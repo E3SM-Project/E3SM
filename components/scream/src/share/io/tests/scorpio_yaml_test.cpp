@@ -8,6 +8,7 @@
 
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/simple_grid.hpp"
+#include "share/grid/grids_manager.hpp"
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
@@ -71,6 +72,10 @@ TEST_CASE("scorpio_yaml", "") {
   auto dummy_grid= std::make_shared<SimpleGrid>("Physics",num_cols,num_levs,io_comm);
   upgm.set_grid(dummy_grid);
 
+  auto grid = upgm.get_grid("Physics");
+  const auto nvl = grid->get_num_vertical_levels();
+  auto phys_lt = grid->get_native_dof_layout();
+
 /* The first step is to establish a Field Manager Repo to work with.  This example is fashioned from the 'field_repo'
  * test from /share/tests/field_tests.hpp                                                                          */ 
   std::vector<FieldTag> tag1d  = {FieldTag::Column};
@@ -78,8 +83,6 @@ TEST_CASE("scorpio_yaml", "") {
   std::vector<FieldTag> tag1dc = {FieldTag::Component};
   std::vector<FieldTag> tag2d  = {FieldTag::Column, FieldTag::VerticalLevel};
   std::vector<FieldTag> tag3d  = {FieldTag::Column, FieldTag::VerticalLevel, FieldTag::Component};
-  //std::vector<FieldTag> tag2d  = {FieldTag::VerticalLevel,FieldTag::Column};
-  //std::vector<FieldTag> tag3d  = {FieldTag::Component,FieldTag::VerticalLevel,FieldTag::Column};
 
   FieldIdentifier fid_x("x", tag1d,  m);
   FieldIdentifier fid_y("y", tag1db, m);
@@ -213,13 +216,11 @@ TEST_CASE("scorpio_yaml", "") {
     out_ins.finalize();
     out_ins.check_status();
   }
-  eam_pio_finalize();
-  upgm.clean_up();
+  //eam_pio_finalize();
+  //upgm.clean_up();
 } // TEST_CASE scorpio_yaml
 
 
-/* ================================================================================================================ */
-/* ====================                           INTERNAL FUNCTIONS                           ==================== */
 /* ================================================================================================================ */
 /* ====================                           INTERNAL FUNCTIONS                           ==================== */
 /* ================================================================================================================ */
@@ -230,16 +231,20 @@ void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d, con
 {
   Real pi = 2*acos(0.0);
 
-  for (int ii=0;ii<dims3d[0];ii++)
+  auto grid = gm.get_grid("Physics");
+  auto gids       = grid->get_dofs_gids();
+  const auto nlvl = grid->get_num_vertical_levels();
+  auto phys_lt    = grid->get_native_dof_layout();
+  for (int ii=0;ii<phys_lt.dim(0);ii++)
   {
     Int g_ii = gids(ii);
     x[ii] = 2.0*pi/total_cols*(g_ii+1);
   }
-  for (int jj=0;jj<dims3d[1];jj++) 
+  for (int jj=0;jj<nlvl;jj++) 
   {
-    y[jj] = 4.0*pi/dims3d[1]*(jj+1);
+    y[jj] = 4.0*pi/nlvl*(jj+1);
   }
-  for (int kk=0;kk<dims3d[2];kk++)
+  for (int kk=0;kk<num_comp;kk++)
   {
     z[kk] = 100*(kk+1);
   }
@@ -281,14 +286,16 @@ void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> inde
 
 void update_data_output(Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z, const std::vector<int> dims3d, const Real t, const dofs_list_type gids)
 {
-  for (int ii=0;ii<dims3d[0];ii++)
+  auto gids = gm.get_grid("Physics")->get_dofs_gids();
+  const auto nlvl = gm.get_grid("Physics")->get_num_vertical_levels();
+  for (int ii=0;ii<gids.size();ii++)
   {
     Int g_ii = gids(ii);
     data_1d(ii) = 0.1 * cos(x[g_ii]+t);
     for (int jj=0;jj<dims3d[1];jj++) 
     {
       data_2d(ii,jj) = sin(y[jj]+t) * data_1d(ii);
-      for (int kk=0;kk<dims3d[2];kk++)
+      for (int kk=0;kk<num_comp;kk++)
       {
         data_3d(ii,jj,kk) = z[kk] + data_2d(ii,jj);
       }

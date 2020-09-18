@@ -114,6 +114,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   m_filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";  //TODO: The filename should be treated as a prefix to enable multiple files for the same control.  Like in the case of monthly output with 1 snap/file.
   EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
 
+  printf("Init file: %s\n",m_filename.c_str());
   // Parse the yaml file that controls this output instance.
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
   m_grid_name       = m_params.get<std::string>("GRID");
