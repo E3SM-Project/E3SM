@@ -95,7 +95,6 @@ def buildnml(case, caseroot, compname):
     sysmod = "{}/components/elm/bld/configure".format(srcroot)
     sysmod += "  {} -comp_intf {} {}".format(config_opts, comp_interface, clm_config_opts)
     sysmod += " -usr_src {}/SourceMods/src.elm".format(caseroot)
-    print sysmod
     run_cmd_no_fail(sysmod, from_dir=elmconf_dir)
 
     #--------------------------------------------------------------------
@@ -184,7 +183,6 @@ def buildnml(case, caseroot, compname):
             sysmod += " -mask {}".format(mask_grid)
 
         # TODO: clm/bld/build-namelist needs to be converted to python
-	print sysmod
         run_cmd_no_fail(sysmod, from_dir=elmconf_dir)
 
         # -----------------------------------------------------
