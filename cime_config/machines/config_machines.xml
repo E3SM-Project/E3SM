@@ -3092,7 +3092,7 @@
       <env name="OMPI_CXX">g++</env>
       <env name="OMPI_FC">gfortran</env>
       <env name="PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="LD_LIBRARY_PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/lib:/home/groups/coegroup/e3sm/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc/8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PNETCDF_PATH">/home/groups/coegroup/e3sm/soft/pnetcdf/1.12.1/gcc/8.2.0/openmpi/2.1.6</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">

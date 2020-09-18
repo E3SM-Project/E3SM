@@ -41,11 +41,11 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/coriolis.F90
   cam/src/physics/crm/sam/crmtracers.F90
   cam/src/physics/crm/sam/crm_ecpp_output_module.F90
-  cam/src/physics/crm/sam/crm_input_module.F90
+  cam/src/physics/crm/crm_input_module.F90
   cam/src/physics/crm/sam/crm_surface.F90
-  cam/src/physics/crm/sam/crm_output_module.F90
-  cam/src/physics/crm/sam/crm_rad_module.F90
-  cam/src/physics/crm/sam/crm_state_module.F90
+  cam/src/physics/crm/crm_output_module.F90
+  cam/src/physics/crm/crm_rad_module.F90
+  cam/src/physics/crm/crm_state_module.F90
   cam/src/physics/crm/sam/damping.F90
   cam/src/physics/crm/sam/grid.F90
   cam/src/physics/crm/sam/diagnose.F90
@@ -75,7 +75,7 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/uvw.F90
   cam/src/physics/crm/sam/vars.F90
   cam/src/physics/crm/sam/zero.F90
-  cam/src/physics/crm/sam/openacc_utils.F90
+  cam/src/physics/crm/openacc_utils.F90
   cam/src/physics/crm/sam/sat.F90 )
 
 # add accelerator/gpu flags for MPAS files
@@ -94,6 +94,10 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_leith.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_pressure_grad.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_vadv.f90
+  # seaice
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_mesh_pool.f90
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_velocity_solver_variational.f90
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_velocity_solver.f90
 )
 
 foreach(ITEM IN LISTS FILES_NEED_OPENACC_FLAGS)
