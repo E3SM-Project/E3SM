@@ -1,4 +1,3 @@
-
 module modal_aer_opt
 
 ! parameterizes aerosol coefficients using chebychev polynomial
@@ -9,11 +8,10 @@ module modal_aer_opt
 
 ! uses Wiscombe's (1979) mie scattering code
 
-
 use shr_kind_mod,      only: r8 => shr_kind_r8, shr_kind_cl
 use ppgrid,            only: pcols, pver, pverp
 use constituents,      only: pcnst
-use spmd_utils,        only: masterproc
+use spmd_utils,        only: masterproc, iam
 use phys_control,      only: cam_chempkg_is
 use ref_pres,          only: top_lev => clim_modal_aero_top_lev
 use physconst,         only: rhoh2o, rga, rair
@@ -65,6 +63,13 @@ integer :: qaerwat_idx  = -1
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
 
+!Declare the following threadprivate variables to be used for calcsize and water uptake
+!These are defined as module level variables to aviod allocation-deallocation in a loop
+real(r8), pointer :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
+real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
+real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
+!$OMP THREADPRIVATE(dgnumdry_m, dgnumwet_m, qaerwat_m)
+
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -111,20 +116,21 @@ subroutine modal_aer_opt_init()
 
    use ioFileMod,        only: getfil
    use phys_control,     only: phys_getopts
+   use shr_log_mod ,     only: errmsg => shr_log_errmsg
 
    ! Local variables
 
    integer  :: i, m
    real(r8) :: rmmin, rmmax       ! min, max aerosol surface mode radius treated (m)
    character(len=256) :: locfile
-   
+
    logical           :: history_amwg            ! output the variables used by the AMWG diag package
    logical           :: history_verbose         ! produce verbose history output
    logical           :: history_aero_optics     ! output aerosol optics diagnostics
 
    logical :: call_list(0:n_diag)
    integer :: ilist, nmodes, m_ncoef, m_prefr, m_prefi
-   integer :: errcode
+   integer :: errcode, istat
 
    character(len=*), parameter :: routine='modal_aer_opt_init'
    !----------------------------------------------------------------------------
@@ -173,6 +179,17 @@ subroutine modal_aer_opt_init()
    call phys_getopts(history_amwg_out        = history_amwg, &
                      history_verbose_out = history_verbose, &
                      history_aero_optics_out = history_aero_optics )
+
+   !Allocate dry and wet size variables in an OMP PARRALLEL region as these
+   !arrays are private for each thread and needs to be allocated for each OMP thread
+   !$OMP PARALLEL
+   allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
+   !$OMP END PARALLEL
 
    ! Add diagnostic fields to history output.
    call addfld ('dryballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
@@ -380,7 +397,6 @@ end subroutine modal_aer_opt_init
 subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
                          tauxar, wa, ga, fa,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
 
-  use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol sw radiative properties
 
    integer,             intent(in) :: list_idx       ! index of the climate or a diagnostic list
@@ -417,11 +433,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
    real(r8), pointer :: dgnumwet(:,:)     ! number mode wet diameter
    real(r8), pointer :: qaerwat(:,:)      ! aerosol water (g/g)
-
-   real(r8), pointer :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
-   real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
-   real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
-   real(r8), pointer :: wetdens_m(:,:,:)  ! 
 
    real(r8) :: sigma_logr_aer         ! geometric standard deviation of number distribution
    real(r8) :: radsurf(pcols,pver)    ! aerosol surface mode radius
@@ -591,41 +602,23 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-
    !BSINGH-Future work:
-   !1. remove wetdens as it is not being used here
-   
-   if(.not. associated(dgnumdry_m)) then
-      allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
-      if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(dgnumwet_m)) then
-      allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
-      if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(qaerwat_m)) then
-      allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
-      if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(wetdens_m)) then
-      allocate(wetdens_m(pcols,pver,nmodes),stat=istat)
-      if (istat .ne. 0) call endrun("Unable to allocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
-   endif
+   !1. Deallocate dgnumdry_m etc. variables in a finalize call
 
+   !Assign unphysical values to detect any inadvertant use of these variables
    dgnumdry_m(:,:,:) = huge(1.0_r8)
    dgnumwet_m(:,:,:) = huge(1.0_r8)
    qaerwat_m(:,:,:)  = huge(1.0_r8)
-   wetdens_m(:,:,:)  = huge(1.0_r8)
    if (list_idx == 0) then
       call modal_aero_calcsize_sub(state_bef_aero, pbuf,deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
            list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-           qaerwat_m, wetdens_m)
+           qaerwat_m)
    else
       call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-           qaerwat_m, wetdens_m)
+           qaerwat_m)
    endif
       call outfld('dryballi',  dgnumdry_m, pcols, lchnk)
       call outfld('wetballi',  dgnumwet_m, pcols, lchnk)
@@ -1087,23 +1080,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
    end do ! nmodes
 
-   if(associated(dgnumdry_m))then
-      deallocate(dgnumdry_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(dgnumwet_m))then
-      deallocate(dgnumwet_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(qaerwat_m))then
-      deallocate(qaerwat_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(wetdens_m))then
-      deallocate(wetdens_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-
    !Add contributions from volcanic aerosols directly read in extinction
    if(is_cmip6_volc) then
       !update tropopause layer first
@@ -1251,11 +1227,6 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt,cld_brn
    real(r8), pointer :: dgnumwet(:,:)  ! wet number mode diameter (m)
    real(r8), pointer :: qaerwat(:,:)   ! aerosol water (g/g)
 
-   real(r8), pointer :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
-   real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
-   real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
-   real(r8), pointer :: wetdens_m(:,:,:)  ! 
-
    real(r8) :: sigma_logr_aer          ! geometric standard deviation of number distribution
    real(r8) :: alnsg_amode
    real(r8) :: xrad(pcols)
@@ -1303,38 +1274,20 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt,cld_brn
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-   if(.not. associated(dgnumdry_m)) then
-      allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
-      if (istat > 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(dgnumwet_m)) then
-      allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
-      if (istat > 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(qaerwat_m)) then
-      allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
-      if (istat > 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(.not. associated(wetdens_m)) then
-      allocate(wetdens_m(pcols,pver,nmodes),stat=istat)
-      if (istat > 0) call endrun("Unable to allocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   
    dgnumdry_m(:,:,:) = huge(1.0_r8)
    dgnumwet_m(:,:,:) = huge(1.0_r8)
    qaerwat_m(:,:,:)  = huge(1.0_r8)
-   wetdens_m(:,:,:)  = huge(1.0_r8)
 
    if ( list_idx == 0 ) then
       call modal_aero_calcsize_sub(state_bef_aero, pbuf, deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
            list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-                                     qaerwat_m, wetdens_m)
+                                     qaerwat_m)
    else
       call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-                                     qaerwat_m, wetdens_m)
+                                     qaerwat_m)
    endif
 
    do m = 1, nmodes
@@ -1474,23 +1427,6 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt,cld_brn
       end do  ! nlwbands
 
    end do ! m = 1, nmodes
-
-   if(associated(dgnumdry_m))then
-      deallocate(dgnumdry_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(dgnumwet_m))then
-      deallocate(dgnumwet_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(qaerwat_m))then
-      deallocate(qaerwat_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   endif
-   if(associated(wetdens_m))then
-      deallocate(wetdens_m, stat=istat)
-      if (istat .ne. 0) call endrun("Unable to deallocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
-   endif
 
 end subroutine modal_aero_lw
 

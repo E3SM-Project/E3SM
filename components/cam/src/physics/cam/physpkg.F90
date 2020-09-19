@@ -12,9 +12,9 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-
+  use omp_lib 
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
-  use spmd_utils,       only: masterproc
+  use spmd_utils,       only: masterproc, iam
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
