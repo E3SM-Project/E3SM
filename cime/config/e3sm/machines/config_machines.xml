@@ -2927,9 +2927,9 @@
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>csc399</PROJECT>
     <CHARGE_ACCOUNT>csc399</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/gpfs/alpine/$PROJECT/world-shared</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>csc399,cli115,cli127</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/world-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
     <!-- In case you wish to try HOME for building to check for filesystem issues, uncomment following -->
     <!-- You may have to change RUNDIR below to use scratch file sustem.  -->
     <!-- <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch/$PROJECT</CIME_OUTPUT_ROOT> -->
@@ -2957,13 +2957,14 @@
       </arguments>
     </mpirun>
     <mpirun mpilib="spectrum-mpi" compiler="pgiacc">
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+      <!--<executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable> -->
+      <executable>/gpfs/alpine/world-shared/csc399/mpirun.summit</executable> 
       <arguments>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="spectrum-mpi" compiler="pgigpu">
-      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+      <executable>/gpfs/alpine/world-shared/csc399/mpirun.summit</executable>
       <arguments>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
       </arguments>
@@ -3002,10 +3003,11 @@
       </modules>
       <!-- List of modules elements, executing commands if compiler and mpilib condition applies -->
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.9</command>
+        <command name="load">pgi/19.10</command>
       </modules>
       <modules compiler="pgiacc">
         <command name="load">cuda/10.1.243</command>
+        <command name="load">nsight-systems/2020.2.1.71</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
@@ -3253,7 +3255,7 @@
 
   </machine>
   <default_run_suffix>
-    <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
+    <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe> 
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
   </default_run_suffix>
 

@@ -2006,7 +2006,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </FFLAGS>
   <LDFLAGS>
     <!--<append> -acc -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel </append> -->
-    <append> -acc -ta=tesla:cc70,pinned -Minfo=accel </append>
+    <append> -acc -ta=tesla:cc70,ptxinfo -Minfo=accel </append>
   </LDFLAGS>
   <SLIBS>
     <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack </append>
