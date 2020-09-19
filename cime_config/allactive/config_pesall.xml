@@ -7950,7 +7950,7 @@
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2">
 	<mach name="anvil">
-	  <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="M">
+	  <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 46 nodes pure-MPI, ~11 sypd </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -7981,7 +7981,7 @@
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2">
     <mach name="compy">
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
+      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
         <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 11 nodes pure-MPI, ~2.8 sypd </comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
@@ -8008,7 +8008,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="S">
+      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
         <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 21 nodes pure-MPI, ~5.5 sypd </comment>
         <ntasks>
           <ntasks_atm>600</ntasks_atm>
@@ -8035,7 +8035,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="M">
+      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 46 nodes pure-MPI, ~11 sypd </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
@@ -8062,7 +8062,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+" pesize="L">
+      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
         <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 90 nodes pure-MPI, ~18 sypd </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
