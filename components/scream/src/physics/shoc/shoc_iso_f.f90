@@ -31,7 +31,7 @@ interface
     real(kind=c_real), intent(inout) :: varorcovar(shcol,nlevi)
 
   end subroutine calc_shoc_varorcovar_f
-  
+
   subroutine calc_shoc_vertflux_f(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use iso_c_binding
 
@@ -85,6 +85,18 @@ subroutine update_host_dse_f(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
   real(kind=c_real), intent(out) :: host_dse(shcol,nlev)
 
 end subroutine update_host_dse_f
+
+subroutine check_tke_f(shcol, nlev, tke) bind(C)
+
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: shcol
+  integer(kind=c_int), intent(in), value :: nlev
+
+  real(kind=c_real), intent(inout) :: tke(shcol,nlev)
+
+end subroutine check_tke_f
+
 
 end interface
 

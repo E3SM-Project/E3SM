@@ -50,11 +50,11 @@ void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
 			    Real *invar1, Real *invar2, Real *varorcovar);
 
 void check_tke_c(Int shcol, Int nlev, Real *tke);
-			    
-void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec, 
-                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres, 
-		Real *u_wind, Real *v_wind, Real *brunt, Real *obklen, 
-		Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke, 
+
+void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec,
+                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres,
+		Real *u_wind, Real *v_wind, Real *brunt, Real *obklen,
+		Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke,
 		Real *tk, Real *tkh, Real *isotropy);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
@@ -101,37 +101,37 @@ void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
 
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
-				    
+
 void clipping_diag_third_shoc_moments_c(Int nlevi, Int shcol, Real *w_sec_zi,
-                                    Real *w3);	
-				    
+                                    Real *w3);
+
 void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_zt_kc,
                                     Real isotropy_zi, Real brunt_zi, Real thetal_zi,
-                                    Real *thedz, Real *thedz2, Real *iso, 
-                                    Real *isosqrd, Real *buoy_sgs2, Real *bet2);				    			
-void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso, 
-                                    Real isosqrd, Real wthl_sec, Real wthl_sec_kc, 
-				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc, 
+                                    Real *thedz, Real *thedz2, Real *iso,
+                                    Real *isosqrd, Real *buoy_sgs2, Real *bet2);
+void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso,
+                                    Real isosqrd, Real wthl_sec, Real wthl_sec_kc,
+				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc,
 				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
-                                    Real tke, Real tke_kc, Real *f0, Real *f1, 
+                                    Real tke, Real tke_kc, Real *f0, Real *f1,
                                     Real *f2, Real *f3, Real *f4, Real *f5);
-				    
+
 void omega_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f3, Real f4,
                                     Real *omega0, Real *omega1, Real *omega2);
-				    
-void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f2, 
+
+void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f2,
                                     Real *x0, Real *y0, Real *x1, Real *y1);
-				    
-void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2, 
-                                    Real x0, Real x1, Real y0, Real y1, 
+
+void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2,
+                                    Real x0, Real x1, Real y0, Real y1,
 				    Real *aa0, Real *aa1);
-				    
-void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0, 
-                                    Real x1, Real f5, Real *w3);				    		   				   			    				    
+
+void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0,
+                                    Real x1, Real f5, Real *w3);
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 
-void diag_third_shoc_moments_c(Int shoc, Int nlev, Int nlevi, Real *w_sec, 
+void diag_third_shoc_moments_c(Int shoc, Int nlev, Int nlevi, Real *w_sec,
                                Real *thl_sec, Real *qw_sec, Real *qwthl_sec,
                                Real *wthl_sec, Real *isotropy, Real *brunt,
                                Real *thetal, Real *tke, Real *wthv_sec,
@@ -140,10 +140,10 @@ void diag_third_shoc_moments_c(Int shoc, Int nlev, Int nlevi, Real *w_sec,
 
 void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_sec,
                                       Real *thl_sec, Real *qw_sec, Real *qwthl_sec,
-                                      Real *wthl_sec, Real *tke, Real *dz_zt, 
+                                      Real *wthl_sec, Real *tke, Real *dz_zt,
                                       Real *dz_zi, Real *zt_grid, Real *zi_grid,
-                                      Real *isotropy_zi, Real *brunt_zi, 
-                                      Real *w_sec_zi, Real *thetal_zi, 
+                                      Real *isotropy_zi, Real *brunt_zi,
+                                      Real *w_sec_zi, Real *thetal_zi,
                                       Real *wthv_sec_zi, Real *w3);
 
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
@@ -292,7 +292,7 @@ void check_tke(SHOCCheckTkeData &d){
   shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
   check_tke_c(d.shcol(), d.nlev(), d.tke);
-  d.transpose<ekat::util::TransposeDirection::f2c>();    
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_tke(SHOCTkeData &d){
@@ -349,7 +349,7 @@ void shoc_length(SHOCLengthData &d){
   shoc_length_c(d.shcol(),d.nlev(),d.nlevi(),d.tke,d.host_dx,d.host_dy,
                 d.pblh,d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.thetal,
                 d.wthv_sec,d.thv,d.brunt,d.shoc_mix);
-  d.transpose<ekat::util::TransposeDirection::f2c>();	
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
@@ -816,6 +816,11 @@ void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exn
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {host_dse_d};
   ekat::pack::device_to_host({host_dse}, {shcol}, {nlev}, inout_views, true);
+}
+
+void check_tke_f(Int shcol, Int nlev, Real* tke)
+{
+
 }
 
 
