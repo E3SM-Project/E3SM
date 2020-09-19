@@ -844,7 +844,7 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
 
      const auto tke_s   = ekat::util::subview(tke_d, i);
 
-     //SHF::check_tke(team, nlev, tke_s);
+     SHF::check_tke(team, nlev, tke_s);
    });
 
  // Sync back to host

@@ -3092,6 +3092,7 @@ subroutine check_tke(&
     enddo
   enddo
 
+  return
 end subroutine check_tke
 
 !==============================================================
