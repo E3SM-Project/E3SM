@@ -820,6 +820,37 @@ void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exn
 
 void check_tke_f(Int shcol, Int nlev, Real* tke)
 {
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_2d, 1> temp_2d_d;
+
+  // Sync to device
+  ekat::pack::host_to_device({tke}, shcol, nlev, temp_2d_d, true);
+
+  view_2d
+    tke_d(temp_2d_d[0]);
+
+ const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+ const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+ Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+     const Int i = team.league_rank();
+
+     const auto tke_s   = ekat::util::subview(tke_d, i);
+
+     //SHF::check_tke(team, nlev, tke_s);
+   });
+
+ // Sync back to host
+ Kokkos::Array<view_2d, 1> inout_views = {tke_d};
+ ekat::pack::device_to_host({tke}, {shcol}, {nlev}, inout_views, true);
+
 
 }
 
