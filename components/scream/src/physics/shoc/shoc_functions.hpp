@@ -109,6 +109,12 @@ struct Functions
     const Scalar& phis,
     const uview_1d<Spack>& host_dse);
 
+  KOKKOS_FUNCTION
+  static void check_tke(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<Spack>& tke);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -122,6 +128,7 @@ struct Functions
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
 # include "shoc_update_host_dse_impl.hpp"
+# include "shoc_check_tke_impl.hpp"
 #endif
 
 #endif
