@@ -198,7 +198,7 @@ contains
     use shr_log_mod               , only : errMsg => shr_log_errMsg
     use clm_varctl                , only : iulog
 #ifdef BETR_VIA_EMI
-    use clm_instMod               , only : ep_betr
+    use elm_instMod               , only : ep_betr
 #endif
     !
     implicit none
@@ -233,7 +233,7 @@ contains
     use clm_varctl                , only : iulog
     use clm_varpar                , only : nlevsoi
 #ifdef BETR_VIA_EMI
-    use clm_instMod               , only : ep_betr
+    use elm_instMod               , only : ep_betr
     use BeTR_decompMod            , only : betr_bounds_type
 #endif
     !

@@ -91,43 +91,43 @@ module elm_driver
   use DaylengthMod           , only : UpdateDaylength
   use perf_mod
   !
-  use clm_instMod            , only : ch4_vars, ep_betr
-  use clm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
-  use clm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
-  use clm_instMod            , only : nitrogenstate_vars
-  use clm_instMod            , only : nitrogenflux_vars
-  use clm_instMod            , only : phosphorusstate_vars
-  use clm_instMod            , only : phosphorusflux_vars
-  use clm_instMod            , only : crop_vars
-  use clm_instMod            , only : cnstate_vars
-  use clm_instMod            , only : dust_vars
-  use clm_instMod            , only : vocemis_vars
-  use clm_instMod            , only : drydepvel_vars
-  use clm_instMod            , only : aerosol_vars
-  use clm_instMod            , only : canopystate_vars
-  use clm_instMod            , only : energyflux_vars
-  use clm_instMod            , only : frictionvel_vars
-  use clm_instMod            , only : lakestate_vars
-  use clm_instMod            , only : photosyns_vars
-  use clm_instMod            , only : sedflux_vars
-  use clm_instMod            , only : soilstate_vars
-  use clm_instMod            , only : soilhydrology_vars
-  use clm_instMod            , only : solarabs_vars
-  use clm_instMod            , only : soilhydrology_vars
-  use clm_instMod            , only : surfalb_vars
-  use clm_instMod            , only : surfrad_vars
-  use clm_instMod            , only : temperature_vars
-  use clm_instMod            , only : col_es
-  use clm_instMod            , only : waterflux_vars
-  use clm_instMod            , only : waterstate_vars
-  use clm_instMod            , only : atm2lnd_vars
-  use clm_instMod            , only : lnd2atm_vars
-  use clm_instMod            , only : glc2lnd_vars
-  use clm_instMod            , only : lnd2glc_vars
-  use clm_instMod            , only : soil_water_retention_curve
-  use clm_instMod            , only : chemstate_vars
-  use clm_instMod            , only : alm_fates
-  use clm_instMod            , only : PlantMicKinetics_vars
+  use elm_instMod            , only : ch4_vars, ep_betr
+  use elm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
+  use elm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
+  use elm_instMod            , only : nitrogenstate_vars
+  use elm_instMod            , only : nitrogenflux_vars
+  use elm_instMod            , only : phosphorusstate_vars
+  use elm_instMod            , only : phosphorusflux_vars
+  use elm_instMod            , only : crop_vars
+  use elm_instMod            , only : cnstate_vars
+  use elm_instMod            , only : dust_vars
+  use elm_instMod            , only : vocemis_vars
+  use elm_instMod            , only : drydepvel_vars
+  use elm_instMod            , only : aerosol_vars
+  use elm_instMod            , only : canopystate_vars
+  use elm_instMod            , only : energyflux_vars
+  use elm_instMod            , only : frictionvel_vars
+  use elm_instMod            , only : lakestate_vars
+  use elm_instMod            , only : photosyns_vars
+  use elm_instMod            , only : sedflux_vars
+  use elm_instMod            , only : soilstate_vars
+  use elm_instMod            , only : soilhydrology_vars
+  use elm_instMod            , only : solarabs_vars
+  use elm_instMod            , only : soilhydrology_vars
+  use elm_instMod            , only : surfalb_vars
+  use elm_instMod            , only : surfrad_vars
+  use elm_instMod            , only : temperature_vars
+  use elm_instMod            , only : col_es
+  use elm_instMod            , only : waterflux_vars
+  use elm_instMod            , only : waterstate_vars
+  use elm_instMod            , only : atm2lnd_vars
+  use elm_instMod            , only : lnd2atm_vars
+  use elm_instMod            , only : glc2lnd_vars
+  use elm_instMod            , only : lnd2glc_vars
+  use elm_instMod            , only : soil_water_retention_curve
+  use elm_instMod            , only : chemstate_vars
+  use elm_instMod            , only : alm_fates
+  use elm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -153,7 +153,7 @@ module elm_driver
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface
-  use clm_instMod            , only : clm_interface_data
+  use elm_instMod            , only : clm_interface_data
   use clm_interface_funcsMod , only : get_clm_data
   ! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc

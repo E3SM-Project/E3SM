@@ -1,4 +1,4 @@
-module clm_instMod
+module elm_instMod
   !-----------------------------------------------------------------------
   ! initialize clm data types
   !
@@ -437,5 +437,5 @@ contains
     end subroutine clm_inst_biogeophys
 
 
-end module clm_instMod
+end module elm_instMod
 

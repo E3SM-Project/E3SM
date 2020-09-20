@@ -9,7 +9,7 @@ set(EMI_ELM_TYPES_STUB_SOURCES
   WaterStateType.F90
   WaterfluxType.F90
   atm2lndType.F90
-  clm_instMod.F90
+  elm_instMod.F90
 )
 
 include_directories(${CMAKE_BINARY_DIR}/elm_stub/shr)

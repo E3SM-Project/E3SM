@@ -34,7 +34,7 @@ module elm_initializeMod
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_es  
 
-  use clm_instMod
+  use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
   use clm_varctl             , only : do_budgets
   !

@@ -1,4 +1,4 @@
-module clm_instMod
+module elm_instMod
 
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -61,4 +61,4 @@ module clm_instMod
 
   end subroutine clm_inst_biogeophys
 
-end module clm_instMod
+end module elm_instMod

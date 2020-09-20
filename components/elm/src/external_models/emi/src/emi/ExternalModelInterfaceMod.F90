@@ -187,15 +187,15 @@ contains
     use ExternalModelConstants, only : EM_ID_PTM
     use ExternalModelConstants, only : EM_ID_STUB
 #ifndef FATES_VIA_EMI
-    use clm_instMod           , only : soilstate_vars
-    use clm_instMod           , only : soilhydrology_vars
-    use clm_instMod           , only : waterflux_vars
-    use clm_instMod           , only : waterstate_vars
+    use elm_instMod           , only : soilstate_vars
+    use elm_instMod           , only : soilhydrology_vars
+    use elm_instMod           , only : waterflux_vars
+    use elm_instMod           , only : waterstate_vars
 #else
-    use clm_instMod           , only : soilstate_inst
-    use clm_instMod           , only : soilhydrology_inst
-    use clm_instMod           , only : waterflux_inst
-    use clm_instMod           , only : waterstate_inst
+    use elm_instMod           , only : soilstate_inst
+    use elm_instMod           , only : soilhydrology_inst
+    use elm_instMod           , only : waterflux_inst
+    use elm_instMod           , only : waterstate_inst
 #endif
     use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List

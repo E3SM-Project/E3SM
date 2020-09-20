@@ -209,7 +209,7 @@ contains
     use shr_log_mod               , only : errMsg => shr_log_errMsg
     use clm_varctl                , only : iulog
 #ifdef FATES_VIA_EMI
-    use clm_instMod               , only : clm_fates
+    use elm_instMod               , only : clm_fates
     use EDSurfaceRadiationMod     , only : ED_SunShadeFracs
 #endif
     !
