@@ -1518,6 +1518,7 @@ module li_advection
     subroutine li_layer_normal_velocity(&
          meshPool,               &
          normalVelocity,         &
+         edgeMask,               &
          layerNormalVelocity,    &
          minOfMaxAllowableDt,    &
          err)
@@ -1533,6 +1534,9 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
            normalVelocity        !< Input: normal velocity on cell edges
+
+      integer, dimension(:), intent(in) :: &
+           edgeMask  !< Input: normal velocity on cell edges
 
       !-----------------------------------------------------------------
       !
@@ -1595,6 +1599,8 @@ module li_advection
       ! loop over local edges
       do iEdge = 1, nEdgesSolve
 
+         if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
+
          ! loop over layers
          do k = 1, nVertLevels
 
@@ -1611,6 +1617,10 @@ module li_advection
             minOfMaxAllowableDt = min(minOfMaxAllowableDt, maxAllowableDt)
 
          enddo     ! k
+
+         else
+            layerNormalVelocity(:,iEdge) = 0.0_RKIND
+         endif
 
       enddo   ! iEdge
 
