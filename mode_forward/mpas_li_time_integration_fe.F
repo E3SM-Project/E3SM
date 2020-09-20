@@ -247,6 +247,7 @@ module li_time_integration_fe
 
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+      integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
       logical, pointer :: config_adaptive_timestep
@@ -329,6 +330,7 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
          ! compute normal velocities and advective CFL limit for this block
@@ -336,6 +338,7 @@ module li_time_integration_fe
          call li_layer_normal_velocity( &
               meshPool,               &
               normalVelocity,         &
+              edgeMask,               &
               layerNormalVelocity,    &
               allowableAdvecDt,       &
               err_tmp)
