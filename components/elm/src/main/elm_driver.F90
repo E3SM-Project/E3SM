@@ -161,7 +161,7 @@ module elm_driver
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
   use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use elm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2elm
+  use elm_interface_funcsMod      , only : update_bgc_data_pf2elm, update_th_data_pf2elm
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
   use clm_interface_pflotranMod   , only : clm_pf_finalize
   !----------------------------------------------------------------------------
@@ -986,7 +986,7 @@ contains
                     call clm_pf_run(clm_interface_data, bounds_clump, filter, nc)
 
                     ! STEP-3: update CLM from clm_interface_data
-                    call update_bgc_data_pf2clm(clm_interface_data%bgc,         &
+                    call update_bgc_data_pf2elm(clm_interface_data%bgc,         &
                            bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &

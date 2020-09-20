@@ -3797,7 +3797,7 @@ contains
 
                  decomp_cpools_delta_vr(c,j,k) = ( decomp_cpools_delta_vr(c,j,k)  &
                                 + decomp_cpools_vr_clm_loc(vec_offset+cellcount)  &
-                                * clm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> clm_bgc_data%decomp_cpools_sourcesink_col
+                                * clm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> elm_bgc_data%decomp_cpools_sourcesink_col
 
                  if (clm_pf_idata%floating_cn_ratio(k)) then
                      decomp_npools_delta_vr(c,j,k) = ( decomp_npools_delta_vr(c,j,k)  &

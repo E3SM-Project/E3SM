@@ -89,7 +89,7 @@ module elm_interface_funcsMod
 
   !--------------------------------------------------------------------------------------
   ! (1) GENERIC SUBROUTINES: used by any specific soil BGC module
-  ! pass clm variables to clm_bgc_data
+  ! pass clm variables to elm_bgc_data
   public    :: get_elm_data                 ! STEP-1: clm vars -> elm_interface_data
 
   ! pass clm variables to elm_interface_data, called by get_elm_data
@@ -98,9 +98,9 @@ module elm_interface_funcsMod
   private   :: get_elm_bgc_state            ! STEP-1.3: state vars
   private   :: get_elm_bgc_flux             ! STEP-1.4: flux vars
 
-  ! STEP-3.x: clm_interface_data -> clm vars
-  ! update clm variables from clm_interface_data,
-  ! e.g., called in 'update_bgc_data_clm2clm' and 'update_bgc_data_pf2clm'
+  ! STEP-3.x: elm_interface_data -> clm vars
+  ! update clm variables from elm_interface_data,
+  ! e.g., called in 'update_bgc_data_clm2clm' and 'update_bgc_data_pf2elm'
   ! specific bgc-module (e.g., PFLOTRAN) requires certain combination of these subroutines
   private   :: update_bgc_state_decomp
   private   :: update_bgc_state_smin
@@ -124,7 +124,7 @@ module elm_interface_funcsMod
 
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
   ! if (use_clm_interface .and. use_pflotran)
-  public    :: update_bgc_data_pf2clm   ! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
+  public    :: update_bgc_data_pf2elm   ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
                                         ! STEP-2:   see 'clm_pf_run' in clm_interface_pflotranMod
 
   public    :: update_th_data_pf2elm
@@ -134,7 +134,7 @@ contains
 
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_data(clm_idata,                              &
+  subroutine get_elm_data(elm_idata,                              &
            bounds, num_soilc, filter_soilc,                       &
            num_soilp, filter_soilp,                               &
            atm2lnd_vars, soilstate_vars,                          &
@@ -171,42 +171,42 @@ contains
     type(phosphorusstate_type)  , intent(in)    :: phosphorusstate_vars
     type(ch4_type)              , intent(in)    :: ch4_vars
 
-    type(elm_interface_data_type), intent(inout) :: clm_idata
+    type(elm_interface_data_type), intent(inout) :: elm_idata
 
     ! LOCAL
-    !type(elm_interface_th_datatype) , pointer :: clm_idata_th
-    !type(elm_interface_bgc_datatype), pointer :: clm_idata_bgc
+    !type(elm_interface_th_datatype) , pointer :: elm_idata_th
+    !type(elm_interface_bgc_datatype), pointer :: elm_idata_bgc
 
 
     character(len=256) :: subname = "get_elm_data"
     !-----------------------------------------------------------------------
 
      associate ( &
-      clm_idata_th  => clm_idata%th,  &
-      clm_idata_bgc => clm_idata%bgc  &
+      elm_idata_th  => elm_idata%th,  &
+      elm_idata_bgc => elm_idata%bgc  &
      )
 
-    call get_elm_soil_property(clm_idata,                   &
+    call get_elm_soil_property(elm_idata,                   &
                     bounds, num_soilc, filter_soilc,        &
                     soilstate_vars, cnstate_vars)
 
-    call get_elm_soil_th_state(clm_idata_th,                &
+    call get_elm_soil_th_state(elm_idata_th,                &
                    bounds, num_soilc, filter_soilc,         &
                    atm2lnd_vars, soilstate_vars,            &
                    waterstate_vars, temperature_vars)
 
-    call get_elm_soil_th_flux(clm_idata_th,                 &
+    call get_elm_soil_th_flux(elm_idata_th,                 &
                        bounds, num_soilc, filter_soilc,     &
                        waterflux_vars, energyflux_vars)
 
-    call get_elm_bgc_state(clm_idata_bgc,                   &
+    call get_elm_bgc_state(elm_idata_bgc,                   &
                     bounds, num_soilc, filter_soilc,        &
                     atm2lnd_vars, soilstate_vars,           &
                     carbonstate_vars, nitrogenstate_vars,   &
                     phosphorusstate_vars,                   &
                     ch4_vars)
 
-    call get_elm_bgc_flux(clm_idata_bgc,                    &
+    call get_elm_bgc_flux(elm_idata_bgc,                    &
                     bounds, num_soilc, filter_soilc,        &
                     cnstate_vars, carbonflux_vars,          &
                     nitrogenflux_vars, phosphorusflux_vars, &
@@ -217,7 +217,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_soil_property(clm_idata,               &
+  subroutine get_elm_soil_property(elm_idata,               &
                         bounds, num_soilc, filter_soilc,    &
                         soilstate_vars, cnstate_vars)
 
@@ -240,7 +240,7 @@ contains
     type(soilstate_type)     , intent(in) :: soilstate_vars
     type(cnstate_type)       , intent(in) :: cnstate_vars
 
-    type(elm_interface_data_type), intent(inout) :: clm_idata
+    type(elm_interface_data_type), intent(inout) :: elm_idata
 
     integer  :: fc, g, l, c, j, k      ! indices
     integer  :: gcount, cellcount
@@ -284,42 +284,42 @@ contains
 
 !-------------------------------------------------------------------------------------
     ! constants:
-    clm_idata%bgc%ndecomp_pools          = ndecomp_pools
-    clm_idata%bgc%decomp_pool_name(:)    = decomp_pool_name(:)
-    clm_idata%bgc%floating_cn_ratio(:)   = floating_cn_ratio(:)
-    clm_idata%bgc%floating_cp_ratio(:)   = floating_cp_ratio(:)
+    elm_idata%bgc%ndecomp_pools          = ndecomp_pools
+    elm_idata%bgc%decomp_pool_name(:)    = decomp_pool_name(:)
+    elm_idata%bgc%floating_cn_ratio(:)   = floating_cn_ratio(:)
+    elm_idata%bgc%floating_cp_ratio(:)   = floating_cp_ratio(:)
 
-    clm_idata%bgc%initial_cn_ratio(:)    = initial_cn_ratio(:)
-    clm_idata%bgc%initial_cp_ratio(:)    = initial_cp_ratio(:)
-    clm_idata%bgc%decomp_k_pools(:)      = decomp_k_pools(1:ndecomp_pools)
-    clm_idata%bgc%adfactor_kd_pools(:)   = adfactor_kd_pools(1:ndecomp_pools)
+    elm_idata%bgc%initial_cn_ratio(:)    = initial_cn_ratio(:)
+    elm_idata%bgc%initial_cp_ratio(:)    = initial_cp_ratio(:)
+    elm_idata%bgc%decomp_k_pools(:)      = decomp_k_pools(1:ndecomp_pools)
+    elm_idata%bgc%adfactor_kd_pools(:)   = adfactor_kd_pools(1:ndecomp_pools)
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
 
-        clm_idata%z(c,:)                 = z(c,:)
-        clm_idata%zi(c,:)                = zi(c,:)
-        clm_idata%dz(c,:)                = dz(c,:)
-        clm_idata%bd_col(c,:)            = bd(c,:)
-        clm_idata%bsw_col(c,:)           = bsw(c,:)
-        clm_idata%hksat_col(c,:)         = hksat(c,:)
-        clm_idata%sucsat_col(c,:)        = sucsat(c,:)
-        clm_idata%watsat_col(c,:)        = watsat(c,:)
-        clm_idata%watfc_col(c,:)         = watfc(c,:)
-        clm_idata%watmin_col(c,:)        = watmin(c,:)
-        clm_idata%sucmin_col(c,:)        = sucmin(c,:)
+        elm_idata%z(c,:)                 = z(c,:)
+        elm_idata%zi(c,:)                = zi(c,:)
+        elm_idata%dz(c,:)                = dz(c,:)
+        elm_idata%bd_col(c,:)            = bd(c,:)
+        elm_idata%bsw_col(c,:)           = bsw(c,:)
+        elm_idata%hksat_col(c,:)         = hksat(c,:)
+        elm_idata%sucsat_col(c,:)        = sucsat(c,:)
+        elm_idata%watsat_col(c,:)        = watsat(c,:)
+        elm_idata%watfc_col(c,:)         = watfc(c,:)
+        elm_idata%watmin_col(c,:)        = watmin(c,:)
+        elm_idata%sucmin_col(c,:)        = sucmin(c,:)
 
-        clm_idata%porosity_col(c,:)      = watsat(c,:)
-        clm_idata%eff_porosity_col(c,:)  = eff_porosity(c,:)
+        elm_idata%porosity_col(c,:)      = watsat(c,:)
+        elm_idata%eff_porosity_col(c,:)  = eff_porosity(c,:)
 
-        clm_idata%cellorg_col(c,:)       = cellorg(c,:)
+        elm_idata%cellorg_col(c,:)       = cellorg(c,:)
 
-        clm_idata%rootfr_col(c,:)        = rootfr(c,:)
+        elm_idata%rootfr_col(c,:)        = rootfr(c,:)
 
         !
         do k = 1, ndecomp_cascade_transitions
-            clm_idata%bgc%rf_decomp_cascade_col(c,:,k)           = rf_decomp_cascade(c,:,k)
-            clm_idata%bgc%pathfrac_decomp_cascade_col(c,:,k)     = pathfrac_decomp_cascade(c,:,k)
+            elm_idata%bgc%rf_decomp_cascade_col(c,:,k)           = rf_decomp_cascade(c,:,k)
+            elm_idata%bgc%pathfrac_decomp_cascade_col(c,:,k)     = pathfrac_decomp_cascade(c,:,k)
         end do
 
     end do
@@ -329,7 +329,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_soil_th_state(clm_idata_th,            &
+  subroutine get_elm_soil_th_state(elm_idata_th,            &
                        bounds, num_soilc, filter_soilc,     &
                        atm2lnd_vars, soilstate_vars,        &
                        waterstate_vars, temperature_vars)
@@ -353,7 +353,7 @@ contains
     type(waterstate_type)    , intent(in) :: waterstate_vars
     type(temperature_type)   , intent(in) :: temperature_vars
 
-    type(elm_interface_th_datatype)       , intent(inout) :: clm_idata_th
+    type(elm_interface_th_datatype)       , intent(inout) :: elm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j         ! indices
@@ -380,27 +380,27 @@ contains
 
     !--------------------------------------------------------------------------------------
     ! grid:
-    clm_idata_th%forc_pbot_grc    = forc_pbot
+    elm_idata_th%forc_pbot_grc    = forc_pbot
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
-        clm_idata_th%frac_sno_eff_col(c)         = frac_sno_eff(c)
-        clm_idata_th%frac_h2osfc_col(c)          = frac_h2osfc(c)
+        elm_idata_th%frac_sno_eff_col(c)         = frac_sno_eff(c)
+        elm_idata_th%frac_h2osfc_col(c)          = frac_h2osfc(c)
 
-        clm_idata_th%t_grnd_col(c)               = t_grnd(c)
-        clm_idata_th%t_h2osfc_col(c)             = t_h2osfc(c)
-        clm_idata_th%t_nearsurf_col(c)           = t_nearsurf(c)
+        elm_idata_th%t_grnd_col(c)               = t_grnd(c)
+        elm_idata_th%t_h2osfc_col(c)             = t_h2osfc(c)
+        elm_idata_th%t_nearsurf_col(c)           = t_nearsurf(c)
 
         do j = -nlevsno+1,nlevgrnd
             if(j>=1) then
-                clm_idata_th%soilpsi_col(c,j)        = soilpsi(c,j)
-                clm_idata_th%h2osoi_vol_col(c,j)     = h2osoi_vol(c,j)
+                elm_idata_th%soilpsi_col(c,j)        = soilpsi(c,j)
+                elm_idata_th%h2osoi_vol_col(c,j)     = h2osoi_vol(c,j)
             endif
 
-            clm_idata_th%h2osoi_liq_col(c,j)         = h2osoi_liq(c,j)
-            clm_idata_th%h2osoi_ice_col(c,j)         = h2osoi_ice(c,j)
-            clm_idata_th%t_soisno_col(c,j)           = t_soisno(c,j)
+            elm_idata_th%h2osoi_liq_col(c,j)         = h2osoi_liq(c,j)
+            elm_idata_th%h2osoi_ice_col(c,j)         = h2osoi_ice(c,j)
+            elm_idata_th%t_soisno_col(c,j)           = t_soisno(c,j)
         end do
 
     end do
@@ -410,7 +410,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_soil_th_flux(clm_idata_th,             &
+  subroutine get_elm_soil_th_flux(elm_idata_th,             &
                        bounds, num_soilc, filter_soilc,     &
                        waterflux_vars, energyflux_vars)
   !
@@ -431,7 +431,7 @@ contains
     type(waterflux_type)     , intent(in) :: waterflux_vars
     type(energyflux_type)    , intent(in) :: energyflux_vars
 
-    type(elm_interface_th_datatype)       , intent(inout) :: clm_idata_th
+    type(elm_interface_th_datatype)       , intent(inout) :: elm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j         ! indices
@@ -466,24 +466,24 @@ contains
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
-        clm_idata_th%qflx_top_soil_col(c)        = qflx_top_soil(c)
-        clm_idata_th%qflx_evap_soil_col(c)       = qflx_evap_soil(c)
-        clm_idata_th%qflx_evap_h2osfc_col(c)     = qflx_evap_h2osfc(c)
-        clm_idata_th%qflx_evap_snow_col(c)       = qflx_evap_snow(c)
-        clm_idata_th%qflx_subl_snow_col(c)       = qflx_subl_snow(c)
-        clm_idata_th%qflx_tran_veg_col(c)        = qflx_tran_veg(c)
+        elm_idata_th%qflx_top_soil_col(c)        = qflx_top_soil(c)
+        elm_idata_th%qflx_evap_soil_col(c)       = qflx_evap_soil(c)
+        elm_idata_th%qflx_evap_h2osfc_col(c)     = qflx_evap_h2osfc(c)
+        elm_idata_th%qflx_evap_snow_col(c)       = qflx_evap_snow(c)
+        elm_idata_th%qflx_subl_snow_col(c)       = qflx_subl_snow(c)
+        elm_idata_th%qflx_tran_veg_col(c)        = qflx_tran_veg(c)
 
         do j = 1,nlevgrnd
-            clm_idata_th%qflx_rootsoil_col(c,j)  = qflx_rootsoil(c,j)
+            elm_idata_th%qflx_rootsoil_col(c,j)  = qflx_rootsoil(c,j)
         end do
 
-        clm_idata_th%htvp_col(c)                 = htvp(c)
-        clm_idata_th%eflx_bot_col(c)             = eflx_bot(c)
-        clm_idata_th%eflx_soil_grnd_col(c)       = eflx_soil_grnd(c)
-        clm_idata_th%eflx_fgr0_snow_col(c)       = eflx_fgr0_snow(c)
-        clm_idata_th%eflx_fgr0_h2osfc_col(c)     = eflx_fgr0_h2osfc(c)
-        clm_idata_th%eflx_fgr0_soil_col(c)       = eflx_fgr0_soil(c)
-        clm_idata_th%eflx_rnet_soil_col(c)       = eflx_rnet_soil(c)
+        elm_idata_th%htvp_col(c)                 = htvp(c)
+        elm_idata_th%eflx_bot_col(c)             = eflx_bot(c)
+        elm_idata_th%eflx_soil_grnd_col(c)       = eflx_soil_grnd(c)
+        elm_idata_th%eflx_fgr0_snow_col(c)       = eflx_fgr0_snow(c)
+        elm_idata_th%eflx_fgr0_h2osfc_col(c)     = eflx_fgr0_h2osfc(c)
+        elm_idata_th%eflx_fgr0_soil_col(c)       = eflx_fgr0_soil(c)
+        elm_idata_th%eflx_rnet_soil_col(c)       = eflx_rnet_soil(c)
 
     end do
 
@@ -493,7 +493,7 @@ contains
 
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_bgc_state(clm_bgc_data,                    &
+  subroutine get_elm_bgc_state(elm_bgc_data,                    &
                         bounds, num_soilc, filter_soilc,        &
                         atm2lnd_vars, soilstate_vars,           &
                         carbonstate_vars, nitrogenstate_vars,   &
@@ -514,7 +514,7 @@ contains
     type(phosphorusstate_type)  , intent(in) :: phosphorusstate_vars
     type(ch4_type)              , intent(in) :: ch4_vars          ! not yet used, but will be.
 
-    type(elm_interface_bgc_datatype), intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(inout) :: elm_bgc_data
 
     character(len=256) :: subname = "get_elm_bgc_state"
 
@@ -551,36 +551,36 @@ contains
     )
 !
 
-    clm_bgc_data%forc_pco2_grc(:)                   = forc_pco2(:)
-    clm_bgc_data%forc_pch4_grc(:)                   = forc_pch4(:)
+    elm_bgc_data%forc_pco2_grc(:)                   = forc_pco2(:)
+    elm_bgc_data%forc_pch4_grc(:)                   = forc_pch4(:)
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
             do k = 1, ndecomp_pools
-                clm_bgc_data%decomp_cpools_vr_col(c,:,k)    = decomp_cpools_vr(c,:,k)
-                clm_bgc_data%decomp_npools_vr_col(c,:,k)    = decomp_npools_vr(c,:,k)
-                clm_bgc_data%decomp_ppools_vr_col(c,:,k)    = decomp_ppools_vr(c,:,k)
+                elm_bgc_data%decomp_cpools_vr_col(c,:,k)    = decomp_cpools_vr(c,:,k)
+                elm_bgc_data%decomp_npools_vr_col(c,:,k)    = decomp_npools_vr(c,:,k)
+                elm_bgc_data%decomp_ppools_vr_col(c,:,k)    = decomp_ppools_vr(c,:,k)
 
             end do
 
-            clm_bgc_data%smin_no3_vr_col(c,:)           = smin_no3_vr(c,:)
-            clm_bgc_data%smin_nh4_vr_col(c,:)           = smin_nh4_vr(c,:)
-            clm_bgc_data%smin_nh4sorb_vr_col(c,:)       = smin_nh4sorb_vr(c,:)
+            elm_bgc_data%smin_no3_vr_col(c,:)           = smin_no3_vr(c,:)
+            elm_bgc_data%smin_nh4_vr_col(c,:)           = smin_nh4_vr(c,:)
+            elm_bgc_data%smin_nh4sorb_vr_col(c,:)       = smin_nh4sorb_vr(c,:)
 
-            clm_bgc_data%solutionp_vr_col(c,:)          = solutionp_vr(c,:)
-            clm_bgc_data%labilep_vr_col(c,:)            = labilep_vr(c,:)
-            clm_bgc_data%secondp_vr_col(c,:)            = secondp_vr(c,:)
-            clm_bgc_data%sminp_vr_col(c,:)              = solutionp_vr(c,:) + labilep_vr(c,:) + secondp_vr(c,:)
-            clm_bgc_data%occlp_vr_col(c,:)              = occlp_vr(c,:)
-            clm_bgc_data%primp_vr_col(c,:)              = primp_vr(c,:)
+            elm_bgc_data%solutionp_vr_col(c,:)          = solutionp_vr(c,:)
+            elm_bgc_data%labilep_vr_col(c,:)            = labilep_vr(c,:)
+            elm_bgc_data%secondp_vr_col(c,:)            = secondp_vr(c,:)
+            elm_bgc_data%sminp_vr_col(c,:)              = solutionp_vr(c,:) + labilep_vr(c,:) + secondp_vr(c,:)
+            elm_bgc_data%occlp_vr_col(c,:)              = occlp_vr(c,:)
+            elm_bgc_data%primp_vr_col(c,:)              = primp_vr(c,:)
 
-            clm_bgc_data%finundated_col(c)              = finundated(c)
-            clm_bgc_data%o2stress_unsat_col(c,:)        = o2stress_unsat(c,:)
-            clm_bgc_data%o2stress_sat_col(c,:)          = o2stress_sat(c,:)
-            clm_bgc_data%o2_decomp_depth_unsat_col(c,:) = o2_decomp_depth_unsat(c,:)
-            clm_bgc_data%conc_o2_unsat_col(c,:)         = conc_o2_unsat(c,:)
-            clm_bgc_data%o2_decomp_depth_sat_col(c,:)   = o2_decomp_depth_sat(c,:)
-            clm_bgc_data%conc_o2_sat_col(c,:)           = conc_o2_sat(c,:)
+            elm_bgc_data%finundated_col(c)              = finundated(c)
+            elm_bgc_data%o2stress_unsat_col(c,:)        = o2stress_unsat(c,:)
+            elm_bgc_data%o2stress_sat_col(c,:)          = o2stress_sat(c,:)
+            elm_bgc_data%o2_decomp_depth_unsat_col(c,:) = o2_decomp_depth_unsat(c,:)
+            elm_bgc_data%conc_o2_unsat_col(c,:)         = conc_o2_unsat(c,:)
+            elm_bgc_data%o2_decomp_depth_sat_col(c,:)   = o2_decomp_depth_sat(c,:)
+            elm_bgc_data%conc_o2_sat_col(c,:)           = conc_o2_sat(c,:)
 
     end do
 
@@ -591,7 +591,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_elm_bgc_flux(clm_bgc_data,                      &
+  subroutine get_elm_bgc_flux(elm_bgc_data,                      &
                         bounds, num_soilc, filter_soilc,         &
                         cnstate_vars, carbonflux_vars,           &
                         nitrogenflux_vars, phosphorusflux_vars,  &
@@ -619,7 +619,7 @@ contains
     type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
     type(ch4_type)                      , intent(in) :: ch4_vars          ! not yet used, but will be.
 
-    type(elm_interface_bgc_datatype)   , intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype)   , intent(inout) :: elm_bgc_data
 
     character(len=256) :: subname = "get_elm_bgc_flux"
 
@@ -686,56 +686,56 @@ contains
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
-        clm_bgc_data%t_scalar_col(c,:) = t_scalar(c,:)
-        clm_bgc_data%w_scalar_col(c,:) = w_scalar(c,:)
-        clm_bgc_data%o_scalar_col(c,:) = o_scalar(c,:)
+        elm_bgc_data%t_scalar_col(c,:) = t_scalar(c,:)
+        elm_bgc_data%w_scalar_col(c,:) = w_scalar(c,:)
+        elm_bgc_data%o_scalar_col(c,:) = o_scalar(c,:)
 
 
-        clm_bgc_data%plant_ndemand_col(c)   = plant_ndemand_col(c)
-        clm_bgc_data%plant_pdemand_col(c)   = plant_pdemand_col(c)
+        elm_bgc_data%plant_ndemand_col(c)   = plant_ndemand_col(c)
+        elm_bgc_data%plant_pdemand_col(c)   = plant_pdemand_col(c)
 
         fnh4_dep  = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_dep(c)+1._r8)))
         fnh4_fert = max(0._r8, min(1.0_r8, 1._r8/(r_nh4_no3_fert(c)+1._r8)))
 
         do k = 1, ndecomp_pools
-            clm_bgc_data%externalc_to_decomp_cpools_col(c,:,k)  = externalc_to_decomp_cpools_vr(c,:,k)
-            clm_bgc_data%externaln_to_decomp_npools_col(c,:,k)  = externaln_to_decomp_npools_vr(c,:,k)
-            clm_bgc_data%externalp_to_decomp_ppools_col(c,:,k)  = externalp_to_decomp_ppools_vr(c,:,k)
+            elm_bgc_data%externalc_to_decomp_cpools_col(c,:,k)  = externalc_to_decomp_cpools_vr(c,:,k)
+            elm_bgc_data%externaln_to_decomp_npools_col(c,:,k)  = externaln_to_decomp_npools_vr(c,:,k)
+            elm_bgc_data%externalp_to_decomp_ppools_col(c,:,k)  = externalp_to_decomp_ppools_vr(c,:,k)
        end do
 
        ! the following is for CTC ad-spinup.
        ! There is a 'time' control here, so MUST be called each time-step,
        ! and then better put the code here rather than in 'get_elm_bgc_state'
        if (spinup_state == 1 .and. year >= 40 .and. nu_com .eq. 'RD') then
-            clm_bgc_data%sitefactor_kd_vr_col(c,:) = decomp_k_scalar(c,:)
+            elm_bgc_data%sitefactor_kd_vr_col(c,:) = decomp_k_scalar(c,:)
        else
-            clm_bgc_data%sitefactor_kd_vr_col(c,:) = 1.0_r8
+            elm_bgc_data%sitefactor_kd_vr_col(c,:) = 1.0_r8
        end if
 
 
 
-       clm_bgc_data%externaln_to_nh4_col(c,:)          =   fnh4_dep*ndep_to_sminn(c) * ndep_prof(c,:) +  &
+       elm_bgc_data%externaln_to_nh4_col(c,:)          =   fnh4_dep*ndep_to_sminn(c) * ndep_prof(c,:) +  &
                                                            fnh4_fert*fert_to_sminn(c) * ndep_prof(c,:) + &
                                                            fnh4_fert*supplement_to_sminn_vr(c,:) +       &
                                                            nfix_to_sminn(c) * nfixation_prof(c,:) +      &
                                                            soyfixn_to_sminn(c) * nfixation_prof(c,:)
 
-       clm_bgc_data%externaln_to_no3_col(c,:)          =   (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, :) +  &
+       elm_bgc_data%externaln_to_no3_col(c,:)          =   (1._r8-fnh4_dep)*ndep_to_sminn(c) * ndep_prof(c, :) +  &
                                                            (1._r8-fnh4_fert)*fert_to_sminn(c) * ndep_prof(c, :) + &
                                                            (1._r8-fnh4_fert)*supplement_to_sminn_vr(c,:)
 
 
 
-       clm_bgc_data%externalp_to_primp_col(c,:)        =   pdep_to_sminp(c)*ndep_prof(c, :)
-       clm_bgc_data%externalp_to_labilep_col(c,:)      =   fert_p_to_sminp(c)*ndep_prof(c, :)
-       clm_bgc_data%externalp_to_solutionp_col(c,:)    =   supplement_to_sminp_vr(c,:)
+       elm_bgc_data%externalp_to_primp_col(c,:)        =   pdep_to_sminp(c)*ndep_prof(c, :)
+       elm_bgc_data%externalp_to_labilep_col(c,:)      =   fert_p_to_sminp(c)*ndep_prof(c, :)
+       elm_bgc_data%externalp_to_solutionp_col(c,:)    =   supplement_to_sminp_vr(c,:)
 
-       clm_bgc_data%no3_net_transport_vr_col(c,:)      = no3_net_transport_vr(c,:)
-       clm_bgc_data%nh4_net_transport_vr_col(c,:)      = nh4_net_transport_vr(c,:)
-       clm_bgc_data%sminp_net_transport_vr_col(c,:)    = sminp_net_transport_vr(c,:)  !from solutionp
+       elm_bgc_data%no3_net_transport_vr_col(c,:)      = no3_net_transport_vr(c,:)
+       elm_bgc_data%nh4_net_transport_vr_col(c,:)      = nh4_net_transport_vr(c,:)
+       elm_bgc_data%sminp_net_transport_vr_col(c,:)    = sminp_net_transport_vr(c,:)  !from solutionp
 
-       clm_bgc_data%plant_ndemand_vr_col(c,:)          = col_plant_ndemand_vr(c,:)
-       clm_bgc_data%plant_pdemand_vr_col(c,:)          = col_plant_pdemand_vr(c,:)
+       elm_bgc_data%plant_ndemand_vr_col(c,:)          = col_plant_ndemand_vr(c,:)
+       elm_bgc_data%plant_pdemand_vr_col(c,:)          = col_plant_pdemand_vr(c,:)
 
     end do ! fc = 1,num_soilc
 
@@ -744,7 +744,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_soil_moisture(clm_idata_th,     &
+  subroutine update_soil_moisture(elm_idata_th,     &
            bounds, num_soilc, filter_soilc,   &
            soilstate_vars, waterstate_vars)
 
@@ -763,7 +763,7 @@ contains
     type(soilstate_type), intent(inout)  :: soilstate_vars
     type(waterstate_type), intent(inout) :: waterstate_vars
 
-    type(elm_interface_th_datatype), intent(in) :: clm_idata_th
+    type(elm_interface_th_datatype), intent(in) :: elm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -781,11 +781,11 @@ contains
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
-        soilpsi_col(c,:)    =  clm_idata_th%soilpsi_col(c,:)
+        soilpsi_col(c,:)    =  elm_idata_th%soilpsi_col(c,:)
 
-        h2osoi_liq_col(c,:) =  clm_idata_th%h2osoi_liq_col(c,:)
-        h2osoi_ice_col(c,:) =  clm_idata_th%h2osoi_ice_col(c,:)
-        h2osoi_vol_col(c,:) =  clm_idata_th%h2osoi_vol_col(c,:)
+        h2osoi_liq_col(c,:) =  elm_idata_th%h2osoi_liq_col(c,:)
+        h2osoi_ice_col(c,:) =  elm_idata_th%h2osoi_ice_col(c,:)
+        h2osoi_vol_col(c,:) =  elm_idata_th%h2osoi_vol_col(c,:)
     end do
 
     end associate
@@ -793,7 +793,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_soil_temperature(clm_idata_th,     &
+  subroutine update_soil_temperature(elm_idata_th,     &
            bounds, num_soilc, filter_soilc,            &
            temperature_vars)
 
@@ -810,7 +810,7 @@ contains
     integer                             , intent(in)    :: num_soilc        ! number of column soil points in column filter
     integer                             , intent(in)    :: filter_soilc(:)  ! column filter for soil points
     type(temperature_type)              , intent(inout) :: temperature_vars
-    type(elm_interface_th_datatype)     , intent(in)    :: clm_idata_th
+    type(elm_interface_th_datatype)     , intent(in)    :: elm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -823,14 +823,14 @@ contains
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-        t_soisno(c,:)   = clm_idata_th%t_soisno_col(c,:)
+        t_soisno(c,:)   = elm_idata_th%t_soisno_col(c,:)
     end do
 
     end associate
   end subroutine update_soil_temperature
 !--------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------
-  subroutine update_th_data_pf2elm(clm_idata_th,           &
+  subroutine update_th_data_pf2elm(elm_idata_th,           &
            bounds, num_soilc, filter_soilc,                &
            waterstate_vars, waterflux_vars,                &
            temperature_vars, energyflux_vars,              &
@@ -852,20 +852,20 @@ contains
     type(soilhydrology_type)    , intent(inout) :: soilhydrology_vars
     type(energyflux_type)       , intent(inout) :: energyflux_vars
 
-    type(elm_interface_th_datatype), intent(in) :: clm_idata_th
+    type(elm_interface_th_datatype), intent(in) :: elm_idata_th
 
     !-----------------------------------------------------------------------
 
     character(len=256) :: subname = "update_th_data_pf2elm"
 
     if (pf_tmode) then
-        call update_soil_temperature(clm_idata_th,      &
+        call update_soil_temperature(elm_idata_th,      &
                    bounds, num_soilc, filter_soilc,     &
                    temperature_vars)
     end if
 
     if (pf_hmode) then
-        call update_soil_moisture(clm_idata_th,         &
+        call update_soil_moisture(elm_idata_th,         &
                    bounds, num_soilc, filter_soilc,     &
                    soilstate_vars, waterstate_vars)
     end if
@@ -875,7 +875,7 @@ contains
 
 
 !--------------------------------------------------------------------------------------
-  subroutine update_bgc_state_decomp(clm_bgc_data,  &
+  subroutine update_bgc_state_decomp(elm_bgc_data,  &
            bounds, num_soilc, filter_soilc,         &
            carbonstate_vars, nitrogenstate_vars,    &
            phosphorusstate_vars                     &
@@ -891,7 +891,7 @@ contains
     type(nitrogenstate_type)            , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
 
-    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
     character(len=256) :: subname = "update_soil_bgc_state"
 
@@ -909,9 +909,9 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
             do k = 1, ndecomp_pools
-                decomp_cpools_vr(c,:,k) = clm_bgc_data%decomp_cpools_vr_col(c,:,k)
-                decomp_npools_vr(c,:,k) = clm_bgc_data%decomp_npools_vr_col(c,:,k)
-                decomp_ppools_vr(c,:,k) = clm_bgc_data%decomp_ppools_vr_col(c,:,k)
+                decomp_cpools_vr(c,:,k) = elm_bgc_data%decomp_cpools_vr_col(c,:,k)
+                decomp_npools_vr(c,:,k) = elm_bgc_data%decomp_npools_vr_col(c,:,k)
+                decomp_ppools_vr(c,:,k) = elm_bgc_data%decomp_ppools_vr_col(c,:,k)
             end do
     end do
 
@@ -920,7 +920,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-    subroutine update_bgc_state_smin(clm_bgc_data,      &
+    subroutine update_bgc_state_smin(elm_bgc_data,      &
            bounds, num_soilc, filter_soilc,             &
            nitrogenstate_vars, phosphorusstate_vars)
 
@@ -936,7 +936,7 @@ contains
     type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
 
-    type(elm_interface_bgc_datatype), intent(in) :: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in) :: elm_bgc_data
 
     character(len=256) :: subname = "update_bgc_state_smin"
 
@@ -962,17 +962,17 @@ contains
 !
     do fc = 1, num_soilc
         c = filter_soilc(fc)
-            smin_no3_vr(c,:)        = clm_bgc_data%smin_no3_vr_col(c,:)
-            smin_nh4_vr(c,:)        = clm_bgc_data%smin_nh4_vr_col(c,:)
-            smin_nh4sorb_vr(c,:)    = clm_bgc_data%smin_nh4sorb_vr_col(c,:)
-            sminn_vr(c,:)           = clm_bgc_data%sminn_vr_col(c,:)
+            smin_no3_vr(c,:)        = elm_bgc_data%smin_no3_vr_col(c,:)
+            smin_nh4_vr(c,:)        = elm_bgc_data%smin_nh4_vr_col(c,:)
+            smin_nh4sorb_vr(c,:)    = elm_bgc_data%smin_nh4sorb_vr_col(c,:)
+            sminn_vr(c,:)           = elm_bgc_data%sminn_vr_col(c,:)
 
-            solutionp_vr(c,:)       = clm_bgc_data%solutionp_vr_col(c,:)
-            labilep_vr(c,:)         = clm_bgc_data%labilep_vr_col(c,:)
-            secondp_vr(c,:)         = clm_bgc_data%secondp_vr_col(c,:)
-            sminp_vr(c,:)           = clm_bgc_data%sminp_vr_col(c,:)
-            occlp_vr(c,:)           = clm_bgc_data%occlp_vr_col(c,:)
-            primp_vr(c,:)           = clm_bgc_data%primp_vr_col(c,:)
+            solutionp_vr(c,:)       = elm_bgc_data%solutionp_vr_col(c,:)
+            labilep_vr(c,:)         = elm_bgc_data%labilep_vr_col(c,:)
+            secondp_vr(c,:)         = elm_bgc_data%secondp_vr_col(c,:)
+            sminp_vr(c,:)           = elm_bgc_data%sminp_vr_col(c,:)
+            occlp_vr(c,:)           = elm_bgc_data%occlp_vr_col(c,:)
+            primp_vr(c,:)           = elm_bgc_data%primp_vr_col(c,:)
     end do
 
     end associate
@@ -980,7 +980,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-    subroutine update_bgc_flux_decomp_sourcesink(clm_bgc_data,       &
+    subroutine update_bgc_flux_decomp_sourcesink(elm_bgc_data,       &
            bounds, num_soilc, filter_soilc,                          &
            carbonflux_vars, nitrogenflux_vars,                       &
            phosphorusflux_vars)
@@ -997,7 +997,7 @@ contains
     type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     integer :: fc, c, j, k
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
@@ -1011,9 +1011,9 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
             do k = 1, ndecomp_pools
-                decomp_cpools_sourcesink_vr(c,:,k) = clm_bgc_data%decomp_cpools_sourcesink_col(c,:,k)
-                decomp_npools_sourcesink_vr(c,:,k) = clm_bgc_data%decomp_npools_sourcesink_col(c,:,k)
-                decomp_ppools_sourcesink_vr(c,:,k) = clm_bgc_data%decomp_ppools_sourcesink_col(c,:,k)
+                decomp_cpools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_cpools_sourcesink_col(c,:,k)
+                decomp_npools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_npools_sourcesink_col(c,:,k)
+                decomp_ppools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_ppools_sourcesink_col(c,:,k)
             end do
     end do
     end associate
@@ -1021,7 +1021,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-    subroutine update_bgc_flux_decomp_cascade(clm_bgc_data, &
+    subroutine update_bgc_flux_decomp_cascade(elm_bgc_data, &
            bounds, num_soilc, filter_soilc,                 &
            carbonflux_vars, nitrogenflux_vars,              &
            phosphorusflux_vars)
@@ -1038,7 +1038,7 @@ contains
     type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     integer :: fc, c, j, k
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
@@ -1061,18 +1061,18 @@ contains
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
-            phr_vr(c,:) = clm_bgc_data%phr_vr_col(c,:)
-            fphr(c,:)   = clm_bgc_data%fphr_col(c,:)
+            phr_vr(c,:) = elm_bgc_data%phr_vr_col(c,:)
+            fphr(c,:)   = elm_bgc_data%fphr_col(c,:)
 
             do k = 1, ndecomp_cascade_transitions
-                decomp_cascade_hr_vr_col(c,:,k)         = clm_bgc_data%decomp_cascade_hr_vr_col(c,:,k)
-                decomp_cascade_ctransfer_vr_col(c,:,k)  = clm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,k)
-                decomp_cascade_ntransfer_vr_col(c,:,k)  = clm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,k)
-                decomp_cascade_ptransfer_vr_col(c,:,k)  = clm_bgc_data%decomp_cascade_ptransfer_vr_col(c,:,k)
+                decomp_cascade_hr_vr_col(c,:,k)         = elm_bgc_data%decomp_cascade_hr_vr_col(c,:,k)
+                decomp_cascade_ctransfer_vr_col(c,:,k)  = elm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,k)
+                decomp_cascade_ntransfer_vr_col(c,:,k)  = elm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,k)
+                decomp_cascade_ptransfer_vr_col(c,:,k)  = elm_bgc_data%decomp_cascade_ptransfer_vr_col(c,:,k)
 
-                decomp_cascade_sminn_flux_vr_col(c,:,k)     = clm_bgc_data%decomp_cascade_sminn_flux_vr_col(c,:,k)
-                decomp_cascade_sminp_flux_vr_col(c,:,k)     = clm_bgc_data%decomp_cascade_sminp_flux_vr_col(c,:,k)
-                sminn_to_denit_decomp_cascade_vr_col(c,:,k) = clm_bgc_data%sminn_to_denit_decomp_cascade_vr_col(c,:,k)
+                decomp_cascade_sminn_flux_vr_col(c,:,k)     = elm_bgc_data%decomp_cascade_sminn_flux_vr_col(c,:,k)
+                decomp_cascade_sminp_flux_vr_col(c,:,k)     = elm_bgc_data%decomp_cascade_sminp_flux_vr_col(c,:,k)
+                sminn_to_denit_decomp_cascade_vr_col(c,:,k) = elm_bgc_data%sminn_to_denit_decomp_cascade_vr_col(c,:,k)
             end do
     end do
     end associate
@@ -1080,7 +1080,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-    subroutine update_bgc_flux_smin(clm_bgc_data,   &
+    subroutine update_bgc_flux_smin(elm_bgc_data,   &
            bounds, num_soilc, filter_soilc,         &
            cnstate_vars,                            &
            nitrogenflux_vars, phosphorusflux_vars)
@@ -1095,7 +1095,7 @@ contains
 
     type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
-    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
     integer :: fc, c, j
     character(len=256) :: subname = "update_bgc_flux_smin"
@@ -1144,46 +1144,46 @@ contains
      do fc = 1, num_soilc
         c = filter_soilc(fc)
 
-        fpg(c)              = clm_bgc_data%fpg_col(c)
-        fpi(c)              = clm_bgc_data%fpi_col(c)
-        fpg_p(c)            = clm_bgc_data%fpg_p_col(c)
-        fpi_p(c)            = clm_bgc_data%fpi_p_col(c)
+        fpg(c)              = elm_bgc_data%fpg_col(c)
+        fpi(c)              = elm_bgc_data%fpi_col(c)
+        fpg_p(c)            = elm_bgc_data%fpg_p_col(c)
+        fpi_p(c)            = elm_bgc_data%fpi_p_col(c)
 
-        potential_immob(c)  = clm_bgc_data%potential_immob_col(c)
-        actual_immob(c)     = clm_bgc_data%actual_immob_col(c)
-        sminn_to_plant(c)   = clm_bgc_data%sminn_to_plant_col(c)
+        potential_immob(c)  = elm_bgc_data%potential_immob_col(c)
+        actual_immob(c)     = elm_bgc_data%actual_immob_col(c)
+        sminn_to_plant(c)   = elm_bgc_data%sminn_to_plant_col(c)
 
-        potential_immob_p(c)  = clm_bgc_data%potential_immob_p_col(c)
-        actual_immob_p(c)     = clm_bgc_data%actual_immob_p_col(c)
-        sminp_to_plant(c)     = clm_bgc_data%sminp_to_plant_col(c)
+        potential_immob_p(c)  = elm_bgc_data%potential_immob_p_col(c)
+        actual_immob_p(c)     = elm_bgc_data%actual_immob_p_col(c)
+        sminp_to_plant(c)     = elm_bgc_data%sminp_to_plant_col(c)
 
-        fpi_vr(c,:)                 = clm_bgc_data%fpi_vr_col(c,:)
-        fpi_p_vr(c,:)               = clm_bgc_data%fpi_p_vr_col(c,:)
+        fpi_vr(c,:)                 = elm_bgc_data%fpi_vr_col(c,:)
+        fpi_p_vr(c,:)               = elm_bgc_data%fpi_p_vr_col(c,:)
 
-        sminn_to_plant_vr(c,:)      = clm_bgc_data%sminn_to_plant_vr_col(c,:)
-        smin_no3_to_plant_vr(c,:)   = clm_bgc_data%smin_no3_to_plant_vr_col(c,:)
-        smin_nh4_to_plant_vr(c,:)   = clm_bgc_data%smin_nh4_to_plant_vr_col(c,:)
+        sminn_to_plant_vr(c,:)      = elm_bgc_data%sminn_to_plant_vr_col(c,:)
+        smin_no3_to_plant_vr(c,:)   = elm_bgc_data%smin_no3_to_plant_vr_col(c,:)
+        smin_nh4_to_plant_vr(c,:)   = elm_bgc_data%smin_nh4_to_plant_vr_col(c,:)
 
-        potential_immob_vr(c,:)     = clm_bgc_data%potential_immob_vr_col(c,:)
-        actual_immob_vr(c,:)        = clm_bgc_data%actual_immob_vr_col(c,:)
-        actual_immob_no3_vr(c,:)    = clm_bgc_data%actual_immob_no3_vr_col(c,:)
-        actual_immob_nh4_vr(c,:)    = clm_bgc_data%actual_immob_nh4_vr_col(c,:)
-        gross_nmin_vr(c,:)          = clm_bgc_data%gross_nmin_vr_col(c,:)
-        net_nmin_vr(c,:)            = clm_bgc_data%net_nmin_vr_col(c,:)
+        potential_immob_vr(c,:)     = elm_bgc_data%potential_immob_vr_col(c,:)
+        actual_immob_vr(c,:)        = elm_bgc_data%actual_immob_vr_col(c,:)
+        actual_immob_no3_vr(c,:)    = elm_bgc_data%actual_immob_no3_vr_col(c,:)
+        actual_immob_nh4_vr(c,:)    = elm_bgc_data%actual_immob_nh4_vr_col(c,:)
+        gross_nmin_vr(c,:)          = elm_bgc_data%gross_nmin_vr_col(c,:)
+        net_nmin_vr(c,:)            = elm_bgc_data%net_nmin_vr_col(c,:)
 
-        sminn_to_denit_excess_vr(c,:)=clm_bgc_data%sminn_to_denit_excess_vr_col(c,:)
-        supplement_to_sminn_vr(c,:) = clm_bgc_data%supplement_to_sminn_vr_col(c,:)
+        sminn_to_denit_excess_vr(c,:)=elm_bgc_data%sminn_to_denit_excess_vr_col(c,:)
+        supplement_to_sminn_vr(c,:) = elm_bgc_data%supplement_to_sminn_vr_col(c,:)
 
-        no3_net_transport_vr(c,:)   = clm_bgc_data%no3_net_transport_vr_col(c,:)
-        nh4_net_transport_vr(c,:)   = clm_bgc_data%nh4_net_transport_vr_col(c,:)
+        no3_net_transport_vr(c,:)   = elm_bgc_data%no3_net_transport_vr_col(c,:)
+        nh4_net_transport_vr(c,:)   = elm_bgc_data%nh4_net_transport_vr_col(c,:)
 
-        supplement_to_sminp_vr(c,:) = clm_bgc_data%supplement_to_sminp_vr_col(c,:)
+        supplement_to_sminp_vr(c,:) = elm_bgc_data%supplement_to_sminp_vr_col(c,:)
 
-        sminp_to_plant_vr(c,:)      = clm_bgc_data%sminp_to_plant_vr_col(c,:)
-        potential_immob_p_vr(c,:)   = clm_bgc_data%potential_immob_p_vr_col(c,:)
-        actual_immob_p_vr(c,:)      = clm_bgc_data%actual_immob_p_vr_col(c,:)
-        gross_pmin_vr(c,:)          = clm_bgc_data%gross_pmin_vr_col(c,:)
-        net_pmin_vr(c,:)            = clm_bgc_data%net_pmin_vr_col(c,:)     !NOT available in PF
+        sminp_to_plant_vr(c,:)      = elm_bgc_data%sminp_to_plant_vr_col(c,:)
+        potential_immob_p_vr(c,:)   = elm_bgc_data%potential_immob_p_vr_col(c,:)
+        actual_immob_p_vr(c,:)      = elm_bgc_data%actual_immob_p_vr_col(c,:)
+        gross_pmin_vr(c,:)          = elm_bgc_data%gross_pmin_vr_col(c,:)
+        net_pmin_vr(c,:)            = elm_bgc_data%net_pmin_vr_col(c,:)     !NOT available in PF
 
       end do
     end associate
@@ -1191,7 +1191,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-    subroutine update_bgc_flux_nitdenit(clm_bgc_data,   &
+    subroutine update_bgc_flux_nitdenit(elm_bgc_data,   &
            bounds, num_soilc, filter_soilc,             &
            nitrogenflux_vars, phosphorusflux_vars)
 
@@ -1203,7 +1203,7 @@ contains
 
     type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
-    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
     integer :: fc, c, j
     character(len=256) :: subname = "update_bgc_flux_nitdenit"
@@ -1220,20 +1220,20 @@ contains
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
-        pot_f_nit_vr(c,:)           = clm_bgc_data%pot_f_nit_vr_col(c,:)
-        pot_f_denit_vr(c,:)         = clm_bgc_data%pot_f_denit_vr_col(c,:)
-        f_nit_vr(c,:)               = clm_bgc_data%f_nit_vr_col(c,:)
-        f_denit_vr(c,:)             = clm_bgc_data%f_denit_vr_col(c,:)
-        n2_n2o_ratio_denit_vr(c,:)  = clm_bgc_data%n2_n2o_ratio_denit_vr_col(c,:)
-        f_n2o_denit_vr(c,:)         = clm_bgc_data%f_n2o_denit_vr_col(c,:)
-        f_n2o_nit_vr(c,:)           = clm_bgc_data%f_n2o_nit_vr_col(c,:)
+        pot_f_nit_vr(c,:)           = elm_bgc_data%pot_f_nit_vr_col(c,:)
+        pot_f_denit_vr(c,:)         = elm_bgc_data%pot_f_denit_vr_col(c,:)
+        f_nit_vr(c,:)               = elm_bgc_data%f_nit_vr_col(c,:)
+        f_denit_vr(c,:)             = elm_bgc_data%f_denit_vr_col(c,:)
+        n2_n2o_ratio_denit_vr(c,:)  = elm_bgc_data%n2_n2o_ratio_denit_vr_col(c,:)
+        f_n2o_denit_vr(c,:)         = elm_bgc_data%f_n2o_denit_vr_col(c,:)
+        f_n2o_nit_vr(c,:)           = elm_bgc_data%f_n2o_nit_vr_col(c,:)
     end do
     end associate
     end subroutine update_bgc_flux_nitdenit
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_bgc_flux_gas_pf(clm_bgc_data,  &
+  subroutine update_bgc_flux_gas_pf(elm_bgc_data,  &
      bounds, num_soilc, filter_soilc,              &
      carbonflux_vars, nitrogenflux_vars)
 
@@ -1246,7 +1246,7 @@ contains
 
      type(carbonflux_type)              , intent(inout) :: carbonflux_vars
      type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars
-     type(elm_interface_bgc_datatype)   , intent(in)    :: clm_bgc_data
+     type(elm_interface_bgc_datatype)   , intent(in)    :: elm_bgc_data
 
      !character(len=256) :: subname = "get_pf_bgc_gaslosses"
 
@@ -1265,14 +1265,14 @@ contains
 ! ------------------------------------------------------------------------
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-        f_co2_soil_vr(c,:)         = clm_bgc_data%f_co2_soil_vr_col(c,:)
-        f_n2_soil_vr(c,:)          = clm_bgc_data%f_n2_soil_vr_col(c,:)
-        f_n2o_soil_vr(c,:)         = clm_bgc_data%f_n2o_soil_vr_col(c,:)
+        f_co2_soil_vr(c,:)         = elm_bgc_data%f_co2_soil_vr_col(c,:)
+        f_n2_soil_vr(c,:)          = elm_bgc_data%f_n2_soil_vr_col(c,:)
+        f_n2o_soil_vr(c,:)         = elm_bgc_data%f_n2o_soil_vr_col(c,:)
 
-        hr_vr(c,:)                 = clm_bgc_data%hr_vr_col(c,:)
-        f_ngas_decomp_vr(c,:)      = clm_bgc_data%f_ngas_decomp_vr_col(c,:)
-        f_ngas_nitri_vr(c,:)       = clm_bgc_data%f_ngas_nitri_vr_col(c,:)
-        f_ngas_denit_vr(c,:)       = clm_bgc_data%f_ngas_denit_vr_col(c,:)
+        hr_vr(c,:)                 = elm_bgc_data%hr_vr_col(c,:)
+        f_ngas_decomp_vr(c,:)      = elm_bgc_data%f_ngas_decomp_vr_col(c,:)
+        f_ngas_nitri_vr(c,:)       = elm_bgc_data%f_ngas_nitri_vr_col(c,:)
+        f_ngas_denit_vr(c,:)       = elm_bgc_data%f_ngas_denit_vr_col(c,:)
 
      enddo ! do c = begc, endc
 !
@@ -1281,7 +1281,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_bgc_data_pf2clm(clm_bgc_data, bounds,         &
+  subroutine update_bgc_data_pf2elm(elm_bgc_data, bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
            cnstate_vars, carbonflux_vars, carbonstate_vars,       &
@@ -1309,37 +1309,37 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
-    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     !-----------------------------------------------------------------------
 
-    character(len=256) :: subname = "update_bgc_data_pf2clm"
+    character(len=256) :: subname = "update_bgc_data_pf2elm"
 
 
     if (pf_cmode) then
         ! bgc_state_decomp is updated in CLM
         ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
-        call update_bgc_flux_decomp_sourcesink(clm_bgc_data,    &
+        call update_bgc_flux_decomp_sourcesink(elm_bgc_data,    &
                     bounds, num_soilc, filter_soilc,            &
                     carbonflux_vars, nitrogenflux_vars,         &
                     phosphorusflux_vars)
 
-        call update_bgc_state_smin(clm_bgc_data,                &
+        call update_bgc_state_smin(elm_bgc_data,                &
                     bounds, num_soilc, filter_soilc,            &
                     nitrogenstate_vars, phosphorusstate_vars)
 
-        call update_bgc_flux_smin(clm_bgc_data,                 &
+        call update_bgc_flux_smin(elm_bgc_data,                 &
                     bounds, num_soilc, filter_soilc,            &
                     cnstate_vars,                               &
                     nitrogenflux_vars, phosphorusflux_vars)
 
-        call update_bgc_flux_gas_pf(clm_bgc_data,               &
+        call update_bgc_flux_gas_pf(elm_bgc_data,               &
                     bounds, num_soilc, filter_soilc,            &
                     carbonflux_vars, nitrogenflux_vars)
 
     end if
 
-  end subroutine update_bgc_data_pf2clm
+  end subroutine update_bgc_data_pf2elm
 
 !--------------------------------------------------------------------------------------
 
@@ -1383,7 +1383,7 @@ contains
     type(elm_interface_data_type)       , intent(inout) :: elm_interface_data
 
     !-------------------------------------------------------------
-    ! STEP-2: (i) pass data from clm_bgc_data to SoilLittDecompAlloc
+    ! STEP-2: (i) pass data from elm_bgc_data to SoilLittDecompAlloc
     call elm_bgc_get_data(elm_interface_data, bounds,       &
                 num_soilc, filter_soilc,                    &
                 canopystate_vars, soilstate_vars,           &
@@ -1403,7 +1403,7 @@ contains
                nitrogenstate_vars, nitrogenflux_vars,       &
                phosphorusstate_vars,phosphorusflux_vars)
 
-    ! STEP-2: (iii) update clm_bgc_data from SoilLittDecompAlloc
+    ! STEP-2: (iii) update elm_bgc_data from SoilLittDecompAlloc
     call elm_bgc_update_data(elm_interface_data%bgc, bounds, &
                 num_soilc, filter_soilc,                     &
                 cnstate_vars, carbonflux_vars,               &
@@ -1414,7 +1414,7 @@ contains
 
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  ! pass data from clm_bgc_data to clm original data-types that used by SoilLittDecompAlloc
+  ! pass data from elm_bgc_data to clm original data-types that used by SoilLittDecompAlloc
   subroutine elm_bgc_get_data(elm_interface_data,       &
             bounds, num_soilc, filter_soilc,            &
             canopystate_vars, soilstate_vars,           &
@@ -1553,8 +1553,8 @@ contains
 
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  ! pass data from clm_bgc to clm_bgc_data
-  subroutine elm_bgc_update_data(clm_bgc_data, bounds,  &
+  ! pass data from clm_bgc to elm_bgc_data
+  subroutine elm_bgc_update_data(elm_bgc_data, bounds,  &
             num_soilc, filter_soilc,                    &
             cnstate_vars, carbonflux_vars,              &
             nitrogenflux_vars, phosphorusflux_vars)
@@ -1571,7 +1571,7 @@ contains
     type(nitrogenflux_type)             , intent(in)    :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
 
-    type(elm_interface_bgc_datatype)    , intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(inout) :: elm_bgc_data
 
     ! LOCAL VARIABLES:
     integer :: fc, c, j, k
@@ -1639,57 +1639,57 @@ contains
     !---------------------------------------------------------------------------
         do fc = 1,num_soilc
             c = filter_soilc(fc)
-            clm_bgc_data%fpg_col(c)                                   = fpg(c)
-            clm_bgc_data%fpi_col(c)                                   = fpi(c)
-            clm_bgc_data%fpi_vr_col(c,:)                              = fpi_vr(c,:)
-            clm_bgc_data%fpg_p_col(c)                                 = fpg_p(c)
-            clm_bgc_data%fpi_p_col(c)                                 = fpi_p(c)
-            clm_bgc_data%fpi_p_vr_col(c,:)                            = fpi_p_vr(c,:)
-            clm_bgc_data%potential_immob_col(c)                       = potential_immob(c)
-            clm_bgc_data%actual_immob_col(c)                          = actual_immob(c)
-            clm_bgc_data%sminn_to_plant_col(c)                        = sminn_to_plant(c)
-            clm_bgc_data%sminn_to_denit_excess_vr_col(c,:)            = sminn_to_denit_excess_vr(c,:)
-            clm_bgc_data%pot_f_nit_vr_col(c,:)                        = pot_f_nit_vr(c,:)
-            clm_bgc_data%pot_f_denit_vr_col(c,:)                      = pot_f_denit_vr(c,:)
-            clm_bgc_data%f_nit_vr_col(c,:)                            = f_nit_vr(c,:)
-            clm_bgc_data%f_denit_vr_col(c,:)                          = f_denit_vr(c,:)
-            clm_bgc_data%actual_immob_no3_vr_col(c,:)                 = actual_immob_no3_vr(c,:)
-            clm_bgc_data%actual_immob_nh4_vr_col(c,:)                 = actual_immob_nh4_vr(c,:)
-            clm_bgc_data%smin_no3_to_plant_vr_col(c,:)                = smin_no3_to_plant_vr(c,:)
-            clm_bgc_data%smin_nh4_to_plant_vr_col(c,:)                = smin_nh4_to_plant_vr(c,:)
-            clm_bgc_data%n2_n2o_ratio_denit_vr_col(c,:)               = n2_n2o_ratio_denit_vr(c,:)
-            clm_bgc_data%f_n2o_denit_vr_col(c,:)                      = f_n2o_denit_vr(c,:)
-            clm_bgc_data%f_n2o_nit_vr_col(c,:)                        = f_n2o_nit_vr(c,:)
-            clm_bgc_data%supplement_to_sminn_vr_col(c,:)              = supplement_to_sminn_vr(c,:)
-            clm_bgc_data%sminn_to_plant_vr_col(c,:)                   = sminn_to_plant_vr(c,:)
-            clm_bgc_data%potential_immob_vr_col(c,:)                  = potential_immob_vr(c,:)
-            clm_bgc_data%actual_immob_vr_col(c,:)                     = actual_immob_vr(c,:)
-            clm_bgc_data%potential_immob_p_col(c)                     = potential_immob_p(c)
-            clm_bgc_data%actual_immob_p_col(c)                        = actual_immob_p(c)
-            clm_bgc_data%sminp_to_plant_col(c)                        = sminp_to_plant(c)
-            clm_bgc_data%supplement_to_sminp_vr_col(c,:)              = supplement_to_sminp_vr(c,:)
-            clm_bgc_data%sminp_to_plant_vr_col(c,:)                   = sminp_to_plant_vr(c,:)
-            clm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
-            clm_bgc_data%actual_immob_p_vr_col(c,:)                   = actual_immob_p_vr(c,:)
+            elm_bgc_data%fpg_col(c)                                   = fpg(c)
+            elm_bgc_data%fpi_col(c)                                   = fpi(c)
+            elm_bgc_data%fpi_vr_col(c,:)                              = fpi_vr(c,:)
+            elm_bgc_data%fpg_p_col(c)                                 = fpg_p(c)
+            elm_bgc_data%fpi_p_col(c)                                 = fpi_p(c)
+            elm_bgc_data%fpi_p_vr_col(c,:)                            = fpi_p_vr(c,:)
+            elm_bgc_data%potential_immob_col(c)                       = potential_immob(c)
+            elm_bgc_data%actual_immob_col(c)                          = actual_immob(c)
+            elm_bgc_data%sminn_to_plant_col(c)                        = sminn_to_plant(c)
+            elm_bgc_data%sminn_to_denit_excess_vr_col(c,:)            = sminn_to_denit_excess_vr(c,:)
+            elm_bgc_data%pot_f_nit_vr_col(c,:)                        = pot_f_nit_vr(c,:)
+            elm_bgc_data%pot_f_denit_vr_col(c,:)                      = pot_f_denit_vr(c,:)
+            elm_bgc_data%f_nit_vr_col(c,:)                            = f_nit_vr(c,:)
+            elm_bgc_data%f_denit_vr_col(c,:)                          = f_denit_vr(c,:)
+            elm_bgc_data%actual_immob_no3_vr_col(c,:)                 = actual_immob_no3_vr(c,:)
+            elm_bgc_data%actual_immob_nh4_vr_col(c,:)                 = actual_immob_nh4_vr(c,:)
+            elm_bgc_data%smin_no3_to_plant_vr_col(c,:)                = smin_no3_to_plant_vr(c,:)
+            elm_bgc_data%smin_nh4_to_plant_vr_col(c,:)                = smin_nh4_to_plant_vr(c,:)
+            elm_bgc_data%n2_n2o_ratio_denit_vr_col(c,:)               = n2_n2o_ratio_denit_vr(c,:)
+            elm_bgc_data%f_n2o_denit_vr_col(c,:)                      = f_n2o_denit_vr(c,:)
+            elm_bgc_data%f_n2o_nit_vr_col(c,:)                        = f_n2o_nit_vr(c,:)
+            elm_bgc_data%supplement_to_sminn_vr_col(c,:)              = supplement_to_sminn_vr(c,:)
+            elm_bgc_data%sminn_to_plant_vr_col(c,:)                   = sminn_to_plant_vr(c,:)
+            elm_bgc_data%potential_immob_vr_col(c,:)                  = potential_immob_vr(c,:)
+            elm_bgc_data%actual_immob_vr_col(c,:)                     = actual_immob_vr(c,:)
+            elm_bgc_data%potential_immob_p_col(c)                     = potential_immob_p(c)
+            elm_bgc_data%actual_immob_p_col(c)                        = actual_immob_p(c)
+            elm_bgc_data%sminp_to_plant_col(c)                        = sminp_to_plant(c)
+            elm_bgc_data%supplement_to_sminp_vr_col(c,:)              = supplement_to_sminp_vr(c,:)
+            elm_bgc_data%sminp_to_plant_vr_col(c,:)                   = sminp_to_plant_vr(c,:)
+            elm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
+            elm_bgc_data%actual_immob_p_vr_col(c,:)                   = actual_immob_p_vr(c,:)
 
-            clm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,:)       = decomp_cascade_ntransfer_vr(c,:,:)
-            clm_bgc_data%decomp_cascade_sminn_flux_vr_col(c,:,:)      = decomp_cascade_sminn_flux_vr(c,:,:)
-            clm_bgc_data%sminn_to_denit_decomp_cascade_vr_col(c,:,:)  = sminn_to_denit_decomp_cascade_vr(c,:,:)
-            clm_bgc_data%gross_nmin_vr_col(c,:)                       = gross_nmin_vr(c,:)
-            clm_bgc_data%net_nmin_vr_col(c,:)                         = net_nmin_vr(c,:)
+            elm_bgc_data%decomp_cascade_ntransfer_vr_col(c,:,:)       = decomp_cascade_ntransfer_vr(c,:,:)
+            elm_bgc_data%decomp_cascade_sminn_flux_vr_col(c,:,:)      = decomp_cascade_sminn_flux_vr(c,:,:)
+            elm_bgc_data%sminn_to_denit_decomp_cascade_vr_col(c,:,:)  = sminn_to_denit_decomp_cascade_vr(c,:,:)
+            elm_bgc_data%gross_nmin_vr_col(c,:)                       = gross_nmin_vr(c,:)
+            elm_bgc_data%net_nmin_vr_col(c,:)                         = net_nmin_vr(c,:)
 
             ! phosphorus
-            clm_bgc_data%decomp_cascade_ptransfer_vr_col(c,:,:)       = decomp_cascade_ptransfer_vr(c,:,:)
-            clm_bgc_data%decomp_cascade_sminp_flux_vr_col(c,:,:)      = decomp_cascade_sminp_flux_vr(c,:,:)
-            clm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
-            clm_bgc_data%gross_pmin_vr_col(c,:)                       = gross_pmin_vr(c,:)
-            clm_bgc_data%net_pmin_vr_col(c,:)                         = net_pmin_vr(c,:)
+            elm_bgc_data%decomp_cascade_ptransfer_vr_col(c,:,:)       = decomp_cascade_ptransfer_vr(c,:,:)
+            elm_bgc_data%decomp_cascade_sminp_flux_vr_col(c,:,:)      = decomp_cascade_sminp_flux_vr(c,:,:)
+            elm_bgc_data%potential_immob_p_vr_col(c,:)                = potential_immob_p_vr(c,:)
+            elm_bgc_data%gross_pmin_vr_col(c,:)                       = gross_pmin_vr(c,:)
+            elm_bgc_data%net_pmin_vr_col(c,:)                         = net_pmin_vr(c,:)
 
-            clm_bgc_data%decomp_cascade_hr_vr_col(c,:,:)              = decomp_cascade_hr_vr(c,:,:)
-            clm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,:)       = decomp_cascade_ctransfer_vr(c,:,:)
+            elm_bgc_data%decomp_cascade_hr_vr_col(c,:,:)              = decomp_cascade_hr_vr(c,:,:)
+            elm_bgc_data%decomp_cascade_ctransfer_vr_col(c,:,:)       = decomp_cascade_ctransfer_vr(c,:,:)
 
-            clm_bgc_data%phr_vr_col(c,:)                              = phr_vr(c,:)
-            clm_bgc_data%fphr_col(c,:)                                = fphr(c,:)
+            elm_bgc_data%phr_vr_col(c,:)                              = phr_vr(c,:)
+            elm_bgc_data%fphr_col(c,:)                                = fphr(c,:)
         end do
 
 
@@ -1698,7 +1698,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_bgc_data_clm2clm(clm_bgc_data,bounds,         &
+  subroutine update_bgc_data_clm2clm(elm_bgc_data,bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
            cnstate_vars, carbonflux_vars, carbonstate_vars,       &
@@ -1726,7 +1726,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
-    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     !-----------------------------------------------------------------------
 
@@ -1734,17 +1734,17 @@ contains
 
     ! bgc_state_decomp is updated in CLM
     ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
-    call update_bgc_flux_decomp_cascade(clm_bgc_data,   &
+    call update_bgc_flux_decomp_cascade(elm_bgc_data,   &
                 bounds, num_soilc, filter_soilc,        &
                 carbonflux_vars, nitrogenflux_vars,     &
                 phosphorusflux_vars)
 
-    call update_bgc_flux_smin(clm_bgc_data,             &
+    call update_bgc_flux_smin(elm_bgc_data,             &
                 bounds, num_soilc, filter_soilc,        &
                 cnstate_vars,                           &
                 nitrogenflux_vars, phosphorusflux_vars)
 
-    call update_bgc_flux_nitdenit(clm_bgc_data,         &
+    call update_bgc_flux_nitdenit(elm_bgc_data,         &
                 bounds, num_soilc, filter_soilc,        &
                 nitrogenflux_vars, phosphorusflux_vars)
 
