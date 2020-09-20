@@ -63,7 +63,7 @@ module clm_interface_funcsMod
   use SoilWaterRetentionCurveMod    , only : soil_water_retention_curve_type
 
   use clm_interface_dataType        , only : clm_interface_data_type
-  use clm_interface_thType          , only : elm_interface_th_datatype
+  use elm_interface_thType          , only : elm_interface_th_datatype
   use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 
   ! most used constants in this module

@@ -10,7 +10,7 @@ module clm_interface_dataType
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
-  use clm_interface_thType
+  use elm_interface_thType
   use elm_interface_bgcType
 
   implicit none

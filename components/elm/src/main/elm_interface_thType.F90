@@ -1,4 +1,4 @@
-module clm_interface_thType
+module elm_interface_thType
 
 !=================================================================================================
 ! ALM Thermal(T)-Hydrology (H) Interface: Data Type (Variables)
@@ -166,4 +166,4 @@ contains
   end subroutine InitAllocate
 !-------------------------------------------------------------------------------------------------
 
-end module clm_interface_thType
+end module elm_interface_thType
