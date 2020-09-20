@@ -5,8 +5,7 @@ namespace scream {
   namespace shoc {
 
     /*
-     * Explicit instantiation for doing vertflux on Reals using the
-     * default device.
+     * Explicit instantiation for the default device.
      */
 
     template struct Functions<Real,DefaultDevice>;
