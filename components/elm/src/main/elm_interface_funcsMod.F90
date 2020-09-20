@@ -63,7 +63,7 @@ module clm_interface_funcsMod
   use SoilWaterRetentionCurveMod    , only : soil_water_retention_curve_type
 
   use clm_interface_dataType        , only : clm_interface_data_type
-  use clm_interface_thType          , only : clm_interface_th_datatype
+  use clm_interface_thType          , only : elm_interface_th_datatype
   use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 
   ! most used constants in this module
@@ -174,7 +174,7 @@ contains
     type(clm_interface_data_type), intent(inout) :: clm_idata
 
     ! LOCAL
-    !type(clm_interface_th_datatype) , pointer :: clm_idata_th
+    !type(elm_interface_th_datatype) , pointer :: clm_idata_th
     !type(elm_interface_bgc_datatype), pointer :: clm_idata_bgc
 
 
@@ -353,7 +353,7 @@ contains
     type(waterstate_type)    , intent(in) :: waterstate_vars
     type(temperature_type)   , intent(in) :: temperature_vars
 
-    type(clm_interface_th_datatype)       , intent(inout) :: clm_idata_th
+    type(elm_interface_th_datatype)       , intent(inout) :: clm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j         ! indices
@@ -431,7 +431,7 @@ contains
     type(waterflux_type)     , intent(in) :: waterflux_vars
     type(energyflux_type)    , intent(in) :: energyflux_vars
 
-    type(clm_interface_th_datatype)       , intent(inout) :: clm_idata_th
+    type(elm_interface_th_datatype)       , intent(inout) :: clm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j         ! indices
@@ -763,7 +763,7 @@ contains
     type(soilstate_type), intent(inout)  :: soilstate_vars
     type(waterstate_type), intent(inout) :: waterstate_vars
 
-    type(clm_interface_th_datatype), intent(in) :: clm_idata_th
+    type(elm_interface_th_datatype), intent(in) :: clm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -810,7 +810,7 @@ contains
     integer                             , intent(in)    :: num_soilc        ! number of column soil points in column filter
     integer                             , intent(in)    :: filter_soilc(:)  ! column filter for soil points
     type(temperature_type)              , intent(inout) :: temperature_vars
-    type(clm_interface_th_datatype)     , intent(in)    :: clm_idata_th
+    type(elm_interface_th_datatype)     , intent(in)    :: clm_idata_th
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g, gcount      ! indices
@@ -852,7 +852,7 @@ contains
     type(soilhydrology_type)    , intent(inout) :: soilhydrology_vars
     type(energyflux_type)       , intent(inout) :: energyflux_vars
 
-    type(clm_interface_th_datatype), intent(in) :: clm_idata_th
+    type(elm_interface_th_datatype), intent(in) :: clm_idata_th
 
     !-----------------------------------------------------------------------
 

@@ -14,7 +14,7 @@ module clm_interface_thType
 
   private
 
-  type, public :: clm_interface_th_datatype
+  type, public :: elm_interface_th_datatype
 
      ! soilstate_vars:
      real(r8), pointer :: soilpsi_col                               (:,:)   ! col soil water potential in each soil layer (MPa) (CN)
@@ -71,7 +71,7 @@ module clm_interface_thType
   contains
      procedure , public  :: Init
      procedure , private :: InitAllocate
-  end type clm_interface_th_datatype
+  end type elm_interface_th_datatype
 !-------------------------------------------------------------------------------------------------
   
 
@@ -80,7 +80,7 @@ contains
 !-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
-     class(clm_interface_th_datatype)  :: this
+     class(elm_interface_th_datatype)  :: this
      type(bounds_type), intent(in)     :: bounds
 
      call this%InitAllocate (bounds)
@@ -97,7 +97,7 @@ contains
 
     ! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
-    class(clm_interface_th_datatype)  :: this
+    class(elm_interface_th_datatype)  :: this
     type(bounds_type), intent(in)     :: bounds
 
     ! LOCAL VARIABLES:

@@ -45,7 +45,7 @@ module clm_interface_dataType
      real(r8), pointer :: csol_col                                  (:,:)   ! col heat capacity, soil solids (J/m**3/Kelvin) (nlevgrnd)
 
      ! thermal-hydrology:
-     type(clm_interface_th_datatype) :: th
+     type(elm_interface_th_datatype) :: th
 
      ! biogeochemistry:
      type(elm_interface_bgc_datatype):: bgc
