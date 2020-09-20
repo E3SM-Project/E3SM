@@ -77,8 +77,9 @@ IF (BUILD_HOMME_THETA_KOKKOS)
      theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
   )
+  set(HOMME_THETA_TESTS_WITH_PROFILE "")
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
-    LIST(APPEND HOMME_PREQX_TESTS_WITH_PROFILE
+    LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE
         ${JJ}.cmake
         ${JJ}-kokkos.cmake
     )

@@ -83,7 +83,7 @@ set(varnames ${varnames}  "SUMMIT_MODULES_P9" CACHE INTERNAL "")
 set(varvals ${varvals} "load-modules-p9" CACHE INTERNAL "")
 
 set(varnames ${varnames}  "SUMMIT_JSRUN_GPU"  CACHE INTERNAL "")
-set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l gpu-gpu -b packed:1 -d plane:1 -a1 -c7 -g1 -smpiargs \"-gpu\" " CACHE INTERNAL "")
+set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l gpu-gpu -b packed:1 -d plane:1 -a1 -c7 -g1 --smpiargs -gpu " CACHE INTERNAL "")
 
 set(varnames ${varnames}  "SUMMIT_JSRUN_P9" CACHE INTERNAL "")
 set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l cpu-cpu -b packed:1 -d plane:1 -a7 -c7 -g0 "  CACHE INTERNAL "")
@@ -91,8 +91,13 @@ set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l cp
 set(varnames ${varnames}  "SUMMIT_JSRUN_TAIL" CACHE INTERNAL "")
 set(varvals ${varvals}  "|& grep -v \"IEEE_UNDERFLOW_FLAG\""  CACHE INTERNAL "")
 
-set(varnames ${varnames}  "SUMMIT_OMP_OPTIONS" CACHE INTERNAL "")
-set(varvals ${varvals}  "export OMP_PLACES=threads\; export OMP_PROC_BIND=close\;export OMP_NUM_THREADS=4"  CACHE INTERNAL "")
+#cprnc line
+set(varnames ${varnames}  "SUMMIT_JSRUN_SERIAL"  CACHE INTERNAL "")
+set(varvals ${varvals}  "jsrun -n 1 -r 1 -l cpu-cpu -b packed:1 -d plane:1 -a1 -c7 -g0" CACHE INTERNAL "")
+
+#only for p9 runs
+#set(varnames ${varnames}  "SUMMIT_OMP_OPTIONS" CACHE INTERNAL "")
+#set(varvals ${varvals}  "export OMP_PLACES=threads\; export OMP_PROC_BIND=close\;export OMP_NUM_THREADS=4"  CACHE INTERNAL "")
 
 
 
