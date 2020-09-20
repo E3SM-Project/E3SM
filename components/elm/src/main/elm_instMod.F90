@@ -130,15 +130,15 @@ module elm_instMod
   type(hlm_fates_interface_type)                      :: alm_fates
   class(betr_simulation_alm_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
-  public :: clm_inst_biogeochem
-  public :: clm_inst_biogeophys
+  public :: elm_inst_biogeochem
+  public :: elm_inst_biogeophys
   public :: alm_fates
 
 contains
 
 
   !-----------------------------------------------------------------------
-  subroutine clm_inst_biogeochem(bounds_proc)
+  subroutine elm_inst_biogeochem(bounds_proc)
 
     !
     ! DESCRIPTION
@@ -234,12 +234,12 @@ contains
        
     call hist_printflds()
 
-  end subroutine clm_inst_biogeochem
+  end subroutine elm_inst_biogeochem
 
 
   !-----------------------------------------------------------------------
 
-    subroutine clm_inst_biogeophys(bounds_proc)
+    subroutine elm_inst_biogeophys(bounds_proc)
     !
     ! DESCRIPTION
     ! initialize biogeophysical variables
@@ -434,7 +434,7 @@ contains
     deallocate (h2osno_col)
     deallocate (snow_depth_col)
 
-    end subroutine clm_inst_biogeophys
+    end subroutine elm_inst_biogeophys
 
 
 end module elm_instMod

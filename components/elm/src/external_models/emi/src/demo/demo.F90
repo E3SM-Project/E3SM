@@ -3,7 +3,7 @@ program demo
   use ExternalModelInterfaceMod
   use clm_varctl                , only : iulog
   use decompMod                 , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
-  use elm_instMod               , only : clm_inst_biogeophys
+  use elm_instMod               , only : elm_inst_biogeophys
   use clm_varpar                , only : clm_varpar_init
   use clm_varcon                , only : clm_varcon_init
   use clm_varpar                , only : nlevdecomp_full, ndecomp_pools
@@ -33,7 +33,7 @@ program demo
 
   call get_proc_bounds(bounds_proc)
 
-  call clm_inst_biogeophys(bounds_proc)
+  call elm_inst_biogeophys(bounds_proc)
   call initialize_clm_data_structures(bounds_proc)
 
   call EMI_Determine_Active_EMs()

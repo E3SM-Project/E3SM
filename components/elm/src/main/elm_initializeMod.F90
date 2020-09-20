@@ -567,7 +567,7 @@ contains
          avgflag='A', long_name='convective boundary height', &
          ptr_col=col_pp%zii, default='inactive')
 
-    call clm_inst_biogeophys(bounds_proc)
+    call elm_inst_biogeophys(bounds_proc)
 
     if(use_betr)then
       !allocate memory for betr simulator
@@ -607,7 +607,7 @@ contains
     endif
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
-    call clm_inst_biogeochem(bounds_proc)
+    call elm_inst_biogeochem(bounds_proc)
 
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
