@@ -11,7 +11,7 @@ module clm_interface_dataType
   use shr_infnan_mod        , only : nan => shr_infnan_nan, assignment(=)
 
   use clm_interface_thType
-  use clm_interface_bgcType
+  use elm_interface_bgcType
 
   implicit none
 
@@ -48,7 +48,7 @@ module clm_interface_dataType
      type(clm_interface_th_datatype) :: th
 
      ! biogeochemistry:
-     type(clm_interface_bgc_datatype):: bgc
+     type(elm_interface_bgc_datatype):: bgc
 
      !
   contains

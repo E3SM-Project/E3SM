@@ -1,4 +1,4 @@
-module clm_interface_bgcType
+module elm_interface_bgcType
 !=================================================================================================
 ! CLM BioGeoChemistry (BGC) Interface: Data Type (Variables)
 ! created: 8/25/2015
@@ -13,7 +13,7 @@ module clm_interface_bgcType
 !
   private
 
-  type, public :: clm_interface_bgc_datatype
+  type, public :: elm_interface_bgc_datatype
 
      ! clm_varpar
      integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
@@ -202,7 +202,7 @@ module clm_interface_bgcType
   contains
      procedure , public  :: Init
      procedure , private :: InitAllocate
-  end type clm_interface_bgc_datatype
+  end type elm_interface_bgc_datatype
 !-------------------------------------------------------------------------------------------------
 
   
@@ -212,7 +212,7 @@ contains
 !-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
-     class(clm_interface_bgc_datatype) :: this
+     class(elm_interface_bgc_datatype) :: this
      type(bounds_type), intent(in)      :: bounds
 
      call this%InitAllocate (bounds)
@@ -230,7 +230,7 @@ contains
 
     ! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
-    class(clm_interface_bgc_datatype)   :: this
+    class(elm_interface_bgc_datatype)   :: this
     type(bounds_type), intent(in)       :: bounds
 
     ! LOCAL VARIABLES:
@@ -440,4 +440,4 @@ contains
   end subroutine InitAllocate
 !-------------------------------------------------------------------------------------------------
 
-end module clm_interface_bgcType
+end module elm_interface_bgcType

@@ -64,7 +64,7 @@ module clm_interface_funcsMod
 
   use clm_interface_dataType        , only : clm_interface_data_type
   use clm_interface_thType          , only : clm_interface_th_datatype
-  use clm_interface_bgcType         , only : clm_interface_bgc_datatype
+  use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 
   ! most used constants in this module
   use clm_varpar            , only : nlevsoi, nlevsno, nlevgrnd, nlevdecomp_full
@@ -175,7 +175,7 @@ contains
 
     ! LOCAL
     !type(clm_interface_th_datatype) , pointer :: clm_idata_th
-    !type(clm_interface_bgc_datatype), pointer :: clm_idata_bgc
+    !type(elm_interface_bgc_datatype), pointer :: clm_idata_bgc
 
 
     character(len=256) :: subname = "get_clm_data"
@@ -514,7 +514,7 @@ contains
     type(phosphorusstate_type)  , intent(in) :: phosphorusstate_vars
     type(ch4_type)              , intent(in) :: ch4_vars          ! not yet used, but will be.
 
-    type(clm_interface_bgc_datatype), intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(inout) :: clm_bgc_data
 
     character(len=256) :: subname = "get_clm_bgc_state"
 
@@ -619,7 +619,7 @@ contains
     type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
     type(ch4_type)                      , intent(in) :: ch4_vars          ! not yet used, but will be.
 
-    type(clm_interface_bgc_datatype)   , intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype)   , intent(inout) :: clm_bgc_data
 
     character(len=256) :: subname = "get_clm_bgc_flux"
 
@@ -891,7 +891,7 @@ contains
     type(nitrogenstate_type)            , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
 
-    type(clm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
 
     character(len=256) :: subname = "update_soil_bgc_state"
 
@@ -936,7 +936,7 @@ contains
     type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
 
-    type(clm_interface_bgc_datatype), intent(in) :: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in) :: clm_bgc_data
 
     character(len=256) :: subname = "update_bgc_state_smin"
 
@@ -997,7 +997,7 @@ contains
     type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(clm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
 
     integer :: fc, c, j, k
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
@@ -1038,7 +1038,7 @@ contains
     type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(clm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
 
     integer :: fc, c, j, k
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
@@ -1095,7 +1095,7 @@ contains
 
     type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
-    type(clm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
 
     integer :: fc, c, j
     character(len=256) :: subname = "update_bgc_flux_smin"
@@ -1203,7 +1203,7 @@ contains
 
     type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
-    type(clm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(in)    :: clm_bgc_data
 
     integer :: fc, c, j
     character(len=256) :: subname = "update_bgc_flux_nitdenit"
@@ -1246,7 +1246,7 @@ contains
 
      type(carbonflux_type)              , intent(inout) :: carbonflux_vars
      type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars
-     type(clm_interface_bgc_datatype)   , intent(in)    :: clm_bgc_data
+     type(elm_interface_bgc_datatype)   , intent(in)    :: clm_bgc_data
 
      !character(len=256) :: subname = "get_pf_bgc_gaslosses"
 
@@ -1309,7 +1309,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
-    type(clm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
 
     !-----------------------------------------------------------------------
 
@@ -1571,7 +1571,7 @@ contains
     type(nitrogenflux_type)             , intent(in)    :: nitrogenflux_vars
     type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
 
-    type(clm_interface_bgc_datatype)    , intent(inout) :: clm_bgc_data
+    type(elm_interface_bgc_datatype)    , intent(inout) :: clm_bgc_data
 
     ! LOCAL VARIABLES:
     integer :: fc, c, j, k
@@ -1726,7 +1726,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
-    type(clm_interface_bgc_datatype), intent(in):: clm_bgc_data
+    type(elm_interface_bgc_datatype), intent(in):: clm_bgc_data
 
     !-----------------------------------------------------------------------
 
