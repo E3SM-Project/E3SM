@@ -101,14 +101,14 @@ module clm_interface_pflotranMod
   private :: pflotran_finalize
   private :: clm_pf_checkerr
   !
-  private :: get_clm_soil_dimension
-  private :: get_clm_soil_properties
+  private :: get_elm_soil_dimension
+  private :: get_elm_soil_properties
   !
-  private :: get_clm_soil_th
-  private :: get_clm_iceadj_porosity 
+  private :: get_elm_soil_th
+  private :: get_elm_iceadj_porosity 
   !
-  private :: get_clm_bgc_conc
-  private :: get_clm_bgc_rate
+  private :: get_elm_bgc_conc
+  private :: get_elm_bgc_rate
   private :: update_soil_bgc_pf2clm
   private :: update_bgc_gaslosses_pf2clm
   ! pflotran mass balance check
@@ -117,8 +117,8 @@ module clm_interface_pflotranMod
   private :: clm_pf_CBalanceCheck
   private :: clm_pf_NBalanceCheck
   !
-  private :: get_clm_bcwflx
-  private :: get_clm_bceflx
+  private :: get_elm_bcwflx
+  private :: get_elm_bceflx
   private :: update_soil_temperature_pf2clm
   private :: update_soil_moisture_pf2clm
   private :: update_bcflow_pf2clm
@@ -1120,10 +1120,10 @@ contains
        ! beg------------------------------------------------
        ! move from 'interface_init'
        ! force CLM soil domain into PFLOTRAN subsurface grids
-       call get_clm_soil_dimension(clm_interface_data, bounds)
+       call get_elm_soil_dimension(elm_interface_data, bounds)
 
        ! Currently always set soil hydraulic/BGC properties from CLM to PF
-       call get_clm_soil_properties(clm_interface_data, bounds, filters)
+       call get_elm_soil_properties(elm_interface_data, bounds, filters)
 
        ! Get top surface area of 3-D pflotran subsurface domain
        call pflotranModelGetTopFaceArea(pflotran_m)
@@ -1131,7 +1131,7 @@ contains
        ! end------------------------------------------------
 
        ! always initializing soil 'TH' states from CLM to pflotran
-       call get_clm_soil_th(clm_interface_data, .not.initth_pf2clm, .not.initth_pf2clm, bounds, filters, ifilter)
+       call get_elm_soil_th(elm_interface_data, .not.initth_pf2clm, .not.initth_pf2clm, bounds, filters, ifilter)
 
        call pflotranModelUpdateTHfromCLM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
 
@@ -1141,7 +1141,7 @@ contains
     ! (1)
     ! if PF T/H mode not available, have to pass those from CLM to global variable in PF to drive BGC/H
     if (.not. isinitpf .and. (.not.pf_tmode .or. .not.pf_hmode)) then    ! always initialize from CLM to pF, if comment out this 'if'block
-       call get_clm_soil_th(clm_interface_data, .TRUE., .TRUE., bounds, filters, ifilter)
+       call get_elm_soil_th(elm_interface_data, .TRUE., .TRUE., bounds, filters, ifilter)
 
        call pflotranModelUpdateTHfromCLM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
 
@@ -1149,7 +1149,7 @@ contains
 
     ! ice-len adjusted porostiy, if PF-ice mode off
     if (.not.pf_frzmode) then
-        call get_clm_iceadj_porosity(clm_interface_data, bounds, filters, ifilter)
+        call get_elm_iceadj_porosity(elm_interface_data, bounds, filters, ifilter)
 
         call pflotranModelResetSoilPorosityFromCLM(pflotran_m)
 
@@ -1157,13 +1157,13 @@ contains
 
     ! (2) CLM thermal BC to PFLOTRAN-CLM interface
     if (pf_tmode) then
-        call get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
+        call get_elm_bceflx(elm_interface_data, bounds, filters, ifilter)
         call pflotranModelUpdateSubsurfTCond( pflotran_m )   ! E-SrcSink and T bc
     end if
 
     ! (3) pass CLM water fluxes to PFLOTRAN-CLM interface
     if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
-        call get_clm_bcwflx(clm_interface_data, bounds, filters, ifilter)
+        call get_elm_bcwflx(elm_interface_data, bounds, filters, ifilter)
 
         ! pass flux 'vecs' from CLM to pflotran
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
@@ -1176,7 +1176,7 @@ contains
     ! (4a) always (re-)initialize PFLOTRAN soil bgc state variables from CLM-CN
     !      (this will be easier to maintain balance error-free)
 
-        call get_clm_bgc_conc(clm_interface_data, bounds, filters, ifilter)
+        call get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
         call pflotranModelSetBgcConcFromCLM(pflotran_m)
         if ((.not.pf_hmode .or. .not.pf_frzmode)) then
           ! this is needed, because at step 0, PF's interface data is empty
@@ -1192,7 +1192,7 @@ contains
         endif
 
     ! (4b) bgc rate (fluxes) from CLM to PFLOTRAN
-        call get_clm_bgc_rate(clm_interface_data, bounds, filters, ifilter)
+        call get_elm_bgc_rate(elm_interface_data, bounds, filters, ifilter)
         call pflotranModelSetBgcRatesFromCLM(pflotran_m)
 
     endif
@@ -1305,10 +1305,10 @@ contains
   !====================================================================================================
   !BOP
   !
-  ! !IROUTINE: get_clm_soil_dimension
+  ! !IROUTINE: get_elm_soil_dimension
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_dimension(clm_interface_data, bounds)
+  subroutine get_elm_soil_dimension(elm_interface_data, bounds)
     !
     ! !DESCRIPTION:
     ! get soil column dimension to PFLOTRAN
@@ -1357,7 +1357,7 @@ contains
     integer  :: xwtgcell_c(1:bounds%endg-bounds%begg+1)
 #endif
 
-    character(len= 32) :: subname = 'get_clm_soil_dimension' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_soil_dimension' ! subroutine name
 
     PetscScalar, pointer :: cellid_clm_loc(:)
     PetscScalar, pointer :: zisoil_clm_loc(:)     ! 3-D PF-cell's z-node coordinates (elevation-adjusted, unit: m)
@@ -1644,15 +1644,15 @@ contains
     call pflotranModelSetSoilDimension(pflotran_m)
 
     end associate
-  end subroutine get_clm_soil_dimension
+  end subroutine get_elm_soil_dimension
 
   !-----------------------------------------------------------------------
   !BOP
   !
-  ! !IROUTINE: get_clm_soil_properties
+  ! !IROUTINE: get_elm_soil_properties
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_properties(clm_interface_data, bounds, filters)
+  subroutine get_elm_soil_properties(elm_interface_data, bounds, filters)
     !
     ! !DESCRIPTION:
     ! get soil column physical properties to PFLOTRAN
@@ -1699,7 +1699,7 @@ contains
     real(r8) :: CN_ratio_mass_to_mol
     real(r8) :: wtgcount
 
-    character(len= 32) :: subname = 'get_clm_soil_properties' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_soil_properties' ! subroutine name
 
 
     PetscScalar, pointer :: hksat_x_clm_loc(:) ! hydraulic conductivity in x-dir at saturation (mm H2O /s)
@@ -1948,7 +1948,7 @@ contains
     call pflotranModelSetSoilProp(pflotran_m)
 
     end associate
-  end subroutine get_clm_soil_properties
+  end subroutine get_elm_soil_properties
 
 
   !====================================================================================================
@@ -1960,10 +1960,10 @@ contains
   !-----------------------------------------------------------------------------
   !BOP
   !
-  ! !ROUTINE: get_clm_soil_th
+  ! !ROUTINE: get_elm_soil_th
   !
   ! !INTERFACE:
-  subroutine get_clm_soil_th(clm_interface_data,initpftmode, initpfhmode, bounds, filters, ifilter)
+  subroutine get_elm_soil_th(elm_interface_data,initpftmode, initpfhmode, bounds, filters, ifilter)
 
   !
   ! !DESCRIPTION:
@@ -2011,7 +2011,7 @@ contains
     integer :: j,nstep
     real(r8):: sattmp, psitmp, itheta, sucmin_pa, psitmp0
 
-    character(len= 32) :: subname = 'get_clm_soil_th' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_soil_th' ! subroutine name
 
   !EOP
   !-----------------------------------------------------------------------
@@ -2161,16 +2161,16 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
    end associate
-  end subroutine get_clm_soil_th
+  end subroutine get_elm_soil_th
 
 
   !-----------------------------------------------------------------------------
   !BOP
   !
-  ! !ROUTINE: get_clm_iceadj_porosity
+  ! !ROUTINE: get_elm_iceadj_porosity
   !
   ! !INTERFACE:
-  subroutine get_clm_iceadj_porosity(clm_interface_data, bounds, filters, ifilter)
+  subroutine get_elm_iceadj_porosity(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !  update soil effective porosity from CLM to PFLOTRAN if PF freezing mode is off
@@ -2205,7 +2205,7 @@ contains
     PetscScalar, pointer :: soilisat_clmp_loc(:)  !
     PetscErrorCode :: ierr
 
-    character(len= 32) :: subname = 'get_clm_iceadj_porosity' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_iceadj_porosity' ! subroutine name
 
   !EOP
   !-----------------------------------------------------------------------
@@ -2267,16 +2267,16 @@ contains
     end if
 
     end associate
-  end subroutine get_clm_iceadj_porosity
+  end subroutine get_elm_iceadj_porosity
   !
 
 !-----------------------------------------------------------------------------
   !BOP
   !
-  ! !IROUTINE: get_clm_bcwflx
+  ! !IROUTINE: get_elm_bcwflx
   !
   ! !INTERFACE:
-  subroutine get_clm_bcwflx(clm_interface_data, bounds, filters, ifilter)
+  subroutine get_elm_bcwflx(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -2345,7 +2345,7 @@ contains
     PetscScalar, pointer :: press_maxponding_clmp_loc(:)   !
     PetscErrorCode :: ierr
 
-    character(len= 32) :: subname = 'get_clm_bcwflx' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_bcwflx' ! subroutine name
   !EOP
   !-----------------------------------------------------------------------
     associate ( &
@@ -2653,13 +2653,13 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
-  end subroutine get_clm_bcwflx
+  end subroutine get_elm_bcwflx
 
   !-----------------------------------------------------------------------------
   !
   !
   ! !INTERFACE:
-  subroutine get_clm_bceflx(clm_interface_data, bounds, filters, ifilter)
+  subroutine get_elm_bceflx(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -2711,7 +2711,7 @@ contains
 
     PetscErrorCode :: ierr
 
-    character(len= 32) :: subname = 'get_clm_bceflx' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_bceflx' ! subroutine name
 
   !EOP
   !-----------------------------------------------------------------------
@@ -2810,7 +2810,7 @@ contains
        ! net (sw+lw) radiation into soil, if not covered by surface water or snow
        eflx_rnet0 = (1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c))*eflx_rnet_soil(c)
 
-       ! soil surface evaporation (NOTE which adjusted by liq. water available in the first soil layer in 'get_clm_wflx' subroutine)
+       ! soil surface evaporation (NOTE which adjusted by liq. water available in the first soil layer in 'get_elm_wflx' subroutine)
        eflx_ev0 = -qflx_evap_soil(c)*htvp(c)*(1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c))  ! - = LE out of soil
 
        ! net heat flux into soil
@@ -2858,7 +2858,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
-  end subroutine get_clm_bceflx
+  end subroutine get_elm_bceflx
 
   !
   !-----------------------------------------------------------------------------
@@ -2867,11 +2867,11 @@ contains
   !-----------------------------------------------------------------------------
   !BOP
   !
-  ! !ROUTINE: get_clm_bgc_conc(clm_interface_data, bounds, filters, ifilter)
+  ! !ROUTINE: get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
   !
   ! !INTERFACE:
 
-  subroutine get_clm_bgc_conc(clm_interface_data, bounds, filters, ifilter)
+  subroutine get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
     use clm_varpar          , only : ndecomp_pools, nlevdecomp_full
@@ -2884,7 +2884,7 @@ contains
 
     type(elm_interface_data_type), intent(in) :: clm_interface_data
 
-    character(len=256) :: subname = "get_clm_bgc_concentration"
+    character(len=256) :: subname = "get_elm_bgc_concentration"
 
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscvec.h"
@@ -3018,14 +3018,14 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
-  end subroutine get_clm_bgc_conc
+  end subroutine get_elm_bgc_conc
 
   !-----------------------------------------------------------------------------
   !
-  ! !IROUTINE: get_clm_bgc_rate()
+  ! !IROUTINE: get_elm_bgc_rate()
   !
   ! !INTERFACE:
-  subroutine get_clm_bgc_rate(clm_interface_data,  bounds, filters, ifilter)
+  subroutine get_elm_bgc_rate(elm_interface_data,  bounds, filters, ifilter)
 ! TODO: add phosphorus vars
   !
   ! !DESCRIPTION:
@@ -3046,7 +3046,7 @@ contains
 
     type(elm_interface_data_type), intent(in) :: clm_interface_data
 
-    character(len=256) :: subname = "get_clm_bgc_rate"
+    character(len=256) :: subname = "get_elm_bgc_rate"
 
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscvec.h"
@@ -3242,7 +3242,7 @@ contains
     call clm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     end associate
-  end subroutine get_clm_bgc_rate
+  end subroutine get_elm_bgc_rate
 
 
 
@@ -3593,7 +3593,7 @@ contains
       if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-      ! the following was actually duplicated from 'get_clm_bcwflx' to calculate total water evap from 'qflx_topsoil'
+      ! the following was actually duplicated from 'get_elm_bcwflx' to calculate total water evap from 'qflx_topsoil'
       ! in order to get potential infiltration from CLM, because 'qflx_ev_soil' might be reduced due to water limits
       qflx_evap = (1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c))*qflx_ev_soil(c)
       if (t_grnd(c) < tfrz .and. qflx_evap<0._r8) then

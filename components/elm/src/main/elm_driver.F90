@@ -153,8 +153,8 @@ module elm_driver
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface
-  use elm_instMod            , only : elm_interface_data
-  use elm_interface_funcsMod , only : get_clm_data
+  use elm_instMod            , only : clm_interface_data
+  use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
   use elm_interface_funcsMod , only : clm_bgc_run, update_bgc_data_clm2clm
@@ -962,7 +962,7 @@ contains
              !--------------------------------------------------------------------------------
              if (use_clm_interface) then
                  ! STEP-1: pass data from CLM to clm_interface_data (INTERFACE DATA TYPE)
-                 call get_clm_data(clm_interface_data,bounds_clump,                     &
+                 call get_elm_data(clm_interface_data,bounds_clump,                     &
                            filter(nc)%num_soilc, filter(nc)%soilc,                      &
                            filter(nc)%num_soilp, filter(nc)%soilp,                      &
                            atm2lnd_vars, soilstate_vars,                                &

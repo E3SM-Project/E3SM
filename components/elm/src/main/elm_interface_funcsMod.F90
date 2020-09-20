@@ -90,13 +90,13 @@ module elm_interface_funcsMod
   !--------------------------------------------------------------------------------------
   ! (1) GENERIC SUBROUTINES: used by any specific soil BGC module
   ! pass clm variables to clm_bgc_data
-  public    :: get_clm_data                 ! STEP-1: clm vars -> clm_interface_data
+  public    :: get_elm_data                 ! STEP-1: clm vars -> elm_interface_data
 
-  ! pass clm variables to clm_interface_data, called by get_clm_data
-  private   :: get_clm_soil_property        ! STEP-1.1: soil properties
-  private   :: get_clm_soil_th_state        ! STEP-1.2: thermohydrology (TH) state vars
-  private   :: get_clm_bgc_state            ! STEP-1.3: state vars
-  private   :: get_clm_bgc_flux             ! STEP-1.4: flux vars
+  ! pass clm variables to elm_interface_data, called by get_elm_data
+  private   :: get_elm_soil_property        ! STEP-1.1: soil properties
+  private   :: get_elm_soil_th_state        ! STEP-1.2: thermohydrology (TH) state vars
+  private   :: get_elm_bgc_state            ! STEP-1.3: state vars
+  private   :: get_elm_bgc_flux             ! STEP-1.4: flux vars
 
   ! STEP-3.x: clm_interface_data -> clm vars
   ! update clm variables from clm_interface_data,
@@ -134,7 +134,7 @@ contains
 
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_data(clm_idata,                              &
+  subroutine get_elm_data(clm_idata,                              &
            bounds, num_soilc, filter_soilc,                       &
            num_soilp, filter_soilp,                               &
            atm2lnd_vars, soilstate_vars,                          &
@@ -178,7 +178,7 @@ contains
     !type(elm_interface_bgc_datatype), pointer :: clm_idata_bgc
 
 
-    character(len=256) :: subname = "get_clm_data"
+    character(len=256) :: subname = "get_elm_data"
     !-----------------------------------------------------------------------
 
      associate ( &
@@ -186,38 +186,38 @@ contains
       clm_idata_bgc => clm_idata%bgc  &
      )
 
-    call get_clm_soil_property(clm_idata,                   &
+    call get_elm_soil_property(clm_idata,                   &
                     bounds, num_soilc, filter_soilc,        &
                     soilstate_vars, cnstate_vars)
 
-    call get_clm_soil_th_state(clm_idata_th,                &
+    call get_elm_soil_th_state(clm_idata_th,                &
                    bounds, num_soilc, filter_soilc,         &
                    atm2lnd_vars, soilstate_vars,            &
                    waterstate_vars, temperature_vars)
 
-    call get_clm_soil_th_flux(clm_idata_th,                 &
+    call get_elm_soil_th_flux(clm_idata_th,                 &
                        bounds, num_soilc, filter_soilc,     &
                        waterflux_vars, energyflux_vars)
 
-    call get_clm_bgc_state(clm_idata_bgc,                   &
+    call get_elm_bgc_state(clm_idata_bgc,                   &
                     bounds, num_soilc, filter_soilc,        &
                     atm2lnd_vars, soilstate_vars,           &
                     carbonstate_vars, nitrogenstate_vars,   &
                     phosphorusstate_vars,                   &
                     ch4_vars)
 
-    call get_clm_bgc_flux(clm_idata_bgc,                    &
+    call get_elm_bgc_flux(clm_idata_bgc,                    &
                     bounds, num_soilc, filter_soilc,        &
                     cnstate_vars, carbonflux_vars,          &
                     nitrogenflux_vars, phosphorusflux_vars, &
                     ch4_vars)
 
     end associate
-  end subroutine get_clm_data
+  end subroutine get_elm_data
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_soil_property(clm_idata,               &
+  subroutine get_elm_soil_property(clm_idata,               &
                         bounds, num_soilc, filter_soilc,    &
                         soilstate_vars, cnstate_vars)
 
@@ -245,7 +245,7 @@ contains
     integer  :: fc, g, l, c, j, k      ! indices
     integer  :: gcount, cellcount
 
-    character(len= 32) :: subname = 'get_clm_soil_property' ! subroutine name
+    character(len= 32) :: subname = 'get_elm_soil_property' ! subroutine name
 
     associate ( &
          ! Assign local pointer to derived subtypes components (column-level)
@@ -325,11 +325,11 @@ contains
     end do
 
   end associate
-  end subroutine get_clm_soil_property
+  end subroutine get_elm_soil_property
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_soil_th_state(clm_idata_th,            &
+  subroutine get_elm_soil_th_state(clm_idata_th,            &
                        bounds, num_soilc, filter_soilc,     &
                        atm2lnd_vars, soilstate_vars,        &
                        waterstate_vars, temperature_vars)
@@ -406,11 +406,11 @@ contains
     end do
 
     end associate
-  end subroutine get_clm_soil_th_state
+  end subroutine get_elm_soil_th_state
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_soil_th_flux(clm_idata_th,             &
+  subroutine get_elm_soil_th_flux(clm_idata_th,             &
                        bounds, num_soilc, filter_soilc,     &
                        waterflux_vars, energyflux_vars)
   !
@@ -488,12 +488,12 @@ contains
     end do
 
     end associate
-  end subroutine get_clm_soil_th_flux
+  end subroutine get_elm_soil_th_flux
 !--------------------------------------------------------------------------------------
 
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_bgc_state(clm_bgc_data,                    &
+  subroutine get_elm_bgc_state(clm_bgc_data,                    &
                         bounds, num_soilc, filter_soilc,        &
                         atm2lnd_vars, soilstate_vars,           &
                         carbonstate_vars, nitrogenstate_vars,   &
@@ -516,7 +516,7 @@ contains
 
     type(elm_interface_bgc_datatype), intent(inout) :: clm_bgc_data
 
-    character(len=256) :: subname = "get_clm_bgc_state"
+    character(len=256) :: subname = "get_elm_bgc_state"
 
     ! Local variables
     integer  :: fc, c, j, k
@@ -587,11 +587,11 @@ contains
 !-----------------------------------------------------------------------------
 
   end associate
-  end subroutine get_clm_bgc_state
+  end subroutine get_elm_bgc_state
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine get_clm_bgc_flux(clm_bgc_data,                      &
+  subroutine get_elm_bgc_flux(clm_bgc_data,                      &
                         bounds, num_soilc, filter_soilc,         &
                         cnstate_vars, carbonflux_vars,           &
                         nitrogenflux_vars, phosphorusflux_vars,  &
@@ -621,7 +621,7 @@ contains
 
     type(elm_interface_bgc_datatype)   , intent(inout) :: clm_bgc_data
 
-    character(len=256) :: subname = "get_clm_bgc_flux"
+    character(len=256) :: subname = "get_elm_bgc_flux"
 
 
  ! !LOCAL VARIABLES:
@@ -705,7 +705,7 @@ contains
 
        ! the following is for CTC ad-spinup.
        ! There is a 'time' control here, so MUST be called each time-step,
-       ! and then better put the code here rather than in 'get_clm_bgc_state'
+       ! and then better put the code here rather than in 'get_elm_bgc_state'
        if (spinup_state == 1 .and. year >= 40 .and. nu_com .eq. 'RD') then
             clm_bgc_data%sitefactor_kd_vr_col(c,:) = decomp_k_scalar(c,:)
        else
@@ -740,7 +740,7 @@ contains
     end do ! fc = 1,num_soilc
 
     end associate
-  end subroutine get_clm_bgc_flux
+  end subroutine get_elm_bgc_flux
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
