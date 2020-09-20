@@ -68,7 +68,7 @@ module elm_instMod
   use VegetationDataType         , only : veg_ns, veg_nf
   use VegetationDataType         , only : veg_ps, veg_pf
 
-  use clm_interface_dataType     , only : clm_interface_data_type
+  use elm_interface_dataType     , only : clm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type

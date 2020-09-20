@@ -51,7 +51,7 @@ module clm_interface_pflotranMod
 
   ! (dummy) variable definitions
   ! ALM types/variables are replaced by clm_interface_data
-  use clm_interface_dataType, only : clm_interface_data_type
+  use elm_interface_dataType, only : clm_interface_data_type
 
 
 #ifdef CLM_PFLOTRAN

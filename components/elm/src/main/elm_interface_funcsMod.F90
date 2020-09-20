@@ -12,7 +12,7 @@ module clm_interface_funcsMod
   !--------------------------------------------------------------------------------------
   ! DESCRIPTION:
   ! Coupling of CLM with any specific Soil BGC module Consists of 3 STEPS:
-  ! STEP-1:   clm vars             -> clm_interface_data (i.e. clm_interface_dataType)  ; pass clm vars to clm_interface_data
+  ! STEP-1:   clm vars             -> clm_interface_data (i.e. elm_interface_dataType)  ; pass clm vars to clm_interface_data
   ! STEP-2:   clm_interface_data   -> soil bgc module -> clm_interface_data
   !      2.1: clm_interface_data   -> soil bgc module
   !      2.2: run soil bgc module
@@ -62,7 +62,7 @@ module clm_interface_funcsMod
 
   use SoilWaterRetentionCurveMod    , only : soil_water_retention_curve_type
 
-  use clm_interface_dataType        , only : clm_interface_data_type
+  use elm_interface_dataType        , only : clm_interface_data_type
   use elm_interface_thType          , only : elm_interface_th_datatype
   use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 

@@ -1,4 +1,4 @@
-module clm_interface_dataType
+module elm_interface_dataType
 
 !=================================================================================================
 ! ALM Thermal(T)-Hydrology (H) & BioGeoChemistry (BGC) Interface: Data Type (Variables)
@@ -124,4 +124,4 @@ contains
   end subroutine InitAllocate
 !-------------------------------------------------------------------------------------------------
 
-end module clm_interface_dataType
+end module elm_interface_dataType
