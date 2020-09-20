@@ -179,8 +179,8 @@ module elm_driver
   public :: elm_drv            ! Main elm driver
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: clm_drv_patch2col
-  private :: clm_drv_init      ! Initialization of variables needed from previous timestep
+  private :: elm_drv_patch2col
+  private :: elm_drv_init      ! Initialization of variables needed from previous timestep
   private :: write_diagnostic  ! Write diagnostic information to log file
   !-----------------------------------------------------------------------
 
@@ -572,7 +572,7 @@ contains
        call UpdateDaylength(bounds_clump, declin)
 
        ! Initialze variables needed for new driver time step 
-       call clm_drv_init(bounds_clump, &
+       call elm_drv_init(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_nolakep, filter(nc)%nolakep, &
             filter(nc)%num_soilp  , filter(nc)%soilp,   &
@@ -782,7 +782,7 @@ contains
        ! ============================================================================
 
        call t_startf('patch2col')
-       call clm_drv_patch2col(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec, &
+       call elm_drv_patch2col(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec, &
             waterstate_vars, energyflux_vars, waterflux_vars)
        call t_stopf('patch2col')
 
@@ -1479,7 +1479,7 @@ contains
   end subroutine elm_drv
 
   !-----------------------------------------------------------------------
-  subroutine clm_drv_init(bounds, &
+  subroutine elm_drv_init(bounds, &
        num_nolakec, filter_nolakec, &
        num_nolakep, filter_nolakep, &
        num_soilp  , filter_soilp, &
@@ -1591,10 +1591,10 @@ contains
 
     end associate
 
-  end subroutine clm_drv_init
+  end subroutine elm_drv_init
   
   !-----------------------------------------------------------------------
-  subroutine clm_drv_patch2col (bounds, num_nolakec, filter_nolakec, &
+  subroutine elm_drv_patch2col (bounds, num_nolakec, filter_nolakec, &
        waterstate_vars, energyflux_vars, waterflux_vars)
     !
     ! !DESCRIPTION:
@@ -1745,7 +1745,7 @@ contains
     call p2c (bounds, num_nolakec, filter_nolakec, &
          veg_wf%qflx_evap_veg(bounds%begp:bounds%endp), &
          col_wf%qflx_evap_veg (bounds%begc:bounds%endc))
-  end subroutine clm_drv_patch2col
+  end subroutine elm_drv_patch2col
 
   !------------------------------------------------------------------------
   subroutine write_diagnostic (bounds, wrtdia, nstep, lnd2atm_vars)
