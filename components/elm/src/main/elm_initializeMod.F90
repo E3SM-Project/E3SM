@@ -1,4 +1,4 @@
-module clm_initializeMod
+module elm_initializeMod
 
   !-----------------------------------------------------------------------
   ! Performs land model initialization
@@ -176,7 +176,7 @@ contains
     case ("graph_partitioning")
        call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
     case default
-       call endrun(msg='ERROR clm_initializeMod: '//&
+       call endrun(msg='ERROR elm_initializeMod: '//&
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
 
@@ -735,7 +735,7 @@ contains
 
        ! Check that finidat is not cold start - abort if it is
        if (finidat /= ' ') then
-          call endrun(msg='ERROR clm_initializeMod: '//&
+          call endrun(msg='ERROR elm_initializeMod: '//&
                'finidat and finidat_interp_source cannot both be non-blank')
        end if
 
@@ -1087,4 +1087,4 @@ contains
   end subroutine clm_petsc_init
 
 
-end module clm_initializeMod
+end module elm_initializeMod

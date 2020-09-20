@@ -42,7 +42,7 @@ contains
     use abortutils       , only : endrun
     use shr_kind_mod     , only : SHR_KIND_CL
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_initializeMod, only : initialize1, initialize2, initialize3
     use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name

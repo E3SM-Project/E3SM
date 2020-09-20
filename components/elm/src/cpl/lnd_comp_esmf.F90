@@ -77,7 +77,7 @@ contains
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_initializeMod, only : initialize1, initialize2, initialize3
     use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name

@@ -170,7 +170,7 @@ contains
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use clm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
-     use clm_initializeMod , only : surfalb_vars
+     use elm_initializeMod , only : surfalb_vars
      use domainMod         , only : ldomain
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
@@ -864,7 +864,7 @@ contains
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use clm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
-     use clm_initializeMod , only : surfalb_vars
+     use elm_initializeMod , only : surfalb_vars
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
