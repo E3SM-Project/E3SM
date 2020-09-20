@@ -157,11 +157,11 @@ module elm_driver
   use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
-  use elm_interface_funcsMod , only : clm_bgc_run, update_bgc_data_clm2clm
+  use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_clm2clm
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
   use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use elm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2clm
+  use elm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2elm
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
   use clm_interface_pflotranMod   , only : clm_pf_finalize
   !----------------------------------------------------------------------------
@@ -1004,7 +1004,7 @@ contains
                     ! STEP-2: (2) run SoilLittDecompAlloc
                     ! STEP-2: (3) update clm_interface_data from SoilLittDecompAlloc
                     ! -------------------------------------------------------------------------
-                    call clm_bgc_run(clm_interface_data, bounds_clump,          &
+                    call elm_bgc_run(clm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            canopystate_vars, soilstate_vars,                    &

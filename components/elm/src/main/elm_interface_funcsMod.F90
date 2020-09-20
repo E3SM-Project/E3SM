@@ -116,18 +116,18 @@ module elm_interface_funcsMod
   ! (2) SPECIFIC SUBROUTINES: used by a specific soil BGC module
   ! (2.1) Specific Subroutines for running clm-bgc (CN or BGC) through interface
   ! if (use_clm_interface .and. use_clm_bgc)
-  public    :: clm_bgc_run              ! STEP-2:   clm_interface_data  -> clm-bgc module -> clm_interface_data    ; called in clm_driver
-  private   :: clm_bgc_get_data         ! STEP-2.1: clm_interface_data  -> clm-bgc module                          ; called in clm_bgc_run
+  public    :: elm_bgc_run              ! STEP-2:   elm_interface_data  -> clm-bgc module -> elm_interface_data    ; called in clm_driver
+  private   :: elm_bgc_get_data         ! STEP-2.1: elm_interface_data  -> clm-bgc module                          ; called in elm_bgc_run
                                         ! STEP-2.2: run clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
-  private   :: clm_bgc_update_data      ! STEP-2.3: clm-bgc module-> clm_interface_data                            ; called in clm_bgc_run
-  public    :: update_bgc_data_clm2clm  ! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
+  private   :: elm_bgc_update_data      ! STEP-2.3: clm-bgc module-> elm_interface_data                            ; called in elm_bgc_run
+  public    :: update_bgc_data_clm2clm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
 
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
   ! if (use_clm_interface .and. use_pflotran)
   public    :: update_bgc_data_pf2clm   ! STEP-3:   clm_interface_data  -> clm vars                                ; called in clm_driver
                                         ! STEP-2:   see 'clm_pf_run' in clm_interface_pflotranMod
 
-  public    :: update_th_data_pf2clm
+  public    :: update_th_data_pf2elm
   !--------------------------------------------------------------------------------------
 
 contains
@@ -830,7 +830,7 @@ contains
   end subroutine update_soil_temperature
 !--------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------
-  subroutine update_th_data_pf2clm(clm_idata_th,           &
+  subroutine update_th_data_pf2elm(clm_idata_th,           &
            bounds, num_soilc, filter_soilc,                &
            waterstate_vars, waterflux_vars,                &
            temperature_vars, energyflux_vars,              &
@@ -856,7 +856,7 @@ contains
 
     !-----------------------------------------------------------------------
 
-    character(len=256) :: subname = "update_th_data_pf2clm"
+    character(len=256) :: subname = "update_th_data_pf2elm"
 
     if (pf_tmode) then
         call update_soil_temperature(clm_idata_th,      &
@@ -870,7 +870,7 @@ contains
                    soilstate_vars, waterstate_vars)
     end if
 
-  end subroutine update_th_data_pf2clm
+  end subroutine update_th_data_pf2elm
 !--------------------------------------------------------------------------------------
 
 
@@ -1348,7 +1348,7 @@ contains
 ! BEG of CLM-bgc through interface
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
-  subroutine clm_bgc_run(clm_interface_data, bounds,        &
+  subroutine elm_bgc_run(elm_interface_data, bounds,        &
                 num_soilc, filter_soilc,                    &
                 num_soilp, filter_soilp,                    &
                 canopystate_vars, soilstate_vars,           &
@@ -1380,11 +1380,11 @@ contains
     type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
 
-    type(elm_interface_data_type)       , intent(inout) :: clm_interface_data
+    type(elm_interface_data_type)       , intent(inout) :: elm_interface_data
 
     !-------------------------------------------------------------
     ! STEP-2: (i) pass data from clm_bgc_data to SoilLittDecompAlloc
-    call clm_bgc_get_data(clm_interface_data, bounds,       &
+    call elm_bgc_get_data(elm_interface_data, bounds,       &
                 num_soilc, filter_soilc,                    &
                 canopystate_vars, soilstate_vars,           &
                 temperature_vars, waterstate_vars,          &
@@ -1404,18 +1404,18 @@ contains
                phosphorusstate_vars,phosphorusflux_vars)
 
     ! STEP-2: (iii) update clm_bgc_data from SoilLittDecompAlloc
-    call clm_bgc_update_data(clm_interface_data%bgc, bounds, &
+    call elm_bgc_update_data(elm_interface_data%bgc, bounds, &
                 num_soilc, filter_soilc,                     &
                 cnstate_vars, carbonflux_vars,               &
                 nitrogenflux_vars, phosphorusflux_vars)
 
-  end subroutine clm_bgc_run
+  end subroutine elm_bgc_run
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
   ! pass data from clm_bgc_data to clm original data-types that used by SoilLittDecompAlloc
-  subroutine clm_bgc_get_data(clm_interface_data,       &
+  subroutine elm_bgc_get_data(elm_interface_data,       &
             bounds, num_soilc, filter_soilc,            &
             canopystate_vars, soilstate_vars,           &
             temperature_vars, waterstate_vars,          &
@@ -1444,7 +1444,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(elm_interface_data_type), intent(in)   :: clm_interface_data
+    type(elm_interface_data_type), intent(in)   :: elm_interface_data
 
     ! LOCAL VARIABLES:
     integer :: fc, c, j, k
@@ -1499,30 +1499,30 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
 
-        plant_ndemand_col(c)        = clm_interface_data%bgc%plant_ndemand_col(c)
-        plant_pdemand_col(c)        = clm_interface_data%bgc%plant_pdemand_col(c)
+        plant_ndemand_col(c)        = elm_interface_data%bgc%plant_ndemand_col(c)
+        plant_pdemand_col(c)        = elm_interface_data%bgc%plant_pdemand_col(c)
 
-        finundated(c)               = clm_interface_data%bgc%finundated_col(c)
+        finundated(c)               = elm_interface_data%bgc%finundated_col(c)
 
-        bd(c,:)                     = clm_interface_data%bd_col(c,:)
-        watsat(c,:)                 = clm_interface_data%watsat_col(c,:)
-        bsw(c,:)                    = clm_interface_data%bsw_col(c,:)
-        sucsat(c,:)                 = clm_interface_data%sucsat_col(c,:)
-        watfc(c,:)                  = clm_interface_data%watfc_col(c,:)
-        cellorg(c,:)                = clm_interface_data%cellorg_col(c,:)
+        bd(c,:)                     = elm_interface_data%bd_col(c,:)
+        watsat(c,:)                 = elm_interface_data%watsat_col(c,:)
+        bsw(c,:)                    = elm_interface_data%bsw_col(c,:)
+        sucsat(c,:)                 = elm_interface_data%sucsat_col(c,:)
+        watfc(c,:)                  = elm_interface_data%watfc_col(c,:)
+        cellorg(c,:)                = elm_interface_data%cellorg_col(c,:)
 
-        soilpsi(c,:)                = clm_interface_data%th%soilpsi_col(c,:)
-        h2osoi_vol(c,:)             = clm_interface_data%th%h2osoi_vol_col(c,:)
-        h2osoi_liq(c,:)             = clm_interface_data%th%h2osoi_liq_col(c,:)
+        soilpsi(c,:)                = elm_interface_data%th%soilpsi_col(c,:)
+        h2osoi_vol(c,:)             = elm_interface_data%th%h2osoi_vol_col(c,:)
+        h2osoi_liq(c,:)             = elm_interface_data%th%h2osoi_liq_col(c,:)
 
-        t_soisno(c,:)               = clm_interface_data%th%t_soisno_col(c,:)
+        t_soisno(c,:)               = elm_interface_data%th%t_soisno_col(c,:)
 
-        o2stress_unsat(c,:)         = clm_interface_data%bgc%o2stress_unsat_col(c,:)
-        o2stress_sat(c,:)           = clm_interface_data%bgc%o2stress_sat_col(c,:)
-        o2_decomp_depth_unsat(c,:)  = clm_interface_data%bgc%o2_decomp_depth_unsat_col(c,:)
-        conc_o2_unsat(c,:)          = clm_interface_data%bgc%conc_o2_unsat_col(c,:)
-        o2_decomp_depth_sat(c,:)    = clm_interface_data%bgc%o2_decomp_depth_sat_col(c,:)
-        conc_o2_sat(c,:)            = clm_interface_data%bgc%conc_o2_sat_col(c,:)
+        o2stress_unsat(c,:)         = elm_interface_data%bgc%o2stress_unsat_col(c,:)
+        o2stress_sat(c,:)           = elm_interface_data%bgc%o2stress_sat_col(c,:)
+        o2_decomp_depth_unsat(c,:)  = elm_interface_data%bgc%o2_decomp_depth_unsat_col(c,:)
+        conc_o2_unsat(c,:)          = elm_interface_data%bgc%conc_o2_unsat_col(c,:)
+        o2_decomp_depth_sat(c,:)    = elm_interface_data%bgc%o2_decomp_depth_sat_col(c,:)
+        conc_o2_sat(c,:)            = elm_interface_data%bgc%conc_o2_sat_col(c,:)
 
     end do
 
@@ -1530,31 +1530,31 @@ contains
     do fc = 1, num_soilc
         c = filter_soilc(fc)
             do k = 1, ndecomp_pools
-                decomp_cpools_vr(c,:,k) = clm_interface_data%bgc%decomp_cpools_vr_col(c,:,k)
-                decomp_npools_vr(c,:,k) = clm_interface_data%bgc%decomp_npools_vr_col(c,:,k)
-                decomp_ppools_vr(c,:,k) = clm_interface_data%bgc%decomp_ppools_vr_col(c,:,k)
+                decomp_cpools_vr(c,:,k) = elm_interface_data%bgc%decomp_cpools_vr_col(c,:,k)
+                decomp_npools_vr(c,:,k) = elm_interface_data%bgc%decomp_npools_vr_col(c,:,k)
+                decomp_ppools_vr(c,:,k) = elm_interface_data%bgc%decomp_ppools_vr_col(c,:,k)
             end do
 
-            smin_no3_vr(c,:)        = clm_interface_data%bgc%smin_no3_vr_col(c,:)
-            smin_nh4_vr(c,:)        = clm_interface_data%bgc%smin_nh4_vr_col(c,:)
-            smin_nh4sorb_vr(c,:)    = clm_interface_data%bgc%smin_nh4sorb_vr_col(c,:)
+            smin_no3_vr(c,:)        = elm_interface_data%bgc%smin_no3_vr_col(c,:)
+            smin_nh4_vr(c,:)        = elm_interface_data%bgc%smin_nh4_vr_col(c,:)
+            smin_nh4sorb_vr(c,:)    = elm_interface_data%bgc%smin_nh4sorb_vr_col(c,:)
 
-            solutionp_vr(c,:)       = clm_interface_data%bgc%solutionp_vr_col(c,:)
-            labilep_vr(c,:)         = clm_interface_data%bgc%labilep_vr_col(c,:)
-            secondp_vr(c,:)         = clm_interface_data%bgc%secondp_vr_col(c,:)
-            sminp_vr(c,:)           = clm_interface_data%bgc%sminp_vr_col(c,:)
-            occlp_vr(c,:)           = clm_interface_data%bgc%occlp_vr_col(c,:)
-            primp_vr(c,:)           = clm_interface_data%bgc%primp_vr_col(c,:)
+            solutionp_vr(c,:)       = elm_interface_data%bgc%solutionp_vr_col(c,:)
+            labilep_vr(c,:)         = elm_interface_data%bgc%labilep_vr_col(c,:)
+            secondp_vr(c,:)         = elm_interface_data%bgc%secondp_vr_col(c,:)
+            sminp_vr(c,:)           = elm_interface_data%bgc%sminp_vr_col(c,:)
+            occlp_vr(c,:)           = elm_interface_data%bgc%occlp_vr_col(c,:)
+            primp_vr(c,:)           = elm_interface_data%bgc%primp_vr_col(c,:)
     end do
 
     end associate
-  end subroutine clm_bgc_get_data
+  end subroutine elm_bgc_get_data
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
   ! !INTERFACE:
   ! pass data from clm_bgc to clm_bgc_data
-  subroutine clm_bgc_update_data(clm_bgc_data, bounds,  &
+  subroutine elm_bgc_update_data(clm_bgc_data, bounds,  &
             num_soilc, filter_soilc,                    &
             cnstate_vars, carbonflux_vars,              &
             nitrogenflux_vars, phosphorusflux_vars)
@@ -1694,7 +1694,7 @@ contains
 
 
     end associate
-  end subroutine clm_bgc_update_data
+  end subroutine elm_bgc_update_data
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
