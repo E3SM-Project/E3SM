@@ -153,15 +153,15 @@ module elm_driver
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_clm_interface
-  use elm_instMod            , only : clm_interface_data
-  use clm_interface_funcsMod , only : get_clm_data
+  use elm_instMod            , only : elm_interface_data
+  use elm_interface_funcsMod , only : get_clm_data
   ! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
-  use clm_interface_funcsMod , only : clm_bgc_run, update_bgc_data_clm2clm
+  use elm_interface_funcsMod , only : clm_bgc_run, update_bgc_data_clm2clm
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
   use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use clm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2clm
+  use elm_interface_funcsMod      , only : update_bgc_data_pf2clm, update_th_data_pf2clm
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
   use clm_interface_pflotranMod   , only : clm_pf_finalize
   !----------------------------------------------------------------------------

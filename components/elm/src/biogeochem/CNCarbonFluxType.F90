@@ -424,7 +424,7 @@ module CNCarbonFluxType
      ! C4MIP output variable
      real(r8), pointer :: plant_c_to_cwdc                 (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant carbon flux to CWD
 
-     ! new variables for clm_interface_funcsMod & pflotran
+     ! new variables for elm_interface_funcsMod & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
                                                                             ! (sum of all external C additions and removals, excluding decomposition/hr).

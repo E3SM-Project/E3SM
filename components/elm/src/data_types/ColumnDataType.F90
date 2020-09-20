@@ -610,7 +610,7 @@ module ColumnDataType
      real(r8), pointer :: plant_p_to_cwdp                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
 
     real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
-    ! Variables for clm_interface_funcsMod & pflotran
+    ! Variables for elm_interface_funcsMod & pflotran
     real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
     real(r8), pointer :: externalc_to_decomp_delta             (:)     => null() ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)

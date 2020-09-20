@@ -1,4 +1,4 @@
-module clm_interface_funcsMod
+module elm_interface_funcsMod
 !=================================================================================================
 ! CLM Theraml-Hydrology (TH) & BioGeoChemistry (BGC) Interface: Modules
 ! created: 8/25/2015
@@ -8,7 +8,7 @@ module clm_interface_funcsMod
 #include "shr_assert.h"
 
 
-  ! MODULE: clm_interface_funcsMod
+  ! MODULE: elm_interface_funcsMod
   !--------------------------------------------------------------------------------------
   ! DESCRIPTION:
   ! Coupling of CLM with any specific Soil BGC module Consists of 3 STEPS:
@@ -1754,5 +1754,5 @@ contains
 !--------------------------------------------------------------------------------------
 
 
-end module clm_interface_funcsMod
+end module elm_interface_funcsMod
 
