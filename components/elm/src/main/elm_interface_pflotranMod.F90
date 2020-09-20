@@ -51,7 +51,7 @@ module clm_interface_pflotranMod
 
   ! (dummy) variable definitions
   ! ALM types/variables are replaced by clm_interface_data
-  use elm_interface_dataType, only : clm_interface_data_type
+  use elm_interface_dataType, only : elm_interface_data_type
 
 
 #ifdef CLM_PFLOTRAN
@@ -285,7 +285,7 @@ contains
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
 
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
     !-----------------------------------------------------------------------
 
@@ -1087,7 +1087,7 @@ contains
     type(clumpfilter) , intent(inout) :: filters(:)     ! filters on current process
     integer           , intent(in)    :: ifilter        ! which filter to be operate
 
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
     !LOCAL VARIABLES:
     real(r8) :: dtime                         ! land model time step (sec)
@@ -1334,7 +1334,7 @@ contains
 #include "petsc/finclude/petscvec.h90"
 
     type(bounds_type)                   , intent(in) :: bounds
-    type(clm_interface_data_type)   , intent(in) :: clm_interface_data
+    type(elm_interface_data_type)   , intent(in) :: clm_interface_data
     !
     ! !REVISION HISTORY:
     ! Created by Gautam Bisht
@@ -1688,7 +1688,7 @@ contains
     type(bounds_type), intent(in) :: bounds           ! bounds
     type(clumpfilter), intent(in) :: filters(:)       ! filters on current process
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
     ! LOCAL VARAIBLES:
 
@@ -1993,7 +1993,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, gcount, cellcount       ! indices
@@ -2195,7 +2195,7 @@ contains
     type(clumpfilter)         , intent(in) :: filters(:)     ! filters on current process
     integer                   , intent(in) :: ifilter        ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, j, gcount, cellcount       ! indices
@@ -2307,7 +2307,7 @@ contains
     type(clumpfilter), intent(inout) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, g, c, j               ! do loop indices
@@ -2690,7 +2690,7 @@ contains
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, gcount            ! do loop indices
@@ -2882,7 +2882,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)      ! filters on current process
     integer           , intent(in) :: ifilter         ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
     character(len=256) :: subname = "get_clm_bgc_concentration"
 
@@ -3044,7 +3044,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
     character(len=256) :: subname = "get_clm_bgc_rate"
 
@@ -3277,7 +3277,7 @@ contains
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g              ! indices
@@ -3406,7 +3406,7 @@ contains
   ! !ARGUMENTS:
     implicit none
 
-    type(clm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: clm_interface_data
 
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscvec.h"
@@ -3526,7 +3526,7 @@ contains
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
   ! !LOCAL VARIABLES:
 #include "petsc/finclude/petscsys.h"
@@ -3658,7 +3658,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
@@ -3966,7 +3966,7 @@ contains
      type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
      integer          , intent(in) :: ifilter        ! which filter to be operated
 
-     type(clm_interface_data_type), intent(inout) :: clm_interface_data
+     type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
      character(len=256) :: subname = "get_pf_bgc_gaslosses"
 
@@ -4322,7 +4322,7 @@ contains
      type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
      integer          , intent(in) :: ifilter        ! which filter to be operated
 
-     type(clm_interface_data_type), intent(inout) :: clm_interface_data
+     type(elm_interface_data_type), intent(inout) :: clm_interface_data
 
      character(len=256) :: subname = "get_pf_bgc_bcfluxes"
 
@@ -4471,7 +4471,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,l     ! indices
@@ -4513,7 +4513,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,l     ! indices
@@ -4570,7 +4570,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer  :: c,j,l                                                               ! indices
@@ -4655,7 +4655,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(clm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: clm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer  :: nlev

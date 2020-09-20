@@ -62,7 +62,7 @@ module clm_interface_funcsMod
 
   use SoilWaterRetentionCurveMod    , only : soil_water_retention_curve_type
 
-  use elm_interface_dataType        , only : clm_interface_data_type
+  use elm_interface_dataType        , only : elm_interface_data_type
   use elm_interface_thType          , only : elm_interface_th_datatype
   use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 
@@ -171,7 +171,7 @@ contains
     type(phosphorusstate_type)  , intent(in)    :: phosphorusstate_vars
     type(ch4_type)              , intent(in)    :: ch4_vars
 
-    type(clm_interface_data_type), intent(inout) :: clm_idata
+    type(elm_interface_data_type), intent(inout) :: clm_idata
 
     ! LOCAL
     !type(elm_interface_th_datatype) , pointer :: clm_idata_th
@@ -240,7 +240,7 @@ contains
     type(soilstate_type)     , intent(in) :: soilstate_vars
     type(cnstate_type)       , intent(in) :: cnstate_vars
 
-    type(clm_interface_data_type), intent(inout) :: clm_idata
+    type(elm_interface_data_type), intent(inout) :: clm_idata
 
     integer  :: fc, g, l, c, j, k      ! indices
     integer  :: gcount, cellcount
@@ -1380,7 +1380,7 @@ contains
     type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
 
-    type(clm_interface_data_type)       , intent(inout) :: clm_interface_data
+    type(elm_interface_data_type)       , intent(inout) :: clm_interface_data
 
     !-------------------------------------------------------------
     ! STEP-2: (i) pass data from clm_bgc_data to SoilLittDecompAlloc
@@ -1444,7 +1444,7 @@ contains
     type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
-    type(clm_interface_data_type), intent(in)   :: clm_interface_data
+    type(elm_interface_data_type), intent(in)   :: clm_interface_data
 
     ! LOCAL VARIABLES:
     integer :: fc, c, j, k

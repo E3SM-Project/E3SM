@@ -68,7 +68,7 @@ module elm_instMod
   use VegetationDataType         , only : veg_ns, veg_nf
   use VegetationDataType         , only : veg_ps, veg_pf
 
-  use elm_interface_dataType     , only : clm_interface_data_type
+  use elm_interface_dataType     , only : elm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
@@ -125,7 +125,7 @@ module elm_instMod
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(phosphorusstate_type)                          :: phosphorusstate_vars
   type(phosphorusflux_type)                           :: phosphorusflux_vars
-  type(clm_interface_data_type)                       :: clm_interface_data
+  type(elm_interface_data_type)                       :: clm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
   class(betr_simulation_alm_type), pointer            :: ep_betr

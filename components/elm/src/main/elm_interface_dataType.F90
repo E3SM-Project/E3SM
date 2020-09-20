@@ -18,7 +18,7 @@ module elm_interface_dataType
   private
 
 !-------------------------------------------------------------------------------------------------
-  type, public :: clm_interface_data_type
+  type, public :: elm_interface_data_type
 
      ! col dimension
      real(r8), pointer :: z                                         (:,:)   ! layer depth (m) (-nlevsno+1:nlevgrnd)
@@ -54,7 +54,7 @@ module elm_interface_dataType
   contains
      procedure , public  :: Init
      procedure , private :: InitAllocate
-  end type clm_interface_data_type
+  end type elm_interface_data_type
 !-------------------------------------------------------------------------------------------------
   
 
@@ -63,7 +63,7 @@ contains
 !-------------------------------------------------------------------------------------------------
   subroutine Init(this, bounds)
      use decompMod               , only : bounds_type
-     class(clm_interface_data_type) :: this
+     class(elm_interface_data_type) :: this
      type(bounds_type), intent(in)  :: bounds
 
      call this%InitAllocate (bounds)
@@ -85,7 +85,7 @@ contains
 
     ! ARGUMENTS:
     real(r8) :: ival  = 0.0_r8  ! initial value
-    class(clm_interface_data_type)      :: this
+    class(elm_interface_data_type)      :: this
     type(bounds_type), intent(in)       :: bounds
 
     ! LOCAL VARIABLES:
