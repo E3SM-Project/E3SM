@@ -1,8 +1,8 @@
-module clm_driver
+module elm_driver
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! This module provides the main CLM driver physics calling sequence.  Most
+  ! This module provides the main ELM driver physics calling sequence.  Most
   ! computations occurs over ``clumps'' of gridcells (and associated subgrid
   ! scale entities) assigned to each MPI process. Computation is further
   ! parallelized by looping over clumps on each process using shared memory OpenMP.
@@ -176,7 +176,7 @@ module clm_driver
   implicit none
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: clm_drv            ! Main clm driver 
+  public :: elm_drv            ! Main elm driver
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: clm_drv_patch2col
@@ -187,7 +187,7 @@ module clm_driver
 contains
 
   !-----------------------------------------------------------------------
-  subroutine clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
+  subroutine elm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
     !
     ! !DESCRIPTION:
     !
@@ -1476,7 +1476,7 @@ contains
        call clm_pf_finalize()
     end if
 
-  end subroutine clm_drv
+  end subroutine elm_drv
 
   !-----------------------------------------------------------------------
   subroutine clm_drv_init(bounds, &
@@ -1817,4 +1817,4 @@ contains
 
   end subroutine write_diagnostic
 
-end module clm_driver
+end module elm_driver
