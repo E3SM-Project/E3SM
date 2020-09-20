@@ -1,4 +1,4 @@
-module clm_finalizeMod
+module elm_finalizeMod
 
   !-----------------------------------------------------------------------
   ! Performs land model cleanup
@@ -46,4 +46,4 @@ contains
 
   end subroutine final
 
-end module clm_finalizeMod
+end module elm_finalizeMod

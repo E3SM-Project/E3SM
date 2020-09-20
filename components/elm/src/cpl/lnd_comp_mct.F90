@@ -558,7 +558,7 @@ contains
     use seq_timemgr_mod ,only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use mct_mod
     use esmf
-    use clm_finalizeMod, only : final
+    use elm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver

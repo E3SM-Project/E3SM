@@ -685,7 +685,7 @@ contains
     ! Finalize land surface model
     !
     ! !USES:
-    use clm_finalizeMod, only : final
+    use elm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp            ! CLM gridded component
