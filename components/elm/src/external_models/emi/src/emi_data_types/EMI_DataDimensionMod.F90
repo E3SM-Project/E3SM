@@ -11,7 +11,7 @@ module EMI_DataDimensionMod
   use elm_varpar, only : ndecomp_pools
   use elm_varpar, only : nlevdecomp_full
   use abortutils, only : endrun
-  use clm_varctl, only : iulog
+  use elm_varctl, only : iulog
 
 implicit none
 

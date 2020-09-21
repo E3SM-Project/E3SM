@@ -8,7 +8,7 @@ Module SoilHydrologyType
   use elm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
   use elm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
   use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
-  use clm_varctl            , only : iulog 
+  use elm_varctl            , only : iulog 
   use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp                
@@ -158,7 +158,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
     use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
@@ -224,7 +224,7 @@ contains
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use clm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
+    use elm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use elm_varcon      , only : denice, denh2o, sb, bdsno 
     use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc

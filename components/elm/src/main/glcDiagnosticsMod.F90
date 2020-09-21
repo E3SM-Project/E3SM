@@ -80,7 +80,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use clm_varctl     , only : create_glacier_mec_landunit
+    use elm_varctl     , only : create_glacier_mec_landunit
     use histFileMod    , only: hist_addfld1d
     use elm_varcon     , only : spval
     !

@@ -11,7 +11,7 @@ module UrbanFluxesMod
   use decompMod            , only : bounds_type
   use elm_varpar           , only : numrad
   use elm_varcon           , only : isecspday, degpsec, namel
-  use clm_varctl           , only : iulog
+  use elm_varctl           , only : iulog
   use abortutils           , only : endrun  
   use UrbanParamsType      , only : urbanparams_type
   use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac 
@@ -63,7 +63,7 @@ contains
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
-    use clm_varctl          , only : use_vsfm
+    use elm_varctl          , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    

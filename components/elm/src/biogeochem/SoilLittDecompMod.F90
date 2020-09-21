@@ -10,7 +10,7 @@ module SoilLittDecompMod
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
-  use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
+  use elm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
@@ -24,7 +24,7 @@ module SoilLittDecompMod
   !!  add phosphorus  -X. YANG
   use PhosphorusStateType    , only : phosphorusstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
 
   use CNCarbonStateType      , only : carbonstate_type
   use CNCarbonFluxType       , only : carbonflux_type
@@ -40,7 +40,7 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
   ! clm interface & pflotran:
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -878,7 +878,7 @@ contains
   !
   !USES:
 
-    use clm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
+    use elm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
     use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:

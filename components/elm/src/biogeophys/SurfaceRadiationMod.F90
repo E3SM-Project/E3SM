@@ -7,7 +7,7 @@ module SurfaceRadiationMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use clm_varctl        , only : use_snicar_frc, use_fates
+  use elm_varctl        , only : use_snicar_frc, use_fates
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use elm_varcon        , only : namec
@@ -326,7 +326,7 @@ contains
      use elm_varpar       , only : numrad, nlevsno
      use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop 
-     use clm_varctl       , only : subgridflag, use_snicar_frc, iulog
+     use elm_varctl       , only : subgridflag, use_snicar_frc, iulog
      use clm_time_manager , only : get_curr_date, get_step_size
      use SnowSnicarMod    , only : DO_SNO_OC
      use abortutils       , only : endrun

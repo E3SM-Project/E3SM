@@ -26,7 +26,7 @@ contains
  !-----------------------------------------------------------------------
  subroutine FatesReadParameters()
 
-   use clm_varctl, only : use_fates, paramfile, fates_paramfile
+   use elm_varctl, only : use_fates, paramfile, fates_paramfile
    use spmdMod, only : masterproc
 
    use FatesParametersInterface, only : fates_parameters_type
@@ -71,7 +71,7 @@ contains
  !-----------------------------------------------------------------------
  subroutine FatesReadPFTs()
 
-   use clm_varctl, only : use_fates, paramfile, fates_paramfile
+   use elm_varctl, only : use_fates, paramfile, fates_paramfile
    use spmdMod, only : masterproc
 
    use FatesParametersInterface, only : fates_parameters_type

@@ -11,7 +11,7 @@ module dynInitColumnsMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use elm_varcon        , only : ispval, namec
   use TemperatureType   , only : temperature_type
   use SoilHydrologyType , only : soilhydrology_type

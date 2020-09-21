@@ -12,7 +12,7 @@ module subgridAveMod
   use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon , only : icol_road_perv , icol_road_imperv
   use elm_varcon    , only : grlnd, nameg, namel, namec, namep,spval 
-  use clm_varctl    , only : iulog
+  use elm_varctl    , only : iulog
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type
   use TopounitType  , only : top_pp

@@ -9,7 +9,7 @@ module WoodProductsMod
   use spmdMod             , only : masterproc
   use landunit_varcon     , only : istsoil
   use clm_time_manager    , only : get_step_size
-  use clm_varctl          , only : use_c13, use_c14
+  use elm_varctl          , only : use_c13, use_c14
   use CNCarbonStateType   , only : carbonstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNNitrogenStateType , only : nitrogenstate_type

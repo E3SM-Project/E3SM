@@ -8,7 +8,7 @@ module PrecisionControlMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com
   use elm_varpar          , only : ndecomp_pools
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
@@ -41,7 +41,7 @@ contains
     ! they get too small.
     !
     ! !USES:
-    use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
+    use elm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
     use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    

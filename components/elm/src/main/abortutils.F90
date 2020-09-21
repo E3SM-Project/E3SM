@@ -27,7 +27,7 @@ CONTAINS
     ! Abort the model for abnormal termination
     !
     use shr_sys_mod , only: shr_sys_abort
-    use clm_varctl  , only: iulog
+    use elm_varctl  , only: iulog
     !
     ! !ARGUMENTS:
     implicit none
@@ -52,7 +52,7 @@ CONTAINS
     ! Abort the model for abnormal termination
     !
     use shr_sys_mod       , only: shr_sys_abort
-    use clm_varctl        , only: iulog
+    use elm_varctl        , only: iulog
     use GetGlobalValuesMod, only: GetGlobalWrite
     !
     ! Arguments:

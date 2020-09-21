@@ -20,14 +20,14 @@ module ColumnDataType
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
-  use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
-  use clm_varctl      , only : use_hydrstress
-  use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
-  use clm_varctl      , only : use_erosion
-  use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
-  use clm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
-  use clm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
-  use clm_varctl      , only : pf_hmode, nu_com
+  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use elm_varctl      , only : use_hydrstress
+  use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
+  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
+  use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
+  use elm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon, only : smax, ks_sorption
@@ -983,7 +983,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
-    use clm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
+    use elm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
     use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
     use UrbanParamsType, only : urbanparams_vars
     !

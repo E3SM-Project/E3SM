@@ -16,10 +16,10 @@ module SoilStateType
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use elm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use elm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
-  use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
-  use clm_varctl      , only : use_erosion
-  use clm_varctl      , only : use_var_soil_thick
-  use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
+  use elm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
+  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : use_var_soil_thick
+  use elm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
@@ -862,8 +862,8 @@ contains
     use abortutils , only : endrun
     use restUtilMod
     use ncdio_pio
-    use clm_varctl,  only : use_dynroot
-    use clm_varctl,  only : use_hydrstress
+    use elm_varctl,  only : use_dynroot
+    use elm_varctl,  only : use_hydrstress
     use RootBiophysMod      , only : init_vegrootfr
     !
     ! !ARGUMENTS:

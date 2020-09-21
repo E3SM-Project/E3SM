@@ -10,7 +10,7 @@ module dynLandunitAreaMod
   ! !USES:
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   use elm_varcon     , only : ispval, namel
   use landunit_varcon, only : isturb_hd, isturb_md, isturb_tbd
   use landunit_varcon, only : istsoil, istcrop, istice, istdlak, istwet, max_lunit 

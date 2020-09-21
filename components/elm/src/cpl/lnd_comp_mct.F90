@@ -44,8 +44,8 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
-    use clm_varctl       , only : inst_index, inst_suffix, inst_name
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
@@ -63,7 +63,7 @@ contains
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
     use spmdMod          , only : masterproc, npes, spmd_init
-    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -226,7 +226,7 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
+    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
                         single_column_in=single_column, scmlat_in=scmlat,       &
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
@@ -343,7 +343,7 @@ contains
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
-    use clm_varctl      ,  only : iulog
+    use elm_varctl      ,  only : iulog
     use clm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
     use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel

@@ -10,7 +10,7 @@ module controlMod
   !       Display the file in a browser to see it neatly formatted in html.
   !
   ! !USES:
-  use clm_varctl   
+  use elm_varctl   
   use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_nl_mod              , only: shr_nl_find_group_name
   use shr_const_mod           , only: SHR_CONST_CDAY
@@ -39,17 +39,17 @@ module controlMod
   use SurfaceAlbedoMod        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use elm_varcon              , only: h2osno_max
-  use clm_varctl              , only: use_dynroot
+  use elm_varctl              , only: use_dynroot
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
-  use clm_varctl              , only: nu_com, use_var_soil_thick
+  use elm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
-  use clm_varctl              , only: forest_fert_exp
-  use clm_varctl              , only: ECA_Pconst_RGspin
-  use clm_varctl              , only: NFIX_PTASE_plant
-  use clm_varctl              , only : use_pheno_flux_limiter
-  use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
-  use clm_varctl              , only: add_temperature, add_co2
-  use clm_varctl              , only: const_climate_hist
+  use elm_varctl              , only: forest_fert_exp
+  use elm_varctl              , only: ECA_Pconst_RGspin
+  use elm_varctl              , only: NFIX_PTASE_plant
+  use elm_varctl              , only : use_pheno_flux_limiter
+  use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
+  use elm_varctl              , only: add_temperature, add_co2
+  use elm_varctl              , only: const_climate_hist
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -371,7 +371,7 @@ contains
                    'to branch type and ONLY if driver is a startup type'// &
                    errMsg(__FILE__, __LINE__))
            end if
-           call clm_varctl_set( nsrest_in=override_nsrest )
+           call elm_varctl_set( nsrest_in=override_nsrest )
        end if
        
        if (maxpatch_glcmec > 0) then

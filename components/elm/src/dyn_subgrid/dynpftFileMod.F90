@@ -12,7 +12,7 @@ module dynpftFileMod
   use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
   use dynFileMod          , only : dyn_file_type
   use dynVarTimeInterpMod , only : dyn_var_time_interp_type
-  use clm_varctl          , only : iulog
+  use elm_varctl          , only : iulog
   use abortutils          , only : endrun
   use spmdMod             , only : masterproc, mpicom
   use elm_varcon          , only : grlnd, nameg

@@ -543,7 +543,7 @@ contains
       ! Return true if we should check weights
       !
       ! !USES:
-      use clm_varctl          , only : nsrest, nsrContinue, use_fates
+      use elm_varctl          , only : nsrest, nsrContinue, use_fates
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -589,7 +589,7 @@ contains
       !
       ! !USES:
       use landunit_varcon, only : istsoil
-      use clm_varctl, only : iulog
+      use elm_varctl, only : iulog
       !
       ! !ARGUMENTS:
       type(bounds_type), intent(in)    :: bounds ! bounds

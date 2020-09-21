@@ -317,7 +317,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
     use elm_varpar     , only : nlevsno, crop_prog, nlevsoi 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !

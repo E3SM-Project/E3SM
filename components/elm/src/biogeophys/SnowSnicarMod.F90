@@ -11,7 +11,7 @@ module SnowSnicarMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use clm_varctl      , only : iulog
+  use elm_varctl      , only : iulog
   use elm_varcon      , only : namec 
   use shr_const_mod   , only : SHR_CONST_RHOICE
   use abortutils      , only : endrun
@@ -1422,7 +1422,7 @@ contains
    subroutine SnowOptics_init( )
      
      use fileutils  , only : getfil
-     use CLM_varctl , only : fsnowoptics
+     use elm_varctl , only : fsnowoptics
      use spmdMod    , only : masterproc
      use ncdio_pio  , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
      use ncdio_pio  , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
@@ -1583,7 +1583,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine SnowAge_init( )
-     use CLM_varctl      , only : fsnowaging
+     use elm_varctl      , only : fsnowaging
      use fileutils       , only : getfil
      use spmdMod         , only : masterproc
      use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile

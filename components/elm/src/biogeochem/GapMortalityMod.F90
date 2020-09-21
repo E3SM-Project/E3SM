@@ -25,7 +25,7 @@ module GapMortalityMod
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
 
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com
 
   !
   implicit none
@@ -93,7 +93,7 @@ contains
     use clm_time_manager , only: get_days_per_year
     use elm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
-    use clm_varctl       , only: spinup_state, spinup_mortality_factor
+    use elm_varctl       , only: spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter

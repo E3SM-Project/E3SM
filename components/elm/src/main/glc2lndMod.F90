@@ -19,7 +19,7 @@ module glc2lndMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varpar     , only : maxpatch_glcmec
-  use clm_varctl     , only : iulog, glc_smb
+  use elm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp
@@ -230,7 +230,7 @@ contains
     ! glc_do_dynglacier is true
     !
     ! !USES:
-    use clm_varctl , only : glc_do_dynglacier
+    use elm_varctl , only : glc_do_dynglacier
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(inout) :: this

@@ -16,7 +16,7 @@ module PhosphorusDynamicsMod
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type  
   use elm_varpar          , only : nlevdecomp
-  use clm_varctl          , only : use_vertsoilc
+  use elm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use CNNitrogenStateType , only : nitrogenstate_type 
@@ -30,7 +30,7 @@ module PhosphorusDynamicsMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none

@@ -146,7 +146,7 @@ contains
   ! Read namelist for clm-pflotran interface
   !
   ! !USES:
-    use clm_varctl    , only : iulog
+    use elm_varctl    , only : iulog
     use spmdMod       , only : masterproc, mpicom
     use fileutils     , only : getavu, relavu, opnfil
     use clm_nlUtilsMod, only : find_nlgroup_name
@@ -371,7 +371,7 @@ contains
     ! initialize the pflotran iterface
     !
     ! !USES:
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     use GridcellType    , only : grc_pp
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
@@ -383,7 +383,7 @@ contains
     use clm_time_manager, only : get_nstep
     use elm_varcon      , only : dzsoi, zisoi
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp_full, ndecomp_pools
-    use clm_varctl      , only : pf_hmode, pf_tmode, pf_cmode, pf_frzmode,  &
+    use elm_varctl      , only : pf_hmode, pf_tmode, pf_cmode, pf_frzmode,  &
                                  initth_pf2clm, pf_clmnstep0,               &
                                  pf_surfaceflow
 
@@ -1077,7 +1077,7 @@ contains
     use spmdMod           , only : mpicom, masterproc, iam, npes
     use clm_time_manager  , only : get_step_size, get_nstep, nsstep, nestep,         &
                                    is_first_step, is_first_restart_step, calc_nestep
-    use clm_varctl        , only : pf_tmode, pf_hmode, pf_cmode,                     &
+    use elm_varctl        , only : pf_tmode, pf_hmode, pf_cmode,                     &
                                    pf_frzmode, pf_clmnstep0, initth_pf2clm
 
     !
@@ -1283,7 +1283,7 @@ contains
   ! finalizing pflotran runs and destroying objects
   !
   ! !USES:
-    use clm_varctl           , only : use_pflotran
+    use elm_varctl           , only : use_pflotran
 
     implicit none
 
@@ -1974,13 +1974,13 @@ contains
     use clm_time_manager    , only : get_nstep, is_first_step, is_first_restart_step
     use shr_const_mod       , only : SHR_CONST_G
     use ColumnType          , only : col_pp
-    use clm_varctl          , only : iulog
+    use elm_varctl          , only : iulog
     use elm_varcon          , only : denh2o, denice, tfrz
     use elm_varpar          , only : nlevgrnd
     use shr_infnan_mod      , only : shr_infnan_isnan
 
     use PFLOTRAN_Constants_module
-    use clm_varctl          , only : pf_frzmode
+    use elm_varctl          , only : pf_frzmode
 
   ! !ARGUMENTS:
     implicit none
@@ -2177,12 +2177,12 @@ contains
   !
   ! !USES:
     use ColumnType          , only : col_pp
-    use clm_varctl          , only : iulog
+    use elm_varctl          , only : iulog
     use elm_varcon          , only : denice
     use elm_varpar          , only : nlevgrnd
 
     use PFLOTRAN_Constants_module
-    use clm_varctl          , only : pf_frzmode
+    use elm_varctl          , only : pf_frzmode
 
   ! !ARGUMENTS:
     implicit none
@@ -2294,7 +2294,7 @@ contains
     use shr_const_mod   , only : SHR_CONST_G
 
     use clm_pflotran_interface_data
-    use clm_varctl      , only : pf_clmnstep0
+    use elm_varctl      , only : pf_clmnstep0
 
   ! !ARGUMENTS:
     implicit none
@@ -2677,7 +2677,7 @@ contains
     use shr_infnan_mod  , only : shr_infnan_isnan
 
     use clm_pflotran_interface_data
-    use clm_varctl      , only : pf_clmnstep0
+    use elm_varctl      , only : pf_clmnstep0
 
   ! !ARGUMENTS:
     implicit none
@@ -2873,7 +2873,7 @@ contains
 
   subroutine get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
     use ColumnType          , only : col_pp
-    use clm_varctl          , only : iulog
+    use elm_varctl          , only : iulog
     use elm_varpar          , only : ndecomp_pools, nlevdecomp_full
 
     implicit none
@@ -3035,7 +3035,7 @@ contains
     use ColumnType          , only : col_pp
     use clm_time_manager    , only : get_step_size, get_nstep,  is_first_step, is_first_restart_step
     use elm_varpar          , only : ndecomp_pools, nlevdecomp_full
-    use clm_varctl          , only : iulog, pf_hmode
+    use elm_varctl          , only : iulog, pf_hmode
 
   ! !ARGUMENTS:
     implicit none
@@ -3263,7 +3263,7 @@ contains
   ! !USES:
     use ColumnType          , only : col_pp
     use elm_varcon          , only : denh2o, denice
-    use clm_varctl          , only : pf_frzmode
+    use elm_varctl          , only : pf_frzmode
     use elm_varpar          , only : nlevgrnd
 
   ! !ARGUMENTS:
@@ -3644,10 +3644,10 @@ contains
   subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars
     use ColumnType              , only : col_pp
-    use clm_varctl              , only : iulog, use_fates
+    use elm_varctl              , only : iulog, use_fates
     use CNDecompCascadeConType  , only : decomp_cascade_con
     use elm_varpar              , only : ndecomp_pools, nlevdecomp_full
-    use clm_varctl              , only : pf_hmode
+    use elm_varctl              , only : pf_hmode
     use clm_time_manager        , only : get_step_size,get_nstep
 
     use elm_varcon              , only : dzsoi_decomp
@@ -3957,7 +3957,7 @@ contains
      use elm_varpar         , only : nlevdecomp_full
      use elm_varcon         , only : tfrz
 
-     use clm_varctl         , only : pf_tmode, pf_hmode, pf_frzmode
+     use elm_varctl         , only : pf_tmode, pf_hmode, pf_frzmode
 
      !
      implicit none
@@ -4428,7 +4428,7 @@ contains
   ! BUT it won't show where the error occurs in the first place, therefore it's hardly useful.
   !
   ! !USES:
-    use clm_varctl    , only : iulog
+    use elm_varctl    , only : iulog
     use spmdMod       , only : iam
 
     implicit none
@@ -4563,7 +4563,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size, get_nstep
-    use clm_varctl      , only : iulog, use_fates
+    use elm_varctl      , only : iulog, use_fates
     use elm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
@@ -4648,7 +4648,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size,get_nstep
-    use clm_varctl      , only : iulog, use_fates
+    use elm_varctl      , only : iulog, use_fates
     use elm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:

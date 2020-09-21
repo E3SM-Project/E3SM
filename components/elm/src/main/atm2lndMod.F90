@@ -13,7 +13,7 @@ module atm2lndMod
   use shr_megan_mod  , only : shr_megan_mechcomps_n
   use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog
+  use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
   use decompMod      , only : bounds_type
@@ -50,7 +50,7 @@ contains
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold
     use landunit_varcon , only : istice_mec 
-    use clm_varctl      , only : glcmec_downscale_rain_snow_convert
+    use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
     use QsatMod         , only : Qsat
     !
@@ -199,7 +199,7 @@ contains
     use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec 
     use elm_varcon      , only : lapse_glcmec
-    use clm_varctl      , only : glcmec_downscale_longwave
+    use elm_varctl      , only : glcmec_downscale_longwave
     !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds  

@@ -7,7 +7,7 @@ module VegetationPropertiesType
   use abortutils     , only : endrun
   use elm_varpar     , only : nlevdecomp
   use elm_varpar     , only : nsoilorder
-  use clm_varctl     , only : nu_com
+  use elm_varctl     , only : nu_com
   !
   implicit none
   save

@@ -7,7 +7,7 @@ module TemperatureType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use clm_varctl      , only : iulog
+  use elm_varctl      , only : iulog
   use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
   use elm_varcon      , only : spval
   use GridcellType    , only : grc_pp
@@ -254,7 +254,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : use_cn
+    use elm_varctl     , only : use_cn
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -302,7 +302,7 @@ contains
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon  , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon  , only : icol_shadewall, icol_road_perv
-    use clm_varctl     , only : iulog, use_vancouver, use_mexicocity
+    use elm_varctl     , only : iulog, use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(temperature_type)        :: this
@@ -403,7 +403,7 @@ contains
     ! !USES 
     use accumulMod       , only : init_accum_field, extract_accum_field
     use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : nsrest, nsrStartup
+    use elm_varctl       , only : nsrest, nsrStartup
     use abortutils       , only : endrun
     !
     ! !ARGUMENTS:

@@ -12,7 +12,7 @@ module dynConsBiogeochemMod
   use shr_log_mod              , only : errMsg => shr_log_errMsg
   use decompMod                , only : bounds_type
   use abortutils               , only : endrun
-  use clm_varctl               , only : iulog, use_c13, use_c14
+  use elm_varctl               , only : iulog, use_c13, use_c14
   use VegetationPropertiesType , only : veg_vp
   use CanopyStateType          , only : canopystate_type
   use PhotosynthesisType       , only : photosyns_type
@@ -1154,7 +1154,7 @@ contains
    ! !USES:
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
-   use clm_varctl              , only : use_lch4
+   use elm_varctl              , only : use_lch4
    !
    ! !ARGUMENTS:
    type(bounds_type)               , intent(in)    :: bounds

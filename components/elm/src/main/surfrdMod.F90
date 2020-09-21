@@ -12,8 +12,8 @@ module surfrdMod
   use elm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
   use elm_varcon      , only : grlnd
-  use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
-  use clm_varctl      , only : create_glacier_mec_landunit
+  use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
+  use elm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
@@ -141,7 +141,7 @@ contains
     use elm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
-    use clm_varctl, only : use_pflotran
+    use elm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 
@@ -549,7 +549,7 @@ contains
     !    o real % abundance PFTs (as a percent of vegetated area)
     !
     ! !USES:
-    use clm_varctl  , only : create_crop_landunit, firrig_data
+    use elm_varctl  , only : create_crop_landunit, firrig_data
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
     use clm_varsur  , only : wt_lunit, topo_glc_mec
@@ -921,7 +921,7 @@ contains
     use clm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
     use elm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
     use elm_varpar      , only : cft_lb, cft_ub
-    use clm_varctl      , only : create_crop_landunit
+    use elm_varctl      , only : create_crop_landunit
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: begg, endg
@@ -988,8 +988,8 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use clm_varctl      , only : create_crop_landunit, use_fates
-    use clm_varctl      , only : irrigate
+    use elm_varctl      , only : create_crop_landunit, use_fates
+    use elm_varctl      , only : irrigate
     use elm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
     use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft

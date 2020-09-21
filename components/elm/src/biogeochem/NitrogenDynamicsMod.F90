@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -30,7 +30,7 @@ module NitrogenDynamicsMod
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
  
   !
   implicit none

@@ -15,9 +15,9 @@ module initVerticalMod
   use elm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
   use elm_varpar     , only : toplev_equalspace, nlev_equalspace
   use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
-  use clm_varctl     , only : fsurdat, iulog, use_var_soil_thick
-  use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
-  use clm_varctl     , only : use_erosion
+  use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
+  use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
+  use elm_varctl     , only : use_erosion
   use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec

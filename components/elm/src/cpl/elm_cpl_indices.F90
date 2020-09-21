@@ -137,7 +137,7 @@ contains
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
-    use clm_varctl     , only: use_voc
+    use elm_varctl     , only: use_voc
     !
     ! !ARGUMENTS:
     implicit none

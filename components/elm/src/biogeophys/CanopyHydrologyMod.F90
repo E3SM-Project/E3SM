@@ -16,8 +16,8 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
-  use LandunitType      , only : lun_pp                
+  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
+  use LandunitType      , only : lun_pp
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
@@ -117,8 +117,8 @@ contains
      ! !USES:
      use elm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
-     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak 
-     use clm_varctl         , only : subgridflag
+     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
+     use elm_varctl         , only : subgridflag
      use elm_varpar         , only : nlevsoi,nlevsno
      use clm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type

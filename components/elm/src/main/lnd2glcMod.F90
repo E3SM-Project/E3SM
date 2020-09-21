@@ -20,7 +20,7 @@ module lnd2glcMod
   use decompMod       , only : get_proc_bounds, bounds_type
   use domainMod       , only : ldomain
   use elm_varpar      , only : maxpatch_glcmec
-  use clm_varctl      , only : iulog
+  use elm_varctl      , only : iulog
   use elm_varcon      , only : spval, tfrz, namec
   use column_varcon   , only : col_itype_to_icemec_class
   use landunit_varcon , only : istice_mec, istsoil

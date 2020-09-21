@@ -9,10 +9,10 @@ module elm_initializeMod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
   use abortutils       , only : endrun
-  use clm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
-  use clm_varctl       , only : create_glacier_mec_landunit, iulog
-  use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
-  use clm_varctl       , only : use_fates, use_betr
+  use elm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
+  use elm_varctl       , only : create_glacier_mec_landunit, iulog
+  use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
+  use elm_varctl       , only : use_fates, use_betr
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
   use perf_mod         , only : t_startf, t_stopf
@@ -36,7 +36,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
-  use clm_varctl             , only : do_budgets
+  use elm_varctl             , only : do_budgets
   !
   implicit none
   save
@@ -58,7 +58,7 @@ contains
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
@@ -71,7 +71,7 @@ contains
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn
-    use clm_varctl                , only: lateral_connectivity, domain_decomp_type
+    use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
     use SoilTemperatureMod        , only: init_soil_temperature
@@ -396,8 +396,8 @@ contains
     use elm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
-    use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
+    use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
+    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
     use clm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep 
@@ -433,7 +433,7 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    use clm_varctl                          , only : use_clm_interface, use_pflotran
+    use elm_varctl                          , only : use_clm_interface, use_pflotran
     use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
@@ -971,12 +971,12 @@ contains
     use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
     use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use clm_varctl               , only : use_vsfm, vsfm_use_dynamic_linesearch
-    use clm_varctl               , only : vsfm_include_seepage_bc, vsfm_satfunc_type
-    use clm_varctl               , only : vsfm_lateral_model_type
-    use clm_varctl               , only : use_petsc_thermal_model
-    use clm_varctl               , only : lateral_connectivity
-    use clm_varctl               , only : finidat
+    use elm_varctl               , only : use_vsfm, vsfm_use_dynamic_linesearch
+    use elm_varctl               , only : vsfm_include_seepage_bc, vsfm_satfunc_type
+    use elm_varctl               , only : vsfm_lateral_model_type
+    use elm_varctl               , only : use_petsc_thermal_model
+    use elm_varctl               , only : lateral_connectivity
+    use elm_varctl               , only : finidat
     use decompMod                , only : get_proc_clumps
     use mpp_varpar               , only : mpp_varpar_init
     use mpp_varcon               , only : mpp_varcon_init_landunit
@@ -1054,9 +1054,9 @@ contains
 #endif
     ! !USES:
     use spmdMod    , only : mpicom
-    use clm_varctl , only : use_vsfm
-    use clm_varctl , only : lateral_connectivity
-    use clm_varctl , only : use_petsc_thermal_model
+    use elm_varctl , only : use_vsfm
+    use elm_varctl , only : lateral_connectivity
+    use elm_varctl , only : use_petsc_thermal_model
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif

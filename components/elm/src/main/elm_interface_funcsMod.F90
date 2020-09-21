@@ -75,7 +75,7 @@ module elm_interface_funcsMod
 
   ! misc.
   use abortutils            , only : endrun
-  use clm_varctl            , only : nu_com
+  use elm_varctl            , only : nu_com
   !--------------------------------------------------------------------------------------
 
   implicit none
@@ -603,7 +603,7 @@ contains
   !
   ! !USES:
     use clm_time_manager      , only : get_curr_date
-    use clm_varctl            , only : spinup_state
+    use elm_varctl            , only : spinup_state
     use CNDecompCascadeConType, only : decomp_cascade_con
 
   ! !ARGUMENTS:
@@ -837,7 +837,7 @@ contains
            soilstate_vars, soilhydrology_vars)
 
     ! USES
-    use clm_varctl          , only : use_pflotran, pf_tmode, pf_hmode
+    use elm_varctl          , only : use_pflotran, pf_tmode, pf_hmode
 
     implicit none
 
@@ -1289,7 +1289,7 @@ contains
            phosphorusflux_vars, phosphorusstate_vars,             &
            ch4_vars)
     ! USES
-    use clm_varctl          , only : use_pflotran, pf_cmode
+    use elm_varctl          , only : use_pflotran, pf_cmode
 
     implicit none
 

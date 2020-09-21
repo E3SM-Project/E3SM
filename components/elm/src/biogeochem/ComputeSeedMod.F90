@@ -9,7 +9,7 @@ module ComputeSeedMod
   use shr_log_mod              , only : errMsg => shr_log_errMsg
   use decompMod                , only : bounds_type
   use elm_varcon               , only : c3_r2, c4_r2, c14ratio
-  use clm_varctl               , only : iulog
+  use elm_varctl               , only : iulog
   use abortutils               , only : endrun
   use SpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P

@@ -75,7 +75,7 @@ contains
     ! This also calls dynHarvest_interp for the initial time
     !
     ! !USES:
-    use clm_varctl            , only : use_cn
+    use elm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
@@ -130,7 +130,7 @@ contains
     ! year, with abrupt changes in the rate at annual boundaries.
     !
     ! !USES:
-    use clm_varctl     , only : use_cn
+    use elm_varctl     , only : use_cn
     use dynTimeInfoMod , only : time_info_type
     !
     ! !ARGUMENTS:

@@ -92,7 +92,7 @@ module subgridWeightsMod
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
-  use clm_varctl   , only : iulog, all_active
+  use elm_varctl   , only : iulog, all_active
   use elm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
   use GridcellType , only : grc_pp

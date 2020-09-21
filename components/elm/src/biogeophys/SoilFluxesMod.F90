@@ -10,7 +10,7 @@ module SoilFluxesMod
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
   use perf_mod		, only : t_startf, t_stopf
-  use clm_varctl	, only : iulog
+  use elm_varctl	, only : iulog
   use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type

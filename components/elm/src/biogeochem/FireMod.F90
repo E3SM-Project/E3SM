@@ -18,7 +18,7 @@ module FireMod
   use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : iulog
+  use elm_varctl             , only : iulog
   use elm_varpar             , only : nlevdecomp, ndecomp_pools
   use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
@@ -54,7 +54,7 @@ module FireMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use SharedParamsMod      , only : ParamsShareInst
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   !
   implicit none
   save
@@ -130,7 +130,7 @@ contains
     use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
     use elm_varpar           , only: max_patch_per_col
     use elm_varcon           , only: secspday
-    use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
+    use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
     use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
     use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
@@ -667,7 +667,7 @@ contains
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
    use elm_varpar           , only: max_patch_per_col
-   use clm_varctl           , only: spinup_state, spinup_mortality_factor
+   use elm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
    use elm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
@@ -1522,7 +1522,7 @@ contains
    ! Initialize data stream information for population density.
    !
    ! !USES:
-   use clm_varctl       , only : inst_name
+   use elm_varctl       , only : inst_name
    use clm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
@@ -1675,7 +1675,7 @@ subroutine lnfm_init( bounds )
   ! Initialize data stream information for Lightning.
   !
   ! !USES:
-  use clm_varctl       , only : inst_name
+  use elm_varctl       , only : inst_name
   use clm_time_manager , only : get_calendar
   use ncdio_pio        , only : pio_subsystem
   use shr_pio_mod      , only : shr_pio_getiotype

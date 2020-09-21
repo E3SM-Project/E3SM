@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog, use_vertsoilc, use_fates
+  use elm_varctl     , only : iulog, use_vertsoilc, use_fates
   use elm_varcon     , only : spval, ispval, dzsoi_decomp 
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -1725,8 +1725,8 @@ contains
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full, nvegwcs
     use landunit_varcon , only : max_lunit
-    use clm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
-    use clm_varctl      , only : version, hostname, username, conventions, source
+    use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
+    use elm_varctl      , only : version, hostname, username, conventions, source
     use domainMod       , only : ldomain
     use fileutils       , only : get_filename
     !
@@ -3370,7 +3370,7 @@ contains
     ! A new history file is used on a branch run.
     !
     ! !USES:
-    use clm_varctl      , only : nsrest, caseid, inst_suffix, nsrStartup, nsrBranch
+    use elm_varctl      , only : nsrest, caseid, inst_suffix, nsrStartup, nsrBranch
     use fileutils       , only : getfil
     use domainMod       , only : ldomain
     use elm_varpar      , only : nlevgrnd, nlevlak, numrad, nlevdecomp_full, nmonth
@@ -4226,7 +4226,7 @@ contains
      ! Determine history dataset filenames.
      !
      ! !USES:
-     use clm_varctl, only : caseid, inst_suffix
+     use elm_varctl, only : caseid, inst_suffix
      use clm_time_manager, only : get_curr_date, get_prev_date
      !
      ! !ARGUMENTS:
@@ -4837,7 +4837,7 @@ contains
     !
     ! !USES:
     use elm_varpar  , only : nlevdecomp_full, crop_prog
-    use clm_varctl  , only : iulog
+    use elm_varctl  , only : iulog
     use abortutils  , only : endrun
     use shr_log_mod , only : errMsg => shr_log_errMsg
     !

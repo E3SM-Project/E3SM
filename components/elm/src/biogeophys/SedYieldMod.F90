@@ -51,7 +51,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     use landunit_varcon , only : istcrop, istsoil
     use pftvarcon       , only : gcpsi, pftcc
     use pftvarcon       , only : nc4_grass

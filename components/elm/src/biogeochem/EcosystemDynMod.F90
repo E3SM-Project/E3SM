@@ -7,12 +7,12 @@ module EcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
-  use clm_varctl          , only : use_century_decomp
-  use clm_varctl          , only : use_erosion
+  use elm_varctl          , only : use_century_decomp
+  use elm_varctl          , only : use_erosion
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -45,10 +45,10 @@ module EcosystemDynMod
   use VegetationDataType  , only : veg_ps, veg_pf
   
   ! bgc interface & pflotran
-  use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use elm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use VerticalProfileMod   , only : decomp_vertprofiles
   use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
-  use clm_varctl          , only : nu_com, use_pheno_flux_limiter
+  use elm_varctl          , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
   !
   ! !PUBLIC TYPES:

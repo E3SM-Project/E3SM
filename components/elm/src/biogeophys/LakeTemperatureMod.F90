@@ -116,7 +116,7 @@ contains
     use clm_time_manager   , only : get_step_size
     use elm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
     use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
-    use clm_varctl         , only : iulog, use_lch4
+    use elm_varctl         , only : iulog, use_lch4
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds	  

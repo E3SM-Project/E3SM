@@ -11,11 +11,11 @@ module elm_driver
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
-  use clm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use clm_varctl             , only : use_erosion
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
+  use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
+  use elm_varctl             , only : use_erosion
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
@@ -152,15 +152,15 @@ module elm_driver
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_clm_interface
+  use elm_varctl             , only : use_clm_interface
   use elm_instMod            , only : clm_interface_data
   use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
-  use clm_varctl             , only : use_clm_bgc
+  use elm_varctl             , only : use_clm_bgc
   use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_clm2clm
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
-  use clm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
+  use elm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
   use elm_interface_funcsMod      , only : update_bgc_data_pf2elm, update_th_data_pf2elm
   use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
   use clm_interface_pflotranMod   , only : clm_pf_finalize
@@ -168,8 +168,8 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
-  use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
-  use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
+  use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
+  use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
 
   !
   ! !PUBLIC TYPES:

@@ -14,7 +14,7 @@ module SurfaceAlbedoMod
   use landunit_varcon   , only : istsoil, istcrop, istdlak
   use elm_varcon        , only : grlnd, namep
   use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
+  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, SNICAR_AD_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
@@ -203,7 +203,7 @@ contains
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
     use abortutils         , only : endrun
-    use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
+    use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
     use CLMFatesInterfaceMod, only : hlm_fates_interface_type
 
     !
@@ -1250,7 +1250,7 @@ contains
      ! !USES:
      use elm_varpar, only : numrad, nlevcan
      use elm_varcon, only : omegas, tfrz, betads, betais
-     use clm_varctl, only : iulog
+     use elm_varctl, only : iulog
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds           

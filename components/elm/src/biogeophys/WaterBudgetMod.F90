@@ -5,7 +5,7 @@ module WaterBudgetMod
   use shr_sys_mod       , only : shr_sys_abort
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use atm2lndType       , only : atm2lnd_type
   use lnd2atmType       , only : lnd2atm_type
   use WaterstateType    , only : waterstate_type

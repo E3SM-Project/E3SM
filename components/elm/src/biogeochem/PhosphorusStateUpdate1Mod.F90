@@ -8,7 +8,7 @@ module PhosphorusStateUpdate1Mod
   use clm_time_manager       , only : get_step_size
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, use_nitrif_denitrif
+  use elm_varctl             , only : iulog, use_nitrif_denitrif
   use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use soilorder_varcon       , only : smax,ks_sorption
@@ -20,16 +20,16 @@ module PhosphorusStateUpdate1Mod
   use VegetationType              , only : veg_pp
   use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : use_pflotran, pf_cmode
+  use elm_varctl             , only : nu_com
   ! forest fertilization experiment
   use clm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
-  use clm_varctl             , only : forest_fert_exp
-  use clm_varctl             , only : NFIX_PTASE_plant
+  use elm_varctl             , only : forest_fert_exp
+  use elm_varctl             , only : NFIX_PTASE_plant
   use decompMod              , only : bounds_type
   use elm_varcon             , only : dzsoi_decomp
-  use clm_varctl             , only : use_fates
+  use elm_varctl             , only : use_fates
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf

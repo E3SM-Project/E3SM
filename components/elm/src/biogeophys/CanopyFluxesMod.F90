@@ -13,8 +13,8 @@ module CanopyFluxesMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
-  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
-  use clm_varctl            , only : use_hydrstress
+  use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
+  use elm_varctl            , only : use_hydrstress
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig

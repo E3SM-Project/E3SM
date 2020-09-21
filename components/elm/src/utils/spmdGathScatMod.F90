@@ -15,7 +15,7 @@ module spmdGathScatMod
   use spmdMod
   use mct_mod
   use abortutils, only : endrun
-  use clm_varctl, only : iulog
+  use elm_varctl, only : iulog
   use perf_mod
 !
 ! !PUBLIC TYPES:

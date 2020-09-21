@@ -8,7 +8,7 @@ module CNNStateUpdate1BeTRMod
   use clm_time_manager       , only : get_step_size
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, use_nitrif_denitrif
+  use elm_varctl             , only : iulog, use_nitrif_denitrif
   use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use VegetationPropertiesType      , only : veg_vp
@@ -20,7 +20,7 @@ module CNNStateUpdate1BeTRMod
   use VegetationDataType     , only : veg_ns, veg_nf
   use tracer_varcon          , only : is_active_betr_bgc
   !! bgc interface & pflotran:
-  use clm_varctl             , only : use_pflotran, pf_cmode
+  use elm_varctl             , only : use_pflotran, pf_cmode
   !
   implicit none
   save

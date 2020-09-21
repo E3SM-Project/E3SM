@@ -19,7 +19,7 @@ module ncdio_pio
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use elm_varcon     , only : grlnd, nameg, namel, namec, namep
   use elm_varcon     , only : spval,ispval
-  use clm_varctl     , only : single_column, iulog
+  use elm_varctl     , only : single_column, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap
   use perf_mod       , only : t_startf, t_stopf
@@ -168,7 +168,7 @@ contains
     !
     ! !USES:
     use shr_pio_mod     , only : shr_pio_getiosys, shr_pio_getiotype
-    use clm_varctl      , only : inst_name
+    use elm_varctl      , only : inst_name
     !-----------------------------------------------------------------------
 
     PIO_subsystem => shr_pio_getiosys(inst_name)
@@ -1961,7 +1961,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     ! Read/Write initial data from/to netCDF instantaneous initial data file 
     !
     ! !USES:
-    use clm_varctl,     only: scmlon,scmlat,single_column
+    use elm_varctl,     only: scmlon,scmlat,single_column
     use shr_scam_mod,   only: shr_scam_getCloseLatLon
     use shr_string_mod, only: shr_string_toLower
     !

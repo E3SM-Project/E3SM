@@ -5,7 +5,7 @@ module ExternalModelBaseType
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
   use decompMod                    , only : bounds_type
   use EMI_DataMod, only : emi_data_list, emi_data
-  use clm_varctl                   , only : iulog
+  use elm_varctl                   , only : iulog
 
   type, public :: em_base_type
    contains

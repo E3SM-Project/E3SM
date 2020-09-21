@@ -50,7 +50,7 @@ contains
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use clm_varctl          , only : use_lch4
+    use elm_varctl          , only : use_lch4
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit

@@ -16,7 +16,7 @@ module lnd_comp_esmf
   use abortutils        , only : endrun
   use domainMod         , only : ldomain
   use decompMod         , only : ldecomp, bounds_type, get_proc_bounds
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
   use clm_cpl_indices
   use lnd_import_export
@@ -79,9 +79,9 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
-    use clm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, noland
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use spmdMod          , only : masterproc, spmd_init
@@ -261,7 +261,7 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    call clm_varctl_set(                                         &
+    call elm_varctl_set(                                         &
          caseid_in=caseid, ctitle_in=ctitle,                     &
          brnch_retain_casename_in=brnch_retain_casename,         &
          single_column_in=single_column, scmlat_in=scmlat,       &

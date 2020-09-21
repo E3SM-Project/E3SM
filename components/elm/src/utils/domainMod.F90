@@ -11,7 +11,7 @@ module domainMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use clm_varctl  , only : iulog
+  use elm_varctl  , only : iulog
 !
 ! !PUBLIC TYPES:
   implicit none

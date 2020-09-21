@@ -9,7 +9,7 @@ module NitrogenStateUpdate2Mod
   use clm_time_manager    , only : get_step_size
   use elm_varpar          , only : nlevsoi, nlevdecomp
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl          , only : iulog
+  use elm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
   use ColumnDataType      , only : col_ns, col_nf
@@ -17,7 +17,7 @@ module NitrogenStateUpdate2Mod
   use VegetationDataType  , only : veg_ns, veg_nf
   use pftvarcon           , only : npcropmin
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
+  use elm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save

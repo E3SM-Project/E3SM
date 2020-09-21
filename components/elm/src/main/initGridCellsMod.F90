@@ -12,7 +12,7 @@ module initGridCellsMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc,iam
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   use elm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc_pp
@@ -55,7 +55,7 @@ contains
     use topounit_varcon   , only : max_topounits
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
-    use clm_varctl        , only : create_glacier_mec_landunit
+    use elm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
@@ -402,7 +402,7 @@ contains
     use clm_varsur      , only : wt_lunit, wt_cft
     use landunit_varcon , only : istcrop, istsoil
     use subgridMod      , only : subgrid_get_topounitinfo
-    use clm_varctl      , only : create_crop_landunit
+    use elm_varctl      , only : create_crop_landunit
     use elm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
     !
     ! !ARGUMENTS:

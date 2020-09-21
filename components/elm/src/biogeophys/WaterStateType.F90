@@ -10,7 +10,7 @@ module WaterstateType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
-  use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
+  use elm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
                               use_hydrstress
   use elm_varpar     , only : nlevgrnd, nlevurb, nlevsno 
   use elm_varcon     , only : spval
@@ -305,8 +305,8 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varctl     , only : hist_wrtch4diag
+    use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use elm_varctl     , only : hist_wrtch4diag
     use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal, no_snow_zero
     !
@@ -361,7 +361,7 @@ contains
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use elm_varcon      , only : denice, denh2o, spval, sb, bdsno 
     use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
-    use clm_varctl      , only : fsurdat, iulog
+    use elm_varctl      , only : fsurdat, iulog
     use spmdMod         , only : masterproc
     use abortutils      , only : endrun
     use fileutils       , only : getfil
@@ -494,7 +494,7 @@ contains
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step
-    use clm_varctl       , only : bound_h2osoi
+    use elm_varctl       , only : bound_h2osoi
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
     use subgridAveMod    , only : c2g

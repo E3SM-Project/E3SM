@@ -17,7 +17,7 @@ module CH4Mod
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
   use clm_time_manager   , only : get_step_size, get_nstep
-  use clm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
+  use elm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
   use SharedParamsMod  , only : ParamsShareInst
@@ -322,7 +322,7 @@ contains
     !
     ! !USES:
     use elm_varpar , only : nlevgrnd, nlevdecomp
-    use clm_varctl , only : hist_wrtch4diag
+    use elm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
     use CH4varcon  , only : allowlakeprod
     !
@@ -678,7 +678,7 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
     use landunit_varcon , only : istsoil, istdlak, istcrop
-    use clm_varctl      , only : iulog, fsurdat
+    use elm_varctl      , only : iulog, fsurdat
     use CH4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
     use spmdMod         , only : masterproc
     use fileutils       , only : getfil
@@ -1899,7 +1899,7 @@ contains
     !
     ! !USES:
     use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
-    use clm_varctl         , only: anoxia
+    use elm_varctl         , only: anoxia
     use elm_varpar         , only: nlevdecomp, nlevdecomp_full
     use SharedParamsMod  , only: nlev_soildecomp_standard
     use pftvarcon          , only: noveg

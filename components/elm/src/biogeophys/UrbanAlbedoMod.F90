@@ -13,7 +13,7 @@ module UrbanAlbedoMod
   use decompMod         , only : bounds_type
   use elm_varpar        , only : numrad
   use elm_varcon        , only : isecspday, degpsec, namel
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use abortutils        , only : endrun  
   use UrbanParamsType   , only : urbanparams_type
   use WaterstateType    , only : waterstate_type

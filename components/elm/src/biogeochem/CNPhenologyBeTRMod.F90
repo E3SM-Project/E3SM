@@ -14,7 +14,7 @@ module CNPhenologyBeTRMod
   use shr_sys_mod         , only : shr_sys_flush
   use decompMod           , only : bounds_type
   use elm_varpar          , only : numpft
-  use clm_varctl          , only : iulog
+  use elm_varctl          , only : iulog
   use elm_varcon          , only : tfrz
   use abortutils          , only : endrun
   use CanopyStateType     , only : canopystate_type
@@ -30,7 +30,7 @@ module CNPhenologyBeTRMod
   use WaterstateType      , only : waterstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com
   use CNBeTRIndicatorMod
   use GridcellType        , only : grc_pp
   use ColumnType          , only : col_pp

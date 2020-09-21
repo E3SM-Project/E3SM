@@ -18,7 +18,7 @@ module SnowHydrologyMod
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
-  use clm_varctl      , only : iulog
+  use elm_varctl      , only : iulog
   use elm_varcon      , only : namec
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
@@ -102,7 +102,7 @@ contains
     use landunit_varcon   , only : istsoil
     use clm_time_manager  , only : get_step_size
     use AerosolMod        , only : AerosolFluxes
-    use clm_varctl        , only : use_vsfm
+    use elm_varctl        , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in)    :: bounds            
@@ -527,7 +527,7 @@ contains
      use clm_time_manager, only : get_step_size
      use elm_varcon      , only : denice, denh2o, tfrz, rpi
      use landunit_varcon , only : istice_mec, istdlak, istsoil, istcrop
-     use clm_varctl      , only : subgridflag
+     use elm_varctl      , only : subgridflag
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in) :: bounds          

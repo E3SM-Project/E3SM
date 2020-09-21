@@ -12,9 +12,9 @@ module CarbonStateUpdate1Mod
   use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varcon              , only : dzsoi_decomp
-  use clm_varctl              , only : nu_com
-  use clm_varctl              , only : use_pflotran, pf_cmode, use_fates
-  use clm_varctl              , only : use_c13, use_c14
+  use elm_varctl              , only : nu_com
+  use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
+  use elm_varctl              , only : use_c13, use_c14
   use pftvarcon               , only : npcropmin, nc3crop
   use CNDecompCascadeConType  , only : decomp_cascade_type
   use CNStateType             , only : cnstate_type

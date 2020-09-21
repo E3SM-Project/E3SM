@@ -9,8 +9,8 @@ module CNAllocationBeTRMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use elm_varcon          , only : dzsoi_decomp
-  use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
-  use clm_varctl          , only : nyears_ad_carbon_only
+  use elm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
+  use elm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
@@ -34,7 +34,7 @@ module CNAllocationBeTRMod
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   
   ! bgc interface & pflotran module switches
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use PlantMicKineticsMod , only : PlantMicKinetics_type
@@ -103,9 +103,9 @@ contains
     use elm_varcon      , only: secspday
     use clm_time_manager, only: get_step_size, get_curr_date
     use elm_varpar      , only: crop_prog
-    use clm_varctl      , only: iulog, cnallocate_carbon_only_set
-    use clm_varctl      , only: cnallocate_carbonnitrogen_only_set
-    use clm_varctl      , only: cnallocate_carbonphosphorus_only_set
+    use elm_varctl      , only: iulog, cnallocate_carbon_only_set
+    use elm_varctl      , only: cnallocate_carbonnitrogen_only_set
+    use elm_varctl      , only: cnallocate_carbonphosphorus_only_set
     use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
     use elm_varpar      , only: nlevdecomp
     !
@@ -244,13 +244,13 @@ contains
     !! PHASE-1 of CNAllocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use elm_varpar       , only: nlevdecomp
     use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
-    use clm_varctl       , only: cnallocate_carbon_only_set
+    use elm_varctl       , only: cnallocate_carbon_only_set
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size, get_curr_date
     !
@@ -1103,7 +1103,7 @@ contains
 
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
 !    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
 !    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean

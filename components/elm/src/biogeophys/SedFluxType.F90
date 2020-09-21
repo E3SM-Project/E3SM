@@ -150,7 +150,7 @@ contains
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use elm_varcon     , only : grlnd
-    use clm_varctl     , only : fsurdat
+    use elm_varctl     , only : fsurdat
     use fileutils      , only : getfil
     use ncdio_pio      , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
     !

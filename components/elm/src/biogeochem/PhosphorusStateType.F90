@@ -9,8 +9,8 @@ module PhosphorusStateType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop, istsoil 
-  use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
-  use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
+  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
+  use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin, nstor
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -20,7 +20,7 @@ module PhosphorusStateType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  use clm_varctl             , only : nu_com, use_crop
+  use elm_varctl             , only : nu_com, use_crop
   ! soil phosphorus initialization Qing Z. 2017
   use pftvarcon              , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon       , only : smax, ks_sorption
@@ -314,7 +314,7 @@ contains
     ! !USES:
     use shr_infnan_mod      , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager    , only : is_restart, get_nstep
-    use clm_varctl          , only : spinup_mortality_factor
+    use elm_varctl          , only : spinup_mortality_factor
     use CNStateType         , only : cnstate_type
     use restUtilMod
     use ncdio_pio
@@ -406,7 +406,7 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use clm_varctl    , only: use_nitrif_denitrif
+    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     !
     ! !ARGUMENTS:

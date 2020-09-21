@@ -18,7 +18,7 @@ module DUSTMod
   use elm_varpar           , only : dst_src_nbr, ndst, sz_nbr
   use elm_varcon           , only : grav, spval
   use landunit_varcon      , only : istcrop, istice_mec, istsoil
-  use clm_varctl           , only : iulog
+  use elm_varctl           , only : iulog
   use abortutils           , only : endrun
   use subgridAveMod        , only : p2l_1d
   use decompMod            , only : bounds_type

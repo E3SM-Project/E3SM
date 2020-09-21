@@ -158,8 +158,8 @@ contains
     ! Initialize time constant and time varying module variables
     !
     ! !USES:
-    use clm_varctl , only : fsurdat
-    use clm_varctl , only : iulog
+    use elm_varctl , only : fsurdat
+    use elm_varctl , only : iulog
     use elm_varpar , only : nlevlak
     use elm_varcon , only : tkwat 
     use fileutils  , only : getfil

@@ -13,7 +13,7 @@ module SoilTemperatureMod
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use perf_mod          , only : t_startf, t_stopf
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use UrbanParamsType   , only : urbanparams_type  
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -124,7 +124,7 @@ contains
     !DESCRIPTION
     !  Initializes the soil tempreature model
     !
-    use clm_varctl, only : use_petsc_thermal_model
+    use elm_varctl, only : use_petsc_thermal_model
     ! !ARGUMENTS:
 
     if (.not.use_petsc_thermal_model) then
@@ -162,7 +162,7 @@ contains
     ! !USES:
     use clm_time_manager         , only : get_step_size
     use elm_varpar               , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl               , only : iulog
+    use elm_varctl               , only : iulog
     use elm_varcon               , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon          , only : istice, istice_mec, istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -716,7 +716,7 @@ contains
     !
     ! !USES:
     use elm_varpar       , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl       , only : iulog
+    use elm_varctl       , only : iulog
     use elm_varcon       , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
     use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
@@ -846,7 +846,7 @@ end subroutine SolveTemperature
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                   
@@ -1074,7 +1074,7 @@ end subroutine SolveTemperature
     use clm_time_manager , only : get_step_size
     use elm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
     use elm_varpar       , only : nlevsno, nlevgrnd
-    use clm_varctl       , only : iulog
+    use elm_varctl       , only : iulog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                         
@@ -1301,7 +1301,7 @@ end subroutine SolveTemperature
     ! !USES:
     use clm_time_manager , only : get_step_size
     use elm_varpar       , only : nlevsno, nlevgrnd,nlevurb
-    use clm_varctl       , only : iulog
+    use elm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use landunit_varcon  , only : istsoil, istcrop, istice_mec

@@ -7,14 +7,14 @@ module CNNitrogenFluxType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
-  use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -947,7 +947,7 @@ contains
     use restUtilMod
     use ncdio_pio
     ! pflotran
-!    use clm_varctl, only : use_pflotran, pf_cmode, pf_hmode
+!    use elm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -1021,7 +1021,7 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use clm_varctl    , only: use_nitrif_denitrif
+    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only : npcropmin 
     use tracer_varcon , only: is_active_betr_bgc
@@ -1058,7 +1058,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
    use elm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 
-!   use clm_varctl    , only: pf_hmode
+!   use elm_varctl    , only: pf_hmode
 !
 ! !ARGUMENTS:
    implicit none

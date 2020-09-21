@@ -10,7 +10,7 @@ module SurfaceResistanceMod
   ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_const_mod , only : SHR_CONST_TKFRZ
-  use clm_varctl    , only : iulog
+  use elm_varctl    , only : iulog
   use SoilStateType , only : soilstate_type
   use WaterStateType, only : waterstate_type
   use ColumnDataType, only : col_ws  
@@ -106,7 +106,7 @@ contains
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col_pp
      use LandunitType    , only : lun_pp
-     use clm_varctl      , only : use_vsfm
+     use elm_varctl      , only : use_vsfm
      !
      implicit none
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   

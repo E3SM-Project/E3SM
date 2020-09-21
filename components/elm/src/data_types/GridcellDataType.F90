@@ -9,7 +9,7 @@ module GridcellDataType
   use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
   use elm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon        , only : spval, ispval
-  use clm_varctl        , only : use_fates
+  use elm_varctl        , only : use_fates
   use histFileMod       , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio         , only : file_desc_t, ncd_double
   use decompMod         , only : bounds_type

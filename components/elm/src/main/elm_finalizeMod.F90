@@ -27,7 +27,7 @@ contains
 #include <petsc/finclude/petsc.h>
 #endif
     ! !USES:
-    use clm_varctl             , only : use_vsfm
+    use elm_varctl             , only : use_vsfm
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif

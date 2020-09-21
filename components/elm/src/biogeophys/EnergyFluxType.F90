@@ -277,7 +277,7 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use elm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
-    use clm_varctl     , only : use_cn
+    use elm_varctl     , only : use_cn
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -325,7 +325,7 @@ contains
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon   , only : icol_shadewall, icol_road_perv
-    use clm_varctl      , only : iulog, use_vancouver, use_mexicocity
+    use elm_varctl      , only : iulog, use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(energyflux_type)         :: this

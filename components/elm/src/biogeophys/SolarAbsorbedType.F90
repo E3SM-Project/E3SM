@@ -143,7 +143,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl    , only : use_snicar_frc 
+    use elm_varctl    , only : use_snicar_frc 
     use elm_varpar    , only : nlevsno
     use histFileMod   , only : hist_addfld1d, hist_addfld2d
     use histFileMod   , only : no_snow_normal
@@ -282,7 +282,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : shr_infnan_isnan
-    use clm_varctl     , only : use_snicar_frc, iulog 
+    use elm_varctl     , only : use_snicar_frc, iulog 
     use spmdMod        , only : masterproc
     use abortutils     , only : endrun
     use ncdio_pio      , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen

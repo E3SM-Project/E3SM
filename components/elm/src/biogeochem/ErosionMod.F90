@@ -44,7 +44,7 @@ contains
     ! Calculate erosion introduced soil C, N, P fluxes 
     !
     ! !USES:
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     use spmdMod         , only : masterproc
     !
     ! !ARGUMENTS:

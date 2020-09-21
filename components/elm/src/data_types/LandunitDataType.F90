@@ -9,7 +9,7 @@ module LandunitDataType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon     , only : spval, ispval
-  use clm_varctl     , only : use_vancouver, use_mexicocity
+  use elm_varctl     , only : use_vancouver, use_mexicocity
   use histFileMod    , only : hist_addfld1d
   use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type

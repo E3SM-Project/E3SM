@@ -9,7 +9,7 @@ module ExternalModelInterfaceMod
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
   use decompMod                             , only : bounds_type, get_proc_clumps
   use abortutils                            , only : endrun
-  use clm_varctl                            , only : iulog
+  use elm_varctl                            , only : iulog
   use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
@@ -74,14 +74,14 @@ contains
     ! Determine which EMs are active
     !
     ! !USES:
-    use clm_varctl, only : use_fates
+    use elm_varctl, only : use_fates
 #ifndef FATES_VIA_EMI
-    use clm_varctl, only : use_betr
-    use clm_varctl, only : use_pflotran
-    use clm_varctl, only : use_vsfm
+    use elm_varctl, only : use_betr
+    use elm_varctl, only : use_pflotran
+    use elm_varctl, only : use_vsfm
 #endif
-    use clm_varctl, only : use_petsc_thermal_model
-    use clm_varctl, only : use_em_stub
+    use elm_varctl, only : use_petsc_thermal_model
+    use elm_varctl, only : use_em_stub
     !
     implicit none
     !

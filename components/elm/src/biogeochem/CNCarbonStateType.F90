@@ -9,7 +9,7 @@ module CNCarbonStateType
   use elm_varpar             , only : nlevdecomp_full, crop_prog, nlevdecomp
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop 
-  use clm_varctl             , only : iulog, use_vertsoilc, spinup_state 
+  use elm_varctl             , only : iulog, use_vertsoilc, spinup_state 
   use decompMod              , only : bounds_type
   use CNStateType            , only : cnstate_type
   use pftvarcon              , only : npcropmin
@@ -20,13 +20,13 @@ module CNCarbonStateType
   use subgridAveMod          , only : p2c
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use clm_varctl             , only : nu_com, use_fates, use_crop
+  use elm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
   use SpeciesMod           , only : species_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
 
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:
@@ -296,7 +296,7 @@ contains
     ! !USES:
     use elm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
     use elm_varpar , only : nlevdecomp, nlevdecomp_full, nlevgrnd
-    use clm_varctl , only : use_c13, use_c14
+    use elm_varctl , only : use_c13, use_c14
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
     !
     ! !ARGUMENTS:
@@ -628,7 +628,7 @@ contains
     use shr_const_mod    , only : SHR_CONST_PDB
     use clm_time_manager , only : is_restart, get_nstep
     use elm_varcon       , only : c13ratio, c14ratio
-    use clm_varctl       , only : spinup_mortality_factor, spinup_state
+    use elm_varctl       , only : spinup_mortality_factor, spinup_state
 
     use restUtilMod
     use ncdio_pio
@@ -810,7 +810,7 @@ contains
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
-    use clm_varctl       , only: iulog
+    use elm_varctl       , only: iulog
     use clm_time_manager , only: get_step_size
     use elm_varcon       , only: secspday
     use elm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full

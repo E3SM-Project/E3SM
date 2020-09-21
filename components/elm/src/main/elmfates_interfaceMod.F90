@@ -42,19 +42,19 @@ module CLMFatesInterfaceMod
    use EnergyFluxType    , only : energyflux_type
 
    use SoilStateType     , only : soilstate_type 
-   use clm_varctl        , only : iulog
-   use clm_varctl        , only : use_fates
-   use clm_varctl        , only : use_vertsoilc 
-   use clm_varctl        , only : fates_spitfire_mode
-   use clm_varctl        , only : fates_parteh_mode
-   use clm_varctl        , only : use_fates_planthydro
-   use clm_varctl        , only : use_fates_cohort_age_tracking
-   use clm_varctl        , only : use_fates_ed_st3
-   use clm_varctl        , only : use_fates_ed_prescribed_phys
-   use clm_varctl        , only : use_fates_logging
-   use clm_varctl        , only : use_fates_inventory_init
-   use clm_varctl        , only : use_fates_fixed_biogeog
-   use clm_varctl        , only : fates_inventory_ctrl_filename
+   use elm_varctl        , only : iulog
+   use elm_varctl        , only : use_fates
+   use elm_varctl        , only : use_vertsoilc 
+   use elm_varctl        , only : fates_spitfire_mode
+   use elm_varctl        , only : fates_parteh_mode
+   use elm_varctl        , only : use_fates_planthydro
+   use elm_varctl        , only : use_fates_cohort_age_tracking
+   use elm_varctl        , only : use_fates_ed_st3
+   use elm_varctl        , only : use_fates_ed_prescribed_phys
+   use elm_varctl        , only : use_fates_logging
+   use elm_varctl        , only : use_fates_inventory_init
+   use elm_varctl        , only : use_fates_fixed_biogeog
+   use elm_varctl        , only : fates_inventory_ctrl_filename
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval 
    use elm_varcon        , only : denice
@@ -1731,7 +1731,7 @@ contains
     use abortutils        , only : endrun
     use decompMod         , only : bounds_type
     use elm_varcon        , only : rgas, tfrz, namep  
-    use clm_varctl        , only : iulog
+    use elm_varctl        , only : iulog
     use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
     use EDTypesMod        , only : dinc_ed

@@ -10,7 +10,7 @@ module initSubgridMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   use elm_varcon     , only : namep, namec, namel, namet
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc_pp                

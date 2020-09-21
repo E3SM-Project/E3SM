@@ -16,7 +16,7 @@ module CanopyTemperatureMod
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
   use abortutils           , only : endrun
-  use clm_varctl           , only : iulog, use_fates
+  use elm_varctl           , only : iulog, use_fates
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
   use CLMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress

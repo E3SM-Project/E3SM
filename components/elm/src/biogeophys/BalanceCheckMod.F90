@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use clm_varctl         , only : iulog, use_var_soil_thick
+  use elm_varctl         , only : iulog, use_var_soil_thick
   use elm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -168,7 +168,7 @@ contains
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
-     use clm_varctl        , only : create_glacier_mec_landunit
+     use elm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
      use elm_initializeMod , only : surfalb_vars
      use domainMod         , only : ldomain
@@ -862,7 +862,7 @@ contains
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
-     use clm_varctl        , only : create_glacier_mec_landunit
+     use elm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
      use elm_initializeMod , only : surfalb_vars
      use CanopyStateType   , only : canopystate_type

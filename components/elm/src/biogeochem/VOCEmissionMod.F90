@@ -7,7 +7,7 @@ module VOCEmissionMod
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use clm_varctl         , only : iulog
+  use elm_varctl         , only : iulog
   use elm_varpar         , only : numpft, nlevcan
   use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
   use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
@@ -304,7 +304,7 @@ contains
     !
     ! !USES
     use ncdio_pio
-    use clm_varctl, only : fsurdat
+    use elm_varctl, only : fsurdat
     !
     ! !ARGUMENTS:
     class(vocemis_type) :: this
@@ -1011,7 +1011,7 @@ contains
     ! Author: Colette L. Heald (11/30/11)
     !
     ! !USES:
-    use clm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
+    use elm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
     !
     ! !ARGUMENTS:
     implicit none

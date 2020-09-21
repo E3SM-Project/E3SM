@@ -45,7 +45,7 @@ contains
     !
     ! !USES:
     use elm_varcon, only : vkc
-    use clm_varctl, only : iulog
+    use elm_varctl, only : iulog
     !
     ! !ARGUMENTS:
     integer  , intent(in)    :: lbn, ubn                 ! pft/landunit array bounds

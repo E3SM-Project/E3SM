@@ -13,7 +13,7 @@ module CarbonStateUpdate2Mod
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
   use pftvarcon        , only : npcropmin
-  use clm_varctl       , only : use_pflotran, pf_cmode
+  use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp   
   use tracer_varcon    , only : is_active_betr_bgc
   use VegetationType        , only : veg_pp

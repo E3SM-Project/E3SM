@@ -1,4 +1,4 @@
-module clm_varctl
+module elm_varctl
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -10,7 +10,7 @@ module clm_varctl
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
-  public :: clm_varctl_set    ! Set variables
+  public :: elm_varctl_set    ! Set variables
   public :: cnallocate_carbon_only_set
   public :: cnallocate_carbon_only
   public :: cnallocate_carbonnitrogen_only_set
@@ -445,7 +445,7 @@ module clm_varctl
 contains
 
   !---------------------------------------------------------------------------
-  subroutine clm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
+  subroutine elm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
        single_column_in, scmlat_in, scmlon_in, nsrest_in, &
        version_in, hostname_in, username_in)
     !
@@ -481,7 +481,7 @@ contains
     if ( present(username_in     ) ) username      = username_in
     if ( present(hostname_in     ) ) hostname      = hostname_in
 
-  end subroutine clm_varctl_set
+  end subroutine elm_varctl_set
 
   ! Set module carbon_only flag
   subroutine cnallocate_carbon_only_set(carbon_only_in)
@@ -532,4 +532,4 @@ contains
     endif
   end function get_carbontag
   
-end module clm_varctl
+end module elm_varctl

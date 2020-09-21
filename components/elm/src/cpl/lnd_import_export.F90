@@ -25,10 +25,10 @@ contains
     ! Convert the input data from the coupler to the land model 
     !
     ! !USES:
-    use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
+    use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
-    use clm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
-    use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
+    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
+    use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -1312,7 +1312,7 @@ contains
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use clm_varctl         , only : iulog, create_glacier_mec_landunit
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit
     use clm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep

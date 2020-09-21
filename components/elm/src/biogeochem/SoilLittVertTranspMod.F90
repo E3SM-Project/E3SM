@@ -5,7 +5,7 @@ module SoilLittVertTranspMod
   !
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
+  use elm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
   use elm_varcon             , only : secspday
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
@@ -18,7 +18,7 @@ module SoilLittVertTranspMod
   use CNNitrogenStateType    , only : nitrogenstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType         , only : col_ns, col_nf, col_ps, col_pf

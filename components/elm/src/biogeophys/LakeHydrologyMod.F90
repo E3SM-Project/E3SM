@@ -73,7 +73,7 @@ contains
     ! !USES:
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers

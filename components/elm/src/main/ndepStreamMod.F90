@@ -15,7 +15,7 @@ module ndepStreamMod
   use shr_mct_mod
   use mct_mod
   use spmdMod     , only: mpicom, masterproc, comp_id, iam
-  use clm_varctl  , only: iulog
+  use elm_varctl  , only: iulog
   use controlMod  , only: NLFilename
   use abortutils  , only: endrun
   use fileutils   , only: getavu, relavu
@@ -48,7 +48,7 @@ contains
    ! Initialize data stream information.  
    !
    ! Uses:
-   use clm_varctl       , only : inst_name
+   use elm_varctl       , only : inst_name
    use clm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype

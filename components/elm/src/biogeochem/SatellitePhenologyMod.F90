@@ -15,8 +15,8 @@ module SatellitePhenologyMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use clm_varctl      , only : scmlat,scmlon,single_column
-  use clm_varctl      , only : iulog, use_lai_streams
+  use elm_varctl      , only : scmlat,scmlon,single_column
+  use elm_varctl      , only : iulog, use_lai_streams
   use elm_varcon      , only : grlnd
   use controlMod      , only : NLFilename
   use decompMod       , only : gsmap_lnd_gdc2glo
@@ -72,7 +72,7 @@ contains
     !
     !
     ! !USES:
-    use clm_varctl       , only : inst_name
+    use elm_varctl       , only : inst_name
     use clm_time_manager , only : get_calendar
     use ncdio_pio        , only : pio_subsystem
     use shr_pio_mod      , only : shr_pio_getiotype
@@ -404,7 +404,7 @@ contains
     ! Determine if 2 new months of data are to be read.
     !
     ! !USES:
-    use clm_varctl      , only : fsurdat
+    use elm_varctl      , only : fsurdat
     use clm_time_manager, only : get_curr_date, get_step_size, get_nstep
     !
     ! !ARGUMENTS:
@@ -462,7 +462,7 @@ contains
     use pftvarcon   , only : noveg
     use domainMod   , only : ldomain
     use fileutils   , only : getfil
-    use clm_varctl  , only : fsurdat
+    use elm_varctl  , only : fsurdat
     use shr_scam_mod, only : shr_scam_getCloseLatLon
     !
     ! !ARGUMENTS:

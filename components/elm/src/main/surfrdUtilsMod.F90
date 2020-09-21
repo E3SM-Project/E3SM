@@ -7,7 +7,7 @@ module surfrdUtilsMod
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use clm_varctl   , only : iulog
+  use elm_varctl   , only : iulog
   use abortutils   , only : endrun
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use spmdMod      , only : masterproc
@@ -197,7 +197,7 @@ contains
     ! Should only be called if using prognostic crops - otherwise, wt_cft is meaningless
     !
     ! !USES:
-    use clm_varctl , only : irrigate
+    use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
     use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoclmpft
     !

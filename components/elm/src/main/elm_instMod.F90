@@ -5,7 +5,7 @@ module elm_instMod
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
   use decompMod                  , only : bounds_type, get_proc_bounds
-  use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
+  use elm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -249,7 +249,7 @@ contains
     use elm_varcon                        , only : h2osno_max, bdsno
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
-    use clm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
+    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil

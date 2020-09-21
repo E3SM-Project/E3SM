@@ -10,9 +10,9 @@ module pftvarcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use clm_varctl  , only : iulog, use_vertsoilc
+  use elm_varctl  , only : iulog, use_vertsoilc
   use elm_varpar  , only : nlevdecomp_full, nsoilorder
-  use clm_varctl  , only : nu_com
+  use elm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -289,8 +289,8 @@ contains
     use fileutils ,  only : getfil
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl,  only : paramfile, use_fates
-    use clm_varctl,  only : use_crop, use_dynroot
+    use elm_varctl,  only : paramfile, use_fates
+    use elm_varctl,  only : use_crop, use_dynroot
     use elm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
 

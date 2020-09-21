@@ -18,9 +18,9 @@ module VegetationDataType
   use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
   use pftvarcon       , only : npcropmin, noveg, nstor
-  use clm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
-  use clm_varctl      , only : nu_com, use_crop, use_c13
-  use clm_varctl      , only : use_lch4, use_betr
+  use elm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
+  use elm_varctl      , only : nu_com, use_crop, use_c13
+  use elm_varctl      , only : use_lch4, use_betr
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type, get_proc_global
@@ -1041,7 +1041,7 @@ module VegetationDataType
   subroutine veg_es_init(this, begp, endp)
     !
     ! !USES:
-    use clm_varctl     , only : use_vancouver, use_mexicocity
+    use elm_varctl     , only : use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(vegetation_energy_state) :: this
@@ -1461,7 +1461,7 @@ module VegetationDataType
     ! !USES 
     use accumulMod       , only : extract_accum_field
     use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : nsrest, nsrStartup
+    use elm_varctl       , only : nsrest, nsrStartup
     use abortutils       , only : endrun
     !
     ! !ARGUMENTS:

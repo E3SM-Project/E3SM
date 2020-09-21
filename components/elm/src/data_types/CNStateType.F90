@@ -11,14 +11,14 @@ module CNStateType
   use elm_varcon     , only : spval, ispval, c14ratio, grlnd
   use landunit_varcon, only : istsoil, istcrop
   use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
-  use clm_varctl     , only : use_vertsoilc, use_c14, use_cn 
-  use clm_varctl     , only : iulog, fsurdat
+  use elm_varctl     , only : use_vertsoilc, use_c14, use_cn 
+  use elm_varctl     , only : iulog, fsurdat
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
-  use clm_varctl     , only: forest_fert_exp
-  use clm_varctl          , only : nu_com
-  use clm_varctl   , only:  use_fates,use_crop
+  use elm_varctl     , only: forest_fert_exp
+  use elm_varctl          , only : nu_com
+  use elm_varctl   , only:  use_fates,use_crop
 
   ! 
   ! !PUBLIC TYPES:
@@ -690,7 +690,7 @@ contains
     ! !USES:
     use spmdMod    , only : masterproc
     use fileutils  , only : getfil
-    use clm_varctl , only : nsrest, nsrStartup
+    use elm_varctl , only : nsrest, nsrStartup
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -1474,7 +1474,7 @@ contains
     ! !USES
     use accumulMod       , only : init_accum_field, extract_accum_field
     use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : nsrest
+    use elm_varctl       , only : nsrest
     use abortutils       , only : endrun
     !
     ! !ARGUMENTS:

@@ -8,11 +8,11 @@ module C14DecayMod
   use clm_time_manager       , only : get_curr_date, get_step_size, get_days_per_year
   use elm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
   use elm_varcon             , only : secspday
-  use clm_varctl             , only : spinup_state
+  use elm_varctl             , only : spinup_state
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   use ColumnDataType         , only : c14_col_cs
   use VegetationDataType     , only : c14_veg_cs  
   !
@@ -246,7 +246,7 @@ contains
     use ncdio_pio
     use fileutils   , only : getfil
     use abortutils  , only : endrun
-    use clm_varctl  , only : iulog
+    use elm_varctl  , only : iulog
     use spmdMod     , only : masterproc
     use shr_log_mod , only : errMsg => shr_log_errMsg
     !

@@ -332,7 +332,7 @@ contains
     use WaterSTateType       , only : waterstate_type
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use VegetationType            , only : veg_pp
-    use clm_varctl       , only : use_hydrstress
+    use elm_varctl       , only : use_hydrstress
     !
     ! !ARGUMENTS:
     implicit none

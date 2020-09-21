@@ -7,14 +7,14 @@ module PhosphorusFluxType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
-  use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   ! bgc interface & pflotran:
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -560,11 +560,11 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use clm_varctl    , only: use_nitrif_denitrif
+    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only: npcropmin
     ! pflotran
-!    use clm_varctl    , only: use_pflotran, pf_cmode
+!    use elm_varctl    , only: use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this

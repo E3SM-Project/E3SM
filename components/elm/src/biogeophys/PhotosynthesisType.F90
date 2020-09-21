@@ -7,7 +7,7 @@ module PhotosynthesisType
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
   use elm_varpar     , only : nlevcan
-  use clm_varctl     , only : iulog, use_cn, use_c13, use_c14
+  use elm_varctl     , only : iulog, use_cn, use_c13, use_c14
   use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
   use VegetationType      , only : veg_pp                

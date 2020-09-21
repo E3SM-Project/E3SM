@@ -256,7 +256,7 @@ contains
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
-    use clm_varctl , only : use_snicar_frc, iulog 
+    use elm_varctl , only : use_snicar_frc, iulog 
     use spmdMod    , only : masterproc
     use decompMod  , only : bounds_type
     use abortutils , only : endrun

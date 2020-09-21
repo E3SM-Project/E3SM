@@ -48,7 +48,7 @@ contains
     use shr_const_mod        , only : SHR_CONST_RGAS
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
-    use clm_varctl           , only : use_lch4
+    use elm_varctl           , only : use_lch4
     use landunit_varcon      , only : istsoil, istcrop
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni
     use QSatMod              , only : QSat

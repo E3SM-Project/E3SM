@@ -9,7 +9,7 @@ module UrbanParamsType
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
   use decompMod    , only : bounds_type
-  use clm_varctl   , only : iulog, fsurdat
+  use elm_varctl   , only : iulog, fsurdat
   use elm_varcon   , only : namel, grlnd, spval
   use LandunitType , only : lun_pp                
   !
@@ -119,7 +119,7 @@ module UrbanParamsType
     use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
     use elm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
     use elm_varpar      , only : nlevsoi, nlevgrnd
-    use clm_varctl      , only : use_vancouver, use_mexicocity
+    use elm_varctl      , only : use_vancouver, use_mexicocity
     use elm_varcon      , only : vkc
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_road_perv
