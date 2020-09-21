@@ -36,6 +36,7 @@ program cime_driver
   use cime_comp_mod, only : cime_init
   use cime_comp_mod, only : cime_run
   use cime_comp_mod, only : cime_final
+  use cime_comp_mod, only : mpi_init_time
   use seq_comm_mct,  only : logunit
 
   implicit none
@@ -45,7 +46,7 @@ program cime_driver
   !--------------------------------------------------------------------------
   integer(i8) :: beg_count, end_count, irtc_rate
   real(r8)    :: cime_pre_init1_time, ESMF_Initialize_time, &
-       cime_pre_init2_time, cime_init_time_adjustment
+                 cime_pre_init2_time, cime_init_time_adjustment
 
   !--------------------------------------------------------------------------
   ! For ESMF logging
@@ -115,7 +116,12 @@ program cime_driver
   call t_startf('CPL:INIT')
   call t_adj_detailf(+1)
 
-  call t_startstop_valsf('CPL:cime_pre_init1',  walltime=cime_pre_init1_time)
+  call t_startf('CPL:cime_pre_init1')
+  call t_startstop_valsf('CPL:mpi_init', walltime=mpi_init_time)
+  call t_stopf('CPL:cime_pre_init1')
+
+  call t_startstop_valsf('CPL:cime_pre_init1',  walltime=cime_pre_init1_time, &
+                         callcount = 0)
   call t_startstop_valsf('CPL:ESMF_Initialize', walltime=ESMF_Initialize_time)
   call t_startstop_valsf('CPL:cime_pre_init2',  walltime=cime_pre_init2_time)
 
@@ -125,10 +131,10 @@ program cime_driver
   call t_stopf('CPL:INIT')
 
   cime_init_time_adjustment = cime_pre_init1_time  &
-       + ESMF_Initialize_time &
-       + cime_pre_init2_time
+                            + ESMF_Initialize_time &
+                            + cime_pre_init2_time
   call t_startstop_valsf('CPL:INIT',  walltime=cime_init_time_adjustment, &
-       callcount=0)
+                         callcount=0)
 
   call cime_run()
   call cime_final()
