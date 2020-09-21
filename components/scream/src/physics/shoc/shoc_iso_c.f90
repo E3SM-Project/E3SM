@@ -1081,4 +1081,15 @@ contains
    call diag_second_moments_ubycond(shcol, thl, qw, wthl, wqw, qwthl, uw, vw, wtke)
  end subroutine shoc_diag_second_moments_ubycond_c
 
+ subroutine shoc_pblintd_init_pot_c(shcol, nlev, thl, ql, q, thv) bind(C)
+   use shoc, only: pblintd_init_pot
+
+   integer(kind=c_int), value, intent(in) :: shcol, nlev
+   real(kind=c_real), intent(in)  :: thl(shcol, nlev), ql(shcol, nlev), q(shcol, nlev)
+   real(kind=c_real), intent(out) :: thv(shcol, nlev)
+
+   call pblintd_init_pot(shcol, nlev, thl, ql, q, thv)
+
+ end subroutine shoc_pblintd_init_pot_c
+
 end module shoc_iso_c
