@@ -67,10 +67,10 @@ public:
     m_output_fids.emplace(out_name,layout,ekat::units::m,m_grid->name());
   }
 
-  void initialize_ (const util::TimeStamp& t0) {
+  void initialize_impl (const util::TimeStamp& t0) {
   }
 
-  void run_ (const Real dt) {
+  void run_impl (const Real dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
     auto iter = m_iter % 4;
@@ -94,7 +94,7 @@ public:
   }
 
   // Clean up
-  void finalize_ ( ) {}
+  void finalize_impl ( ) {}
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const {

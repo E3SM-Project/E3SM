@@ -50,7 +50,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
 }
 // =========================================================================================
-void SHOCMacrophysics::initialize_ (const util::TimeStamp& t0)
+void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 {
   // TODO: create the host mirrors once.
   auto q_dev = m_shoc_fields_out.at("q").get_view();
@@ -64,7 +64,7 @@ void SHOCMacrophysics::initialize_ (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run_ (const Real dt)
+void SHOCMacrophysics::run_impl (const Real dt)
 {
   // TODO: create the host mirrors once.
   auto q_dev   = m_shoc_fields_out.at("q").get_view();
@@ -88,7 +88,7 @@ void SHOCMacrophysics::run_ (const Real dt)
   m_shoc_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void SHOCMacrophysics::finalize_()
+void SHOCMacrophysics::finalize_impl()
 {
   shoc_finalize_f90 ();
 }

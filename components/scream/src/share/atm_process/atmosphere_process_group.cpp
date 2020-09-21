@@ -209,7 +209,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   }
 }
 
-void AtmosphereProcessGroup::initialize_ (const TimeStamp& t0) {
+void AtmosphereProcessGroup::initialize_impl (const TimeStamp& t0) {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
     m_atm_processes[i]->initialize(t0);
@@ -264,7 +264,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
   }
 }
 
-void AtmosphereProcessGroup::run_ (const Real dt) {
+void AtmosphereProcessGroup::run_impl (const Real dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {
@@ -365,7 +365,7 @@ void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
   EKAT_REQUIRE_MSG (false,"Error! Parallel splitting not yet implemented.\n");
 }
 
-void AtmosphereProcessGroup::finalize_ (/* what inputs? */) {
+void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
   for (auto atm_proc : m_atm_processes) {
     atm_proc->finalize(/* what inputs? */);
   }

@@ -81,7 +81,7 @@ public:
   //     that no other process is currently inside a call to 'run'.
   //   - the finalize method makes sure, if necessary, that all resources are freed.
   // NOTE: You don't override these methods. Override the protected methods
-  // NOTE: initialize_, run_, and finalize_ instead.
+  // NOTE: initialize_impl, run_impl, and finalize_impl instead.
   // The initialize/finalize method should be called just once per simulation (should
   // we enforce that? It depends on what resources we init/free, and how), while the
   // run method can (and usually will) be called multiple times.
@@ -89,15 +89,15 @@ public:
   // run/finalize is called.
   void initialize (const TimeStamp& t0) {
     t_ = t0;
-    initialize_(t_);
+    initialize_impl(t_);
   }
   void run        (const Real dt) {
     // Call the subclass's run method and update it afterward.
-    run_(dt);
+    run_impl(dt);
     t_ += dt;
   }
   void finalize   (/* what inputs? */) {
-    finalize_(/* what inputs? */);
+    finalize_impl(/* what inputs? */);
   }
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
@@ -137,14 +137,14 @@ public:
 protected:
 
   // Override this method to initialize your subclass.
-  virtual void initialize_(const TimeStamp& t0) = 0;
+  virtual void initialize_impl(const TimeStamp& t0) = 0;
 
   // Override this method to define how your subclass runs forward one step
   // (of size dt). This method is called before the timestamp is updated.
-  virtual void run_(const Real dt) = 0;
+  virtual void run_impl(const Real dt) = 0;
 
   // Override this method to finalize your subclass.
-  virtual void finalize_(/* what inputs? */) = 0;
+  virtual void finalize_impl(/* what inputs? */) = 0;
 
   // This provides access to this process's timestamp.
   const TimeStamp& timestamp() const {

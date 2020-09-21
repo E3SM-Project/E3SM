@@ -47,9 +47,9 @@ namespace scream {
 
         protected:
             // The three main interfaces for the subcomponent
-            void initialize_ (const util::TimeStamp& t0);
-            void run_        (const Real dt);
-            void finalize_   ();
+            void initialize_impl (const util::TimeStamp& t0);
+            void run_impl        (const Real dt);
+            void finalize_impl   ();
 
             // Set fields in the atmosphere process
             void set_required_field_impl (const Field<const Real, device_type>& f);

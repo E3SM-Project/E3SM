@@ -51,14 +51,14 @@ protected:
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize_ (const util::TimeStamp& /* t0 */ ) {}
+  void initialize_impl (const util::TimeStamp& /* t0 */ ) {}
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
-  void run_ (const Real /* dt */) {}
+  void run_impl (const Real /* dt */) {}
 
   // Clean up
-  void finalize_ ( /* inputs */ ) {}
+  void finalize_impl ( /* inputs */ ) {}
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& /* f */) {}
