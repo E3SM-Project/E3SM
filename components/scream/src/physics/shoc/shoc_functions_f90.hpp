@@ -45,15 +45,15 @@ struct SHOCGridData : public PhysicsTestData {
 
 struct SHOCObklenData : public PhysicsTestData {
   // Inputs
-  Real *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *thl_sfc
-  Real *cldliq_sfc, *qv_sfc,
-  
+  Real *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *thl_sfc;
+  Real *cldliq_sfc, *qv_sfc;
+
   // Outputs
-  Real *ustar, *kbfs, *obklen
-  
+  Real *ustar, *kbfs, *obklen;
+
   SHOCObklenData(Int shcol_) :
   PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc, &thl_sfc, &cldliq_sfc, &qv_sfc, &ustar, &kbfs, &obklen}){}
-  
+
   SHOC_NO_SCALAR(SHOCObklenData, 1);
 
 };

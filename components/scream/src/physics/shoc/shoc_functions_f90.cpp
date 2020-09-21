@@ -22,7 +22,7 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
-                 
+
 void shoc_diag_obklen_c(Int shcol, Real *uw_sfc, Real *vw_sfc, Real *wthl_sfc,
                         Real *wqw_sfc, Real *thl_sfc, Real *cldliq_sfc,
                         Real *qv_sfc, Real *ustar, Real *kbfs, Real *obklen);
@@ -241,9 +241,9 @@ void shoc_grid(SHOCGridData &d) {
 void shoc_diag_obklen(SHOCObklenData &d){
   shoc_init(1, true); // single level function
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_diag_obklen(d.shcol(), d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
-                   d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs,
-                   d.obklen);
+  shoc_diag_obklen_c(d.shcol(), d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+                     d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs,
+                     d.obklen);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
