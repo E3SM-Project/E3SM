@@ -51,10 +51,13 @@
     config_calculate_coriolis = true
 /
 &use_sections
+    config_use_dynamics = true
     config_use_velocity_solver = true
     config_use_advection = true
     config_use_forcing = true
     config_use_column_package = true
+    config_use_prescribed_ice = false
+    config_use_prescribed_ice_forcing = false
 /
 &forcing
     config_atmospheric_forcing_type = 'CORE'
