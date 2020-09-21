@@ -17,8 +17,8 @@ module ncdio_pio
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc, mpicom, iam, npes
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
-  use clm_varcon     , only : grlnd, nameg, namel, namec, namep
-  use clm_varcon     , only : spval,ispval
+  use elm_varcon     , only : grlnd, nameg, namel, namec, namep
+  use elm_varcon     , only : spval,ispval
   use clm_varctl     , only : single_column, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_clmlevel_gsize,get_clmlevel_gsmap

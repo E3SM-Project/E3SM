@@ -9,7 +9,7 @@ module spmdGathScatMod
 ! Perform SPMD gather and scatter operations.
 !
 ! !USES:
-  use clm_varcon, only: spval, ispval
+  use elm_varcon, only: spval, ispval
   use decompMod, only : get_clmlevel_gsmap
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmdMod

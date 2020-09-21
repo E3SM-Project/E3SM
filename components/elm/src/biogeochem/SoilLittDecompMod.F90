@@ -11,7 +11,7 @@ module SoilLittDecompMod
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
   use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
-  use clm_varcon             , only : dzsoi_decomp
+  use elm_varcon             , only : dzsoi_decomp
   use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc

@@ -16,7 +16,7 @@ module DUSTMod
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
   use clm_varpar           , only : dst_src_nbr, ndst, sz_nbr
-  use clm_varcon           , only : grav, spval
+  use elm_varcon           , only : grav, spval
   use landunit_varcon      , only : istcrop, istice_mec, istsoil
   use clm_varctl           , only : iulog
   use abortutils           , only : endrun

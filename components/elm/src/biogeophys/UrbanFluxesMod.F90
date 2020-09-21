@@ -10,7 +10,7 @@ module UrbanFluxesMod
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
   use clm_varpar           , only : numrad
-  use clm_varcon           , only : isecspday, degpsec, namel
+  use elm_varcon           , only : isecspday, degpsec, namel
   use clm_varctl           , only : iulog
   use abortutils           , only : endrun  
   use UrbanParamsType      , only : urbanparams_type
@@ -54,8 +54,8 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
-    use clm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
-    use clm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
+    use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
+    use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter

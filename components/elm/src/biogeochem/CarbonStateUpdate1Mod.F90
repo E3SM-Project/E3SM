@@ -11,7 +11,7 @@ module CarbonStateUpdate1Mod
   use decompMod               , only : bounds_type
   use clm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use clm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varcon              , only : dzsoi_decomp
+  use elm_varcon              , only : dzsoi_decomp
   use clm_varctl              , only : nu_com
   use clm_varctl              , only : use_pflotran, pf_cmode, use_fates
   use clm_varctl              , only : use_c13, use_c14

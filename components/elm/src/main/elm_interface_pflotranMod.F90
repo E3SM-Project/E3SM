@@ -381,7 +381,7 @@ contains
     use domainMod       , only : ldomain, lon1d, lat1d
 
     use clm_time_manager, only : get_nstep
-    use clm_varcon      , only : dzsoi, zisoi
+    use elm_varcon      , only : dzsoi, zisoi
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp_full, ndecomp_pools
     use clm_varctl      , only : pf_hmode, pf_tmode, pf_cmode, pf_frzmode,  &
                                  initth_pf2clm, pf_clmnstep0,               &
@@ -1321,7 +1321,7 @@ contains
     use clm_varpar      , only : nlevgrnd
     use domainMod       , only : ldomain
     use landunit_varcon , only : istsoil, istcrop
-    use clm_varcon      , only : re
+    use elm_varcon      , only : re
 
 
     !
@@ -1975,7 +1975,7 @@ contains
     use shr_const_mod       , only : SHR_CONST_G
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
-    use clm_varcon          , only : denh2o, denice, tfrz
+    use elm_varcon          , only : denh2o, denice, tfrz
     use clm_varpar          , only : nlevgrnd
     use shr_infnan_mod      , only : shr_infnan_isnan
 
@@ -2178,7 +2178,7 @@ contains
   ! !USES:
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
-    use clm_varcon          , only : denice
+    use elm_varcon          , only : denice
     use clm_varpar          , only : nlevgrnd
 
     use PFLOTRAN_Constants_module
@@ -2287,7 +2287,7 @@ contains
   !
   ! !USES:
     use ColumnType      , only : col_pp
-    use clm_varcon      , only : tfrz, denh2o
+    use elm_varcon      , only : tfrz, denh2o
     use clm_varpar      , only : nlevsoi, nlevgrnd
     use clm_time_manager, only : get_step_size, get_nstep
     use shr_infnan_mod  , only : shr_infnan_isnan
@@ -2672,7 +2672,7 @@ contains
   ! !USES:
     use ColumnType      , only : col_pp
     use clm_time_manager, only : get_step_size, get_nstep
-    use clm_varcon      , only : tfrz
+    use elm_varcon      , only : tfrz
     use clm_varpar      , only : nlevgrnd
     use shr_infnan_mod  , only : shr_infnan_isnan
 
@@ -3262,7 +3262,7 @@ contains
   !
   ! !USES:
     use ColumnType          , only : col_pp
-    use clm_varcon          , only : denh2o, denice
+    use elm_varcon          , only : denh2o, denice
     use clm_varctl          , only : pf_frzmode
     use clm_varpar          , only : nlevgrnd
 
@@ -3401,7 +3401,7 @@ contains
   ! !USES:
     use ColumnType          , only : col_pp
     use clm_varpar          , only : nlevgrnd
-    use clm_varcon          , only : tfrz
+    use elm_varcon          , only : tfrz
 
   ! !ARGUMENTS:
     implicit none
@@ -3518,7 +3518,7 @@ contains
   ! !USES:
     use ColumnType          , only : col_pp
     use clm_varpar          , only : nlevgrnd
-    use clm_varcon          , only : tfrz, denh2o
+    use elm_varcon          , only : tfrz, denh2o
     use landunit_varcon     , only : istsoil, istcrop
     use clm_time_manager    , only : get_step_size, get_nstep
 
@@ -3650,7 +3650,7 @@ contains
     use clm_varctl              , only : pf_hmode
     use clm_time_manager        , only : get_step_size,get_nstep
 
-    use clm_varcon              , only : dzsoi_decomp
+    use elm_varcon              , only : dzsoi_decomp
 
     implicit none
 
@@ -3955,7 +3955,7 @@ contains
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size, get_nstep
      use clm_varpar         , only : nlevdecomp_full
-     use clm_varcon         , only : tfrz
+     use elm_varcon         , only : tfrz
 
      use clm_varctl         , only : pf_tmode, pf_hmode, pf_frzmode
 
@@ -4465,7 +4465,7 @@ contains
     ! conservation checks.
 
     use clm_varpar      , only : ndecomp_pools, nlevdecomp,nlevdecomp_full
-    use clm_varcon      , only : dzsoi_decomp
+    use elm_varcon      , only : dzsoi_decomp
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
@@ -4507,7 +4507,7 @@ contains
     ! conservation checks.
 
     use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
-    use clm_varcon      , only : dzsoi_decomp
+    use elm_varcon      , only : dzsoi_decomp
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
@@ -4565,7 +4565,7 @@ contains
     use clm_time_manager, only : get_step_size, get_nstep
     use clm_varctl      , only : iulog, use_fates
     use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
-    use clm_varcon      , only : dzsoi_decomp
+    use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
@@ -4650,7 +4650,7 @@ contains
     use clm_time_manager, only : get_step_size,get_nstep
     use clm_varctl      , only : iulog, use_fates
     use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
-    use clm_varcon      , only : dzsoi_decomp
+    use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process

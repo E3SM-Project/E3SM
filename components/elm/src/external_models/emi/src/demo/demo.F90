@@ -5,7 +5,7 @@ program demo
   use decompMod                 , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
   use elm_instMod               , only : elm_inst_biogeophys
   use clm_varpar                , only : clm_varpar_init
-  use clm_varcon                , only : clm_varcon_init
+  use elm_varcon                , only : elm_varcon_init
   use clm_varpar                , only : nlevdecomp_full, ndecomp_pools
   use spmdMod                   , only : spmd_init
   use ExternalModelConstants    , only : EM_ID_STUB, EM_STUB_SOIL_HYDRO_STAGE, EM_STUB_SOIL_THERMAL_STAGE
@@ -28,7 +28,7 @@ program demo
   call spmd_init()
   call set_namelist_variables()
   call clm_varpar_init()
-  call clm_varcon_init()
+  call elm_varcon_init()
   call decompInit()
 
   call get_proc_bounds(bounds_proc)

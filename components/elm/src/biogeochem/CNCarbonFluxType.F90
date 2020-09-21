@@ -6,7 +6,7 @@ module CNCarbonFluxType
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : crop_prog
   use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
-  use clm_varcon             , only : spval, ispval, dzsoi_decomp
+  use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
   use clm_varctl             , only : use_c13, use_fates 
   use CH4varcon              , only : allowlakeprod
@@ -1114,7 +1114,7 @@ contains
     ! !USES:
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use clm_time_manager , only : is_restart
-    use clm_varcon       , only : c13ratio, c14ratio
+    use elm_varcon       , only : c13ratio, c14ratio
     use clm_varctl       , only : use_lch4, use_betr
     use restUtilMod
     use ncdio_pio
@@ -1585,7 +1585,7 @@ contains
     ! !USES:
     use clm_varctl       , only : iulog
     use clm_time_manager , only : get_step_size
-    use clm_varcon       , only : secspday
+    use elm_varcon       , only : secspday
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc

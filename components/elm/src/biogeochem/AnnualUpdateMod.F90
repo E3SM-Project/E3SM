@@ -32,7 +32,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only: get_step_size, get_days_per_year
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     use SubgridAveMod   , only: p2c
     !
     ! !ARGUMENTS:

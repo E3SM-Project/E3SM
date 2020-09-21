@@ -13,7 +13,7 @@ module initGridCellsMod
   use spmdMod        , only : masterproc,iam
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog
-  use clm_varcon     , only : namep, namec, namel, nameg
+  use elm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp  
@@ -1125,7 +1125,7 @@ contains
     !
     ! !USES
     use decompMod         , only : get_proc_bounds
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !LOCAL VARIABLES:
     type(bounds_type) :: bounds_proc

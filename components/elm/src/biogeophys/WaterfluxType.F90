@@ -6,7 +6,7 @@ module WaterfluxType
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
   use decompMod    , only : bounds_type, get_proc_global
-  use clm_varcon   , only : spval
+  use elm_varcon   , only : spval
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -395,7 +395,7 @@ contains
     ! 
     ! !USES:
     use spmdMod          , only : masterproc
-    use clm_varcon       , only : denice, denh2o, pondmx, watmin
+    use elm_varcon       , only : denice, denh2o, pondmx, watmin
     use landunit_varcon  , only : istcrop, istdlak, istsoil 
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_varpar       , only : nlevgrnd, nlevurb, nlevsno   

@@ -225,7 +225,7 @@ contains
     ! USES
     use clm_varpar            , only : nlevsno, nlevgrnd
     use clm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
-    use clm_varcon            , only : spval
+    use elm_varcon            , only : spval
     use decompMod             , only : bounds_type
 
     ! ARGUMENTS:

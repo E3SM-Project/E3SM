@@ -47,7 +47,7 @@ contains
     ! !USES:
     use shr_const_mod        , only : SHR_CONST_RGAS
     use clm_varpar           , only : nlevgrnd
-    use clm_varcon           , only : cpair, vkc, grav, denice, denh2o
+    use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
     use clm_varctl           , only : use_lch4
     use landunit_varcon      , only : istsoil, istcrop
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni

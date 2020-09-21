@@ -125,7 +125,7 @@ contains
     !
     ! !USES:
     use histFileMod, only : hist_addfld1d
-    use clm_varcon , only : spval
+    use elm_varcon , only : spval
     !
     ! !ARGUMENTS:
     class(glc2lnd_type) :: this
@@ -265,7 +265,7 @@ contains
     !
     ! !USES:
     use domainMod , only : ldomain
-    use clm_varcon, only : nameg
+    use elm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -301,7 +301,7 @@ contains
     ! Do a sanity check on the icemask_coupled_fluxes field received from CISM via coupler.
     !
     ! !USES:
-    use clm_varcon, only : nameg
+    use elm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -375,7 +375,7 @@ contains
     ! The weights updated here are some col_pp%wtlunit and lun_pp%wtgcell values
     !
     ! !USES:
-    use clm_varcon        , only : ispval
+    use elm_varcon        , only : ispval
     use landunit_varcon   , only : istice_mec
     use column_varcon     , only : col_itype_to_icemec_class
     use subgridWeightsMod , only : set_landunit_weight

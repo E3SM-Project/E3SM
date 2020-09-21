@@ -12,7 +12,7 @@ module TopounitType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use landunit_varcon, only : max_lunit
-  use clm_varcon     , only : ispval, spval
+  use elm_varcon     , only : ispval, spval
   use clm_varpar     , only : numrad
   use decompMod      , only : bounds_type
 

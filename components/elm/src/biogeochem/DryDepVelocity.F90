@@ -55,7 +55,7 @@ Module DryDepVelocity
   use seq_drydep_mod       , only : index_co=>co_ndx, index_ch4=>ch4_ndx, index_pan=>pan_ndx
   use seq_drydep_mod       , only : index_xpan=>xpan_ndx
   use decompMod            , only : bounds_type
-  use clm_varcon           , only : namep
+  use elm_varcon           , only : namep
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use FrictionVelocityType , only : frictionvel_type

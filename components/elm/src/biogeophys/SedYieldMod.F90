@@ -10,7 +10,7 @@ module SedYieldMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
-  use clm_varcon        , only : grav, denh2o, rpi
+  use elm_varcon        , only : grav, denh2o, rpi
   use clm_varpar        , only : mxpft, nlevsno, max_patch_per_col
   use clm_varpar        , only : nlevslp
   use atm2lndType       , only : atm2lnd_type

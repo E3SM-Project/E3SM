@@ -14,8 +14,8 @@ module VegetationDataType
   use clm_time_manager, only : is_restart, get_nstep
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
   use clm_varpar      , only : nlevdecomp, nlevdecomp_full
-  use clm_varcon      , only : spval, ispval, sb
-  use clm_varcon      , only : c13ratio, c14ratio
+  use elm_varcon      , only : spval, ispval, sb
+  use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
   use pftvarcon       , only : npcropmin, noveg, nstor
   use clm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  

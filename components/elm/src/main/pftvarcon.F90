@@ -291,7 +291,7 @@ contains
                             ncd_inqdid, ncd_inqdlen
     use clm_varctl,  only : paramfile, use_fates
     use clm_varctl,  only : use_crop, use_dynroot
-    use clm_varcon,  only : tfrz
+    use elm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
 
     !

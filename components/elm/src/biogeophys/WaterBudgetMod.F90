@@ -269,7 +269,7 @@ contains
     ! !DESCRIPTION:
     !
     use domainMod, only : ldomain
-    use clm_varcon, only : re
+    use elm_varcon, only : re
     !
     implicit none
 
@@ -670,7 +670,7 @@ contains
     ! !USES:
     use subgridAveMod    , only : p2c, c2g
     use clm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
-    use clm_varcon       , only : spval
+    use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
@@ -725,7 +725,7 @@ contains
     !
     ! !USES:
     use subgridAveMod    , only : c2g
-    use clm_varcon       , only : spval
+    use elm_varcon       , only : spval
     use clm_time_manager , only : get_curr_date, get_nstep
     !
     ! !ARGUMENTS:

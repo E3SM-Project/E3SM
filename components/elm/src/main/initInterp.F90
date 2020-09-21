@@ -15,7 +15,7 @@ module initInterpMod
   use spmdMod        , only: masterproc
   use restUtilMod    , only: iflag_interp, iflag_copy, iflag_skip
   use restUtilMod    , only: iflag_noswitchdim, iflag_switchdim
-  use clm_varcon     , only: spval, re
+  use elm_varcon     , only: spval, re
   use ncdio_pio
   use pio
 

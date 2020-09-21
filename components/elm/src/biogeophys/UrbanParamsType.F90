@@ -10,7 +10,7 @@ module UrbanParamsType
   use abortutils   , only : endrun
   use decompMod    , only : bounds_type
   use clm_varctl   , only : iulog, fsurdat
-  use clm_varcon   , only : namel, grlnd, spval
+  use elm_varcon   , only : namel, grlnd, spval
   use LandunitType , only : lun_pp                
   !
   implicit none
@@ -120,7 +120,7 @@ module UrbanParamsType
     use clm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
     use clm_varpar      , only : nlevsoi, nlevgrnd
     use clm_varctl      , only : use_vancouver, use_mexicocity
-    use clm_varcon      , only : vkc
+    use elm_varcon      , only : vkc
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_road_perv
     use landunit_varcon , only : isturb_MIN

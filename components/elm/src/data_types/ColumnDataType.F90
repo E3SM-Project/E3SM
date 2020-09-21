@@ -17,9 +17,9 @@ module ColumnDataType
   use clm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
   use clm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
-  use clm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
-  use clm_varcon      , only : c13ratio, c14ratio, secspday
+  use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
+  use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
+  use elm_varcon      , only : c13ratio, c14ratio, secspday
   use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use clm_varctl      , only : use_hydrstress
   use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state

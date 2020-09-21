@@ -47,7 +47,7 @@ contains
     use clm_varpar       , only : nlevgrnd
     use clm_time_manager , only : get_curr_date, get_step_size
     use clm_varctl       , only : iulog
-    use clm_varcon       , only : zsoi
+    use elm_varcon       , only : zsoi
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter

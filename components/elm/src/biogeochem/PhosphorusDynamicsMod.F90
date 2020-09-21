@@ -11,7 +11,7 @@ module PhosphorusDynamicsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : dzsoi_decomp, zisoi
+  use elm_varcon          , only : dzsoi_decomp, zisoi
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type  
@@ -93,7 +93,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon, only: r_weather
     !
     ! !ARGUMENTS:
@@ -160,7 +160,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_adsorp
     !
     ! !ARGUMENTS:
@@ -229,7 +229,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_desorp
     !
     ! !ARGUMENTS:
@@ -298,7 +298,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_occlude
     !
     ! !ARGUMENTS:
@@ -493,7 +493,7 @@ contains
     use clm_varpar       , only : ndecomp_pools
     use clm_time_manager , only : get_step_size
     use soilorder_varcon , only:k_s1_biochem,k_s2_biochem,k_s3_biochem,k_s4_biochem
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
 
     !
     ! !ARGUMENTS:

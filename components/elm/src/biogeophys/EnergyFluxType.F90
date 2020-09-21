@@ -5,7 +5,7 @@ module EnergyFluxType
   !------------------------------------------------------------------------------
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varcon     , only : spval
+  use elm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
@@ -321,7 +321,7 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb
+    use elm_varcon      , only : denice, denh2o, sb
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon   , only : icol_shadewall, icol_road_perv

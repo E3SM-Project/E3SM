@@ -152,7 +152,7 @@ contains
 
    !-----------------------------------------------------------------------
    use clm_time_manager, only : get_curr_date, get_days_per_year
-   use clm_varcon      , only : secspday
+   use elm_varcon      , only : secspday
    use atm2lndType     , only : atm2lnd_type
    !
    ! Arguments
@@ -188,7 +188,7 @@ contains
 
     !-------------------------------------------------------------------
     ! Set domain data type for internal clm grid
-    use clm_varcon  , only : re
+    use elm_varcon  , only : re
     use domainMod   , only : ldomain
     use seq_flds_mod
     implicit none

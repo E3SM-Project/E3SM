@@ -13,7 +13,7 @@ module WaterstateType
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_cn, iulog, use_fates_planthydro, &
                               use_hydrstress
   use clm_varpar     , only : nlevgrnd, nlevurb, nlevsno 
-  use clm_varcon     , only : spval
+  use elm_varcon     , only : spval
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   !
@@ -359,8 +359,8 @@ contains
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
     use column_varcon   , only : icol_shadewall, icol_road_perv
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
-    use clm_varcon      , only : denice, denh2o, spval, sb, bdsno 
-    use clm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
+    use elm_varcon      , only : denice, denh2o, spval, sb, bdsno 
+    use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
     use clm_varctl      , only : fsurdat, iulog
     use spmdMod         , only : masterproc
     use abortutils      , only : endrun
@@ -490,7 +490,7 @@ contains
     !
     ! !USES:
     use spmdMod          , only : masterproc
-    use clm_varcon       , only : denice, denh2o, pondmx, watmin, spval  
+    use elm_varcon       , only : denice, denh2o, pondmx, watmin, spval  
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step

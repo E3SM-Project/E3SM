@@ -13,7 +13,7 @@ module dyncropFileMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use clm_varctl            , only : iulog, use_crop
-  use clm_varcon            , only : grlnd, namec
+  use elm_varcon            , only : grlnd, namec
   use abortutils            , only : endrun
   use spmdMod               , only : masterproc, mpicom
   use LandunitType          , only : lun_pp

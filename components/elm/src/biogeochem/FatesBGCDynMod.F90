@@ -300,7 +300,7 @@ contains
     use decompMod              , only : bounds_type
     use CNCarbonFluxType       , only : carbonflux_type
     use CNCarbonStateType      , only : carbonstate_type
-    use clm_varcon             , only : dzsoi_decomp, zisoi
+    use elm_varcon             , only : dzsoi_decomp, zisoi
     use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
     use CNDecompCascadeConType , only : decomp_cascade_con
     

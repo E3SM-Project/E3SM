@@ -55,10 +55,10 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_inventory_init
    use clm_varctl        , only : use_fates_fixed_biogeog
    use clm_varctl        , only : fates_inventory_ctrl_filename
-   use clm_varcon        , only : tfrz
-   use clm_varcon        , only : spval 
-   use clm_varcon        , only : denice
-   use clm_varcon        , only : ispval
+   use elm_varcon        , only : tfrz
+   use elm_varcon        , only : spval 
+   use elm_varcon        , only : denice
+   use elm_varcon        , only : ispval
 
    use clm_varpar        , only : natpft_size
    use clm_varpar        , only : numrad
@@ -101,7 +101,7 @@ module CLMFatesInterfaceMod
    use landunit_varcon   , only : istsoil
    use abortutils        , only : endrun
    use shr_log_mod       , only : errMsg => shr_log_errMsg    
-   use clm_varcon        , only : dzsoi_decomp
+   use elm_varcon        , only : dzsoi_decomp
    use FuncPedotransferMod, only: get_ipedof
    
 
@@ -1730,7 +1730,7 @@ contains
     use shr_log_mod       , only : errMsg => shr_log_errMsg
     use abortutils        , only : endrun
     use decompMod         , only : bounds_type
-    use clm_varcon        , only : rgas, tfrz, namep  
+    use elm_varcon        , only : rgas, tfrz, namep  
     use clm_varctl        , only : iulog
     use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic

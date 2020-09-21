@@ -10,7 +10,7 @@ module BalanceCheckMod
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
   use clm_varctl         , only : iulog, use_var_soil_thick
-  use clm_varcon         , only : namep, namec
+  use elm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
   use glc2lndMod         , only : glc2lnd_type
@@ -53,7 +53,7 @@ contains
     ! !USES:
     use subgridAveMod    , only : p2c, c2g
     use clm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
-    use clm_varcon       , only : spval
+    use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     !
@@ -164,7 +164,7 @@ contains
      ! error = abs(precipitation - change of water storage - evaporation - runoff)
      !
      ! !USES:
-     use clm_varcon        , only : spval
+     use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
@@ -858,7 +858,7 @@ contains
      ! !DESCRIPTION:
      !
      ! !USES:
-     use clm_varcon        , only : spval
+     use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet

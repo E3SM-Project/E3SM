@@ -4,7 +4,7 @@ module clm_time_manager
    use shr_sys_mod , only: shr_sys_abort
    use spmdMod     , only: masterproc
    use clm_varctl  , only: iulog
-   use clm_varcon  , only: isecspday
+   use elm_varcon  , only: isecspday
    use ESMF
 
    implicit none

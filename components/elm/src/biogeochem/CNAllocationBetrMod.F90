@@ -8,7 +8,7 @@ module CNAllocationBeTRMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use clm_varcon          , only : dzsoi_decomp
+  use elm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
   use clm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
@@ -100,7 +100,7 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     use clm_time_manager, only: get_step_size, get_curr_date
     use clm_varpar      , only: crop_prog
     use clm_varctl      , only: iulog, cnallocate_carbon_only_set
@@ -249,7 +249,7 @@ contains
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use clm_varpar       , only: nlevdecomp
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
     use clm_varctl       , only: cnallocate_carbon_only_set
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size, get_curr_date
@@ -1110,7 +1110,7 @@ contains
     use pftvarcon        , only: noveg
     use pftvarcon        , only:  npcropmin, grperc, grpnow
     use clm_varpar       , only:  nlevdecomp !!nlevsoi,
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
 !    use clm_time_manager , only: get_step_size
     !

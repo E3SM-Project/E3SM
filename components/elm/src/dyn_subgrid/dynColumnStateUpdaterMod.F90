@@ -93,7 +93,7 @@ module dynColumnStateUpdaterMod
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use abortutils           , only : endrun
   use clm_varctl           , only : iulog  
-  use clm_varcon           , only : namec, spval
+  use elm_varcon           , only : namec, spval
   use decompMod            , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType           , only : col_pp
   use LandunitType         , only : lun_pp

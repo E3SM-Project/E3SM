@@ -227,7 +227,7 @@ contains
     ! !USES
     use shr_kind_mod    , only: r8 => shr_kind_r8
     use shr_log_mod     , only : errMsg => shr_log_errMsg
-    use clm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment 
+    use elm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment 
     use decompMod       , only : bounds_type
     use CanopyStateType , only : canopystate_type
     use EnergyFluxType  , only : energyflux_type
@@ -324,7 +324,7 @@ contains
     use shr_kind_mod         , only : r8 => shr_kind_r8  
     use shr_log_mod          , only : errMsg => shr_log_errMsg
     use decompMod            , only : bounds_type
-    use clm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
+    use elm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use VegetationPropertiesType     , only : veg_vp
     use TemperatureType      , only : temperature_type
     use SoilStateType        , only : soilstate_type
@@ -449,7 +449,7 @@ contains
     ! USES
     use shr_kind_mod    , only : r8 => shr_kind_r8  
     use shr_log_mod     , only : errMsg => shr_log_errMsg
-    use clm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment 
+    use elm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment 
     use decompMod       , only : bounds_type
     use CanopyStateType , only : canopystate_type
     use EnergyFluxType  , only : energyflux_type

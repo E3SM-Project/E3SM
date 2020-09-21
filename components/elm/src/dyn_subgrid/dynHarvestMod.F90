@@ -24,7 +24,7 @@ module dynHarvestMod
   use CNCarbonFluxType      , only : carbonflux_type
   use CNNitrogenFluxType    , only : nitrogenflux_type
    use VegetationPropertiesType        , only : veg_vp
-  use clm_varcon            , only : grlnd
+  use elm_varcon            , only : grlnd
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
   use ColumnType            , only : col_pp
@@ -184,7 +184,7 @@ contains
     !
     ! !USES:
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
-    use clm_varcon      , only : secspday
+    use elm_varcon      , only : secspday
     use clm_time_manager, only : get_days_per_year
     !
     ! !ARGUMENTS:

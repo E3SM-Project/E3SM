@@ -18,8 +18,8 @@ module restFileMod
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
   use clm_varctl           , only : use_erosion
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
-  use clm_varcon           , only : c13ratio, c14ratio
-  use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
+  use elm_varcon           , only : c13ratio, c14ratio
+  use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type

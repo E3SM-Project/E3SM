@@ -92,7 +92,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval, ispval
+    use elm_varcon    , only: spval, ispval
     !
     ! !ARGUMENTS:
     class(surfalb_type) :: this
@@ -159,7 +159,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval
+    use elm_varcon    , only: spval
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:

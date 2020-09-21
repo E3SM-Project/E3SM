@@ -21,7 +21,7 @@ module lnd2glcMod
   use domainMod       , only : ldomain
   use clm_varpar      , only : maxpatch_glcmec
   use clm_varctl      , only : iulog
-  use clm_varcon      , only : spval, tfrz, namec
+  use elm_varcon      , only : spval, tfrz, namec
   use column_varcon   , only : col_itype_to_icemec_class
   use landunit_varcon , only : istice_mec, istsoil
   use abortutils      , only : endrun
@@ -81,7 +81,7 @@ contains
     ! Initialize land variables required by glc
     !
     ! !USES:
-    use clm_varcon , only : spval
+    use elm_varcon , only : spval
     use histFileMod, only : hist_addfld1d
     !
     ! !ARGUMENTS:

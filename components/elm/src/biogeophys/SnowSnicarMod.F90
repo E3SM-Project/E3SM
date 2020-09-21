@@ -12,7 +12,7 @@ module SnowSnicarMod
   use shr_sys_mod     , only : shr_sys_flush
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use clm_varctl      , only : iulog
-  use clm_varcon      , only : namec 
+  use elm_varcon      , only : namec 
   use shr_const_mod   , only : SHR_CONST_RHOICE
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
@@ -1163,7 +1163,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_step_size, get_nstep
     use clm_varpar       , only : nlevsno
-    use clm_varcon       , only : spval
+    use elm_varcon       , only : spval
     use shr_const_mod    , only : SHR_CONST_RHOICE, SHR_CONST_PI
     !
     ! !ARGUMENTS:

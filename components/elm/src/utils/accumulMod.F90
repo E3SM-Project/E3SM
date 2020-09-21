@@ -249,7 +249,7 @@ contains
     ! is assigned to  indicate the time average is not yet valid.
     !
     ! !USES:
-    use clm_varcon, only : spval, ispval
+    use elm_varcon, only : spval, ispval
     !
     ! !ARGUMENTS:
     implicit none
@@ -310,7 +310,7 @@ contains
     ! is assigned to  indicate the time average is not yet valid.
     !
     ! !USES:
-    use clm_varcon, only : spval
+    use elm_varcon, only : spval
     !
     ! !ARGUMENTS:
     implicit none
@@ -576,7 +576,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : is_restart
-    use clm_varcon      , only : ispval
+    use elm_varcon      , only : ispval
     use ncdio_pio
     use pio
     !

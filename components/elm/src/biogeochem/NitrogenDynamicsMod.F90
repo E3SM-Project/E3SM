@@ -10,7 +10,7 @@ module NitrogenDynamicsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : dzsoi_decomp, zisoi
+  use elm_varcon          , only : dzsoi_decomp, zisoi
   use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
@@ -163,7 +163,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -626,7 +626,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
         
     !

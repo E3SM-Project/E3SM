@@ -7,7 +7,7 @@ module CropMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_varcon          , only : tfrz
+  use elm_varcon          , only : tfrz
   use VegetationType      , only : veg_pp
   !
   implicit none
@@ -37,7 +37,7 @@ contains
     !         (delta + gamma*(1+0.34*u2))
 
     ! !USES:
-    use clm_varcon       , only : tfrz
+    use elm_varcon       , only : tfrz
 
     ! !ARGUMENTS:
     implicit none

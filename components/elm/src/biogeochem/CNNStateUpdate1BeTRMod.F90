@@ -9,7 +9,7 @@ module CNNStateUpdate1BeTRMod
   use clm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use clm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl             , only : iulog, use_nitrif_denitrif
-  use clm_varcon             , only : nitrif_n2o_loss_frac
+  use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use VegetationPropertiesType      , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con

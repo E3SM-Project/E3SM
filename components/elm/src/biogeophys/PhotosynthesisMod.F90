@@ -15,7 +15,7 @@ module  PhotosynthesisMod
   use clm_varpar          , only : nlevcan
   use clm_varctl          , only : use_hydrstress
   use clm_varpar          , only : nvegwcs, mxpft
-  use clm_varcon          , only : namep
+  use elm_varcon          , only : namep
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
   use VegetationPropertiesType      , only : veg_vp
@@ -204,7 +204,7 @@ contains
     ! Note: This subroutine is not called via FATES (RGK)
     !
     ! !USES:
-    use clm_varcon     , only : rgas, tfrz
+    use elm_varcon     , only : rgas, tfrz
     use clm_varctl     , only : cnallocate_carbon_only 
     use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
@@ -1378,7 +1378,7 @@ contains
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
     !!USES
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
@@ -1402,7 +1402,7 @@ contains
     ! !REVISION HISTORY
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
@@ -1429,7 +1429,7 @@ contains
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
     !!USES
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: hd    ! deactivation energy in photosynthesis temperature function (J/mol)
@@ -1589,7 +1589,7 @@ contains
     ! method
     !
     ! !USES:
-    use clm_varcon        , only : rgas, tfrz, rpi
+    use elm_varcon        , only : rgas, tfrz, rpi
     use clm_varctl        , only : cnallocate_carbon_only
     !use clm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
     use clm_varpar        , only : nlevsoi
@@ -3287,7 +3287,7 @@ contains
     !
     ! USES
     use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varcon        , only : rgas
     !!
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3511,7 +3511,7 @@ contains
     !
     ! USES
     use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varcon        , only : rgas
     !
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3687,7 +3687,7 @@ contains
     !
     ! USES
     use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varcon        , only : rgas
     use ColumnType        , only : col_pp
     !
     ! !ARGUMENTS:
@@ -3870,7 +3870,7 @@ contains
     !  calculate sunlit and shaded transpiration using gb_MOL and gs_MOL
     ! !USES:
     !
-    use clm_varcon        , only : rgas
+    use elm_varcon        , only : rgas
     implicit none
     !
     ! !ARGUMENTS:

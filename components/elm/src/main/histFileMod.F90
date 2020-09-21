@@ -13,8 +13,8 @@ module histFileMod
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog, use_vertsoilc, use_fates
-  use clm_varcon     , only : spval, ispval, dzsoi_decomp 
-  use clm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
+  use elm_varcon     , only : spval, ispval, dzsoi_decomp 
+  use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
   use GridcellType   , only : grc_pp                
   use LandunitType   , only : lun_pp                
@@ -436,7 +436,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only: get_prev_time
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
     !
@@ -2298,7 +2298,7 @@ contains
     ! contents.
     !
     ! !USES:
-    use clm_varcon      , only : zsoi, zlak, secspday
+    use elm_varcon      , only : zsoi, zlak, secspday
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
@@ -3167,7 +3167,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time, get_prev_date
-    use clm_varcon      , only : secspday
+    use elm_varcon      , only : secspday
     use perf_mod        , only : t_startf, t_stopf
     use clm_varpar      , only : nlevgrnd
     !

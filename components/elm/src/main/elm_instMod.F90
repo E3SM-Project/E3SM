@@ -143,7 +143,7 @@ contains
     !
     ! DESCRIPTION
     ! initialize biogeochemical variables
-    use clm_varcon            , only : c13ratio, c14ratio
+    use elm_varcon            , only : c13ratio, c14ratio
     use histFileMod           , only : hist_printflds
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
@@ -246,7 +246,7 @@ contains
     !
     use shr_scam_mod                      , only : shr_scam_getCloseLatLon
     use landunit_varcon                   , only : istice, istice_mec, istsoil
-    use clm_varcon                        , only : h2osno_max, bdsno
+    use elm_varcon                        , only : h2osno_max, bdsno
     use domainMod                         , only : ldomain
     use clm_varpar                        , only : nlevsno, numpft
     use clm_varctl                        , only : single_column, fsurdat, scmlat, scmlon

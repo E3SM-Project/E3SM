@@ -80,7 +80,7 @@ contains
   subroutine InitAllocate(this, bounds)
     ! USES
     use clm_varpar            , only : nlevsno, nlevgrnd
-    use clm_varcon            , only : spval
+    use elm_varcon            , only : spval
     use decompMod             , only : bounds_type
 
     ! ARGUMENTS:

@@ -755,7 +755,7 @@ contains
     ! Send the land model domain information to the coupler
     !
     ! !USES:
-    use clm_varcon  , only : re
+    use elm_varcon  , only : re
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds ! bounds

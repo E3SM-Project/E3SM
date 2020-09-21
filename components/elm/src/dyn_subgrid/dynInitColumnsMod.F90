@@ -12,7 +12,7 @@ module dynInitColumnsMod
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use clm_varctl        , only : iulog
-  use clm_varcon        , only : ispval, namec
+  use elm_varcon        , only : ispval, namec
   use TemperatureType   , only : temperature_type
   use SoilHydrologyType , only : soilhydrology_type
   use WaterstateType    , only : waterstate_type
@@ -156,7 +156,7 @@ contains
     ! return ispval from this function. Within this function, we check this assumption.
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer              :: c_template ! function result
@@ -186,7 +186,7 @@ contains
     ! Returns ispval if there is no column to use for initialization
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     use landunit_varcon, only : istsoil, istcrop
     !
     ! !ARGUMENTS:
@@ -231,7 +231,7 @@ contains
     ! time step.
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer :: c_template  ! function return value

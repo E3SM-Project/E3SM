@@ -20,7 +20,7 @@ module FireMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : iulog
   use clm_varpar             , only : nlevdecomp, ndecomp_pools
-  use clm_varcon             , only : dzsoi_decomp
+  use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
   use spmdMod                , only : masterproc, mpicom, comp_id
   use fileutils              , only : getavu, relavu
@@ -129,7 +129,7 @@ contains
     ! !USES:
     use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
     use clm_varpar           , only: max_patch_per_col
-    use clm_varcon           , only: secspday
+    use elm_varcon           , only: secspday
     use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
     use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
@@ -669,7 +669,7 @@ contains
    use clm_varpar           , only: max_patch_per_col
    use clm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
-   use clm_varcon           , only: secspday
+   use elm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
    !
    ! !ARGUMENTS:

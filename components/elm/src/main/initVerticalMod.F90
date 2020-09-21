@@ -18,7 +18,7 @@ module initVerticalMod
   use clm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varctl     , only : use_erosion
-  use clm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
+  use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil

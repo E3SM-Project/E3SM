@@ -9,7 +9,7 @@ module TemperatureType
   use abortutils      , only : endrun
   use clm_varctl      , only : iulog
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevlak, nlevurb, crop_prog 
-  use clm_varcon      , only : spval
+  use elm_varcon      , only : spval
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
@@ -298,7 +298,7 @@ contains
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use shr_const_mod  , only : SHR_CONST_TKFRZ
-    use clm_varcon     , only : denice, denh2o, sb
+    use elm_varcon     , only : denice, denh2o, sb
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon  , only : icol_road_imperv, icol_roof, icol_sunwall
     use column_varcon  , only : icol_shadewall, icol_road_perv

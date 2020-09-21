@@ -12,7 +12,7 @@ module UrbanRadiationMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use clm_varpar        , only : numrad
-  use clm_varcon        , only : isecspday, degpsec, namel
+  use elm_varcon        , only : isecspday, degpsec, namel
   use clm_varctl        , only : iulog
   use abortutils        , only : endrun  
   use UrbanParamsType   , only : urbanparams_type
@@ -58,7 +58,7 @@ contains
     ! Also net and upward longwave fluxes.
 
     ! !USES:
-    use clm_varcon          , only : spval, sb, tfrz
+    use elm_varcon          , only : spval, sb, tfrz
     use column_varcon       , only : icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager    , only : get_curr_date, get_step_size
@@ -337,7 +337,7 @@ contains
     ! multiple reflection. Also net longwave radiation for urban roof. 
     !
     ! !USES:
-    use clm_varcon , only : sb
+    use elm_varcon , only : sb
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                  

@@ -1,4 +1,4 @@
-module clm_varcon
+module elm_varcon
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -23,7 +23,7 @@ module clm_varcon
   !-----------------------------------------------------------------------
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: clm_varcon_init  ! initialize constants in clm_varcon
+  public :: elm_varcon_init  ! initialize constants in elm_varcon
   !
   ! !REVISION HISTORY:
   ! Created by Mariana Vertenstein
@@ -225,10 +225,10 @@ module clm_varcon
 contains
 
   !------------------------------------------------------------------------------
-  subroutine clm_varcon_init()
+  subroutine elm_varcon_init()
     !
     ! !DESCRIPTION:
-    ! This subroutine initializes constant arrays in clm_varcon. 
+    ! This subroutine initializes constant arrays in elm_varcon. 
     ! MUST be called  after clm_varpar_init.
     !
     ! USES
@@ -247,6 +247,6 @@ contains
     allocate( zisoifl(0:nlevsoifl            ))
     allocate( dzsoifl(1:nlevsoifl            ))
 
-  end subroutine clm_varcon_init
+  end subroutine elm_varcon_init
 
-end module clm_varcon
+end module elm_varcon

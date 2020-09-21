@@ -10,7 +10,7 @@ module SurfaceRadiationMod
   use clm_varctl        , only : use_snicar_frc, use_fates
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
-  use clm_varcon        , only : namec
+  use elm_varcon        , only : namec
   use atm2lndType       , only : atm2lnd_type
   use WaterstateType    , only : waterstate_type
   use CanopyStateType   , only : canopystate_type
@@ -143,7 +143,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only : spval
+    use elm_varcon    , only : spval
     use histFileMod   , only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
@@ -324,7 +324,7 @@ contains
      !
      ! !USES:
      use clm_varpar       , only : numrad, nlevsno
-     use clm_varcon       , only : spval, degpsec, isecspday
+     use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop 
      use clm_varctl       , only : subgridflag, use_snicar_frc, iulog
      use clm_time_manager , only : get_curr_date, get_step_size

@@ -8,7 +8,7 @@ module CanopyStateType
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
   use landunit_varcon , only : istsoil, istcrop
-  use clm_varcon      , only : spval  
+  use elm_varcon      , only : spval  
   use clm_varpar      , only : nlevcan, nvegwcs
   use clm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress
   use LandunitType    , only : lun_pp                

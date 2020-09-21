@@ -7,7 +7,7 @@ Module SoilHydrologyType
   use abortutils            , only : endrun
   use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
   use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
-  use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
+  use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
   use clm_varctl            , only : iulog 
   use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
@@ -226,9 +226,9 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use clm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb, bdsno 
-    use clm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
-    use clm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
+    use elm_varcon      , only : denice, denh2o, sb, bdsno 
+    use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
+    use elm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
     use column_varcon   , only : icol_shadewall, icol_road_perv
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
@@ -622,7 +622,7 @@ contains
     ! added by M. Huang
     !
     ! !USES:
-    use clm_varcon  , only : denh2o, denice
+    use elm_varcon  , only : denh2o, denice
     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
     !
     ! !ARGUMENTS:
@@ -748,7 +748,7 @@ contains
      ! h2osoi_ice is actually water equavlent ice content.
      !
      ! !USES:
-     use clm_varcon  , only : denh2o, denice
+     use elm_varcon  , only : denh2o, denice
      use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
      !
      ! !ARGUMENTS:

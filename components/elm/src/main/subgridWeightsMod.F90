@@ -93,7 +93,7 @@ module subgridWeightsMod
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
   use clm_varctl   , only : iulog, all_active
-  use clm_varcon   , only : nameg, namel, namec, namep
+  use elm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
   use GridcellType , only : grc_pp
   use TopounitType , only : top_pp  
@@ -474,7 +474,7 @@ contains
     ! Get the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     real(r8) :: weight  ! function result
@@ -503,7 +503,7 @@ contains
     ! Set the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer , intent(in) :: t      ! topounit index

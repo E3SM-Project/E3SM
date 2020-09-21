@@ -19,7 +19,7 @@ module SnowHydrologyMod
   use abortutils      , only : endrun
   use clm_varpar      , only : nlevsno
   use clm_varctl      , only : iulog
-  use clm_varcon      , only : namec
+  use elm_varcon      , only : namec
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TemperatureType , only : temperature_type
@@ -98,7 +98,7 @@ contains
     ! to being called.
     !
     ! !USES:
-    use clm_varcon        , only : denh2o, denice, wimp, ssi
+    use elm_varcon        , only : denh2o, denice, wimp, ssi
     use landunit_varcon   , only : istsoil
     use clm_time_manager  , only : get_step_size
     use AerosolMod        , only : AerosolFluxes
@@ -525,7 +525,7 @@ contains
      !
      ! !USES:
      use clm_time_manager, only : get_step_size
-     use clm_varcon      , only : denice, denh2o, tfrz, rpi
+     use elm_varcon      , only : denice, denh2o, tfrz, rpi
      use landunit_varcon , only : istice_mec, istdlak, istsoil, istcrop
      use clm_varctl      , only : subgridflag
      !
@@ -686,7 +686,7 @@ contains
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
      use clm_time_manager , only : get_step_size
-     use clm_varcon       , only : denh2o     
+     use elm_varcon       , only : denh2o     
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          
@@ -1045,7 +1045,7 @@ contains
      ! Subdivides snow layers if they exceed their prescribed maximum thickness.
      !
      ! !USES:
-     use clm_varcon,  only : tfrz 
+     use elm_varcon,  only : tfrz 
      use LakeCon   ,  only : lsadz
      !
      ! !ARGUMENTS:
@@ -1712,7 +1712,7 @@ contains
      ! that of the combined element.
      !
      ! !USES:
-     use clm_varcon,  only : cpice, cpliq, tfrz, hfus
+     use elm_varcon,  only : cpice, cpliq, tfrz, hfus
      !
      ! !ARGUMENTS:
      implicit none

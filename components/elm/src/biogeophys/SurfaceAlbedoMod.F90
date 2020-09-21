@@ -12,7 +12,7 @@ module SurfaceAlbedoMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
-  use clm_varcon        , only : grlnd, namep
+  use elm_varcon        , only : grlnd, namep
   use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
   use VegetationPropertiesType    , only : veg_vp
@@ -1110,7 +1110,7 @@ contains
      !
      ! !USES:
     use clm_varpar, only : numrad
-     use clm_varcon      , only : tfrz
+     use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak
      use LakeCon         , only : lakepuddling
     !
@@ -1249,7 +1249,7 @@ contains
      !
      ! !USES:
      use clm_varpar, only : numrad, nlevcan
-     use clm_varcon, only : omegas, tfrz, betads, betais
+     use elm_varcon, only : omegas, tfrz, betads, betais
      use clm_varctl, only : iulog
      !
      ! !ARGUMENTS:

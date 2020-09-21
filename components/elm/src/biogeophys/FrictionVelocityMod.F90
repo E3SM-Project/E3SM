@@ -44,7 +44,7 @@ contains
     ! Vol. 11, 2628-2644.
     !
     ! !USES:
-    use clm_varcon, only : vkc
+    use elm_varcon, only : vkc
     use clm_varctl, only : iulog
     !
     ! !ARGUMENTS:
@@ -450,7 +450,7 @@ contains
     ! Vol. 11, 2628-2644.
     !
     ! !USES:
-    use clm_varcon, only : grav
+    use elm_varcon, only : grav
     !
     ! !ARGUMENTS:
     implicit none

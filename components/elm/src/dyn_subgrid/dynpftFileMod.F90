@@ -15,7 +15,7 @@ module dynpftFileMod
   use clm_varctl          , only : iulog
   use abortutils          , only : endrun
   use spmdMod             , only : masterproc, mpicom
-  use clm_varcon          , only : grlnd, nameg
+  use elm_varcon          , only : grlnd, nameg
   use LandunitType        , only : lun_pp                
   !DW  not use at all     !   use ColumnType          , only : col                
   use VegetationType           , only : veg_pp                

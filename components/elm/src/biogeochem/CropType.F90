@@ -11,7 +11,7 @@ module CropType
   use spmdMod             , only : masterproc
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : spval
+  use elm_varcon          , only : spval
   use clm_varpar          , only : crop_prog
   use clm_varctl          , only : iulog, use_crop
   use ColumnDataType      , only : col_es

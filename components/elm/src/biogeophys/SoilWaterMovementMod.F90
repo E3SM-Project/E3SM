@@ -85,7 +85,7 @@ contains
     use WaterFluxType              , only : waterflux_type
     use WaterStateType             , only : waterstate_type
     use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
-    use clm_varcon                 , only : denh2o, denice, watmin
+    use elm_varcon                 , only : denh2o, denice, watmin
     use ColumnType                 , only : col_pp
     use ExternalModelConstants     , only : EM_VSFM_SOIL_HYDRO_STAGE
     use ExternalModelConstants     , only : EM_ID_VSFM
@@ -270,8 +270,8 @@ contains
     use shr_kind_mod         , only : r8 => shr_kind_r8     
     use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
     use decompMod            , only : bounds_type        
-    use clm_varcon           , only : wimp,grav,hfus,tfrz
-    use clm_varcon           , only : e_ice,denh2o, denice
+    use elm_varcon           , only : wimp,grav,hfus,tfrz
+    use elm_varcon           , only : e_ice,denh2o, denice
     use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
@@ -863,7 +863,7 @@ contains
     ! !USES:
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use decompMod                 , only : bounds_type
-    use clm_varcon                , only : denh2o
+    use elm_varcon                , only : denh2o
     use clm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager          , only : get_step_size
     use SoilStateType             , only : soilstate_type
@@ -873,7 +873,7 @@ contains
     use WaterStateType            , only : waterstate_type
     use VegetationType            , only : veg_pp
     use ColumnType                , only : col_pp
-    use clm_varcon                , only : watmin
+    use elm_varcon                , only : watmin
     use LandunitType              , only : lun_pp
     use landunit_varcon           , only : istsoil, istcrop
     use clm_varctl                , only : lateral_connectivity

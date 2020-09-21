@@ -7,7 +7,7 @@ module LakeStateType
   ! !USES:
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_log_mod  , only : errMsg => shr_log_errMsg
-  use clm_varcon   , only : spval, grlnd
+  use elm_varcon   , only : spval, grlnd
   use decompMod    , only : bounds_type
   use spmdMod      , only : masterproc
   use abortUtils   , only : endrun
@@ -161,7 +161,7 @@ contains
     use clm_varctl , only : fsurdat
     use clm_varctl , only : iulog
     use clm_varpar , only : nlevlak
-    use clm_varcon , only : tkwat 
+    use elm_varcon , only : tkwat 
     use fileutils  , only : getfil
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
     use ncdio_pio  , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen

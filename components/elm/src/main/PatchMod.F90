@@ -2,7 +2,7 @@ module PatchMod
 
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varcon     , only : ispval
+  use elm_varcon     , only : ispval
   use VegetationType , only : veg_pp
   !
   ! !PUBLIC TYPES:

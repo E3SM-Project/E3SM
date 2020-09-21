@@ -26,7 +26,7 @@ contains
     use shr_log_mod, only: errMsg => shr_log_errMsg
     use decompMod  , only: bounds_type, get_clmlevel_gsmap, get_proc_bounds
     use spmdMod    , only: iam
-    use clm_varcon , only: nameg, namel, namec, namep
+    use elm_varcon , only: nameg, namel, namec, namep
     use clm_varctl , only: iulog
     use mct_mod
     !
@@ -74,7 +74,7 @@ contains
     use shr_log_mod, only: errMsg => shr_log_errMsg
     use decompMod  , only: bounds_type, get_clmlevel_gsmap, get_proc_bounds
     use spmdMod    , only: iam
-    use clm_varcon , only: nameg, namel, namec, namep
+    use elm_varcon , only: nameg, namel, namec, namep
     use clm_varctl , only: iulog
     use mct_mod
     !
@@ -128,7 +128,7 @@ contains
     use shr_sys_mod  , only : shr_sys_abort
     use shr_log_mod  , only : errMsg => shr_log_errMsg
     use clm_varctl   , only : iulog
-    use clm_varcon   , only : nameg, namel, namec, namep
+    use elm_varcon   , only : nameg, namel, namec, namep
     use GridcellType , only : grc_pp                
     use LandunitType , only : lun_pp                
     use ColumnType   , only : col_pp                

@@ -29,7 +29,7 @@ contains
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
     use clm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
     use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
-    use clm_varcon       , only: rair, o2_molar_const, c13ratio
+    use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
@@ -1152,7 +1152,7 @@ contains
          call endrun( sub//' ERROR: Invalid co2_type_idx, must be 0, 1, or 2 (constant, prognostic, or diagnostic)' )
        end if
        ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
-       ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
+       ! If using C13, then get the c13ratio from elm_varcon (constant value for pre-industrial atmosphere)
 
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)

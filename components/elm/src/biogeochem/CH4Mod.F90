@@ -13,8 +13,8 @@ module CH4Mod
   use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use clm_varpar         , only : nlevsoi, ngases, nlevsno, nlevdecomp
-  use clm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
-  use clm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
+  use elm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
+  use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
   use clm_time_manager   , only : get_step_size, get_nstep
   use clm_varctl         , only : iulog, use_cn, use_nitrif_denitrif, use_lch4
@@ -1284,7 +1284,7 @@ contains
     use clm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
     use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
-    use clm_varcon         , only : secspday
+    use elm_varcon         , only : secspday
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds   
@@ -2392,7 +2392,7 @@ contains
     ! By default upland veg. has small 5% porosity but this can be switched to be equal to inundated porosity.
 
     ! !USES:
-    use clm_varcon       , only : rpi
+    use elm_varcon       , only : rpi
     use clm_time_manager , only : get_step_size
     use pftvarcon        , only : nc3_arctic_grass, crop, nc3_nonarctic_grass, nc4_grass, noveg
     use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
@@ -3652,7 +3652,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only: get_step_size, get_days_per_year, get_nstep
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  

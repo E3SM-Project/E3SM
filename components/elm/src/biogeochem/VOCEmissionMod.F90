@@ -22,7 +22,7 @@ module VOCEmissionMod
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
   use fileutils          , only : getfil
-  use clm_varcon         , only : grlnd
+  use elm_varcon         , only : grlnd
   use atm2lndType        , only : atm2lnd_type
   use CanopyStateType    , only : canopystate_type
   use PhotosynthesisType , only : photosyns_type
@@ -173,7 +173,7 @@ contains
     ! Initialize history output fields for MEGAN emissions diagnositics
     !
     ! !USES 
-    use clm_varcon  , only : spval
+    use elm_varcon  , only : spval
     use histFileMod , only : hist_addfld1d
     !
     ! !ARGUMENTS:
@@ -787,7 +787,7 @@ contains
     ! Guenther et al., 2006 eq 3
     !
     ! !USES:
-    use clm_varcon   , only : denice
+    use elm_varcon   , only : denice
     use clm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
@@ -820,7 +820,7 @@ contains
     ! convert to volumetric soil water using equation 7.118 of the CLM4 Technical Note
     !
     ! !USES:
-    use clm_varcon   , only : denice
+    use elm_varcon   , only : denice
     use clm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:

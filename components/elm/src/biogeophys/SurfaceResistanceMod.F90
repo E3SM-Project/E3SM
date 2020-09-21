@@ -100,7 +100,7 @@ contains
      use shr_log_mod     , only : errMsg => shr_log_errMsg   
      use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
      use decompMod       , only : bounds_type
-     use clm_varcon      , only : denh2o, denice
+     use elm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
@@ -226,7 +226,7 @@ contains
      !   Sci = v/Di, Di is diffusivity of gas i
      !   v : kinetic viscosity
 
-     use clm_varcon         , only :  vkc
+     use elm_varcon         , only :  vkc
 
      real(r8), intent(in) :: rho
      real(r8), intent(in) :: temp              ! air temperature

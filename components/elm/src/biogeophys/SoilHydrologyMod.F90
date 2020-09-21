@@ -8,7 +8,7 @@ module SoilHydrologyMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use clm_varctl        , only : iulog, use_vichydro
-  use clm_varcon        , only : e_ice, denh2o, denice, rpi
+  use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type  
   use SoilStateType     , only : soilstate_type
@@ -45,7 +45,7 @@ contains
     ! Calculate surface runoff
     !
     ! !USES:
-    use clm_varcon      , only : denice, denh2o, wimp, pondmx_urban
+    use elm_varcon      , only : denice, denh2o, wimp, pondmx_urban
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_imperv, icol_road_perv
     use clm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
@@ -264,7 +264,7 @@ contains
      use shr_const_mod    , only : shr_const_pi
      use clm_varpar       , only : nlayer, nlayert
      use clm_varpar       , only : nlevsoi, nlevgrnd
-     use clm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
+     use elm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
      use clm_time_manager , only : get_step_size
@@ -542,7 +542,7 @@ contains
      !
      ! !USES:
      use clm_time_manager , only : get_step_size
-     use clm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
+     use elm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
      use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
@@ -888,7 +888,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
-     use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
+     use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
@@ -1533,7 +1533,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
-     use clm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
+     use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
      use clm_varctl       , only : use_vsfm
@@ -1953,7 +1953,7 @@ contains
      ! mapping from VIC to CLM layers, M.Huang
      !
      ! !USES:
-     use clm_varcon  , only : denh2o, denice, watmin
+     use elm_varcon  , only : denh2o, denice, watmin
      use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
      use decompMod   , only : bounds_type
      !

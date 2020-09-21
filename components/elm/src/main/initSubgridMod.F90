@@ -11,7 +11,7 @@ module initSubgridMod
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
   use clm_varctl     , only : iulog
-  use clm_varcon     , only : namep, namec, namel, namet
+  use elm_varcon     , only : namep, namec, namel, namet
   use decompMod      , only : bounds_type
   use GridcellType   , only : grc_pp                
   Use TopounitType   , only : top_pp
@@ -59,7 +59,7 @@ contains
     ! subroutine will set c_pi(1) = 1, c_pf(1) = 4, c_pi(2) = 5, c_pf(2) = 12.
     !
     ! !USES
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
@@ -193,7 +193,7 @@ contains
     ! Checks and writes out a summary of subgrid data
     !
     ! !USES
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     use landunit_varcon, only : max_lunit
     !
     ! !ARGUMENTS
@@ -489,7 +489,7 @@ contains
     ! new patch is added at pi+1, and the pi argument is incremented accordingly.
     !
     ! !USES:
-    use clm_varcon      , only : ispval
+    use elm_varcon      , only : ispval
     use landunit_varcon , only : istsoil, istcrop
     use clm_varpar      , only : natpft_lb
     !

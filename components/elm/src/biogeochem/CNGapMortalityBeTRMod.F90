@@ -90,7 +90,7 @@ contains
     !
     ! !USES:
     use clm_time_manager , only: get_days_per_year
-    use clm_varcon       , only: secspday
+    use elm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
     use clm_varctl       , only: spinup_state, spinup_mortality_factor
     !

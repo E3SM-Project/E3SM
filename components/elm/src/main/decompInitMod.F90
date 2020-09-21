@@ -12,7 +12,7 @@ module decompInitMod
   use spmdMod         , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils      , only : endrun
   use clm_varctl      , only : iulog, use_fates
-  use clm_varcon      , only : grlnd
+  use elm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp                
   use TopounitType    , only : top_pp                

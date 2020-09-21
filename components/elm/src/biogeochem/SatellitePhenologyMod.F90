@@ -17,7 +17,7 @@ module SatellitePhenologyMod
   use abortutils      , only : endrun
   use clm_varctl      , only : scmlat,scmlon,single_column
   use clm_varctl      , only : iulog, use_lai_streams
-  use clm_varcon      , only : grlnd
+  use elm_varcon      , only : grlnd
   use controlMod      , only : NLFilename
   use decompMod       , only : gsmap_lnd_gdc2glo
   use domainMod       , only : ldomain

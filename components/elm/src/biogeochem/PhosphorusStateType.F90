@@ -7,7 +7,7 @@ module PhosphorusStateType
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use clm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
-  use clm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
+  use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop, istsoil 
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
   use clm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state

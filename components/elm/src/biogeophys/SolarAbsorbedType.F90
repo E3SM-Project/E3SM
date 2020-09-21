@@ -5,7 +5,7 @@ module SolarAbsorbedType
   use shr_kind_mod , only: r8 => shr_kind_r8
   use shr_log_mod  , only: errMsg => shr_log_errMsg
   use decompMod    , only : bounds_type
-  use clm_varcon   , only : spval
+  use elm_varcon   , only : spval
   !
   ! !PUBLIC TYPES:
   implicit none

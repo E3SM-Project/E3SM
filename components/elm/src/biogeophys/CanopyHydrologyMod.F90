@@ -29,7 +29,7 @@ module CanopyHydrologyMod
   use ColumnDataType    , only : col_es, col_ws, col_wf  
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ws, veg_wf  
-  use clm_varcon        , only : snw_rds_min
+  use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
   !
@@ -115,7 +115,7 @@ contains
      ! temperature in the subroutine clm\_leaftem.f90, not in this subroutine.
      !
      ! !USES:
-     use clm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
+     use elm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak 
      use clm_varctl         , only : subgridflag

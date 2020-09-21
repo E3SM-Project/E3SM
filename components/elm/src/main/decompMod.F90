@@ -10,7 +10,7 @@ module decompMod
   ! Must use shr_sys_abort rather than endrun here to avoid circular dependency
   use shr_sys_mod , only : shr_sys_abort 
   use clm_varctl  , only : iulog
-  use clm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
+  use elm_varcon  , only : grlnd, nameg, namet, namel, namec, namep, nameCohort
   use mct_mod     , only : mct_gsMap
   !
   ! !PUBLIC TYPES:

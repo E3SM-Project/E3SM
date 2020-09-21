@@ -626,7 +626,7 @@ contains
     ! Send the land model domain information to the coupler
     !
     ! !USES:
-    use clm_varcon  , only: re
+    use elm_varcon  , only: re
     use domainMod   , only: ldomain
     use spmdMod     , only: iam
     use mct_mod     , only: mct_gsMap, mct_gGrid, mct_gGrid_importIAttr

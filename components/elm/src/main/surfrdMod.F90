@@ -11,7 +11,7 @@ module surfrdMod
   use abortutils      , only : endrun
   use clm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
-  use clm_varcon      , only : grlnd
+  use elm_varcon      , only : grlnd
   use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use clm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
@@ -138,7 +138,7 @@ contains
     ! o real longitude of grid cell (degrees)
     !
     ! !USES:
-    use clm_varcon, only : spval, re
+    use elm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
     use clm_varctl, only : use_pflotran

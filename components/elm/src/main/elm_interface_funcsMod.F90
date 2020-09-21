@@ -70,7 +70,7 @@ module elm_interface_funcsMod
   use clm_varpar            , only : nlevsoi, nlevsno, nlevgrnd, nlevdecomp_full
   use clm_varpar            , only : ndecomp_pools, ndecomp_cascade_transitions
   use clm_varpar            , only : max_patch_per_col
-  use clm_varcon            , only : denh2o, denice, tfrz, dzsoi_decomp
+  use elm_varcon            , only : denh2o, denice, tfrz, dzsoi_decomp
   use landunit_varcon       , only : istsoil, istcrop
 
   ! misc.

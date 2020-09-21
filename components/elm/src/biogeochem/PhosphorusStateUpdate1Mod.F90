@@ -9,7 +9,7 @@ module PhosphorusStateUpdate1Mod
   use clm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use clm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl             , only : iulog, use_nitrif_denitrif
-  use clm_varcon             , only : nitrif_n2o_loss_frac
+  use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : npcropmin, nc3crop
   use soilorder_varcon       , only : smax,ks_sorption
   use VegetationPropertiesType         , only : veg_vp
@@ -28,7 +28,7 @@ module PhosphorusStateUpdate1Mod
   use clm_varctl             , only : forest_fert_exp
   use clm_varctl             , only : NFIX_PTASE_plant
   use decompMod              , only : bounds_type
-  use clm_varcon             , only : dzsoi_decomp
+  use elm_varcon             , only : dzsoi_decomp
   use clm_varctl             , only : use_fates
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf

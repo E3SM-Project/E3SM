@@ -18,7 +18,7 @@ module EcosystemBalanceCheckMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use clm_varpar          , only : nlevdecomp
-  use clm_varcon          , only : dzsoi_decomp
+  use elm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
 

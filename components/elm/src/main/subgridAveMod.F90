@@ -11,7 +11,7 @@ module subgridAveMod
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon , only : icol_road_perv , icol_road_imperv
-  use clm_varcon    , only : grlnd, nameg, namel, namec, namep,spval 
+  use elm_varcon    , only : grlnd, nameg, namel, namec, namep,spval 
   use clm_varctl    , only : iulog
   use abortutils    , only : endrun
   use decompMod     , only : bounds_type

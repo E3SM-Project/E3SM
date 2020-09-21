@@ -6,7 +6,7 @@ module SoilLittVertTranspMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
-  use clm_varcon             , only : secspday
+  use elm_varcon             , only : secspday
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -104,7 +104,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_step_size, get_curr_date
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
-    use clm_varcon       , only : zsoi, dzsoi_decomp, zisoi
+    use elm_varcon       , only : zsoi, dzsoi_decomp, zisoi
     use TridiagonalMod   , only : Tridiagonal
     !
     ! !ARGUMENTS:

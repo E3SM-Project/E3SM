@@ -168,7 +168,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval
+    use elm_varcon    , only: spval
     use clm_varpar    , only: nlevsno 
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     use histFileMod   , only: no_snow_normal, no_snow_zero
@@ -280,7 +280,7 @@ contains
     !
     ! !USES:
     use clm_varpar , only : nlevsno, nlevsoi
-    use clm_varcon , only : spval
+    use elm_varcon , only : spval
     use clm_varctl , only : iulog  
     use clm_varpar , only : nlevsno
     use spmdMod    , only : masterproc

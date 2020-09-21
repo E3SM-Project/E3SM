@@ -55,7 +55,7 @@ contains
     !
     ! !USES:
     use clm_varpar                , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
-    use clm_varcon                , only: clm_varcon_init
+    use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
     use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
@@ -121,7 +121,7 @@ contains
 
     call control_init()
     call clm_varpar_init()
-    call clm_varcon_init()
+    call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
     call clm_petsc_init()
@@ -394,7 +394,7 @@ contains
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
     use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
-    use clm_varcon            , only : h2osno_max, bdsno, spval
+    use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
     use clm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates

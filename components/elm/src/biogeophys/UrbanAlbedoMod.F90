@@ -12,7 +12,7 @@ module UrbanAlbedoMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use clm_varpar        , only : numrad
-  use clm_varcon        , only : isecspday, degpsec, namel
+  use elm_varcon        , only : isecspday, degpsec, namel
   use clm_varctl        , only : iulog
   use abortutils        , only : endrun  
   use UrbanParamsType   , only : urbanparams_type
@@ -56,7 +56,7 @@ contains
     !
     ! !USES:
     use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz
-    use clm_varcon    , only : sb
+    use elm_varcon    , only : sb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
     !
@@ -553,7 +553,7 @@ contains
     ! and all solar zenith angles from 1 to 90 deg by 1
     !
     ! !USES:
-    use clm_varcon, only : rpi
+    use elm_varcon, only : rpi
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                      
