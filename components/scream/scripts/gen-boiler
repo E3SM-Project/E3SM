@@ -74,6 +74,8 @@ multiple physics. This may also improve performance.
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run instead of modifying files")
 
+    # TODO: support subroutine rename
+    # TODO: prob need more unit tests and a bit more documentation
     args = parser.parse_args(args[1:])
 
     expect(args.source_repo is not None, "Must either run from a valid repo or provide a --source-repo")

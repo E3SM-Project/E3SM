@@ -70,6 +70,8 @@ namespace {physics} {
 
 #endif
 """.format(physics=phys, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+
+    "cxx_eti": lambda phys, sub, gen_code: gen_code
 }
 
 # piece map. maps the name of a piece of boilerplate that needs to be genereate to:
@@ -79,45 +81,51 @@ PIECES = {
     "f90_c2f_bind"  : (
         lambda phys, sub, gb: "{}_iso_c.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)),
+        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"),
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),
     ),
+
     "f90_f2c_bind"  : (
         lambda phys, sub, gb: "{}_iso_f.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_f".format(phys)),
+        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_f".format(phys)), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"),
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),
     ),
+
     "cxx_c2f_bind_decl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'),
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"),
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
     ),
+
     "cxx_c2f_bind_impl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_impl"),
-        lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"),
+        lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
         lambda phys, sub, gb: re.compile(r".*[}]\s*$"),
     ),
+
     "cxx_c2f_data"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),
+        lambda phys, sub, gb: get_namespace_close_regex(phys), # insert at end of phys namespace (near bottom of file)
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)),
         lambda phys, sub, gb: re.compile(r".*(namespace|struct)"),
     ),
+
     "cxx_f2c_bind_decl"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
     ),
+
     "cxx_f2c_bind_impl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
@@ -125,6 +133,7 @@ PIECES = {
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="end {}".format(sub + "_f")),
     ),
+
     "cxx_func_hpp"  : (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_hpp"),
@@ -132,6 +141,7 @@ PIECES = {
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
     ),
+
     "cxx_func_impl" : (
         lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
@@ -139,6 +149,7 @@ PIECES = {
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
         lambda phys, sub, gb: re.compile(r".*{\s*$"),
     ),
+
     "cxx_bfb_unit_impl"  : (
         lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
@@ -146,6 +157,7 @@ PIECES = {
         lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"),
     ),
+
     "cxx_bfb_unit_decl" : (
         lambda phys, sub, gb: "tests/{}_unit_tests_common.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
@@ -153,19 +165,29 @@ PIECES = {
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)),
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
     ),
+
+    "cxx_eti" : (
+        lambda phys, sub, gb: "{}_{}.cpp".format(phys, sub),
+        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
+        lambda phys, sub, gb: re.compile(".*"),
+        lambda phys, sub, gb: re.compile(".*"),
+        lambda phys, sub, gb: get_namespace_close_regex("scream"),
+    ),
 }
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src)
-ORIGIN_FILE, CXX_ROOT = range(2)
+ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
         "components/cam/src/physics/cam/micro_p3.F90",
         "components/scream/src/physics/p3",
+        "p3_init();"
     ),
     "shoc" : (
         "components/cam/src/physics/cam/shoc.F90",
         "components/scream/src/physics/shoc",
+        "shoc_init(d.nlev, true);"
     ),
 }
 
@@ -246,10 +268,14 @@ def expect_exists(physics, sub, piece, gb):
     filepath = gb.get_path_for_piece_file(physics, sub, piece, gb)
     expect(filepath.exists(), "For generating {}'s {} for phyiscs {}, expected file {} to already exist".\
            format(sub, piece, physics, filepath))
+    return False # File was not created
 
 ###############################################################################
 def create_template(physics, sub, piece, gb):
 ###############################################################################
+    """
+    Create a file based on a template if it doesn't exist. Return True if a file was created.
+    """
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
     if not filepath.exists():
         expect(piece in FILE_TEMPLATES,
@@ -259,6 +285,10 @@ def create_template(physics, sub, piece, gb):
         contents = FILE_TEMPLATES[piece](physics, sub, gen_code)
         with filepath.open("w") as fd:
             fd.write(contents)
+
+        return True
+    else:
+        return False
 
 ###############################################################################
 def remove_comments_and_ws(contents):
@@ -488,7 +518,7 @@ C_TYPE_MAP = {"real" : "c_real", "integer" : "c_int", "logical" : "c_bool"}
 ###############################################################################
 def gen_arg_f90_decl(argtype, intent, dims, names):
 ###############################################################################
-    expect(argtype in C_TYPE_MAP, "Unrecognized argtype: {}".format(argtype))
+    expect(argtype in C_TYPE_MAP, "Unrecognized argtype for C_TYPE_MAP: {}".format(argtype))
     c_type = C_TYPE_MAP[argtype]
     value  = ", value" if dims is None and intent == "in" else ""
     intent_s = ", intent({})".format(intent)
@@ -496,6 +526,42 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
     names_s = ", ".join(names)
     return "{argtype}(kind={c_type}) {value}{intent}{dimension} :: {names}".\
         format(argtype=argtype, c_type=c_type, value=value, intent=intent_s, dimension=dimension_s, names=names_s)
+
+CXX_TYPE_MAP = {"real" : "Real", "integer" : "Int", "logical" : "bool"}
+###############################################################################
+def get_cxx_type(arg_datum):
+###############################################################################
+    is_ptr = arg_datum[ARG_DIMS] is not None or arg_datum[ARG_INTENT] != "in"
+    arg_type = arg_datum[ARG_TYPE]
+    expect(arg_type in CXX_TYPE_MAP, "Unrecognized argtype for CXX_TYPE_MAP: {}".format(arg_type))
+    arg_cxx_type = CXX_TYPE_MAP[arg_type]
+    return "{}{}".format(arg_cxx_type, "*" if is_ptr else "")
+
+###############################################################################
+def gen_arg_cxx_decls(arg_data):
+###############################################################################
+    arg_names    = [item[ARG_NAME] for item in arg_data]
+    arg_types    = [get_cxx_type(item) for item in arg_data]
+    arg_sig_list = ["{} {}".format(arg_name, arg_type) for arg_name, arg_type in zip(arg_names, arg_types)]
+    return arg_sig_list
+
+###############################################################################
+def needs_transpose(arg_data):
+###############################################################################
+    for arg_datum in arg_data:
+        arg_dims = arg_datum[ARG_DIMS]
+        if arg_dims is not None and len(arg_dims) > 1:
+            return True
+
+    return False
+
+###############################################################################
+def gen_cxx_data_args(arg_data):
+###############################################################################
+    args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
+    arg_names      = [item[ARG_NAME] for item in arg_data]
+    args = ["{}.d{}".format("&" if need_ptr else "", arg_name) for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
+    return args
 
 ###############################################################################
 def gen_arg_f90_decls(arg_data):
@@ -506,16 +572,174 @@ def gen_arg_f90_decls(arg_data):
     metadata = OrderedDict()
     for name, argtype, intent, dims in arg_data:
         metatuple = (argtype, intent, dims)
-        if metatuple in metadata:
-            metadata[metatuple].append(name)
-        else:
-            metadata[metatuple] = [name]
+        metadata.setdefault(metatuple, []).append(name)
 
     result = []
     for metatuple, names in metadata.items():
         result.append(gen_arg_f90_decl(*metatuple, names))
 
     return result
+
+###############################################################################
+def has_arrays(arg_data):
+###############################################################################
+    for _, _, _, dims in arg_data:
+        if dims is not None:
+            return True
+
+    return False
+
+###############################################################################
+def gen_struct_members(arg_data):
+###############################################################################
+    metadata = {} # intent -> (type, is_ptr) -> names
+    for name, argtype, intent, dims in arg_data:
+        metadata.setdefault(intent, OrderedDict()).setdefault((argtype, dims is not None), []).append(name)
+
+    intent_order = ( ("in", "Inputs"), ("inout", "Inputs/Outputs"), ("out", "Outputs") )
+    result = []
+    for intent, comment in intent_order:
+        if intent in metadata:
+            result.append("// {}".format(comment))
+            type_map = metadata[intent]
+            for type_info, names in type_map.items():
+                type_name, is_ptr = type_info
+                decl_str = CXX_TYPE_MAP[type_name]
+                decl_str += " {};".format(", ".join(["{}{}".format("*" if is_ptr else "", name) for name in names]))
+                result.append(decl_str)
+
+            result.append("")
+
+    return result
+
+###############################################################################
+def get_struct_api(physics, struct_name, arg_data):
+###############################################################################
+    i_ints   = []
+    i_reals  = []
+    ik_reals = []
+    ij_reals = [] # j = alternate k dim
+    scalars  = []
+
+    i_dim = None
+    k_dim = None
+    j_dim = None
+
+    for name, argtype, _, dims in arg_data:
+        if dims is not None:
+            expect(len(dims) >= 1 and len(dims) <= 2,
+                   "Only 1d and 2d data is support, {} has too many dims".format(name))
+
+            if i_dim is None:
+                i_dim = dims[0]
+            else:
+                expect(i_dim == dims[0],
+                       "Ambiguous dimension for {}, expected {}, got{}".format(name, i_dim, dims[0]))
+
+            if len(dims) == 2:
+                if k_dim is None:
+                    k_dim = dims[1]
+                elif k_dim == dims[1]:
+                    pass
+                elif j_dim is None:
+                    j_dim = dims[1]
+                elif j_dim == dims[1]:
+                    pass
+                else:
+                    expect(False, "Unable to identify dimension {} for arg {}".format(dims[1], name))
+
+    for name, argtype, _, dims in arg_data:
+        if dims is None:
+            if (name not in [i_dim, k_dim, j_dim]):
+                scalars.append( (name, CXX_TYPE_MAP[argtype]))
+            else:
+                expect(argtype == "integer", "Expected dimension {} to be of type integer".format(name))
+
+        elif argtype == "integer":
+            expect(len(dims) == 1 and dims[0] == i_dim, "integer data {} has unsupported dims {}".format(name, dims))
+            i_ints.append(name)
+
+        elif len(dims) == 1:
+            expect(dims[0] == i_dim and argtype in ["integer", "real"],
+                   "1d real data {} has unsupported dims {}".format(name, dims))
+            if argtype == "real":
+                i_reals.append(name)
+            else:
+                i_ints.append(name)
+
+        else:
+            expect(len(dims) == 2 and dims[0] == i_dim and dims[1] in [k_dim, j_dim],
+                   "2d real data {} has unsupported dims {}".format(name, dims))
+            if dims[1] == k_dim:
+                ik_reals.append(name)
+            else:
+                ij_reals.append(name)
+
+    result = []
+    dim_args = [(item, "Int") for item in [i_dim, k_dim, j_dim] if item is not None]
+    cons_args = dim_args + scalars
+    result.append("{struct_name}({cons_args}) :".\
+                  format(struct_name=struct_name,
+                         cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
+    parent_call = "  PhysicsTestData({}".format(", ".join(["{}_".format(name) for name, _ in dim_args]))
+    for item in (ik_reals, ij_reals, i_reals, i_ints):
+        if len(item) > 0:
+            parent_call += ", {{{}}}".format(", ".join(["&{}".format(name) for name in item]))
+
+    parent_call += ")"
+    if scalars:
+        parent_call += ", {}".format(", ".join(["{0}({0}_)".format(name) for name, _ in scalars]))
+
+    parent_call += " {}"
+    result.append(parent_call)
+
+    if physics != "p3":
+        if len(scalars) == 0:
+            result.append("SHOC_NO_SCALAR({}, {})".format(struct_name, len(dim_args)))
+        else:
+            result.append("SHOC_SCALARS({}, {}, {}, {})".format(struct_name, len(dim_args), len(scalars),
+                                                                ", ".join([name for name, _ in scalars])))
+    else:
+        expect(False, "p3 is not supported for now") # TODO
+
+###############################################################################
+def find_insertion(lines, insert_regex):
+###############################################################################
+    for idx, line in enumerate(lines):
+        has_match = bool(insert_regex.match(line))
+        if has_match:
+            return idx
+
+    return None
+
+###############################################################################
+def check_existing_piece(lines, begin_regex, end_regex):
+###############################################################################
+    begin_idx = None
+    end_idx   = None
+
+    for idx, line in enumerate(lines):
+        begin_match = bool(begin_regex.match(line))
+        end_match   = bool(end_regex.match(line))
+
+        if begin_match:
+            expect(begin_idx is None,
+                   "Found multiple begin matches for pattern '{}' before end pattern '{}' was found".\
+                   format(begin_regex.pattern, end_regex.pattern))
+
+            if begin_idx is not None:
+                begin_idx = idx
+
+        if end_match and begin_idx is not None:
+            end_idx = idx
+            break
+
+    if begin_idx is not None:
+        expect(end_idx is not None,
+               "Found no ending match for begin pattern '{}' starting on line {} and searching end pattern '{}'".\
+               format(begin_regex.pattern, begin_idx, end_regex.pattern))
+
+    return None if begin_idx is None else (begin_idx, end_idx)
 
 #
 # Main classes
@@ -567,19 +791,44 @@ class GenBoiler(object):
     ###########################################################################
     def gen_piece(self, phys, sub, piece):
     ###########################################################################
-        filepath, filegen, insert_regex, self_begin_regex, self_end_regex \
+        filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex \
             = [item(phys, sub, self) for item in PIECES[piece]]
 
-        # TODO:
-        # Gen file if not there
-        # If freshly generated file, we're done
-        # If file already exists...
-        #   Check to see if piece already exists
-        #   If yes:
-        #     find the lines it occupies and overwrite them with fresh generation
-        #   If no:
-        #     fine insertion point and insert fresh generation
-        #   write the new lines
+        if was_filegen:
+            # If freshly generated file, we're done
+            pass
+        else:
+            orig_lines = filepath.open().readlines()
+            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub).splitlines()
+
+            # Check to see if piece already exists
+            try:
+                existing_piece_line_range = check_existing_piece(orig_lines, self_begin_regex, self_end_regex)
+            except Exception as e:
+                expect(False, "Problem parsing file {} for existing piece {}: {}".format(filepath, piece, e))
+
+            if existing_piece_line_range is not None:
+                # Replace existing
+                if self._dry_run:
+                    print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
+                          format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
+                else:
+                    orig_lines[slice(*existing_piece_line_range)] = gen_lines
+            else:
+                # Look for place to insert and insert
+                insert_line = find_insertion(orig_lines, insert_regex)
+                expect(insert_line is not None,
+                       "Could not find place to insert generated code for {} in file {} based on regex {}".\
+                       format(piece, filepath, insert_regex))
+
+                if self._dry_run:
+                    print("In file {}, at line {}, would insert:\n{}}".format(filepath, insert_line, "\n".join(gen_lines)))
+                else:
+                    orig_lines[insert_line:insert_line] = gen_lines
+
+            if not self._dry_run:
+                with filepath.open("w") as fd:
+                    fd.writelines(orig_lines)
 
     ###########################################################################
     def gen_f90_c2f_bind(self, phys, sub):
@@ -589,8 +838,7 @@ class GenBoiler(object):
         arg_decls = gen_arg_f90_decls(arg_data)
         phys_mod = "micro_p3" if phys == "p3" else phys
         result = \
-"""
-  subroutine {sub}_c({arg_names}) bind(C)
+"""  subroutine {sub}_c({arg_names}) bind(C)
     use {phys_mod}, only : {sub}
 
     {arg_decls}
@@ -600,6 +848,67 @@ class GenBoiler(object):
 """.format(sub=sub, arg_names=arg_names, phys_mod=phys_mod, arg_decls="\n    ".join(arg_decls))
 
         return result
+
+    ###########################################################################
+    def gen_f90_f2c_bind(self, phys, sub):
+    ###########################################################################
+        arg_data = self._get_arg_data(phys, sub)
+        arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
+        arg_decls = gen_arg_f90_decls(arg_data)
+        result = \
+"""  subroutine {sub}_f({arg_names}) bind(C)
+    use iso_c_binding
+
+    {arg_decls}
+  end subroutine {sub}_f
+""".format(sub=sub, arg_names=arg_names, arg_decls="\n    ".join(arg_decls))
+
+        return result
+
+    ###########################################################################
+    def gen_cxx_c2f_bind_decl(self, phys, sub):
+    ###########################################################################
+        arg_data  = self._get_arg_data(phys, sub)
+        arg_decls = gen_arg_cxx_decls(arg_data)
+        result = "void {sub}_c({arg_sig});\n".format(sub=sub, arg_sig=", ".join(arg_decls))
+        return result
+
+    ###########################################################################
+    def gen_cxx_c2f_bind_impl(self, phys, sub):
+    ###########################################################################
+        arg_data         = self._get_arg_data(phys, sub)
+        arg_data_args    = gen_cxx_data_args(arg_data)
+        need_transpose   = needs_transpose(arg_data)
+        transpose_code_1 = "\n  d.transpose<ekat::util::TransposeDirection::c2f>();\n" if need_transpose else ""
+        transpose_code_2 = "\n  d.transpose<ekat::util::TransposeDirection::f2c>();\n" if need_transpose else ""
+        data_struct      = get_data_struct_name(sub)
+        init_code        = get_physics_data(phys, INIT_CODE)
+
+        result = \
+"""void {sub}({data_struct}& d)
+{
+  {init_code}{transpose_code_1}
+  {sub}_c({arg_data_args});{transpose_code_2}
+}
+""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
+        return result
+
+    ###########################################################################
+    def gen_cxx_c2f_data(self, phys, sub):
+    ###########################################################################
+        arg_data         = self._get_arg_data(phys, sub)
+        struct_members   = gen_struct_members(arg_data)
+        any_arrays       = has_arrays(arg_data)
+        struct_name      = get_data_struct_name(sub)
+        inheritance      = " : public PhysicsTestData" if any_arrays else ""
+        api              = get_struct_api(phys, struct_name, arg_data) if any_arrays else ""
+
+        result = \
+"""struct {struct_name}{inheritance} {
+{struct_members}{api}
+};
+
+""".format(struct_name=struct_name, inheritance=inheritance, api="\n  ".join(api))
 
     ###########################################################################
     def gen_boiler(self):
