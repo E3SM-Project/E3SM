@@ -2,6 +2,7 @@
 #define SHOC_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
+#include "physics/shoc/shoc_constants.hpp"
 
 #include "share/scream_types.hpp"
 
