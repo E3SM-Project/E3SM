@@ -24,7 +24,7 @@ using device_type    = DefaultDevice; // TODO: template class on device type
 using kokkos_types   = KokkosTypes<device_type>;
 using dofs_list_type = kokkos_types::view_1d<gid_type>;
 void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d, const dofs_list_type gids, const Int total_cols);
-void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, std::vector<int> dims3d, const Int tt, const dofs_list_type gids);
+void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, std::vector<int> dims3d, const Int tt, const dofs_list_type gids, bool& init);
 void update_data_output(Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z, const std::vector<int> dims3d, const Real t, const dofs_list_type gids);
  
 /* ================================================================================================================ */
@@ -154,6 +154,7 @@ TEST_CASE("scorpio_yaml", "") {
   }
 
   // Run and record data:
+  bool index_init = true;
   Real dt = 1.0;
   Int max_tstep = 10;
   for (int tstep = 0;tstep<max_tstep;++tstep)
@@ -166,7 +167,7 @@ TEST_CASE("scorpio_yaml", "") {
     auto index_1d_h = Kokkos::create_mirror_view( index_1d_dev );
     auto index_2d_h = Kokkos::create_mirror_view( index_2d_dev );
     auto index_3d_h = Kokkos::create_mirror_view( index_3d_dev );
-    update_index_output(index_1d_dev, index_2d_dev, index_3d_dev, dims3d, l_time, gids);
+    update_index_output(index_1d_dev, index_2d_dev, index_3d_dev, dims3d, (int) dt, gids, index_init);
     Kokkos::deep_copy(index_1d_dev,index_1d_h);
     Kokkos::deep_copy(index_2d_dev,index_2d_h);
     Kokkos::deep_copy(index_3d_dev,index_3d_h);
@@ -223,18 +224,35 @@ void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d, con
   }
 }
 
-void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, const std::vector<int> dims3d, const Int tt, const dofs_list_type gids)
+void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, const std::vector<int> dims3d, const Int dt, const dofs_list_type gids,bool& init)
 {
-  for (int ii=0;ii<dims3d[0];ii++)
+  if (init)
   {
-    Int g_ii = gids(ii);
-    index_1d(ii) = g_ii*1. + 10000.*tt;
-    for (int jj=0;jj<dims3d[1];jj++) 
+    for (int ii=0;ii<dims3d[0];ii++)
     {
-      index_2d(ii,jj) = g_ii*1. + jj*100. + 10000.*tt;
-      for (int kk=0;kk<dims3d[2];kk++)
+      Int g_ii = gids(ii);
+      index_1d(ii) = g_ii*1.;
+      for (int jj=0;jj<dims3d[1];jj++) 
       {
-        index_3d(ii,jj,kk) = g_ii*1. + jj*100. + kk*1000. + 10000.*tt;
+        index_2d(ii,jj) = g_ii*1. + jj*100.;
+        for (int kk=0;kk<dims3d[2];kk++)
+        {
+          index_3d(ii,jj,kk) = g_ii*1. + jj*100. + kk*1000.;
+        }
+      }
+    }
+    init = false;
+  } else {
+    for (int ii=0;ii<dims3d[0];ii++)
+    {
+      index_1d(ii) += 10000.*dt;
+      for (int jj=0;jj<dims3d[1];jj++) 
+      {
+        index_2d(ii,jj) += 10000.*dt;
+        for (int kk=0;kk<dims3d[2];kk++)
+        {
+          index_3d(ii,jj,kk) += 10000.*dt;
+        }
       }
     }
   }

@@ -11,21 +11,22 @@
 #include "share/io/scream_scorpio_interface.hpp"
 
 #include "share/field/field_repository.hpp"
+#include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_identifier.hpp"
 
 #include "share/grid/grids_manager.hpp"
 /* There are a number of things that need to be cleaned up - in no particular order -
- *  1) Gather dimension data from grid manager or field repo.  We may need to use field repo since grid manager
+ *--1) Gather dimension data from grid manager or field repo.  We may need to use field repo since grid manager
  *     is unaware of say the number of components, for example.  --DONE--
- *  2) Clean-up init step, perhaps with subfunctions.  --DONE--
- *  3) Gather degree's of freedom from grid manager. Need to know the global-id index for
+ *--2) Clean-up init step, perhaps with subfunctions.  --DONE--
+ *--3) Gather degree's of freedom from grid manager. Need to know the global-id index for
  *     each value in a view, in order if flattened.  --DONE--
  *  4) Handle MPI communication to allow for PIO_STRIDE (i.e. fewer pio ranks than total ranks).
  *  5) Make it so that all dimensions that are registered are automatically registered as variables and the values written (only once, not with time).  Probably need this information from the grid manager(?)
  *  6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.
  *  7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?
- *  8) Create average, min, max and instantaneous options for output.
+ *--8) Create average, min, max and instantaneous options for output.  --DONE--
  *  9) Assure that IO is compatible with PACKing of variables.
  * 10) Add control of netCDF header information to the YAML file and this class.
  * 11) Better naming convention for output files?  Currently just keeps a counter, but in EAM the date/time range is used.
@@ -39,10 +40,13 @@ namespace scream
 class AtmosphereOutput 
 {
 public:
-  using device_type = DefaultDevice; // may need to template class on this
+  using device_type    = DefaultDevice; // may need to template class on this
+  using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
+  using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
+  using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
+
   using Int = scream::Int;
   using Real = scream::Real;
-  using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -67,6 +71,7 @@ protected:
   void add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name);
   void register_variables();
   void set_degrees_of_freedom();
+  void register_views(const FieldRepository<Real, device_type> &field_repo);
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -79,18 +84,22 @@ protected:
   Int m_out_frequency;
   std::string m_out_units;
 
+  // Aaron: You were thinking about making each atmoutput have it's own local field repo where you could store the
+  // data needed to handle "averaging" types that are not "instant".  But you keep running into a compilation error.
   std::map<std::string,FieldIdentifier>  m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
   dofs_list_type                         m_gids;
+  std::map<std::string,view_type>        m_view;
 
   bool m_is_init = false;
 
   std::map<std::string,Int> m_status = {
-                                  {"Init",    0},
-                                  {"Run",     0},
-                                  {"Finalize",0},
-                                  {"Snaps",   0},
+                                  {"Init",          0},  // Records the number of files this output stream has managed
+                                  {"Run",           0},  // Total number of times "Run" has been called
+                                  {"Finalize",      0},  // Total number of times "Finalize" has been called (should always be 1)
+                                  {"Snaps",         0},  // Total number of timesnaps saved to the currently open file.
+                                  {"Avg Count",     0},  // Total number of timesnaps that have gone by since the last time output was written.
                                        }; 
 private:
 
@@ -106,7 +115,6 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   m_filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";  //TODO: The filename should be treated as a prefix to enable multiple files for the same control.  Like in the case of monthly output with 1 snap/file.
   EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
 
-  printf("Init file: %s\n",m_filename.c_str());
   // Parse the yaml file that controls this output instance.
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
   m_grid_name       = m_params.get<std::string>("GRID");
@@ -146,6 +154,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   register_dimension(m_filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
   // Register variables with netCDF file.  Must come after dimensions are registered.
   register_variables();
+  register_views(field_repo);
   set_degrees_of_freedom();
 
   // Finish the definition phase for this file.
@@ -162,27 +171,66 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
   using Real = scream::Real;
 
   m_status["Run"] += 1;
+  m_status["Avg Count"] += 1;
 
-  if (m_status["Run"] % m_out_frequency == 0)
-    {
+  // Check to see if output will be written this step
+  bool is_write = (m_status["Avg Count"] == m_out_frequency);
+  bool avg_init = (m_status["Avg Count"] == 1); // If Avg Count was 0 last step then we need to reset the view.
+  // Preamble to writing output this step
+  if (is_write) 
+  {
     if (!m_is_init) {init(field_repo, gm);} // If m_is_init is false than the previous step was at max_n_steps.  Need a new file.
 
-    pio_update_time(m_filename,time);
-    // Cycle through all fields in this output file, grab the view and write to file.
-    for (auto const& f_map : m_fields)
-    {
-      grid_write_data_array(m_filename,f_map.first,m_dofs.at(f_map.first),field_repo.get_field(f_map.second).get_view().data());
-    } 
-    sync_outfile(m_filename);
+    pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
+    m_status["Snaps"] += 1;           // Update the snap tally, used to determine if a new file is needed.
+  }
 
-    // Check if the maximum number of steps has been reached.  If so, close this file and flag for a new one if needed.
-    m_status["Snaps"] += 1;
-    if (m_status["Snaps"]% m_out_max_steps==0)
+  // Take care of updating and possibly writing fields.
+  for (auto const& f_map : m_fields)
+  {
+    // Get all the info for this field.
+    auto name   = f_map.first;
+    auto g_view = field_repo.get_field(f_map.second).get_view();
+    auto l_view = m_view.at(name);
+    Int  f_len  = f_map.second.get_layout().size();
+    // The next two operations do not need to happen if the frequency of output is instantaneous.
+    if (m_avg_type != "Instant")
     {
+      // If this is the start of a new averaging flag then init the local view.
+      if (avg_init) { for (int ii=0; ii<f_len; ++ii) {l_view(ii) = g_view(ii); }
+      }
+      // Update local view given the averaging type.  TODO make this a switch statement?
+      if (m_avg_type == "Average")
+      {
+        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = (l_view(ii)*(m_status["Avg Count"]-1) + g_view(ii))/(m_status["Avg Count"]);}
+      } else if (m_avg_type == "Max")
+      {
+        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = std::max(l_view(ii),g_view(ii));}
+      } else if (m_avg_type == "Min")
+      {
+        for (int ii=0; ii<f_len; ++ii) {l_view(ii) = std::min(l_view(ii),g_view(ii));}
+      } else {
+        EKAT_REQUIRE_MSG(true, "Error! IO Class, updating local views, averaging type of " + m_avg_type + " is not supported.");
+      }
+    } // m_avg_type != "Instant"
+    if (is_write) {grid_write_data_array(m_filename,name,m_dofs.at(name),l_view.data());}
+  }
+
+  // Finish up any updates to output file and snap counter.
+  if (is_write)
+  {
+    sync_outfile(m_filename);
+    // If snaps equals max per file, close this file and set flag to open a new one next write step.
+    if (m_status["Snaps"] == m_out_max_steps)
+    {
+      m_status["Snaps"] = 0;
       eam_pio_closefile(m_filename);
       m_is_init = false;
     }
+    // Zero out the Avg Count count now that snap has bee written.
+    m_status["Avg Count"] = 0;
   }
+
 } // run
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::finalize() 
@@ -238,10 +286,34 @@ inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_
   EKAT_REQUIRE_MSG(true,"Error! Field " + name + " not found in repo.\n");
 } // add_identifier
 /* ---------------------------------------------------------- */
+inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_type> &field_repo)
+{
+  using namespace scream;
+  using namespace scream::scorpio;
+
+  // Cycle through all fields and register.
+  for (auto it : m_fields)
+  {
+    auto  name = it.first;
+    // If the "averaging type" is instant then just need a ptr to the view.
+    if (m_avg_type == "Instant")
+    {
+      m_view.emplace(name,field_repo.get_field(it.second).get_view());
+    } else {
+    // If anything else then we need a local copy that can be updated.
+//      auto view_copy = Kokkos::create_mirror_view( field_repo.get_field(it.second).get_view() );
+//      Kokkos::deep_copy(view_copy, field_repo.get_field(it.second).get_view());
+      view_type view_copy("",field_repo.get_field(it.second).get_view().extent(0));
+      m_view.emplace(name,view_copy);
+    }
+  }
+}
+/* ---------------------------------------------------------- */
 inline void AtmosphereOutput::register_variables()
 {
   using namespace scream;
   using namespace scream::scorpio;
+
   // Cycle through all fields and register.
   for (auto it : m_fields)
   {
