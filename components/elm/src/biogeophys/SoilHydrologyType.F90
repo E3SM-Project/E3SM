@@ -51,7 +51,7 @@ Module SoilHydrologyType
      real(r8), pointer :: dsmax_col         (:)     ! col VIC max. velocity of baseflow (mm/day) (time constant)
      real(r8), pointer :: Wsvic_col         (:)     ! col VIC fraction of maximum soil moisutre where non-liear base flow occurs (time constant)
      real(r8), pointer :: porosity_col      (:,:)   ! col VIC porosity (1-bulk_density/soil_density)
-     real(r8), pointer :: vic_clm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
+     real(r8), pointer :: vic_elm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
      real(r8), pointer :: depth_col         (:,:)   ! col VIC layer depth of upper layer  
      real(r8), pointer :: c_param_col       (:)     ! col VIC baseflow exponent (Qb) 
      real(r8), pointer :: expt_col          (:,:)   ! col VIC pore-size distribution related paramter(Q12) 
@@ -139,7 +139,7 @@ contains
     allocate(this%Wsvic_col         (begc:endc))                 ; this%Wsvic_col         (:)     = nan
     allocate(this%depth_col         (begc:endc,nlayert))         ; this%depth_col         (:,:)   = nan
     allocate(this%porosity_col      (begc:endc,nlayer))          ; this%porosity_col      (:,:)   = nan
-    allocate(this%vic_clm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_clm_fract_col (:,:,:) = nan
+    allocate(this%vic_elm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_elm_fract_col (:,:,:) = nan
     allocate(this%c_param_col       (begc:endc))                 ; this%c_param_col       (:)     = nan
     allocate(this%expt_col          (begc:endc,nlayer))          ; this%expt_col          (:,:)   = nan
     allocate(this%ksat_col          (begc:endc,nlayer))          ; this%ksat_col          (:,:)   = nan
@@ -657,7 +657,7 @@ contains
     !-------------------------------------------------------------------------------------------
 
     ! soilhydrology_vars%depth_col(:,:)           Output: layer depth of upper layer(m) 
-    ! soilhydrology_vars%vic_clm_fract_col(:,:,:) Output: fraction of VIC layers in CLM layers
+    ! soilhydrology_vars%vic_elm_fract_col(:,:,:) Output: fraction of VIC layers in CLM layers
     ! soilhydrology_vars%c_param_col(:)           Output: baseflow exponent (Qb)
     ! soilhydrology_vars%expt_col(:,:)            Output: pore-size distribution related paramter(Q12)
     ! soilhydrology_vars%ksat_col(:,:)            Output: Saturated hydrologic conductivity (mm/s)
@@ -676,10 +676,10 @@ contains
        om_fracvic(i) = 0._r8  
        temp_sum_frac = 0._r8     
        do j = 1, nlevsoi
-          sandvic(i)    = sandvic(i)    + sandcol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
-          clayvic(i)    = clayvic(i)    + claycol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
-          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_clm_fract_col(c,i,j) 
-          temp_sum_frac = temp_sum_frac +                   soilhydrology_vars%vic_clm_fract_col(c,i,j)
+          sandvic(i)    = sandvic(i)    + sandcol(c,j)    * soilhydrology_vars%vic_elm_fract_col(c,i,j)
+          clayvic(i)    = clayvic(i)    + claycol(c,j)    * soilhydrology_vars%vic_elm_fract_col(c,i,j)
+          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_elm_fract_col(c,i,j) 
+          temp_sum_frac = temp_sum_frac +                   soilhydrology_vars%vic_elm_fract_col(c,i,j)
        end do
 
        !average soil properties, M.Huang, 08/11/2010
@@ -774,7 +774,7 @@ contains
           z             =>    col_pp%z     ,                          & ! Input:  [real(r8) (:,:)   ]  layer thickness (m)                   
 
           depth         =>    soilhydrology_vars%depth_col ,       & ! Input:  [real(r8) (:,:)   ]  layer depth of VIC (m)                
-          vic_clm_fract =>    soilhydrology_vars%vic_clm_fract_col & ! Output: [real(r8) (:,:,:) ]  fraction of VIC layers in clm layers
+          vic_elm_fract =>    soilhydrology_vars%vic_elm_fract_col & ! Output: [real(r8) (:,:,:) ]  fraction of VIC layers in clm layers
           )
 
        !  set fraction of VIC layer in each CLM layer
@@ -789,25 +789,25 @@ contains
           do j = 1, nlevsoi
              if( (zsum < lsum) .and. (zsum + dz(c,j) >= lsum ))  then
                 call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_clm_fract(c,i,j) = 1._r8 - temp
+                vic_elm_fract(c,i,j) = 1._r8 - temp
                 if(lsum + deltal(i) < zsum + dz(c,j)) then
                    call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 1._r8, 0._r8)
-                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
+                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
                 end if
              else if( (zsum < lsum + deltal(i)) .and. (zsum + dz(c,j) >= lsum + deltal(i)) ) then
                 call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_clm_fract(c,i,j) = temp
+                vic_elm_fract(c,i,j) = temp
                 if(zsum<=lsum) then
                    call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
+                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
                 end if
              else if( (zsum >= lsum .and. zsum + dz(c,j) <= lsum + deltal(i)) )  then
-                vic_clm_fract(c,i,j) = 1._r8
+                vic_elm_fract(c,i,j) = 1._r8
              else
-                vic_clm_fract(c,i,j) = 0._r8
+                vic_elm_fract(c,i,j) = 0._r8
              end if
              zsum = zsum + dz(c,j)
-             sum_frac(i) = sum_frac(i) + vic_clm_fract(c,i,j)
+             sum_frac(i) = sum_frac(i) + vic_elm_fract(c,i,j)
           end do                           ! end CLM layer calculation
           lsum = lsum + deltal(i)
        end do                             ! end VIC layer calcultion 

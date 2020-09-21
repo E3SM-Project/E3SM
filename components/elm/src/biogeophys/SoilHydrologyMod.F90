@@ -1988,7 +1988,7 @@ contains
           depth         => soilhydrology_vars%depth_col         , & ! Input:  [real(r8) (:,:)   ] layer depth of upper layer (m)         
           porosity      => soilhydrology_vars%porosity_col      , & ! Input:  [real(r8) (:,:)   ] soil porisity (1-bulk_density/soil_density)
           max_moist     => soilhydrology_vars%max_moist_col     , & ! Input:  [real(r8) (:,:)   ] max layer moist + ice (mm)             
-          vic_clm_fract => soilhydrology_vars%vic_clm_fract_col , & ! Input:  [real(r8) (:,:,:) ] fraction of VIC layers in each CLM layer
+          vic_elm_fract => soilhydrology_vars%vic_elm_fract_col , & ! Input:  [real(r8) (:,:,:) ] fraction of VIC layers in each CLM layer
           moist         => soilhydrology_vars%moist_col         , & ! Output: [real(r8) (:,:)   ] liquid water (mm)                      
           ice           => soilhydrology_vars%ice_col           , & ! Output: [real(r8) (:,:)   ] ice lens (mm)                          
           moist_vol     => soilhydrology_vars%moist_vol_col       & ! Output: [real(r8) (:,:)   ] volumetric soil moisture for VIC soil layers
@@ -2003,8 +2003,8 @@ contains
              ice(c,i) = 0._r8
              moist(c,i) = 0._r8
              do j = 1, nlevsoi
-                ice(c,i) = ice(c,i) + h2osoi_ice(c,j) * vic_clm_fract(c,i,j)
-                moist(c,i) = moist(c,i) + h2osoi_liq(c,j) * vic_clm_fract(c,i,j)
+                ice(c,i) = ice(c,i) + h2osoi_ice(c,j) * vic_elm_fract(c,i,j)
+                moist(c,i) = moist(c,i) + h2osoi_liq(c,j) * vic_elm_fract(c,i,j)
              end do
              ice(c,i)       = min((moist0(i) + ice0(i)), ice(c,i))
              ice(c,i)       = max(0._r8, ice(c,i))
