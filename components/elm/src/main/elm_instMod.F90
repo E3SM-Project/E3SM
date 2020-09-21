@@ -72,7 +72,7 @@ module elm_instMod
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
   use BeTRSimulationALM          , only : betr_simulation_alm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
-  use CLMFatesInterfaceMod       , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod       , only : hlm_fates_interface_type
 
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars

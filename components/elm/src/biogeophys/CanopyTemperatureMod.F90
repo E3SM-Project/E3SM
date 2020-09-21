@@ -18,7 +18,7 @@ module CanopyTemperatureMod
   use abortutils           , only : endrun
   use elm_varctl           , only : iulog, use_fates
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
-  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress
   use VegetationPropertiesType, only : veg_vp
   use atm2lndType          , only : atm2lnd_type

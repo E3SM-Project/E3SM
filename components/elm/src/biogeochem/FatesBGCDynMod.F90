@@ -59,7 +59,7 @@ contains
       use PhosphorusStateType    , only : phosphorusstate_type
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
-      use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
+      use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
       use CropType               , only : crop_type
 
     !

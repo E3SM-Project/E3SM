@@ -79,7 +79,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use CLMFatesInterfaceMod      , only: ELMFatesGlobals
+    use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status

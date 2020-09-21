@@ -77,7 +77,7 @@ contains
     use elm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
-    use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+    use ELMFatesInterfaceMod , only : hlm_fates_interface_type
     use BeTRSimulationALM    , only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:

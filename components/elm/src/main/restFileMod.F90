@@ -30,7 +30,7 @@ module restFileMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
 
-  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod , only : hlm_fates_interface_type
 
   use AerosolType          , only : aerosol_type
   use CanopyStateType      , only : canopystate_type

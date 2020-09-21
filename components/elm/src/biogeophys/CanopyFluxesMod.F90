@@ -40,7 +40,7 @@ module CanopyFluxesMod
   use PhotosynthesisType    , only : photosyns_type
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
-  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
   use GridcellType          , only : grc_pp 
   use TopounitDataType      , only : top_as, top_af  
   use ColumnType            , only : col_pp

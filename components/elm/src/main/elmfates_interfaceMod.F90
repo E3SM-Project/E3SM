@@ -1,4 +1,4 @@
-module CLMFatesInterfaceMod
+module ELMFatesInterfaceMod
    
    ! -------------------------------------------------------------------------------------
    ! This module contains various functions and definitions to aid in the
@@ -2616,4 +2616,4 @@ contains
 
 
  
-end module CLMFatesInterfaceMod
+end module ELMFatesInterfaceMod
