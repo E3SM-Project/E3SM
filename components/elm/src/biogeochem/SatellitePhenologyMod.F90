@@ -76,7 +76,7 @@ contains
     use clm_time_manager , only : get_calendar
     use ncdio_pio        , only : pio_subsystem
     use shr_pio_mod      , only : shr_pio_getiotype
-    use clm_nlUtilsMod   , only : find_nlgroup_name
+    use elm_nlUtilsMod   , only : find_nlgroup_name
     use ndepStreamMod    , only : clm_domain_mct
     use histFileMod      , only : hist_addfld1d
     use shr_stream_mod   , only : shr_stream_file_null

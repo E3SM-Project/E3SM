@@ -37,7 +37,7 @@ contains
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
-    use clm_nlUtilsMod   , only : find_nlgroup_name
+    use elm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
     !
     ! !ARGUMENTS:

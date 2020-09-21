@@ -841,7 +841,7 @@ contains
      ! !USES:
      use shr_mpi_mod          , only : shr_mpi_bcast
      use fileutils            , only : getavu, relavu, opnfil
-     use clm_nlUtilsMod       , only : find_nlgroup_name
+     use elm_nlUtilsMod       , only : find_nlgroup_name
      !
      ! !ARGUMENTS:
      class(soilhydrology_type) :: this

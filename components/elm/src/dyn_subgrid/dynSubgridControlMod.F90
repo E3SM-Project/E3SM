@@ -100,7 +100,7 @@ contains
     !
     ! !USES:
     use fileutils      , only : getavu, relavu
-    use clm_nlUtilsMod , only : find_nlgroup_name
+    use elm_nlUtilsMod , only : find_nlgroup_name
     use elm_varctl     , only : iulog
     use spmdMod        , only : masterproc, mpicom
     use shr_mpi_mod    , only : shr_mpi_bcast

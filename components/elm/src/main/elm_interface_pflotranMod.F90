@@ -149,7 +149,7 @@ contains
     use elm_varctl    , only : iulog
     use spmdMod       , only : masterproc, mpicom
     use fileutils     , only : getavu, relavu, opnfil
-    use clm_nlUtilsMod, only : find_nlgroup_name
+    use elm_nlUtilsMod, only : find_nlgroup_name
     use shr_nl_mod    , only : shr_nl_find_group_name
     use shr_mpi_mod   , only : shr_mpi_bcast
 
