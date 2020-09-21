@@ -24,6 +24,7 @@ module crm_module
   use damping_mod
   use ice_fall_mod
   use coriolis_mod
+  use params_kind
 
   use crm_state_module,       only: crm_state_type
   use crm_rad_module,         only: crm_rad_type
@@ -74,7 +75,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
 
     implicit none
-    integer, parameter :: r8 = selected_real_kind(13)
 
     !-----------------------------------------------------------------------------------------------
     ! Interface variable declarations

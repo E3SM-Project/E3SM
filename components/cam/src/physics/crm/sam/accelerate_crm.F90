@@ -10,7 +10,7 @@
 !
 ! PUBLIC MODULE VARIABLES:
 !   logical  :: use_crm_accel - apply MSA if true (cam namelist variable)
-!   real(r8) :: crm_accel_factor - MSA factor to use (cam namelist variable)
+!   real(crm_rknd) :: crm_accel_factor - MSA factor to use (cam namelist variable)
 !
 ! REVISION HISTORY:
 !   2018-Nov-01: Initial implementation
@@ -20,18 +20,18 @@
 ! -----------------------------------------------------------------------------
 module accelerate_crm_mod
     use grid, only: nx, ny
-    use params, only: asyncid, rc=>crm_rknd
+    use params, only: asyncid
+    use params_kind
     implicit none
     public
-    integer, parameter :: r8 = selected_real_kind(13)
 
-    real(rc), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
+    real(crm_rknd), parameter :: coef = 1._crm_rknd / dble(nx * ny)  ! coefficient for horizontal averaging
     logical :: crm_accel_uv  ! (false) apply MSA only to scalar fields (T and QT)
                              ! (true) apply MSA to winds (U/V) and scalar fields
 
     ! public module variables
     logical :: use_crm_accel  ! use MSA if true
-    real(rc) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
+    real(crm_rknd) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
 
     public :: use_crm_accel, crm_accel_factor
     public :: accelerate_crm
@@ -100,21 +100,21 @@ module accelerate_crm_mod
       integer, intent(in   ) :: nstep
       integer, intent(inout) :: nstop
       logical, intent(inout) :: ceaseflag
-      real(rc), allocatable :: ubaccel  (:,:)   ! u before applying MSA tendency
-      real(rc), allocatable :: vbaccel  (:,:)   ! v before applying MSA tendency
-      real(rc), allocatable :: tbaccel  (:,:)   ! t before applying MSA tendency
-      real(rc), allocatable :: qtbaccel (:,:)  ! Non-precipitating qt before applying MSA tendency
-      real(rc), allocatable :: ttend_acc(:,:) ! MSA adjustment of t
-      real(rc), allocatable :: qtend_acc(:,:) ! MSA adjustment of qt
-      real(rc), allocatable :: utend_acc(:,:) ! MSA adjustment of u
-      real(rc), allocatable :: vtend_acc(:,:) ! MSA adjustment of v
-      real(r8), allocatable :: qpoz     (:,:) ! total positive micro_field(:,:,k,idx_qt,:) in level k
-      real(r8), allocatable :: qneg     (:,:) ! total negative micro_field(:,:,k,idx_qt,:) in level k
-      real(rc) :: tmp  ! temporary variable for atomic updates
+      real(crm_rknd), allocatable :: ubaccel  (:,:)   ! u before applying MSA tendency
+      real(crm_rknd), allocatable :: vbaccel  (:,:)   ! v before applying MSA tendency
+      real(crm_rknd), allocatable :: tbaccel  (:,:)   ! t before applying MSA tendency
+      real(crm_rknd), allocatable :: qtbaccel (:,:)  ! Non-precipitating qt before applying MSA tendency
+      real(crm_rknd), allocatable :: ttend_acc(:,:) ! MSA adjustment of t
+      real(crm_rknd), allocatable :: qtend_acc(:,:) ! MSA adjustment of qt
+      real(crm_rknd), allocatable :: utend_acc(:,:) ! MSA adjustment of u
+      real(crm_rknd), allocatable :: vtend_acc(:,:) ! MSA adjustment of v
+      real(crm_rknd), allocatable :: qpoz     (:,:) ! total positive micro_field(:,:,k,idx_qt,:) in level k
+      real(crm_rknd), allocatable :: qneg     (:,:) ! total negative micro_field(:,:,k,idx_qt,:) in level k
+      real(crm_rknd) :: tmp  ! temporary variable for atomic updates
       integer i, j, k, icrm  ! iteration variables
-      real(r8) :: factor, qt_res ! local variables for redistributing moisture
-      real(rc) :: ttend_threshold ! threshold for ttend_acc at which MSA aborts
-      real(rc) :: tmin  ! mininum value of t allowed (sanity factor)
+      real(crm_rknd) :: factor, qt_res ! local variables for redistributing moisture
+      real(crm_rknd) :: ttend_threshold ! threshold for ttend_acc at which MSA aborts
+      real(crm_rknd) :: tmin  ! mininum value of t allowed (sanity factor)
 
       ttend_threshold = 5.  ! 5K, following UP-CAM implementation
       tmin = 50.  ! should never get below 50K in crm, following UP-CAM implementation
@@ -288,22 +288,22 @@ module accelerate_crm_mod
               else
                 ! Clip qt values at 0 and remove the negative excess in each layer
                 ! proportionally from the positive qt fields in the layer
-                factor = 1._r8 + qneg(icrm,k) / qpoz(icrm,k)
-                micro_field(icrm,i,j,k,idx_qt) = max(0._rc, micro_field(icrm,i,j,k,idx_qt) * factor)
+                factor = 1._crm_rknd + qneg(icrm,k) / qpoz(icrm,k)
+                micro_field(icrm,i,j,k,idx_qt) = max(0._crm_rknd, micro_field(icrm,i,j,k,idx_qt) * factor)
                 ! Partition micro_field == qv + qcl + qci following these rules:
                 !    (1) attempt to satisfy purely by adjusting qv
                 !    (2) adjust qcl and qci only if needed to ensure positivity
-                if (micro_field(icrm,i,j,k,idx_qt) <= 0._rc) then
+                if (micro_field(icrm,i,j,k,idx_qt) <= 0._crm_rknd) then
                   qv(icrm,i,j,k) = 0.
                   qcl(icrm,i,j,k) = 0.
                   qci(icrm,i,j,k) = 0.
                 else
                   ! deduce qv as residual between qt - qcl - qci
                   qt_res = micro_field(icrm,i,j,k,idx_qt) - qcl(icrm,i,j,k) - qci(icrm,i,j,k)
-                  qv(icrm,i,j,k) = max(0._rc, qt_res)
-                  if (qt_res < 0._r8) then
+                  qv(icrm,i,j,k) = max(0._crm_rknd, qt_res)
+                  if (qt_res < 0._crm_rknd) then
                     ! qv was clipped; need to reduce qcl and qci accordingly
-                    factor = 1._r8 + qt_res / (qcl(icrm,i,j,k) + qci(icrm,i,j,k))
+                    factor = 1._crm_rknd + qt_res / (qcl(icrm,i,j,k) + qci(icrm,i,j,k))
                     qcl(icrm,i,j,k) = qcl(icrm,i,j,k) * factor
                     qci(icrm,i,j,k) = qci(icrm,i,j,k) * factor
                   endif
