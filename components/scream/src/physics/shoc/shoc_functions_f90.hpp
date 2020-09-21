@@ -43,6 +43,21 @@ struct SHOCGridData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCGridData, 3);
 };
 
+struct SHOCObklenData : public PhysicsTestData {
+  // Inputs
+  Real *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *thl_sfc
+  Real *cldliq_sfc, *qv_sfc,
+  
+  // Outputs
+  Real *ustar, *kbfs, *obklen
+  
+  SHOCObklenData(Int shcol_) :
+  PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc, &thl_sfc, &cldliq_sfc, &qv_sfc, &ustar, &kbfs, &obklen}){}
+  
+  SHOC_NO_SCALAR(SHOCObklenData, 1);
+
+};
+
 //Create data structure to hold data for check_tke
 struct SHOCCheckTkeData : public PhysicsTestData {
 
@@ -639,6 +654,7 @@ struct SHOCSecondMomentUbycondData : public PhysicsTestData {
 // and density.
 
 void shoc_grid                                      (SHOCGridData &d);
+void shoc_diag_obklen                               (SHOCObklenData &d);
 void update_host_dse                                (SHOCEnergydseData &d);
 void shoc_energy_integrals                          (SHOCEnergyintData &d);
 void shoc_energy_total_fixer                        (SHOCEnergytotData &d);
