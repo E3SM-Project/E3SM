@@ -1,4 +1,4 @@
-module clm_varsur
+module elm_varsur
 
   !-----------------------------------------------------------------------
   ! Module containing 2-d surface boundary data information
@@ -42,4 +42,4 @@ module clm_varsur
   real(r8), pointer :: topo_glc_mec(:,:) 
   !-----------------------------------------------------------------------
 
-end module clm_varsur
+end module elm_varsur

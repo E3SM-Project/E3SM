@@ -114,7 +114,7 @@ contains
     ! PCT_NAT_PFT on the surface dataset.
     !
     ! !USES:
-    use clm_varsur, only : wt_nat_patch
+    use elm_varsur, only : wt_nat_patch
     use elm_varpar, only : natpft_size
     use ncdio_pio
     !

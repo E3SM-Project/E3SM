@@ -120,7 +120,7 @@ contains
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
      use elm_varctl         , only : subgridflag
      use elm_varpar         , only : nlevsoi,nlevsno
-     use clm_varsur         , only : wt_lunit
+     use elm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
      use clm_time_manager   , only : get_step_size

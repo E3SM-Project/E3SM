@@ -720,7 +720,7 @@ module UrbanParamsType
     ! true, abort with a message.
     !
     ! !USES:
-    use clm_varsur      , only : urban_valid
+    use elm_varsur      , only : urban_valid
     use landunit_varcon , only : numurbl
     !
     ! !ARGUMENTS:

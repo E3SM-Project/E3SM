@@ -552,7 +552,7 @@ contains
     use elm_varctl  , only : create_crop_landunit, firrig_data
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
-    use clm_varsur  , only : wt_lunit, topo_glc_mec
+    use elm_varsur  , only : wt_lunit, topo_glc_mec
 
     !
     ! !ARGUMENTS:
@@ -695,7 +695,7 @@ contains
     ! !USES:
     use elm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
-    use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
+    use elm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
     !
     ! !ARGUMENTS:
@@ -863,7 +863,7 @@ contains
     !     Handle generic crop types for file format where they are on their own
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch
+    use elm_varsur      , only : fert_cft, wt_nat_patch
     use elm_varpar      , only : cft_size, cft_lb, natpft_lb
     ! !ARGUMENTS:
     implicit none
@@ -918,7 +918,7 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
+    use elm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
     use elm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
     use elm_varpar      , only : cft_lb, cft_ub
     use elm_varctl      , only : create_crop_landunit
@@ -992,7 +992,7 @@ contains
     use elm_varctl      , only : irrigate
     use elm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
-    use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
     use landunit_varcon , only : istsoil, istcrop
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig

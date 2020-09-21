@@ -63,8 +63,8 @@ module domainMod
   public domain_check         ! write out domain info
 !
 ! !REVISION HISTORY:
-! Originally clm_varsur by Mariana Vertenstein
-! Migrated from clm_varsur to domainMod by T Craig
+! Originally elm_varsur by Mariana Vertenstein
+! Migrated from elm_varsur to domainMod by T Craig
 !
 !
 !EOP

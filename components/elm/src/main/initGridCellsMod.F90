@@ -242,7 +242,7 @@ contains
     ! Initialize vegetated landunit with competition
     !
     ! !USES
-    use clm_varsur, only : wt_lunit, wt_nat_patch
+    use elm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
     use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
     !
@@ -292,7 +292,7 @@ contains
     !
     ! !USES
     use elm_varpar      , only : maxpatch_glcmec
-    use clm_varsur      , only : wt_lunit, wt_glc_mec
+    use elm_varsur      , only : wt_lunit, wt_glc_mec
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_topounitinfo
@@ -399,7 +399,7 @@ contains
     ! since itype is istsoil if we are running with create_crop_landunit but crop_prog = false.
     !
     ! !USES
-    use clm_varsur      , only : wt_lunit, wt_cft
+    use elm_varsur      , only : wt_lunit, wt_cft
     use landunit_varcon , only : istcrop, istsoil
     use subgridMod      , only : subgrid_get_topounitinfo
     use elm_varctl      , only : create_crop_landunit
@@ -468,7 +468,7 @@ contains
     use column_varcon   , only : icol_road_perv, icol_road_imperv
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
     use elm_varpar      , only : maxpatch_urb
-    use clm_varsur      , only : wt_lunit
+    use elm_varsur      , only : wt_lunit
     use subgridMod      , only : subgrid_get_topounitinfo
     use UrbanParamsType , only : urbinp
     use decompMod       , only : ldecomp
