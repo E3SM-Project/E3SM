@@ -49,6 +49,7 @@ set(SHOC_TESTS_SRCS
     shoc_pdf_compute_cloudvar_tests.cpp
     shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
+    shoc_pblintd_init_pot_test.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

@@ -17,6 +17,7 @@ set(SHOC_SRCS
   scream_shoc_interface.F90
   shoc_diag_second_moments_srf.cpp
   shoc_diag_second_moments_ubycond.cpp
+  shoc_pblintd_init_pot.cpp
 )
 
 set(SHOC_HEADERS
