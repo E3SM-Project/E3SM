@@ -77,7 +77,7 @@ contains
     use ncdio_pio        , only : pio_subsystem
     use shr_pio_mod      , only : shr_pio_getiotype
     use elm_nlUtilsMod   , only : find_nlgroup_name
-    use ndepStreamMod    , only : clm_domain_mct
+    use ndepStreamMod    , only : elm_domain_mct
     use histFileMod      , only : hist_addfld1d
     use shr_stream_mod   , only : shr_stream_file_null
     use shr_string_mod   , only : shr_string_listCreateField
@@ -150,7 +150,7 @@ contains
 
     endif
 
-    call clm_domain_mct (bounds, dom_clm)
+    call elm_domain_mct (bounds, dom_clm)
 
     !
     ! create the field list for these lai fields...use in shr_strdata_create

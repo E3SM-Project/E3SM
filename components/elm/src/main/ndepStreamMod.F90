@@ -30,7 +30,7 @@ module ndepStreamMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: ndep_init      ! position datasets for dynamic ndep
   public :: ndep_interp    ! interpolates between two years of ndep file data
-  public :: clm_domain_mct ! Sets up MCT domain for this resolution
+  public :: elm_domain_mct ! Sets up MCT domain for this resolution
 
   ! ! PRIVATE TYPES
   type(shr_strdata_type)  :: sdat         ! input data stream
@@ -113,7 +113,7 @@ contains
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_clm)
 
    call shr_strdata_create(sdat,name="clmndep",    &
         pio_subsystem=pio_subsystem,               & 
@@ -184,7 +184,7 @@ contains
  end subroutine ndep_interp
 
  !==============================================================================
-  subroutine clm_domain_mct(bounds, dom_clm)
+  subroutine elm_domain_mct(bounds, dom_clm)
 
     !-------------------------------------------------------------------
     ! Set domain data type for internal clm grid
@@ -270,7 +270,7 @@ contains
     deallocate(data)
     deallocate(idata)
 
-  end subroutine clm_domain_mct
+  end subroutine elm_domain_mct
     
 end module ndepStreamMod
 

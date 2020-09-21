@@ -1527,7 +1527,7 @@ contains
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
    use elm_nlUtilsMod   , only : find_nlgroup_name
-   use ndepStreamMod    , only : clm_domain_mct
+   use ndepStreamMod    , only : elm_domain_mct
    use histFileMod      , only : hist_addfld1d
    !
    ! !ARGUMENTS:
@@ -1593,7 +1593,7 @@ contains
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_clm)
 
    call shr_strdata_create(sdat_hdm,name="clmhdm",     &
         pio_subsystem=pio_subsystem,                   & 
@@ -1680,7 +1680,7 @@ subroutine lnfm_init( bounds )
   use ncdio_pio        , only : pio_subsystem
   use shr_pio_mod      , only : shr_pio_getiotype
   use elm_nlUtilsMod   , only : find_nlgroup_name
-  use ndepStreamMod    , only : clm_domain_mct
+  use ndepStreamMod    , only : elm_domain_mct
   use histFileMod      , only : hist_addfld1d
   !
   ! !ARGUMENTS:
@@ -1746,7 +1746,7 @@ subroutine lnfm_init( bounds )
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_clm)
 
    call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
         pio_subsystem=pio_subsystem,                  & 
