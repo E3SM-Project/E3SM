@@ -48,9 +48,9 @@ contains
     use elm_varcon      , only : denice, denh2o, wimp, pondmx_urban
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_imperv, icol_road_perv
-    use clm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
+    use elm_varpar      , only : nlevsoi, nlevgrnd, maxpatch_pft
     use clm_time_manager, only : get_step_size
-    use clm_varpar      , only : nlayer, nlayert
+    use elm_varpar      , only : nlayer, nlayert
     use clm_varctl      , only : use_var_soil_thick
     use abortutils      , only : endrun
     use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
@@ -262,8 +262,8 @@ contains
      !
      ! !USES:
      use shr_const_mod    , only : shr_const_pi
-     use clm_varpar       , only : nlayer, nlayert
-     use clm_varpar       , only : nlevsoi, nlevgrnd
+     use elm_varpar       , only : nlayer, nlayert
+     use elm_varpar       , only : nlevsoi, nlevgrnd
      use elm_varcon       , only : denh2o, denice, roverg, wimp, pc, mu, tfrz
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop
@@ -543,7 +543,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use elm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
-     use clm_varpar       , only : nlevsoi, nlevgrnd
+     use elm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
      use domainMod        , only : ldomain
@@ -887,7 +887,7 @@ contains
      !
      ! !USES:
      use clm_time_manager , only : get_step_size
-     use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
+     use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
@@ -1532,7 +1532,7 @@ contains
      !
      ! !USES:
      use clm_time_manager , only : get_step_size
-     use clm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
+     use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use abortutils       , only : endrun
@@ -1954,7 +1954,7 @@ contains
      !
      ! !USES:
      use elm_varcon  , only : denh2o, denice, watmin
-     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+     use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
      use decompMod   , only : bounds_type
      !
      ! !REVISION HISTORY:

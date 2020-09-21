@@ -239,7 +239,7 @@ contains
     ! as a function of soluble mineral N and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevdecomp, nlevsoi
+    use elm_varpar       , only : nlevdecomp, nlevsoi
     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:

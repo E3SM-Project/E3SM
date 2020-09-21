@@ -39,8 +39,8 @@ contains
       
       use clm_varctl             , only : use_c13, use_c14, use_fates
       use decompMod              , only : bounds_type
-      use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
-      use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+      use elm_varpar             , only : nlevgrnd, nlevdecomp_full 
+      use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
       use clm_varctl             , only : use_century_decomp
       use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use DecompCascadeCNMod   , only : decomp_rate_constants_cn
@@ -301,7 +301,7 @@ contains
     use CNCarbonFluxType       , only : carbonflux_type
     use CNCarbonStateType      , only : carbonstate_type
     use elm_varcon             , only : dzsoi_decomp, zisoi
-    use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+    use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
     use CNDecompCascadeConType , only : decomp_cascade_con
     
     type(bounds_type)         , intent(in)    :: bounds  

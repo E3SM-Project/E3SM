@@ -12,9 +12,9 @@ module  PhotosynthesisMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
-  use clm_varpar          , only : nlevcan
+  use elm_varpar          , only : nlevcan
   use clm_varctl          , only : use_hydrstress
-  use clm_varpar          , only : nvegwcs, mxpft
+  use elm_varpar          , only : nvegwcs, mxpft
   use elm_varcon          , only : namep
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
@@ -1592,7 +1592,7 @@ contains
     use elm_varcon        , only : rgas, tfrz, rpi
     use clm_varctl        , only : cnallocate_carbon_only
     !use clm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use pftvarcon         , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     use ColumnType        , only : col_pp        
@@ -3084,7 +3084,7 @@ contains
     !
     !
     ! !USES:
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     implicit none
     !
     ! !ARGUMENTS:
@@ -3286,7 +3286,7 @@ contains
     ! calls spacF, spacA, and getvegwp
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     !!
     ! !ARGUMENTS:
@@ -3510,7 +3510,7 @@ contains
     ! example a LINPACK linear algebra solver.
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     !
     ! !ARGUMENTS:
@@ -3686,7 +3686,7 @@ contains
     !  calculated for vegwp(p,:) as passed in via x
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     use ColumnType        , only : col_pp
     !
@@ -3769,7 +3769,7 @@ contains
     !
     ! !USES:
     ! calls getqflx
-    use clm_varpar  , only : nlevsoi
+    use elm_varpar  , only : nlevsoi
     use ColumnType  , only : col_pp
     implicit none
     !

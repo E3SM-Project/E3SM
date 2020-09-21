@@ -39,7 +39,7 @@ contains
     ! Obtain gridcell properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use clm_varctl  , only : create_crop_landunit
     use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
@@ -321,7 +321,7 @@ contains
     ! Obtain topounit properties
     !
     ! !USES
-    use clm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use clm_varctl  , only : create_crop_landunit
     use clm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &

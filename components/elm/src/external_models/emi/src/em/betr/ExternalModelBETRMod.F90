@@ -231,7 +231,7 @@ contains
     use abortutils                , only : endrun
     use shr_log_mod               , only : errMsg => shr_log_errMsg
     use clm_varctl                , only : iulog
-    use clm_varpar                , only : nlevsoi
+    use elm_varpar                , only : nlevsoi
 #ifdef BETR_VIA_EMI
     use elm_instMod               , only : ep_betr
     use BeTR_decompMod            , only : betr_bounds_type

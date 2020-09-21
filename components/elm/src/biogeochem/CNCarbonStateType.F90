@@ -5,8 +5,8 @@ module CNCarbonStateType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar             , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar             , only : nlevdecomp_full, crop_prog, nlevdecomp
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop 
   use clm_varctl             , only : iulog, use_vertsoilc, spinup_state 
@@ -294,8 +294,8 @@ contains
     ! add history fields for all CN variables, always set as default='inactive'
     !
     ! !USES:
-    use clm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
-    use clm_varpar , only : nlevdecomp, nlevdecomp_full, nlevgrnd
+    use elm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
+    use elm_varpar , only : nlevdecomp, nlevdecomp_full, nlevgrnd
     use clm_varctl , only : use_c13, use_c14
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
     !
@@ -813,7 +813,7 @@ contains
     use clm_varctl       , only: iulog
     use clm_time_manager , only: get_step_size
     use elm_varcon       , only: secspday
-    use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use elm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonstate_type) :: this

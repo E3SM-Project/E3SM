@@ -7,7 +7,7 @@ module AerosolType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varpar     , only : nlevsno, nlevgrnd
+  use elm_varpar     , only : nlevsno, nlevgrnd
   use decompMod      , only : bounds_type
   !
   ! !PUBLIC TYPES:
@@ -169,7 +169,7 @@ contains
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
     use elm_varcon    , only: spval
-    use clm_varpar    , only: nlevsno 
+    use elm_varpar    , only: nlevsno 
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     use histFileMod   , only: no_snow_normal, no_snow_zero
     !
@@ -279,10 +279,10 @@ contains
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
-    use clm_varpar , only : nlevsno, nlevsoi
+    use elm_varpar , only : nlevsno, nlevsoi
     use elm_varcon , only : spval
     use clm_varctl , only : iulog  
-    use clm_varpar , only : nlevsno
+    use elm_varpar , only : nlevsno
     use spmdMod    , only : masterproc
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
     use restUtilMod

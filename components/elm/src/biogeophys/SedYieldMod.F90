@@ -11,8 +11,8 @@ module SedYieldMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use elm_varcon        , only : grav, denh2o, rpi
-  use clm_varpar        , only : mxpft, nlevsno, max_patch_per_col
-  use clm_varpar        , only : nlevslp
+  use elm_varpar        , only : mxpft, nlevsno, max_patch_per_col
+  use elm_varpar        , only : nlevslp
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : CanopyState_type
   use EnergyFluxType    , only : energyflux_type

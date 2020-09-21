@@ -51,7 +51,7 @@ contains
     ! This also calls dynpft_interp for the initial time
     !
     ! !USES:
-    use clm_varpar     , only : numpft, maxpatch_pft, natpft_size
+    use elm_varpar     , only : numpft, maxpatch_pft, natpft_size
     use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod , only : YEAR_POSITION_END_OF_TIMESTEP
     use ncdio_pio
@@ -115,7 +115,7 @@ contains
     !
     ! !USES:
     use clm_varsur, only : wt_nat_patch
-    use clm_varpar, only : natpft_size
+    use elm_varpar, only : natpft_size
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -240,7 +240,7 @@ contains
     !
     ! !USES:
     use landunit_varcon , only : istsoil
-    use clm_varpar      , only : natpft_lb, natpft_ub
+    use elm_varpar      , only : natpft_lb, natpft_ub
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds

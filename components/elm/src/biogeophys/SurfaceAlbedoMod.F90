@@ -13,7 +13,7 @@ module SurfaceAlbedoMod
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
   use elm_varcon        , only : grlnd, namep
-  use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
+  use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, SNICAR_AD_RT, DO_SNO_AER, DO_SNO_OC
@@ -1109,7 +1109,7 @@ contains
      ! Determine ground surface albedo, accounting for snow
      !
      ! !USES:
-    use clm_varpar, only : numrad
+    use elm_varpar, only : numrad
      use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak
      use LakeCon         , only : lakepuddling
@@ -1248,7 +1248,7 @@ contains
      ! a multi-layer canopy to calculate APAR profile
      !
      ! !USES:
-     use clm_varpar, only : numrad, nlevcan
+     use elm_varpar, only : numrad, nlevcan
      use elm_varcon, only : omegas, tfrz, betads, betais
      use clm_varctl, only : iulog
      !

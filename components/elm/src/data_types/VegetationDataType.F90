@@ -12,8 +12,8 @@ module VegetationDataType
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
   use clm_time_manager, only : is_restart, get_nstep
-  use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
-  use clm_varpar      , only : nlevdecomp, nlevdecomp_full
+  use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
+  use elm_varpar      , only : nlevdecomp, nlevdecomp_full
   use elm_varcon      , only : spval, ispval, sb
   use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop

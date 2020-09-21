@@ -6,8 +6,8 @@ module CarbonIsoFluxMod
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
-  use clm_varpar             , only : max_patch_per_col, maxpatch_pft
+  use elm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
+  use elm_varpar             , only : max_patch_per_col, maxpatch_pft
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp

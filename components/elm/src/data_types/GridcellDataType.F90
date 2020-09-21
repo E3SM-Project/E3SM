@@ -7,7 +7,7 @@ module GridcellDataType
   !
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
+  use elm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon        , only : spval, ispval
   use clm_varctl        , only : use_fates
   use histFileMod       , only : hist_addfld1d, hist_addfld2d, no_snow_normal

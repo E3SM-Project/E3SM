@@ -9,9 +9,9 @@ module pftvarcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
+  use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
   use clm_varctl  , only : iulog, use_vertsoilc
-  use clm_varpar  , only : nlevdecomp_full, nsoilorder
+  use elm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:

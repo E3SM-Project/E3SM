@@ -8,7 +8,7 @@ module VOCEmissionMod
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use clm_varctl         , only : iulog
-  use clm_varpar         , only : numpft, nlevcan
+  use elm_varpar         , only : numpft, nlevcan
   use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
   use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
   use pftvarcon          , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_brl_shrub
@@ -788,7 +788,7 @@ contains
     !
     ! !USES:
     use elm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none
@@ -821,7 +821,7 @@ contains
     !
     ! !USES:
     use elm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none

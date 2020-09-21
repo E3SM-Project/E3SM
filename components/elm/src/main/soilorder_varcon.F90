@@ -9,7 +9,7 @@ module soilorder_varcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use clm_varpar  , only : nsoilorder
+  use elm_varpar  , only : nsoilorder
   use clm_varctl  , only : iulog, use_vertsoilc
   !
   ! !PUBLIC TYPES:

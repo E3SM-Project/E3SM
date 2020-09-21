@@ -7,7 +7,7 @@ module MaintenanceRespMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use clm_varpar          , only : nlevgrnd
+  use elm_varpar          , only : nlevgrnd
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun

@@ -9,7 +9,7 @@ module ErosionMod
   use decompMod         , only : bounds_type
   use clm_time_manager  , only : get_step_size
   use elm_varcon        , only : dzsoi_decomp
-  use clm_varpar        , only : ndecomp_pools, nlevdecomp
+  use elm_varpar        , only : ndecomp_pools, nlevdecomp
   use CNCarbonFluxType  , only : carbonflux_type
   use CNCarbonStateType , only : carbonstate_type
   use CNDecompCascadeConType , only : decomp_cascade_con

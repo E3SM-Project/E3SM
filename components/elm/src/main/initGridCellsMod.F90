@@ -244,7 +244,7 @@ contains
     ! !USES
     use clm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
-    use clm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
+    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
     !
     ! !ARGUMENTS:
     integer , intent(in)    :: ltype             ! landunit type
@@ -291,7 +291,7 @@ contains
     ! Initialize wet_ice_lake landunits that are non-urban (lake, wetland, glacier, glacier_mec)
     !
     ! !USES
-    use clm_varpar      , only : maxpatch_glcmec
+    use elm_varpar      , only : maxpatch_glcmec
     use clm_varsur      , only : wt_lunit, wt_glc_mec
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec
     use column_varcon   , only : icemec_class_to_col_itype
@@ -403,7 +403,7 @@ contains
     use landunit_varcon , only : istcrop, istsoil
     use subgridMod      , only : subgrid_get_topounitinfo
     use clm_varctl      , only : create_crop_landunit
-    use clm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
+    use elm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
     !
     ! !ARGUMENTS:
     integer , intent(in)    :: ltype             ! landunit type
@@ -467,7 +467,7 @@ contains
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
-    use clm_varpar      , only : maxpatch_urb
+    use elm_varpar      , only : maxpatch_urb
     use clm_varsur      , only : wt_lunit
     use subgridMod      , only : subgrid_get_topounitinfo
     use UrbanParamsType , only : urbinp

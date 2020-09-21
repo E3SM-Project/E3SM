@@ -14,7 +14,7 @@ module restFileMod
   use subgridRestMod       , only : SubgridRest
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
-  use clm_varpar           , only : crop_prog
+  use elm_varpar           , only : crop_prog
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
   use clm_varctl           , only : use_erosion
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
@@ -1005,8 +1005,8 @@ contains
     use clm_time_manager     , only : get_nstep
     use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
     use clm_varctl           , only : conventions, source, use_hydrstress
-    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
-    use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
+    use elm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
     use clm_varctl           , only : do_budgets
@@ -1165,7 +1165,7 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use clm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
     use pftvarcon , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
@@ -1197,7 +1197,7 @@ contains
     !
     ! !USES:
     use decompMod,  only : get_proc_global
-    use clm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
+    use elm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
     use clm_varctl, only : single_column, nsrest, nsrStartup
     !
     ! !ARGUMENTS:

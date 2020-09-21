@@ -12,18 +12,18 @@ module EcosystemBalanceCheckMod
   use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
-  use clm_varpar          , only : crop_prog
+  use elm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use clm_varpar          , only : nlevdecomp
+  use elm_varpar          , only : nlevdecomp
   use elm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
 
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use clm_varpar          , only: ndecomp_cascade_transitions
+  use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type

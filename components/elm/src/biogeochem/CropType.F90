@@ -12,7 +12,7 @@ module CropType
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use elm_varcon          , only : spval
-  use clm_varpar          , only : crop_prog
+  use elm_varpar          , only : crop_prog
   use clm_varctl          , only : iulog, use_crop
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es

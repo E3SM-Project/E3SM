@@ -13,7 +13,7 @@ module CNPhenologyBeTRMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_sys_mod         , only : shr_sys_flush
   use decompMod           , only : bounds_type
-  use clm_varpar          , only : numpft
+  use elm_varpar          , only : numpft
   use clm_varctl          , only : iulog
   use elm_varcon          , only : tfrz
   use abortutils          , only : endrun
@@ -288,7 +288,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only: get_step_size
-    use clm_varpar      , only: crop_prog
+    use elm_varpar      , only: crop_prog
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
@@ -2070,7 +2070,7 @@ contains
     use clm_time_manager , only : get_curr_date
     use clm_time_manager , only : get_step_size
     use elm_varcon       , only : secspday
-    use clm_varpar       , only : numpft
+    use elm_varpar       , only : numpft
     use pftvarcon        , only : planttemp
     use CropMod          , only : calculate_eto, plant_month
 
@@ -2966,7 +2966,7 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !USES:
-    use clm_varpar , only : max_patch_per_col, nlevdecomp
+    use elm_varpar , only : max_patch_per_col, nlevdecomp
     use pftvarcon  , only : npcropmin
     !
     ! !ARGUMENTS:
@@ -3147,7 +3147,7 @@ contains
    ! to the column level and assign them to a product pools
    !
    ! !USES:
-   use clm_varpar, only : maxpatch_pft
+   use elm_varpar, only : maxpatch_pft
    type(cnstate_type)       , intent(in)    :: cnstate_vars
    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars

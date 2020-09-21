@@ -7,7 +7,7 @@ module FrictionVelocityType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use clm_varctl     , only : use_cn
-  use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
+  use elm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
   use elm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun

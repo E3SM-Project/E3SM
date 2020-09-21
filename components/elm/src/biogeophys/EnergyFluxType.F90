@@ -156,7 +156,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, crop_prog 
     !
     ! !ARGUMENTS:
     class(energyflux_type) :: this
@@ -276,7 +276,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
+    use elm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use clm_varctl     , only : use_cn
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
@@ -320,7 +320,7 @@ contains
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use shr_const_mod   , only : SHR_CONST_TKFRZ
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use elm_varcon      , only : denice, denh2o, sb
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall

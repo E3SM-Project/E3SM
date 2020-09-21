@@ -152,7 +152,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : max_lunit
-    use clm_varpar     , only : maxpatch_glcmec, natpft_size, cft_size
+    use elm_varpar     , only : maxpatch_glcmec, natpft_size, cft_size
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use decompMod      , only : BOUNDS_LEVEL_PROC
     use histFileMod    , only : hist_addfld2d
@@ -797,7 +797,7 @@ contains
     ! !USES:
     use landunit_varcon, only : istice_mec
     use column_varcon, only : col_itype_to_icemec_class
-    use clm_varpar, only : maxpatch_glcmec
+    use elm_varpar, only : maxpatch_glcmec
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
@@ -832,7 +832,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istsoil, istcrop
-    use clm_varpar, only : natpft_lb, cft_lb
+    use elm_varpar, only : natpft_lb, cft_lb
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds

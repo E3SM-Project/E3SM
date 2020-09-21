@@ -11,7 +11,7 @@ module UrbanAlbedoMod
   use shr_sys_mod       , only : shr_sys_flush 
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use clm_varpar        , only : numrad
+  use elm_varpar        , only : numrad
   use elm_varcon        , only : isecspday, degpsec, namel
   use clm_varctl        , only : iulog
   use abortutils        , only : endrun  

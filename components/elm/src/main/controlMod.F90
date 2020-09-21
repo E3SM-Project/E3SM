@@ -18,7 +18,7 @@ module controlMod
   use abortutils              , only: endrun
   use spmdMod                 , only: masterproc
   use decompMod               , only: clump_pproc
-  use clm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
+  use elm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
   use histFileMod             , only: max_tapes, max_namlen 
   use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape 
   use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
@@ -582,7 +582,7 @@ contains
     ! !USES:
     !
     use spmdMod,    only : mpicom, MPI_CHARACTER, MPI_INTEGER, MPI_LOGICAL, MPI_REAL8
-    use clm_varpar, only : numrad
+    use elm_varpar, only : numrad
     !
     ! !ARGUMENTS:
     implicit none

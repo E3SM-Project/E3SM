@@ -67,9 +67,9 @@ module elm_interface_funcsMod
   use elm_interface_bgcType         , only : elm_interface_bgc_datatype
 
   ! most used constants in this module
-  use clm_varpar            , only : nlevsoi, nlevsno, nlevgrnd, nlevdecomp_full
-  use clm_varpar            , only : ndecomp_pools, ndecomp_cascade_transitions
-  use clm_varpar            , only : max_patch_per_col
+  use elm_varpar            , only : nlevsoi, nlevsno, nlevgrnd, nlevdecomp_full
+  use elm_varpar            , only : ndecomp_pools, ndecomp_cascade_transitions
+  use elm_varpar            , only : max_patch_per_col
   use elm_varcon            , only : denh2o, denice, tfrz, dzsoi_decomp
   use landunit_varcon       , only : istsoil, istcrop
 

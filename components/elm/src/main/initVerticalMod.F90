@@ -12,9 +12,9 @@ module initVerticalMod
   use shr_sys_mod    , only : shr_sys_abort
   use decompMod      , only : bounds_type
   use spmdMod        , only : masterproc
-  use clm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
-  use clm_varpar     , only : toplev_equalspace, nlev_equalspace
-  use clm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
+  use elm_varpar     , only : more_vertlayers, nlevsno, nlevgrnd, nlevlak
+  use elm_varpar     , only : toplev_equalspace, nlev_equalspace
+  use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
   use clm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use clm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varctl     , only : use_erosion

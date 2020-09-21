@@ -1,4 +1,4 @@
-module clm_varpar
+module elm_varpar
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -73,7 +73,7 @@ module clm_varpar
   integer :: ndecomp_pools
   integer :: ndecomp_cascade_transitions
 
-  ! Indices used in surface file read and set in clm_varpar_init
+  ! Indices used in surface file read and set in elm_varpar_init
 
   integer :: natpft_lb          ! In PFT arrays, lower bound of Patches on the natural veg landunit (i.e., bare ground index)
   integer :: natpft_ub          ! In PFT arrays, upper bound of Patches on the natural veg landunit
@@ -88,14 +88,14 @@ module clm_varpar
   real(r8) :: mach_eps            ! machine epsilon
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public clm_varpar_init          ! set parameters
+  public elm_varpar_init          ! set parameters
   !
   !-----------------------------------------------------------------------
 
 contains
 
   !------------------------------------------------------------------------------
-  subroutine clm_varpar_init()
+  subroutine elm_varpar_init()
     !
     ! !DESCRIPTION:
     ! Initialize module variables 
@@ -105,7 +105,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     !
-    character(len=32) :: subname = 'clm_varpar_init'  ! subroutine name
+    character(len=32) :: subname = 'elm_varpar_init'  ! subroutine name
     !------------------------------------------------------------------------------
 
     ! Crop settings and consistency checks
@@ -211,6 +211,6 @@ contains
     
 
 
-  end subroutine clm_varpar_init
+  end subroutine elm_varpar_init
 
-end module clm_varpar
+end module elm_varpar

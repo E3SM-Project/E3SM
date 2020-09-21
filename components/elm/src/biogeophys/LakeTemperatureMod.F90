@@ -112,7 +112,7 @@ contains
     use LakeCon           , only : lakepuddling, lake_no_ed
     use QSatMod            , only : QSat
     use TridiagonalMod     , only : Tridiagonal
-    use clm_varpar         , only : nlevlak, nlevgrnd, nlevsno
+    use elm_varpar         , only : nlevlak, nlevgrnd, nlevsno
     use clm_time_manager   , only : get_step_size
     use elm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
     use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
@@ -1080,7 +1080,7 @@ contains
      ! !USES:
      use elm_varcon  , only : denh2o, denice, tfrz, tkwat, tkice, tkair
      use elm_varcon  , only : cpice,  cpliq, thk_bedrock
-     use clm_varpar  , only : nlevsno, nlevsoi, nlevgrnd
+     use elm_varpar  , only : nlevsno, nlevsoi, nlevgrnd
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)  :: bounds  
@@ -1260,7 +1260,7 @@ contains
      ! !USES:
      use clm_time_manager , only : get_step_size
      use elm_varcon       , only : tfrz, hfus, denh2o, denice, cpliq, cpice
-     use clm_varpar       , only : nlevsno, nlevgrnd, nlevlak
+     use elm_varpar       , only : nlevsno, nlevgrnd, nlevlak
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds                     

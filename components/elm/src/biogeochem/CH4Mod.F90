@@ -12,7 +12,7 @@ module CH4Mod
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use clm_varpar         , only : nlevsoi, ngases, nlevsno, nlevdecomp
+  use elm_varpar         , only : nlevsoi, ngases, nlevsno, nlevdecomp
   use elm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
@@ -226,7 +226,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varpar    , only: nlevgrnd
+    use elm_varpar    , only: nlevgrnd
     !
     ! !ARGUMENTS:
     class(ch4_type) :: this
@@ -321,7 +321,7 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use clm_varpar , only : nlevgrnd, nlevdecomp
+    use elm_varpar , only : nlevgrnd, nlevdecomp
     use clm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
     use CH4varcon  , only : allowlakeprod
@@ -676,7 +676,7 @@ contains
     !
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
     use landunit_varcon , only : istsoil, istdlak, istcrop
     use clm_varctl      , only : iulog, fsurdat
     use CH4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
@@ -1281,7 +1281,7 @@ contains
     !
     ! !USES:
     use subgridAveMod      , only : p2c, c2g
-    use clm_varpar         , only : nlevgrnd, nlevdecomp
+    use elm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
     use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
     use elm_varcon         , only : secspday
@@ -1900,7 +1900,7 @@ contains
     ! !USES:
     use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
     use clm_varctl         , only: anoxia
-    use clm_varpar         , only: nlevdecomp, nlevdecomp_full
+    use elm_varpar         , only: nlevdecomp, nlevdecomp_full
     use SharedParamsMod  , only: nlev_soildecomp_standard
     use pftvarcon          , only: noveg
     !

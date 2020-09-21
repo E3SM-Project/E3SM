@@ -26,7 +26,7 @@ contains
     !
     ! !USES:
     use ColumnType                , only : col_pp
-    use clm_varpar                , only : nlevgrnd, nlevsno
+    use elm_varpar                , only : nlevgrnd, nlevsno
     !
     implicit none
     !

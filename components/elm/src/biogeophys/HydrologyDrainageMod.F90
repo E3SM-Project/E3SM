@@ -52,7 +52,7 @@ contains
     use clm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
     use domainMod        , only : ldomain
     use atm2lndType      , only : atm2lnd_type
-    use clm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
+    use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use clm_varctl       , only : use_vsfm

@@ -13,10 +13,10 @@ module ColumnDataType
   use shr_sys_mod     , only : shr_sys_flush
   use abortutils      , only : endrun
   use MathfuncMod     , only : dot_sum
-  use clm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
-  use clm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
-  use clm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
+  use elm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use elm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday

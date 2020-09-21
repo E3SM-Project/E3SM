@@ -13,7 +13,7 @@ module TopounitType
   use abortutils     , only : endrun
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
-  use clm_varpar     , only : numrad
+  use elm_varpar     , only : numrad
   use decompMod      , only : bounds_type
 
   implicit none

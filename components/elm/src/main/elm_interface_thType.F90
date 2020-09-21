@@ -91,7 +91,7 @@ contains
 
   subroutine InitAllocate(this, bounds)
     ! USES
-    use clm_varpar            , only : nlevsno, nlevgrnd
+    use elm_varpar            , only : nlevsno, nlevgrnd
     use elm_varcon            , only : spval
     use decompMod             , only : bounds_type
 

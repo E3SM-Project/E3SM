@@ -161,7 +161,7 @@ contains
     !
     ! !USES:
     use clm_time_manager         , only : get_step_size
-    use clm_varpar               , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar               , only : nlevsno, nlevgrnd, nlevurb
     use clm_varctl               , only : iulog
     use elm_varcon               , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon          , only : istice, istice_mec, istsoil, istcrop
@@ -715,7 +715,7 @@ contains
     !  Assembles and solves the banded penta-diagonal system of equations
     !
     ! !USES:
-    use clm_varpar       , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar       , only : nlevsno, nlevgrnd, nlevurb
     use clm_varctl       , only : iulog
     use elm_varcon       , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
@@ -842,7 +842,7 @@ end subroutine SolveTemperature
     ! flux from the interface to the node j+1.
     !
     ! !USES:
-    use clm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
+    use elm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -1073,7 +1073,7 @@ end subroutine SolveTemperature
     ! !USES:
     use clm_time_manager , only : get_step_size
     use elm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
-    use clm_varpar       , only : nlevsno, nlevgrnd
+    use elm_varpar       , only : nlevsno, nlevgrnd
     use clm_varctl       , only : iulog
     !
     ! !ARGUMENTS:
@@ -1300,7 +1300,7 @@ end subroutine SolveTemperature
     !
     ! !USES:
     use clm_time_manager , only : get_step_size
-    use clm_varpar       , only : nlevsno, nlevgrnd,nlevurb
+    use elm_varpar       , only : nlevsno, nlevgrnd,nlevurb
     use clm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
@@ -1697,7 +1697,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, max_patch_per_col
+    use elm_varpar     , only : nlevsno, max_patch_per_col
     !
     ! !ARGUMENTS:
     implicit none
@@ -1948,7 +1948,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : capr, cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2055,7 +2055,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon      , only : cnfac, cpliq
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2181,7 +2181,7 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to snow layers.
     !
     ! !USES:
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2258,7 +2258,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2333,7 +2333,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2415,7 +2415,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2500,7 +2500,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2579,7 +2579,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2645,7 +2645,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2749,7 +2749,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2833,7 +2833,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2924,7 +2924,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3011,7 +3011,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3096,7 +3096,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3170,7 +3170,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3345,7 +3345,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3422,7 +3422,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3483,7 +3483,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3536,7 +3536,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3615,7 +3615,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3692,7 +3692,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3767,7 +3767,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
 
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
@@ -3819,7 +3819,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3867,7 +3867,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3934,7 +3934,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4001,7 +4001,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4066,7 +4066,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4162,7 +4162,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4225,7 +4225,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4317,7 +4317,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4414,7 +4414,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4510,7 +4510,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4568,7 +4568,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4619,7 +4619,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4685,7 +4685,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_imperv, icol_road_perv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4757,7 +4757,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4826,7 +4826,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4884,7 +4884,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4939,7 +4939,7 @@ end subroutine SolveTemperature
     ! !USES:
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4996,7 +4996,7 @@ end subroutine SolveTemperature
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use TemperatureType , only : temperature_type
-    use clm_varpar      , only : nlevsno
+    use elm_varpar      , only : nlevsno
     !
     implicit none
     !

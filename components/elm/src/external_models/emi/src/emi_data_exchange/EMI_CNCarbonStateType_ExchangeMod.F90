@@ -37,8 +37,8 @@ contains
     ! Pack data from ALM carbonstate_vars for EM
     !
     ! !USES:
-    use clm_varpar             , only : nlevdecomp_full
-    use clm_varpar             , only : ndecomp_pools
+    use elm_varpar             , only : nlevdecomp_full
+    use elm_varpar             , only : ndecomp_pools
     !
     implicit none
     !
@@ -108,8 +108,8 @@ contains
     ! Unpack data for ALM carbonstate_vars from EM
     !
     ! !USES:
-    use clm_varpar             , only : nlevdecomp_full
-    use clm_varpar             , only : ndecomp_pools
+    use elm_varpar             , only : nlevdecomp_full
+    use elm_varpar             , only : ndecomp_pools
     !
     implicit none
     !

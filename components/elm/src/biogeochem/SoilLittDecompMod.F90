@@ -12,7 +12,7 @@ module SoilLittDecompMod
   use perf_mod               , only : t_startf, t_stopf
   use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
-  use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
   use CNNitrifDenitrifMod    , only : nitrif_denitrif
@@ -628,7 +628,7 @@ contains
     use AllocationMod , only: Allocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
     use clm_time_manager, only: get_step_size
-!    use clm_varpar      , only: nlevdecomp, ndecomp_pools
+!    use elm_varpar      , only: nlevdecomp, ndecomp_pools
 
     !
     ! !ARGUMENT:
@@ -879,7 +879,7 @@ contains
   !USES:
 
     use clm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
-    use clm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
+    use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds

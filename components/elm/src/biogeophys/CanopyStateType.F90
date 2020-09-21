@@ -9,7 +9,7 @@ module CanopyStateType
   use decompMod       , only : bounds_type
   use landunit_varcon , only : istsoil, istcrop
   use elm_varcon      , only : spval  
-  use clm_varpar      , only : nlevcan, nvegwcs
+  use elm_varpar      , only : nlevcan, nvegwcs
   use clm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
@@ -89,7 +89,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevcan, nlevsno, nlevgrnd
     use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
     !
     ! !ARGUMENTS:
@@ -147,7 +147,7 @@ contains
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
     use clm_varctl    , only: use_cn
-    use clm_varpar    , only: nlevgrnd
+    use elm_varpar    , only: nlevgrnd
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:

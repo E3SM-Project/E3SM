@@ -103,7 +103,7 @@ contains
     !
     ! !USES:
     use clm_time_manager , only : get_step_size, get_curr_date
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
     use elm_varcon       , only : zsoi, dzsoi_decomp, zisoi
     use TridiagonalMod   , only : Tridiagonal
     !

@@ -7,7 +7,7 @@ module CNNitrifDenitrifMod
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_const_mod       , only : SHR_CONST_TKFRZ
-  use clm_varpar          , only : nlevgrnd,nlevdecomp
+  use elm_varpar          , only : nlevgrnd,nlevdecomp
   use elm_varcon          , only : rpi, denh2o, dzsoi, zisoi, grav
   use elm_varcon          , only : d_con_g, d_con_w, spval, secspday
   use clm_varctl          , only : use_lch4, iulog

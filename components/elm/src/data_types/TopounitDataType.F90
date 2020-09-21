@@ -11,7 +11,7 @@ module TopounitDataType
   use abortutils     , only : endrun
   use elm_varcon     , only : spval, ispval
   use clm_varctl     , only : iulog, use_cn, use_fates, use_lch4
-  use clm_varpar     , only : numrad
+  use elm_varpar     , only : numrad
   use histFileMod    , only : hist_addfld1d, hist_addfld2d
   use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type

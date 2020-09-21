@@ -13,9 +13,9 @@ module elm_varcon
   use shr_const_mod , only: SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH
   use shr_const_mod , only: SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY
   use shr_const_mod , only: SHR_CONST_RGAS
-  use clm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
-  use clm_varpar    , only: ngases
-  use clm_varpar    , only: nlayer
+  use elm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
+  use elm_varpar    , only: ngases
+  use elm_varpar    , only: nlayer
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -228,11 +228,11 @@ contains
   subroutine elm_varcon_init()
     !
     ! !DESCRIPTION:
-    ! This subroutine initializes constant arrays in elm_varcon. 
+    ! This subroutine initializes constant arrays in elm_varcon.
     ! MUST be called  after clm_varpar_init.
     !
     ! USES
-    use clm_varpar, only: nlevgrnd, nlevlak, nlevdecomp_full, nlevsoifl, nlayer
+    use elm_varpar, only: nlevgrnd, nlevlak, nlevdecomp_full, nlevsoifl, nlayer
     !------------------------------------------------------------------------------
 
     allocate( zlak(1:nlevlak                 ))

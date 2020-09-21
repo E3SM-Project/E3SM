@@ -78,7 +78,7 @@ contains
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_PDB
     use landunit_varcon    , only : istsoil, istcrop
-    use clm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
+    use elm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
     use pftvarcon          , only : pconv, pprod10, pprod100
     use elm_varcon         , only : c13ratio, c14ratio
     use clm_time_manager   , only : get_step_size

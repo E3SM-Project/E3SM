@@ -15,7 +15,7 @@ module CanopyFluxesMod
   use abortutils            , only : endrun
   use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
   use clm_varctl            , only : use_hydrstress
-  use clm_varpar            , only : nlevgrnd, nlevsno
+  use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type

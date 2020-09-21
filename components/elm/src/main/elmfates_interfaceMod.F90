@@ -60,14 +60,14 @@ module CLMFatesInterfaceMod
    use elm_varcon        , only : denice
    use elm_varcon        , only : ispval
 
-   use clm_varpar        , only : natpft_size
-   use clm_varpar        , only : numrad
-   use clm_varpar        , only : ivis
-   use clm_varpar        , only : inir
-   use clm_varpar        , only : nlevgrnd
-   use clm_varpar        , only : nlevdecomp
-   use clm_varpar        , only : nlevdecomp_full
-   use clm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
+   use elm_varpar        , only : natpft_size
+   use elm_varpar        , only : numrad
+   use elm_varpar        , only : ivis
+   use elm_varpar        , only : inir
+   use elm_varpar        , only : nlevgrnd
+   use elm_varpar        , only : nlevdecomp
+   use elm_varpar        , only : nlevdecomp_full
+   use elm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
    use PhotosynthesisType , only : photosyns_type
    Use TopounitDataType  , only : topounit_atmospheric_flux, topounit_atmospheric_state
    use atm2lndType       , only : atm2lnd_type
@@ -2477,7 +2477,7 @@ contains
    use FatesLitterMod,    only : ncwd_fates       => ncwd
    use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
    use EDtypesMod,        only : nclmax_fates     => nclmax
-   use clm_varpar,        only : nlevgrnd
+   use elm_varpar,        only : nlevgrnd
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
 

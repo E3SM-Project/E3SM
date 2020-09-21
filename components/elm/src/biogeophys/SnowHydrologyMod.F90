@@ -17,7 +17,7 @@ module SnowHydrologyMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
-  use clm_varpar      , only : nlevsno
+  use elm_varpar      , only : nlevsno
   use clm_varctl      , only : iulog
   use elm_varcon      , only : namec
   use atm2lndType     , only : atm2lnd_type

@@ -6,7 +6,7 @@ module C14DecayMod
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use clm_time_manager       , only : get_curr_date, get_step_size, get_days_per_year
-  use clm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
+  use elm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
   use elm_varcon             , only : secspday
   use clm_varctl             , only : spinup_state
   use CNDecompCascadeConType , only : decomp_cascade_con

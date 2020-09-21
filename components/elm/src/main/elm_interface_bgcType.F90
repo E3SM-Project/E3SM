@@ -15,7 +15,7 @@ module elm_interface_bgcType
 
   type, public :: elm_interface_bgc_datatype
 
-     ! clm_varpar
+     ! elm_varpar
      integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
      integer                    :: ndecomp_pools                            ! num of decomposition pools
 
@@ -223,8 +223,8 @@ contains
 
   subroutine InitAllocate(this, bounds)
     ! USES
-    use clm_varpar            , only : nlevsno, nlevgrnd
-    use clm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
+    use elm_varpar            , only : nlevsno, nlevgrnd
+    use elm_varpar            , only : nlevdecomp_full, ndecomp_pools,  ndecomp_cascade_transitions
     use elm_varcon            , only : spval
     use decompMod             , only : bounds_type
 

@@ -382,7 +382,7 @@ contains
 
     use clm_time_manager, only : get_nstep
     use elm_varcon      , only : dzsoi, zisoi
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp_full, ndecomp_pools
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp_full, ndecomp_pools
     use clm_varctl      , only : pf_hmode, pf_tmode, pf_cmode, pf_frzmode,  &
                                  initth_pf2clm, pf_clmnstep0,               &
                                  pf_surfaceflow
@@ -1318,7 +1318,7 @@ contains
     use LandunitType    , only : lun_pp
     use ColumnType      , only : col_pp
 
-    use clm_varpar      , only : nlevgrnd
+    use elm_varpar      , only : nlevgrnd
     use domainMod       , only : ldomain
     use landunit_varcon , only : istsoil, istcrop
     use elm_varcon      , only : re
@@ -1574,7 +1574,7 @@ contains
 
             else
                call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-                   " 'clm_varpar%nlevgrnd'. Please check")
+                   " 'elm_varpar%nlevgrnd'. Please check")
 
             endif
 
@@ -1611,7 +1611,7 @@ contains
 
          else
             call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-              " 'clm_varpar%nlevgrnd'. Please check")
+              " 'elm_varpar%nlevgrnd'. Please check")
 
          endif
 
@@ -1662,7 +1662,7 @@ contains
     use ColumnType              , only : col_pp
     use landunit_varcon         , only : istsoil, istcrop
 
-    use clm_varpar              , only : nlevgrnd, ndecomp_pools, ndecomp_cascade_transitions
+    use elm_varpar              , only : nlevgrnd, ndecomp_pools, ndecomp_cascade_transitions
     use CNDecompCascadeConType  , only : decomp_cascade_con
 
     ! pflotran
@@ -1907,7 +1907,7 @@ contains
 
           else
             call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-              " 'clm_varpar%nlevgrnd'. Please check")
+              " 'elm_varpar%nlevgrnd'. Please check")
 
           endif
         enddo
@@ -1976,7 +1976,7 @@ contains
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
     use elm_varcon          , only : denh2o, denice, tfrz
-    use clm_varpar          , only : nlevgrnd
+    use elm_varpar          , only : nlevgrnd
     use shr_infnan_mod      , only : shr_infnan_isnan
 
     use PFLOTRAN_Constants_module
@@ -2134,7 +2134,7 @@ contains
 
         else 
             call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-              " 'clm_varpar%nlevgrnd'. Please check")
+              " 'elm_varpar%nlevgrnd'. Please check")
 
         endif !if (j<=nlevgrnd) then
 
@@ -2179,7 +2179,7 @@ contains
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
     use elm_varcon          , only : denice
-    use clm_varpar          , only : nlevgrnd
+    use elm_varpar          , only : nlevgrnd
 
     use PFLOTRAN_Constants_module
     use clm_varctl          , only : pf_frzmode
@@ -2252,7 +2252,7 @@ contains
                soilisat_clmp_loc(cellcount ) = itheta/watsat(c,j)
              else
                call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer number is greater than " // &
-                 " 'clm_varpar%nlevgrnd'. Please check")
+                 " 'elm_varpar%nlevgrnd'. Please check")
 
              endif
 
@@ -2288,7 +2288,7 @@ contains
   ! !USES:
     use ColumnType      , only : col_pp
     use elm_varcon      , only : tfrz, denh2o
-    use clm_varpar      , only : nlevsoi, nlevgrnd
+    use elm_varpar      , only : nlevsoi, nlevgrnd
     use clm_time_manager, only : get_step_size, get_nstep
     use shr_infnan_mod  , only : shr_infnan_isnan
     use shr_const_mod   , only : SHR_CONST_G
@@ -2461,7 +2461,7 @@ contains
 
         else
           call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-             " 'clm_varpar%nlevgrnd'. Please check")
+             " 'elm_varpar%nlevgrnd'. Please check")
 
         endif
       end do
@@ -2612,9 +2612,9 @@ contains
 
           end if
 
-        else   !j>clm_varpar%nlevgrnd
+        else   !j>elm_varpar%nlevgrnd
           call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
-              " 'clm_varpar%nlevgrnd'. Please check")
+              " 'elm_varpar%nlevgrnd'. Please check")
         endif
 
        end do
@@ -2673,7 +2673,7 @@ contains
     use ColumnType      , only : col_pp
     use clm_time_manager, only : get_step_size, get_nstep
     use elm_varcon      , only : tfrz
-    use clm_varpar      , only : nlevgrnd
+    use elm_varpar      , only : nlevgrnd
     use shr_infnan_mod  , only : shr_infnan_isnan
 
     use clm_pflotran_interface_data
@@ -2874,7 +2874,7 @@ contains
   subroutine get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
     use ColumnType          , only : col_pp
     use clm_varctl          , only : iulog
-    use clm_varpar          , only : ndecomp_pools, nlevdecomp_full
+    use elm_varpar          , only : ndecomp_pools, nlevdecomp_full
 
     implicit none
 
@@ -3034,7 +3034,7 @@ contains
   ! !USES:
     use ColumnType          , only : col_pp
     use clm_time_manager    , only : get_step_size, get_nstep,  is_first_step, is_first_restart_step
-    use clm_varpar          , only : ndecomp_pools, nlevdecomp_full
+    use elm_varpar          , only : ndecomp_pools, nlevdecomp_full
     use clm_varctl          , only : iulog, pf_hmode
 
   ! !ARGUMENTS:
@@ -3264,7 +3264,7 @@ contains
     use ColumnType          , only : col_pp
     use elm_varcon          , only : denh2o, denice
     use clm_varctl          , only : pf_frzmode
-    use clm_varpar          , only : nlevgrnd
+    use elm_varpar          , only : nlevgrnd
 
   ! !ARGUMENTS:
     implicit none
@@ -3400,7 +3400,7 @@ contains
   !
   ! !USES:
     use ColumnType          , only : col_pp
-    use clm_varpar          , only : nlevgrnd
+    use elm_varpar          , only : nlevgrnd
     use elm_varcon          , only : tfrz
 
   ! !ARGUMENTS:
@@ -3517,7 +3517,7 @@ contains
   !
   ! !USES:
     use ColumnType          , only : col_pp
-    use clm_varpar          , only : nlevgrnd
+    use elm_varpar          , only : nlevgrnd
     use elm_varcon          , only : tfrz, denh2o
     use landunit_varcon     , only : istsoil, istcrop
     use clm_time_manager    , only : get_step_size, get_nstep
@@ -3646,7 +3646,7 @@ contains
     use ColumnType              , only : col_pp
     use clm_varctl              , only : iulog, use_fates
     use CNDecompCascadeConType  , only : decomp_cascade_con
-    use clm_varpar              , only : ndecomp_pools, nlevdecomp_full
+    use elm_varpar              , only : ndecomp_pools, nlevdecomp_full
     use clm_varctl              , only : pf_hmode
     use clm_time_manager        , only : get_step_size,get_nstep
 
@@ -3954,7 +3954,7 @@ contains
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size, get_nstep
-     use clm_varpar         , only : nlevdecomp_full
+     use elm_varpar         , only : nlevdecomp_full
      use elm_varcon         , only : tfrz
 
      use clm_varctl         , only : pf_tmode, pf_hmode, pf_frzmode
@@ -4313,7 +4313,7 @@ contains
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size
-     use clm_varpar         , only : nlevdecomp_full
+     use elm_varpar         , only : nlevdecomp_full
 
      !
      implicit none
@@ -4464,7 +4464,7 @@ contains
     ! On the radiation time step, calculate the beginning carbon balance for mass
     ! conservation checks.
 
-    use clm_varpar      , only : ndecomp_pools, nlevdecomp,nlevdecomp_full
+    use elm_varpar      , only : ndecomp_pools, nlevdecomp,nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     !
     ! !ARGUMENTS:
@@ -4506,7 +4506,7 @@ contains
     ! On the radiation time step, calculate the beginning carbon balance for mass
     ! conservation checks.
 
-    use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
+    use elm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     !
     ! !ARGUMENTS:
@@ -4564,7 +4564,7 @@ contains
     ! !USES:
     use clm_time_manager, only : get_step_size, get_nstep
     use clm_varctl      , only : iulog, use_fates
-    use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
+    use elm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
@@ -4649,7 +4649,7 @@ contains
     ! !USES:
     use clm_time_manager, only : get_step_size,get_nstep
     use clm_varctl      , only : iulog, use_fates
-    use clm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
+    use elm_varpar      , only : ndecomp_pools, nlevdecomp, nlevdecomp_full
     use elm_varcon      , only : dzsoi_decomp
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process

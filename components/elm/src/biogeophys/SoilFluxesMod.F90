@@ -11,7 +11,7 @@ module SoilFluxesMod
   use abortutils	, only : endrun
   use perf_mod		, only : t_startf, t_stopf
   use clm_varctl	, only : iulog
-  use clm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
+  use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
   use EnergyFluxType    , only : energyflux_type

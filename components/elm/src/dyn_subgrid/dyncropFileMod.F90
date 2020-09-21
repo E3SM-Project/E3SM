@@ -51,7 +51,7 @@ contains
     ! samples that bound the initial model date)
     !
     ! !USES:
-    use clm_varpar     , only : cft_size
+    use elm_varpar     , only : cft_size
     use ncdio_pio      , only : check_dim
     use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     !
@@ -120,7 +120,7 @@ contains
     ! !USES:
     use CropType          , only : crop_type
     use landunit_varcon   , only : istcrop
-    use clm_varpar        , only : cft_lb, cft_ub
+    use elm_varpar        , only : cft_lb, cft_ub
     use surfrdUtilsMod    , only : collapse_crop_types
     use subgridWeightsMod , only : set_landunit_weight
     use subgridWeightsMod , only : get_landunit_weight

@@ -12,12 +12,12 @@ module elm_driver
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
-  use clm_varpar             , only : nlevtrc_soil, nlevsoi
+  use elm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
   use clm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_varctl             , only : use_erosion
   use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
-  use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
+  use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
   use filterMod              , only : filter, filter_inactive_and_active
@@ -1491,7 +1491,7 @@ contains
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use shr_infnan_mod     , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar         , only : nlevsno
+    use elm_varpar         , only : nlevsno
     use elm_varcon         , only : h2osno_max
     use landunit_varcon    , only : istice_mec
     use CanopyStateType    , only : canopystate_type

@@ -19,7 +19,7 @@ module lnd2glcMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : get_proc_bounds, bounds_type
   use domainMod       , only : ldomain
-  use clm_varpar      , only : maxpatch_glcmec
+  use elm_varpar      , only : maxpatch_glcmec
   use clm_varctl      , only : iulog
   use elm_varcon      , only : spval, tfrz, namec
   use column_varcon   , only : col_itype_to_icemec_class

@@ -458,7 +458,7 @@ contains
     ! read 12 months of veg data for dry deposition
     !
     ! !USES:
-    use clm_varpar  , only : numpft
+    use elm_varpar  , only : numpft
     use pftvarcon   , only : noveg
     use domainMod   , only : ldomain
     use fileutils   , only : getfil
@@ -558,7 +558,7 @@ contains
     ! Read monthly vegetation data for two consec. months.
     !
     ! !USES:
-    use clm_varpar       , only : numpft
+    use elm_varpar       , only : numpft
     use pftvarcon        , only : noveg
     use fileutils        , only : getfil
     use spmdMod          , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER

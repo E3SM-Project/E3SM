@@ -9,7 +9,7 @@ module surfrdMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use clm_varpar      , only : nlevsoifl, numpft, numcft
+  use elm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
   use elm_varcon      , only : grlnd
   use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
@@ -693,7 +693,7 @@ contains
     ! as soil color and percent sand and clay
     !
     ! !USES:
-    use clm_varpar      , only : maxpatch_glcmec, nlevurb
+    use elm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
     use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
@@ -864,7 +864,7 @@ contains
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
     use clm_varsur      , only : fert_cft, wt_nat_patch
-    use clm_varpar      , only : cft_size, cft_lb, natpft_lb
+    use elm_varpar      , only : cft_size, cft_lb, natpft_lb
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t), intent(inout) :: ncid         ! netcdf id
@@ -919,8 +919,8 @@ contains
     !     natural vegetation landunit.
     ! !USES:
     use clm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
-    use clm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
-    use clm_varpar      , only : cft_lb, cft_ub
+    use elm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
+    use elm_varpar      , only : cft_lb, cft_ub
     use clm_varctl      , only : create_crop_landunit
     ! !ARGUMENTS:
     implicit none
@@ -990,8 +990,8 @@ contains
     ! !USES:
     use clm_varctl      , only : create_crop_landunit, use_fates
     use clm_varctl      , only : irrigate
-    use clm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
-    use clm_varpar      , only : crop_prog
+    use elm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
+    use elm_varpar      , only : crop_prog
     use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
     use landunit_varcon , only : istsoil, istcrop
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin

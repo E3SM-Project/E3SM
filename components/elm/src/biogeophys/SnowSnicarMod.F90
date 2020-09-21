@@ -219,7 +219,7 @@ contains
     ! J. Geophys. Res., 112, D11202, doi: 10.1029/2006JD008003
     !
     ! !USES:
-    use clm_varpar       , only : nlevsno, numrad
+    use elm_varpar       , only : nlevsno, numrad
     use clm_time_manager , only : get_nstep
     use shr_const_mod    , only : SHR_CONST_PI
     !
@@ -1162,7 +1162,7 @@ contains
     !
     ! !USES:
     use clm_time_manager , only : get_step_size, get_nstep
-    use clm_varpar       , only : nlevsno
+    use elm_varpar       , only : nlevsno
     use elm_varcon       , only : spval
     use shr_const_mod    , only : SHR_CONST_RHOICE, SHR_CONST_PI
     !
@@ -1651,7 +1651,7 @@ contains
      ! The inputs and outputs are the same to subroutine SNICAR_RT
      !
      ! !USES:
-     use clm_varpar       , only : nlevsno, numrad
+     use elm_varpar       , only : nlevsno, numrad
      use clm_time_manager , only : get_nstep
      use shr_const_mod    , only : SHR_CONST_PI
      !

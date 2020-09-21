@@ -9,8 +9,8 @@ module DecompCascadeBGCMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
-  use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
   use elm_varcon             , only : zsoi
   use decompMod              , only : bounds_type

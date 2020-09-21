@@ -117,8 +117,8 @@ module UrbanParamsType
     !
     ! !USES:
     use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
-    use clm_varpar      , only : nlevsoi, nlevgrnd
+    use elm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
+    use elm_varpar      , only : nlevsoi, nlevgrnd
     use clm_varctl      , only : use_vancouver, use_mexicocity
     use elm_varcon      , only : vkc
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
@@ -372,7 +372,7 @@ module UrbanParamsType
     ! Allocate memory and read in urban input data
     !
     ! !USES:
-    use clm_varpar      , only : numrad, nlevurb
+    use elm_varpar      , only : numrad, nlevurb
     use landunit_varcon , only : numurbl
     use fileutils       , only : getavu, relavu, getfil, opnfil
     use spmdMod         , only : masterproc

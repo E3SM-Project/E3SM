@@ -80,7 +80,7 @@ contains
     use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon      , only : icol_road_imperv, icol_road_perv
     use landunit_varcon    , only : istice, istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
-    use clm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
+    use elm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    

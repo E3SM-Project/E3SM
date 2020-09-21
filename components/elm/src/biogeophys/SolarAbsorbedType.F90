@@ -87,7 +87,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar    , only : nlevcan, nlevcan, numrad, nlevsno
+    use elm_varpar    , only : nlevcan, nlevcan, numrad, nlevsno
     !
     ! !ARGUMENTS:
     class(solarabs_type) :: this
@@ -144,7 +144,7 @@ contains
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
     use clm_varctl    , only : use_snicar_frc 
-    use clm_varpar    , only : nlevsno
+    use elm_varpar    , only : nlevsno
     use histFileMod   , only : hist_addfld1d, hist_addfld2d
     use histFileMod   , only : no_snow_normal
     !

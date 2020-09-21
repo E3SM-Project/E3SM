@@ -5,8 +5,8 @@ Module SoilHydrologyType
   use decompMod             , only : bounds_type
   use spmdMod               , only : masterproc, mpicom
   use abortutils            , only : endrun
-  use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
-  use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
+  use elm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
+  use elm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
   use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
   use clm_varctl            , only : iulog 
   use SharedParamsMod     , only : ParamsShareInst
@@ -100,7 +100,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
@@ -159,7 +159,7 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog 
+    use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -225,7 +225,7 @@ contains
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use clm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use elm_varcon      , only : denice, denh2o, sb, bdsno 
     use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
     use elm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
@@ -623,7 +623,7 @@ contains
     !
     ! !USES:
     use elm_varcon  , only : denh2o, denice
-    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+    use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: c               ! column index
@@ -749,7 +749,7 @@ contains
      !
      ! !USES:
      use elm_varcon  , only : denh2o, denice
-     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+     use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
      !
      ! !ARGUMENTS:
      integer , intent(in)  :: c

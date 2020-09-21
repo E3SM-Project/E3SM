@@ -15,7 +15,7 @@ module PhosphorusDynamicsMod
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type  
-  use clm_varpar          , only : nlevdecomp
+  use elm_varpar          , only : nlevdecomp
   use clm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -370,7 +370,7 @@ contains
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevsoi
+    use elm_varpar       , only : nlevsoi
     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
@@ -489,8 +489,8 @@ contains
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevsoi
-    use clm_varpar       , only : ndecomp_pools
+    use elm_varpar       , only : nlevsoi
+    use elm_varpar       , only : ndecomp_pools
     use clm_time_manager , only : get_step_size
     use soilorder_varcon , only:k_s1_biochem,k_s2_biochem,k_s3_biochem,k_s4_biochem
     use elm_varcon       , only : secspday, spval
@@ -603,7 +603,7 @@ contains
     !
     ! !USES:
     use pftvarcon              , only : noveg
-    use clm_varpar             , only : ndecomp_pools
+    use elm_varpar             , only : ndecomp_pools
     use clm_time_manager       , only : get_step_size
     use CNDecompCascadeConType , only : decomp_cascade_con
  

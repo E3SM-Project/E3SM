@@ -18,7 +18,7 @@ module glc2lndMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : maxpatch_glcmec
+  use elm_varpar     , only : maxpatch_glcmec
   use clm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp

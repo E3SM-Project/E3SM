@@ -54,7 +54,7 @@ contains
     ! CLM initialization first phase 
     !
     ! !USES:
-    use clm_varpar                , only: clm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
@@ -120,7 +120,7 @@ contains
     endif
 
     call control_init()
-    call clm_varpar_init()
+    call elm_varpar_init()
     call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
@@ -393,7 +393,7 @@ contains
     use shr_orb_mod           , only : shr_orb_decl
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
-    use clm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
+    use elm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use clm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
@@ -967,7 +967,7 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
-    use clm_varpar               , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
+    use elm_varpar               , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
     use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
     use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv

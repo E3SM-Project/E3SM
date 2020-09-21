@@ -9,7 +9,7 @@ module UrbanFluxesMod
   use shr_sys_mod          , only : shr_sys_flush 
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
-  use clm_varpar           , only : numrad
+  use elm_varpar           , only : numrad
   use elm_varcon           , only : isecspday, degpsec, namel
   use clm_varctl           , only : iulog
   use abortutils           , only : endrun  
@@ -61,7 +61,7 @@ contains
     use filterMod           , only : filter
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
     use QSatMod             , only : QSat
-    use clm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
+    use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
     use clm_varctl          , only : use_vsfm
     !

@@ -486,7 +486,7 @@ contains
    ! to the column level and assign them to the three litter pools
    !
    ! !USES:
-   use clm_varpar , only : maxpatch_pft, nlevdecomp
+   use elm_varpar , only : maxpatch_pft, nlevdecomp
    !
    ! !ARGUMENTS:
    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter

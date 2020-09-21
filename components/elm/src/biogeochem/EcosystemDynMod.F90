@@ -313,7 +313,7 @@ contains
     use DecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
 !    use dynHarvestMod          , only: CNHarvest
-    use clm_varpar             , only: crop_prog
+    use elm_varpar             , only: crop_prog
     use AllocationMod        , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc2
     use NitrogenDynamicsMod         , only: NitrogenLeaching
@@ -540,7 +540,7 @@ contains
     use CropType               , only: crop_type
     use dynHarvestMod          , only: CNHarvest
     use RootDynamicsMod           , only: RootDynamics
-!    use clm_varpar             , only: crop_prog
+!    use elm_varpar             , only: crop_prog
 
 !    use AllocationMod        , only: cnallocation
     use SoilLittDecompMod            , only: SoilLittDecompAlloc

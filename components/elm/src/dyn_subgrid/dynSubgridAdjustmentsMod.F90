@@ -17,7 +17,7 @@ module dynSubgridAdjustmentsMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
-  use clm_varpar             , only : ndecomp_pools, nlevdecomp
+  use elm_varpar             , only : ndecomp_pools, nlevdecomp
   use clm_varctl             , only : use_crop, use_nitrif_denitrif
   use elm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type

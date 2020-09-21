@@ -93,7 +93,7 @@ module CNEcosystemDynBetrMod
     use DecompCascadeCNMod      , only : decomp_rate_constants_cn
     use CropType                  , only : crop_type
     use dynHarvestMod             , only : CNHarvest
-    use clm_varpar                , only : crop_prog
+    use elm_varpar                , only : crop_prog
     use CropHarvestPoolsMod       , only : CropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc

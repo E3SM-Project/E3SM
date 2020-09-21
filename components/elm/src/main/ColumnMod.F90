@@ -2,7 +2,7 @@ module ColumnMod
 
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevslp
+  use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevslp
   use elm_varcon     , only : spval, ispval
   use ColumnType     , only : col_pp
   !

@@ -69,7 +69,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varpar    , only: nlevlak, nlevsno
+    use elm_varpar    , only: nlevlak, nlevsno
     !
     ! !ARGUMENTS:
     class(lakestate_type) :: this
@@ -160,7 +160,7 @@ contains
     ! !USES:
     use clm_varctl , only : fsurdat
     use clm_varctl , only : iulog
-    use clm_varpar , only : nlevlak
+    use elm_varpar , only : nlevlak
     use elm_varcon , only : tkwat 
     use fileutils  , only : getfil
     use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen

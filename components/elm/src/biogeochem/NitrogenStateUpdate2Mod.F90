@@ -7,8 +7,8 @@ module NitrogenStateUpdate2Mod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use clm_time_manager    , only : get_step_size
-  use clm_varpar          , only : nlevsoi, nlevdecomp
-  use clm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar          , only : nlevsoi, nlevdecomp
+  use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type

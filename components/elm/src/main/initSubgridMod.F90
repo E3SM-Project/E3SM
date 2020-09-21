@@ -491,7 +491,7 @@ contains
     ! !USES:
     use elm_varcon      , only : ispval
     use landunit_varcon , only : istsoil, istcrop
-    use clm_varpar      , only : natpft_lb
+    use elm_varpar      , only : natpft_lb
     !
     ! !ARGUMENTS:
     integer  , intent(inout) :: pi    ! input value is index of last patch added; output value is index of this newly-added patch

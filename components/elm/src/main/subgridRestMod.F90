@@ -11,7 +11,7 @@ module subgridRestMod
   use domainMod          , only : ldomain
   use clm_time_manager   , only : get_curr_date
   use elm_varcon         , only : nameg, namel, namec, namep
-  use clm_varpar         , only : nlevsno
+  use elm_varpar         , only : nlevsno
   use pio                , only : file_desc_t
   use ncdio_pio          , only : ncd_int, ncd_double
   use GetGlobalValuesMod , only : GetGlobalIndexArray

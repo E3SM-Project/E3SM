@@ -76,7 +76,7 @@ contains
     use clm_varctl                 , only : use_betr
     use clm_varctl                 , only : use_var_soil_thick
     use shr_kind_mod               , only : r8 => shr_kind_r8
-    use clm_varpar                 , only : nlevsoi    
+    use elm_varpar                 , only : nlevsoi    
     use decompMod                  , only : bounds_type   
     use abortutils                 , only : endrun   
     use SoilHydrologyType          , only : soilhydrology_type
@@ -272,7 +272,7 @@ contains
     use decompMod            , only : bounds_type        
     use elm_varcon           , only : wimp,grav,hfus,tfrz
     use elm_varcon           , only : e_ice,denh2o, denice
-    use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
+    use elm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
     use TridiagonalMod       , only : Tridiagonal
@@ -864,7 +864,7 @@ contains
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use decompMod                 , only : bounds_type
     use elm_varcon                , only : denh2o
-    use clm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
+    use elm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager          , only : get_step_size
     use SoilStateType             , only : soilstate_type
     use SoilHydrologyType         , only : soilhydrology_type
@@ -1162,7 +1162,7 @@ contains
     !USES:
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
-    use clm_varpar       , only : nlevsoi, max_patch_per_col
+    use elm_varpar       , only : nlevsoi, max_patch_per_col
     use SoilStateType    , only : soilstate_type
     use WaterFluxType    , only : waterflux_type
     use VegetationType   , only : veg_pp
@@ -1281,8 +1281,8 @@ contains
         !
         !USES:
         use decompMod        , only : bounds_type
-        use clm_varpar       , only : nlevsoi
-        use clm_varpar       , only : max_patch_per_col
+        use elm_varpar       , only : nlevsoi
+        use elm_varpar       , only : max_patch_per_col
         use SoilStateType    , only : soilstate_type
         use WaterFluxType    , only : waterflux_type
         use CanopyStateType  , only : canopystate_type

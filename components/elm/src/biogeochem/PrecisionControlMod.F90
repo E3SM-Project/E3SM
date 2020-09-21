@@ -9,7 +9,7 @@ module PrecisionControlMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
   use clm_varctl          , only : nu_com
-  use clm_varpar          , only : ndecomp_pools
+  use elm_varpar          , only : ndecomp_pools
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -42,7 +42,7 @@ contains
     !
     ! !USES:
     use clm_varctl , only : iulog, use_c13, use_c14, use_nitrif_denitrif, use_fates
-    use clm_varpar , only : nlevdecomp_full, crop_prog
+    use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
     use tracer_varcon          , only : is_active_betr_bgc    
     use CNDecompCascadeConType , only : decomp_cascade_con

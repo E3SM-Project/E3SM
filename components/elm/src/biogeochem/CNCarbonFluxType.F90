@@ -3,9 +3,9 @@ module CNCarbonFluxType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
-  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar             , only : crop_prog
-  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
+  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar             , only : crop_prog
+  use elm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
   use clm_varctl             , only : use_c13, use_fates 
@@ -876,8 +876,8 @@ contains
     ! add history fields for all CN variables, always set as default='inactive'
     !
     ! !USES:
-    use clm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
-    use clm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
+    use elm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
+    use elm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
     use clm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
     use tracer_varcon    , only : is_active_betr_bgc
@@ -1586,11 +1586,11 @@ contains
     use clm_varctl       , only : iulog
     use clm_time_manager , only : get_step_size
     use elm_varcon       , only : secspday
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
     use tracer_varcon    , only : is_active_betr_bgc
     use MathfuncMod      , only : dot_sum
-    use clm_varpar       , only : nlevdecomp_full
+    use elm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonflux_type)                 :: this
@@ -2336,8 +2336,8 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
 !
 ! !USES:
    use shr_sys_mod, only: shr_sys_flush
-   use clm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
-   use clm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+   use elm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
+   use elm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
    use clm_time_manager    , only : get_step_size
 !
 ! !ARGUMENTS:
@@ -2558,7 +2558,7 @@ end subroutine CSummary_interface
   !summarize heterotrophic respiration for methane calculation
   !
     use tracer_varcon    , only : is_active_betr_bgc
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   ! !ARGUMENTS:
     class(carbonflux_type) :: this
     type(bounds_type), intent(in)  :: bounds

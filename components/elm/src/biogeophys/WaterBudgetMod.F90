@@ -669,7 +669,7 @@ contains
     !
     ! !USES:
     use subgridAveMod    , only : p2c, c2g
-    use clm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
+    use elm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall 
     use column_varcon    , only : icol_road_perv, icol_road_imperv

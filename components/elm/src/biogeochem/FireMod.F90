@@ -19,7 +19,7 @@ module FireMod
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : iulog
-  use clm_varpar             , only : nlevdecomp, ndecomp_pools
+  use elm_varpar             , only : nlevdecomp, ndecomp_pools
   use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
   use spmdMod                , only : masterproc, mpicom, comp_id
@@ -128,7 +128,7 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
-    use clm_varpar           , only: max_patch_per_col
+    use elm_varpar           , only: max_patch_per_col
     use elm_varcon           , only: secspday
     use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
@@ -666,7 +666,7 @@ contains
    use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
-   use clm_varpar           , only: max_patch_per_col
+   use elm_varpar           , only: max_patch_per_col
    use clm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
    use elm_varcon           , only: secspday

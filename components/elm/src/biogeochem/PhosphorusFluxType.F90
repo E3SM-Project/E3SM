@@ -3,8 +3,8 @@ module PhosphorusFluxType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools
-  use clm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
+  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
   use clm_varctl             , only : use_nitrif_denitrif, use_vertsoilc
@@ -403,7 +403,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
+    use elm_varpar     , only : nlevsno, nlevgrnd, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
     !
     ! !ARGUMENTS:
@@ -449,7 +449,7 @@ contains
     ! Initializes time varying variables used only in coupled carbon-phosphorus mode (CN):
     !
     ! !USES:
-    use clm_varpar      , only : crop_prog
+    use elm_varpar      , only : crop_prog
     use landunit_varcon , only : istsoil, istcrop
     !
     ! !ARGUMENTS:
@@ -488,7 +488,7 @@ contains
     ! Read/write CN restart data for carbon state
     !
     ! !USES:
-    use clm_varpar, only : crop_prog
+    use elm_varpar, only : crop_prog
     use restUtilMod
     use ncdio_pio
     !
@@ -559,7 +559,7 @@ contains
   subroutine Summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !USES:
-    use clm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
+    use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use clm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use pftvarcon     , only: npcropmin

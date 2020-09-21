@@ -6,7 +6,7 @@ module SurfaceAlbedoType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
-  use clm_varpar     , only : numrad, nlevcan, nlevsno
+  use elm_varpar     , only : numrad, nlevcan, nlevsno
   use abortutils     , only : endrun
   !
   ! !PUBLIC TYPES:

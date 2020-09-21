@@ -323,7 +323,7 @@ contains
      ! Output variables are parsun,parsha,sabv,sabg,fsa,fsr,ndvi
      !
      ! !USES:
-     use clm_varpar       , only : numrad, nlevsno
+     use elm_varpar       , only : numrad, nlevsno
      use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop 
      use clm_varctl       , only : subgridflag, use_snicar_frc, iulog
