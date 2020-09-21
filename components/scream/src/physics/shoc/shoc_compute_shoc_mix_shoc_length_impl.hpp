@@ -20,8 +20,8 @@ void Functions<S,D>
   const uview_1d<Spack>&       shoc_mix)
 {
   const Int nlev_pack = ekat::pack::npack<Spack>(nlev);
-  const auto maxlen = scream::physics::shoc::Constants<Scalar>::maxlen;
-  const auto length_fac = scream::physics::shoc::Constants<Scalar>::length_fac;
+  const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
+  const auto length_fac = scream::shoc::Constants<Scalar>::length_fac;
   const auto vk = C::Karman;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
