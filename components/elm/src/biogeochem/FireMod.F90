@@ -1540,7 +1540,7 @@ contains
    integer            :: model_year_align_popdens    ! align stream_year_first_hdm with 
    integer            :: nu_nml                      ! unit for namelist file
    integer            :: nml_error                   ! namelist i/o error flag
-   type(mct_ggrid)    :: dom_clm                     ! domain information 
+   type(mct_ggrid)    :: dom_elm                     ! domain information 
    character(len=CL)  :: stream_fldFileName_popdens  ! population density streams filename
    character(len=CL)  :: popdensmapalgo = 'bilinear' ! mapping alogrithm for population density
    character(*), parameter :: subName = "('hdmdyn_init')"
@@ -1593,13 +1593,13 @@ contains
       write(iulog,*) ' '
    endif
 
-   call elm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_hdm,name="clmhdm",     &
         pio_subsystem=pio_subsystem,                   & 
         pio_iotype=shr_pio_getiotype(inst_name),       &
         mpicom=mpicom, compid=comp_id,                 &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,        &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,        &
         nxg=ldomain%ni, nyg=ldomain%nj,                &
         yearFirst=stream_year_first_popdens,           &
         yearLast=stream_year_last_popdens,             &
@@ -1693,7 +1693,7 @@ subroutine lnfm_init( bounds )
   integer            :: model_year_align_lightng   ! align stream_year_first_lnfm with 
   integer            :: nu_nml                     ! unit for namelist file
   integer            :: nml_error                  ! namelist i/o error flag
-  type(mct_ggrid)    :: dom_clm                    ! domain information 
+  type(mct_ggrid)    :: dom_elm                    ! domain information 
   character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
   character(len=CL)  :: lightngmapalgo = 'bilinear'! Mapping alogrithm
   character(*), parameter :: subName = "('lnfmdyn_init')"
@@ -1746,13 +1746,13 @@ subroutine lnfm_init( bounds )
       write(iulog,*) ' '
    endif
 
-   call elm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
         pio_subsystem=pio_subsystem,                  & 
         pio_iotype=shr_pio_getiotype(inst_name),      &
         mpicom=mpicom, compid=comp_id,                &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,       &
         nxg=ldomain%ni, nyg=ldomain%nj,               &
         yearFirst=stream_year_first_lightng,          &
         yearLast=stream_year_last_lightng,            &

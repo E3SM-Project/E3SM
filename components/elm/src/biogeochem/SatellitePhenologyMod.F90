@@ -93,7 +93,7 @@ contains
     integer            :: model_year_align_lai       ! align stream_year_first_lai with 
     integer            :: nu_nml                     ! unit for namelist file
     integer            :: nml_error                  ! namelist i/o error flag
-    type(mct_ggrid)    :: dom_clm                    ! domain information 
+    type(mct_ggrid)    :: dom_elm                    ! domain information 
     character(len=CL)  :: stream_fldFileName_lai     ! lai stream filename to read
     character(len=CL)  :: lai_mapalgo = 'bilinear'   ! Mapping alogrithm
 
@@ -150,7 +150,7 @@ contains
 
     endif
 
-    call elm_domain_mct (bounds, dom_clm)
+    call elm_domain_mct (bounds, dom_elm)
 
     !
     ! create the field list for these lai fields...use in shr_strdata_create
@@ -161,7 +161,7 @@ contains
          pio_subsystem=pio_subsystem,                  & 
          pio_iotype=shr_pio_getiotype(inst_name),      &
          mpicom=mpicom, compid=comp_id,                &
-         gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
+         gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,       &
          nxg=ldomain%ni, nyg=ldomain%nj,               &
          yearFirst=stream_year_first_lai,              &
          yearLast=stream_year_last_lai,                &
