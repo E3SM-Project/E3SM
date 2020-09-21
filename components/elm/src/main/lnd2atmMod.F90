@@ -168,7 +168,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_vars%u10_clm_patch (bounds%begp:bounds%endp), &
+         frictionvel_vars%u10_elm_patch (bounds%begp:bounds%endp), &
          lnd2atm_vars%u_ref10m_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
