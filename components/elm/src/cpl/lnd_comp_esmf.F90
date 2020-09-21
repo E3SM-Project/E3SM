@@ -18,7 +18,7 @@ module lnd_comp_esmf
   use decompMod         , only : ldecomp, bounds_type, get_proc_bounds
   use elm_varctl        , only : iulog
   use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-  use clm_cpl_indices
+  use elm_cpl_indices
   use lnd_import_export
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -142,7 +142,7 @@ contains
 
     ! Determine indices
 
-    call clm_cpl_indices_set()
+    call elm_cpl_indices_set()
 
     rc = ESMF_SUCCESS
 

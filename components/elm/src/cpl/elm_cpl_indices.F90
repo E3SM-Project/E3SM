@@ -1,4 +1,4 @@
-module clm_cpl_indices
+module elm_cpl_indices
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   !    Module containing the indices for the fields passed between CLM and
@@ -14,7 +14,7 @@ module clm_cpl_indices
   private                              ! By default make data private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: clm_cpl_indices_set        ! Set the coupler indices
+  public :: elm_cpl_indices_set        ! Set the coupler indices
   !
   ! !PUBLIC DATA MEMBERS:
   !
@@ -125,7 +125,7 @@ module clm_cpl_indices
 contains
 
   !-----------------------------------------------------------------------
-  subroutine clm_cpl_indices_set( )
+  subroutine elm_cpl_indices_set( )
     !
     ! !DESCRIPTION: 
     ! Set the coupler indices needed by the land model coupler
@@ -152,7 +152,7 @@ contains
     integer           :: num 
     character(len= 2) :: cnum
     character(len=64) :: name
-    character(len=32) :: subname = 'clm_cpl_indices_set'  ! subroutine name
+    character(len=32) :: subname = 'elm_cpl_indices_set'  ! subroutine name
     !-----------------------------------------------------------------------
 
     ! Determine attribute vector indices
@@ -314,8 +314,8 @@ contains
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)
 
-  end subroutine clm_cpl_indices_set
+  end subroutine elm_cpl_indices_set
 
 !=======================================================================
 
-end module clm_cpl_indices
+end module elm_cpl_indices

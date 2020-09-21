@@ -64,7 +64,7 @@ contains
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
-    use clm_cpl_indices  , only : clm_cpl_indices_set
+    use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
@@ -124,7 +124,7 @@ contains
 
     ! Determine attriute vector indices
 
-    call clm_cpl_indices_set()
+    call elm_cpl_indices_set()
 
     ! Initialize clm MPI communicator 
 

@@ -9,7 +9,7 @@ module lnd_import_export
   use glc2lndMod   , only: glc2lnd_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
-  use clm_cpl_indices
+  use elm_cpl_indices
   use mct_mod
   !
   implicit none
