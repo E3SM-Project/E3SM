@@ -22,7 +22,4 @@ export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math -D__USE_CUDA__ --expt-extended
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
 
-# activate an environment that includes netcdf4
-# conda create --name samxx_env --channel conda-forge netcdf4
-source activate samxx_env
 
