@@ -629,10 +629,10 @@ Toggle to turn on calculation of SNow and Ice Aerosol Radiation model (SNICAR) r
 </entry>
 
 <entry id="use_snicar_ad" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="clm_inparm" valid_values="" value=".true.">
 Toggle to turn on SNICAR_AD snow shortwave algorithms
 The same snow shortwave algorithm can be turned on for sea-ice simulation
-with config_use_snicar_ad in mpas-seaic namelist
+with config_use_snicar_ad in mpas-seaice namelist
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
