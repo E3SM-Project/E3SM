@@ -34,4 +34,11 @@
 			    </test>
 		</domain>
 	</configuration>
+	<configuration name="prescribed_ice">
+		<domain name="domain_QU120km">
+			<test name="regression"/>
+			<test name="parallelism"/>
+			<test name="restartability"/>
+		</domain>
+	</configuration>
 </testsuite>
