@@ -7982,7 +7982,7 @@
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2">
     <mach name="compy">
       <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 11 nodes pure-MPI, ~2.8 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_EC30to60* on 11 nodes pure-MPI, ~2.8 sypd </comment>
         <ntasks>
           <ntasks_atm>320</ntasks_atm>
           <ntasks_lnd>80</ntasks_lnd>
@@ -8009,7 +8009,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 21 nodes pure-MPI, ~5.5 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_EC30to60* on 21 nodes pure-MPI, ~5.5 sypd </comment>
         <ntasks>
           <ntasks_atm>600</ntasks_atm>
           <ntasks_lnd>120</ntasks_lnd>
@@ -8036,7 +8036,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 46 nodes pure-MPI, ~11 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_EC30to60* on 46 nodes pure-MPI, ~11 sypd </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>280</ntasks_lnd>
@@ -8063,12 +8063,12 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30pg2_oEC* on 90 nodes pure-MPI, ~18 sypd </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_EC30to60* on 90 nodes pure-MPI, ~18 sypd </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
-          <ntasks_lnd>540</ntasks_lnd>
-          <ntasks_rof>540</ntasks_rof>
-          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_lnd>520</ntasks_lnd>
+          <ntasks_rof>520</ntasks_rof>
+          <ntasks_ice>2200</ntasks_ice>
           <ntasks_ocn>880</ntasks_ocn>
           <ntasks_cpl>2700</ntasks_cpl>
         </ntasks>
@@ -8082,8 +8082,8 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>2160</rootpe_lnd>
-          <rootpe_rof>2160</rootpe_rof>
+          <rootpe_lnd>2200</rootpe_lnd>
+          <rootpe_rof>2200</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>2720</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
