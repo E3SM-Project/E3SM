@@ -46,7 +46,7 @@ contains
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
     use elm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
+    use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
     use domainMod        , only : ldomain
@@ -344,7 +344,7 @@ contains
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
     use elm_varctl      ,  only : iulog
-    use clm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
+    use elm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
     use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel
     use seq_cdata_mod   ,  only : seq_cdata, seq_cdata_setptrs

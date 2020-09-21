@@ -1,5 +1,5 @@
 
-module clm_varorb
+module elm_varorb
 
   use shr_kind_mod , only: r8 => shr_kind_r8
   implicit none
@@ -14,4 +14,4 @@ module clm_varorb
   real(r8) :: lambm0  ! Mean longitude of perihelion at the vernal equinox (radians)
   real(r8) :: mvelpp  ! Earth's moving vernal equinox longitude of perihelion plus pi (radians)
 
-end module clm_varorb
+end module elm_varorb

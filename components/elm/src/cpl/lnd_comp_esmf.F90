@@ -82,7 +82,7 @@ contains
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, noland
     use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
-    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
+    use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use spmdMod          , only : masterproc, spmd_init
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
@@ -460,7 +460,7 @@ contains
     use shr_orb_mod       , only : shr_orb_decl
     use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use elm_driver        , only : elm_drv
-    use clm_varorb        , only : eccen, obliqr, lambm0, mvelpp
+    use elm_varorb        , only : eccen, obliqr, lambm0, mvelpp
     use clm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager  , only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use seq_timemgr_mod   , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
