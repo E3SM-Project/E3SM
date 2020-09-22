@@ -76,12 +76,12 @@ MODULE WRM_subw_IO_mod
 
      character(len=350) :: paraFile, demandPath, DemandVariableName
      integer :: ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
 
      namelist /wrm_inparm/  &
         paraFile, demandPath, DemandVariableName, &
         ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
 
      character(len=*),parameter :: subname='(WRM_init)'
 
@@ -122,6 +122,7 @@ MODULE WRM_subw_IO_mod
      call mpi_bcast(TotalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(GroundWaterFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(ExternalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+     call mpi_bcast(DamConstructionFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
 
      ctlSubwWRM%paraFile = paraFile
      ctlSubwWRM%demandPath = demandPath
@@ -133,6 +134,7 @@ MODULE WRM_subw_IO_mod
      ctlSubwWRM%GroundWaterFlag = GroundWaterFlag
      ctlSubwWRM%ExternalDemandFlag = ExternalDemandFlag
      ctlSubwWRM%DemandVariableName = DemandVariableName
+     ctlSubwWRM%DamConstructionFlag = DamConstructionFlag
 
      if (masterproc) then
         write(iulog,*) subname," paraFile        = ",trim(ctlSubwWRM%paraFile)
@@ -145,6 +147,7 @@ MODULE WRM_subw_IO_mod
         write(iulog,*) subname," TotalDemandFlag = ",ctlSubwWRM%TotalDemandFlag
         write(iulog,*) subname," GroundWaterFlag = ",ctlSubwWRM%GroundWaterFlag
         write(iulog,*) subname," ExternalDemandFlag = ",ctlSubwWRM%ExternalDemandFlag
+        write(iulog,*) subname," DamConstructionFlag = ",ctlSubwWRM%DamConstructionFlag
      endif
 
      !-------------------
@@ -483,7 +486,8 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%YEAR(ctlSubwWRM%localNumDam))
      WRMUnit%YEAR = 1900
-
+     allocate (WRMUnit%active_stage(ctlSubwWRM%localNumDam))
+     WRMUnit%active_stage = 0
      allocate (WRMUnit%SurfArea(ctlSubwWRM%localNumDam))
      WRMUnit%SurfArea = 0._r8
      allocate (WRMUnit%InstCap(ctlSubwWRM%localNumDam))
@@ -743,6 +747,11 @@ MODULE WRM_subw_IO_mod
            if (WRMUnit%StorageCalibFlag(idam).eq.1) then
               StorWater%storage(idam)  = WRMUnit%StorTarget(idam,13)
            endif
+
+           if (ctlSubwWRM%DamConstructionFlag .eq. 1) then
+             StorWater%storage(idam) = 0._r8 * WRMUnit%StorCap(idam)
+           endif
+
            if ( WRMUnit%StorCap(idam) <= 0 ) then
               write(iulog,*) subname, "Error negative max cap for reservoir ", idam, WRMUnit%StorCap(idam)
               call shr_sys_abort(subname//' ERROR: negative max cap for reservoir')
@@ -825,6 +834,26 @@ MODULE WRM_subw_IO_mod
      character(len=*),parameter :: subname = '(WRM_computeRelease)'
 
      call get_curr_date(yr, mon, day, tod)
+
+   do idam = 1, ctlSubwWRM%localNumDam
+    if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
+      if (WRMUnit%active_stage(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
+       if (WRMUnit%YEAR(idam) <= yr .and. WRMUnit%YEAR(idam) > yr-10) then
+           WRMUnit%active_stage(idam) = 1
+           if (StorWater%storage(idam) > 0.8_r8 * WRMUnit%StorCap(idam)) then
+             WRMUnit%active_stage(idam) = 2
+           endif
+       endif
+       
+       if (WRMUnit%YEAR(idam) <= yr-10) then
+         WRMUnit%active_stage(idam) = 2
+       endif
+      endif     
+    else
+      WRMUnit%active_stage(idam) = 2
+    endif
+   enddo    
+
      do idam=1,ctlSubwWRM%localNumDam
         if ( mon .eq. WRMUnit%MthStOp(idam)) then
            WRMUnit%StorMthStOp(idam) = StorWater%storage(idam)

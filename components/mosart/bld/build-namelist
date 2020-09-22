@@ -349,8 +349,9 @@ else {
     add_default($nl, 'ReturnFlowFlag');
     add_default($nl, 'TotalDemandFlag');
     add_default($nl, 'GroundWaterFlag');
-    add_default($nl, 'ExternalDemandFlag');   # added by Tian Apr. 2018
-    add_default($nl, 'DemandVariableName');   # added by Tian Apr. 2018
+    add_default($nl, 'ExternalDemandFlag');
+    add_default($nl, 'DemandVariableName');
+    add_default($nl, 'DamConstructionFlag');
 
     add_default($nl, 'OPT_inund');
     add_default($nl, 'OPT_trueDW');
