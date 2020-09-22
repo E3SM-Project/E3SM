@@ -141,6 +141,86 @@ contains
 
   end subroutine calc_shoc_varorcovar_c
   
+  subroutine compute_tmpi_c(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi) bind(C)
+    use shoc, only: compute_tmpi
+    
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: rho_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    
+    real(kind=c_real), intent(out) :: tmpi(shcol,nlevi)
+    
+    call compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
+  
+  end subroutine compute_tmpi_c
+  
+  subroutine dp_inverse_c(nlev, shcol, rho_zt, dz_zt, rdp_zt) bind(C)
+    use shoc, only: dp_inverse
+    
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev) 
+    real(kind=c_real), intent(out) :: rdp_zt(shcol,nlev)
+    
+    call dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+  
+  end subroutine dp_inverse_c
+  
+  subroutine sfc_fluxes_c(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,&
+                          wqw_sfc, wtke_sfc, thetal, qw, tke) bind(C)
+    use shoc, only: sfc_fluxes
+  
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
+    real(kind=c_real), intent(in) :: rdp_zt_sfc(shcol)
+    real(kind=c_real), intent(in) :: wthl_sfc(shcol)
+    real(kind=c_real), intent(in) :: wqw_sfc(shcol)
+    real(kind=c_real), intent(in) :: wtke_sfc(shcol)
+    
+    real(kind=c_real), intent(inout) :: thetal(shcol)
+    real(kind=c_real), intent(inout) :: qw(shcol)
+    real(kind=c_real), intent(inout) :: tke(shcol)
+
+    call sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, & 
+                    wthl_sfc, wqw_sfc, wtke_sfc, thetal, qw, tke)
+  
+  end subroutine sfc_fluxes_c
+  
+  subroutine impli_srf_stress_term_c(shcol, rho_zi_sfc, uw_sfc, vw_sfc, &
+                                     u_wind_sfc, v_wind_sfc, ksrf) bind(C)
+    use shoc, only: impli_srf_stress_term
+    
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
+    real(kind=c_real), intent(in) :: uw_sfc(shcol)
+    real(kind=c_real), intent(in) :: vw_sfc(shcol)
+    real(kind=c_real), intent(in) :: u_wind_sfc(shcol)
+    real(kind=c_real), intent(in) :: v_wind_sfc(shcol)
+    
+    real(kind=c_real), intent(out) :: ksrf(shcol)
+    
+    ksrf(1:shcol) = impli_srf_stress_term(shcol, rho_zi_sfc, &
+                      uw_sfc, vw_sfc, u_wind_sfc, v_wind_sfc) 
+        
+  end subroutine impli_srf_stress_term_c
+  
+  subroutine tke_srf_flux_term_c(shcol, uw_sfc, vw_sfc, wtke_sfc) bind(C)
+    use shoc, only: tke_srf_flux_term
+    
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: uw_sfc(shcol)
+    real(kind=c_real), intent(in) :: vw_sfc(shcol)
+    
+    real(kind=c_real), intent(out) :: wtke_sfc(shcol)
+    
+    wtke_sfc(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
+  
+  end subroutine tke_srf_flux_term_c
+  
   subroutine check_tke_c(shcol, nlev, tke) bind(C)
     use shoc, only: check_tke
     

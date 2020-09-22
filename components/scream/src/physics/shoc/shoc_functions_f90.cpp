@@ -48,6 +48,22 @@ void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
+                            
+void compute_tmpi_c(Int nlevi, Int shcol, Real dtime, Real *rho_zi, 
+                    Real *dz_zi, Real *tmpi);
+                    
+void dp_inverse_c(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
+                  
+void sfc_fluxes_c(Int shcol, Real dtime, Real *rho_zi_sfc, Real *rdp_zt_sfc, 
+                  Real *wthl_sfc, Real *wqw_sfc, Real *wtke_sfc, Real *thetal, 
+                  Real *qw, Real *tke);
+                  
+void impli_srf_stress_term_c(Int shcol, Real *rho_zi_sfc, Real *uw_sfc, 
+                             Real *vw_sfc, Real *u_wind_sfc, Real *v_wind_sfc, 
+                             Real *ksrf);
+                                      
+void tke_srf_flux_term_c(Int shcol, Real *uw_sfc, Real *vw_sfc, 
+                         Real *wtke_sfc);
 
 void check_tke_c(Int shcol, Int nlev, Real *tke);
 			    
@@ -224,6 +240,43 @@ void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
   calc_shoc_varorcovar_c(d.shcol(), d.nlev(), d.nlevi(), d.tunefac, d.isotropy_zi, d.tkh_zi,
                          d.dz_zi, d.invar1, d.invar2, d.varorcovar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void compute_tmpi(SHOCComptmpiData &d){
+  shoc_init(d.nlevi()-1, true); // nlev=nlevi-1
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  compute_tmpi_c(d.nlevi(), d.shcol(), d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void dp_inverse(SHOCDpinverseData &d){
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  dp_inverse_c(d.nlev(), d.shcol(), d.rho_zt, d.dz_zt, d.rdp_zt);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void sfc_fluxes(SHOCSfcfluxesData &d){
+  shoc_init(1, true); // single layer function
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  sfc_fluxes_c(d.shcol(), d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc, d.wthl_sfc,
+               d.wqw_sfc, d.wtke_sfc, d.thetal, d.qw, d.tke);
+  d.transpose<ekat::util::TransposeDirection::f2c>();            
+}
+
+void impli_srf_stress_term(SHOCImplsrfstressData &d){
+  shoc_init(1, true); // single layer function
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  impli_srf_stress_term_c(d.shcol(), d.rho_zi_sfc, d.uw_sfc, d.vw_sfc, 
+                          d.u_wind_sfc, d.v_wind_sfc, d.ksrf);
+  d.transpose<ekat::util::TransposeDirection::f2c>();                          
+}
+
+void tke_srf_flux_term(SHOCTkesrffluxData &d){
+  shoc_init(1, true); // single layer function
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  tke_srf_flux_term_c(d.shcol(), d.uw_sfc, d.vw_sfc, d.wtke_sfc);
+  d.transpose<ekat::util::TransposeDirection::f2c>();  
 }
 
 void shoc_grid(SHOCGridData &d) {

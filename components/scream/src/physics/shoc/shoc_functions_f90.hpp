@@ -43,6 +43,85 @@ struct SHOCGridData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCGridData, 3);
 };
 
+//Create data structure to hold data for compute_tmpi
+struct SHOCComptmpiData : public PhysicsTestData {
+  //Inputs
+  Real dtime;
+  Real *rho_zi, *dz_zi;
+  
+  //Outputs
+  Real *tmpi;
+  
+  SHOCComptmpiData(Int shcol_, Int nlevi_, Real dtime_) :
+    PhysicsTestData(shcol_, nlevi_, {&rho_zi, &dz_zi, &tmpi}), dtime(dtime_) {}
+    
+//  SHOC_SCALARS(SHOCComptmpiData, 2, 1, dtime);
+  PTD_STD_DEF(SHOCComptmpiData, 2, 1, dtime);
+  PTD_DIM_RENAME(2, shcol, nlevi);
+
+}; // SHOCComptmpiData
+
+//Create data structure to hold data for dp_inverse
+struct SHOCDpinverseData : public PhysicsTestData {
+  //Inputs
+  Real *rho_zt, *dz_zt;
+  
+  //Outputs
+  Real *rdp_zt;
+  
+  SHOCDpinverseData(Int shcol_, Int nlev_) :
+    PhysicsTestData(shcol_, nlev_, {&rho_zt, &dz_zt, &rdp_zt}) {}
+    
+  SHOC_NO_SCALAR(SHOCDpinverseData, 2);
+
+}; // SHOCDpinverseData
+
+//Create data structure to hold data for sfc_fluxes
+struct SHOCSfcfluxesData : public PhysicsTestData {
+  //Inputs
+  Real dtime;
+  Real *rdp_zt_sfc, *rho_zi_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc;
+  
+  //Outputs
+  Real *thetal, *qw, *tke;
+  
+  SHOCSfcfluxesData(Int shcol_, Real dtime_) :
+    PhysicsTestData(shcol_, {&rdp_zt_sfc, &rho_zi_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke}), dtime(dtime_) {}
+    
+  SHOC_SCALARS(SHOCSfcfluxesData, 1, 1, dtime);
+
+}; // SHOCSfcfluxesData
+
+//Create data structure to hold data for impli_srf_stress_term
+struct SHOCImplsrfstressData : public PhysicsTestData {
+  //Inputs
+  Real *rho_zi_sfc, *uw_sfc, *vw_sfc, *u_wind_sfc, *v_wind_sfc;
+  
+  //Outputs
+  Real *ksrf;
+  
+  SHOCImplsrfstressData(Int shcol_) :
+    PhysicsTestData(shcol_, {&rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf}) {}
+    
+  SHOC_NO_SCALAR(SHOCImplsrfstressData, 1);
+
+}; // SHOCImplsrfstressData
+
+//Create data structure to hold data for tke_srf_flux_term
+struct SHOCTkesrffluxData : public PhysicsTestData {
+  //Inputs
+  Real *uw_sfc, *vw_sfc;
+  
+  //Outputs
+  Real *wtke_sfc;
+  
+  SHOCTkesrffluxData(Int shcol_) :
+    PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wtke_sfc}) {}
+    
+  SHOC_NO_SCALAR(SHOCTkesrffluxData, 1);
+
+}; // SHOCTkesrffluxData
+
 //Create data structure to hold data for check_tke
 struct SHOCCheckTkeData : public PhysicsTestData {
 
@@ -646,6 +725,11 @@ void shoc_energy_threshold_fixer                    (SHOCEnergythreshfixerData &
 void shoc_energy_dse_fixer                          (SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux                             (SHOCVertfluxData &d);
 void calc_shoc_varorcovar                           (SHOCVarorcovarData &d);
+void compute_tmpi                                   (SHOCComptmpiData &d);
+void dp_inverse                                     (SHOCDpinverseData &d);
+void sfc_fluxes                                     (SHOCSfcfluxesData &d);
+void impli_srf_stress_term                          (SHOCImplsrfstressData &d);
+void tke_srf_flux_term                              (SHOCTkesrffluxData &d);
 void integ_column_stability                         (SHOCColstabData &d);
 void check_tke                                      (SHOCCheckTkeData &d);
 void shoc_tke                                       (SHOCTkeData &d);
