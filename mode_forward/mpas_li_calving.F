@@ -1322,13 +1322,14 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeNonDynEdge, requiredCalvingVolumeDynEdge
+      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeNonDynCell, requiredCalvingVolumeDynCell
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructY
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), allocatable :: thicknessForCalving
-      real (kind=RKIND), dimension(:), allocatable :: requiredCalvingVolumeNonDynEdge, requiredCalvingVolumeNonDynCell
-      real (kind=RKIND), dimension(:), allocatable :: requiredCalvingVolumeDynEdge, requiredCalvingVolumeDynCell
+      real (kind=RKIND), dimension(:), pointer :: calvedVolumeNonDynCell, calvedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: uncalvedVolumeNonDynCell, uncalvedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
       real(kind=RKIND) :: calvingSubtotal1, calvingSubtotal2, calvingSubtotal3
@@ -1364,7 +1365,13 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(geometryPool, 'uncalvedVolumeNonDynCell', uncalvedVolumeNonDynCell)
       call mpas_pool_get_array(geometryPool, 'uncalvedVolumeDynCell', uncalvedVolumeDynCell)
+      call mpas_pool_get_array(geometryPool, 'calvedVolumeNonDynCell', calvedVolumeNonDynCell)
+      call mpas_pool_get_array(geometryPool, 'calvedVolumeDynCell', calvedVolumeDynCell)
       call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
+      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeNonDynEdge', requiredCalvingVolumeNonDynEdge)
+      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeDynEdge', requiredCalvingVolumeDynEdge)
+      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeNonDynCell', requiredCalvingVolumeNonDynCell)
+      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeDynCell', requiredCalvingVolumeDynCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
@@ -1403,14 +1410,12 @@ module li_calving
 
       ! Init fields for accounting
       calvingThickness(:) = 0.0_RKIND
+      calvedVolumeNonDynCell(:) = 0.0_RKIND
+      calvedVolumeDynCell(:) = 0.0_RKIND
       uncalvedVolumeNonDynCell(:) = 0.0_RKIND
       uncalvedVolumeDynCell(:) = 0.0_RKIND
       allocate(cellVolume(nCells+1))
       cellVolume(:) = areaCell(:) * thickness(:)
-      allocate(requiredCalvingVolumeNonDynEdge(nEdges+1))
-      allocate(requiredCalvingVolumeNonDynCell(nCells+1))
-      allocate(requiredCalvingVolumeDynEdge(nEdges+1))
-      allocate(requiredCalvingVolumeDynCell(nCells+1))
       requiredCalvingVolumeNonDynEdge(:) = 0.0_RKIND
       requiredCalvingVolumeNonDynCell(:) = 0.0_RKIND
       requiredCalvingVolumeDynEdge(:) = 0.0_RKIND
@@ -1459,11 +1464,15 @@ module li_calving
             ! c. Apply calving here
             removeVolumeHere = min(cellVolume(iCell), requiredCalvingVolumeNonDynCell(iCell))  ! Don't use more than available
             calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            calvedVolumeNonDynCell(iCell) = removeVolumeHere
             uncalvedVolumeNonDynCell(iCell) = requiredCalvingVolumeNonDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
             calvingSubtotal1 = calvingSubtotal1 + removeVolumeHere
          endif
       enddo
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'uncalvedVolumeNonDynCell')
+      call mpas_timer_stop("halo updates")
       !call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
 
@@ -1490,7 +1499,7 @@ module li_calving
 
       ! b. copy calving remaining in non-dynamic cells to dynamic edges
       ! Assume height and velocity are uniform, but edge length is not.
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
          if ( (.not. li_mask_is_dynamic_ice(cellMask(iCell))) .and. &
                  uncalvedVolumeNonDynCell(iCell) > 0.0_RKIND) then
             ! This is a non-dynamic location that still has calving to offer - a location where calving needs to be propagated
@@ -1532,11 +1541,14 @@ module li_calving
             enddo
          endif
       enddo
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'requiredCalvingVolumeDynEdge')
+      call mpas_timer_stop("halo updates")
 
       ! c. Now apply calving to each cell
       do iCell = 1, nCellsSolve
-         if ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) .and. &
-                 li_mask_is_dynamic_margin(cellMask(iCell)) ) .or. (groundedMarineMarginMask(iCell) == 1) ) then
+         if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level)) then
+            ! Can loop over all dyn cells - only ones with calving on their edges will have calving applied.
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                ! No need to check what type of edge this is - only required edges are nonzero
@@ -1546,6 +1558,7 @@ module li_calving
             ! c. Apply calving here
             removeVolumeHere = min(cellVolume(iCell), requiredCalvingVolumeDynCell(iCell))  ! Don't use more than available
             calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            calvedVolumeDynCell(iCell) = removeVolumeHere
             uncalvedVolumeDynCell(iCell) = requiredCalvingVolumeDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
             calvingSubtotal2 = calvingSubtotal2 + removeVolumeHere
@@ -1632,10 +1645,6 @@ module li_calving
       call mpas_timer_stop("halo updates")
 
       deallocate(cellVolume)
-      deallocate(requiredCalvingVolumeNonDynEdge)
-      deallocate(requiredCalvingVolumeNonDynCell)
-      deallocate(requiredCalvingVolumeDynEdge)
-      deallocate(requiredCalvingVolumeDynCell)
       deallocate(thicknessForCalving)
 
     end subroutine apply_calving_velocity
