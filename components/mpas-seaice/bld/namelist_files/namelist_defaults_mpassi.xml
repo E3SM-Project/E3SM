@@ -25,6 +25,7 @@
 <config_dt ice_grid="oARRM60to10">900.0</config_dt>
 <config_dt ice_grid="oARRM60to6">900.0</config_dt>
 <config_dt ice_grid="EC30to60E2r2">1800.0</config_dt>
+<config_dt ice_grid="WC14to60E2r3">1800.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -124,6 +125,7 @@
 <config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="EC30to60E2r2">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="WC14to60E2r3">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
