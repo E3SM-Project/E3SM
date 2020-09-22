@@ -11,8 +11,8 @@ module topounit_varcon
   use clm_varctl      , only: fsurdat, iulog
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use abortutils      , only : endrun
   use clm_varcon      , only : grlnd
-  !use abortutils      , only : endrun
   use pio
   use spmdMod
   !
@@ -30,7 +30,7 @@ module topounit_varcon
   integer, public :: max_topounits               ! maximum number of topounits per gridcell
   logical, public :: has_topounit                ! true => topounit dimension is on dataset
   !integer, pointer, public :: ntpu_per_grd(:)             ! Number of topounits per grid globally  num_tunits_per_grd
- ! integer, pointer, public :: tpu_lnd(:)             ! Number of topounit per grid for the land domain
+  !integer, pointer, public :: tpu_lnd(:)             ! Number of topounit per grid for the land domain
   !integer, pointer, public :: tpu_glo_ind(:)         ! global index for number of topounits per grid
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -55,8 +55,8 @@ module topounit_varcon
     type(domain_type),intent(in) :: ldomain     ! land domain
     
     !integer , intent(in) :: amask(:)  
-   ! integer :: ni
-   ! integer :: nj
+    !!integer :: ni
+    !!integer :: nj
     !
     ! !LOCAL VARIABLES:
     type(file_desc_t)     :: ncid         ! netcdf id
@@ -84,17 +84,7 @@ module topounit_varcon
           !call endrun(msg=errMsg(__FILE__, __LINE__))
        endif
     endif
-    
-    !! count total land gridcells
-    !lns = ni*nj
-    !numg = 0
-    !!ns = len(amask(:))
-    !do ln = 1, lns
-    !   if (amask(ln) == 1) then
-    !      numg = numg + 1
-    !   endif
-    !enddo
-
+ 
     ! Read surface data
     call getfil( lfsurdat, locfn, 0 )
     call ncd_pio_openfile (ncid, trim(locfn), 0)
@@ -117,21 +107,17 @@ module topounit_varcon
        if (readvar) then
           call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
              dim1name=grlnd, readvar=readvar)
-        endif    
-       !write(iulog,*)'TKT Surface dataset chcking max_topounit '
-      ! ldomain%num_tunits_per_grd(:) = 0
-       !call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
-       !     dim1name=grlnd, readvar=readvar)
+       endif    
        if (.not. readvar) then
           write(iulog,*)' TKT ERROR: Reading number of topounits per grid from lfsurfdat file '
-        !   call endrun(msg=errMsg(__FILE__, __LINE__))
+          !call endrun(msg=errMsg(__FILE__, __LINE__))
         end if
        
        !call ncd_io(ncid=ncid, varname='topoPerGrid', data=idata2d, flag='read', readvar=readvar)
        
-       ! Make sure the glc mask is a subset of the land mask
+       ! Make sure the number of topounits per grid consistent with the land mask
        do n = begg,endg
-          !write(iulog,*)'TKT num_tunits_per_grd(n) ', ldomain%num_tunits_per_grd(n)
+          !write(iulog,*)'TKT num_tunits_per_grd(n), ldomain%mask(n) ', ldomain%num_tunits_per_grd(n), '<====>', ldomain%mask(n)
           if (ldomain%num_tunits_per_grd(n)>1 .and. ldomain%mask(n)==0) then
              write(iulog,*)trim(subname),&
                   'initialize1: landmask/Number of topounits mismatch'
@@ -166,7 +152,7 @@ module topounit_varcon
        ! !   call endrun(msg=errMsg(__FILE__, __LINE__))
        ! end if       
        
-        ! count total land gridcells
+       ! !count total land gridcells
        !!lns = ni*nj
        !numg = 0
        !!ns = len(amask(:))

@@ -53,14 +53,14 @@ contains
     use decompMod         , only : get_proc_bounds, get_clump_bounds, get_proc_clumps
     use subgridWeightsMod , only : compute_higher_order_weights
     use topounit_varcon   , only : max_topounits, has_topounit 
-    use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit
+    use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
     use clm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
-    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu  ! indices
+    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu,tmp_tpu2,tmp_msk  ! indices
     integer :: nclumps                                                     ! number of clumps on this processor
     real(r8) :: wttopounit2gridcell, elv, slp                              ! topounit weight on gridcell, elevation and slope
     integer :: asp                                                         ! aspect
@@ -129,13 +129,16 @@ contains
        ! For each gridcell in clump, create the correct number of topounits       
        do gdc = bounds_clump%begg, bounds_clump%endg
           tmp_tpu = ldomain%num_tunits_per_grd(gdc)       ! Actual number of topounits per grid
+          tmp_tpu2 = num_tunit_per_grd(gdc)
+          tmp_msk = ldomain%mask(gdc)
           if(has_topounit .and. max_topounits > 1) then
              ntopos = tmp_tpu                                
              !! TKT debugging begin
-             if (masterproc) then
-                write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc), gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',gdc
-                write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
-             endif
+             !if (masterproc) then
+             !   write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc),tmp_tpu2, tmp_msk, gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',tmp_tpu2,', ',tmp_msk,' ',gdc
+             !   write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
+             !   write(iulog,*) 'grc_pp%MaxElevation(gdc), grc_pp%elevation(gdc)  ', grc_pp%MaxElevation(gdc), ' ', grc_pp%elevation(gdc)
+             !endif
              !! TKT debugging end
           else 
              ntopos = max_topounits

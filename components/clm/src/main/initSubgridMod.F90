@@ -352,6 +352,9 @@ contains
                 if (lun_pp%itype(l) /= ltype) error = .true.
                 if (lun_pp%topounit(l) /= t) error = .true.
                 if (lun_pp%gridcell(l) /= g) error = .true.
+                !if (masterproc) TKT
+                !write(iulog,*) ' TKT clm_ptrs_check: lun_pp%itype(l), ltype, l, t, lun_pp%topounit(l), lun_pp%gridcell(l), g:  ',lun_pp%itype(l),' ', ltype,' ',l,' ',t,' ',lun_pp%topounit(l), ' ',lun_pp%gridcell(l), ' ', g
+                !write(iulog,*) ' TKT gegg, endg, grc_pp%topi(g),grc_pp%topf(g), max_lunit  ', begg,' ', endg,' ', grc_pp%topi(g),' ', grc_pp%topf(g),' ',max_lunit
                 if (error) then
                    write(iulog,*) '   clm_ptrs_check: tree consistent - ERROR'
                    call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))

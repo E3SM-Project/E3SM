@@ -15,7 +15,7 @@ module clm_initializeMod
   use clm_varctl       , only : use_fates, use_betr
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
   use clm_varsur       , only : fert_cft
-  use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit
+  use clm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -255,6 +255,7 @@ contains
     allocate (elv_tunit (begg:endg,1:max_topounits  ))
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
+    allocate (num_tunit_per_grd (begg:endg))
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -403,7 +404,7 @@ contains
     ! end of the run for error checking.
 
     deallocate (wt_lunit, wt_cft, wt_glc_mec)
-    deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit)
+    deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
 
     call t_stopf('clm_init1')
 

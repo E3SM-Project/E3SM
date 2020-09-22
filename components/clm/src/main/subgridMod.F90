@@ -79,9 +79,9 @@ contains
     integer  :: icohorts         ! number of cohorts in gridcell
     integer  :: npfts_per_lunit  ! number of pfts in landunit
     integer  :: ntopounits_per_gcell  ! number of topounits in this gridcell
-    integer  :: tmp_tpu_ind_glb
-    integer  :: tmp_tpu_lnd
-    integer  :: tmp_tpu_glb
+    !integer  :: tmp_tpu_ind_glb
+    !integer  :: tmp_tpu_lnd
+    !integer  :: tmp_tpu_glb
     
     !------------------------------------------------------------------------------
 
@@ -128,7 +128,7 @@ contains
     !if (masterproc) then
     !   write(iulog,*) 'tmp_tpu_ind_glb, tmp_tpu_glb, gi, tmp_tpu_lnd ',tmp_tpu_ind_glb, ', ',tmp_tpu_glb, ', ',gi, ', ',tmp_tpu_lnd
     !endif
-    ! TKT debugging end
+    !! TKT debugging end
     if(has_topounit .and. max_topounits > 1) then
        ntopounits_per_gcell = num_tunits_per_grd                 !grc_pp%ntopounits2(gi) !tpu_lnd(gi)
     else 

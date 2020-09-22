@@ -1325,7 +1325,7 @@ contains
     use clm_varctl      , only: fsurdat
     use fileutils       , only : getfil   
 	use GridcellType    , only : grc_pp
-    use clm_varsur      , only : wt_tunit, elv_tunit, slp_tunit, asp_tunit
+    use clm_varsur      , only : wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd
     use topounit_varcon ,  only : max_topounits, has_topounit
     
     !
@@ -1344,11 +1344,12 @@ contains
     type(file_desc_t)     :: ncid         ! netcdf id
    
     real(r8),pointer :: maxTopoElv(:)            ! Maximum topounit elevation
-   ! real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
+    real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
     real(r8),pointer :: TopounitFracArea(:,:)    ! Topounit fractional area
     integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
     real(r8),pointer :: TopounitAspect(:,:)      ! Topounit aspect
+    real(r8),pointer :: num_topo_per_grid(:)      ! Topounit aspect
     real(r8),pointer :: GridElevation(:)      ! Topounit aspect
 !    integer ,pointer :: TopounitIndices(:,:)     ! Topounit indices in each grid
 	
@@ -1357,11 +1358,12 @@ contains
 
     allocate(maxTopoElv(begg:endg))
     allocate(GridElevation(begg:endg))
-   ! allocate(numTopoPerGrid(begg:endg))
+    allocate(numTopoPerGrid(begg:endg))
     allocate(TopounitFracArea(begg:endg,max_topounits))
     allocate(TopounitElv(begg:endg,max_topounits))
     allocate(TopounitSlope(begg:endg,max_topounits))
     allocate(TopounitAspect(begg:endg,max_topounits))
+    allocate(num_topo_per_grid(begg:endg))
 !    allocate(TopounitIndices(begg:endg,max_topounits))
     
     ! Read surface data
@@ -1375,11 +1377,11 @@ contains
          dim1name=grlnd, readvar=readvar)
     endif
 
-    !call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
-    !if (readvar) then
-    !   call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
-    !     dim1name=grlnd, readvar=readvar)
-    !endif
+    call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
+         dim1name=grlnd, readvar=readvar)
+    endif
 
     call check_var(ncid=ncid, varname='TopounitFracArea', vardesc=vardesc, readvar=readvar)
     if (readvar) then
@@ -1405,6 +1407,12 @@ contains
          dim1name=grlnd, readvar=readvar)
     endif
     
+    call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=num_topo_per_grid, &
+         dim1name=grlnd, readvar=readvar)
+    endif
+    
     call check_var(ncid=ncid, varname='TOPO2', vardesc=vardesc, readvar=readvar)
     if (readvar) then
        call ncd_io(ncid=ncid, varname='TOPO2', flag='read', data=GridElevation, &
@@ -1414,11 +1422,13 @@ contains
         do n = begg,endg          
            grc_pp%MaxElevation(n) = maxTopoElv(n) 	
            grc_pp%elevation(n) = GridElevation(n) 
+           num_tunit_per_grd(n) = num_topo_per_grid(n)
+           grc_pp%ntopounits(n) = numTopoPerGrid(n)
            do t = 1, max_topounits
               wt_tunit(n,t) = TopounitFracArea(n,t)
               elv_tunit(n,t) = TopounitElv(n,t)
               slp_tunit(n,t) = TopounitSlope(n,t)
-              asp_tunit(n,t) = TopounitAspect(n,t)
+              asp_tunit(n,t) = TopounitAspect(n,t)              
            end do
         end do		
      endif	

@@ -503,7 +503,7 @@ contains
     
     !ier = pio_inq_dimid (ncid, 'topounit', dimid)
     !if (ier == PIO_NOERR) then
-     !  ier = pio_inq_dimlen(ncid, dimid, ni)
+    !   ier = pio_inq_dimlen(ncid, dimid, ni)
     !   if (ier == PIO_NOERR) nj = 1
     !end if       
 
@@ -2113,9 +2113,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     real(r8) , pointer   :: pfts1dlat(:)      ! holds pfts1d_jxy var
     real(r8) , pointer   :: land1dlon(:)      ! holds land1d_ixy var
     real(r8) , pointer   :: land1dlat(:)      ! holds land1d_jxy var
+    real(r8) , pointer   :: topo1dlon(:)      ! holds topo1d_ixy var
+    real(r8) , pointer   :: topo1dlat(:)      ! holds topo1d_ixy var
     integer, allocatable :: cols(:)           ! grid cell columns for scam
     integer, allocatable :: pfts(:)           ! grid cell pfts for scam
     integer, allocatable :: landunits(:)      ! grid cell landunits for scam
+    integer, allocatable :: topounits(:)      ! grid cell topounits for scam
     integer, allocatable :: dids(:)           ! dim ids
     integer              :: varid             ! netCDF variable id
     integer              :: status            ! return code
@@ -2268,6 +2271,42 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           deallocate (land1dlon)
           deallocate (land1dlat)
           deallocate (landunits)
+
+          start(i) = data_offset
+          count(i) = ndata
+       else if ( trim(dimname)=='topounit') then
+
+          allocate (topo1dlon(dimlen))
+          allocate (topo1dlat(dimlen))
+          allocate (topounits(dimlen))
+
+          status = pio_inq_varid(ncid, 'topo1d_lon', varid)
+          status = pio_get_var(ncid, varid, topo1dlon)
+
+          status = pio_inq_varid(ncid, 'topo1d_lat', varid)
+          status = pio_get_var(ncid, varid, topo1dlat)
+
+          topounits(:) = huge(1)
+          data_offset  = huge(1)
+          ii     = 1
+          ndata = 0
+          do cc = 1, dimlen
+             if (topo1dlon(cc) == closelon.and.topo1dlat(cc) == closelat) then
+                topounits(ii)=cc
+                ndata  =ii
+                ii=ii+1
+             end if
+          end do
+          if (ndata == 0) then
+             write(iulog,*)'couldnt find any topounits for this latitude',closelat,' and longitude ',closelon
+             call shr_sys_abort('ERROR:: no topounits for this position'//errMsg(__FILE__, __LINE__))
+          else
+             data_offset=topounits(1)
+          end if
+
+          deallocate (topo1dlon)
+          deallocate (topo1dlat)
+          deallocate (topounits)
 
           start(i) = data_offset
           count(i) = ndata

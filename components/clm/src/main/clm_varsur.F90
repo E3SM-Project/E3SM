@@ -42,6 +42,7 @@ module clm_varsur
   real(r8), pointer :: topo_glc_mec(:,:,:) 
   
   ! Topounit related poiters
+  real(r8), pointer :: num_tunit_per_grd(:)   ! Topounit area fraction
   real(r8), pointer :: wt_tunit(:,:)   ! Topounit area fraction
   real(r8), pointer :: elv_tunit(:,:)  ! Topounit elevation 
   real(r8), pointer :: slp_tunit(:,:)  ! Topounit slope 

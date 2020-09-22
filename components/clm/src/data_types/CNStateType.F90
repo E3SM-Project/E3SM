@@ -718,10 +718,10 @@ contains
     integer     ,pointer     :: fert_continue_rdin (:)
     real(r8)    ,pointer     :: fert_dose_rdin (:,:)
     ! soil phosphorus pool Qing Z. 2017
-    real(r8) ,pointer  :: labp_g (:)                       ! read in - LABILE_P
-    real(r8) ,pointer  :: secp_g (:)                       ! read in - SECONDARY_P
-    real(r8) ,pointer  :: occp_g (:)                       ! read in - OCCLUDED_P
-    real(r8) ,pointer  :: prip_g (:)                       ! read in - APATITE_P
+    real(r8) ,pointer  :: labp_g (:,:)                       ! read in - LABILE_P
+    real(r8) ,pointer  :: secp_g (:,:)                       ! read in - SECONDARY_P
+    real(r8) ,pointer  :: occp_g (:,:)                       ! read in - OCCLUDED_P
+    real(r8) ,pointer  :: prip_g (:,:)                       ! read in - APATITE_P
     integer     ,pointer     :: fert_start_rdin (:)
     integer     ,pointer     :: fert_end_rdin (:)
     !-----------------------------------------------------------------------
@@ -919,50 +919,62 @@ contains
 
     ! Read soil phosphorus pool Qing Z. 2017 
     this%pdatasets_present = .true.
-    allocate(labp_g(bounds%begg:bounds%endg))
+    allocate(labp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='LABILE_P', flag='read', data=labp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%labp_col(c) = labp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%labp_col(c) = labp_g(g,ti)
        end do
     end if
     deallocate(labp_g)
 
-    allocate(secp_g(bounds%begg:bounds%endg))
+    allocate(secp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='SECONDARY_P', flag='read', data=secp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%secp_col(c) = secp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%secp_col(c) = secp_g(g,ti)
        end do
     end if
     deallocate(secp_g)
 
-    allocate(occp_g(bounds%begg:bounds%endg))
+    allocate(occp_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='OCCLUDED_P', flag='read', data=occp_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%occp_col(c) = occp_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%occp_col(c) = occp_g(g,ti)
        end do
     end if
     deallocate(occp_g)
 
-    allocate(prip_g(bounds%begg:bounds%endg))
+    allocate(prip_g(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='APATITE_P', flag='read', data=prip_g, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        this%pdatasets_present = .false.
     else
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%prip_col(c) = prip_g(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          this%prip_col(c) = prip_g(g,ti)
        end do
     end if
     deallocate(prip_g)  
