@@ -240,11 +240,8 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
-         !$omp master
          allocate(normalThicknessFluxSum(nEdges))
          allocate(layerThicknessSumEdge(nEdges))
-         !$omp end master
-         !$omp barrier
 
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -693,11 +690,8 @@ contains
          end do
 
          ! scratch arrays
-         !$omp master
          deallocate(normalThicknessFluxSum)
          deallocate(layerThicknessSumEdge)
-         !$omp end master
-         !$omp barrier
 
          block => block % next
       end do

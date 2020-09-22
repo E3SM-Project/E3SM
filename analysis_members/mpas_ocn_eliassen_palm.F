@@ -482,7 +482,6 @@ contains
          !--------------------------------------------------
          ! allocate scratch field variables
          !--------------------------------------------------
-         !$omp master
          allocate(firstLayerBuoyCoor(ncells), &
                   lastLayerBuoyCoor(ncells), &
                   heightMidBuoyCoor(nBuoyancyLayers, nCells), &
@@ -520,8 +519,6 @@ contains
                   uPVMidBuoyCoorEA(nBuoyancyLayers, nCells), &
                   vPVMidBuoyCoorEA(nBuoyancyLayers, nCells), &
                   PVFluxTest(2,nBuoyancyLayers, nCells))
-         !$omp end master
-         !$omp barrier
 
          !--------------------------------------------------
          ! assign pointers for ensemble average (EA) and thickness-weighted averaged state
@@ -1063,7 +1060,6 @@ contains
          !-------------------------------------------------------------
          ! deallocate scratch space and test space variables
          !-------------------------------------------------------------
-         !$omp master
          deallocate(firstLayerBuoyCoor, &
                     lastLayerBuoyCoor, &
                     heightMidBuoyCoor, &
@@ -1101,8 +1097,6 @@ contains
                     uPVMidBuoyCoorEA, &
                     vPVMidBuoyCoorEA, &
                     PVFluxTest)
-         !$omp end master
-         !$omp barrier
 
          !-------------------------------------------------------------
          ! update test variables
