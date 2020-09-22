@@ -44,8 +44,8 @@ _TESTS = {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
-            "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
-            "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
+            "SMS_Ln9.ne4_ne4.FC5AV1C-L.eam-outfrq9s",
+            "SMS.ne4_ne4.FC5AV1C-L.eam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
@@ -56,16 +56,16 @@ _TESTS = {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
-            "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
+            "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.eam-clubb_only",
             "ERP_Ln9.ne4_ne4.F-EAMv1-RCEMIP",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
-            "SMS_Ln1.ne4_ne4.FC5AV1C-L.cam-chem_pp",
-            "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
-            "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
+            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_ne4.FC5AV1C-L.eam-chem_pp",
+            "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-rrtmgp",
+            "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-04P2.cam-thetahy_sl_pg2_mass",
+            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-04P2.eam-thetahy_sl_pg2_mass",
             )
         },
 
@@ -91,7 +91,7 @@ _TESTS = {
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
         "tests" : (
-            "SMS_Ln5.ne30_ne30.FC5AV1C-L.cam-cosplite",
+            "SMS_Ln5.ne30_ne30.FC5AV1C-L.eam-cosplite",
             "SMS.ne30_r05_ne30.F20TRC5-CMIP6",
             )
         },
@@ -127,7 +127,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
-            "SMS_B.ne4_ne4.F-EAMv1-AQP1.cam-hommexx",
+            "SMS_B.ne4_ne4.F-EAMv1-AQP1.eam-hommexx",
             )
         },
 
@@ -158,7 +158,7 @@ _TESTS = {
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             )
@@ -177,7 +177,7 @@ _TESTS = {
     "e3sm_hi_res" : {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
-            "SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS.cam-cosplite",
+            "SMS.ne120_oRRS18v3_ICG.A_WCYCL2000_H01AS.eam-cosplite",
             "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
             )
         },
@@ -199,11 +199,11 @@ _TESTS = {
             "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF1",
             "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
-            "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
+            "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.eam-rrtmgp",
             )
         },
 
@@ -250,35 +250,35 @@ _TESTS = {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-preqx_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-preqx_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-preqx_ftype4",
                  )
     },
     "eam_theta" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype4",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype0",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype1",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
-                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
-                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
-                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetahy_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetahy_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetahy_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetahy_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetanh_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetanh_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetanh_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetanh_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.eam-thetahy_sl",
+                 "ERS.ne4_ne4.FC5AV1C-L.eam-thetahy_ftype2",
+                 "ERS.ne4_ne4.FC5AV1C-L.eam-thetanh_ftype2",
                  )
     },
     "eam_theta_pg2" : {
         "share"    : True,
         "time"     : "02:00:00",
         "tests"    : (
-                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
-                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
-                 "ERS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2"
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.eam-thetahy_pg2",
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.eam-thetahy_sl_pg2",
+                 "ERS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.eam-thetahy_sl_pg2"
                  )
     },
     "e3sm_bench_hires_g" : {
@@ -322,13 +322,13 @@ _TESTS = {
     "e3sm_bench_hires_f" : {
         "time"     : "01:00:00",
         "tests"    : (
-                 "PFS_P7200.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P8640.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P10800.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P14400.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P21600.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P43200.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
-                 "PFS_P86400.ne120_ne120.FC5AV1C-H01A.cam-bench-noio",
+                 "PFS_P7200.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P8640.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P10800.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P14400.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P21600.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P43200.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
+                 "PFS_P86400.ne120_ne120.FC5AV1C-H01A.eam-bench-noio",
                  )
     },
     "e3sm_bench_hires" : {
@@ -354,9 +354,9 @@ _TESTS = {
     "e3sm_bench_lores_f" : {
         "time"     : "01:00:00",
         "tests"    : (
-                 "PFS_P1350.ne30_ne30.FC5AV1C-L.cam-bench-noio",
-                 "PFS_P2700.ne30_ne30.FC5AV1C-L.cam-bench-noio",
-                 "PFS_P5400.ne30_ne30.FC5AV1C-L.cam-bench-noio",
+                 "PFS_P1350.ne30_ne30.FC5AV1C-L.eam-bench-noio",
+                 "PFS_P2700.ne30_ne30.FC5AV1C-L.eam-bench-noio",
+                 "PFS_P5400.ne30_ne30.FC5AV1C-L.eam-bench-noio",
                  )
     },
     "e3sm_bench_lores" : {
@@ -376,8 +376,8 @@ _TESTS = {
 
     "e3sm_gpu" : {
         "tests"    : (
-                 "SMS_P36x1_Ld1.ne4pg2_ne4pg2.FC5AV1C-H01A.cam-crm_gpu",
-                 "SMS_P36x1_Ld1.ne4_ne4.FC5AV1C-H01A.cam-crm_gpu",
+                 "SMS_P36x1_Ld1.ne4pg2_ne4pg2.FC5AV1C-H01A.eam-crm_gpu",
+                 "SMS_P36x1_Ld1.ne4_ne4.FC5AV1C-H01A.eam-crm_gpu",
                  "SMS_P36x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
                  "SMS_P36x1_Ld1.T62_oEC60to30v3.DTESTM",
                  )

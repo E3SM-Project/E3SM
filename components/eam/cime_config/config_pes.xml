@@ -446,7 +446,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>128</ntasks_atm>
@@ -666,7 +666,7 @@
   </grid>
   <grid name="a%ne30np4">
     <mach name="titan|stampede|bluewaters">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>1280</ntasks_atm>
@@ -814,7 +814,7 @@
   </grid>
   <grid name="a%ne120np4">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
@@ -851,7 +851,7 @@
   </grid>
   <grid name="a%ne120np4">
     <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>4800</ntasks_atm>
@@ -925,7 +925,7 @@
   </grid>
   <grid name="a%ne240np4">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>2048</ntasks_atm>
@@ -1591,7 +1591,7 @@
   </grid>
   <grid name="a%1.9x2.5">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="T">
+      <pes compset="EAM.+CLM.+DOCN." pesize="T">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>16</ntasks_atm>
@@ -1776,7 +1776,7 @@
   </grid>
   <grid name="a%0.9x1.25">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="T">
+      <pes compset="EAM.+CLM.+DOCN." pesize="T">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>32</ntasks_atm>
@@ -2146,7 +2146,7 @@
   </grid>
   <grid name="a%wr50a">
     <mach name="any">
-      <pes compset="CAM.+CLM.+DOCN." pesize="any">
+      <pes compset="EAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>25</ntasks_atm>

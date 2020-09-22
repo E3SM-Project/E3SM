@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Namelist creator for E3SM's CAM component
+Namelist creator for E3SM's atmosphere component
 """
 
 import os, sys, re
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildnml(case, caseroot, compname):
 ###############################################################################
-    expect(compname == "cam", compname)
+    expect(compname == "eam", compname)
 
     os.chdir(caseroot)
 
@@ -55,12 +55,12 @@ def buildnml(case, caseroot, compname):
     force_build_smp     = case.get_value("FORCE_BUILD_SMP")
     os_                 = case.get_value("OS").lower()
 
-    camconf_dir = os.path.join(casebuild, "camconf")
+    eamconf_dir = os.path.join(casebuild, "eamconf")
 
-    if not os.path.isdir(camconf_dir): os.mkdir(camconf_dir)
+    if not os.path.isdir(eamconf_dir): os.mkdir(eamconf_dir)
 
     #--------------------------------------------------------------------
-    # Invoke cam configure - output will go in $CASEBUILD/camconf
+    # Invoke eam configure - output will go in $CASEBUILD/eamconf
     #--------------------------------------------------------------------
 
     if not build_complete:
@@ -104,18 +104,18 @@ def buildnml(case, caseroot, compname):
         # specify target OS name
         os_opt = "-target_os bgq" if os_ == 'bgq' else ""
 
-        # TODO: cam/bld/configure needs to be converted to python
+        # TODO: eam/bld/configure needs to be converted to python
         config_cmd = "{} -s -ccsm_seq -ice none -ocn {} -caseroot {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".\
-            format(os.path.join(srcroot, "components/cam/bld/configure"), ocn, caseroot, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt)
-        run_cmd_no_fail(config_cmd, from_dir=camconf_dir)
+            format(os.path.join(srcroot, "components/eam/bld/configure"), ocn, caseroot, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt)
+        run_cmd_no_fail(config_cmd, from_dir=eamconf_dir)
 
     else:
 
         # Verify that we have a config_cache file.
-        expect(os.path.exists(os.path.join(camconf_dir, "config_cache.xml")), "Missing cam cache file")
+        expect(os.path.exists(os.path.join(eamconf_dir, "config_cache.xml")), "Missing eam cache file")
 
     #--------------------------------------------------------------------
-    # Invoke cam build-namelist - output will go in $CASEBUILD/camconf
+    # Invoke eam build-namelist - output will go in $CASEBUILD/eamconf
     #--------------------------------------------------------------------
 
     ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
@@ -141,25 +141,25 @@ def buildnml(case, caseroot, compname):
                           os.path.join(rundir, "rpointer.atm{}".format(inst_string)))
 
         # -----------------------------------------------------
-        # create camconf/cesm_namelist
+        # create eamconf/cesm_namelist
         # -----------------------------------------------------
 
         ncdata = ""
         if run_type == 'hybrid':
-            if os.path.exists("{}.cam{}.i.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)):
-                ncdata = "'{}.cam{}.i.{}-{}.nc'".format(run_refcase, inst_string, run_refdate, run_reftod)
+            if os.path.exists("{}.eam{}.i.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)):
+                ncdata = "'{}.eam{}.i.{}-{}.nc'".format(run_refcase, inst_string, run_refdate, run_reftod)
             else:
-                ncdata = "'{}.cam.i.{}-{}.nc'".format(run_refcase, run_refdate, run_reftod)
+                ncdata = "'{}.eam.i.{}-{}.nc'".format(run_refcase, run_refdate, run_reftod)
 
             if inst_string != "":
                 logger.warning("WARNING: {} is being used".format(ncdata))
 
         cam_branch_file = ""
         if run_type == 'branch':
-            if os.path.exists("{}/{}.cam{}.r.{}-{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)):
-                cam_branch_file = "'{}/{}.cam{}.r.{}-{}.nc'".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+            if os.path.exists("{}/{}.eam{}.r.{}-{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)):
+                cam_branch_file = "'{}/{}.eam{}.r.{}-{}.nc'".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
             else:
-                cam_branch_file = "'{}/{}.cam.r.{}-{}.nc'".format(rundir, run_refcase, run_refdate, run_reftod)
+                cam_branch_file = "'{}/{}.eam.r.{}-{}.nc'".format(rundir, run_refcase, run_refdate, run_reftod)
                 if inst_string != "":
                     logger.warning("WARNING: {} is being used".format(cam_branch_file))
 
@@ -185,41 +185,41 @@ def buildnml(case, caseroot, compname):
         if debug:           infile_text += " state_debug_checks = .true. \n"
 
         create_namelist_infile(case,
-                               "{}/user_nl_cam{}".format(caseroot, inst_string),
-                               "{}/cesm_namelist".format(camconf_dir),
+                               "{}/user_nl_eam{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(eamconf_dir),
                                infile_text=infile_text)
 
         # -----------------------------------------------------
         # call build-namelist
         # -----------------------------------------------------
 
-        if os.path.exists(os.path.join(casebuild, "cam.input_data_list")):
-            os.remove(os.path.join(casebuild, "cam.input_data_list"))
+        if os.path.exists(os.path.join(casebuild, "eam.input_data_list")):
+            os.remove(os.path.join(casebuild, "eam.input_data_list"))
 
-        cam_buildnml_cmd =  os.path.join(srcroot, "components/cam/bld/build-namelist")
-        cam_buildnml_cmd += " -infile {}/cesm_namelist".format(camconf_dir)
+        cam_buildnml_cmd =  os.path.join(srcroot, "components/eam/bld/build-namelist")
+        cam_buildnml_cmd += " -infile {}/cesm_namelist".format(eamconf_dir)
         cam_buildnml_cmd += " -csmdata {} {} {}".format(din_loc_root, ignore, usecase)
-        cam_buildnml_cmd += " -inputdata {}/cam.input_data_list".format(casebuild)
+        cam_buildnml_cmd += " -inputdata {}/eam.input_data_list".format(casebuild)
         cam_buildnml_cmd += " -ntasks {}".format(ntasks)
         cam_buildnml_cmd += ' -namelist " &atmexp {} /" '.format(cam_namelist_opts)
 
-        # TODO: cam/bld/build-namelist needs to be converted to python
-        run_cmd_no_fail(cam_buildnml_cmd, from_dir=camconf_dir)
+        # TODO: eam/bld/build-namelist needs to be converted to python
+        run_cmd_no_fail(cam_buildnml_cmd, from_dir=eamconf_dir)
 
         # -----------------------------------------------------
         # move atm_in to $RUNDIR
         # -----------------------------------------------------
 
         if os.path.exists(rundir):
-            safe_copy(os.path.join(camconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
-            safe_copy(os.path.join(camconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
+            safe_copy(os.path.join(eamconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
+            safe_copy(os.path.join(eamconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
 
 ###############################################################################
 def _main_func():
 ###############################################################################
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
-        buildnml(case, caseroot, "cam")
+        buildnml(case, caseroot, "eam")
 
 if __name__ == "__main__":
     _main_func()

@@ -471,7 +471,7 @@ if ($print>=2) {
 	print "Writing namelist files for cpl7 scripts$eol";
     }
     elsif ($cam_build) {
-	print "Writing namelist files for cam standalone scripts$eol";
+	print "Writing namelist files for eam standalone scripts$eol";
     }
 }
 
@@ -620,7 +620,7 @@ if ($ideal_or_adia_or_aqua) {
 }
 
 # Note that the prescribed SSTs
-# used by aqua-planet mode are implemented in the cam_aqua component.)
+# used by aqua-planet mode are implemented in the eam_aqua component.)
 
 # Single column mode
 my $scam = $cfg->get('scam');
@@ -3449,7 +3449,7 @@ if ( $chem ) {
 # to explicitly specify this namelist variable issue error.
 my $cam_physpkg = $nl->get_value('cam_physpkg');
 if (defined $cam_physpkg) {
-    die "CAM Namelist ERROR: User may not specify the value of cam_physpkg.\n".
+    die "EAM Namelist ERROR: User may not specify the value of cam_physpkg.\n".
 	"This variable is set by build-namelist based on information\n".
 	"from the configure cache file.\n";
 }
@@ -3510,7 +3510,7 @@ add_default($nl, 'convproc_do_gas');
 add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
-add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in cam
+add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in eam
 add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
 
 # Microphysics scheme
@@ -4016,7 +4016,7 @@ if ($lnd_pkg eq 'clm' and $cam_build and $lnd_active) {
     # *** N.B. *** this code enforces the constraint that the CLM timestep match the CAM timestep.
     # Note that a Namelist object method is used to add the value of dtime to clm_inparm to avoid
     # the namelist definition checking done by add_default.  That's because dtime is in CAM's definition
-    # file as a variable that belongs in cam_inparm and it can't also be in clm_inparm.  This will be
+    # file as a variable that belongs in eam_inparm and it can't also be in clm_inparm.  This will be
     # resolved when the CLM component is made responsible for producing the clm_inparm namelist.
     my $clmval = $nl->get_value('dtime');
     $nl->set_variable_value('clm_inparm', 'dtime', $clmval);

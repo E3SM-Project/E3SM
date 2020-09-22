@@ -2,7 +2,7 @@
 use strict;
 
 if ($#ARGV == -1) {
-    die " ERROR cam.buildexe: must specify a caseroot input argument";
+    die " ERROR eam buildlib: must specify a caseroot input argument";
 }
 my ($CASEROOT) = @ARGV;
 chdir "${CASEROOT}";
@@ -18,24 +18,24 @@ chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/atm/obj";
 
-if (-f "$CASEBUILD/camconf/Filepath") {
-    my $sysmod = "cp ${CASEBUILD}/camconf/Filepath ./tmp_filepath"; 
-    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+if (-f "$CASEBUILD/eamconf/Filepath") {
+    my $sysmod = "cp ${CASEBUILD}/eamconf/Filepath ./tmp_filepath"; 
+    system($sysmod) == 0 or die "ERROR eam buildlib: $sysmod failed: $?\n";
 } else {
-    die "ERROR cam.buildexe  - missing $CASEBUILD/camconf/Filepath";
+    die "ERROR eam buildlib  - missing $CASEBUILD/eamconf/Filepath";
 }
 
 if (-f "Filepath") {
     my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
-    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR eam buildlib: $sysmod failed: $?\n";
 } else {
     my $sysmod = "mv -f tmp_filepath Filepath ";
-    system($sysmod) == 0 or die "ERROR cam.buildexe: $sysmod failed: $?\n";
+    system($sysmod) == 0 or die "ERROR eam buildlib: $sysmod failed: $?\n";
 }
 
-my $camdefs = `cat $CASEBUILD/camconf/CCSM_cppdefs`;
+my $camdefs = `cat $CASEBUILD/eamconf/CCSM_cppdefs`;
 chomp($camdefs);
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
-system($sysmod) == 0 or die "ERROR: cam.buildexe $sysmod failed: $?\n";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=eam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
+system($sysmod) == 0 or die "ERROR: eam buildlib $sysmod failed: $?\n";
 
 exit(0);
