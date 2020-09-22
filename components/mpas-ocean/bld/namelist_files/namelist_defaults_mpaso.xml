@@ -47,7 +47,7 @@
 <config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
 <config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
 <config_dt ocn_grid="EC30to60E2r2">'00:30:00'</config_dt>
-<config_dt ocn_grid="WC14to60E2r3">'00:30:00'</config_dt>
+<config_dt ocn_grid="WC14to60E2r3">'00:10:00'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
 
 <!-- hmix -->
@@ -92,7 +92,7 @@
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E1r2">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="EC30to60E2r2">1000.0</config_mom_del2>
-<config_mom_del2 ocn_grid="WC14to60E2r3">1000.0</config_mom_del2>
+<config_mom_del2 ocn_grid="WC14to60E2r3">250.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
@@ -117,7 +117,7 @@
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="EC30to60E2r2">1.2e11</config_mom_del4>
-<config_mom_del4 ocn_grid="WC14to60E2r3">1.2e11</config_mom_del4>
+<config_mom_del4 ocn_grid="WC14to60E2r3">1.5e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
@@ -366,7 +366,7 @@
 <config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
 <config_btr_dt ocn_grid="EC30to60E2r2">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="WC14to60E2r3">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="WC14to60E2r3">'0000_00:00:15'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
