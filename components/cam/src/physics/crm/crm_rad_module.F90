@@ -7,10 +7,9 @@ module crm_rad_module
    ! the other diagnostic quantities. This module should also contain methods to
    ! update the radiation in the future, should we choose to put the radiation
    ! calculations on the CRM.
-   use params_kind,       only: crm_rknd
+   use params_kind, only: crm_rknd, r8
 
    implicit none
-   integer, parameter :: r8 = selected_real_kind(13)
 
    public crm_rad_type
 
