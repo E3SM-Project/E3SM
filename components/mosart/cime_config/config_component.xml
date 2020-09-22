@@ -16,7 +16,7 @@
     <valid_values>ACTIVE,NULL</valid_values>
     <default_value>ACTIVE</default_value>
     <values>
-      <value compset="_CAM.*_DOCN" >ACTIVE</value>
+      <value compset="_EAM.*_DOCN" >ACTIVE</value>
       <value grid="r%null">NULL</value>
     </values>
     <group>build_component_mosart</group>
