@@ -203,7 +203,12 @@ program driver
     write(*,*) 'Running the CRM'
   endif
 
-  call system_clock(t1)
+#if HAVE_MPI
+  call mpi_barrier(mpi_comm_world,ierr)
+#endif
+  if (masterTask) then
+    call system_clock(t1)
+  endif
 
   ! Run the code
   call crm(ncrms, ncrms, dt_gl(1), plev, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
@@ -226,17 +231,20 @@ program driver
            crm_output%precsl, crm_output%prec_crm, crm_clear_rh, &
            lat0, long0, gcolp, 2, logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
 
-  call system_clock(t2,tr)
-  write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
+
+#if HAVE_MPI
+  call mpi_barrier(mpi_comm_world,ierr)
+#endif
+  if (masterTask) then
+    call system_clock(t2,tr)
+    write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
+  endif
 
   if (masterTask) then
     write(*,*) 'Writing output data'
   endif
   ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
   ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
-#if HAVE_MPI
-  call mpi_barrier(mpi_comm_world,ierr)
-#endif
   do irank = 0 , nranks-1
     if (irank == rank) then
       do icrm = 1 , ncrms

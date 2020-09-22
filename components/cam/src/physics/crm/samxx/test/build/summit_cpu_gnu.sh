@@ -2,9 +2,7 @@
 
 source $MODULESHOME/init/bash
 module purge
-module load DefApps gcc/8.1.1 cuda/10.1.105 netcdf netcdf-fortran cmake python/3.7.0-anaconda3-5.3.0
-
-conda deactivate
+module load DefApps gcc/8.1.1 netcdf netcdf-fortran cmake python/3.7.0-anaconda3-5.3.0
 
 unset ARCH
 unset NCRMS
