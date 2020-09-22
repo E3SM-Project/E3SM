@@ -227,15 +227,13 @@ contains
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
          nCells = nCellsArray( size(nCellsArray) )
-         !$omp master
          allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
-         !$omp end master
-         !$omp barrier
 
          pressureAdjustedForLandIce(:,:) = pressure(:,:)
          !If landice cavity remove land ice pressure to search for ML depth
          if ( associated(landIcePressure) ) then
-           !$omp do schedule(runtime)
+           !$omp parallel
+           !$omp do schedule(runtime) private(k)
            do iCell = 1,nCells
              do k = 1,maxLevelCell(iCell)
                 pressureAdjustedForLandIce(k,iCell) = pressureAdjustedForLandIce(k,iCell)   &
@@ -243,11 +241,14 @@ contains
              end do
            end do
            !$omp end do
+           !$omp end parallel
          end if
 
          if(config_AM_mixedLayerDepths_Tthreshold) then
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'tThreshMLD',tThreshMLD)
-            !$omp do schedule(runtime) private( k, refIndex, found_temp_mld, localVals, interp_local, temp_ref_lev)
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(refIndex, found_temp_mld, k, localvals, temp_ref_lev, dVp1, dV, mldTemp)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -288,13 +289,16 @@ contains
                    if(.not. found_temp_mld) tThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
                end do !iCell
                !$omp end do
+               !$omp end parallel
 
                if (associated(landIceMask) ) then
+                  !$omp parallel
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
                      tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                   end do
                   !$omp end do
+                  !$omp end parallel
                end if
 
           end if !end tThresh MLD search
@@ -303,7 +307,9 @@ contains
             call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
             call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
 
-            !$omp do schedule(runtime) private( k, refIndex, found_den_mld, localVals, interp_local, den_ref_lev, dV, dVp1, mldTemp)
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(refIndex, found_den_mld, k, localvals, den_ref_lev, dVp1, dV, mldTemp)
             do iCell = 1,nCells
 
                !Initialize RefIndex for cases of very shallow columns
@@ -347,13 +353,16 @@ contains
                     end if
              end do !iCell
              !$omp end do
+             !$omp end parallel
 
              if (associated(landIceMask) ) then
+               !$omp parallel
                !$omp do schedule(runtime)
                do iCell = 1, nCells
                   dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
                end do
                !$omp end do
+               !$omp end parallel
 
 
              end if
@@ -368,7 +377,9 @@ contains
 
            allocate(temperatureGradient(nVertLevels,2))
 
-           !$omp do schedule(runtime) private( k, refLevel, found_temp_mld, localVals, interp_local)
+           !$omp parallel
+           !$omp do schedule(runtime) &
+           !$omp private(temperatureGradient, found_temp_mld, k, dz, mldTemp, refLevel)
            do iCell = 1,nCells
 
             temperatureGradient(:,1) = 0.0_RKIND
@@ -411,14 +422,17 @@ contains
 
          end do !iCell
          !$omp end do
+         !$omp end parallel
 
          !normalize MLD to top of ice cavity
          if (associated(landIceMask) ) then
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
              tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            end do
            !$omp end do
+           !$omp end parallel
          end if
 
 
@@ -431,7 +445,9 @@ contains
 
              allocate(densityGradient(nVertLevels,2))
 
-           !$omp do schedule(runtime) private( k, refLevel, found_den_mld, interp_local, mldTemp, dz)
+           !$omp parallel
+           !$omp do schedule(runtime) &
+           !$omp private(densityGradient, found_den_mld, k, dz, mldTemp, refLevel)
            do iCell = 1,nCells
 
             densityGradient(:,:)=0.0_RKIND
@@ -472,22 +488,22 @@ contains
 
          end do !iCell
          !$omp end do
+         !$omp end parallel
 
          if (associated(landIceMask) ) then
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
              dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
            end do
            !$omp end do
+           !$omp end parallel
          end if
 
          deallocate(densityGradient)
        end if !if(densitygradientflag)
 
-         !$omp barrier
-         !$omp master
          deallocate(pressureAdjustedForLandIce)
-         !$omp end master
          block => block % next
       end do
 
