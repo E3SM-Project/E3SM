@@ -14,7 +14,7 @@ module drop_activation
 !
 !---------------------------------------------------------------------------------------------------- 
    use modal_aero_data, only: ntot_amode
-   use params_kind
+   use params_kind,     only: crm_rknd, r8
 
    implicit none
    private

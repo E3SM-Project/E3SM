@@ -21,7 +21,7 @@
 module accelerate_crm_mod
     use grid, only: nx, ny
     use params, only: asyncid
-    use params_kind
+    use params_kind, only: crm_rknd
     implicit none
     public
 

@@ -50,8 +50,8 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 module RNG_MT
+   use params_kind, only: r8
    implicit none
-   integer, parameter :: r8 = selected_real_kind(13)
 
    integer, private, parameter :: N      = 624      ! why are these parameters so big?
    integer, private, parameter :: N1     = 625

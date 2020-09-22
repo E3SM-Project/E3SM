@@ -3,6 +3,7 @@ module crm_module
   use openacc_utils, only: prefetch
   use perf_mod
   use task_init_mod, only: task_init
+  use params_kind, only: crm_rknd, r8
   use abcoefs_mod, only: abcoefs
   use kurant_mod, only: kurant
   use setperturb_mod, only: setperturb
@@ -24,7 +25,6 @@ module crm_module
   use damping_mod
   use ice_fall_mod
   use coriolis_mod
-  use params_kind
 
   use crm_state_module,       only: crm_state_type
   use crm_rad_module,         only: crm_rad_type
