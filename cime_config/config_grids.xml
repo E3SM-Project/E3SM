@@ -2655,14 +2655,14 @@
       <nx>407420</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.WC14to60E2r3.200714.nc</file>
-      <desc>WC14to60E2r3 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that is roughly comparable to the pop 1 degree resolution:</desc>
+      <desc>WC14to60E2r3 is a MPAS ice/ocean grid with enhanced resolution of 14km along the coast of North America, the Northern Atlantic subpolar gyre, and the Arctic Ocean. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid:</desc>
     </domain>
 
     <domain name="WC14to60E2r3_ICG">
       <nx>407420</nx>
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.WC14to60E2r3.200714.nc</file>
-      <desc>WC14to60E2r3 is a MPAS ocean grid generated with the jigsaw/compass process using the eddy closure density function that is roughly comparable to the pop 1 degree resolution. This version of initial conditions is spun-up from a G compset run:</desc>
+      <desc>WC14to60E2r3 is a MPAS ice/ocean grid with enhanced resolution of 14km along the coast of North America, the Northern Atlantic subpolar gyre, and the Arctic Ocean. The high resolution regions smoothly transition to the background resolution of the standard low resolution 60to30km grid. This version of initial conditions is spun-up from a G compset run:</desc>
     </domain>
 
     <!-- ROF (river) grids-->
