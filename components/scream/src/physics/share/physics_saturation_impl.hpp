@@ -38,8 +38,12 @@ void  Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice)
+Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& range_mask)
 {
+
+  //First check if the temperature is legitimate or not
+  check_temperature(t_atm, "MurphyKoop_svp", range_mask);
+
   //Formulas used below are from the following paper:
   //Murphy, D. M., and T. Koop (2005), Review of the vapour pressures of ice
   //and supercooled water for atmospheric applications, Quart J. Roy. Meteor.
@@ -80,9 +84,12 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice)
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::polysvp1(const Spack& t, const bool ice)
+Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask)
 {
   // REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
+
+  //First check if the temperature is legitimate or not
+  check_temperature(t, "polysvp1", range_mask);
 
   const Spack dt = max(t - sp(273.15), sp(-80));
   Spack result;
@@ -132,17 +139,14 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
   func_idx = Polysvp1 (=0) --> polysvp1 (Flatau et al. 1992)
   func_idx = MurphyKoop (=1) --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)*/
 
-  //First check if the temperature is legitimate or not
-  check_temperature(t_atm, "qv_sat", range_mask);
-
   Spack e_pres; // saturation vapor pressure [Pa]
 
   switch (func_idx){
     case Polysvp1:
-      e_pres = polysvp1(t_atm, ice);
+      e_pres = polysvp1(t_atm, ice, range_mask);
       break;
     case MurphyKoop:
-      e_pres = MurphyKoop_svp(t_atm, ice);
+      e_pres = MurphyKoop_svp(t_atm, ice, range_mask);
       break;
     default:
       EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat.");
