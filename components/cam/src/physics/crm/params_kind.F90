@@ -1,6 +1,8 @@
 
 module params_kind
+#ifndef MMF_STANDALONE
   use shr_kind_mod,  only: shr_kind_r8
+#endif
   implicit none
 
 #ifdef CRM_SINGLE_PRECISION
