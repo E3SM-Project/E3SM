@@ -2491,7 +2491,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
   esval1_1=0._rtype
   esval1_2=0._rtype
 
-  esval1_1=MurphyKoop_svp(Tl1_1, liquid)*100._rtype
+  esval1_1=MurphyKoop_svp(Tl1_1, liquid)
   lstarn1=lcond
 
   qs1=0.622_rtype*esval1_1/max(esval1_1,pval-esval1_1)
@@ -2504,7 +2504,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
     qs2=qs1
     beta2=beta1
   else
-    esval1_2=MurphyKoop_svp(Tl1_2, liquid)*100._rtype
+    esval1_2=MurphyKoop_svp(Tl1_2, liquid)
     qs2=0.622_rtype*esval1_2/max(esval1_2,pval-esval1_2)
     beta2=(rgas/rv)*(lstarn2/(rgas*Tl1_2))*(lstarn2/(cp*Tl1_2))
   endif
