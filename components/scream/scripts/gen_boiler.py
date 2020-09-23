@@ -177,7 +177,7 @@ PIECES = {
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
-        lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file, reqs hack in gen_piece
+        lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file
     ),
 }
 
@@ -384,9 +384,9 @@ def get_physics_data(physics_name, physics_data):
     return PHYSICS[physics_name][physics_data]
 
 ###############################################################################
-def expect_exists(physics, sub, piece, gb):
+def expect_exists(physics, sub, gb, piece):
 ###############################################################################
-    filepath = gb.get_path_for_piece_file(physics, sub, piece, gb)
+    filepath = gb.get_path_for_piece_file(physics, sub, piece)
     expect(filepath.exists(), "For generating {}'s {} for phyiscs {}, expected file {} to already exist".\
            format(sub, piece, physics, filepath))
     return False # File was not created
@@ -417,7 +417,6 @@ def create_template(physics, sub, piece, gb, force=False, force_arg_data=None):
     {
       // TODO
     }
-    <BLANKLINE>
     <BLANKLINE>
     } // namespace p3
     } // namespace scream
@@ -1030,9 +1029,9 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
     >>> lines = ["foo", "bar", "baz", "bag"]
     >>> check_existing_piece(lines, re.compile("foo"), re.compile("bag"))
-    (0, 3)
+    (0, 4)
     >>> check_existing_piece(lines, re.compile("foo"), re.compile("foo"))
-    (0, 0)
+    (0, 1)
     >>> check_existing_piece(lines, re.compile("zxzc"), re.compile("foo"))
     """
     begin_idx = None
@@ -1058,7 +1057,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
                "Found no ending match for begin pattern '{}' starting on line {} and searching end pattern '{}'".\
                format(begin_regex.pattern, begin_idx, end_regex.pattern))
 
-    return None if begin_idx is None else (begin_idx, end_idx)
+    return None if begin_idx is None else (begin_idx, end_idx+1)
 
 #
 # Main classes
@@ -1310,8 +1309,12 @@ class GenBoiler(object):
     ###########################################################################
     def gen_cxx_f2c_bind_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_f2c_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
+        """
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_data  = self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
         return "void {sub}_f({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
@@ -1319,20 +1322,32 @@ class GenBoiler(object):
     ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        decl = self.gen_cxx_f2c_bind_decl(phys, sub).rstrip(";")
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2)
+        {
+          // TODO
+        }
+        """
+        decl = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
         # TODO - is it possible to fill-out some or all of the implementation?
         result = \
 """{decl}
 {{
   // TODO
-}}
-""".format(sub=sub, decl=decl)
+}}""".format(sub=sub, decl=decl)
         return result
 
     ###########################################################################
     def gen_cxx_func_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_func_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2);
+        """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
@@ -1341,6 +1356,14 @@ class GenBoiler(object):
     ###########################################################################
     def gen_cxx_func_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_func_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
+        {
+          // TODO
+        }
+        """
         decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
         # I don't think any intelligent guess at an impl is possible here
@@ -1348,19 +1371,75 @@ class GenBoiler(object):
 """{decl}
 {{
   // TODO
-}}
-""".format(decl=decl)
+}}""".format(decl=decl)
         return result
 
     ###########################################################################
     def gen_cxx_bfb_unit_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_bfb_unit_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        struct TestFakeSub;
+        """
         test_struct = get_data_test_struct_name(sub)
         return "struct {};".format(test_struct)
 
     ###########################################################################
     def gen_cxx_bfb_unit_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+          static void run_bfb()
+          {
+            FakeSub f90_data[] = {
+              // TODO
+            };
+        <BLANKLINE>
+            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSub);
+        <BLANKLINE>
+            // Generate random input data
+            for (auto& d : f90_data) {
+              d.randomize();
+            }
+        <BLANKLINE>
+            // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+            // inout data is in original state
+            FakeSub cxx_data[] = {
+              // TODO
+            };
+        <BLANKLINE>
+            // Assume all data is in C layout
+        <BLANKLINE>
+            // Get data from fortran
+            for (auto& d : f90_data) {
+              // expects data in C layout
+              calc_shoc_vertflux(d);
+            }
+        <BLANKLINE>
+            // Get data from cxx
+            for (auto& d : cxx_data) {
+              d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout
+              calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+              d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout
+            }
+        <BLANKLINE>
+            // Verify BFB results, all data should be in C layout
+            for (Int i = 0; i < num_runs; ++i) {
+              FakeSub& d_f90 = f90_data[i];
+              FakeSub& d_cxx = cxx_data[i];
+              REQUIRE(f90_data.('bab1', 'Int') == cxx_data.('bab1', 'Int'));
+              REQUIRE(f90_data.('bab2', 'Int') == cxx_data.('bab2', 'Int'));
+              for (Int k = 0; k < f90_data.dim1; ++k) {
+                REQUIRE(f90_data.baz[k] == cxx_data.baz[k]);
+                REQUIRE(f90_data.ball1[k] == cxx_data.ball1[k]);
+                REQUIRE(f90_data.ball2[k] == cxx_data.ball2[k]);
+              }
+        <BLANKLINE>
+            }
+          } // run_bfb
+        """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
         has_array = has_arrays(arg_data)
@@ -1385,7 +1464,7 @@ class GenBoiler(object):
         check_scalars, check_arrays = "", ""
         i_arrays = i_reals + i_ints
         for scalar in scalars:
-            check_scalars += "    REQUIRE(f90_data.{name} == cxx_data.{name});\n".format(name=scalar)
+            check_scalars += "      REQUIRE(f90_data.{name} == cxx_data.{name});\n".format(name=scalar)
 
         for items, total_call in [(ik_reals, "total1x2()"), (ij_reals, "total1x3()"), (i_arrays, "dim1")]:
             if len(items) > 0:
@@ -1395,7 +1474,7 @@ class GenBoiler(object):
                 check_arrays += "      }\n"
 
         result = \
-"""  static void bfb()
+"""  static void run_bfb()
   {{
     {data_struct} f90_data[] = {{
       // TODO
@@ -1428,7 +1507,7 @@ class GenBoiler(object):
       {data_struct}& d_cxx = cxx_data[i];
 {check_scalars}{check_arrays}
     }}
-}} // run_bfb""".format(data_struct=data_struct,
+  }} // run_bfb""".format(data_struct=data_struct,
            gen_random=gen_random,
            c2f_transpose_code=c2f_transpose_code,
            f2c_transpose_code=f2c_transpose_code,
@@ -1440,6 +1519,25 @@ class GenBoiler(object):
     ###########################################################################
     def gen_cxx_eti(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        #include shoc_fake_sub_impl.hpp
+        <BLANKLINE>
+        namespace scream {
+        namespace shoc {
+        <BLANKLINE>
+        /*
+         * Explicit instantiation for doing fake_sub on Reals using the
+         * default device.
+         */
+        <BLANKLINE>
+        template struct Functions<Real,DefaultDevice>;
+        <BLANKLINE>
+        } // namespace shoc
+        } // namespace scream
+        <BLANKLINE>
+        """
         include_file = PIECES["cxx_func_impl"][0](phys, sub, self)
 
         result = \
@@ -1455,9 +1553,9 @@ namespace {phys} {{
 
 template struct Functions<Real,DefaultDevice>;
 
-} // namespace {phys}
-} // namespace scream
-""".format(include_file=include_file, phys=phys)
+}} // namespace {phys}
+}} // namespace scream
+""".format(sub=sub, include_file=include_file, phys=phys)
 
         return result
 
@@ -1466,9 +1564,79 @@ template struct Functions<Real,DefaultDevice>;
     #
 
     ###########################################################################
-    def gen_piece(self, phys, sub, piece):
+    def gen_piece(self, phys, sub, piece, force_arg_data=None, force_file_lines=None):
     ###########################################################################
-        """
+        r"""
+        Generate code for a specific piece for a physics+subroutine
+
+        >>> gb = GenBoiler(dry_run=True)
+        >>> force_file_lines = [
+        ... "fake_line_before_1",
+        ... "fake_line_before_2",
+        ... "void fake_sub(FakeSub& d)",
+        ... "{",
+        ... "  // bad line",
+        ... "}",
+        ... "fake_line_after_1",
+        ... "fake_line_after_2",
+        ... ]
+        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        In file shoc_functions_f90.cpp, would replace:
+        void fake_sub(FakeSub& d)
+        {
+          // bad line
+        }
+        <BLANKLINE>
+        WITH:
+        void fake_sub(FakeSub& d)
+        {
+          shoc_init(d.nlev, true);
+          d.transpose<ekat::util::TransposeDirection::c2f>();
+          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          d.transpose<ekat::util::TransposeDirection::f2c>();
+        }
+
+        >>> force_file_lines = [
+        ... "fake_line_before_1",
+        ... "fake_line_before_2",
+        ... "// end _c impls",
+        ... "fake_line_after_1",
+        ... "fake_line_after_2",
+        ... ]
+        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        In file shoc_functions_f90.cpp, at line 2, would insert:
+        void fake_sub(FakeSub& d)
+        {
+          shoc_init(d.nlev, true);
+          d.transpose<ekat::util::TransposeDirection::c2f>();
+          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          d.transpose<ekat::util::TransposeDirection::f2c>();
+        }
+
+        >>> force_file_lines[2:2] = ["void fake_sub(FakeSub& d)", "{", "}"]
+        >>> print("\n".join(force_file_lines))
+        fake_line_before_1
+        fake_line_before_2
+        void fake_sub(FakeSub& d)
+        {
+        }
+        // end _c impls
+        fake_line_after_1
+        fake_line_after_2
+
+        >>> force_file_lines = [
+        ... "fake_line_before_1",
+        ... "fake_line_before_2",
+        ... "void fake_sub_c();",
+        ... "fake_line_after_1",
+        ... "fake_line_after_2",
+        ... ]
+        >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
+        In file shoc_functions_f90.cpp, would replace:
+        void fake_sub_c();
+        <BLANKLINE>
+        WITH:
+        void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
         """
         filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex \
             = [item(phys, sub, self) for item in PIECES[piece]]
@@ -1477,9 +1645,9 @@ template struct Functions<Real,DefaultDevice>;
             # If freshly generated file, we're done
             pass
         else:
-            orig_lines = filepath.open().readlines()
+            orig_lines = force_file_lines if force_file_lines else filepath.open().read().splitlines()
             needs_rewrite = False
-            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub).splitlines()
+            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub, force_arg_data=force_arg_data).splitlines()
 
             # Check to see if piece already exists
             try:
@@ -1489,11 +1657,6 @@ template struct Functions<Real,DefaultDevice>;
 
             if existing_piece_line_range is not None:
                 # Replace existing
-
-                # the ETI files are special, entire file needs to be replaced
-                if piece == "cxx_eti":
-                    existing_piece_line_range(0, len(orig_lines))
-
                 if self._dry_run:
                     print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
                           format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
@@ -1511,7 +1674,7 @@ template struct Functions<Real,DefaultDevice>;
                        format(piece, filepath, insert_regex))
 
                 if self._dry_run:
-                    print("In file {}, at line {}, would insert:\n{}}".format(filepath, insert_line, "\n".join(gen_lines)))
+                    print("In file {}, at line {}, would insert:\n{}".format(filepath, insert_line, "\n".join(gen_lines)))
                 else:
                     orig_lines[insert_line:insert_line] = gen_lines
                     needs_rewrite = True
