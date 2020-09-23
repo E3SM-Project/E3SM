@@ -481,6 +481,7 @@ end subroutine modal_aero_calcsize_init
 subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m,cp_buf,cp_num_buf)
 
+  implicit none
    !-----------------------------------------------------------------------
    !
    ! Calculates aerosol size distribution parameters
@@ -530,7 +531,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
-   integer  :: ipair, iq, nspec, imode, klev, icol, idx
+   integer  :: iq, nspec, imode, klev, icol, idx
    integer  :: num_idx
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
@@ -558,6 +559,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: v2ncur_a(pcols,pver,ntot_amode)
    real(r8) :: v2ncur_c(pcols,pver,ntot_amode)
 
+   integer, parameter :: ipair = 1
    !---------------------------------------------------------------------
    ! "qsrflx" array:
    !----------------
@@ -573,7 +575,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
 
-   !BALLI: THINGS TO DO:
+   !BSINGH: THINGS TO DO:
    !2. In compute_dry_volume, find if _c spec for radiation diags is same as _a spec
    !3. In compute_dry_volume, see if two nested do loops for _a and _c can be combined
    !4. state_q should not be used as some specs may be missing in the diganostic calls
@@ -626,13 +628,16 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       if(.not. present(ptend)) call endrun('ptend should be present if update_mmr is true'//errmsg(__FILE__,__LINE__))
       dotend => ptend%lq
       dqdt   => ptend%q
-      dotendqqcw(:) = .false.
-      dqqcwdt(:,:,:) = 0.0_r8!balli- else put NaNs here
-      qsrflx(:,:,:,:) = 0.0_r8 !balli- else put NaNs here
+      dotendqqcw(:)   = .false.
+      dqqcwdt(:,:,:)  = 0.0_r8
+      qsrflx(:,:,:,:) = 0.0_r8
+   else
+      dqqcwdt(:,:,:)  = huge(dqqcwdt)
+      qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
    pdel     => state%pdel !balli add if for only update_mmr
-   state_q  => state%q    ! only if list_idx is 0 or no list idx balli
+   state_q  => state%q    !BSINGH - it is okay to use it for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
@@ -711,20 +716,20 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !
    if ( do_aitacc_transfer ) then
       if(present(cp_buf)) then!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, tadjinv, &
-              deltat, pdel, state_q, &
+         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
+              deltat, pdel, state_q, state, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
               drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,  &
-              ipair, dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
+              dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
               dqdt, dqqcwdt, qsrflx, cp_buf)
       else!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, tadjinv, &
-              deltat, pdel, state_q, &
+         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
+              deltat, pdel, state_q, state, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
               drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,  &
-              ipair, dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
+              dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
               dqdt, dqqcwdt, qsrflx)
       endif
    end if  !  do_aitacc_transfer
@@ -1374,12 +1379,12 @@ end subroutine update_dgn_voltonum
 
 !---------------------------------------------------------------------------------------------
 
-subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
-     deltat, pdel, state_q, &
+subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
+     deltat, pdel, state_q, state, &
      pbuf, &
      drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
      drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,      &
-     ipair, dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
+     dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
      dqdt, dqqcwdt, qsrflx, cp_buf )
 
   !-----------------------------------------------------------------------------
@@ -1387,7 +1392,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   ! sizes
   !
   !Called by: modal_aero_calcsize_sub
-  !Calls    : endrun,
+  !Calls    : endrun
   !
   !Author: Balwinder Singh based on the code by Richard Easter (RCE)
   !-----------------------------------------------------------------------------
@@ -1395,7 +1400,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   implicit none
 
   !inputs
-  integer,  intent(in) :: ncol, lchnk
+  integer,  intent(in) :: ncol, lchnk, list_idx, ipair
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: deltat
   real(r8), intent(in) :: pdel(:,:)
@@ -1404,6 +1409,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   real(r8), intent(in) :: drv_a_accsv(:,:), num_a_accsv(:,:)
   real(r8), intent(in) :: drv_c_aitsv(:,:), num_c_aitsv(:,:)
   real(r8), intent(in) :: drv_c_accsv(:,:), num_c_accsv(:,:)
+  type(physics_state), intent(in)    :: state       ! Physics state variables
   type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
   real(r8), intent(in), optional    :: cp_buf(:,:,:,:)! TO BE REMOVED
 
@@ -1414,8 +1420,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   real(r8), intent(inout) :: v2ncur_c(:,:,:)
   logical,  intent(inout), optional :: dotend(:), dotendqqcw(:)
   real(r8), intent(inout), optional :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
-
-  integer,  intent(out)   :: ipair
 
   !local
   integer  :: imode, jmode, aer_type, jsrflx, icol, klev, iq
@@ -1436,6 +1440,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
   real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
   real(r8) :: xfertend, xfertend_num(2,2)
+  real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
   real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
   logical  :: update_mmr, noxf_acc2ait(ntot_aspectype)
 
@@ -1447,7 +1452,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   if (npair_csizxf .le. 0)call endrun('npair_csizxf <= 0'//errmsg(__FILE__,__LINE__))
 
   ! check that calcsize transfer ipair=1 is aitken-->accum
-  ipair = 1
   nait = modeptr_aitken !aitken mode number
   nacc = modeptr_accum  !accumulation mode number
 
@@ -1549,19 +1553,20 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                     ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
                     dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(ispec,nacc))
                     idx = lmassptr_amode(ispec,nacc)
+                    call rad_cnst_get_aer_mmr(list_idx, nacc, ispec, 'a', state, pbuf, specmmr) !get mmr
                     drv_a_noxf = drv_a_noxf    &
-                         + max(0.0_r8,state_q(icol,klev,idx))*dummwdens
-                    if(masterproc)then
-                       call rad_cnst_get_info(list_idx_in, nacc, ispec,spec_name=spec_name)
-                       call cnst_get_ind(trim(adjustl(spec_name)), idx_cw)
-                       if(lmassptrcw_amode(ispec,nacc) == idx_cw) then
-                          write(iulog,*)'BALLI, it okay:', list_idx_in, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
-                       else
-                          write(iulog,*)'BALLI, it NOTokay:', list_idx_in, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
-                       endif
-                    endif
+                         + max(0.0_r8,specmmr(icol,klev))*dummwdens
+                    !if(masterproc)then
+                    !   call rad_cnst_get_info(list_idx, nacc, ispec,spec_name=spec_name)
+                    !   call cnst_get_ind(trim(adjustl(spec_name)), idx_cw)
+                    !   if(lmassptrcw_amode(ispec,nacc) == idx_cw) then
+                    !      write(iulog,*)'BALLI, it okay:', list_idx, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
+                    !   else
+                    !      write(iulog,*)'BALLI, it NOTokay:', list_idx, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
+                    !   endif
+                    !endif
                     fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec,nacc),lchnk)
-                    if(present(cp_buf)) then
+                    if(present(cp_buf)) then !<< remove cp_buf stuff
                        drv_c_noxf = drv_c_noxf    &
                             + max(0.0_r8,cp_buf(icol,klev,ispec,nacc))*dummwdens
                     else
