@@ -4,6 +4,11 @@ SET (NEED_LIBS shoc physics_share scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
+    shoc_impli_comp_tmpi_tests.cpp
+    shoc_impli_dp_inverse_tests.cpp
+    shoc_impli_sfc_fluxes_tests.cpp
+    shoc_impli_srf_stress_tests.cpp
+    shoc_impli_srf_tke_tests.cpp
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
     shoc_energy_update_dse_tests.cpp

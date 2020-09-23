@@ -48,13 +48,13 @@ struct SHOCComptmpiData : public PhysicsTestData {
   //Inputs
   Real dtime;
   Real *rho_zi, *dz_zi;
-  
+
   //Outputs
   Real *tmpi;
-  
+
   SHOCComptmpiData(Int shcol_, Int nlevi_, Real dtime_) :
     PhysicsTestData(shcol_, nlevi_, {&rho_zi, &dz_zi, &tmpi}), dtime(dtime_) {}
-    
+
 //  SHOC_SCALARS(SHOCComptmpiData, 2, 1, dtime);
   PTD_STD_DEF(SHOCComptmpiData, 2, 1, dtime);
   PTD_DIM_RENAME(2, shcol, nlevi);
@@ -65,13 +65,13 @@ struct SHOCComptmpiData : public PhysicsTestData {
 struct SHOCDpinverseData : public PhysicsTestData {
   //Inputs
   Real *rho_zt, *dz_zt;
-  
+
   //Outputs
   Real *rdp_zt;
-  
+
   SHOCDpinverseData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&rho_zt, &dz_zt, &rdp_zt}) {}
-    
+
   SHOC_NO_SCALAR(SHOCDpinverseData, 2);
 
 }; // SHOCDpinverseData
@@ -81,13 +81,13 @@ struct SHOCSfcfluxesData : public PhysicsTestData {
   //Inputs
   Real dtime;
   Real *rdp_zt_sfc, *rho_zi_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc;
-  
-  //Outputs
+
+  //In/Outputs
   Real *thetal, *qw, *tke;
-  
+
   SHOCSfcfluxesData(Int shcol_, Real dtime_) :
     PhysicsTestData(shcol_, {&rdp_zt_sfc, &rho_zi_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke}), dtime(dtime_) {}
-    
+
   SHOC_SCALARS(SHOCSfcfluxesData, 1, 1, dtime);
 
 }; // SHOCSfcfluxesData
@@ -96,13 +96,13 @@ struct SHOCSfcfluxesData : public PhysicsTestData {
 struct SHOCImplsrfstressData : public PhysicsTestData {
   //Inputs
   Real *rho_zi_sfc, *uw_sfc, *vw_sfc, *u_wind_sfc, *v_wind_sfc;
-  
+
   //Outputs
   Real *ksrf;
-  
+
   SHOCImplsrfstressData(Int shcol_) :
     PhysicsTestData(shcol_, {&rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf}) {}
-    
+
   SHOC_NO_SCALAR(SHOCImplsrfstressData, 1);
 
 }; // SHOCImplsrfstressData
@@ -111,13 +111,13 @@ struct SHOCImplsrfstressData : public PhysicsTestData {
 struct SHOCTkesrffluxData : public PhysicsTestData {
   //Inputs
   Real *uw_sfc, *vw_sfc;
-  
+
   //Outputs
   Real *wtke_sfc;
-  
+
   SHOCTkesrffluxData(Int shcol_) :
     PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wtke_sfc}) {}
-    
+
   SHOC_NO_SCALAR(SHOCTkesrffluxData, 1);
 
 }; // SHOCTkesrffluxData
