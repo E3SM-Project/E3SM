@@ -1,4 +1,4 @@
-from utils import expect
+from utils import expect, get_git_toplevel_dir
 
 from collections import OrderedDict
 import pathlib, re
@@ -9,9 +9,8 @@ import pathlib, re
 
 # Templates: maps piece name to generic file text
 FILE_TEMPLATES = {
-    "cxx_func_impl": lambda phys, sub, gen_code:
-"""
-#include "catch2/catch.hpp"
+    "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
+"""#include "catch2/catch.hpp"
 
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
@@ -21,42 +20,41 @@ FILE_TEMPLATES = {
 
 #include "{physics}_unit_tests_common.hpp"
 
-namespace scream {
-namespace {physics} {
-namespace unit_test {
+namespace scream {{
+namespace {physics} {{
+namespace unit_test {{
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::{test_data_struct} {
+struct UnitWrap::UnitTest<D>::{test_data_struct} {{
 
 {gen_code}
 
-}; // struct {test_data_struct}
+}};
 
-} // namespace unit_test
-} // namespace {physics}
-} // namespace scream
+}} // namespace unit_test
+}} // namespace {physics}
+}} // namespace scream
 
-namespace {
+namespace {{
 
 TEST_CASE({sub}_bfb, "[{physics}_functions]")
-{
+{{
   using TestStruct = scream::{physics}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{test_data_struct};
 
   TestStruct::run_bfb();
-}
+}}
 
-} // empty namespace
+}} // empty namespace
 """.format(physics=phys, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
 
-    "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
-"""
-#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
+    "cxx_func_impl": lambda phys, sub, gen_code:
+"""#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
 #define {phys_upper}_{sub_upper}_IMPL_HPP
 
 #include "{physics}_functions.hpp" // for ETI only but harmless for GPU
 
-namespace scream {
-namespace {physics} {
+namespace scream {{
+namespace {physics} {{
 
 /*
  * Implementation of {physics} {sub}. Clients should NOT
@@ -65,11 +63,11 @@ namespace {physics} {
 
 {gen_code}
 
-} // namespace p3
-} // namespace scream
+}} // namespace p3
+}} // namespace scream
 
 #endif
-""".format(physics=phys, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+""".format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
 
     "cxx_eti": lambda phys, sub, gen_code: gen_code
 }
@@ -82,104 +80,104 @@ PIECES = {
         lambda phys, sub, gb: "{}_iso_c.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
         lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)), # put at end of module
-        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"),
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),
+        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
+        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),   # sub_c end
     ),
 
     "f90_f2c_bind"  : (
         lambda phys, sub, gb: "{}_iso_f.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
         lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_f".format(phys)), # put at end of module
-        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"),
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),
+        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
+        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
     ),
 
     "cxx_c2f_bind_decl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"),
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
+        lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
     ),
 
     "cxx_c2f_glue_decl"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
         lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
-        lambda phys, sub, gb: re.compile(r".*"),
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data) decl
+        lambda phys, sub, gb: re.compile(r".*;\s*"),             # ;
     ),
 
     "cxx_c2f_glue_impl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
-        lambda phys, sub, gb: re.compile(r"^[}]\s*$"),
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
     ),
 
     "cxx_c2f_data"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
-        lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)),
-        lambda phys, sub, gb: re.compile(r".*(namespace|struct|// Glue)"),
+        lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
+        lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True),             # terminating };
     ),
 
     "cxx_f2c_bind_decl"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
+        lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
     ),
 
     "cxx_f2c_bind_impl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end {}".format(sub + "_f")), # reqs special comment
+        lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
     ),
 
     "cxx_func_decl"  : (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_hpp"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"),
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx decl
+        lambda phys, sub, gb: re.compile(r".*;\s*$"),            # ;
     ),
 
     "cxx_func_impl" : (
         lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
-        lambda phys, sub, gb: re.compile(r".*{\s*$"),
+        lambda phys, sub, gb: get_namespace_close_regex(phys),   # insert at end of namespace
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx begin
+        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
     ),
 
     "cxx_bfb_unit_decl" : (
         lambda phys, sub, gb: "tests/{}_unit_tests_common.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True),
-        lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)),
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
+        lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
+        lambda phys, sub, gb: re.compile(r".*;\s*$"), # end of struct decl
     ),
 
     "cxx_bfb_unit_impl"  : (
         lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct {}".format(get_data_test_struct_name(sub))),
-        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, at_line_start=True), # insert of end of struct
+        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb", static=True),  # run_bfb
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"), # } // run_bfb # reqs special comment
     ),
 
     "cxx_eti" : (
         lambda phys, sub, gb: "{}_{}.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
-        lambda phys, sub, gb: re.compile(".*"),
-        lambda phys, sub, gb: re.compile(".*"),
-        lambda phys, sub, gb: get_namespace_close_regex("scream"),
+        lambda phys, sub, gb: re.compile(".*"), # insert at top of file
+        lambda phys, sub, gb: re.compile(".*"), # start at top of file
+        lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file, reqs hack in gen_piece
     ),
 }
 
@@ -199,6 +197,27 @@ PHYSICS = {
     ),
 }
 
+# A good set of arg data for unit testing
+UT_ARG_DATA = [
+    ("foo1", "real", "in", ("shcol",)),
+    ("foo2", "real", "in", ("shcol",)),
+    ("bar1", "real", "in", ("shcol","nlev")),
+    ("bar2", "real", "in", ("shcol","nlev")),
+    ("bak1", "real", "in", ("shcol","nlevi")),
+    ("bak2", "real", "in", ("shcol","nlevi")),
+    ("gag", "real", "in", None),
+    ("baz", "real", "inout", ("shcol",)),
+    ("bag", "integer", "in", ("shcol",)),
+    ("bab1", "integer", "out", None),
+    ("bab2", "integer", "out", None),
+    ("val", "logical", "in", None),
+    ("shcol", "integer", "in", None),
+    ("nlev", "integer", "in", None),
+    ("nlevi", "integer", "in", None),
+    ("ball1", "integer", "out", ("shcol",)),
+    ("ball2", "integer", "out", ("shcol",)),
+]
+
 #
 # Free functions
 #
@@ -206,48 +225,142 @@ PHYSICS = {
 ###############################################################################
 def get_subroutine_begin_regex(name):
 ###############################################################################
+    """
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub("))
+    True
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub_2("))
+    False
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ("))
+    True
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("  subroutine  fake_sub ( one, two )"))
+    True
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("! subroutine fake_sub("))
+    False
+    >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub"))
+    False
+    """
     subroutine_begin_regex_str = r"^\s*subroutine\s+{}\s*[(]".format(name)
     return re.compile(subroutine_begin_regex_str)
 
 ###############################################################################
 def get_subroutine_end_regex(name):
 ###############################################################################
+    """
+    >>> bool(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub"))
+    True
+    >>> bool(get_subroutine_end_regex("fake_sub").match("end subroutine fake_sub_2"))
+    False
+    >>> bool(get_subroutine_end_regex("fake_sub").match("  end  subroutine  fake_sub "))
+    True
+    >>> bool(get_subroutine_end_regex("fake_sub").match("!end  subroutine  fake_sub "))
+    False
+    """
     subroutine_end_regex_str = r"^\s*end\s+subroutine\s+{}\s*$".format(name)
     return re.compile(subroutine_end_regex_str)
 
 ###############################################################################
-def get_cxx_function_begin_regex(name):
+def get_cxx_function_begin_regex(name, static=False):
 ###############################################################################
-    function_begin_regex_str = r"^\s*void\s+{}\s*[(]".format(name)
+    """
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub("))
+    True
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub_2("))
+    False
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ("))
+    True
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("  void  fake_sub ( one, two )"))
+    True
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("// void fake_sub("))
+    False
+    >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub"))
+    False
+    >>> bool(get_cxx_function_begin_regex("fake_sub", static=True).match("static void fake_sub("))
+    True
+    """
+    static_regex_str = r"static\s+" if static else ""
+    function_begin_regex_str = r"^\s*{}void\s+{}\s*[(]".format(static_regex_str, name)
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
-def get_cxx_close_block_regex(semicolon=False, comment=None):
+def get_cxx_close_block_regex(semicolon=False, comment=None, at_line_start=False):
 ###############################################################################
+    """
+    >>> bool(get_cxx_close_block_regex().match("}"))
+    True
+    >>> bool(get_cxx_close_block_regex(at_line_start=True).match("}"))
+    True
+    >>> bool(get_cxx_close_block_regex().match(" } "))
+    True
+    >>> bool(get_cxx_close_block_regex(at_line_start=True).match(" }; "))
+    False
+    >>> bool(get_cxx_close_block_regex(at_line_start=True).match(" } "))
+    False
+    >>> bool(get_cxx_close_block_regex(comment="hi").match(" } "))
+    False
+    >>> bool(get_cxx_close_block_regex(comment="hi").match(" } // hi"))
+    True
+    >>> bool(get_cxx_close_block_regex(comment="hi").match("} // hi  "))
+    True
+    >>> bool(get_cxx_close_block_regex(semicolon=True).match(" } "))
+    False
+    >>> bool(get_cxx_close_block_regex(semicolon=True).match(" } ; "))
+    True
+    >>> bool(get_cxx_close_block_regex(semicolon=True).match("};"))
+    True
+    >>> bool(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi"))
+    True
+    >>> bool(get_cxx_close_block_regex(semicolon=True, comment="hi", at_line_start=True).match("};  // hi there"))
+    False
+    """
     semicolon_regex_str = r"\s*;" if semicolon else ""
+    line_start_regex_str = "" if at_line_start else r"\s*"
     comment_regex_str   = r"\s*//\s*{}".format(comment) if comment else ""
-    close_block_regex_str = re.compile(r"^\s*}{}{}\s*$".format(semicolon_regex_str, comment_regex_str))
+    close_block_regex_str = re.compile(r"^{}}}{}{}\s*$".format(line_start_regex_str, semicolon_regex_str, comment_regex_str))
     return re.compile(close_block_regex_str)
 
 ###############################################################################
 def get_namespace_close_regex(namespace):
 ###############################################################################
+    """
+    >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo"))
+    True
+    >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo_bar"))
+    False
+    """
     return get_cxx_close_block_regex(comment=r"namespace\s+{}".format(namespace))
 
 ###############################################################################
 def get_cxx_struct_begin_regex(struct):
 ###############################################################################
+    """
+    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct Foo {"))
+    True
+    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct Foo"))
+    True
+    >>> bool(get_cxx_struct_begin_regex("Foo").match("struct FooBar"))
+    False
+    """
     struct_regex_str = r"^\s*struct\s+{}([\W]|$)".format(struct)
     return re.compile(struct_regex_str)
 
 ###############################################################################
 def get_data_struct_name(sub):
 ###############################################################################
+    """
+    >>> get_data_struct_name("my_sub_name")
+    'MySubName'
+    >>> get_data_struct_name("sub")
+    'Sub'
+    """
     return "".join([item.capitalize() for item in sub.split("_")])
 
 ###############################################################################
 def get_data_test_struct_name(sub):
 ###############################################################################
+    """
+    >>> get_data_test_struct_name("my_sub_name")
+    'TestMySubName'
+    """
     return "Test{}".format(get_data_struct_name(sub))
 
 ###############################################################################
@@ -261,9 +374,9 @@ def get_supported_physics():
     return PHYSICS.keys()
 
 ###############################################################################
-def get_piece_data(physics, sub, piece_name, piece_data):
+def get_piece_data(physics, sub, piece_name, piece_data, gb):
 ###############################################################################
-    return PIECES[piece_name][piece_data](physics, sub)
+    return PIECES[piece_name][piece_data](physics, sub, gb)
 
 ###############################################################################
 def get_physics_data(physics_name, physics_data):
@@ -279,20 +392,49 @@ def expect_exists(physics, sub, piece, gb):
     return False # File was not created
 
 ###############################################################################
-def create_template(physics, sub, piece, gb):
+def create_template(physics, sub, piece, gb, force=False, force_arg_data=None):
 ###############################################################################
     """
     Create a file based on a template if it doesn't exist. Return True if a file was created.
+
+    >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
+    >>> create_template("shoc", "linear_interp", "cxx_func_impl", gb, force=True, force_arg_data=UT_ARG_DATA)
+    Would create file /home/jgfouca/scream/components/scream/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
+    #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
+    #define SHOC_LINEAR_INTERP_IMPL_HPP
+    <BLANKLINE>
+    #include "shoc_functions.hpp" // for ETI only but harmless for GPU
+    <BLANKLINE>
+    namespace scream {
+    namespace shoc {
+    <BLANKLINE>
+    /*
+     * Implementation of shoc linear_interp. Clients should NOT
+     * #include this file, but include shoc_functions.hpp instead.
+     */
+    <BLANKLINE>
+    void linear_interp(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
+    {
+      // TODO
+    }
+    <BLANKLINE>
+    <BLANKLINE>
+    } // namespace p3
+    } // namespace scream
+    <BLANKLINE>
+    #endif
+    <BLANKLINE>
+    True
     """
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
-    if not filepath.exists():
+    if not filepath.exists() or force:
         expect(piece in FILE_TEMPLATES,
                "{} does not exist and there is no template for generating files for piece {}".format(filepath, piece))
 
-        gen_code = getattr(gb, "gen_{}".format(piece))(physics, sub)
+        gen_code = getattr(gb, "gen_{}".format(piece))(physics, sub, force_arg_data=force_arg_data)
         contents = FILE_TEMPLATES[piece](physics, sub, gen_code)
         if gb.dry_run():
-            print("Would create file {} with contents:\n\n{}".format(filepath, contents))
+            print("Would create file {} with contents:\n{}".format(filepath, contents))
         else:
             with filepath.open("w") as fd:
                 fd.write(contents)
@@ -670,24 +812,17 @@ def gen_arg_f90_decls(arg_data):
     r"""
     Generate f90 argument declarations, will attempt to group these together if possible.
 
-    >>> arg_data = [
-    ... ("foo1", "real", "in", ("100",)),
-    ... ("foo2", "real", "in", ("100",)),
-    ... ("bar1", "real", "in", ("100","50")),
-    ... ("bar2", "real", "in", ("100","50")),
-    ... ("baz", "real", "inout", ("100",)),
-    ... ("bag", "integer", "in", ("100",)),
-    ... ("bab1", "integer", "out", None),
-    ... ("bab2", "integer", "out", None),
-    ... ("val", "logical", "in", None),
-    ... ]
-    >>> print("\n".join(gen_arg_f90_decls(arg_data)))
-    real(kind=c_real) , intent(in), dimension(100) :: foo1, foo2
-    real(kind=c_real) , intent(in), dimension(100, 50) :: bar1, bar2
-    real(kind=c_real) , intent(inout), dimension(100) :: baz
-    integer(kind=c_int) , intent(in), dimension(100) :: bag
+    >>> print("\n".join(gen_arg_f90_decls(UT_ARG_DATA)))
+    real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
+    real(kind=c_real) , value, intent(in) :: gag
+    real(kind=c_real) , intent(inout), dimension(shcol) :: baz
+    integer(kind=c_int) , intent(in), dimension(shcol) :: bag
     integer(kind=c_int) , intent(out) :: bab1, bab2
     logical(kind=c_bool) , value, intent(in) :: val
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
     """
     metadata = OrderedDict()
     for name, argtype, intent, dims in arg_data:
@@ -715,30 +850,20 @@ def gen_struct_members(arg_data):
     r"""
     Gen cxx code for data struct members
 
-    >>> arg_data = [
-    ... ("foo1", "real", "in", ("100",)),
-    ... ("foo2", "real", "in", ("100",)),
-    ... ("bar1", "real", "in", ("100","50")),
-    ... ("bar2", "real", "in", ("100","50")),
-    ... ("gag", "real", "in", None),
-    ... ("baz", "real", "inout", ("100",)),
-    ... ("bag", "integer", "in", ("100",)),
-    ... ("bab1", "integer", "out", None),
-    ... ("bab2", "integer", "out", None),
-    ... ("val", "logical", "in", None),
-    ... ]
-    >>> print("\n".join(gen_struct_members(arg_data)))
+    >>> print("\n".join(gen_struct_members(UT_ARG_DATA)))
     // Inputs
-    Real *foo1, *foo2, *bar1, *bar2;
+    Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2;
     Real gag;
     Int *bag;
     bool val;
+    Int shcol, nlev, nlevi;
     <BLANKLINE>
     // Inputs/Outputs
     Real *baz;
     <BLANKLINE>
     // Outputs
     Int bab1, bab2;
+    Int *ball1, *ball2;
     <BLANKLINE>
     """
     metadata = {} # intent -> (type, is_ptr) -> names
@@ -767,25 +892,8 @@ def group_data(arg_data, filter_out_intent=None):
     """
     Given data, return (i_dim, k_dim, j_dim, [scalars], [ik_reals], [ij_reals], [i_reals], [i_ints])
 
-    >>> arg_data = [
-    ... ("foo1", "real", "in", ("shcol",)),
-    ... ("foo2", "real", "in", ("shcol",)),
-    ... ("bar1", "real", "in", ("shcol","nlev")),
-    ... ("bar2", "real", "in", ("shcol","nlev")),
-    ... ("bak1", "real", "in", ("shcol","nlevi")),
-    ... ("bak2", "real", "in", ("shcol","nlevi")),
-    ... ("gag", "real", "in", None),
-    ... ("baz", "real", "inout", ("shcol",)),
-    ... ("bag", "integer", "in", ("shcol",)),
-    ... ("bab1", "integer", "out", None),
-    ... ("bab2", "integer", "out", None),
-    ... ("val", "logical", "in", None),
-    ... ("shcol", "integer", "in", None),
-    ... ("nlev", "integer", "in", None),
-    ... ("nlevi", "integer", "in", None),
-    ... ]
-    >>> group_data(arg_data)
-    ('shcol', 'nlev', 'nlevi', [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')], ['bar1', 'bar2'], ['bak1', 'bak2'], ['foo1', 'foo2', 'baz'], ['bag'])
+    >>> group_data(UT_ARG_DATA)
+    ('shcol', 'nlev', 'nlevi', [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')], ['bar1', 'bar2'], ['bak1', 'bak2'], ['foo1', 'foo2', 'baz'], ['bag', 'ball1', 'ball2'])
     """
     i_ints   = []
     i_reals  = []
@@ -856,26 +964,9 @@ def gen_struct_api(physics, struct_name, arg_data):
     r"""
     Given data, generate code for data struct api
 
-    >>> arg_data = [
-    ... ("foo1", "real", "in", ("shcol",)),
-    ... ("foo2", "real", "in", ("shcol",)),
-    ... ("bar1", "real", "in", ("shcol","nlev")),
-    ... ("bar2", "real", "in", ("shcol","nlev")),
-    ... ("bak1", "real", "in", ("shcol","nlevi")),
-    ... ("bak2", "real", "in", ("shcol","nlevi")),
-    ... ("gag", "real", "in", None),
-    ... ("baz", "real", "inout", ("shcol",)),
-    ... ("bag", "integer", "in", ("shcol",)),
-    ... ("bab1", "integer", "out", None),
-    ... ("bab2", "integer", "out", None),
-    ... ("val", "logical", "in", None),
-    ... ("shcol", "integer", "in", None),
-    ... ("nlev", "integer", "in", None),
-    ... ("nlevi", "integer", "in", None),
-    ... ]
-    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", arg_data)))
+    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)))
     DataSubName(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-      PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+      PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag, &ball1, &ball2}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
     <BLANKLINE>
     SHOC_SCALARS(DataSubName, 3, 4, gag, bab1, bab2, val)
     """
@@ -914,6 +1005,15 @@ def gen_struct_api(physics, struct_name, arg_data):
 ###############################################################################
 def find_insertion(lines, insert_regex):
 ###############################################################################
+    """
+    Find the index that matches insert_regex. If not found, return None
+
+    >>> lines = ["foo", "bar", "baz", "bag"]
+    >>> find_insertion(lines, re.compile("baz"))
+    2
+    >>> find_insertion(lines, re.compile("ball"))
+    >>>
+    """
     for idx, line in enumerate(lines):
         has_match = bool(insert_regex.match(line))
         if has_match:
@@ -924,6 +1024,17 @@ def find_insertion(lines, insert_regex):
 ###############################################################################
 def check_existing_piece(lines, begin_regex, end_regex):
 ###############################################################################
+    """
+    Check to see if an existing block/piece of code existing in a file, given its
+    starting and ending regex. Returns None if not found
+
+    >>> lines = ["foo", "bar", "baz", "bag"]
+    >>> check_existing_piece(lines, re.compile("foo"), re.compile("bag"))
+    (0, 3)
+    >>> check_existing_piece(lines, re.compile("foo"), re.compile("foo"))
+    (0, 0)
+    >>> check_existing_piece(lines, re.compile("zxzc"), re.compile("foo"))
+    """
     begin_idx = None
     end_idx   = None
 
@@ -936,8 +1047,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
                    "Found multiple begin matches for pattern '{}' before end pattern '{}' was found".\
                    format(begin_regex.pattern, end_regex.pattern))
 
-            if begin_idx is not None:
-                begin_idx = idx
+            begin_idx = idx
 
         if end_match and begin_idx is not None:
             end_idx = idx
@@ -959,8 +1069,27 @@ class GenBoiler(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, subs, pieces, physics, overwrite, kernel, source_repo, target_repo, dry_run):
+    def __init__(self,
+                 subs        = None,
+                 pieces      = get_supported_pieces(),
+                 physics     = get_supported_physics(),
+                 overwrite   = False,
+                 kernel      = False,
+                 source_repo = get_git_toplevel_dir(),
+                 target_repo = get_git_toplevel_dir(),
+                 dry_run     = False):
     ###########################################################################
+        expect(source_repo is not None, "Must either run from a valid repo or provide a --source-repo")
+        expect(target_repo is not None, "Must either run from a valid repo or provide a --target-repo")
+
+        normalized_source_repo = get_git_toplevel_dir(repo=source_repo)
+        expect(normalized_source_repo is not None, "source repo {} is not a valid repo".format(source_repo))
+        source_repo = normalized_source_repo
+
+        normalized_target_repo = get_git_toplevel_dir(repo=target_repo)
+        expect(normalized_target_repo is not None, "target repo {} is not a valid repo".format(target_repo))
+        target_repo = normalized_target_repo
+
         self._subs        = subs
         self._pieces      = pieces
         self._physics     = physics
@@ -970,6 +1099,11 @@ class GenBoiler(object):
         self._target_repo = pathlib.Path(target_repo).resolve()
         self._dry_run     = dry_run
         self._db          = {}
+
+        # TODO: support subroutine rename?
+
+        if not self._pieces:
+            self._pieces = get_supported_pieces()
 
     ###########################################################################
     def _get_db(self, phys):
@@ -999,61 +1133,37 @@ class GenBoiler(object):
     def get_path_for_piece_file(self, physics, sub, piece):
     ###############################################################################
         root_dir = pathlib.Path(get_physics_data(physics, CXX_ROOT))
-        filepath = self._target_repo / root_dir / get_piece_data(physics, sub, piece, FILEPATH)
+        filepath = self._target_repo / root_dir / get_piece_data(physics, sub, piece, FILEPATH, self)
         return filepath
 
-    ###########################################################################
-    def gen_piece(self, phys, sub, piece):
-    ###########################################################################
-        filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex \
-            = [item(phys, sub, self) for item in PIECES[piece]]
-
-        if was_filegen:
-            # If freshly generated file, we're done
-            pass
-        else:
-            orig_lines = filepath.open().readlines()
-            needs_rewrite = False
-            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub).splitlines()
-
-            # Check to see if piece already exists
-            try:
-                existing_piece_line_range = check_existing_piece(orig_lines, self_begin_regex, self_end_regex)
-            except Exception as e:
-                expect(False, "Problem parsing file {} for existing piece {}: {}".format(filepath, piece, e))
-
-            if existing_piece_line_range is not None:
-                # Replace existing
-                if self._dry_run:
-                    print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
-                          format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
-                elif not self._overwrite:
-                    print("Already detected piece {} for subroutine {} in file {}, code:\n{}".\
-                          format(piece, sub, filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)])))
-                else:
-                    orig_lines[slice(*existing_piece_line_range)] = gen_lines
-                    needs_rewrite = True
-            else:
-                # Look for place to insert and insert
-                insert_line = find_insertion(orig_lines, insert_regex)
-                expect(insert_line is not None,
-                       "Could not find place to insert generated code for {} in file {} based on regex {}".\
-                       format(piece, filepath, insert_regex))
-
-                if self._dry_run:
-                    print("In file {}, at line {}, would insert:\n{}}".format(filepath, insert_line, "\n".join(gen_lines)))
-                else:
-                    orig_lines[insert_line:insert_line] = gen_lines
-                    needs_rewrite = True
-
-            if needs_rewrite:
-                with filepath.open("w") as fd:
-                    fd.writelines(orig_lines)
+    #
+    # Individual piece generator methods
+    #
 
     ###########################################################################
-    def gen_f90_c2f_bind(self, phys, sub):
+    def gen_f90_c2f_bind(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data = self._get_arg_data(phys, sub)
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_f90_c2f_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+          subroutine fake_sub_c(foo1, foo2, bar1, bar2, bak1, bak2, gag, baz, bag, bab1, bab2, val, shcol, nlev, nlevi, ball1, ball2) bind(C)
+            use shoc, only : fake_sub
+        <BLANKLINE>
+            real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
+            real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
+            real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
+            real(kind=c_real) , value, intent(in) :: gag
+            real(kind=c_real) , intent(inout), dimension(shcol) :: baz
+            integer(kind=c_int) , intent(in), dimension(shcol) :: bag
+            integer(kind=c_int) , intent(out) :: bab1, bab2
+            logical(kind=c_bool) , value, intent(in) :: val
+            integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+            integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
+        <BLANKLINE>
+            call fake_sub(foo1, foo2, bar1, bar2, bak1, bak2, gag, baz, bag, bab1, bab2, val, shcol, nlev, nlevi, ball1, ball2)
+          end subroutine fake_sub_c
+        """
+        arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
         arg_decls = gen_arg_f90_decls(arg_data)
         phys_mod = "micro_p3" if phys == "p3" else phys
@@ -1064,15 +1174,32 @@ class GenBoiler(object):
     {arg_decls}
 
     call {sub}({arg_names})
-  end subroutine {sub}_c
-""".format(sub=sub, arg_names=arg_names, phys_mod=phys_mod, arg_decls="\n    ".join(arg_decls))
+  end subroutine {sub}_c""".format(sub=sub, arg_names=arg_names, phys_mod=phys_mod, arg_decls="\n    ".join(arg_decls))
 
         return result
 
     ###########################################################################
-    def gen_f90_f2c_bind(self, phys, sub):
+    def gen_f90_f2c_bind(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data = self._get_arg_data(phys, sub)
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_f90_f2c_bind("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+          subroutine fake_sub_f(foo1, foo2, bar1, bar2, bak1, bak2, gag, baz, bag, bab1, bab2, val, shcol, nlev, nlevi, ball1, ball2) bind(C)
+            use iso_c_binding
+        <BLANKLINE>
+            real(kind=c_real) , intent(in), dimension(shcol) :: foo1, foo2
+            real(kind=c_real) , intent(in), dimension(shcol, nlev) :: bar1, bar2
+            real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: bak1, bak2
+            real(kind=c_real) , value, intent(in) :: gag
+            real(kind=c_real) , intent(inout), dimension(shcol) :: baz
+            integer(kind=c_int) , intent(in), dimension(shcol) :: bag
+            integer(kind=c_int) , intent(out) :: bab1, bab2
+            logical(kind=c_bool) , value, intent(in) :: val
+            integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+            integer(kind=c_int) , intent(out), dimension(shcol) :: ball1, ball2
+          end subroutine fake_sub_f
+        """
+        arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_names = ", ".join([item[ARG_NAME] for item in arg_data])
         arg_decls = gen_arg_f90_decls(arg_data)
         result = \
@@ -1080,34 +1207,55 @@ class GenBoiler(object):
     use iso_c_binding
 
     {arg_decls}
-  end subroutine {sub}_f
-""".format(sub=sub, arg_names=arg_names, arg_decls="\n    ".join(arg_decls))
+  end subroutine {sub}_f""".format(sub=sub, arg_names=arg_names, arg_decls="\n    ".join(arg_decls))
 
         return result
 
     ###########################################################################
-    def gen_cxx_c2f_bind_decl(self, phys, sub):
+    def gen_cxx_c2f_bind_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data  = self._get_arg_data(phys, sub)
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_c2f_bind_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
+        <BLANKLINE>
+        """
+        arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
         result = "void {sub}_c({arg_sig});\n".format(sub=sub, arg_sig=", ".join(arg_decls))
         return result
 
     ###########################################################################
-    def gen_cxx_c2f_glue_decl(self, phys, sub):
+    def gen_cxx_c2f_glue_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_c2f_glue_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub(FakeSub& d);
+        """
         struct_name      = get_data_struct_name(sub)
         result = "void {sub}({struct_name}& d);".format(sub=sub, struct_name=struct_name)
         return result
 
     ###########################################################################
-    def gen_cxx_c2f_glue_impl(self, phys, sub):
+    def gen_cxx_c2f_glue_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data         = self._get_arg_data(phys, sub)
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        void fake_sub(FakeSub& d)
+        {
+          shoc_init(d.nlev, true);
+          d.transpose<ekat::util::TransposeDirection::c2f>();
+          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          d.transpose<ekat::util::TransposeDirection::f2c>();
+        }
+        """
+        arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_data_args    = gen_cxx_data_args(arg_data)
         need_transpose   = needs_transpose(arg_data)
-        transpose_code_1 = "\n  d.transpose<ekat::util::TransposeDirection::c2f>();\n" if need_transpose else ""
-        transpose_code_2 = "\n  d.transpose<ekat::util::TransposeDirection::f2c>();\n" if need_transpose else ""
+        transpose_code_1 = "\n  d.transpose<ekat::util::TransposeDirection::c2f>();" if need_transpose else ""
+        transpose_code_2 = "\n  d.transpose<ekat::util::TransposeDirection::f2c>();" if need_transpose else ""
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE)
 
@@ -1116,38 +1264,60 @@ class GenBoiler(object):
 {{
   {init_code}{transpose_code_1}
   {sub}_c({arg_data_args});{transpose_code_2}
-}}
-""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
+}}""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
         return result
 
     ###########################################################################
-    def gen_cxx_c2f_data(self, phys, sub):
+    def gen_cxx_c2f_data(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data         = self._get_arg_data(phys, sub)
-        struct_members   = gen_struct_members(arg_data)
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_c2f_data("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        struct FakeSub : public PhysicsTestData {
+          // Inputs
+          Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2;
+          Real gag;
+          Int *bag;
+          bool val;
+          Int shcol, nlev, nlevi;
+        <BLANKLINE>
+          // Inputs/Outputs
+          Real *baz;
+        <BLANKLINE>
+          // Outputs
+          Int bab1, bab2;
+          Int *ball1, *ball2;
+        <BLANKLINE>
+          FakeSub(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+            PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag, &ball1, &ball2}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+        <BLANKLINE>
+          SHOC_SCALARS(FakeSub, 3, 4, gag, bab1, bab2, val)
+        };
+        """
+        arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
+        struct_members   = "\n  ".join(gen_struct_members(arg_data))
         any_arrays       = has_arrays(arg_data)
         struct_name      = get_data_struct_name(sub)
         inheritance      = " : public PhysicsTestData" if any_arrays else ""
-        api              = gen_struct_api(phys, struct_name, arg_data) if any_arrays else ""
+        api              = "\n  " + "\n  ".join(gen_struct_api(phys, struct_name, arg_data) if any_arrays else "")
 
         result = \
 """struct {struct_name}{inheritance} {{
-{struct_members}{api}
-}};
-
-""".format(struct_name=struct_name, inheritance=inheritance, struct_members=struct_members, api="\n  ".join(api))
+  {struct_members}{api}
+}};""".format(struct_name=struct_name, inheritance=inheritance, struct_members=struct_members, api=api)
         return result
 
     ###########################################################################
-    def gen_cxx_f2c_bind_decl(self, phys, sub):
+    def gen_cxx_f2c_bind_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
+        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_data  = self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
         return "void {sub}_f({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
 
     ###########################################################################
-    def gen_cxx_f2c_bind_impl(self, phys, sub):
+    def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
         decl = self.gen_cxx_f2c_bind_decl(phys, sub).rstrip(";")
 
@@ -1156,22 +1326,22 @@ class GenBoiler(object):
 """{decl}
 {{
   // TODO
-}} // end {sub}_f
+}}
 """.format(sub=sub, decl=decl)
         return result
 
     ###########################################################################
-    def gen_cxx_func_decl(self, phys, sub):
+    def gen_cxx_func_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data = self._get_arg_data(phys, sub)
+        arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
         return "void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
 
     ###########################################################################
-    def gen_cxx_func_impl(self, phys, sub):
+    def gen_cxx_func_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        decl = self.gen_cxx_func_decl(phys, sub).rstrip(";")
+        decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
         # I don't think any intelligent guess at an impl is possible here
         result = \
@@ -1183,15 +1353,15 @@ class GenBoiler(object):
         return result
 
     ###########################################################################
-    def gen_cxx_bfb_unit_decl(self, phys, sub):
+    def gen_cxx_bfb_unit_decl(self, phys, sub, force_arg_data=None):
     ###########################################################################
         test_struct = get_data_test_struct_name(sub)
         return "struct {};".format(test_struct)
 
     ###########################################################################
-    def gen_cxx_bfb_unit_impl(self, phys, sub):
+    def gen_cxx_bfb_unit_impl(self, phys, sub, force_arg_data=None):
     ###########################################################################
-        arg_data = self._get_arg_data(phys, sub)
+        arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
         has_array = has_arrays(arg_data)
         need_transpose = needs_transpose(arg_data)
@@ -1258,8 +1428,7 @@ class GenBoiler(object):
       {data_struct}& d_cxx = cxx_data[i];
 {check_scalars}{check_arrays}
     }}
-}}
-""".format(data_struct=data_struct,
+}} // run_bfb""".format(data_struct=data_struct,
            gen_random=gen_random,
            c2f_transpose_code=c2f_transpose_code,
            f2c_transpose_code=f2c_transpose_code,
@@ -1269,7 +1438,7 @@ class GenBoiler(object):
         return result
 
     ###########################################################################
-    def gen_cxx_eti(self, phys, sub):
+    def gen_cxx_eti(self, phys, sub, force_arg_data=None):
     ###########################################################################
         include_file = PIECES["cxx_func_impl"][0](phys, sub, self)
 
@@ -1291,6 +1460,65 @@ template struct Functions<Real,DefaultDevice>;
 """.format(include_file=include_file, phys=phys)
 
         return result
+
+    #
+    # Main methods
+    #
+
+    ###########################################################################
+    def gen_piece(self, phys, sub, piece):
+    ###########################################################################
+        """
+        """
+        filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex \
+            = [item(phys, sub, self) for item in PIECES[piece]]
+
+        if was_filegen:
+            # If freshly generated file, we're done
+            pass
+        else:
+            orig_lines = filepath.open().readlines()
+            needs_rewrite = False
+            gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub).splitlines()
+
+            # Check to see if piece already exists
+            try:
+                existing_piece_line_range = check_existing_piece(orig_lines, self_begin_regex, self_end_regex)
+            except Exception as e:
+                expect(False, "Problem parsing file {} for existing piece {}: {}".format(filepath, piece, e))
+
+            if existing_piece_line_range is not None:
+                # Replace existing
+
+                # the ETI files are special, entire file needs to be replaced
+                if piece == "cxx_eti":
+                    existing_piece_line_range(0, len(orig_lines))
+
+                if self._dry_run:
+                    print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
+                          format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
+                elif not self._overwrite:
+                    print("Already detected piece {} for subroutine {} in file {}, code:\n{}".\
+                          format(piece, sub, filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)])))
+                else:
+                    orig_lines[slice(*existing_piece_line_range)] = gen_lines
+                    needs_rewrite = True
+            else:
+                # Look for place to insert and insert
+                insert_line = find_insertion(orig_lines, insert_regex)
+                expect(insert_line is not None,
+                       "Could not find place to insert generated code for {} in file {} based on regex {}".\
+                       format(piece, filepath, insert_regex))
+
+                if self._dry_run:
+                    print("In file {}, at line {}, would insert:\n{}}".format(filepath, insert_line, "\n".join(gen_lines)))
+                else:
+                    orig_lines[insert_line:insert_line] = gen_lines
+                    needs_rewrite = True
+
+            if needs_rewrite:
+                with filepath.open("w") as fd:
+                    fd.writelines(orig_lines)
 
     ###########################################################################
     def gen_boiler(self):

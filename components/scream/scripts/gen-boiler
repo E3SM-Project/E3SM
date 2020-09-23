@@ -49,14 +49,15 @@ OR
                         help="fortran subroutine name[s]")
 
     parser.add_argument("-p", "--piece", dest="pieces", default=[], action="append", choices=get_supported_pieces(),
-                        help="Select which pieces of boilerplate to generate")
+                        help="Select which pieces of boilerplate to generate. Default will generate ALL pieces.")
 
     parser.add_argument("--physics", default=[], action="append", choices=get_supported_physics(),
                         help=\
 """
 Limit generation to a specific set of physics. This should only be
 needed to disambiguate cases where a subroutine has the same name in
-multiple physics. This may also improve performance.
+multiple physics. This may also improve performance. Default will scan
+ALL physics.
 """
                     )
 
@@ -74,22 +75,7 @@ multiple physics. This may also improve performance.
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run instead of modifying files")
 
-    # TODO: support subroutine rename
-    # TODO: prob need more unit tests and a bit more documentation
     args = parser.parse_args(args[1:])
-
-    expect(args.source_repo is not None, "Must either run from a valid repo or provide a --source-repo")
-    expect(args.target_repo is not None, "Must either run from a valid repo or provide a --target-repo")
-
-    if (args.source_repo != default_repo):
-        normalized_source_repo = get_git_toplevel_dir(repo=args.source_repo)
-        expect(normalized_source_repo is not None, "source repo {} is not a valid repo".format(args.source_repo))
-        args.source_repo = normalized_source_repo
-
-    if (args.target_repo != default_repo):
-        normalized_target_repo = get_git_toplevel_dir(repo=args.target_repo)
-        expect(normalized_target_repo is not None, "target repo {} is not a valid repo".format(args.target_repo))
-        args.target_repo = normalized_target_repo
 
     return args
 
