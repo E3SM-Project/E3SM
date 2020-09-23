@@ -138,7 +138,7 @@ set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE STRING
 # With the master pack size determined, we have constraints on the others.
 set(DEFAULT_SMALL_PACK_SIZE ${SCREAM_PACK_SIZE})
 # For some routines, SKX may have better performance with pksize=1
-if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "SKX")
+if (Kokkos_ARCH_SKX)
   set(DEFAULT_POSSIBLY_NO_PACK TRUE)
 endif ()
 set(SCREAM_SMALL_PACK_SIZE ${DEFAULT_SMALL_PACK_SIZE} CACHE STRING
@@ -188,7 +188,6 @@ set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL includ
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
 
-set (SCREAM_LINK_FLAGS ${KOKKOS_LDFLAGS_STR})
 set (SCREAM_INCLUDE_DIRS
   ${SCREAM_SRC_DIR}
   ${EKAT_INCLUDE_DIRS}
@@ -203,7 +202,6 @@ if (${SCREAM_DOUBLE_PRECISION})
   endif()
 endif()
 
-print_var(KOKKOS_GMAKE_DEVICES)
 print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_MIMIC_GPU)
