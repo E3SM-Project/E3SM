@@ -50,7 +50,7 @@ sub chem_preprocess
 
     my $chem_proc_bld = "$cam_bld/chem_proc";
 
-    my $chem_preprocessor = "$cam_root/components/cam/chem_proc";
+    my $chem_preprocessor = "$cam_root/components/eam/chem_proc";
 
     my $chem_mech_infile;
 
@@ -87,7 +87,7 @@ sub chem_preprocess
 	    $usr_mech_infile = "$chem_proc_bld/chem_mech.in";
 	    write_chem_preproc($usr_mech_infile, $cfg_ref, $chem_preprocessor , $chem_proc_bld);
 	} else {
-	    $usr_mech_infile = "$cam_root/components/cam/src/chemistry/pp_${chem_pkg}/chem_mech.in";
+	    $usr_mech_infile = "$cam_root/components/eam/src/chemistry/pp_${chem_pkg}/chem_mech.in";
 	}
     }
 
