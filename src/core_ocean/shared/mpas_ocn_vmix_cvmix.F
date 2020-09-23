@@ -530,13 +530,13 @@ contains
                  normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThicknessEdge(1,iEdge)
                  layerThicknessEdgeSum(1) = layerThicknessEdge(1,iEdge)
 
-                 do kIndexOBL = 2, maxLevelEdgeTop(iEdge)
+                 do kIndexOBL = 2, maxLevelCell(iCell)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
                                       layerThicknessEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
                     layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThicknessEdge(kIndexOBL, iEdge)
                  end do
 
-                 do kIndexOBL = 1, maxLevelEdgeTop(iEdge)
+                 do kIndexOBL = 1, maxLevelCell(iCell)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
@@ -674,23 +674,10 @@ contains
             ! intent out of BoundaryLayerDepth is boundary layer depth measured in meters and vertical index
             indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
 
-
-
-            if(config_cvmix_kpp_matching .eq. 'SimpleShapes') then
-                do k = 1, int(indexBoundaryLayerDepth(iCell))
-                   vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
-                   vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
-                end do
-                do k = int(indexBoundaryLayerDepth(iCell))+1, maxLevelCell(iCell)+1
-                   vertViscTopOfCell(k,iCell) = cvmix_variables % Mdiff_iface(k)
-                   vertDiffTopOfCell(k,iCell) = cvmix_variables % Tdiff_iface(k)
-                enddo
-            else
-                do k = 1, maxLevelCell(iCell) + 1
-                   vertViscTopOfCell(k, iCell) = cvmix_variables % Mdiff_iface(k)
-                   vertDiffTopOfCell(k, iCell) = cvmix_variables % Tdiff_iface(k)
-                end do
-            endif
+            do k = 1, maxLevelCell(iCell) + 1
+                vertViscTopOfCell(k, iCell) = cvmix_variables % Mdiff_iface(k)
+                vertDiffTopOfCell(k, iCell) = cvmix_variables % Tdiff_iface(k)
+            end do
 
             ! store non-local flux terms
             ! these flux terms must be multiplied by the surfaceTracerFlux field
@@ -713,7 +700,7 @@ contains
             ! add convective mixing to vertical viscosity/diffusivity
             ! if using KPP, then do not apply convective mixing within the ocean boundary layer
             if(config_use_cvmix_kpp) then
-               do k = int(indexBoundaryLayerDepth(iCell)) + 1, maxLevelCell(iCell)
+               do k = int(ceiling(indexBoundaryLayerDepth(iCell))) + 1, maxLevelCell(iCell)
                   vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
                   vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
                enddo
