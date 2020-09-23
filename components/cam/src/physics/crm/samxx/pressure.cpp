@@ -43,7 +43,7 @@ void pressure() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzslab,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzslab,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     f(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm);
   });
 
@@ -55,7 +55,7 @@ void pressure() {
     // for (int k=0; k<nzslab; k++) {
     //  for (int j=0; j<ny; j++) {
     //      for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+    parallel_for( SimpleBounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       real ftmp[nx+2];
       real tmp [nx];
 
@@ -71,7 +71,7 @@ void pressure() {
       //  for (int i=0; j<nx+1; i++) {
       //    for(int l=0; l<ny2; l++) {
       //      for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         real ftmp[ny+2];
         real tmp [ny];
 
@@ -128,20 +128,20 @@ void pressure() {
   //  for(int j=0; j<nypp; j++) {
   //    for(int i=0; i<nx+1; i++) {
   //      for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzslab,nypp,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzslab,nypp,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     ff(k,j,i,icrm) = f(k,j,i,icrm);
   });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     a(k,icrm)=rhow(k,icrm)/(adz(k,icrm)*adzw(k,icrm)*dz(icrm)*dz(icrm));
     c(k,icrm)=rhow(k+1,icrm)/(adz(k,icrm)*adzw(k+1,icrm)*dz(icrm)*dz(icrm));
   });
 
   //   for (int j=0; j<nypp; j++) {
   //     for (int i=0; i<nx+1; i++) {
-  parallel_for( Bounds<2>(nypp,nx+1) , YAKL_LAMBDA (int j, int i) {
+  parallel_for( SimpleBounds<2>(nypp,nx+1) , YAKL_LAMBDA (int j, int i) {
     int jt = 0;
     int it = 0;
 
@@ -162,7 +162,7 @@ void pressure() {
   // for (int j=0; j<nypp; j++) {
   //  for (int i=0; i<nx+1; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nypp,nx+1,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nypp,nx+1,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     SArray<real,1,nzm-1> alfa;
     SArray<real,1,nzm-1> beta;
 
@@ -199,7 +199,7 @@ void pressure() {
   //   for (int j=0; j<nypp; j++) {
   //     for (int i=0; i<nx+1; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzslab,nypp,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzslab,nypp,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     f(k,j,i,icrm) = ff(k,j,i,icrm);
   });
 
@@ -209,7 +209,7 @@ void pressure() {
       // for (int k=0; k<nzslab; k++) {
       //   for (int i=0; i<nx+1; i++) {
       //     for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         real ftmp[ny+2];
         real tmp [ny];
         
@@ -224,7 +224,7 @@ void pressure() {
     // for (int k=0; k<nzslab; k++) {
     //   for (int j=0; i<ny; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+    parallel_for( SimpleBounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       real ftmp[nx+2];
       real tmp [nx];
 
@@ -266,7 +266,7 @@ void pressure() {
 
   #endif
 
-  parallel_for( Bounds<4>(nzslab,dimy_p,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzslab,dimy_p,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int jj, ii;
 
     if (YES3D) {

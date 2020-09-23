@@ -54,7 +54,7 @@ void timeloop() {
       //   for (int j=0; j<ny; j++) {
       //     for (int i=0; i<nx; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int i_rad = i / (nx/crm_nx_rad);
         int j_rad = j / (ny/crm_ny_rad);
         t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;

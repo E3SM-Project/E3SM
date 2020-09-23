@@ -41,7 +41,7 @@ void precip_fall(int hydro_type, real4d &omega) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     rhofac(k,icrm) = sqrt(1.29/rho(k,icrm));
     irhoadz(k,icrm) = 1.0/(rho(k,icrm)*adz(k,icrm));
     int kb = max(0,k-1);
@@ -57,7 +57,7 @@ void precip_fall(int hydro_type, real4d &omega) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (hydro_type == 0) {
       lfac(k,j,i,icrm) = fac_cond;
     }
@@ -98,7 +98,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       // wp already includes factor of dt, so reduce it by a
       // factor equal to the number of precipitation steps.
       wp(k,j,i,icrm) = wp(k,j,i,icrm)/nprec;
@@ -115,7 +115,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm); // Temporary array for qp in this column
     });
 
@@ -123,7 +123,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (nonos) {
         int kc=min(nzm-1,k+1);
         int kb=max(0,k-1);
@@ -138,7 +138,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=k+1;
       tmp_qp(k,j,i,icrm)=tmp_qp(k,j,i,icrm)-(fz(kc,j,i,icrm)-fz(k,j,i,icrm))*irhoadz(k,icrm); //Update temporary qp
     });
@@ -147,7 +147,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       // Also, compute anti-diffusive correction to previous
       // (upwind) approximation to the flux
       int kb=max(0,k-1);
@@ -165,7 +165,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       //   for (int j=0; j<ny; j++) {
       //     for (int i=0; i<nx; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int kc=min(nzm-1,k+1);
         int kb=max(0,k-1);
         mx(k,j,i,icrm)=max(tmp_qp(kb,j,i,icrm),max(tmp_qp(kc,j,i,icrm),max(tmp_qp(k,j,i,icrm),mx(k,j,i,icrm))));
@@ -181,7 +181,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       //   for (int j=0; j<ny; j++) {
       //     for (int i=0; i<nx; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int kb=max(0,k-1);
         // Add limited flux correction to fz(k).
         fz(k,j,i,icrm) = fz(k,j,i,icrm) + pp(www(k,j,i,icrm))*min(1.0,min(mx(k,j,i,icrm), mn(kb,j,i,icrm))) -
@@ -196,7 +196,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=k+1;
       // Update precipitation mass fraction.
       // Note that fz is the total flux, including both the
@@ -224,7 +224,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       //  for (int i=0; i<nx; i++) {
       //    for (int k=0; k<nzm; k++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         real tmp = term_vel_qp(icrm,i,j,k,micro_field(1,k,j+offy_s,i+offx_s,icrm), 
                                vrain, vsnow, vgrau, crain, csnow, cgrau, rho(k,icrm),
                                tabs(k,j,i,icrm), a_pr, a_gr);
@@ -264,7 +264,7 @@ void micro_precip_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     omega(k,j,i,icrm) = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tprmin)*a_pr));
   });
 
@@ -282,7 +282,7 @@ void micro_flux() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     fluxbmk(index_water_vapor,j,i,icrm) = fluxbq(j,i,icrm);
     fluxtmk(index_water_vapor,j,i,icrm) = fluxtq(j,i,icrm);
   });
@@ -305,7 +305,7 @@ void micro_diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     qv(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm) - qn(k,j,i,icrm);
     real omn = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tbgmin)*a_bg));
     qcl(k,j,i,icrm) = qn(k,j,i,icrm)*omn;
@@ -354,7 +354,7 @@ void micro_init() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
       fluxbmk(l,j,i,icrm) = 0.0;
       fluxtmk(l,j,i,icrm) = 0.0;
     });
@@ -366,7 +366,7 @@ void micro_init() {
   // for (int l=0; l<nmicro_fields; k++) {
   //  for (int k=0; k<nz; k++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nmicro_fields,nz,ncrms) , YAKL_LAMBDA (int l, int k, int icrm) {
+  parallel_for( SimpleBounds<3>(nmicro_fields,nz,ncrms) , YAKL_LAMBDA (int l, int k, int icrm) {
     mkwle (l,k,icrm) = 0.0;
     mkwsb (l,k,icrm) = 0.0;
     mkadv (l,k,icrm) = 0.0;
@@ -375,7 +375,7 @@ void micro_init() {
   
   // for (int k=0; k<nz; k++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpsrc(k,icrm) = 0.0;
     qpevp(k,icrm) = 0.0;
   });

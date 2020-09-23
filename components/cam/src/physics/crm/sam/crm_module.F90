@@ -3,6 +3,7 @@ module crm_module
   use openacc_utils, only: prefetch
   use perf_mod
   use task_init_mod, only: task_init
+  use params_kind, only: crm_rknd, r8
   use abcoefs_mod, only: abcoefs
   use kurant_mod, only: kurant
   use setperturb_mod, only: setperturb
@@ -48,9 +49,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
-    use shr_kind_mod          , only: r8 => shr_kind_r8
     use shr_const_mod         , only: SHR_CONST_TKFRZ
-    use ppgrid                , only: pcols
     use vars
     use params
     use microphysics
@@ -71,8 +70,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     use ecppvars              , only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
 #endif /* ECPP */
     use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm, crm_accel_uv
+#ifndef MMF_STANDALONE
     use cam_abortutils        , only: endrun
-    use time_manager          , only: get_nstep
+#endif
 
     implicit none
 
@@ -668,7 +668,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_ny_rad_fac = real(crm_ny_rad,crm_rknd)/real(ny,crm_rknd)
     else
       write(0,*) "crm_nx_rad and crm_ny_rad need to be divisible by nx and ny"
+#ifdef MMF_STANDALONE
+      stop
+#else
       call endrun('crm main')
+#endif
     end if
   enddo
 

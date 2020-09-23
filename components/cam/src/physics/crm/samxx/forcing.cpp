@@ -19,7 +19,7 @@ void forcing() {
   int2d  nneg("nneg",nzm,ncrms);
 
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpoz(k,icrm) = 0.0;
     qneg(k,icrm) = 0.0;
     nneg(k,icrm) = 0;
@@ -29,7 +29,7 @@ void forcing() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     t(k, j+offy_s, i+offx_s, icrm) = t(k, j+offy_s, i+offx_s, icrm) + ttend(k,icrm) * dtn;
     micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = 
           micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) + qtend(k,icrm) * dtn;
@@ -48,7 +48,7 @@ void forcing() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real factor;
     if(nneg(k,icrm) > 0 && qpoz(k,icrm)+qneg(k,icrm) > 0.0) {
       factor =  1.0 + qneg(k,icrm)/qpoz(k,icrm);

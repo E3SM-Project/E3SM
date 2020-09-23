@@ -38,7 +38,7 @@ void diffuse_mom2D(real5d &tk) {
     // for (int k=0; k<nzm; k++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=k+1;
       int kcu=min(kc,nzm-1);
       real dxz=dx/(dz(icrm)*adzw(kc,icrm));
@@ -57,7 +57,7 @@ void diffuse_mom2D(real5d &tk) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=k+1;
       int ib=i-1;
       dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)-(fu(k,j,i+1,icrm)-fu(k,j,ib+1,icrm));
@@ -68,7 +68,7 @@ void diffuse_mom2D(real5d &tk) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     uwsb(k,icrm)=0.0;
     vwsb(k,icrm)=0.0;
   });
@@ -76,7 +76,7 @@ void diffuse_mom2D(real5d &tk) {
   // for (int k=0; k<nzm-1; k++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(k,icrm);
@@ -99,7 +99,7 @@ void diffuse_mom2D(real5d &tk) {
   
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(nzm-2,icrm);
     real tkz=rdz2*grdf_z(nzm-1,icrm)*tk(0,nzm-1,j+offy_d,i+offx_d,icrm);
@@ -116,7 +116,7 @@ void diffuse_mom2D(real5d &tk) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     real rhoi = 1.0/(rho(k,icrm)*adz(k,icrm));
     dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)-(fu(kc,j,i+1,icrm)-fu(k,j,i+1,icrm))*rhoi;
@@ -126,7 +126,7 @@ void diffuse_mom2D(real5d &tk) {
   // for (int k=0; k<nzm-1; k++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     real rhoi = 1.0/(rhow(k+1,icrm)*adzw(k+1,icrm));
     dwdt(na-1,k+1,j,i,icrm)=dwdt(na-1,k+1,j,i,icrm)-(fw(k+2,j,i+1,icrm)-fw(k+1,j,i+1,icrm))*rhoi;
   });

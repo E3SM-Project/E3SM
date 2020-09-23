@@ -18,7 +18,7 @@ void shear_prod3D(real4d &def2) {
   //    for (int j=0; j<ny; j++) {
   //      for (int i=0; i<nx; i++) {
   //        for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real rdx0 = 1.0/dx;
     real rdy0 = 1.0/dy;
     real rdz, rdzw_up, rdzw_dn, rdx, rdx_up, rdx_dn, rdy, rdy_up, rdy_dn;

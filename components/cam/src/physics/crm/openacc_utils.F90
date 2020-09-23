@@ -8,6 +8,7 @@ module openacc_utils
   use cudafor
 #endif
   implicit none
+  private
   integer :: ierr
   integer :: asyncid_loc = 1
 
@@ -94,6 +95,9 @@ module openacc_utils
     module procedure prefetch_log_6d
     module procedure prefetch_log_7d
   end interface prefetch
+
+  public :: memset_async
+  public :: prefetch
 
 contains
 

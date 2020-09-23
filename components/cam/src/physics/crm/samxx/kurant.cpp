@@ -21,7 +21,7 @@ void kurant () {
   real2d tmpMax("uhMax",nzm,ncrms);
 
   ncycle = 1;
-  parallel_for( Bounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     wm(k,icrm) = 0.0;
     uhm(k,icrm) = 0.0;
   });
@@ -30,7 +30,7 @@ void kurant () {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp;
     tmp = fabs(w(k,j+offy_w,i+offx_w,icrm));
     yakl::atomicMax(wm(k,icrm),tmp);
@@ -45,7 +45,7 @@ void kurant () {
   cfl = 0.0;
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     real tmp1 = uhm(k,icrm)*dt*sqrt(1.0/(dx*dx) + YES3D*1.0/(dy*dy));
     real dztemp = dz(icrm)*adzw(k,icrm);
     real tmp2 = wm(k,icrm)*dt/dztemp;

@@ -205,7 +205,6 @@ subroutine rfftmf ( lot, jump, n, inc, r, lenr, wsave, lensav, &
   real    ( kind = crm_rknd ) ,intent(inout) :: r(lenr)
   real    ( kind = crm_rknd ) ,intent(inout) :: work(lenwrk)
   real    ( kind = crm_rknd ) ,intent(inout) :: wsave(lensav)
-  logical xercon
 
   ier = 0
 
@@ -343,7 +342,6 @@ subroutine rfftmb ( lot, jump, n, inc, r, lenr, wsave, lensav, &
   real    ( kind = crm_rknd ) ,intent(inout) :: r(lenr)
   real    ( kind = crm_rknd ) ,intent(inout) :: work(lenwrk)
   real    ( kind = crm_rknd ) ,intent(inout) :: wsave(lensav)
-  logical xercon
 
   ier = 0
 

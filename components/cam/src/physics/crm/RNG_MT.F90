@@ -50,8 +50,7 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 module RNG_MT
-   use shr_kind_mod,  only: r8 => shr_kind_r8
-
+   use params_kind, only: r8
    implicit none
 
    integer, private, parameter :: N      = 624      ! why are these parameters so big?

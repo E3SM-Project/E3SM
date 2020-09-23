@@ -24,7 +24,7 @@ void advect2_mom_z() {
 
   // for (int k=0; k<nzm; k++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     uwle(k,icrm) = 0.0;
     vwle(k,icrm) = 0.0;
   });
@@ -32,7 +32,7 @@ void advect2_mom_z() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     real dz25=1.0/(4.0*dz(icrm));
     fuz(0,j,i,icrm) = 0.0;
     fuz(nz-1,j,i,icrm) = 0.0;
@@ -48,7 +48,7 @@ void advect2_mom_z() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real dz25=1.0/(4.0*dz(icrm));
       int kb = k-1;
       real rhoi = dz25 * rhow(k+1,icrm);
@@ -66,7 +66,7 @@ void advect2_mom_z() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real dz25=1.0/(4.0*dz(icrm));
       int kb = k-1;
       real rhoi = dz25 * rhow(k+1,icrm);
@@ -83,7 +83,7 @@ void advect2_mom_z() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real dz25=1.0/(4.0*dz(icrm));
     int kc = k+1;
     real rhoi = 1.0/(rho(k,icrm)*adz(k,icrm));
@@ -97,7 +97,7 @@ void advect2_mom_z() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int kb=k-1;
     real rhoi = 1.0/(rhow(k+1,icrm)*adzw(k+1,icrm));
     dwdt(na-1,k+1,j,i,icrm)=dwdt(na-1,k+1,j,i,icrm)-(fwz(k+1,j,i,icrm)-fwz(kb+1,j,i,icrm))*rhoi;
