@@ -299,7 +299,7 @@ contains
             write (iulog,*) 'h_r - z_d <= z_0'
             write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
+            write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
          if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
@@ -307,7 +307,7 @@ contains
             write (iulog,*) 'h_u - z_d <= z_0'
             write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
+            write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
@@ -820,7 +820,7 @@ contains
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
          if (abs(eflx_err(indexl)) > .01_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than .01 W/m**2'
+            write(iulog,*)'elm model is stopping - error is greater than .01 W/m**2'
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
             write(iulog,*)'eflx          = ',eflx(indexl)
@@ -844,7 +844,7 @@ contains
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than 4.e-9 kg/m**2/s'
+            write(iulog,*)'elm model is stopping - error is greater than 4.e-9 kg/m**2/s'
             write(iulog,*)'qflx_scale    = ',qflx_scale(indexl)
             write(iulog,*)'qflx          = ',qflx(indexl)
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))

@@ -391,12 +391,12 @@ contains
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
           else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
 
-             write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
+             write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'colum number               = ',col_pp%gridcell(indexc)
              write(iulog,*)'nstep                      = ',nstep
              write(iulog,*)'errh2o                     = ',errh2o(indexc)
@@ -421,7 +421,7 @@ contains
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -514,7 +514,7 @@ contains
                ' errh2osno= ',errh2osno(indexc)
 
           if (abs(errh2osno(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
-             write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
+             write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep            = ',nstep
              write(iulog,*)'errh2osno        = ',errh2osno(indexc)
              write(iulog,*)'snl              = ',col_pp%snl(indexc)
@@ -534,7 +534,7 @@ contains
              if (create_glacier_mec_landunit) then
                 write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime
              end if
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -607,7 +607,7 @@ contains
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsol        = ',errsol(indexp)
           if (abs(errsol(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'fsa           = ',fsa(indexp)
              write(iulog,*)'fsr           = ',fsr(indexp)
              write(iulog,*)'forc_solad(1) = ',forc_solad(indext,1)
@@ -616,7 +616,7 @@ contains
              write(iulog,*)'forc_solai(2) = ',forc_solai(indext,2)
              write(iulog,*)'forc_tot      = ',forc_solad(indext,1)+forc_solad(indext,2) &
                +forc_solai(indext,1)+forc_solai(indext,2)
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -637,7 +637,7 @@ contains
           write(iulog,*)'nstep        = ',nstep 
           write(iulog,*)'errlon       = ',errlon(indexp)
           if (abs(errlon(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
              call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -660,7 +660,7 @@ contains
           write(iulog,*)'nstep          = ' ,nstep
           write(iulog,*)'errseb         = ' ,errseb(indexp)
           if (abs(errseb(indexp)) > 1.e-5_r8 ) then
-             write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
+             write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
              write(iulog,*)'sabv           = ' ,sabv(indexp)
 
              write(iulog,*)'sabg           = ' ,sabg(indexp), ((1._r8- frac_sno(indexc))*sabg_soil(indexp) + &
@@ -678,7 +678,7 @@ contains
              write(iulog,*)'albd albi = '      ,albd(indexp,:), albi(indexp,:)
              write(iulog,*)'ftii ftdd ftid = ' ,ftii(indexp,:), ftdd(indexp,:),ftid(indexp,:)
              write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
@@ -700,7 +700,7 @@ contains
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
           write(iulog,*)'colum number  = ',col_pp%gridcell(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
-             write(iulog,*)'clm model is stopping'
+             write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if

@@ -452,7 +452,7 @@ contains
   subroutine lnd_run_esmf(comp, import_state, export_state, EClock, rc)
     !
     ! !DESCRIPTION:
-    ! Run clm model
+    ! Run elm model
     !
     ! !USES:
     use shr_file_mod      , only : shr_file_setLogUnit, shr_file_setLogLevel

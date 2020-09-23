@@ -333,7 +333,7 @@ contains
   subroutine lnd_run_mct(EClock, cdata_l, x2l_l, l2x_l)
     !
     ! !DESCRIPTION:
-    ! Run clm model
+    ! Run elm model
     !
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8

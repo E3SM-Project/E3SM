@@ -1308,7 +1308,7 @@ contains
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Convert the data to be sent from the clm model to the coupler 
+    ! Convert the data to be sent from the elm model to the coupler 
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8

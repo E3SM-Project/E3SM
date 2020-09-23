@@ -496,7 +496,7 @@ contains
             write(iulog,*) 'vf_sr      = ',vf_sr(l)
             write(iulog,*) 'vf_sw      = ',vf_sw(l)
             write(iulog,*) 'canyon_hwr = ',canyon_hwr(l)
-            write(iulog,*) 'clm model is stopping'
+            write(iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          endif
       end do
@@ -676,7 +676,7 @@ contains
          end do
          if (iter >= n) then
             write (iulog,*) 'urban net longwave radiation error: no convergence'
-            write (iulog,*) 'clm model is stopping'
+            write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          endif
 
@@ -701,7 +701,7 @@ contains
          err = lwnet_canyon(l) - (lwup_canyon(l) - lwdown(l))
          if (abs(err) > .10_r8 ) then
             write (iulog,*) 'urban net longwave radiation balance error',err
-            write (iulog,*) 'clm model is stopping'
+            write (iulog,*) 'elm model is stopping'
             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
