@@ -135,25 +135,25 @@ contains
     ! ----------------------------------------------------------------------
 
     ! Time step
-    namelist / clm_inparm/ &
+    namelist / elm_inparm/ &
          dtime
 
     ! CLM namelist settings
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          fatmlndfrc, finidat, nrevsn, &
          finidat_interp_source, finidat_interp_dest
 
     ! Input datasets
 
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          fsurdat, fatmtopo, flndtopo, &
          paramfile, fsnowoptics, fsnowaging,fsoilordercon
 
 
     ! History, restart options
 
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          hist_empty_htapes, hist_dov2xy, &
          hist_avgflag_pertape, hist_type1d_pertape, &
          hist_nhtfrq,  hist_ndens, hist_mfilt, &
@@ -161,86 +161,86 @@ contains
          hist_fincl4,  hist_fincl5, hist_fincl6, &
          hist_fexcl1,  hist_fexcl2, hist_fexcl3, &
          hist_fexcl4,  hist_fexcl5, hist_fexcl6
-    namelist /clm_inparm/ hist_wrtch4diag
+    namelist /elm_inparm/ hist_wrtch4diag
 
     ! BGC info
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          nu_com
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          nu_com_phosphatase
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          nu_com_nfix
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          forest_fert_exp
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          ECA_Pconst_RGspin
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          NFIX_PTASE_plant
 
     ! For experimental manipulations
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          startdate_add_temperature
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          startdate_add_co2
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          add_temperature
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          add_co2
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          use_pheno_flux_limiter
          
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          suplnitro,suplphos
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          nfix_timeconst
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          spinup_state, override_bgc_restart_mismatch_dump
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          nyears_ad_carbon_only, spinup_mortality_factor
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          co2_type
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          perchroot, perchroot_alt
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          anoxia, anoxia_wtsat
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          deepmixing_depthcrit, deepmixing_mixfact, lake_melt_icealb
     ! lake_melt_icealb is of dimension numrad
 
     ! Glacier_mec info
-    namelist /clm_inparm/ &    
+    namelist /elm_inparm/ &    
          maxpatch_glcmec, glc_smb, glc_do_dynglacier, glcmec_downscale_rain_snow_convert, &
          glcmec_downscale_longwave, glc_snow_persistence_max_days, glc_grid, fglcmask 
 
     ! Other options
 
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
          albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active
     ! Urban options
 
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          urban_hac, urban_traffic
 
     ! vertical soil mixing variables
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          som_adv_flux, max_depth_cryoturb
 
     ! C and N input vertical profiles
-    namelist /clm_inparm/  & 
+    namelist /elm_inparm/  & 
           exponential_rooting_profile, rootprof_exp, surfprof_exp, pftspecific_rootingprofile
 
-    namelist /clm_inparm / no_frozen_nitrif_denitrif
+    namelist /elm_inparm / no_frozen_nitrif_denitrif
 
-    namelist /clm_inparm / use_c13, use_c14
+    namelist /elm_inparm / use_c13, use_c14
 
-    namelist /clm_inparm/ fates_paramfile, use_fates,      &
+    namelist /elm_inparm/ fates_paramfile, use_fates,      &
           fates_spitfire_mode, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_cohort_age_tracking,                &
@@ -250,51 +250,51 @@ contains
           use_fates_fixed_biogeog, &
           fates_parteh_mode
 
-    namelist /clm_inparm / use_betr
+    namelist /elm_inparm / use_betr
         
-    namelist /clm_inparm / use_lai_streams
+    namelist /elm_inparm / use_lai_streams
 
-    namelist /clm_inparm/  &
+    namelist /elm_inparm/  &
          use_c14_bombspike, atm_c14_filename
 
     ! All old cpp-ifdefs are below and have been converted to namelist variables 
 
     ! max number of plant functional types in naturally vegetated landunit
-    namelist /clm_inparm/ maxpatch_pft
+    namelist /elm_inparm/ maxpatch_pft
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
          use_snicar_ad, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
-    namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
+    namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
          co2_file, aero_file,const_climate_hist
 
     ! bgc & pflotran interface
-    namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
+    namelist /elm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
 
-    namelist /clm_inparm/ use_dynroot
+    namelist /elm_inparm/ use_dynroot
 
-    namelist /clm_inparm/ use_var_soil_thick
+    namelist /elm_inparm/ use_var_soil_thick
 
-    namelist /clm_inparm / &
+    namelist /elm_inparm / &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
 
-    namelist /clm_inparm/ use_hydrstress
+    namelist /elm_inparm/ use_hydrstress
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
        lateral_connectivity, domain_decomp_type
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          use_petsc_thermal_model
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
 
-    namelist /clm_inparm/ &
+    namelist /elm_inparm/ &
          use_erosion, ero_ccycle
 
     ! ----------------------------------------------------------------------
@@ -330,14 +330,14 @@ contains
           call endrun(msg=' error: nlfilename not set'//errMsg(__FILE__, __LINE__))
        end if
        unitn = getavu()
-       write(iulog,*) 'Read in clm_inparm namelist from: ', trim(NLFilename)
+       write(iulog,*) 'Read in elm_inparm namelist from: ', trim(NLFilename)
        open( unitn, file=trim(NLFilename), status='old' )
        print*,trim(NLFilename),"X.YANG debug"
-       call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
+       call shr_nl_find_group_name(unitn, 'elm_inparm', status=ierr)
        if (ierr == 0) then
-          read(unitn, clm_inparm, iostat=ierr)
+          read(unitn, elm_inparm, iostat=ierr)
           if (ierr /= 0) then
-             call endrun(msg='ERROR reading clm_inparm namelist'//errMsg(__FILE__, __LINE__))
+             call endrun(msg='ERROR reading elm_inparm namelist'//errMsg(__FILE__, __LINE__))
           end if
        end if
        
