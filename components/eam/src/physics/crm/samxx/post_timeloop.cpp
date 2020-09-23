@@ -123,6 +123,7 @@ void post_timeloop() {
   auto &vwsb                    = :: vwsb;
   auto &crm_output_tkesgsz      = :: crm_output_tkesgsz;
   auto &crm_output_tkez         = :: crm_output_tkez;
+  auto &crm_output_wtke         = :: crm_output_wtke;
   auto &crm_output_tkz          = :: crm_output_tkz;
   auto &crm_output_precflux     = :: crm_output_precflux;
   auto &crm_output_qp_fall      = :: crm_output_qp_fall;
@@ -456,6 +457,7 @@ void post_timeloop() {
     }
     crm_output_tkesgsz   (l,icrm)= rho(k,icrm)*tmp*factor_xy;
     crm_output_tkez      (l,icrm)= rho(k,icrm)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output_tkesgsz(l,icrm);
+    crm_output_wtke      (l,icrm)= rho(k,icrm)*0.5*(w2z)*factor_xy;
 
     tmp = 0.0;
     for (int j=0; j<ny; j++) {

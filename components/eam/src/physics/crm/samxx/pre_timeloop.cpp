@@ -121,6 +121,7 @@ void pre_timeloop() {
   auto &crm_output_flux_v        = :: crm_output_flux_v; 
   auto &crm_output_fluxsgs_qt    = :: crm_output_fluxsgs_qt;
   auto &crm_output_tkez          = :: crm_output_tkez; 
+  auto &crm_output_wtke          = :: crm_output_wtke; 
   auto &crm_output_tkesgsz       = :: crm_output_tkesgsz; 
   auto &crm_output_tkz           = :: crm_output_tkz; 
   auto &crm_output_flux_qp       = :: crm_output_flux_qp; 
@@ -422,6 +423,7 @@ void pre_timeloop() {
       crm_output_flux_v    (k,icrm) = 0.0;
       crm_output_fluxsgs_qt(k,icrm) = 0.0;
       crm_output_tkez      (k,icrm) = 0.0;
+      crm_output_wtke      (k,icrm) = 0.0;
       crm_output_tkesgsz   (k,icrm) = 0.0;
       crm_output_tkz       (k,icrm) = 0.0;
       crm_output_flux_qp   (k,icrm) = 0.0;

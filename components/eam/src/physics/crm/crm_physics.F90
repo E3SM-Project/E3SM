@@ -905,7 +905,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
                crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
                crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
-               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
+               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%wtke, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
                crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
                crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, &
