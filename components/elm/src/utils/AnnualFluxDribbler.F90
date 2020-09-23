@@ -274,7 +274,7 @@ contains
                 write(iulog,*) 'other than the first time step of the year, which this dribbler was told not to expect.'
                 write(iulog,*) 'If this non-zero mid-year delta is expected, then you can suppress this error'
                 write(iulog,*) 'by setting allows_non_annual_delta to .true. when constructing this dribbler.'
-                call endrun(decomp_index=i, clmlevel=this%name_subgrid, &
+                call endrun(decomp_index=i, elmlevel=this%name_subgrid, &
                      msg=subname//': found unexpected non-zero delta mid-year: ' // &
                      errMsg(sourcefile, __LINE__))
              end if

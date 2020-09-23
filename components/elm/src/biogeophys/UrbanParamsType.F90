@@ -297,13 +297,13 @@ module UrbanParamsType
           if (abs(sumvf-1._r8) > 1.e-06_r8 ) then
              write (iulog,*) 'urban road view factor error',sumvf
              write (iulog,*) 'clm model is stopping'
-             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
           endif
           sumvf = this%vf_sw(l) + this%vf_rw(l) + this%vf_ww(l)
           if (abs(sumvf-1._r8) > 1.e-06_r8 ) then
              write (iulog,*) 'urban wall view factor error',sumvf
              write (iulog,*) 'clm model is stopping'
-             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
           endif
 
           !----------------------------------------------------------------------------------

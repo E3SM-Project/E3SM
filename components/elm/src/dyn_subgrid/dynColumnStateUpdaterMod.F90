@@ -891,7 +891,7 @@ contains
        if (this%area_gained_col(c) < 0._r8) then
           if (.not. vals_input_valid(c)) then
              write(iulog,*) subname//' ERROR: shrinking column without valid input value'
-             call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(sourcefile, __LINE__))
+             call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost

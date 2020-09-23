@@ -903,7 +903,7 @@ contains
                if (gs_mol(p,iv) < 0._r8) then
                   write (iulog,*)'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
-                  call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
@@ -2552,7 +2552,7 @@ contains
                if (gs_mol_sun(p,iv) < 0._r8 .or. gs_mol_sha(p,iv) < 0._r8) then
                   write (iulog,*)'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
-                  call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b

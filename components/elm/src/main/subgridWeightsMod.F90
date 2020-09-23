@@ -285,7 +285,7 @@ contains
        if (col_pp%active(c) .and. .not. lun_pp%active(l)) then
           write(iulog,*) trim(subname),' ERROR: active column found on inactive landunit', &
                          'at c = ', c, ', l = ', l
-          call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -295,7 +295,7 @@ contains
        if (veg_pp%active(p) .and. .not. col_pp%active(c)) then
           write(iulog,*) trim(subname),' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
-          call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=p, elmlevel=namep, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -522,7 +522,7 @@ contains
     else if (weight > 0._r8) then
        write(iulog,*) subname//' ERROR: Attempt to assign non-zero weight to a non-existent landunit'
        write(iulog,*) 'g, t, l, ltype, weight = ', top_pp%gridcell(t), t, l, ltype, weight
-       call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
     end if
     
   end subroutine set_landunit_weight

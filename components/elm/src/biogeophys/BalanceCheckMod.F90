@@ -366,7 +366,7 @@ contains
           write(iulog,*)'WARNING:  water balance error ',&
                ' nstep= ',nstep, &
                ' local indexc= ',indexc,&
-               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, elmlevel=namec), &
                ' errh2o= ',errh2o(indexc)
 
           if ((col_pp%itype(indexc) == icol_roof .or. &
@@ -392,7 +392,7 @@ contains
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
           else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
 
@@ -422,7 +422,7 @@ contains
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -508,7 +508,7 @@ contains
           write(iulog,*)'WARNING:  snow balance error '
           write(iulog,*)'nstep= ',nstep, &
                ' local indexc= ',indexc, &
-               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, clmlevel=namec), &
+               !' global indexc= ',GetGlobalIndex(decomp_index=indexc, elmlevel=namec), &
                ' col_pp%itype= ',col_pp%itype(indexc), &
                ' lun_pp%itype= ',lun_pp%itype(col_pp%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
@@ -535,7 +535,7 @@ contains
                 write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime
              end if
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -617,7 +617,7 @@ contains
              write(iulog,*)'forc_tot      = ',forc_solad(indext,1)+forc_solad(indext,2) &
                +forc_solai(indext,1)+forc_solai(indext,2)
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -638,7 +638,7 @@ contains
           write(iulog,*)'errlon       = ',errlon(indexp)
           if (abs(errlon(indexp)) > 1.e-5_r8 ) then
              write(iulog,*)'clm model is stopping - error is greater than 1e-5 (W/m2)'
-             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -679,7 +679,7 @@ contains
              write(iulog,*)'ftii ftdd ftid = ' ,ftii(indexp,:), ftdd(indexp,:),ftid(indexp,:)
              write(iulog,*)'elai esai = '      ,elai(indexp),   esai(indexp)      
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexp, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -701,7 +701,7 @@ contains
           write(iulog,*)'colum number  = ',col_pp%gridcell(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'clm model is stopping'
-             call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 

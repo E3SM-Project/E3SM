@@ -624,7 +624,7 @@ contains
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
     surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
     surfdata_domain%set = .false.
-    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
+    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, elmlevel=grlnd)
 
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
          dim1name=grlnd, readvar=readvar)

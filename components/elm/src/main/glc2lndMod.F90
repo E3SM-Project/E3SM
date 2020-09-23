@@ -288,7 +288,7 @@ contains
           write(iulog,*) 'You can fix this problem by adding more grid cells'
           write(iulog,*) 'to the mask defined by the fglcmask file.'
           write(iulog,*) '(Change grid cells to 1 everywhere that CISM can operate.)'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -322,7 +322,7 @@ contains
 
        if (this%icemask_coupled_fluxes_grc(g) > 0._r8 .and. this%icemask_grc(g) == 0._r8) then
           write(iulog,*) subname//' ERROR: icemask_coupled_fluxes must be a subset of icemask.'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 

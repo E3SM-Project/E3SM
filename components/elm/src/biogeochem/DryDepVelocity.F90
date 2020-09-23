@@ -286,7 +286,7 @@ CONTAINS
             if (clmveg >= npcropmin .and. clmveg <= npcropmax ) wesveg = 2 
             if (wesveg == wveg_unset )then
                write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
-               call endrun(decomp_index=pi, clmlevel=namep, &
+               call endrun(decomp_index=pi, elmlevel=namep, &
                     msg='ERROR: Not able to determine Wesley vegetation type'//&
                     errMsg(__FILE__, __LINE__))
             end if

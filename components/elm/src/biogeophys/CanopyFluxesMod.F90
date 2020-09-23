@@ -732,7 +732,7 @@ contains
       if (found) then
          if ( .not. use_fates ) then
             write(iulog,*)'Error: Forcing height is below canopy height for pft index '
-            call endrun(decomp_index=index, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=index, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 

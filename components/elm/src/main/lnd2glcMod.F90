@@ -207,7 +207,7 @@ contains
          write(iulog,*) 'One possible cause is having multiple columns in the istsoil landunit,'
          write(iulog,*) 'which this routine cannot handle.'
          write(iulog,*) 'g, n = ', g, n
-         call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+         call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
       end if
 
       ! Send surface temperature, topography, and SMB flux (qice) to coupler.

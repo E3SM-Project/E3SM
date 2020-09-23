@@ -177,7 +177,7 @@ contains
          long_name='2d latitude index of corresponding landunit',                  &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-    ilarr = GetGlobalIndexArray(lun_pp%gridcell(bounds%begl:bounds%endl), bounds%begl, bounds%endl, clmlevel=nameg)
+    ilarr = GetGlobalIndexArray(lun_pp%gridcell(bounds%begl:bounds%endl), bounds%begl, bounds%endl, elmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='land1d_gridcell_index', xtype=ncd_int, &
          dim1name='landunit',                                                             &
          long_name='gridcell index of corresponding landunit',                            &
@@ -240,13 +240,13 @@ contains
          long_name='2d latitude index of corresponding column', units=' ',          &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=nameg)
+    icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_gridcell_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='gridcell index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    icarr = GetGlobalIndexArray(col_pp%landunit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=namel)
+    icarr = GetGlobalIndexArray(col_pp%landunit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namel)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_landunit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='landunit index of corresponding column',                              &
@@ -317,19 +317,19 @@ contains
          long_name='2d latitude index of corresponding pft', units='',         &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=nameg)
+    iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_gridcell_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='gridcell index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%landunit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namel)
+    iparr = GetGlobalIndexArray(veg_pp%landunit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namel)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_landunit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='landunit index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%column(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namec)
+    iparr = GetGlobalIndexArray(veg_pp%column(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namec)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_column_index', xtype=ncd_int,   &
          dim1name='pft',                                                                  &
          long_name='column index of corresponding pft',                                   &
@@ -624,7 +624,7 @@ contains
                write(iulog,*) '    in user_nl_clm'
                write(iulog,*) '    In this case, CLM will take the weights from the initial conditions file.'
                write(iulog,*) ' '
-               call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+               call endrun(decomp_index=p, elmlevel=namep, msg=errMsg(__FILE__, __LINE__))
             end if
          end if
       end do

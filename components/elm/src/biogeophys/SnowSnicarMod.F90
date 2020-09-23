@@ -497,7 +497,7 @@ contains
                   write (iulog,*) "column: ", c_idx, " level: ", i, " snl(c)= ", snl_lcl
                   write (iulog,*) "lat= ", lat_coord, " lon= ", lon_coord
                   write (iulog,*) "h2osno(c)= ", h2osno_lcl
-                  call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                endif
             enddo
 
@@ -1034,7 +1034,7 @@ contains
                      write(iulog,*) "column index: ", c_idx
                      write(iulog,*) "landunit type", lun_pp%itype(l_idx)
                      write(iulog,*) "frac_sno: ", frac_sno(c_idx)
-                     call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                     call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                   else
                      flg_dover = 0
                   endif
@@ -1047,7 +1047,7 @@ contains
                if (abs(energy_sum) > 0.00001_r8) then
                   write (iulog,"(a,e13.6,a,i6,a,i6)") "SNICAR ERROR: Energy conservation error of : ", energy_sum, &
                        " at timestep: ", nstep, " at column: ", c_idx
-                  call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                endif
 
                albout_lcl(bnd_idx) = albedo
@@ -1081,7 +1081,7 @@ contains
                   write (iulog,*) "SNICAR STATS: snw_rds(-1)= ", snw_rds(c_idx,-1)
                   write (iulog,*) "SNICAR STATS: snw_rds(0)= ", snw_rds(c_idx,0)
 
-                  call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                endif
 
             enddo   ! loop over wvl bands
@@ -2042,7 +2042,7 @@ contains
                    write (iulog,*) "column: ", c_idx, " level: ", i, " snl(c)= ", snl_lcl
                    write (iulog,*) "lat= ", lat_coord, " lon= ", lon_coord
                    write (iulog,*) "h2osno(c)= ", h2osno_lcl
-                   call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                   call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                 endif
              enddo
 
@@ -2547,7 +2547,7 @@ contains
                       write(iulog,*) "SNICAR_AD STATS: dust2(0)= ", mss_cnc_aer_lcl(0,4)
                       write(iulog,*) "SNICAR_AD STATS: dust3(0)= ", mss_cnc_aer_lcl(0,5)
                       write(iulog,*) "SNICAR_AD STATS: dust4(0)= ", mss_cnc_aer_lcl(0,6)
-                      call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                      call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                     endif
                   enddo
 
@@ -2598,7 +2598,7 @@ contains
                    write(iulog,*) "bnd_idx", bnd_idx
                    write(iulog,*) "F_abs", F_abs
                    write(iulog,*) "albedo", albedo
-                   call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                   call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                 endif
 
                 albout_lcl(bnd_idx) = albedo
@@ -2630,7 +2630,7 @@ contains
                    write (iulog,*) "SNICAR STATS: snw_rds(-1)= ", snw_rds(c_idx,-1)
                    write (iulog,*) "SNICAR STATS: snw_rds(0)= ", snw_rds(c_idx,0)
 
-                   call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                   call endrun(decomp_index=c_idx, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                 endif
 
              enddo   ! loop over wvl bands

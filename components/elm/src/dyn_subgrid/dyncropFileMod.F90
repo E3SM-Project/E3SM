@@ -178,7 +178,7 @@ contains
           if (col_set(c)) then
              write(iulog,*) subname//' ERROR: attempt to set a column that has already been set.'
              write(iulog,*) 'This may happen if there are multiple crops on a single column.'
-             call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(sourcefile, __LINE__))
+             call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
           col_pp%wtlunit(c) = wtcft_cur(g,m)
           if (use_crop) then

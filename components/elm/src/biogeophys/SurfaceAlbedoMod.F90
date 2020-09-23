@@ -973,7 +973,7 @@ contains
        if (abs(laisum-elai(p)) > 1.e-06_r8 .or. abs(saisum-esai(p)) > 1.e-06_r8) then
           write (iulog,*) 'multi-layer canopy error 01 in SurfaceAlbedo: ',&
                nrad(p),elai(p),laisum,esai(p),saisum
-          call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
        end if
 
        ! Repeat to find canopy layers buried by snow
@@ -1013,7 +1013,7 @@ contains
           if (abs(laisum-tlai(p)) > 1.e-06_r8 .or. abs(saisum-tsai(p)) > 1.e-06_r8) then
              write (iulog,*) 'multi-layer canopy error 02 in SurfaceAlbedo: ',nrad(p),ncan(p)
              write (iulog,*) tlai(p),elai(p),blai(p),laisum,tsai(p),esai(p),bsai(p),saisum
-             call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 

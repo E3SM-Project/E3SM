@@ -1680,7 +1680,7 @@ contains
                         abs(snwliqtot(c)) > 1.e-7_r8 ) then
                       write(iulog,*)'Inconsistency in SnowDivision_Lake! c, remainders', &
                            'dztot, snwicetot, snwliqtot = ',c,dztot(c),snwicetot(c),snwliqtot(c)
-                      call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                      call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                    end if
                 end if
              end do

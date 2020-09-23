@@ -1141,7 +1141,7 @@ contains
        curg  = lun_pp%gridcell(l)
        if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
           write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
-          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
        if (grc_pp%landunit_indices(ltype, curg) == ispval) then
@@ -1149,7 +1149,7 @@ contains
        else
           write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
           write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
-          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
