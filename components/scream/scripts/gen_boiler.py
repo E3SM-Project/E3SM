@@ -102,20 +102,28 @@ PIECES = {
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
     ),
 
-    "cxx_c2f_bind_impl"  : (
+    "cxx_c2f_glue_decl"  : (
+        lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
+        lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
+        lambda phys, sub, gb: re.compile(r".*"),
+    ),
+
+    "cxx_c2f_glue_impl"  : (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_impl"),
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub),
-        lambda phys, sub, gb: re.compile(r".*[}]\s*$"),
+        lambda phys, sub, gb: re.compile(r"^[}]\s*$"),
     ),
 
     "cxx_c2f_data"  : (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys), # insert at end of phys namespace (near bottom of file)
+        lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"), # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)),
-        lambda phys, sub, gb: re.compile(r".*(namespace|struct)"),
+        lambda phys, sub, gb: re.compile(r".*(namespace|struct|// Glue)"),
     ),
 
     "cxx_f2c_bind_decl"  : (
@@ -131,10 +139,10 @@ PIECES = {
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end {}".format(sub + "_f")),
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end {}".format(sub + "_f")), # reqs special comment
     ),
 
-    "cxx_func_hpp"  : (
+    "cxx_func_decl"  : (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_hpp"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"),
@@ -150,20 +158,20 @@ PIECES = {
         lambda phys, sub, gb: re.compile(r".*{\s*$"),
     ),
 
-    "cxx_bfb_unit_impl"  : (
-        lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
-        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct {}".format(get_data_test_struct_name(sub))),
-        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"),
-    ),
-
     "cxx_bfb_unit_decl" : (
         lambda phys, sub, gb: "tests/{}_unit_tests_common.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True),
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)),
         lambda phys, sub, gb: re.compile(r".*;\s*$"),
+    ),
+
+    "cxx_bfb_unit_impl"  : (
+        lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
+        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct {}".format(get_data_test_struct_name(sub))),
+        lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb"),
+        lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"),
     ),
 
     "cxx_eti" : (
@@ -283,8 +291,11 @@ def create_template(physics, sub, piece, gb):
 
         gen_code = getattr(gb, "gen_{}".format(piece))(physics, sub)
         contents = FILE_TEMPLATES[piece](physics, sub, gen_code)
-        with filepath.open("w") as fd:
-            fd.write(contents)
+        if gb.dry_run():
+            print("Would create file {} with contents:\n\n{}".format(filepath, contents))
+        else:
+            with filepath.open("w") as fd:
+                fd.write(contents)
 
         return True
     else:
@@ -518,6 +529,20 @@ C_TYPE_MAP = {"real" : "c_real", "integer" : "c_int", "logical" : "c_bool"}
 ###############################################################################
 def gen_arg_f90_decl(argtype, intent, dims, names):
 ###############################################################################
+    """
+    Generate f90 argument declaration based on the input data
+
+    >>> gen_arg_f90_decl("real", "in", ("10", "150"), ["foo", "bar"])
+    'real(kind=c_real) , intent(in), dimension(10, 150) :: foo, bar'
+    >>> gen_arg_f90_decl("real", "out", ("10", "150"), ["foo", "bar"])
+    'real(kind=c_real) , intent(out), dimension(10, 150) :: foo, bar'
+    >>> gen_arg_f90_decl("logical", "in", None, ["biz", "baz"])
+    'logical(kind=c_bool) , value, intent(in) :: biz, baz'
+    >>> gen_arg_f90_decl("integer", "inout", None, ["barg"])
+    'integer(kind=c_int) , intent(inout) :: barg'
+    >>> gen_arg_f90_decl("integer", "out", None, ["barg"])
+    'integer(kind=c_int) , intent(out) :: barg'
+    """
     expect(argtype in C_TYPE_MAP, "Unrecognized argtype for C_TYPE_MAP: {}".format(argtype))
     c_type = C_TYPE_MAP[argtype]
     value  = ", value" if dims is None and intent == "in" else ""
@@ -531,23 +556,93 @@ CXX_TYPE_MAP = {"real" : "Real", "integer" : "Int", "logical" : "bool"}
 ###############################################################################
 def get_cxx_type(arg_datum):
 ###############################################################################
+    """
+    Based on arg datum, give c++ bridge type
+
+    >>> get_cxx_type(("foo", "real", "in", ("100",)))
+    'Real*'
+    >>> get_cxx_type(("foo", "real", "in", None))
+    'Real'
+    >>> get_cxx_type(("foo", "real", "inout", ("100",)))
+    'Real*'
+    >>> get_cxx_type(("foo", "real", "inout", None))
+    'Real*'
+    >>> get_cxx_type(("foo", "real", "out", ("100",)))
+    'Real*'
+    >>> get_cxx_type(("foo", "real", "out", None))
+    'Real*'
+    >>> get_cxx_type(("foo", "integer", "inout", None))
+    'Int*'
+    """
     is_ptr = arg_datum[ARG_DIMS] is not None or arg_datum[ARG_INTENT] != "in"
     arg_type = arg_datum[ARG_TYPE]
     expect(arg_type in CXX_TYPE_MAP, "Unrecognized argtype for CXX_TYPE_MAP: {}".format(arg_type))
     arg_cxx_type = CXX_TYPE_MAP[arg_type]
     return "{}{}".format(arg_cxx_type, "*" if is_ptr else "")
 
+KOKKOS_TYPE_MAP = {"real" : "Spack", "integer" : "Int", "logical" : "bool"}
 ###############################################################################
-def gen_arg_cxx_decls(arg_data):
+def get_kokkos_type(arg_datum):
 ###############################################################################
+    """
+    Based on arg datum, give c++ kokkos type
+
+    Note: We can only guess at the correct types, especially whether an argument
+    should be packed data or not!
+
+    >>> get_kokkos_type(("foo", "real", "in", ("100",)))
+    'const uview_1d<const Spack>&'
+    >>> get_kokkos_type(("foo", "real", "in", None))
+    'const Spack&'
+    >>> get_kokkos_type(("foo", "real", "inout", ("100",)))
+    'const uview_1d<Spack>&'
+    >>> get_kokkos_type(("foo", "real", "inout", None))
+    'Spack&'
+    >>> get_kokkos_type(("foo", "real", "out", ("100",)))
+    'const uview_1d<Spack>&'
+    >>> get_kokkos_type(("foo", "real", "out", None))
+    'Spack&'
+    >>> get_kokkos_type(("foo", "integer", "inout", None))
+    'Int&'
+    """
+    is_const  = arg_datum[ARG_INTENT] == "in"
+    is_view   = arg_datum[ARG_DIMS] is not None
+    base_type = "{}{}".format("const " if is_const else "", KOKKOS_TYPE_MAP[arg_datum[ARG_TYPE]])
+
+    # We assume 1d even if the f90 array is 2d since we assume c++ will spawn a kernel
+    # over one of the dimensions
+    return "const uview_1d<{}>&".format(base_type) if is_view else "{}&".format(base_type)
+
+###############################################################################
+def gen_arg_cxx_decls(arg_data, kokkos=False):
+###############################################################################
+    """
+    Get all arg decls for a set of arg data
+
+    >>> gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)])
+    ['Real* foo', 'Real bar']
+    >>> gen_arg_cxx_decls([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)], kokkos=True)
+    ['const uview_1d<const Spack>& foo', 'const Spack& bar']
+    """
     arg_names    = [item[ARG_NAME] for item in arg_data]
-    arg_types    = [get_cxx_type(item) for item in arg_data]
-    arg_sig_list = ["{} {}".format(arg_name, arg_type) for arg_name, arg_type in zip(arg_names, arg_types)]
+    get_type     = get_kokkos_type if kokkos else get_cxx_type
+    arg_types    = [get_type(item) for item in arg_data]
+    arg_sig_list = ["{} {}".format(arg_type, arg_name) for arg_name, arg_type in zip(arg_names, arg_types)]
     return arg_sig_list
 
 ###############################################################################
 def needs_transpose(arg_data):
 ###############################################################################
+    """
+    Based on data, does this sub need to have its data transposed when going between languages?
+
+    >>> needs_transpose([("foo", "real", "in", ("100",)), ("bar", "real", "in", None)])
+    False
+    >>> needs_transpose([("foo", "real", "in", ("100","50")), ("bar", "real", "in", None)])
+    True
+    >>> needs_transpose([("foo", "real", "in", None), ("bar", "real", "in", None)])
+    False
+    """
     for arg_datum in arg_data:
         arg_dims = arg_datum[ARG_DIMS]
         if arg_dims is not None and len(arg_dims) > 1:
@@ -558,16 +653,41 @@ def needs_transpose(arg_data):
 ###############################################################################
 def gen_cxx_data_args(arg_data):
 ###############################################################################
+    """
+    Based on data, generate unpacking of Data struct args
+
+    >>> gen_cxx_data_args([("foo", "real", "in", ("100",)), ("bar", "real", "in", None), ("baz", "integer", "inout", None), ("bag", "integer", "inout", ("100",))])
+    ['d.foo', 'd.bar', '&d.baz', 'd.bag']
+    """
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
-    args = ["{}.d{}".format("&" if need_ptr else "", arg_name) for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
+    args = ["{}d.{}".format("&" if need_ptr else "", arg_name) for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
     return args
 
 ###############################################################################
 def gen_arg_f90_decls(arg_data):
 ###############################################################################
-    """
+    r"""
     Generate f90 argument declarations, will attempt to group these together if possible.
+
+    >>> arg_data = [
+    ... ("foo1", "real", "in", ("100",)),
+    ... ("foo2", "real", "in", ("100",)),
+    ... ("bar1", "real", "in", ("100","50")),
+    ... ("bar2", "real", "in", ("100","50")),
+    ... ("baz", "real", "inout", ("100",)),
+    ... ("bag", "integer", "in", ("100",)),
+    ... ("bab1", "integer", "out", None),
+    ... ("bab2", "integer", "out", None),
+    ... ("val", "logical", "in", None),
+    ... ]
+    >>> print("\n".join(gen_arg_f90_decls(arg_data)))
+    real(kind=c_real) , intent(in), dimension(100) :: foo1, foo2
+    real(kind=c_real) , intent(in), dimension(100, 50) :: bar1, bar2
+    real(kind=c_real) , intent(inout), dimension(100) :: baz
+    integer(kind=c_int) , intent(in), dimension(100) :: bag
+    integer(kind=c_int) , intent(out) :: bab1, bab2
+    logical(kind=c_bool) , value, intent(in) :: val
     """
     metadata = OrderedDict()
     for name, argtype, intent, dims in arg_data:
@@ -592,6 +712,35 @@ def has_arrays(arg_data):
 ###############################################################################
 def gen_struct_members(arg_data):
 ###############################################################################
+    r"""
+    Gen cxx code for data struct members
+
+    >>> arg_data = [
+    ... ("foo1", "real", "in", ("100",)),
+    ... ("foo2", "real", "in", ("100",)),
+    ... ("bar1", "real", "in", ("100","50")),
+    ... ("bar2", "real", "in", ("100","50")),
+    ... ("gag", "real", "in", None),
+    ... ("baz", "real", "inout", ("100",)),
+    ... ("bag", "integer", "in", ("100",)),
+    ... ("bab1", "integer", "out", None),
+    ... ("bab2", "integer", "out", None),
+    ... ("val", "logical", "in", None),
+    ... ]
+    >>> print("\n".join(gen_struct_members(arg_data)))
+    // Inputs
+    Real *foo1, *foo2, *bar1, *bar2;
+    Real gag;
+    Int *bag;
+    bool val;
+    <BLANKLINE>
+    // Inputs/Outputs
+    Real *baz;
+    <BLANKLINE>
+    // Outputs
+    Int bab1, bab2;
+    <BLANKLINE>
+    """
     metadata = {} # intent -> (type, is_ptr) -> names
     for name, argtype, intent, dims in arg_data:
         metadata.setdefault(intent, OrderedDict()).setdefault((argtype, dims is not None), []).append(name)
@@ -613,8 +762,31 @@ def gen_struct_members(arg_data):
     return result
 
 ###############################################################################
-def get_struct_api(physics, struct_name, arg_data):
+def group_data(arg_data, filter_out_intent=None):
 ###############################################################################
+    """
+    Given data, return (i_dim, k_dim, j_dim, [scalars], [ik_reals], [ij_reals], [i_reals], [i_ints])
+
+    >>> arg_data = [
+    ... ("foo1", "real", "in", ("shcol",)),
+    ... ("foo2", "real", "in", ("shcol",)),
+    ... ("bar1", "real", "in", ("shcol","nlev")),
+    ... ("bar2", "real", "in", ("shcol","nlev")),
+    ... ("bak1", "real", "in", ("shcol","nlevi")),
+    ... ("bak2", "real", "in", ("shcol","nlevi")),
+    ... ("gag", "real", "in", None),
+    ... ("baz", "real", "inout", ("shcol",)),
+    ... ("bag", "integer", "in", ("shcol",)),
+    ... ("bab1", "integer", "out", None),
+    ... ("bab2", "integer", "out", None),
+    ... ("val", "logical", "in", None),
+    ... ("shcol", "integer", "in", None),
+    ... ("nlev", "integer", "in", None),
+    ... ("nlevi", "integer", "in", None),
+    ... ]
+    >>> group_data(arg_data)
+    ('shcol', 'nlev', 'nlevi', [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')], ['bar1', 'bar2'], ['bak1', 'bak2'], ['foo1', 'foo2', 'baz'], ['bag'])
+    """
     i_ints   = []
     i_reals  = []
     ik_reals = []
@@ -648,32 +820,66 @@ def get_struct_api(physics, struct_name, arg_data):
                 else:
                     expect(False, "Unable to identify dimension {} for arg {}".format(dims[1], name))
 
-    for name, argtype, _, dims in arg_data:
-        if dims is None:
-            if (name not in [i_dim, k_dim, j_dim]):
-                scalars.append( (name, CXX_TYPE_MAP[argtype]))
-            else:
-                expect(argtype == "integer", "Expected dimension {} to be of type integer".format(name))
+    for name, argtype, intent, dims in arg_data:
+        if filter_out_intent is None or intent != filter_out_intent:
+            if dims is None:
+                if (name not in [i_dim, k_dim, j_dim]):
+                    scalars.append( (name, CXX_TYPE_MAP[argtype]))
+                else:
+                    expect(argtype == "integer", "Expected dimension {} to be of type integer".format(name))
 
-        elif argtype == "integer":
-            expect(len(dims) == 1 and dims[0] == i_dim, "integer data {} has unsupported dims {}".format(name, dims))
-            i_ints.append(name)
-
-        elif len(dims) == 1:
-            expect(dims[0] == i_dim and argtype in ["integer", "real"],
-                   "1d real data {} has unsupported dims {}".format(name, dims))
-            if argtype == "real":
-                i_reals.append(name)
-            else:
+            elif argtype == "integer":
+                expect(len(dims) == 1 and dims[0] == i_dim, "integer data {} has unsupported dims {}".format(name, dims))
                 i_ints.append(name)
 
-        else:
-            expect(len(dims) == 2 and dims[0] == i_dim and dims[1] in [k_dim, j_dim],
-                   "2d real data {} has unsupported dims {}".format(name, dims))
-            if dims[1] == k_dim:
-                ik_reals.append(name)
+            elif len(dims) == 1:
+                expect(dims[0] == i_dim and argtype in ["integer", "real"],
+                       "1d real data {} has unsupported dims {}".format(name, dims))
+                if argtype == "real":
+                    i_reals.append(name)
+                else:
+                    i_ints.append(name)
+
             else:
-                ij_reals.append(name)
+                expect(len(dims) == 2 and dims[0] == i_dim and dims[1] in [k_dim, j_dim],
+                       "2d real data {} has unsupported dims {}".format(name, dims))
+                if dims[1] == k_dim:
+                    ik_reals.append(name)
+                else:
+                    ij_reals.append(name)
+
+    return i_dim, k_dim, j_dim, scalars, ik_reals, ij_reals, i_reals, i_ints
+
+###############################################################################
+def gen_struct_api(physics, struct_name, arg_data):
+###############################################################################
+    r"""
+    Given data, generate code for data struct api
+
+    >>> arg_data = [
+    ... ("foo1", "real", "in", ("shcol",)),
+    ... ("foo2", "real", "in", ("shcol",)),
+    ... ("bar1", "real", "in", ("shcol","nlev")),
+    ... ("bar2", "real", "in", ("shcol","nlev")),
+    ... ("bak1", "real", "in", ("shcol","nlevi")),
+    ... ("bak2", "real", "in", ("shcol","nlevi")),
+    ... ("gag", "real", "in", None),
+    ... ("baz", "real", "inout", ("shcol",)),
+    ... ("bag", "integer", "in", ("shcol",)),
+    ... ("bab1", "integer", "out", None),
+    ... ("bab2", "integer", "out", None),
+    ... ("val", "logical", "in", None),
+    ... ("shcol", "integer", "in", None),
+    ... ("nlev", "integer", "in", None),
+    ... ("nlevi", "integer", "in", None),
+    ... ]
+    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", arg_data)))
+    DataSubName(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+      PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+    <BLANKLINE>
+    SHOC_SCALARS(DataSubName, 3, 4, gag, bab1, bab2, val)
+    """
+    i_dim, k_dim, j_dim, scalars, ik_reals, ij_reals, i_reals, i_ints = group_data(arg_data)
 
     result = []
     dim_args = [(item, "Int") for item in [i_dim, k_dim, j_dim] if item is not None]
@@ -692,6 +898,7 @@ def get_struct_api(physics, struct_name, arg_data):
 
     parent_call += " {}"
     result.append(parent_call)
+    result.append("")
 
     if physics != "p3":
         if len(scalars) == 0:
@@ -701,6 +908,8 @@ def get_struct_api(physics, struct_name, arg_data):
                                                                 ", ".join([name for name, _ in scalars])))
     else:
         expect(False, "p3 is not supported for now") # TODO
+
+    return result
 
 ###############################################################################
 def find_insertion(lines, insert_regex):
@@ -781,6 +990,11 @@ class GenBoiler(object):
         expect(sub in phys_db, "No data for subroutine {} in physics {}".format(sub, phys))
         return phys_db[sub]
 
+    ###########################################################################
+    def dry_run(self):
+    ###########################################################################
+        return self._dry_run
+
     ###############################################################################
     def get_path_for_piece_file(self, physics, sub, piece):
     ###############################################################################
@@ -799,6 +1013,7 @@ class GenBoiler(object):
             pass
         else:
             orig_lines = filepath.open().readlines()
+            needs_rewrite = False
             gen_lines  = getattr(self, "gen_{}".format(piece))(phys, sub).splitlines()
 
             # Check to see if piece already exists
@@ -812,8 +1027,12 @@ class GenBoiler(object):
                 if self._dry_run:
                     print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
                           format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
+                elif not self._overwrite:
+                    print("Already detected piece {} for subroutine {} in file {}, code:\n{}".\
+                          format(piece, sub, filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)])))
                 else:
                     orig_lines[slice(*existing_piece_line_range)] = gen_lines
+                    needs_rewrite = True
             else:
                 # Look for place to insert and insert
                 insert_line = find_insertion(orig_lines, insert_regex)
@@ -825,8 +1044,9 @@ class GenBoiler(object):
                     print("In file {}, at line {}, would insert:\n{}}".format(filepath, insert_line, "\n".join(gen_lines)))
                 else:
                     orig_lines[insert_line:insert_line] = gen_lines
+                    needs_rewrite = True
 
-            if not self._dry_run:
+            if needs_rewrite:
                 with filepath.open("w") as fd:
                     fd.writelines(orig_lines)
 
@@ -874,7 +1094,14 @@ class GenBoiler(object):
         return result
 
     ###########################################################################
-    def gen_cxx_c2f_bind_impl(self, phys, sub):
+    def gen_cxx_c2f_glue_decl(self, phys, sub):
+    ###########################################################################
+        struct_name      = get_data_struct_name(sub)
+        result = "void {sub}({struct_name}& d);".format(sub=sub, struct_name=struct_name)
+        return result
+
+    ###########################################################################
+    def gen_cxx_c2f_glue_impl(self, phys, sub):
     ###########################################################################
         arg_data         = self._get_arg_data(phys, sub)
         arg_data_args    = gen_cxx_data_args(arg_data)
@@ -886,10 +1113,10 @@ class GenBoiler(object):
 
         result = \
 """void {sub}({data_struct}& d)
-{
+{{
   {init_code}{transpose_code_1}
   {sub}_c({arg_data_args});{transpose_code_2}
-}
+}}
 """.format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
         return result
 
@@ -901,14 +1128,169 @@ class GenBoiler(object):
         any_arrays       = has_arrays(arg_data)
         struct_name      = get_data_struct_name(sub)
         inheritance      = " : public PhysicsTestData" if any_arrays else ""
-        api              = get_struct_api(phys, struct_name, arg_data) if any_arrays else ""
+        api              = gen_struct_api(phys, struct_name, arg_data) if any_arrays else ""
 
         result = \
-"""struct {struct_name}{inheritance} {
+"""struct {struct_name}{inheritance} {{
 {struct_members}{api}
-};
+}};
 
-""".format(struct_name=struct_name, inheritance=inheritance, api="\n  ".join(api))
+""".format(struct_name=struct_name, inheritance=inheritance, struct_members=struct_members, api="\n  ".join(api))
+        return result
+
+    ###########################################################################
+    def gen_cxx_f2c_bind_decl(self, phys, sub):
+    ###########################################################################
+        arg_data  = self._get_arg_data(phys, sub)
+        arg_decls = gen_arg_cxx_decls(arg_data)
+
+        return "void {sub}_f({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+
+    ###########################################################################
+    def gen_cxx_f2c_bind_impl(self, phys, sub):
+    ###########################################################################
+        decl = self.gen_cxx_f2c_bind_decl(phys, sub).rstrip(";")
+
+        # TODO - is it possible to fill-out some or all of the implementation?
+        result = \
+"""{decl}
+{{
+  // TODO
+}} // end {sub}_f
+""".format(sub=sub, decl=decl)
+        return result
+
+    ###########################################################################
+    def gen_cxx_func_decl(self, phys, sub):
+    ###########################################################################
+        arg_data = self._get_arg_data(phys, sub)
+        arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
+
+        return "void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+
+    ###########################################################################
+    def gen_cxx_func_impl(self, phys, sub):
+    ###########################################################################
+        decl = self.gen_cxx_func_decl(phys, sub).rstrip(";")
+
+        # I don't think any intelligent guess at an impl is possible here
+        result = \
+"""{decl}
+{{
+  // TODO
+}}
+""".format(decl=decl)
+        return result
+
+    ###########################################################################
+    def gen_cxx_bfb_unit_decl(self, phys, sub):
+    ###########################################################################
+        test_struct = get_data_test_struct_name(sub)
+        return "struct {};".format(test_struct)
+
+    ###########################################################################
+    def gen_cxx_bfb_unit_impl(self, phys, sub):
+    ###########################################################################
+        arg_data = self._get_arg_data(phys, sub)
+        data_struct = get_data_struct_name(sub)
+        has_array = has_arrays(arg_data)
+        need_transpose = needs_transpose(arg_data)
+
+        gen_random = "" if not has_array else \
+"""
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }"""
+
+        c2f_transpose_code = "" if not need_transpose else \
+"""
+      d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
+        f2c_transpose_code = "" if not need_transpose else \
+"""
+      d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout"""
+
+        _, _, _, scalars, ik_reals, ij_reals, i_reals, i_ints = group_data(arg_data, filter_out_intent="in")
+        check_scalars, check_arrays = "", ""
+        i_arrays = i_reals + i_ints
+        for scalar in scalars:
+            check_scalars += "    REQUIRE(f90_data.{name} == cxx_data.{name});\n".format(name=scalar)
+
+        for items, total_call in [(ik_reals, "total1x2()"), (ij_reals, "total1x3()"), (i_arrays, "dim1")]:
+            if len(items) > 0:
+                check_arrays += "      for (Int k = 0; k < f90_data.{}; ++k) {{\n".format(total_call)
+                for item in items:
+                    check_arrays += "        REQUIRE(f90_data.{name}[k] == cxx_data.{name}[k]);\n".format(name=item)
+                check_arrays += "      }\n"
+
+        result = \
+"""  static void bfb()
+  {{
+    {data_struct} f90_data[] = {{
+      // TODO
+    }};
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    {data_struct} cxx_data[] = {{
+      // TODO
+    }};
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {{
+      // expects data in C layout
+      calc_shoc_vertflux(d);
+    }}
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {{{c2f_transpose_code}
+      calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);{f2c_transpose_code}
+    }}
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {{
+      {data_struct}& d_f90 = f90_data[i];
+      {data_struct}& d_cxx = cxx_data[i];
+{check_scalars}{check_arrays}
+    }}
+}}
+""".format(data_struct=data_struct,
+           gen_random=gen_random,
+           c2f_transpose_code=c2f_transpose_code,
+           f2c_transpose_code=f2c_transpose_code,
+           check_scalars=check_scalars,
+           check_arrays=check_arrays)
+
+        return result
+
+    ###########################################################################
+    def gen_cxx_eti(self, phys, sub):
+    ###########################################################################
+        include_file = PIECES["cxx_func_impl"][0](phys, sub, self)
+
+        result = \
+"""#include {include_file}
+
+namespace scream {{
+namespace {phys} {{
+
+/*
+ * Explicit instantiation for doing {sub} on Reals using the
+ * default device.
+ */
+
+template struct Functions<Real,DefaultDevice>;
+
+} // namespace {phys}
+} // namespace scream
+""".format(include_file=include_file, phys=phys)
+
+        return result
 
     ###########################################################################
     def gen_boiler(self):

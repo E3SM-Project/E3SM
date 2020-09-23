@@ -184,7 +184,7 @@ void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real w
 void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
                                        Real* wqw, Real* qwthl, Real* uw, Real* vw,
                                        Real* wtke);
-} // extern "C" : end _c decls
+} // end _c function decls
 
 namespace scream {
 namespace shoc {

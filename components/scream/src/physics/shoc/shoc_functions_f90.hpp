@@ -597,15 +597,7 @@ struct SHOCSecondMomentUbycondData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCSecondMomentUbycondData, 1);
 };
 
-//
 // Glue functions to call fortran from from C++ with the Data struct
-//
-
-// This function initialzes the grid used by shoc. Given the
-// locations of the cell center (location of thermodynaics quantities), cell
-// interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
-// and density.
-
 void shoc_grid                                      (SHOCGridData &d);
 void update_host_dse                                (SHOCEnergydseData &d);
 void shoc_energy_integrals                          (SHOCEnergyintData &d);
@@ -651,10 +643,7 @@ void shoc_assumed_pdf_compute_liquid_water_flux     (SHOCPDFcompliqfluxData &d);
 void shoc_assumed_pdf_compute_buoyancy_flux         (SHOCPDFcompbuoyfluxData &d);
 void shoc_diag_second_moments_ubycond               (SHOCSecondMomentUbycondData& d);
 
-//
-// _f functions decls
-//
-extern "C" {
+extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
