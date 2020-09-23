@@ -312,8 +312,6 @@ module ocn_time_integration_split
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceCur, 1)
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceNew, 2)
 
-         call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
-
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
@@ -347,8 +345,6 @@ module ocn_time_integration_split
             sshNew(iCell) = sshCur(iCell)
             do k = 1, maxLevelCell(iCell)
                layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
-               ! set vertAleTransportTop to zero for stage 1 velocity tendency, first time through.
-               vertAleTransportTop(k,iCell) = 0.0_RKIND
             end do
          end do
          !$omp end do
@@ -524,6 +520,19 @@ module ocn_time_integration_split
            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThicknessNew, 2)
 
            call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+           call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
+
+           ! compute vertAleTransportTop.  Use u (rather than normalTransportVelocity) for momentum advection.
+           ! Use the most recent time level available.
+           if (associated(highFreqThicknessNew)) then
+              call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+                 layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, err, highFreqThicknessNew)
+            else
+               call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
+                  layerThicknessCur, layerThicknessEdge, normalVelocityCur, &
+                  sshCur, dt, vertAleTransportTop, err)
+            endif
 
            call ocn_tend_vel(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, stage1_tend_time, dt)
 
