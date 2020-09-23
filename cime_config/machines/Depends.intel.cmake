@@ -10,7 +10,7 @@ set(PERFOBJS
   homme/src/share/viscosity_base.F90
   homme/src/theta-l/viscosity_theta.F90
   homme/src/theta-l/eos.F90
-  cam/src/physics/cam/uwshcu.F90)
+  eam/src/physics/cam/uwshcu.F90)
 
 set(REDUCED_PRECISION_OBJS ${CIMESRC_PATH}/share/util/shr_wv_sat_mod.F90)
 
