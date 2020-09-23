@@ -160,7 +160,7 @@ CONTAINS
     integer  :: ispec 
     integer  :: length 
     integer  :: wesveg       !wesely vegegation index  
-    integer  :: clmveg       !clm veg index from ivegtype 
+    integer  :: elmveg       !elm veg index from ivegtype
     integer  :: i 
     integer  :: index_season !seasonal index based on LAI.  This indexs wesely data tables 
     integer  :: nstep        !current step 
@@ -261,31 +261,31 @@ CONTAINS
             solar_flux = forc_solad(t,1) 
             lat        = grc_pp%latdeg(g) 
             lon        = grc_pp%londeg(g) 
-            clmveg     = veg_pp%itype(pi) 
+            elmveg     = veg_pp%itype(pi)
             soilw      = h2osoi_vol(c,1)
 
-            !map CLM veg type into Wesely veg type  
+            !map ELM veg type into Wesely veg type  
             wesveg = wveg_unset 
-            if (clmveg == noveg                               ) wesveg = 8 
-            if (clmveg == ndllf_evr_tmp_tree                  ) wesveg = 5 
-            if (clmveg == ndllf_evr_brl_tree                  ) wesveg = 5 
-            if (clmveg == ndllf_dcd_brl_tree                  ) wesveg = 5 
-            if (clmveg == nbrdlf_evr_trp_tree                 ) wesveg = 4 
-            if (clmveg == nbrdlf_evr_tmp_tree                 ) wesveg = 4 
-            if (clmveg == nbrdlf_dcd_trp_tree                 ) wesveg = 4 
-            if (clmveg == nbrdlf_dcd_tmp_tree                 ) wesveg = 4 
-            if (clmveg == nbrdlf_dcd_brl_tree                 ) wesveg = 4 
-            if (clmveg == nbrdlf_evr_shrub                    ) wesveg = 11 
-            if (clmveg == nbrdlf_dcd_tmp_shrub                ) wesveg = 11 
-            if (clmveg == nbrdlf_dcd_brl_shrub                ) wesveg = 11 
-            if (clmveg == nc3_arctic_grass                    ) wesveg = 3 
-            if (clmveg == nc3_nonarctic_grass                 ) wesveg = 3 
-            if (clmveg == nc4_grass                           ) wesveg = 3 
-            if (clmveg == nc3crop                             ) wesveg = 2 
-            if (clmveg == nc3irrig                            ) wesveg = 2 
-            if (clmveg >= npcropmin .and. clmveg <= npcropmax ) wesveg = 2 
+            if (elmveg == noveg                               ) wesveg = 8
+            if (elmveg == ndllf_evr_tmp_tree                  ) wesveg = 5
+            if (elmveg == ndllf_evr_brl_tree                  ) wesveg = 5
+            if (elmveg == ndllf_dcd_brl_tree                  ) wesveg = 5
+            if (elmveg == nbrdlf_evr_trp_tree                 ) wesveg = 4
+            if (elmveg == nbrdlf_evr_tmp_tree                 ) wesveg = 4
+            if (elmveg == nbrdlf_dcd_trp_tree                 ) wesveg = 4
+            if (elmveg == nbrdlf_dcd_tmp_tree                 ) wesveg = 4
+            if (elmveg == nbrdlf_dcd_brl_tree                 ) wesveg = 4
+            if (elmveg == nbrdlf_evr_shrub                    ) wesveg = 11
+            if (elmveg == nbrdlf_dcd_tmp_shrub                ) wesveg = 11
+            if (elmveg == nbrdlf_dcd_brl_shrub                ) wesveg = 11
+            if (elmveg == nc3_arctic_grass                    ) wesveg = 3
+            if (elmveg == nc3_nonarctic_grass                 ) wesveg = 3
+            if (elmveg == nc4_grass                           ) wesveg = 3
+            if (elmveg == nc3crop                             ) wesveg = 2
+            if (elmveg == nc3irrig                            ) wesveg = 2
+            if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
             if (wesveg == wveg_unset )then
-               write(iulog,*) 'clmveg = ', clmveg, 'lun_pp%itype = ', lun_pp%itype(l)
+               write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)
                call endrun(decomp_index=pi, elmlevel=namep, &
                     msg='ERROR: Not able to determine Wesley vegetation type'//&
                     errMsg(__FILE__, __LINE__))
