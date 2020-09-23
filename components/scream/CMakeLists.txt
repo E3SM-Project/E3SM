@@ -29,8 +29,8 @@ include(EkatMpiUtils)
 # (for openpmi; -lmpicxx for mpich) flag.
 DisableMpiCxxBindings()
 
-if (KOKKOS_ENABLE_CUDA)
-  include(BuildKokkos.cmake)
+if (Kokkos_ENABLE_CUDA)
+  include(EkatBuildKokkos)
   # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
   EkatSetKokkosSourceDir()
 
