@@ -873,9 +873,12 @@ def gen_cxx_data_args(arg_data):
     >>> gen_cxx_data_args([("foo", "real", "in", ("100",)), ("bar", "real", "in", None), ("baz", "integer", "inout", None), ("bag", "integer", "inout", ("100",))])
     ['d.foo', 'd.bar', '&d.baz', 'd.bag']
     """
+    all_dims = group_data(arg_data)[0:3]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
-    args = ["{}d.{}".format("&" if need_ptr else "", arg_name) for arg_name, need_ptr in zip(arg_names, args_needs_ptr)]
+    arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
+    args = ["{}d.{}{}".format("&" if need_ptr else "", arg_name, "()" if dim_call else "")
+            for arg_name, need_ptr, dim_call in zip(arg_names, args_needs_ptr, arg_dim_call)]
     return args
 
 ###############################################################################
@@ -1334,12 +1337,12 @@ class GenBoiler(object):
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
-          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::util::TransposeDirection::f2c>();
         }
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_data_args    = gen_cxx_data_args(arg_data)
+        arg_data_args    = ", ".join(gen_cxx_data_args(arg_data))
         need_transpose   = needs_transpose(arg_data)
         transpose_code_1 = "\n  d.transpose<ekat::util::TransposeDirection::c2f>();" if need_transpose else ""
         transpose_code_2 = "\n  d.transpose<ekat::util::TransposeDirection::f2c>();" if need_transpose else ""
@@ -1522,7 +1525,7 @@ class GenBoiler(object):
             // Get data from cxx
             for (auto& d : cxx_data) {
               d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout
-              fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol, d.nlev, d.nlevi, d.ball1, d.ball2);
+              fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
               d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout
             }
         <BLANKLINE>
@@ -1718,7 +1721,7 @@ template struct Functions<Real,DefaultDevice>;
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
-          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::util::TransposeDirection::f2c>();
         }
 
@@ -1735,7 +1738,7 @@ template struct Functions<Real,DefaultDevice>;
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
-          fake_sub_c(['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ball1', 'd.ball2']);
+          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::util::TransposeDirection::f2c>();
         }
 
@@ -1766,7 +1769,7 @@ template struct Functions<Real,DefaultDevice>;
         """
         if force_arg_data is None: # don't want unit tests printing this
             print("===============================================================================")
-            print("Trying to generate piece {} for subroutine {} for physics {}".format(piece, sub, phys))
+            print("Trying to generate piece {} for subroutine {} for physics {}\n".format(piece, sub, phys))
 
         base_filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
             = [item(phys, sub, self) for item in PIECES[piece]]
