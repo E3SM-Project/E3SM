@@ -60,7 +60,6 @@ integer, parameter:: cld_brn_aero = 2
 
 integer :: dgnum_idx = -1
 
-integer, parameter :: maxpair_csizxf = 1
 #ifdef MODAL_AERO
 integer, parameter :: maxspec_csizxf = ntot_aspectype
 #else
@@ -72,13 +71,13 @@ integer, parameter :: maxspec_csizxf = 8
 real(r8), parameter :: third = 1.0_r8/3.0_r8
 
 integer :: npair_csizxf = -123456789
-integer :: modefrm_csizxf(maxpair_csizxf)
-integer :: modetoo_csizxf(maxpair_csizxf)
-integer :: nspecfrm_csizxf(maxpair_csizxf)
-integer :: lspecfrmc_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspecfrma_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspectooc_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspectooa_csizxf(maxspec_csizxf,maxpair_csizxf)
+integer :: modefrm_csizxf
+integer :: modetoo_csizxf
+integer :: nspecfrm_csizxf
+integer :: lspecfrmc_csizxf(maxspec_csizxf)
+integer :: lspecfrma_csizxf(maxspec_csizxf)
+integer :: lspectooc_csizxf(maxspec_csizxf)
+integer :: lspectooa_csizxf(maxspec_csizxf)
 
 !===============================================================================
 contains
@@ -144,8 +143,8 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    endif
 
    npair_csizxf = 0
-   modefrm_csizxf(1) = 0
-   modetoo_csizxf(1) = 0
+   modefrm_csizxf = 0
+   modetoo_csizxf = 0
 
 #ifndef MODAL_AERO
    do_adjust_default          = .false.
@@ -183,16 +182,16 @@ do_aitacc_transfer_if_block1: &
 !   transfers include number_a, number_c, mass_a, mass_c
 !
       npair_csizxf = 1
-      modefrm_csizxf(1) = nait
-      modetoo_csizxf(1) = nacc
+      modefrm_csizxf = nait
+      modetoo_csizxf = nacc
 
 !
 !   define species involved in each transfer pairing
 !
 aa_ipair: do ipair = 1, npair_csizxf
 
-      mfrm = modefrm_csizxf(ipair)
-      mtoo = modetoo_csizxf(ipair)
+      mfrm = modefrm_csizxf
+      mtoo = modetoo_csizxf
       if (mfrm < 10) then
           nchfrmskip = 1
       else if (mfrm < 100) then
@@ -269,13 +268,13 @@ aa_iqfrm: do iqfrm = -1, nspec_amode(mfrm)
          end if
 
          nspec = nspec + 1
-         lspecfrma_csizxf(nspec,ipair) = lsfrma
-         lspectooa_csizxf(nspec,ipair) = lstooa
-         lspecfrmc_csizxf(nspec,ipair) = lsfrmc
-         lspectooc_csizxf(nspec,ipair) = lstooc
+         lspecfrma_csizxf(nspec) = lsfrma
+         lspectooa_csizxf(nspec) = lstooa
+         lspecfrmc_csizxf(nspec) = lsfrmc
+         lspectooc_csizxf(nspec) = lstooc
       end do aa_iqfrm
 
-      nspecfrm_csizxf(ipair) = nspec
+      nspecfrm_csizxf = nspec
       end do aa_ipair
 
 9100  format( / '*** subr. modal_aero_calcsize_init' /   &
@@ -299,15 +298,15 @@ aa_iqfrm: do iqfrm = -1, nspec_amode(mfrm)
       write(iulog,9310) do_adjust_default, do_aitacc_transfer_default
 
       do ipair = 1, npair_csizxf
-      mfrm = modefrm_csizxf(ipair)
-      mtoo = modetoo_csizxf(ipair)
+      mfrm = modefrm_csizxf
+      mtoo = modetoo_csizxf
       write(iulog,9320) ipair, mfrm, mtoo
 
-      do iq = 1, nspecfrm_csizxf(ipair)
-         lsfrma = lspecfrma_csizxf(iq,ipair)
-         lstooa = lspectooa_csizxf(iq,ipair)
-         lsfrmc = lspecfrmc_csizxf(iq,ipair)
-         lstooc = lspectooc_csizxf(iq,ipair)
+      do iq = 1, nspecfrm_csizxf
+         lsfrma = lspecfrma_csizxf(iq)
+         lstooa = lspectooa_csizxf(iq)
+         lsfrmc = lspecfrmc_csizxf(iq)
+         lstooc = lspectooc_csizxf(iq)
          if (lstooa .gt. 0) then
             write(iulog,9330) lsfrma, cnst_name(lsfrma),   &
                                lstooa, cnst_name(lstooa)
@@ -389,15 +388,15 @@ do_aitacc_transfer_if_block2: &
 
 ! check that calcsize transfer ipair=1 is aitken-->accum
       ipair = 1
-      if ((modefrm_csizxf(ipair) .ne. nait) .or.   &
-          (modetoo_csizxf(ipair) .ne. nacc)) then
+      if ((modefrm_csizxf .ne. nait) .or.   &
+          (modetoo_csizxf .ne. nacc)) then
          write( iulog, '(//2a//)' )   &
             '*** modal_aero_calcaersize_init error -- ',   &
             'modefrm/too_csizxf(1) are wrong'
          call endrun( 'modal_aero_calcaersize_init error' )
       end if
 
-      do iq = 1, nspecfrm_csizxf(ipair)
+      do iq = 1, nspecfrm_csizxf
 
 ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
          do aer_type = 1, 2
@@ -405,11 +404,11 @@ do_aitacc_transfer_if_block2: &
 ! the lspecfrma_csizxf (and lspecfrmc_csizxf) are aitken species
 ! the lspectooa_csizxf (and lspectooc_csizxf) are accum  species
             if (aer_type .eq. inter_aero) then
-               lsfrm = lspecfrma_csizxf(iq,ipair)
-               lstoo = lspectooa_csizxf(iq,ipair)
+               lsfrm = lspecfrma_csizxf(iq)
+               lstoo = lspectooa_csizxf(iq)
             else
-               lsfrm = lspecfrmc_csizxf(iq,ipair)
-               lstoo = lspectooc_csizxf(iq,ipair)
+               lsfrm = lspecfrmc_csizxf(iq)
+               lstoo = lspectooc_csizxf(iq)
             end if
             if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
 
@@ -559,7 +558,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: v2ncur_a(pcols,pver,ntot_amode)
    real(r8) :: v2ncur_c(pcols,pver,ntot_amode)
 
-   integer, parameter :: ipair = 1
    !---------------------------------------------------------------------
    ! "qsrflx" array:
    !----------------
@@ -584,7 +582,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !5. remove unused vars
    !6. update mmr should not happen for diagnostics, add a check!!!
    !7. add comments and author, date , called by and calls
-   !8. ipair seems to take value of 1 only
    !9. why call master proc......is it tp print something during first time step? (aitken_accum_exchange)
    !10. cloud borne processes and interstital can be combined and refactored into one subroutine.(aitken_accum_exchange)
    !11. init and register routine should be re-worked/streamlined to remove redundant logics
@@ -716,7 +713,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !
    if ( do_aitacc_transfer ) then
       if(present(cp_buf)) then!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
+         call aitken_accum_exchange(ncol, lchnk, list_idx_local, tadjinv, &
               deltat, pdel, state_q, state, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
@@ -724,7 +721,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
               dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
               dqdt, dqqcwdt, qsrflx, cp_buf)
       else!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
+         call aitken_accum_exchange(ncol, lchnk, list_idx_local, tadjinv, &
               deltat, pdel, state_q, state, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
@@ -769,12 +766,12 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       if ( .not. do_aitacc_transfer ) return ! return if transfer of species not required
 
 
-      do iq = 1, nspecfrm_csizxf(ipair)
+      do iq = 1, nspecfrm_csizxf
 
          ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
 
-         lsfrm = lspecfrma_csizxf(iq,ipair)
-         lstoo = lspectooa_csizxf(iq,ipair)
+         lsfrm = lspecfrma_csizxf(iq)
+         lstoo = lspectooa_csizxf(iq)
 
          if ((lsfrm > 0) .and. (lstoo > 0)) then
             tmpnamea = cnst_name(lsfrm)
@@ -792,8 +789,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
             call outfld( fieldname, qsrflx(:,lstoo,4,inter_aero), pcols, lchnk)
          endif
 
-         lsfrm = lspecfrmc_csizxf(iq,ipair)
-         lstoo = lspectooc_csizxf(iq,ipair)
+         lsfrm = lspecfrmc_csizxf(iq)
+         lstoo = lspectooc_csizxf(iq)
          if ((lsfrm > 0) .and. (lstoo > 0)) then
             tmpnamea = cnst_name_cw(lsfrm)
             tmpnameb = cnst_name_cw(lstoo)
@@ -1379,7 +1376,7 @@ end subroutine update_dgn_voltonum
 
 !---------------------------------------------------------------------------------------------
 
-subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
+subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
      deltat, pdel, state_q, state, &
      pbuf, &
      drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
@@ -1400,7 +1397,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   implicit none
 
   !inputs
-  integer,  intent(in) :: ncol, lchnk, list_idx, ipair
+  integer,  intent(in) :: ncol, lchnk, list_idx
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: deltat
   real(r8), intent(in) :: pdel(:,:)
@@ -1451,23 +1448,23 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
 
   if (npair_csizxf .le. 0)call endrun('npair_csizxf <= 0'//errmsg(__FILE__,__LINE__))
 
-  ! check that calcsize transfer ipair=1 is aitken-->accum
+  ! check that calcsize transfer aitken-->accum
   nait = modeptr_aitken !aitken mode number
   nacc = modeptr_accum  !accumulation mode number
 
-  if ((modefrm_csizxf(ipair) .ne. nait) .or.   &
-       (modetoo_csizxf(ipair) .ne. nacc)) call endrun('modefrm/too_csizxf(1) are wrong'//errmsg(__FILE__,__LINE__))
+  if ((modefrm_csizxf .ne. nait) .or.   &
+       (modetoo_csizxf .ne. nacc)) call endrun('modefrm/too_csizxf(1) are wrong'//errmsg(__FILE__,__LINE__))
 
   ! set dotend() for species that will be transferred
-  do iq = 1, nspecfrm_csizxf(ipair)
-     lsfrm = lspecfrma_csizxf(iq,ipair)
-     lstoo = lspectooa_csizxf(iq,ipair)
+  do iq = 1, nspecfrm_csizxf
+     lsfrm = lspecfrma_csizxf(iq)
+     lstoo = lspectooa_csizxf(iq)
      if ((lsfrm > 0) .and. (lstoo > 0)) then
         if(update_mmr)dotend(lsfrm) = .true.
         if(update_mmr)dotend(lstoo) = .true.
      end if
-     lsfrm = lspecfrmc_csizxf(iq,ipair)
-     lstoo = lspectooc_csizxf(iq,ipair)
+     lsfrm = lspecfrmc_csizxf(iq)
+     lstoo = lspectooc_csizxf(iq)
      if ((lsfrm > 0) .and. (lstoo > 0)) then
         if(update_mmr)dotendqqcw(lsfrm) = .true.
         if(update_mmr)dotendqqcw(lstoo) = .true.
@@ -1478,8 +1475,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   noxf_acc2ait(:) = .true.
   do ispec = 1, nspec_amode(nacc)
      idx = lmassptr_amode(ispec,nacc)
-     do iq = 1, nspecfrm_csizxf(ipair)
-        if (lspectooa_csizxf(iq,ipair) == idx) then
+     do iq = 1, nspecfrm_csizxf
+        if (lspectooa_csizxf(iq) == idx) then
            noxf_acc2ait(ispec) = .false.
         end if
      end do
@@ -1687,23 +1684,23 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            if ( masterproc ) then
               if (idiagaa > 0) then
                  do jmode = 1, 2
-                    do iq = 1, nspecfrm_csizxf(ipair)
+                    do iq = 1, nspecfrm_csizxf
                        do aer_type = 1, 2
                           if (jmode .eq. 1) then
                              if (aer_type .eq. inter_aero) then
-                                lsfrm = lspecfrma_csizxf(iq,ipair)
-                                lstoo = lspectooa_csizxf(iq,ipair)
+                                lsfrm = lspecfrma_csizxf(iq)
+                                lstoo = lspectooa_csizxf(iq)
                              else
-                                lsfrm = lspecfrmc_csizxf(iq,ipair)
-                                lstoo = lspectooc_csizxf(iq,ipair)
+                                lsfrm = lspecfrmc_csizxf(iq)
+                                lstoo = lspectooc_csizxf(iq)
                              end if
                           else
                              if (aer_type .eq. inter_aero) then
-                                lsfrm = lspectooa_csizxf(iq,ipair)
-                                lstoo = lspecfrma_csizxf(iq,ipair)
+                                lsfrm = lspectooa_csizxf(iq)
+                                lstoo = lspecfrma_csizxf(iq)
                              else
-                                lsfrm = lspectooc_csizxf(iq,ipair)
-                                lstoo = lspecfrmc_csizxf(iq,ipair)
+                                lsfrm = lspectooc_csizxf(iq)
+                                lstoo = lspecfrmc_csizxf(iq)
                              end if
                           end if
                           write( iulog, '(a,3i3,2i4)' ) 'calcsize jmode,iq,aer_type, lsfrm,lstoo',   &
@@ -1729,7 +1726,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                     xfercoef = xfercoef_vol_acc2ait
                  end if
 
-                 do  iq = 1, nspecfrm_csizxf(ipair)
+                 do  iq = 1, nspecfrm_csizxf
 
                     ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
                     do  aer_type = 1, 2
@@ -1740,19 +1737,19 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                        ! for jmode=2, want lsfrm=accum  species,  lstoo=aitken species
                        if (jmode .eq. 1) then
                           if (aer_type .eq. inter_aero) then
-                             lsfrm = lspecfrma_csizxf(iq,ipair)
-                             lstoo = lspectooa_csizxf(iq,ipair)
+                             lsfrm = lspecfrma_csizxf(iq)
+                             lstoo = lspectooa_csizxf(iq)
                           else
-                             lsfrm = lspecfrmc_csizxf(iq,ipair)
-                             lstoo = lspectooc_csizxf(iq,ipair)
+                             lsfrm = lspecfrmc_csizxf(iq)
+                             lstoo = lspectooc_csizxf(iq)
                           end if
                        else
                           if (aer_type .eq. inter_aero) then
-                             lsfrm = lspectooa_csizxf(iq,ipair)
-                             lstoo = lspecfrma_csizxf(iq,ipair)
+                             lsfrm = lspectooa_csizxf(iq)
+                             lstoo = lspecfrma_csizxf(iq)
                           else
-                             lsfrm = lspectooc_csizxf(iq,ipair)
-                             lstoo = lspecfrmc_csizxf(iq,ipair)
+                             lsfrm = lspectooc_csizxf(iq)
+                             lstoo = lspecfrmc_csizxf(iq)
                           end if
                        end if
 
