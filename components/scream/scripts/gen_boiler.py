@@ -1669,8 +1669,10 @@ template struct Functions<Real,DefaultDevice>;
         WITH:
         void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
         """
-        filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex \
+        _, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
             = [item(phys, sub, self) for item in PIECES[piece]]
+
+        filepath = self.get_path_for_piece_file(phys, sub, piece)
 
         if was_filegen:
             # If freshly generated file, we're done
@@ -1712,7 +1714,7 @@ template struct Functions<Real,DefaultDevice>;
 
             if needs_rewrite:
                 with filepath.open("w") as fd:
-                    fd.writelines(orig_lines)
+                    fd.write("\n".join(orig_lines))
 
     ###########################################################################
     def gen_boiler(self):
@@ -1722,7 +1724,7 @@ template struct Functions<Real,DefaultDevice>;
             for phys in self._physics:
                 for piece in self._pieces:
                     try:
-                        gen_piece(phys, sub, piece)
+                        self.gen_piece(phys, sub, piece)
                     except Exception as e:
                         print("Warning: failed to generate subroutine {} piece {} for physics {}, error: {}".\
                               format(sub, piece, phys, e))
