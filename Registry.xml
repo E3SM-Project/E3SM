@@ -134,7 +134,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'damagecalving', 'mask'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -171,6 +171,34 @@
                 <nml_option name="config_remove_small_islands" type="logical" default_value=".false." units="unitless"
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
+		/>
+                <nml_option name="config_damage_restore_threshold" type="real" default_value="0.0" units="unitless"
+                        description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_restore_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to 0.6 if non-damaged ice is transported from upstream. If we set config_damage_restore_threshold to 0 (default), then it will just not play a role in pratical."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_calving_threshold" type="real" default_value="1.0" units="unitless"
+                        description="It is a value above which the cell would be calved away."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
+                        description="When coupling damage to rheology, we do not allow it to fall below this value"
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
+                        description="If true, then we change stiffnessFactor to 1-damage during the run."
+	                possible_values=".true. or .false."
+		/>
+                <nml_option name="config_use_constant_A" type="logical" default_value=".false." units="unitless"
+                        description="If true, then we use constant A (i.e., config_default_flowParamA) in the damage calculation."
+	                possible_values=".true. or .false."
+		/>
+                <nml_option name="config_damage_if_calving_rate" type="logical" default_value=".false." units="unitless"
+                        description="If true, then we use a parameterized calving velocity to connect calving and damage."
+	                possible_values=".true. or .false."
+		/>
+    <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
+                        description="A scalar parameter that links damage and calving"
+	                possible_values="any positive real value"
 		/>
 	</nml_record>
 
@@ -575,6 +603,10 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
+			<var name="damage"/>
+			<var name="ddamagedt"/>
+			<var name="szero"/>
+			<var name="source"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
@@ -668,6 +700,10 @@
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
+			<var name="damage"/>
+			<var name="ddamagedt"/>
+			<var name="szero"/>
+			<var name="source"/>
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
                         <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
@@ -703,6 +739,8 @@
 			<var name="upperSurface"/>
 			<var name="temperature"/>
 			<var name="cellMask"/>
+			<var name="cellMaskFront"/>
+			<var name="cellVolumeLeft"/>
 			<var name="edgeMask"/>
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
@@ -999,6 +1037,33 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
+                />
+                <var name="damage" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="damage number"
+		/>
+                <var name="ddamagedt" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="damage change rate"
+		/>
+                <var name="damage_nye" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="Nye zero-stress damage number"
+		/>
+                <var name="damage_max" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="maximum damage number kept constant"
+		/>
+                <var name="szero" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="S0 number"
+		/>
+                <var name="source" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+		     description="damage source term"
+		/>
+                <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"
+                     description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
+                />
+               <var name="uncalvedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
+                />
+                <var name="requiredCalvingVolume" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
+                     description="total volume of ice that needs to be removed based on calving rate for the given time step"
                 />
                 <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left uncalved from required calving flux at non-dynamic cells"
@@ -1310,6 +1375,74 @@ is the value of that variable from the *previous* time level!
 	       persistence="scratch"
 	       />
 	  <var name="workCell3" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="meanFlowParamAField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="viscField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmaxyField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmayxField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmaxxField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmayyField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmaminField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="sigmamaxField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="alphaField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="epsmaxField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="nstarField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <!--var name="szeroField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       /-->
+	  <!--var name="sourceField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       /-->
+	  <var name="ddamagedtField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="forceField" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="thicknessField" type="real" dimensions="nCells" units="none"
+	       description="update halo for thickness (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="meanTField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
