@@ -2,7 +2,7 @@
 #include "share/scream_types.hpp"
 
 namespace scream {
-  namespace shoc {
+namespace shoc {
 
     /*
      * Explicit instantiation for the default device.
@@ -10,5 +10,5 @@ namespace scream {
 
     template struct Functions<Real,DefaultDevice>;
 
-  } // namespace shoc
+} // namespace shoc
 } // namespace scream

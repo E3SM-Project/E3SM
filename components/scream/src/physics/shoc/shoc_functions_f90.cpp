@@ -840,18 +840,16 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-     const Int i = team.league_rank();
+   const Int i = team.league_rank();
 
-     const auto tke_s   = ekat::util::subview(tke_d, i);
+   const auto tke_s   = ekat::util::subview(tke_d, i);
 
-     SHF::check_tke(team, nlev, tke_s);
-   });
+   SHF::check_tke(team, nlev, tke_s);
+ });
 
  // Sync back to host
  Kokkos::Array<view_2d, 1> inout_views = {tke_d};
  ekat::pack::device_to_host({tke}, {shcol}, {nlev}, inout_views, true);
-
-
 }
 
 
