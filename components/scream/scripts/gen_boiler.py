@@ -88,7 +88,7 @@ PIECES = OrderedDict([
     ("f90_f2c_bind"  , (
         lambda phys, sub, gb: "{}_iso_f.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_f".format(phys)), # put at end of module
+        lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
         lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
