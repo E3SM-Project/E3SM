@@ -35,7 +35,7 @@ void Functions<S,D>
   constexpr Scalar Q_low  = 0.;
 
   Int kmin, kmax;
-  ekat::util::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {

@@ -316,8 +316,8 @@ registration_ends () {
 // A short name for an AbstractRemapper factory
 template<typename ScalarType, typename Device>
 using RemapperFactory =
-    ekat::util::Factory<AbstractRemapper<ScalarType,Device>,
-                  ekat::util::CaseInsensitiveString,
+    ekat::Factory<AbstractRemapper<ScalarType,Device>,
+                  ekat::CaseInsensitiveString,
                   std::shared_ptr<AbstractRemapper<ScalarType,Device>>,
                   const ekat::ParameterList&>;
 

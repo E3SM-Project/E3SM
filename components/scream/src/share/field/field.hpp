@@ -72,7 +72,7 @@ public:
   // allocation. This allows each field to be stored as a 1d array, but then
   // be reshaped to the desired layout before being used.
   template<typename DT>
-  ekat::util::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
+  ekat::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
   get_reshaped_view () const;
 
   // Checks whether the underlying view has been already allocated.
@@ -173,7 +173,7 @@ operator= (const Field<SrcScalarType,Device>& src) {
 
 template<typename ScalarType, typename Device>
 template<typename DT>
-ekat::util::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
+ekat::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
 Field<ScalarType,Device>::get_reshaped_view () const {
   // The dst value types
   using DstValueType = typename ekat::ValueType<DT>::type;
@@ -193,7 +193,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
-  using DstView = ekat::util::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
+  using DstView = ekat::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
   typename DstView::traits::array_layout kokkos_layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);

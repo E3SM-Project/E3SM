@@ -134,7 +134,7 @@ void Functions<S,D>
   hydrometeorsPresent = false;
   team.team_barrier();
 
-  const Int nk_pack = ekat::pack::npack<Spack>(nk);
+  const Int nk_pack = ekat::npack<Spack>(nk);
 
   //
   // calculate some time-varying atmospheric variables
@@ -147,7 +147,7 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    const auto range_pack = ekat::pack::range<IntSmallPack>(k*Spack::n);
+    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
 
     rho(k)          = dpres(k)/dz(k) / g;
@@ -328,7 +328,7 @@ void Functions<S,D>
     }
 
     //compute mask to identify padded values in packs, which are undefined
-    const auto range_pack = ekat::pack::range<IntSmallPack>(k*Spack::n);
+    const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
 
     // All microphysics tendencies will be computed as IN-CLOUD, they will be mapped back to cell-average later.
@@ -873,8 +873,8 @@ void Functions<S,D>
 
   get_latent_heat(nj, nk, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion);
 
-  const Int nk_pack = ekat::pack::npack<Spack>(nk);
-  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const Int nk_pack = ekat::npack<Spack>(nk);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
 
   ekat::WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 47, policy);
 
@@ -952,44 +952,44 @@ void Functions<S,D>
 
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
-    const auto opres               = ekat::util::subview(diagnostic_inputs.pres, i);
-    const auto odz                 = ekat::util::subview(diagnostic_inputs.dz, i);
-    const auto onc_nuceat_tend     = ekat::util::subview(diagnostic_inputs.nc_nuceat_tend, i);
-    const auto oni_activated       = ekat::util::subview(diagnostic_inputs.ni_activated, i);
-    const auto oinv_qc_relvar      = ekat::util::subview(diagnostic_inputs.inv_qc_relvar, i);
-    const auto odpres              = ekat::util::subview(diagnostic_inputs.dpres, i);
-    const auto oexner              = ekat::util::subview(diagnostic_inputs.exner, i);
-    const auto ocld_frac_i         = ekat::util::subview(diagnostic_inputs.cld_frac_i, i);
-    const auto ocld_frac_l         = ekat::util::subview(diagnostic_inputs.cld_frac_l, i);
-    const auto ocld_frac_r         = ekat::util::subview(diagnostic_inputs.cld_frac_r, i);
-    const auto ocol_location       = ekat::util::subview(infrastructure.col_location, i);
-    const auto oqc                 = ekat::util::subview(prognostic_state.qc, i);
-    const auto onc                 = ekat::util::subview(prognostic_state.nc, i);
-    const auto oqr                 = ekat::util::subview(prognostic_state.qr, i);
-    const auto onr                 = ekat::util::subview(prognostic_state.nr, i);
-    const auto oqi                 = ekat::util::subview(prognostic_state.qi, i);
-    const auto oqm                 = ekat::util::subview(prognostic_state.qm, i);
-    const auto oni                 = ekat::util::subview(prognostic_state.ni, i);
-    const auto obm                 = ekat::util::subview(prognostic_state.bm, i);
-    const auto oqv                 = ekat::util::subview(prognostic_state.qv, i);
-    const auto oth                 = ekat::util::subview(prognostic_state.th, i);
-    const auto odiag_effc          = ekat::util::subview(diagnostic_outputs.diag_effc, i);
-    const auto odiag_effi          = ekat::util::subview(diagnostic_outputs.diag_effi, i);
-    const auto orho_qi             = ekat::util::subview(diagnostic_outputs.rho_qi, i);
-    const auto omu_c               = ekat::util::subview(diagnostic_outputs.mu_c, i);
-    const auto olamc               = ekat::util::subview(diagnostic_outputs.lamc, i);
-    const auto ocmeiout            = ekat::util::subview(diagnostic_outputs.cmeiout, i);
-    const auto oprecip_total_tend  = ekat::util::subview(diagnostic_outputs.precip_total_tend, i);
-    const auto onevapr             = ekat::util::subview(diagnostic_outputs.nevapr, i);
-    const auto oqr_evap_tend       = ekat::util::subview(diagnostic_outputs.qr_evap_tend, i);
-    const auto oprecip_liq_flux    = ekat::util::subview(diagnostic_outputs.precip_liq_flux, i);
-    const auto oprecip_ice_flux    = ekat::util::subview(diagnostic_outputs.precip_ice_flux, i);
-    const auto oliq_ice_exchange   = ekat::util::subview(history_only.liq_ice_exchange, i);
-    const auto ovap_liq_exchange   = ekat::util::subview(history_only.vap_liq_exchange, i);
-    const auto ovap_ice_exchange   = ekat::util::subview(history_only.vap_ice_exchange, i);
-    const auto olatent_heat_vapor  = ekat::util::subview(latent_heat_vapor, i);
-    const auto olatent_heat_sublim = ekat::util::subview(latent_heat_sublim, i);
-    const auto olatent_heat_fusion = ekat::util::subview(latent_heat_fusion, i);
+    const auto opres               = ekat::subview(diagnostic_inputs.pres, i);
+    const auto odz                 = ekat::subview(diagnostic_inputs.dz, i);
+    const auto onc_nuceat_tend     = ekat::subview(diagnostic_inputs.nc_nuceat_tend, i);
+    const auto oni_activated       = ekat::subview(diagnostic_inputs.ni_activated, i);
+    const auto oinv_qc_relvar      = ekat::subview(diagnostic_inputs.inv_qc_relvar, i);
+    const auto odpres              = ekat::subview(diagnostic_inputs.dpres, i);
+    const auto oexner              = ekat::subview(diagnostic_inputs.exner, i);
+    const auto ocld_frac_i         = ekat::subview(diagnostic_inputs.cld_frac_i, i);
+    const auto ocld_frac_l         = ekat::subview(diagnostic_inputs.cld_frac_l, i);
+    const auto ocld_frac_r         = ekat::subview(diagnostic_inputs.cld_frac_r, i);
+    const auto ocol_location       = ekat::subview(infrastructure.col_location, i);
+    const auto oqc                 = ekat::subview(prognostic_state.qc, i);
+    const auto onc                 = ekat::subview(prognostic_state.nc, i);
+    const auto oqr                 = ekat::subview(prognostic_state.qr, i);
+    const auto onr                 = ekat::subview(prognostic_state.nr, i);
+    const auto oqi                 = ekat::subview(prognostic_state.qi, i);
+    const auto oqm                 = ekat::subview(prognostic_state.qm, i);
+    const auto oni                 = ekat::subview(prognostic_state.ni, i);
+    const auto obm                 = ekat::subview(prognostic_state.bm, i);
+    const auto oqv                 = ekat::subview(prognostic_state.qv, i);
+    const auto oth                 = ekat::subview(prognostic_state.th, i);
+    const auto odiag_effc          = ekat::subview(diagnostic_outputs.diag_effc, i);
+    const auto odiag_effi          = ekat::subview(diagnostic_outputs.diag_effi, i);
+    const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
+    const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
+    const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
+    const auto ocmeiout            = ekat::subview(diagnostic_outputs.cmeiout, i);
+    const auto oprecip_total_tend  = ekat::subview(diagnostic_outputs.precip_total_tend, i);
+    const auto onevapr             = ekat::subview(diagnostic_outputs.nevapr, i);
+    const auto oqr_evap_tend       = ekat::subview(diagnostic_outputs.qr_evap_tend, i);
+    const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
+    const auto oprecip_ice_flux    = ekat::subview(diagnostic_outputs.precip_ice_flux, i);
+    const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
+    const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
+    const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
+    const auto olatent_heat_vapor  = ekat::subview(latent_heat_vapor, i);
+    const auto olatent_heat_sublim = ekat::subview(latent_heat_sublim, i);
+    const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
 
     // Need to watch out for race conditions with these shared variables
     bool &nucleationPossible  = bools(i, 0);
