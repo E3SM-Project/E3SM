@@ -1,7 +1,7 @@
 from utils import expect, get_git_toplevel_dir
 
 from collections import OrderedDict
-import pathlib, re
+import pathlib, re, os
 
 #
 # Global hardcoded data
@@ -67,7 +67,7 @@ namespace {physics} {{
 }} // namespace scream
 
 #endif
-""".format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+""".format(physics=phys, sub=sub, gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
 
     "cxx_eti": lambda phys, sub, gen_code: gen_code
 }
@@ -151,10 +151,19 @@ PIECES = OrderedDict([
     ("cxx_func_decl", (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct, reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),            # ;
         lambda *x           : "The cxx kokkos function declaration(<name>)"
+    )),
+
+    ("cxx_incl_impl", (
+        lambda phys, sub, gb: "{}_functions.hpp".format(phys),
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_incl_impl"),
+        lambda phys, sub, gb: re.compile(r"^\s*#\s*endif\s+//\s*KOKKOS_ENABLE_CUDA"), # insert at end of impl includes, reqs special comment
+        lambda phys, sub, gb: re.compile(r'^\s*#\s*include\s+"{}"'.format(get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, gb))),
+        lambda phys, sub, gb: re.compile(r".*"),
+        lambda *x           : "The include of *impl.hpp file at bottom of main hpp"
     )),
 
     ("cxx_func_impl", (
@@ -192,6 +201,25 @@ PIECES = OrderedDict([
         lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file
         lambda *x           : "The cxx explicit template instatiation file"
     )),
+
+    ("cmake_impl_eti", (
+        lambda phys, sub, gb: "CMakeLists.txt",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_impl_eti"),
+        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{} ETI SRCS".format(phys.upper())), # insert at end of ETI src list, reqs special comment
+        lambda phys, sub, gb: re.compile(r".*{}".format(get_piece_data(phys, sub, "cxx_eti", FILEPATH, gb))),
+        lambda phys, sub, gb: re.compile(".*"),
+        lambda *x           : "Make cmake aware of the ETI file if not cuda build"
+    )),
+
+    ("cmake_unit_test", (
+        lambda phys, sub, gb: "tests/CMakeLists.txt",
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_unit_test"),
+        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{}_TESTS_SRCS".format(phys.upper())), # insert at end of test src list, reqs special comment
+        lambda phys, sub, gb: re.compile(r".*{}".format(os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, gb)))),
+        lambda phys, sub, gb: re.compile(".*"),
+        lambda *x           : "Make cmake aware of the unit test"
+    )),
+
 ])
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
@@ -1395,7 +1423,7 @@ class GenBoiler(object):
 """{decl}
 {{
   // TODO
-}}""".format(sub=sub, decl=decl)
+}}""".format(decl=decl)
         return result
 
     ###########################################################################
@@ -1410,6 +1438,17 @@ class GenBoiler(object):
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
         return "void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+
+    ###########################################################################
+    def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
+    ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cxx_incl_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        # include "shoc_fake_sub_impl.hpp"
+        """
+        impl_path = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
+        return '# include "{}"'.format(impl_path)
 
     ###########################################################################
     def gen_cxx_func_impl(self, phys, sub, force_arg_data=None):
@@ -1619,6 +1658,28 @@ template struct Functions<Real,DefaultDevice>;
 
         return result
 
+    ###########################################################################
+    def gen_cmake_impl_eti(self, phys, sub, force_arg_data=None):
+    ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+            shoc_fake_sub.cpp
+        """
+        eti_src = get_piece_data(phys, sub, "cxx_eti", FILEPATH, self)
+        return "    {}".format(eti_src)
+
+    ###########################################################################
+    def gen_cmake_unit_test(self, phys, sub, force_arg_data=None):
+    ###########################################################################
+        """
+        >>> gb = GenBoiler([])
+        >>> print(gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+            shoc_fake_sub_tests.cpp
+        """
+        test_src = os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self))
+        return "    {}".format(test_src)
+
     #
     # Main methods
     #
@@ -1698,6 +1759,10 @@ template struct Functions<Real,DefaultDevice>;
         WITH:
         void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
         """
+        if force_arg_data is None: # don't want unit tests printing this
+            print("===============================================================================")
+            print("Trying to generate piece {} for subroutine {} for physics {}".format(piece, sub, phys))
+
         base_filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
             = [item(phys, sub, self) for item in PIECES[piece]]
 
@@ -1744,6 +1809,8 @@ template struct Functions<Real,DefaultDevice>;
             if needs_rewrite:
                 with filepath.open("w") as fd:
                     fd.write("\n".join(orig_lines))
+
+                print("SUCCESS")
 
     ###########################################################################
     def gen_boiler(self):
