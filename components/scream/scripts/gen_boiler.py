@@ -1149,6 +1149,7 @@ class GenBoiler(object):
 
         # TODO: support subroutine rename?
         # TODO: support auto cmake generation?
+        # TODO: support smart line wrapping?
 
         if not self._pieces:
             self._pieces = get_supported_pieces()
@@ -1581,7 +1582,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        #include shoc_fake_sub_impl.hpp
+        #include "shoc_fake_sub_impl.hpp"
         <BLANKLINE>
         namespace scream {
         namespace shoc {
@@ -1600,7 +1601,7 @@ class GenBoiler(object):
         include_file = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
 
         result = \
-"""#include {include_file}
+"""#include "{include_file}"
 
 namespace scream {{
 namespace {phys} {{
