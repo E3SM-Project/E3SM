@@ -434,6 +434,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
     void linear_interp(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
     {
       // TODO
+      // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
     }
     <BLANKLINE>
     } // namespace p3
@@ -554,6 +555,25 @@ def normalize_f90(contents):
     # We do not currently attempt to preprocess the contents
     return resolve_line_continuations(contents).lower()
 
+###############################################################################
+def split_top_commas(line):
+###############################################################################
+    """
+    Split a line along commas except for commas within parentheses
+    """
+    raw_splits = [item.strip() for item in line.strip().split(",")]
+    top_splits = []
+    balanced = True
+    for raw_split in raw_splits:
+        if balanced:
+            top_splits.append(raw_split)
+        else:
+            top_splits[-1] += ",{}".format(raw_split)
+
+        balanced = top_splits[-1].count("(") == top_splits[-1].count(")")
+
+    return top_splits
+
 ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS = range(4)
 ###############################################################################
 def parse_f90_args(line):
@@ -575,20 +595,13 @@ def parse_f90_args(line):
     [('dz', 'real', 'inout', ('3', '4'))]
     >>> parse_f90_args('real(rtype), dimension(3,4),intent(inout) :: dz')
     [('dz', 'real', 'inout', ('3', '4'))]
+    >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1), y1(ncol , km1 )')
+    [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))]
     """
     expect(line.count("::") == 1, "Expected line format 'type-info :: names' for: {}".format(line))
-    metadata, names_str = line.split("::")
-    names = [name.strip() for name in names_str.split(",")]
-    metadata_raw = [item.strip() for item in metadata.strip().split(",")]
-    metadata = []
-    balanced = True
-    for metadatum_raw in metadata_raw:
-        if balanced:
-            metadata.append(metadatum_raw)
-        else:
-            metadata[-1] += ",{}".format(metadatum_raw)
-
-        balanced = metadata[-1].count("(") == metadata[-1].count(")")
+    metadata_str, names_str = line.split("::")
+    names_dims = split_top_commas(names_str)
+    metadata   = split_top_commas(metadata_str)
 
     argtype = metadata[0].split("(")[0].strip()
     intent, dims = None, None
@@ -600,6 +613,18 @@ def parse_f90_args(line):
             expect(dims is None, "Multiple dimensions in line: {}".format(line))
             dims_raw = metadatum.split("(")[-1].rstrip(")").strip()
             dims = tuple(item.replace(" ", "") for item in dims_raw.split(","))
+
+    names = []
+    for name_dim in names_dims:
+        if "(" in name_dim:
+            name, dims_raw = name_dim.split("(")
+            dims_raw = dims_raw.rstrip(")").strip()
+            dims_check = tuple(item.replace(" ", "") for item in dims_raw.split(","))
+            expect(dims is None or dims_check == dims, "Inconsistent dimensions in line: {}".format(line))
+            dims = dims_check
+            names.append(name.strip())
+        else:
+            names.append(name_dim.strip())
 
     return [(name, argtype, intent, dims) for name in names]
 
@@ -1123,6 +1148,7 @@ class GenBoiler(object):
         self._db          = {}
 
         # TODO: support subroutine rename?
+        # TODO: support auto cmake generation?
 
         if not self._pieces:
             self._pieces = get_supported_pieces()
@@ -1393,6 +1419,7 @@ class GenBoiler(object):
         void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
         {
           // TODO
+          // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
         }
         """
         decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
@@ -1402,6 +1429,7 @@ class GenBoiler(object):
 """{decl}
 {{
   // TODO
+  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
 }}""".format(decl=decl)
         return result
 
@@ -1669,7 +1697,7 @@ template struct Functions<Real,DefaultDevice>;
         WITH:
         void fake_sub_c(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, Int shcol, Int nlev, Int nlevi, Int* ball1, Int* ball2);
         """
-        _, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
+        base_filepath, was_filegen, insert_regex, self_begin_regex, self_end_regex, _ \
             = [item(phys, sub, self) for item in PIECES[piece]]
 
         filepath = self.get_path_for_piece_file(phys, sub, piece)
@@ -1685,17 +1713,17 @@ template struct Functions<Real,DefaultDevice>;
             # Check to see if piece already exists
             try:
                 existing_piece_line_range = check_existing_piece(orig_lines, self_begin_regex, self_end_regex)
-            except Exception as e:
+            except SystemExit as e:
                 expect(False, "Problem parsing file {} for existing piece {}: {}".format(filepath, piece, e))
 
             if existing_piece_line_range is not None:
                 # Replace existing
                 if self._dry_run:
                     print("In file {}, would replace:\n{}\n\nWITH:\n{}".\
-                          format(filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
+                          format(base_filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)]), "\n".join(gen_lines)))
                 elif not self._overwrite:
                     print("Already detected piece {} for subroutine {} in file {}, code:\n{}".\
-                          format(piece, sub, filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)])))
+                          format(piece, sub, base_filepath, "\n".join(orig_lines[slice(*existing_piece_line_range)])))
                 else:
                     orig_lines[slice(*existing_piece_line_range)] = gen_lines
                     needs_rewrite = True
@@ -1707,7 +1735,7 @@ template struct Functions<Real,DefaultDevice>;
                        format(piece, filepath, insert_regex))
 
                 if self._dry_run:
-                    print("In file {}, at line {}, would insert:\n{}".format(filepath, insert_line, "\n".join(gen_lines)))
+                    print("In file {}, at line {}, would insert:\n{}".format(base_filepath, insert_line, "\n".join(gen_lines)))
                 else:
                     orig_lines[insert_line:insert_line] = gen_lines
                     needs_rewrite = True
