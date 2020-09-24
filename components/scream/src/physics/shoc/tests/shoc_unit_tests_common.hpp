@@ -99,6 +99,7 @@ struct UnitWrap {
     struct TestShocPdfCompLiqFlux;
     struct TestShocPdfCompBuoyFlux;
     struct TestSecondMomUbycond;
+    struct TestPblintdInitPot;
   };
 
 };

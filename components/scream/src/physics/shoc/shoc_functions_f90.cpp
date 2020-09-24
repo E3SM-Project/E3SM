@@ -199,6 +199,9 @@ void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real w
 void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
                                        Real* wqw, Real* qwthl, Real* uw, Real* vw,
                                        Real* wtke);
+
+void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
+
 }
 
 namespace scream {
@@ -579,6 +582,14 @@ void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
+void shoc_pblintd_init_pot(SHOCPblintdInitPotData& d)
+{
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_pblintd_init_pot_c(d.shcol(), d.nlev(), d.thl, d.ql, d.q, d.thv);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -818,6 +829,43 @@ void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exn
   ekat::pack::device_to_host({host_dse}, {shcol}, {nlev}, inout_views, true);
 }
 
+void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real *thl, Real* ql, Real* q,
+                             Real *thv)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using view_2d    = typename SHOC::view_2d<Spack>;
+  using KT         = typename SHOC::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHOC::MemberType;
+
+  static constexpr Int num_arrays = 3;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  ekat::pack::host_to_device({thl, ql, q}, shcol, nlev, temp_d, true);
+
+  view_2d thl_d(temp_d[0]),
+          ql_d (temp_d[1]),
+          q_d  (temp_d[2]);
+
+  view_2d thv_d("thv", shcol, nlev);
+
+  const Int nlev_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto thl_1d = ekat::util::subview(thl_d, i);
+    const auto ql_1d  = ekat::util::subview(ql_d, i);
+    const auto q_1d   = ekat::util::subview(q_d, i);
+    const auto thv_1d = ekat::util::subview(thv_d, i);
+
+    SHOC::shoc_pblintd_init_pot(team, nlev, thl_1d, ql_1d, q_1d, thv_1d);
+  });
+
+  Kokkos::Array<view_2d, 1> inout_views = {thv_d};
+  ekat::pack::device_to_host({thv}, {shcol}, {nlev}, inout_views, true);
+}
 
 } // namespace shoc
 } // namespace scream
