@@ -61,6 +61,8 @@ namespace {physics} {{
  * #include this file, but include {physics}_functions.hpp instead.
  */
 
+template<typename S, typename D>
+KOKKOS_FUNCTION
 {gen_code}
 
 }} // namespace p3
@@ -459,7 +461,9 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
      * #include this file, but include shoc_functions.hpp instead.
      */
     <BLANKLINE>
-    void linear_interp(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
+    template<typename S, typename D>
+    KOKKOS_FUNCTION
+    void Functions<S,D>::linear_interp(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
     {
       // TODO
       // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
@@ -1461,13 +1465,13 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_func_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
+        void Functions<S,D>::fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
         {
           // TODO
           // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
         }
         """
-        decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+        decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";").replace("void ", "void Functions<S,D>::")
 
         # I don't think any intelligent guess at an impl is possible here
         result = \
