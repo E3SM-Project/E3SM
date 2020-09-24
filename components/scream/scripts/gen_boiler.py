@@ -62,7 +62,6 @@ namespace {physics} {{
  */
 
 template<typename S, typename D>
-KOKKOS_FUNCTION
 {gen_code}
 
 }} // namespace p3
@@ -1424,6 +1423,7 @@ class GenBoiler(object):
         {
           // TODO
         }
+        <BLANKLINE>
         """
         decl = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
@@ -1432,7 +1432,8 @@ class GenBoiler(object):
 """{decl}
 {{
   // TODO
-}}""".format(decl=decl)
+}}
+""".format(decl=decl)
         return result
 
     ###########################################################################
@@ -1441,12 +1442,13 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_func_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2);
+          KOKKOS_FUNCTION
+          void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2);
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
-        return "void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+        return "  KOKKOS_FUNCTION\n  void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
 
     ###########################################################################
     def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
@@ -1465,6 +1467,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_func_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
+        KOKKOS_FUNCTION
         void Functions<S,D>::fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2)
         {
           // TODO
@@ -1472,6 +1475,7 @@ class GenBoiler(object):
         }
         """
         decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";").replace("void ", "void Functions<S,D>::")
+        decl = "\n".join(line.strip() for line in decl.splitlines())
 
         # I don't think any intelligent guess at an impl is possible here
         result = \
@@ -1488,10 +1492,10 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_bfb_unit_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        struct TestFakeSub;
+            struct TestFakeSub;
         """
         test_struct = get_data_test_struct_name(sub)
-        return "struct {};".format(test_struct)
+        return "    struct {};".format(test_struct)
 
     ###########################################################################
     def gen_cxx_bfb_unit_impl(self, phys, sub, force_arg_data=None):

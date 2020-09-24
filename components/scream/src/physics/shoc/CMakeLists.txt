@@ -30,6 +30,7 @@ if (NOT CUDA_BUILD)
   list(APPEND SHOC_SRCS
     shoc_calc_shoc_varorcovar.cpp
     shoc_calc_shoc_vertflux.cpp
+    shoc_linear_interp.cpp
   ) # SHOC ETI SRCS
 endif()
 
@@ -44,4 +45,3 @@ target_link_libraries(shoc physics_share scream_share ${SCREAM_TPL_LIBRARIES})
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
-

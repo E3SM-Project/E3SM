@@ -437,7 +437,7 @@ void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
-void linear_interp(SHOCLinearintData& d)
+void linear_interp(SHOCLinearInterpData& d)
 {
   shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
@@ -731,6 +731,10 @@ void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wt
   ekat::pack::device_to_host({thl, qw, qwthl, wthl, wqw, uw, vw, wtke}, shcol, host_views);
 }
 
+void linear_interp_f(Int km1, Int km2, Int ncol, Real* x1, Real* y1, Real* x2, Real minthresh, Real* y2)
+{
+  // TODO
+}
 
 } // namespace shoc
 } // namespace scream

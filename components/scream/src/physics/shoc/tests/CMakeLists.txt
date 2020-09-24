@@ -33,7 +33,7 @@ set(SHOC_TESTS_SRCS
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
-    shoc_linearinterp_tests.cpp
+    shoc_linear_interp_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
     shoc_pdf_thl_parameters_tests.cpp
@@ -62,4 +62,3 @@ add_custom_target(shoc_baseline
   COMMAND $<TARGET_FILE:shoc_run_and_cmp> -f -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
 
 add_dependencies(baseline shoc_baseline)
-

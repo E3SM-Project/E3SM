@@ -451,7 +451,7 @@ struct SHOCSecondMomentSrfData : public PhysicsTestData {
 };
 
 //Create data structure to hold data for linear_interp
-struct SHOCLinearintData : public PhysicsTestData {
+struct SHOCLinearInterpData : public PhysicsTestData {
   // Inputs
   Real minthresh;
   Real *x1, *x2, *y1;
@@ -459,11 +459,11 @@ struct SHOCLinearintData : public PhysicsTestData {
   // In/out
   Real *y2;
 
-  SHOCLinearintData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
+  SHOCLinearInterpData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
 
-  SHOC_SCALARS(SHOCLinearintData, 3, 1, minthresh);
-};//SHOCLinearintData
+  SHOC_SCALARS(SHOCLinearInterpData, 3, 1, minthresh);
+};//SHOCLinearInterpData
 
 //Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
 struct SHOCPDFtildaData
@@ -628,7 +628,7 @@ void x_y_terms_diag_third_shoc_moment               (SHOCXYdiagthirdmomsData &d)
 void w3_diag_third_shoc_moment                      (SHOCW3diagthirdmomsData &d);
 void clipping_diag_third_shoc_moments               (SHOCClipthirdmomsData &d);
 void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d);
-void linear_interp                                  (SHOCLinearintData &d);
+void linear_interp                                  (SHOCLinearInterpData &d);
 void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);
@@ -655,6 +655,7 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw,
 void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wthl,
                           Real* wqw, Real* qwthl, Real* uw, Real* vw, Real* wtke);
 
+void linear_interp_f(Int km1, Int km2, Int ncol, Real* x1, Real* y1, Real* x2, Real minthresh, Real* y2);
 } // end _f function decls
 
 }  // namespace shoc

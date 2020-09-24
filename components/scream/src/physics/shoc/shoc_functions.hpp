@@ -98,6 +98,8 @@ struct Functions
     Scalar& thl_sec, Scalar& qw_sec, Scalar& wthl_sec, Scalar& wqw_sec,
     Scalar& qwthl_sec, Scalar& uw_sec, Scalar& vw_sec, Scalar& wtke_sec);
 
+  KOKKOS_FUNCTION
+  void linear_interp(const Int& km1, const Int& km2, const Int& ncol, const uview_1d<const Spack>& x1, const uview_1d<const Spack>& y1, const uview_1d<const Spack>& x2, const Spack& minthresh, const uview_1d<Spack>& y2);
 }; // struct Functions
 
 } // namespace shoc
@@ -110,6 +112,7 @@ struct Functions
 # include "shoc_calc_shoc_vertflux_impl.hpp"
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
+# include "shoc_linear_interp_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

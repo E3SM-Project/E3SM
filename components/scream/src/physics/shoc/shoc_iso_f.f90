@@ -70,6 +70,15 @@ interface
 
  end subroutine shoc_diag_second_moments_ubycond_f
 
+  subroutine linear_interp_f(km1, km2, ncol, x1, y1, x2, minthresh, y2) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
+    real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
+    real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
+    real(kind=c_real) , value, intent(in) :: minthresh
+    real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
+  end subroutine linear_interp_f
 end interface
 
 end module shoc_iso_f
