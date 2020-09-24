@@ -18,6 +18,7 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
