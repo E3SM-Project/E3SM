@@ -30,7 +30,7 @@ if (NOT CUDA_BUILD)
   list(APPEND SHOC_SRCS
     shoc_calc_shoc_varorcovar.cpp
     shoc_calc_shoc_vertflux.cpp
-  )
+  ) # SHOC ETI SRCS
 endif()
 
 add_library(shoc ${SHOC_SRCS})

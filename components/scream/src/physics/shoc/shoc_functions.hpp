@@ -110,6 +110,6 @@ struct Functions
 # include "shoc_calc_shoc_vertflux_impl.hpp"
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
-#endif
+#endif // KOKKOS_ENABLE_CUDA
 
 #endif
