@@ -321,7 +321,7 @@
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="N2_dependent" units="unitless"
-					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997"
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. edenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
 					possible_values="'N2_dependent', 'constant', 'visbeck'"
 		/>
 		<nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
@@ -343,6 +343,14 @@
 		<nml_option name="config_GM_visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
 					description="minimum value of bolus diffusivity for visbeck scheme"
 					possible_values="values around 100s"
+		/>
+		<nml_option name="config_gm_EG_riMin" type="real" default_value="200.0" units="NA"
+					description="minimum Richardson number to prevent overly large bolus Kappa values"
+					possible_values="numbers greater than zero"
+		/>
+		<nml_option name="config_gm_EG_kappa_factor" type="real" default_value="2.0" units="NA"
+					description="factor to scale diffusivity for eden greatbach scheme"
+					possible_values="small positive reals"
 		/>
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
 					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
@@ -2528,7 +2536,7 @@
 		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
 			description="inverse eddy time scale in visbeck 1997 closure"
 		/>
-		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
