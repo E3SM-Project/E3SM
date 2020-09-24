@@ -1076,7 +1076,8 @@ class GenBoiler(object):
                  kernel      = False,
                  source_repo = get_git_toplevel_dir(),
                  target_repo = get_git_toplevel_dir(),
-                 dry_run     = False):
+                 dry_run     = False,
+                 verbose     = False):
     ###########################################################################
         expect(source_repo is not None, "Must either run from a valid repo or provide a --source-repo")
         expect(target_repo is not None, "Must either run from a valid repo or provide a --target-repo")
@@ -1089,6 +1090,7 @@ class GenBoiler(object):
         expect(normalized_target_repo is not None, "target repo {} is not a valid repo".format(target_repo))
         target_repo = normalized_target_repo
 
+        # configuration
         self._subs        = subs
         self._pieces      = pieces
         self._physics     = physics
@@ -1097,6 +1099,9 @@ class GenBoiler(object):
         self._source_repo = pathlib.Path(source_repo).resolve()
         self._target_repo = pathlib.Path(target_repo).resolve()
         self._dry_run     = dry_run
+        self._verbose     = verbose
+
+        # internals
         self._db          = {}
 
         # TODO: support subroutine rename?
@@ -1114,6 +1119,14 @@ class GenBoiler(object):
             expect(origin_file.exists(), "Missing origin file for physics {}: {}".format(phys, origin_file))
             db = parse_origin(origin_file.open().read(), self._subs)
             self._db[phys] = db
+            if self._verbose:
+                print("For physics {}, found:")
+                for sub in self._subs:
+                    if sub in db:
+                        print("  For subroutine {}, found args:")
+                        for name, argtype, intent, dims in db[sub]:
+                            print("    name:{} type:{} intent:{} dims:({})".\
+                                  format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
             return db
 
     ###########################################################################

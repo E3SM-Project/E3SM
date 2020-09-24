@@ -75,6 +75,9 @@ ALL physics.
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run instead of modifying files")
 
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Produce extra output")
+
     args = parser.parse_args(args[1:])
 
     return args
