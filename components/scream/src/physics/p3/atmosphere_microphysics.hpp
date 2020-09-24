@@ -46,11 +46,6 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // The three main interfaces for the subcomponent
-  void initialize (const util::TimeStamp& t0);
-  void run        (const Real dt);
-  void finalize   ();
-
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
@@ -59,6 +54,11 @@ public:
   const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
 protected:
+
+  // The three main overrides for the subcomponent
+  void initialize_impl (const util::TimeStamp& t0);
+  void run_impl        (const Real dt);
+  void finalize_impl   ();
 
   // Setting the fields in the atmospheric process
   void set_required_field_impl (const Field<const Real, device_type>& f);

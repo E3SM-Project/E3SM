@@ -49,11 +49,6 @@ public:
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // The initialization, run, and finalization methods
-  void initialize (const TimeStamp& t0);
-  void run        (const Real dt);
-  void finalize   (/* what inputs? */);
-
   void final_setup ();
 
   // Register all fields in the given repo
@@ -90,6 +85,11 @@ public:
   void set_internal_field (const Field<Real, device_type>& f);
 
 protected:
+
+  // The initialization, run, and finalization methods
+  void initialize_impl (const TimeStamp& t0);
+  void run_impl        (const Real dt);
+  void finalize_impl   (/* what inputs? */);
 
   void run_sequential (const Real dt);
   void run_parallel   (const Real dt);
@@ -159,8 +159,6 @@ protected:
   const FieldRepository<Real, device_type>*   m_bkp_field_repo;
 
 #endif
-
-  TimeStamp                                   m_current_ts;
 };
 
 } // namespace scream
