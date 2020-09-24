@@ -67,11 +67,10 @@ public:
     m_output_fids.emplace(out_name,layout,ekat::units::m,m_grid->name());
   }
 
-  void initialize (const util::TimeStamp& t0) {
-    m_time_stamp = t0;
+  void initialize_impl (const util::TimeStamp& t0) {
   }
 
-  void run (const Real dt) {
+  void run_impl (const Real dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
     auto iter = m_iter % 4;
@@ -89,12 +88,13 @@ public:
     Kokkos::fence();
 
     ++m_iter;
-    m_time_stamp += dt;
-    m_output.get_header().get_tracking().update_time_stamp(m_time_stamp);
+    auto ts = timestamp();
+    ts += dt;
+    m_output.get_header().get_tracking().update_time_stamp(ts);
   }
 
   // Clean up
-  void finalize ( ) {}
+  void finalize_impl ( ) {}
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const {
@@ -118,8 +118,6 @@ protected:
   }
 
   int m_iter;
-
-  util::TimeStamp           m_time_stamp;
 
   std::set<FieldIdentifier> m_input_fids;
   std::set<FieldIdentifier> m_output_fids;

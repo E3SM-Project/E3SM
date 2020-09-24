@@ -23,6 +23,7 @@ set(SHOC_HEADERS
   shoc.hpp
   atmosphere_macrophysics.hpp
   scream_shoc_interface.hpp
+  shoc_constants.hpp
 )
 
 # Add ETI source files if not on CUDA

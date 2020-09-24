@@ -38,11 +38,6 @@ namespace scream {
             // Set the grid
             void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
 
-            // The three main interfaces for the subcomponent
-            void initialize (const util::TimeStamp& t0);
-            void run        (const Real dt);
-            void finalize   ();
-
             // Register all fields in the given repo
             void register_fields (FieldRepository<Real, device_type>& field_repo) const;
 
@@ -51,6 +46,11 @@ namespace scream {
             const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
         protected:
+            // The three main interfaces for the subcomponent
+            void initialize_impl (const util::TimeStamp& t0);
+            void run_impl        (const Real dt);
+            void finalize_impl   ();
+
             // Set fields in the atmosphere process
             void set_required_field_impl (const Field<const Real, device_type>& f);
             void set_computed_field_impl (const Field<      Real, device_type>& f);

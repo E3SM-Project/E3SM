@@ -2467,6 +2467,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
   Tl1_1,Tl1_2,pval,&   ! Input
   qs1,beta1,qs2,beta2) ! Ouput
 
+  use wv_sat_scream, only: MurphyKoop_svp
   implicit none
 
   ! intent-in
@@ -2481,6 +2482,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
   real(rtype), intent(out) ::   beta2
 
   ! local vars
+  integer, parameter :: liquid = 0   ! liquid flag for MurphyKoop
   real(rtype) :: esval1_1
   real(rtype) :: esval1_2
   real(rtype) :: lstarn1
@@ -2489,7 +2491,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
   esval1_1=0._rtype
   esval1_2=0._rtype
 
-  esval1_1=esatw_shoc(Tl1_1)*100._rtype
+  esval1_1=MurphyKoop_svp(Tl1_1, liquid)
   lstarn1=lcond
 
   qs1=0.622_rtype*esval1_1/max(esval1_1,pval-esval1_1)
@@ -2502,7 +2504,7 @@ subroutine shoc_assumed_pdf_compute_qs(&
     qs2=qs1
     beta2=beta1
   else
-    esval1_2=esatw_shoc(Tl1_2)*100._rtype
+    esval1_2=MurphyKoop_svp(Tl1_2, liquid)
     qs2=0.622_rtype*esval1_2/max(esval1_2,pval-esval1_2)
     beta2=(rgas/rv)*(lstarn2/(rgas*Tl1_2))*(lstarn2/(cp*Tl1_2))
   endif
@@ -4233,35 +4235,6 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
     return
 
 end subroutine linear_interp
-
-!==============================================================
-!
-! Saturation vapor pressure and mixing ratio.
-! Based on Flatau et.al, (JAM, 1992:1507) - valid for T > -80C
-! sat. vapor over ice below -80C - used Murphy and Koop (2005)
-! For water below -80C simply assumed esw/esi = 2.
-! des/dT below -80C computed as a finite difference of es
-
-real(rtype) function esatw_shoc(t)
-   implicit none
-   real(rtype) t    ! temperature (K)
-   real(rtype) a0,a1,a2,a3,a4,a5,a6,a7,a8
-   data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
-        6.105851_rtype, 0.4440316_rtype, 0.1430341e-1_rtype, &
-        0.2641412e-3_rtype, 0.2995057e-5_rtype, 0.2031998e-7_rtype, &
-        0.6936113e-10_rtype, 0.2564861e-13_rtype,-0.3704404e-15_rtype/
-!         6.11239921, 0.443987641, 0.142986287e-1, &
-!       0.264847430e-3, 0.302950461e-5, 0.206739458e-7, &
-!       0.640689451e-10, -0.952447341e-13,-0.976195544e-15/
-   real(rtype) dt
-   dt = t-273.16_rtype
-   if(dt.gt.-80._rtype) then
-      esatw_shoc = a0 + dt*(a1+dt*(a2+dt*(a3+dt*(a4+dt*(a5+dt*(a6+dt*(a7+a8*dt)))))))
-   else
-      esatw_shoc = 2._rtype*0.01_rtype*exp(9.550426_rtype - 5723.265_rtype/t + 3.53068_rtype*Log(t) - 0.00728332_rtype*t)
-   end if
-end
-
 
 subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
 
