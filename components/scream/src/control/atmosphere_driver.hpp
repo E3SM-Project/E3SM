@@ -58,7 +58,7 @@ public:
   // Clean up the driver (includes cleaning up the parametrizations and the fm's);
   void finalize ( /* inputs */ );
 
-  const FieldRepository<Real,device_type>& get_field_repo () const { return m_device_field_repo; }
+  const FieldRepository<Real,device_type>& get_field_repo () const { return *m_device_field_repo; }
 #ifdef SCREAM_DEBUG
   const FieldRepository<Real,device_type>& get_bkp_field_repo () const { return m_bkp_device_field_repo; }
 #endif
@@ -73,7 +73,7 @@ protected:
   void create_bkp_device_field_repo ();
 #endif
 
-  FieldRepository<Real,device_type>           m_device_field_repo;
+  std::shared_ptr<FieldRepository<Real,device_type>>          m_device_field_repo;
 #ifdef SCREAM_DEBUG
   FieldRepository<Real,device_type>           m_bkp_device_field_repo;
 #endif
