@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
           if (s < shcol-1){
             REQUIRE(SDS.dz_zi[offset] > SDS.dz_zi[offsets]);
           }
-	}
+        }
       }
     }
 

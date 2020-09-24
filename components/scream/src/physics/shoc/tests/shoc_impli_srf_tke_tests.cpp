@@ -70,7 +70,6 @@ struct UnitWrap::UnitTest<D>::TestImpTkeSfcStress {
       }
     }
 
-
   }
 
   static void run_bfb()

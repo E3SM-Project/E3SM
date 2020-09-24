@@ -646,7 +646,7 @@ subroutine update_prognostics_implicit( &
 
   ! compute terms needed for the implicit surface stress (ksrf)
   ksrf(1:shcol)      = impli_srf_stress_term(shcol, rho_zi(:,nlevi), &
-                    uw_sfc, vw_sfc, u_wind(:,nlev), v_wind(:,nlev))
+                         uw_sfc, vw_sfc, u_wind(:,nlev), v_wind(:,nlev))
 
   !compute term needed for tke flux calc (wtke_sfc)
   wtke_sfc(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
