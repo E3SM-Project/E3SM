@@ -3,7 +3,7 @@
 list(APPEND CPPDEFS "-DCORE_OCEAN")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 
-+# check if lapack is linked
+# check if lapack is linked
 find_package(LAPACK)
 find_package(BLAS)
 if(LAPACK_FOUND AND BLAS_FOUND)
