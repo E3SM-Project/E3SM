@@ -2622,11 +2622,12 @@ module ocn_time_integration_si
             end do  ! block
 
             if ( iter > int(mean_num_cells*5) ) then
-               call mpas_log_write('******************************************************')
-               call mpas_log_write('Iteration number exceeds Max. #iteration: PROGRAM STOP',MPAS_LOG_CRIT)
-               call mpas_log_write('Current #Iteration $i = ', intArgs=(/ iter /) )
-               call mpas_log_write('Max.    #Iteration $i = ', intArgs=(/ int(mean_num_cells*5) /) )
-               call mpas_log_write('******************************************************')
+               call mpas_log_write('******************************************************')                      
+               call mpas_log_write('Iteration number exceeds Max. #iteration: PROGRAM STOP')                      
+               call mpas_log_write('Current #Iteration = $i ', intArgs=(/ iter /) )                               
+               call mpas_log_write('Max.    #Iteration = $i ', intArgs=(/ int(mean_num_cells*5) /) )              
+               call mpas_log_write('******************************************************')                      
+               call mpas_log_write('',MPAS_LOG_CRIT)
             endif
 
          !**************************************************************!
