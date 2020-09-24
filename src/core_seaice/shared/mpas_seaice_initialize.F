@@ -62,6 +62,8 @@ contains
          seaice_set_testing_system_test_arrays
     use seaice_mesh_pool, only: &
          seaice_mesh_pool_create
+    use seaice_prescribed, only: &
+         seaice_init_prescribed_ice
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -85,6 +87,9 @@ contains
 
     ! initialize junk values
     call init_junk_values(domain)
+
+    ! initialize prescribed ice
+    call seaice_init_prescribed_ice(domain)
 
     ! initialize landice mask if needed for testing
     call init_test_ice_shelf_mask(domain)

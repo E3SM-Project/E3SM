@@ -51,13 +51,13 @@
     config_calculate_coriolis = true
 /
 &use_sections
-    config_use_dynamics = true
+    config_use_dynamics = false
     config_use_velocity_solver = true
     config_use_advection = true
     config_use_forcing = true
     config_use_column_package = true
-    config_use_prescribed_ice = false
-    config_use_prescribed_ice_forcing = false
+    config_use_prescribed_ice = true
+    config_use_prescribed_ice_forcing = true
 /
 &forcing
     config_atmospheric_forcing_type = 'CORE'
@@ -102,7 +102,7 @@
     config_use_column_shortwave = true
     config_use_column_vertical_thermodynamics = true
     config_use_column_biogeochemistry = false
-    config_use_column_itd_thermodynamics = true
+    config_use_column_itd_thermodynamics = false
     config_use_column_ridging = true
     config_use_column_snow_tracers = false
 /
@@ -468,7 +468,7 @@
     config_AM_timeSeriesStatsMonthly_write_on_startup = false
     config_AM_timeSeriesStatsMonthly_compute_interval = 'dt'
     config_AM_timeSeriesStatsMonthly_output_stream = 'timeSeriesStatsMonthlyOutput'
-    config_AM_timeSeriesStatsMonthly_restart_stream = 'timeSeriesStatsMonthlyRestart'
+    config_AM_timeSeriesStatsMonthly_restart_stream = 'none'
     config_AM_timeSeriesStatsMonthly_operation = 'avg'
     config_AM_timeSeriesStatsMonthly_reference_times = 'initial_time'
     config_AM_timeSeriesStatsMonthly_duration_intervals = 'repeat_interval'
