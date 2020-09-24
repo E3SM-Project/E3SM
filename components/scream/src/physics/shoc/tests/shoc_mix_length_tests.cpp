@@ -153,13 +153,13 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::util::TransposeDirection::c2f>();
+      d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
       compute_shoc_mix_shoc_length_f(d.nlev(), d.shcol(),
                                      d.tke, d.brunt,
                                      d.tscale, d.zt_grid,
                                      d.l_inf, d.shoc_mix);
-      d.transpose<ekat::util::TransposeDirection::f2c>();
+      d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout
