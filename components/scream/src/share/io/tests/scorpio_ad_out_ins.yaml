@@ -1,0 +1,16 @@
+%YAML 1.1
+---
+FILENAME: scorpio_ad_out_avg
+AVERAGING TYPE: Instant
+GRID: Physics
+FREQUENCY:
+  OUT_N: 1
+  OUT_OPTION: Steps
+  OUT_MAX_STEPS: 10
+FIELDS:
+  Number of Fields: 2
+  field 1: T
+  field 2: pmid
+
+...
+

@@ -4,6 +4,7 @@
 #include "share/field/field_repository.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/scream_types.hpp"
+#include "share/io/output_manager.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -82,6 +83,8 @@ protected:
   std::shared_ptr<GridsManager>                       m_grids_manager;
 
   ekat::ParameterList                                 m_atm_params;
+
+  OutputManager                                       m_output_manager;
 
   // This are the time stamps of the start and end of the time step.
   util::TimeStamp                       m_old_ts;

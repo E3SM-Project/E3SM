@@ -5,6 +5,7 @@
 
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scorpio.hpp"
+#include "share/io/output_manager.hpp"
 
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/simple_grid.hpp"
@@ -53,6 +54,7 @@ TEST_CASE("scorpio_yaml", "") {
   auto gids       = upgm.get_grid("Physics")->get_dofs_gids();
   auto phys_lt    = upgm.get_grid("Physics")->get_native_dof_layout();
 
+  printf("ASD yaml test p0\n");
   Int num_cols = 10;
   Int num_levs = 5;
   Int num_comp = 2;
@@ -61,17 +63,26 @@ TEST_CASE("scorpio_yaml", "") {
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
 
+  printf("ASD yaml test p1\n");
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
+  printf("             -- p1.1\n");
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
+  printf("             -- p1.2\n");
   // Set the dummy grid in the UserProvidedGridManager
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
-  UserProvidedGridsManager upgm;
+  std::shared_ptr<UserProvidedGridsManager> upgm;
+  printf("             -- p1.3\n");
   auto dummy_grid= std::make_shared<SimpleGrid>("Physics",num_cols,num_levs,io_comm);
-  upgm.set_grid(dummy_grid);
-  auto gids       = upgm.get_grid("Physics")->get_dofs_gids();
-  auto phys_lt    = upgm.get_grid("Physics")->get_native_dof_layout();
+  printf("             -- p1.4\n");
+  upgm->set_grid(dummy_grid);
+  printf("             -- p1.5\n");
+  printf("             -- p1.51\n");
+  auto gids = dummy_grid->get_dofs_gids();
+  printf("             -- p1.6\n");
+  auto phys_lt    = dummy_grid->get_native_dof_layout();
+  printf("ASD yaml test p2\n");
 
 /* The first step is to establish a Field Manager Repo to work with.  This example is fashioned from the 'field_repo'
  * test from /share/tests/field_tests.hpp                                                                          */ 
@@ -91,6 +102,7 @@ TEST_CASE("scorpio_yaml", "") {
   FieldIdentifier fid_data_2d("data_2d", tag2d, m/s);
   FieldIdentifier fid_data_3d("data_3d", tag3d, m/s);
 
+  printf("ASD yaml test p3\n");
   std::vector<int> dimsx = {phys_lt.dim(0)};
   std::vector<int> dimsy = {num_levs};
   std::vector<int> dimsz = {num_comp};
@@ -117,13 +129,19 @@ TEST_CASE("scorpio_yaml", "") {
   fid_data_1d.set_grid_name("Physics");
   fid_data_2d.set_grid_name("Physics");
   fid_data_3d.set_grid_name("Physics");
+  printf("ASD yaml test p4\n");
 
   // Field Repo    /* TODO: Expand test to support packing */
-  FieldRepository<Real,DefaultDevice>  repo;
-  repo.registration_begins();
+  std::shared_ptr<const FieldRepository<Real,DefaultDevice>>  repo = std::make_shared<const FieldRepository<Real,DefaultDevice>>();
+  printf("             --p4.1\n");
+  &repo->registration_begins();
+  printf("             --p4.2\n");
   repo.register_field(fid_x,"group_1");
+  printf("             --p4.3\n");
   repo.register_field(fid_y,"group_1");
+  printf("             --p4.4\n");
   repo.register_field(fid_z,"group_1");
+  printf("             --p4.5\n");
   // All fields in the field manager are consider REAL, so index still used but converted to REAL
   repo.register_field(fid_index_1d,"group_2");
   repo.register_field(fid_index_2d,"group_2");
@@ -131,12 +149,15 @@ TEST_CASE("scorpio_yaml", "") {
   repo.register_field(fid_data_1d,"group_3");
   repo.register_field(fid_data_2d,"group_3");
   repo.register_field(fid_data_3d,"group_3");
+  printf("             --p4.6\n");
   repo.registration_ends();
+  printf("             --p4.7\n");
+  printf("ASD yaml test p5\n");
 
   // Initialize spatial vectors
-  auto xd = repo.get_field(fid_x).get_view(); 
-  auto yd = repo.get_field(fid_y).get_view();
-  auto zd = repo.get_field(fid_z).get_view();
+  auto xd = repo->get_field(fid_x).get_view(); 
+  auto yd = repo->get_field(fid_y).get_view();
+  auto zd = repo->get_field(fid_z).get_view();
   auto xh = Kokkos::create_mirror_view( xd );
   auto yh = Kokkos::create_mirror_view( yd );
   auto zh = Kokkos::create_mirror_view( zd );
@@ -144,6 +165,7 @@ TEST_CASE("scorpio_yaml", "") {
   Kokkos::deep_copy(xd,xh);
   Kokkos::deep_copy(yd,yh);
   Kokkos::deep_copy(zd,zh);
+  printf("ASD yaml test p6\n");
 
 /* The next step is to initialize the set of IO class objects to handle output,
  * and sync it with the field manager we just created. */
@@ -156,20 +178,31 @@ TEST_CASE("scorpio_yaml", "") {
   parse_yaml_file (input_yaml_file, scorpio_params);
   // Retrieve the list of scorpio output control files from scream_params.
   auto& output_control_files = scorpio_params.get<std::vector<std::string>>("Output YAML Files");    // First grab the list of Output files from the control YAML
+  printf("ASD yaml test p7\n");
 
   // For each output control file create a separate instance of the io class.
   std::vector<AtmosphereOutput> AtmOutput_Instances;
-  for (const auto& fname : output_control_files) {
-    ekat::ParameterList out_params(fname);
-    parse_yaml_file(fname,out_params);
-    AtmosphereOutput output_instance(io_comm,out_params);
-    AtmOutput_Instances.push_back(output_instance);
-  }
-  // Initialize the output files:
-  for (auto& out_ins : AtmOutput_Instances)
-  {
-    out_ins.init(repo,upgm);
-  }
+//  for (int ii=0;ii<output_control_files.size();ii++) {
+//    ekat::ParameterList out_params(output_control_files[ii]);
+//    parse_yaml_file(output_control_files[ii],out_params);
+//    AtmosphereOutput output_instance(io_comm,out_params);
+//    AtmOutput_Instances.push_back(output_instance);
+//  }
+//  // Initialize the output files:
+//  for (auto& out_ins : AtmOutput_Instances)
+//  {
+//    out_ins.init(repo,upgm);
+//  }
+  // Initalize the output manager:
+  printf("ASD yaml test p7\n");
+  OutputManager m_output_manager;
+  auto& out_params = scorpio_params.sublist("Output Manager");
+  m_output_manager.set_params(out_params);
+  m_output_manager.set_comm(io_comm);
+  m_output_manager.set_grids(upgm);
+  m_output_manager.set_repo(repo);
+  m_output_manager.init();
+  printf("ASD yaml test p8\n");
 
   // Run and record data:
   bool index_init = true;
@@ -179,9 +212,9 @@ TEST_CASE("scorpio_yaml", "") {
   {
     Real l_time = tstep*dt;
     // Update index variables
-    auto index_1d_dev = repo.get_field(fid_index_1d).get_view(); 
-    auto index_2d_dev = repo.get_field(fid_index_2d).get_reshaped_view<Real**>();
-    auto index_3d_dev = repo.get_field(fid_index_3d).get_reshaped_view<Real***>();
+    auto index_1d_dev = repo->get_field(fid_index_1d).get_view(); 
+    auto index_2d_dev = repo->get_field(fid_index_2d).get_reshaped_view<Real**>();
+    auto index_3d_dev = repo->get_field(fid_index_3d).get_reshaped_view<Real***>();
     auto index_1d_h = Kokkos::create_mirror_view( index_1d_dev );
     auto index_2d_h = Kokkos::create_mirror_view( index_2d_dev );
     auto index_3d_h = Kokkos::create_mirror_view( index_3d_dev );
@@ -190,9 +223,9 @@ TEST_CASE("scorpio_yaml", "") {
     Kokkos::deep_copy(index_2d_dev,index_2d_h);
     Kokkos::deep_copy(index_3d_dev,index_3d_h);
     // Update data variables
-    auto data_1d_dev = repo.get_field(fid_data_1d).get_view(); 
-    auto data_2d_dev = repo.get_field(fid_data_2d).get_reshaped_view<Real**>();
-    auto data_3d_dev = repo.get_field(fid_data_3d).get_reshaped_view<Real***>();
+    auto data_1d_dev = repo->get_field(fid_data_1d).get_view(); 
+    auto data_2d_dev = repo->get_field(fid_data_2d).get_reshaped_view<Real**>();
+    auto data_3d_dev = repo->get_field(fid_data_3d).get_reshaped_view<Real***>();
     auto data_1d_h = Kokkos::create_mirror_view( data_1d_dev );
     auto data_2d_h = Kokkos::create_mirror_view( data_2d_dev );
     auto data_3d_h = Kokkos::create_mirror_view( data_3d_dev );
@@ -201,20 +234,24 @@ TEST_CASE("scorpio_yaml", "") {
     Kokkos::deep_copy(data_2d_dev,data_2d_h);
     Kokkos::deep_copy(data_3d_dev,data_3d_h);
 
-    for (auto& out_ins : AtmOutput_Instances)
-    {
-      out_ins.run(repo,upgm,l_time);
-    }
+    m_output_manager.run(l_time);
+    //for (auto& out_ins : AtmOutput_Instances)
+    //{
+    //  out_ins.run(repo,upgm,l_time);
+    //}
   }
+  printf("ASD yaml test p9\n");
 
   //Finished with PIO, finalize the system
-  for (auto& out_ins : AtmOutput_Instances)
-  {
-    out_ins.finalize();
-    out_ins.check_status();
-  }
-  eam_pio_finalize();
-  upgm.clean_up();
+  m_output_manager.finalize();
+//  for (auto& out_ins : AtmOutput_Instances)
+//  {
+//    out_ins.finalize();
+//    out_ins.check_status();
+//  }
+//  eam_pio_finalize();
+  printf("ASD yaml test p10\n");
+  (*upgm).clean_up();
 } // TEST_CASE scorpio_yaml
 
 

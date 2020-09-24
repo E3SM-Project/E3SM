@@ -24,14 +24,18 @@
  *     each value in a view, in order if flattened.  --DONE--
  *  4) Handle MPI communication to allow for PIO_STRIDE (i.e. fewer pio ranks than total ranks).
  *  5) Make it so that all dimensions that are registered are automatically registered as variables and the values written (only once, not with time).  Probably need this information from the grid manager(?)
- *  6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.
- *  7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?
+ *  6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.  #3
+ * 6a) Also need restart history, in case you stop mid-out frequency and need to pick it up in the next run.
+ *  7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?  #2
  *--8) Create average, min, max and instantaneous options for output.  --DONE--
  *  9) Assure that IO is compatible with PACKing of variables.
  * 10) Add control of netCDF header information to the YAML file and this class.
  * 11) Better naming convention for output files?  Currently just keeps a counter, but in EAM the date/time range is used.
  * 12) Better handling of output frequency.  Need to a) gather time info from driver and b) parse that info for frequency units.
  * 13) Expand compatability of IO class to handle Dynamics grids.  This will require a different approach to "set_dofs"
+ * 14) Hook up the AD for the unit test.  #1
+ * 15) SCORPIO in stand-alone build.
+ * 16) When dynamics is ready, write output from a dynamics run.
  */
 
 namespace scream
@@ -70,7 +74,7 @@ protected:
   void add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name);
   void register_variables();
   void set_degrees_of_freedom();
-  void register_views(const FieldRepository<Real, device_type> &field_repo);
+  void register_views(const FieldRepository<Real, device_type>& field_repo);
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -243,7 +247,7 @@ inline void AtmosphereOutput::check_status()
   printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",m_comm.rank(),m_filename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
 } // check_status
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_type> &field_repo, const std::string name)
+inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name)
 {
   for (auto myalias=field_repo.begin();myalias!=field_repo.end();++myalias)
   {
@@ -283,7 +287,7 @@ inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_
   EKAT_REQUIRE_MSG(true,"Error! Field " + name + " not found in repo.\n");
 } // add_identifier
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_type> &field_repo)
+inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_type>& field_repo)
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -298,8 +302,6 @@ inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_
       m_view.emplace(name,field_repo.get_field(it.second).get_view());
     } else {
     // If anything else then we need a local copy that can be updated.
-//      auto view_copy = Kokkos::create_mirror_view( field_repo.get_field(it.second).get_view() );
-//      Kokkos::deep_copy(view_copy, field_repo.get_field(it.second).get_view());
       view_type view_copy("",field_repo.get_field(it.second).get_view().extent(0));
       m_view.emplace(name,view_copy);
     }

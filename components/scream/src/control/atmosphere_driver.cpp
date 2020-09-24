@@ -154,6 +154,19 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     }
   }
 
+  // Now that all fields have been set and checked we can establish an output manager
+  // for all output streams.
+  if (m_atm_params.isSublist("Output Manager"))
+  {
+    auto& out_params = m_atm_params.sublist("Output Manager");
+    m_output_manager.set_params(out_params);
+    m_output_manager.set_comm(atm_comm);
+    m_output_manager.set_grids(m_grids_manager);
+    m_output_manager.set_repo(m_device_field_repo);
+    m_output_manager.init();
+    // If not true then m_output_manager.init() won't be called, leaving no_output flag as true and skipping output throughout simulation.
+  }
+
 #ifdef SCREAM_DEBUG
   create_bkp_field_repo();
   m_atm_process_group->set_field_repos(*m_field_repo,m_bkp_field_repo);
@@ -170,12 +183,18 @@ void AtmosphereDriver::run (const Real dt) {
 
   // Update current time stamps
   m_current_ts += dt;
+
+  // Update output streams
+  m_output_manager.run(m_current_ts);
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 
-  m_field_repo->clean_up();
+  // Finalize output streams, make sure files are closed
+  m_output_manager.finalize();
+
+  m_device_field_repo->clean_up();
 #ifdef SCREAM_DEBUG
   m_bkp_field_repo.clean_up();
 #endif

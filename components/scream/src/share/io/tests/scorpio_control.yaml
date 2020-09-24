@@ -1,0 +1,7 @@
+%YAML 1.1
+---
+Output Manager:
+  PIO Stride: 1
+  Output YAML Files: ["scorpio_output1.yaml", "scorpio_output2.yaml"]
+
+...
