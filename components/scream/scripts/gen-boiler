@@ -16,7 +16,7 @@ check_minimum_python_version(3, 5)
 
 import argparse, sys, pathlib
 
-from gen_boiler import GenBoiler, get_supported_pieces, get_supported_physics
+from gen_boiler import GenBoiler, get_supported_pieces, get_supported_physics, get_piece_description
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -40,43 +40,45 @@ OR
     > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     default_repo = get_git_toplevel_dir()
 
     parser.add_argument("subs", nargs="+",
-                        help="fortran subroutine name[s]")
+                        help="fortran subroutine name[s]. Must specify at least one")
 
-    parser.add_argument("-p", "--piece", dest="pieces", default=[], action="append", choices=get_supported_pieces(),
-                        help="Select which pieces of boilerplate to generate. Default will generate ALL pieces.")
+    parser.add_argument("-p", "--piece", dest="pieces", default=[], metavar="", action="append", choices=get_supported_pieces(),
+                        help="Select which pieces of boilerplate to generate."
+                        "\nPiece choices:\n{}\n\nDefault will generate ALL pieces".format("\n".join(["{:17s}: {}".format(item, get_piece_description(item)) for item in get_supported_pieces()])))
 
     parser.add_argument("--physics", default=[], action="append", choices=get_supported_physics(),
                         help=\
 """
 Limit generation to a specific set of physics. This should only be
 needed to disambiguate cases where a subroutine has the same name in
-multiple physics. This may also improve performance. Default will scan
-ALL physics.
+multiple physics. This may also improve performance.
+Default will scan ALL physics.
 """
                     )
 
-    parser.add_argument("-o", "--overwrite", action="store_true", help="Overwrite existing boilerplate")
+    parser.add_argument("-o", "--overwrite", action="store_true",
+                        help="Overwrite existing boilerplate.\nDefault: %(default)s")
 
     parser.add_argument("-k", "--kernel", action="store_true",
-                        help="The generate cxx functions need the ability to launch kokkos kernels")
+                        help="The generate cxx functions need the ability to launch kokkos kernels.\nDefault: %(default)s")
 
     parser.add_argument("-s", "--source-repo", default=default_repo,
-                        help="The repo you wish to scan for fortran subroutines")
+                        help="The repo you wish to scan for fortran subroutines.\nDefault: %(default)s")
 
     parser.add_argument("-t", "--target-repo", default=default_repo,
-                        help="The repo you wish to generate boilerplate into")
+                        help="The repo you wish to generate boilerplate into.\nDefault: %(default)s")
 
     parser.add_argument("-d", "--dry-run", action="store_true",
-                        help="Do a dry run instead of modifying files")
+                        help="Do a dry run instead of modifying files.\nDefault: %(default)s")
 
     parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Produce extra output")
+                        help="Produce extra output.\nDefault: %(default)s")
 
     args = parser.parse_args(args[1:])
 

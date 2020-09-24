@@ -74,112 +74,125 @@ namespace {physics} {{
 
 # piece map. maps the name of a piece of boilerplate that needs to be genereate to:
 #   (filepath (relative to cxx_root))
-FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX = range(5)
-PIECES = {
-    "f90_c2f_bind"  : (
+FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
+PIECES = OrderedDict([
+    ("f90_c2f_bind", (
         lambda phys, sub, gb: "{}_iso_c.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
         lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),   # sub_c end
-    ),
+        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),    # sub_c end
+        lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
+    )),
 
-    "f90_f2c_bind"  : (
+    ("f90_f2c_bind"  , (
         lambda phys, sub, gb: "{}_iso_f.f90".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
         lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_f".format(phys)), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
-    ),
+        lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
+    )),
 
-    "cxx_c2f_bind_decl"  : (
+    ("cxx_c2f_bind_decl"  , (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-    ),
+        lambda *x           : "The c to f90 c function declaration(<name>_c)"
+    )),
 
-    "cxx_c2f_glue_decl"  : (
+    ("cxx_c2f_glue_decl"  , (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
         lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data) decl
         lambda phys, sub, gb: re.compile(r".*;\s*"),             # ;
-    ),
+        lambda *x           : "The cxx to c function declaration(<name>(Data))"
+    )),
 
-    "cxx_c2f_glue_impl"  : (
+    ("cxx_c2f_glue_impl" , (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-    ),
+        lambda *x           : "The cxx to c function implementation(<name>(Data))"
+    )),
 
-    "cxx_c2f_data"  : (
+    ("cxx_c2f_data"  , (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
         lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True),             # terminating };
-    ),
+        lambda *x           : "The cxx data struct definition(struct Data)"
+    )),
 
-    "cxx_f2c_bind_decl"  : (
+    ("cxx_f2c_bind_decl"  , (
         lambda phys, sub, gb: "{}_functions_f90.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-    ),
+        lambda *x           : "The f90 to cxx function declaration(<name>_f)"
+    )),
 
-    "cxx_f2c_bind_impl"  : (
+    ("cxx_f2c_bind_impl"  , (
         lambda phys, sub, gb: "{}_functions_f90.cpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-    ),
+        lambda *x           : "The f90 to cxx function implementation(<name>_f)"
+    )),
 
-    "cxx_func_decl"  : (
+    ("cxx_func_decl", (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_hpp"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),            # ;
-    ),
+        lambda *x           : "The cxx kokkos function declaration(<name>)"
+    )),
 
-    "cxx_func_impl" : (
+    ("cxx_func_impl", (
         lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),   # insert at end of namespace
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx begin
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-    ),
+        lambda *x           : "The cxx kokkos function stub implementation(<name>)"
+    )),
 
-    "cxx_bfb_unit_decl" : (
+    ("cxx_bfb_unit_decl", (
         lambda phys, sub, gb: "tests/{}_unit_tests_common.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"), # end of struct decl
-    ),
+        lambda *x           : "The cxx unit test struct declaration"
+    )),
 
-    "cxx_bfb_unit_impl"  : (
+    ("cxx_bfb_unit_impl", (
         lambda phys, sub, gb: "tests/{}_{}_tests.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_bfb_unit_impl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, at_line_start=True), # insert of end of struct
         lambda phys, sub, gb: get_cxx_function_begin_regex("run_bfb", static=True),  # run_bfb
         lambda phys, sub, gb: get_cxx_close_block_regex(comment="run_bfb"), # } // run_bfb # reqs special comment
-    ),
+        lambda *x           : "The cxx bfb unit test implementation"
+    )),
 
-    "cxx_eti" : (
+    ("cxx_eti", (
         lambda phys, sub, gb: "{}_{}.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
         lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file
-    ),
-}
+        lambda *x           : "The cxx explicit template instatiation file"
+    )),
+])
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src)
@@ -221,6 +234,11 @@ UT_ARG_DATA = [
 #
 # Free functions
 #
+
+###############################################################################
+def get_piece_description(piece):
+###############################################################################
+    return PIECES[piece][DESC]()
 
 ###############################################################################
 def get_subroutine_begin_regex(name):
@@ -1551,7 +1569,7 @@ class GenBoiler(object):
         } // namespace scream
         <BLANKLINE>
         """
-        include_file = PIECES["cxx_func_impl"][0](phys, sub, self)
+        include_file = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
 
         result = \
 """#include {include_file}
