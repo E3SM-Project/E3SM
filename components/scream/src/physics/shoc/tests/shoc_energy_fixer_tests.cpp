@@ -5,6 +5,7 @@
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "physics/shoc/shoc_constants.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -27,27 +28,28 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
   {
     static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
     static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
+    static constexpr Real mintke  = scream::shoc::Constants<Real>::mintke;
     static constexpr Int shcol    = 3;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
 
     // Tests for the SHOC function
     //     shoc_energy_fixer
-    
+
     // TESTs ONE through THREE
-    // No energy change and surface flux test.  
+    // No energy change and surface flux test.
     //  In one column, given inputs where the energy has not changed
     //  from timestep to timestep, verify that the host model dry static
-    //  energy also has not changed. 
-    
-    // In second column, give positive surface fluxes, 
-    //  all other information being the same.  Verify that energy was added 
+    //  energy also has not changed.
+
+    // In second column, give positive surface fluxes,
+    //  all other information being the same.  Verify that energy was added
     //  in to the system and verify that energy was added into the system AND
     //  verify that energy was only adjust at the levels where TKE is greater
     //  than zero.
-    
-    // In third column, give negative surface fluxes and verify energy 
-    //  was removed from the system.  
+
+    // In third column, give negative surface fluxes and verify energy
+    //  was removed from the system.
 
     // Timestep [s]
     static constexpr Real dtime = 300;
@@ -60,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Host model temperture [K]
     static constexpr Real host_temp_input[nlev] = {250, 275, 285, 290, 300};
     // Define TKE inputs
-    static constexpr Real tke[nlev] = {0.0004, 0.0004, 0.3, 0.4, 0.1};
+    static constexpr Real tke[nlev] = {mintke, mintke, 0.3, 0.4, 0.1};
    //  Pressure at interface [Pa]
     static constexpr Real pint[nlevi] = {50000, 60000, 70000, 80000, 90000, 100000};
     // Define integrated static energy, kinetic energy, water vapor,
@@ -85,7 +87,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Want exactly three columns for this case
     REQUIRE(shcol == 3);
     REQUIRE(nlevi == nlev+1);
-    
+
     // compute host model dry static energy
     for(Int n = 0; n < nlev; ++n) {
       zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
@@ -119,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
         SDS.tke[offset] = tke[n];
         SDS.host_dse[offset] = host_dse_input[n];
       }
-      
+
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
@@ -161,18 +163,18 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     shoc_energy_fixer(SDS);
 
     // Check test
-    // Verify that the dry static energy has not changed if surface 
+    // Verify that the dry static energy has not changed if surface
     //  fluxes are zero, else verify host_dse has increased
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
         const auto offset = n + s * nlev;
-        
+
         // If TKE is at minimum threshold then make sure that
         //  host_dse has not been modified
-        if (SDS.tke[offset] == 0.0004){
+        if (SDS.tke[offset] == mintke){
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
-        }         
-        else{        
+        }
+        else{
           if (SDS.wthl_sfc[s] == 0){
             REQUIRE(SDS.wqw_sfc[s] == 0); // verify input
             REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
@@ -184,20 +186,20 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
           else {
             REQUIRE(SDS.wqw_sfc[s] > 0);
             REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
-          }  
+          }
         }
 
       }
     }
-    
+
     // TEST FOUR
     // Energy loss, gain test.
     // Now set surface fluxes to zero and set all *_a scalar arrays
     //  to be less/more than the *_b arrays.  This will signify that SHOC
     //  lost/gained energy during integration and thus host_dse should be
     //  INCREASED/DECREASED at all levels where TKE is sufficient
-        
-    // Define by how much each energy integral array will 
+
+    // Define by how much each energy integral array will
     //  be perturbed
     static constexpr Real se_gainloss = 2;
     static constexpr Real ke_gainloss = 1;
@@ -207,9 +209,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // For this test set to zero
     static constexpr Real wthl_sfc_gainloss = 0;
     static constexpr Real wqw_sfc_gainloss = 0;
-    
+
     // Load up the data
-    // This will alternate between a positive and negative 
+    // This will alternate between a positive and negative
     Real gainloss_fac[shcol];
     // Initialize value
     gainloss_fac[0] = 1;
@@ -222,18 +224,18 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
       SDS.se_a[s] = se+gainloss_fac[s]*se_gainloss;
       SDS.ke_a[s] = ke+gainloss_fac[s]*ke_gainloss;
       SDS.wv_a[s] = wv+gainloss_fac[s]*wv_gainloss;
-      SDS.wl_a[s] = wl+gainloss_fac[s]*wl_gainloss;      
-      
-      // Alternate between positive and negative loss, 
+      SDS.wl_a[s] = wl+gainloss_fac[s]*wl_gainloss;
+
+      // Alternate between positive and negative loss,
       //  change sign for next column
       if (s < shcol-1){
         gainloss_fac[s+1] = gainloss_fac[s]*-1;
       }
     }
-    
+
     // Call the fortran implementation
     shoc_energy_fixer(SDS);
-    
+
     // Verify the result
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
@@ -241,10 +243,10 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
         // If TKE is at minimum threshold then make sure that
         //  host_dse has not been modified
-        if (SDS.tke[offset] == 0.0004){     
+        if (SDS.tke[offset] == mintke){
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
-        }         
-        else{       
+        }
+        else{
           // If the system gained energy, make sure that host_dse
           //  has decreased to compensate for this
           if (gainloss_fac[s] > 0){
@@ -253,9 +255,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
           // Else, the vice versa of above
           else{
             REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
-          }    
+          }
         }
-        
+
       }
     }
 
