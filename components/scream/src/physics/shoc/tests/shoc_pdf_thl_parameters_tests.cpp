@@ -24,13 +24,12 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 
   static void run_property()
   {
-  
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_thl_parameters
 
     // TEST ONE
-    // run the test two times given identical inputs, except 
-    // one test where thlsec is larger.  Verify that thl2_1 and 
+    // run the test two times given identical inputs, except
+    // one test where thlsec is larger.  Verify that thl2_1 and
     // th2_2 are larger
 
     // Define the flux of thetal [K m/s]
@@ -51,15 +50,15 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     static constexpr Real Skew_w_test1 = 3;
     // Define fraction of first gaussian
     static constexpr Real a_test1 = 0.2;
-    // Define logical 
-    static constexpr bool dothetal_skew = false; 
-    
+    // Define logical
+    static constexpr bool dothetal_skew = false;
+
     // Be sure this value is actually larger
     REQUIRE(thlsec_large > thlsec_small);
-    
+
     // Initialize data structure for bridging to F90
     SHOCPDFthlparamData SDS;
-    
+
     // Fill the test data
     SDS.wthlsec = wthlsec_test1;
     SDS.sqrtw2 = sqrtw2_test1;
@@ -71,12 +70,12 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     SDS.Skew_w = Skew_w_test1;
     SDS.a = a_test1;
     SDS.dothetal_skew = dothetal_skew;
-    
+
     // Verify input is physical
     REQUIRE(SDS.sqrtw2 >= 0);
     REQUIRE(SDS.sqrtthl >= 0);
     REQUIRE(SDS.thl_first > 0);
-    
+
     // Make sure vertical velocity data is consistent
     REQUIRE(SDS.w1_1 > 0);
     REQUIRE(SDS.w1_2 < 0);
@@ -86,7 +85,7 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     }
     else if (SDS.Skew_w < 0){
       REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
-      REQUIRE(SDS.a > 0.5);    
+      REQUIRE(SDS.a > 0.5);
     }
     else if (SDS.Skew_w == 0){
       REQUIRE(abs(SDS.w1_1) == abs(SDS.w1_2));
@@ -95,63 +94,66 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 
     // Call the fortran implementation
     shoc_assumed_pdf_thl_parameters(SDS);
-    
+
     // Save some results to compare with next test
     // save the gaussian temperature variances
     Real thl2_1_result1 = SDS.thl2_1;
     Real thl2_2_result1 = SDS.thl2_2;
-    
+
     // Now load up input data with a larger temperature standard deviation
     SDS.thlsec = thlsec_large;
-    SDS.sqrtthl = sqrt(thlsec_large); 
+    SDS.sqrtthl = sqrt(thlsec_large);
 
-    // Call the fortran implementation again 
-    shoc_assumed_pdf_thl_parameters(SDS);    
-    
+    // Call the fortran implementation again
+    shoc_assumed_pdf_thl_parameters(SDS);
+
     // Save some results to compare with the old test
     // save the gaussian temperature variances
     Real thl2_1_result2 = SDS.thl2_1;
-    Real thl2_2_result2 = SDS.thl2_2;    
-    
+    Real thl2_2_result2 = SDS.thl2_2;
+
     // Now check the result
     REQUIRE(thl2_1_result2 > thl2_1_result1);
     REQUIRE(thl2_2_result2 > thl2_2_result1);
-    
+
     // TEST TWO
-    // For a case with identical input except wthlsec, verify that 
+    // For a case with identical input except wthlsec, verify that
     // the case with higher wthlsec has larger |thl1_2-thl1_1|
-    
+
     // Define the flux of thetal [K m/s], small value
     static constexpr Real wthlsec_small = 0.02;
     // Define the large value
     static constexpr Real wthlsec_large = 0.05;
-    
+
     REQUIRE(wthlsec_large > wthlsec_small);
-    
+
     //load the value for the small test, all other inputs
     //  will be recycled from last test
     SDS.wthlsec = wthlsec_small;
-    
-    // Call Fortran implementation 
-    shoc_assumed_pdf_thl_parameters(SDS); 
-    
+
+    // Call Fortran implementation
+    shoc_assumed_pdf_thl_parameters(SDS);
+
     // Save absolute difference between the two gaussian temps
     Real thlgaus_diff_result1 = abs(SDS.thl1_2 - SDS.thl1_1);
-    
+
     // Now laod up value for the large wthlsec test
     SDS.wthlsec = wthlsec_large;
 
-    // Call Fortran implementation 
+    // Call Fortran implementation
     shoc_assumed_pdf_thl_parameters(SDS);
-    
+
     // Save absolute difference between the two gaussian temps
-    Real thlgaus_diff_result2 = abs(SDS.thl1_2 - SDS.thl1_1); 
-    
+    Real thlgaus_diff_result2 = abs(SDS.thl1_2 - SDS.thl1_1);
+
     // Now check the result
-    REQUIRE(thlgaus_diff_result2 > thlgaus_diff_result1);       
-      
+    REQUIRE(thlgaus_diff_result2 > thlgaus_diff_result1);
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -167,10 +169,11 @@ TEST_CASE("shoc_pdf_thl_parameters_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_thl_parameters_b4b", "shoc")
+TEST_CASE("shoc_pdf_thl_parameters_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

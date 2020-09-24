@@ -12,6 +12,7 @@ namespace p3 {
  */
 
 template <typename S, typename D>
+KOKKOS_FUNCTION
 void Functions<S,D>::
 get_cloud_dsd2(
   const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,

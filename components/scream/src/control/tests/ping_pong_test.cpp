@@ -12,7 +12,8 @@ namespace scream {
 TEST_CASE("ping-pong", "") {
   using namespace scream;
 
-  constexpr int num_cols   = 2;
+  constexpr int num_cols = 2;
+  constexpr int num_vl   = 8;
 
   // Load ad parameter list
   std::string fname = "ping_pong.yaml";
@@ -24,7 +25,7 @@ TEST_CASE("ping-pong", "") {
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Setup the atm factories and grid manager
-  dummy_atm_init (num_cols);
+  dummy_atm_init (num_cols,num_vl,atm_comm);
 
   // Create the driver
   control::AtmosphereDriver ad;

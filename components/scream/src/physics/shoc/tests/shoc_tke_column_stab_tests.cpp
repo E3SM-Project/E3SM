@@ -53,12 +53,13 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     SHOCColstabData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.dz_zt[offset] = dz_zt[n];
 	SDS.pres[offset] = pres[n];
@@ -67,9 +68,9 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// Should be greater than zero
 	REQUIRE(SDS.dz_zt[offset] > 0.0);
 	// Make sure all pressure levels are in the
@@ -95,16 +96,16 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     static constexpr Real brunt_neg[nlev] = {-0.3, -0.4, -0.1, -10.0, -0.5};
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	SDS.brunt[offset] = brunt_neg[n];
       }
     }
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// All points should be less than zero
 	REQUIRE(SDS.brunt[offset] < 0.0);
       }
@@ -120,6 +121,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -135,10 +140,11 @@ TEST_CASE("shoc_tke_column_stab_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_tke_column_stab_b4b", "shoc")
+TEST_CASE("shoc_tke_column_stab_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

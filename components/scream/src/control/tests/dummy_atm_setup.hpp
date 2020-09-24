@@ -9,7 +9,7 @@
 
 namespace scream {
 
-void dummy_atm_init (const int num_cols) {
+void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) {
   using namespace scream;
   using device_type = DefaultDevice;
 
@@ -28,8 +28,8 @@ void dummy_atm_init (const int num_cols) {
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
-  auto dummy_grid_fwd = std::make_shared<DummyPhysicsGrid>(num_cols,true);
-  auto dummy_grid_bwd = std::make_shared<DummyPhysicsGrid>(num_cols,false);
+  auto dummy_grid_fwd = std::make_shared<SimpleGrid>("Physics_fwd",num_cols,nvl,comm);
+  auto dummy_grid_bwd = std::make_shared<SimpleGrid>("Physics_bwd",num_cols,nvl,comm);
 
   upgm.set_grid(dummy_grid_fwd);
   upgm.set_grid(dummy_grid_bwd);

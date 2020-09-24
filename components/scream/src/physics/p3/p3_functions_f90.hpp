@@ -499,7 +499,7 @@ struct CalcUpwindData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(CalcUpwindData, 7);
   PTD_ASSIGN_OP(CalcUpwindData, 7, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 
   void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
 };
@@ -561,7 +561,7 @@ struct CloudSedData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(CloudSedData, 9);
   PTD_ASSIGN_OP(CloudSedData, 9, kts, kte, ktop, kbot, kdir, dt, inv_dt, do_predict_nc, precip_liq_surf);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 void cloud_sedimentation(CloudSedData& d);
 
@@ -596,7 +596,7 @@ struct IceSedData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(IceSedData, 8);
   PTD_ASSIGN_OP(IceSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_ice_surf);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 
 void ice_sedimentation(IceSedData& d);
@@ -634,7 +634,7 @@ struct RainSedData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(RainSedData, 8);
   PTD_ASSIGN_OP(RainSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 
 void rain_sedimentation(RainSedData& d);
@@ -688,12 +688,7 @@ struct HomogeneousFreezingData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(HomogeneousFreezingData, 5);
   PTD_ASSIGN_OP(HomogeneousFreezingData, 5, kts, kte, ktop, kbot, kdir);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-
+  Int nk() const { return dim1; }
 };
 void homogeneous_freezing(HomogeneousFreezingData& d);
 
@@ -1007,7 +1002,7 @@ struct CheckValuesData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(CheckValuesData, 5);
   PTD_ASSIGN_OP(CheckValuesData, 5, kts, kte, timestepcount, source_ind, force_abort);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 void check_values(CheckValuesData& d);
 
@@ -1059,7 +1054,7 @@ struct P3MainPart1Data : public PhysicsTestData
   PTD_DATA_COPY_CTOR(P3MainPart1Data, 7);
   PTD_ASSIGN_OP(P3MainPart1Data, 7, kts, kte, kbot, ktop, kdir, do_predict_nc, dt);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part1(P3MainPart1Data& d);
@@ -1105,7 +1100,7 @@ struct P3MainPart2Data : public PhysicsTestData
   PTD_DATA_COPY_CTOR(P3MainPart2Data, 7);
   PTD_ASSIGN_OP(P3MainPart2Data, 9, kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, is_hydromet_present);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part2(P3MainPart2Data& d);
@@ -1145,7 +1140,7 @@ struct P3MainPart3Data : public PhysicsTestData
   PTD_DATA_COPY_CTOR(P3MainPart3Data, 5);
   PTD_ASSIGN_OP(P3MainPart3Data, 5, kts, kte, kbot, ktop, kdir);
 
-  Int nk() const { return shcol; }
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part3(P3MainPart3Data& d);

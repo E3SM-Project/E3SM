@@ -4,6 +4,10 @@ INCLUDE (ScreamUtils)
 SET (rrtmgpLib rrtmgp)
 SET (NEED_LIBS ${rrtmgpLib} scream_control scream_share)
 
+# Copy yaml input file to run directory
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
+
 # Test atmosphere processes
 CreateUnitTest(rrtmgp_stand_alone "rrtmgp_stand_alone.cpp" "${NEED_LIBS}" LABELS "rrtmgp;physics")
 

@@ -23,11 +23,14 @@ set(SHOC_HEADERS
   shoc.hpp
   atmosphere_macrophysics.hpp
   scream_shoc_interface.hpp
+  shoc_constants.hpp
 )
 
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
   list(APPEND SHOC_SRCS
+    shoc_update_host_dse.cpp
+    shoc_calc_shoc_varorcovar.cpp
     shoc_calc_shoc_vertflux.cpp
   )
 endif()

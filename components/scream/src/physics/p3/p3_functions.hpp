@@ -500,7 +500,7 @@ struct Functions
     const Smask& context = Smask(true) );
 
   // TODO: comment
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static void get_cloud_dsd2(
     const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
     const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& cld_frac_l,
