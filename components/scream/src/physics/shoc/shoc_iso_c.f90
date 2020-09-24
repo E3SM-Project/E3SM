@@ -294,6 +294,45 @@ contains
                            phis, host_dse)
 
   end subroutine update_host_dse_c
+  
+  subroutine shoc_energy_fixer_c(shcol, nlev, nlevi, dtime, nadv, &
+                                 zt_grid, zi_grid, se_b, ke_b, wv_b, &
+                                 wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
+                                 wqw_sfc, pdel, rho_zt, tke, pint, &
+                                 host_dse) bind (C)
+    use shoc, only: shoc_energy_fixer
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in), value :: dtime
+    integer(kind=c_int), intent(in), value :: nadv
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+    real(kind=c_real), intent(in) :: se_b(shcol)
+    real(kind=c_real), intent(in) :: ke_b(shcol)
+    real(kind=c_real), intent(in) :: wv_b(shcol)
+    real(kind=c_real), intent(in) :: wl_b(shcol)
+    real(kind=c_real), intent(in) :: se_a(shcol)
+    real(kind=c_real), intent(in) :: ke_a(shcol)
+    real(kind=c_real), intent(in) :: wv_a(shcol)
+    real(kind=c_real), intent(in) :: wl_a(shcol)
+    real(kind=c_real), intent(in) :: wthl_sfc(shcol)
+    real(kind=c_real), intent(in) :: wqw_sfc(shcol)
+    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
+    real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
+    
+    real(kind=c_real), intent(inout) :: host_dse(shcol,nlev)
+    
+    call shoc_energy_fixer(shcol, nlev, nlevi, dtime, nadv, &
+                           zt_grid, zi_grid, se_b, ke_b, wv_b, &
+                           wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
+                           wqw_sfc, pdel, rho_zt, tke, pint, &
+                           host_dse)
+
+  end subroutine shoc_energy_fixer_c
 
   subroutine shoc_energy_integrals_c(shcol, nlev, host_dse, pdel,&
                                      rtm, rcm, u_wind, v_wind,&
