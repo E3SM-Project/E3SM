@@ -682,6 +682,9 @@ contains
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
 
+           !$omp parallel
+           !$omp do schedule(runtime) private(cell1, cell2, sumRi, sigma, RiTopOfEdge, &
+           !$omp             L_rhines, Lr, Length)
            do iEdge=1,nEdges
               sumRi = 0.0_RKIND
               cell1 = cellsOnEdge(1, iEdge)
@@ -703,6 +706,8 @@ contains
               enddo
             enddo
          endif
+         !$omp end do
+         !$omp end parallel
 
          if(config_Redi_set_RediKappa_to_GMKappa) then
             !$omp parallel
