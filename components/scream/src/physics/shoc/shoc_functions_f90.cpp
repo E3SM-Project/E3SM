@@ -254,13 +254,13 @@ void update_host_dse(SHOCEnergydseData &d) {
 
 void shoc_energy_fixer(SHOCEnergyfixerData &d){
   shoc_init(d.nlev(), true);
-  d.transpose<ekat::util::TransposeDirection::c2f>();
+  d.transpose<ekat::TransposeDirection::c2f>();
   shoc_energy_fixer_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
                       d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
                       d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
                       d.wqw_sfc, d.pdel, d.rho_zt, d.tke, d.pint,
                       d.host_dse);
-  d.transpose<ekat::util::TransposeDirection::f2c>();
+  d.transpose<ekat::TransposeDirection::f2c>();
 }
 
 void shoc_energy_integrals(SHOCEnergyintData &d) {
