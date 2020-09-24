@@ -1010,7 +1010,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
-void get_time_space_phys_variables_f(Real t_atm_, Real pres_, Real rho_, Real latent_heat_vapor_, Real latent_heat_sublim_, Real qv_sat_l_, Real qv_sat_i_,
+void get_time_space_phys_variables_f(Real T_atm_, Real pres_, Real rho_, Real latent_heat_vapor_, Real latent_heat_sublim_, Real qv_sat_l_, Real qv_sat_i_,
 				     Real* mu_, Real* dv_, Real* sc_, Real* dqsdt_, Real* dqsidt_, Real* ab_,
 				     Real* abi_, Real* kap_, Real* eii_)
 {
@@ -1020,7 +1020,7 @@ void get_time_space_phys_variables_f(Real t_atm_, Real pres_, Real rho_, Real la
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack T_atm(t_atm_), pres(pres_), rho(rho_), latent_heat_vapor(latent_heat_vapor_), latent_heat_sublim(latent_heat_sublim_), qv_sat_l(qv_sat_l_), qv_sat_i(qv_sat_i_);
+      typename P3F::Spack T_atm(T_atm_), pres(pres_), rho(rho_), latent_heat_vapor(latent_heat_vapor_), latent_heat_sublim(latent_heat_sublim_), qv_sat_l(qv_sat_l_), qv_sat_i(qv_sat_i_);
       typename P3F::Spack mu, dv, sc, dqsdt,dqsidt, ab, abi, kap, eii;
 
       P3F::get_time_space_phys_variables(T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt,
@@ -1202,7 +1202,7 @@ void update_prognostic_liquid_f(Real qc2qr_accret_tend_, Real nc_accret_tend_, R
   *nr_    = t_h(5);
 }
 
-void ice_deposition_sublimation_f(Real qi_incld_, Real ni_incld_, Real t_atm_, Real qv_sat_l_,
+void ice_deposition_sublimation_f(Real qi_incld_, Real ni_incld_, Real T_atm_, Real qv_sat_l_,
 				  Real qv_sat_i_, Real epsi_, Real abi_, Real qv_,
 				  Real* qv2qi_vapdep_tend_, Real* qi2qv_sublim_tend_, Real* ni_sublim_tend_, Real* qc2qi_berg_tend_)
 {
@@ -1217,7 +1217,7 @@ void ice_deposition_sublimation_f(Real qi_incld_, Real ni_incld_, Real t_atm_, R
   Real local_qc2qi_berg_tend = *qc2qi_berg_tend_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack qi_incld(qi_incld_), ni_incld(ni_incld_), T_atm(t_atm_), qv_sat_l(qv_sat_l_), qv_sat_i(qv_sat_i_),
+      typename P3F::Spack qi_incld(qi_incld_), ni_incld(ni_incld_), T_atm(T_atm_), qv_sat_l(qv_sat_l_), qv_sat_i(qv_sat_i_),
 	epsi(epsi_), abi(abi_), qv(qv_);
 
       typename P3F::Spack qv2qi_vapdep_tend(local_qv2qi_vapdep_tend), qi2qv_sublim_tend(local_qi2qv_sublim_tend), ni_sublim_tend(local_ni_sublim_tend), qc2qi_berg_tend(local_qc2qi_berg_tend);
@@ -1775,7 +1775,7 @@ void back_to_cell_average_f(Real cld_frac_l_, Real cld_frac_r_, Real cld_frac_i_
 }
 
 void prevent_ice_overdepletion_f(
-  Real pres_, Real t_atm_, Real qv_, Real latent_heat_sublim_, Real inv_dt_, Real* qv2qi_vapdep_tend_,
+  Real pres_, Real T_atm_, Real qv_, Real latent_heat_sublim_, Real inv_dt_, Real* qv2qi_vapdep_tend_,
   Real* qi2qv_sublim_tend_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -1786,7 +1786,7 @@ void prevent_ice_overdepletion_f(
   Real local_qi2qv_sublim_tend = *qi2qv_sublim_tend_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    typename P3F::Spack pres(pres_), T_atm(t_atm_), qv(qv_), latent_heat_sublim(latent_heat_sublim_),
+    typename P3F::Spack pres(pres_), T_atm(T_atm_), qv(qv_), latent_heat_sublim(latent_heat_sublim_),
       qv2qi_vapdep_tend(local_qv2qi_vapdep_tend), qi2qv_sublim_tend(local_qi2qv_sublim_tend);
     P3F::prevent_ice_overdepletion(pres, T_atm, qv, latent_heat_sublim, inv_dt_, qv2qi_vapdep_tend, qi2qv_sublim_tend);
 
@@ -1801,7 +1801,7 @@ void prevent_ice_overdepletion_f(
 }
 
 void calc_rime_density_f(
-  Real t_atm_, Real rhofaci_, Real table_val_qi_fallspd_, Real acn_, Real lamc_, Real mu_c_,
+  Real T_atm_, Real rhofaci_, Real table_val_qi_fallspd_, Real acn_, Real lamc_, Real mu_c_,
   Real qc_incld_, Real qc2qi_collect_tend_, Real* vtrmi1_, Real* rho_qm_cloud_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -1812,7 +1812,7 @@ void calc_rime_density_f(
   Real local_rho_qm_cloud = *rho_qm_cloud_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack T_atm(t_atm_), rhofaci(rhofaci_), table_val_qi_fallspd(table_val_qi_fallspd_), acn(acn_),
+      typename P3F::Spack T_atm(T_atm_), rhofaci(rhofaci_), table_val_qi_fallspd(table_val_qi_fallspd_), acn(acn_),
                           lamc(lamc_), mu_c(mu_c_), qc_incld(qc_incld_),
                           qc2qi_collect_tend(qc2qi_collect_tend_), vtrmi1(local_vtrmi1),
                           rho_qm_cloud(local_rho_qm_cloud);
@@ -1830,7 +1830,7 @@ void calc_rime_density_f(
 }
 
 void cldliq_immersion_freezing_f(
-  Real t_atm_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_, Real inv_qc_relvar_,
+  Real T_atm_, Real lamc_, Real mu_c_, Real cdist1_, Real qc_incld_, Real inv_qc_relvar_,
   Real* qc2qi_hetero_freeze_tend_, Real* nc2ni_immers_freeze_tend_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -1841,7 +1841,7 @@ void cldliq_immersion_freezing_f(
   Real local_nc2ni_immers_freeze_tend = *nc2ni_immers_freeze_tend_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack T_atm(t_atm_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),qc_incld(qc_incld_),
+      typename P3F::Spack T_atm(T_atm_), lamc(lamc_), mu_c(mu_c_), cdist1(cdist1_),qc_incld(qc_incld_),
 	                  inv_qc_relvar(inv_qc_relvar_),qc2qi_hetero_freeze_tend(local_qc2qi_hetero_freeze_tend), nc2ni_immers_freeze_tend(local_nc2ni_immers_freeze_tend);
       P3F::cldliq_immersion_freezing(T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
                                      qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend);
@@ -1857,7 +1857,7 @@ void cldliq_immersion_freezing_f(
 }
 
 void rain_immersion_freezing_f(
-  Real t_atm_, Real lamr_, Real mu_r_, Real cdistr_, Real qr_incld_,
+  Real T_atm_, Real lamr_, Real mu_r_, Real cdistr_, Real qr_incld_,
   Real* qr2qi_immers_freeze_tend_, Real* nr2ni_immers_freeze_tend_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -1868,7 +1868,7 @@ void rain_immersion_freezing_f(
   Real local_nr2ni_immers_freeze_tend = *nr2ni_immers_freeze_tend_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack T_atm(t_atm_), lamr(lamr_), mu_r(mu_r_),
+      typename P3F::Spack T_atm(T_atm_), lamr(lamr_), mu_r(mu_r_),
                           cdistr(cdistr_), qr_incld(qr_incld_),
                           qr2qi_immers_freeze_tend(local_qr2qi_immers_freeze_tend), nr2ni_immers_freeze_tend(local_nr2ni_immers_freeze_tend);
       P3F::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
@@ -1983,7 +1983,7 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nr_
   *nr_selfcollect_tend_ = t_h(0);
 }
 
-  void ice_melting_f(Real rho_,Real t_atm_,Real pres_,Real rhofaci_,Real table_val_qi2qr_melting_,Real table_val_qi2qr_vent_melt_,Real latent_heat_vapor_,Real latent_heat_fusion_,Real dv_,Real sc_,Real mu_,Real kap_,Real qv_,Real qi_incld_,Real ni_incld_,Real* qi2qr_melt_tend_,Real* ni2nr_melt_tend_){
+  void ice_melting_f(Real rho_,Real T_atm_,Real pres_,Real rhofaci_,Real table_val_qi2qr_melting_,Real table_val_qi2qr_vent_melt_,Real latent_heat_vapor_,Real latent_heat_fusion_,Real dv_,Real sc_,Real mu_,Real kap_,Real qv_,Real qi_incld_,Real ni_incld_,Real* qi2qr_melt_tend_,Real* ni2nr_melt_tend_){
   using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::view_1d<Real> t_d("t_h", 2);
@@ -1992,7 +1992,7 @@ void rain_self_collection_f(Real rho_, Real qr_incld_, Real nr_incld_, Real* nr_
   Real local_ni2nr_melt_tend = *ni2nr_melt_tend_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack rho(rho_), T_atm(t_atm_), pres(pres_), rhofaci(rhofaci_),table_val_qi2qr_melting(table_val_qi2qr_melting_), table_val_qi2qr_vent_melt(table_val_qi2qr_vent_melt_), latent_heat_vapor(latent_heat_vapor_), latent_heat_fusion(latent_heat_fusion_),dv(dv_), sc(sc_), mu(mu_), kap(kap_),qv(qv_), qi_incld(qi_incld_), ni_incld(ni_incld_), qi2qr_melt_tend(local_qi2qr_melt_tend), ni2nr_melt_tend(local_ni2nr_melt_tend);
+      typename P3F::Spack rho(rho_), T_atm(T_atm_), pres(pres_), rhofaci(rhofaci_),table_val_qi2qr_melting(table_val_qi2qr_melting_), table_val_qi2qr_vent_melt(table_val_qi2qr_vent_melt_), latent_heat_vapor(latent_heat_vapor_), latent_heat_fusion(latent_heat_fusion_),dv(dv_), sc(sc_), mu(mu_), kap(kap_),qv(qv_), qi_incld(qi_incld_), ni_incld(ni_incld_), qi2qr_melt_tend(local_qi2qr_melt_tend), ni2nr_melt_tend(local_ni2nr_melt_tend);
       P3F::ice_melting(rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend);
 
       t_d(0) = qi2qr_melt_tend[0];
