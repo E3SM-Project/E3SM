@@ -25,6 +25,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
   static void run_property()
   {
+    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
+    static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;    
     static constexpr Int shcol    = 6;
     static constexpr Int nlev     = 5;
 
@@ -36,8 +38,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
     //  verify that given a positive value of energy imbalance that
     //  columns with a higher SHOC top were subject to more energy removal.
 
-    // Host model dry static energy [K]
-    static constexpr Real host_dse_input[nlev] = {350.0, 325.0, 315.0, 310.0, 300.0};
+    // Host model dry static energy [J kg-1]
+    static constexpr Real host_dse_input[nlev] = {350e3, 325e3, 315e3, 310e3, 300e3};
 
     // Energy disbalance.  For this test we assume all columns have
     //  the same disbalance magnitude.

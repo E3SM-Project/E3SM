@@ -173,11 +173,12 @@ def setup_mach_env (machine):
             # BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
             # }
             # Which breaks the assumption that each env var is on one line.
+            # On some systems, this variable seems to have a different name,
+            # and there can potentially be other BASH_FUNC_blah variables.
             # To get around this, discard lines that either do not contain '=',
-            # or that start with BASH_FUNC_module.
-            if item.find("BASH_FUNC_module") != -1 or item.find("=") == -1:
+            # or that start with BASH_FUNC_.
+            if item.find("BASH_FUNC_") != -1 or item.find("=") == -1:
                 continue
-
 
             # 2 means only 1st occurence will cause a split.
             # Just in case some env var value contains '='

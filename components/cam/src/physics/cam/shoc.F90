@@ -3680,7 +3680,7 @@ subroutine shoc_energy_threshold_fixer(&
   real(rtype), intent(in) :: te_b(shcol)
 
 
-  ! INPUT VARIABLES
+  ! OUTPUT VARIABLES
   real(rtype), intent(out) :: se_dis(shcol)
   integer, intent(out) :: shoctop(shcol)
 
@@ -3925,6 +3925,9 @@ subroutine pblintd_init_pot(&
        shcol,nlev,&             ! Input
        thl,ql,q,&               ! Input
        thv)                     ! Output
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_pblintd_init_pot_f
+#endif
     !------------------------------Arguments--------------------------------
     !
     ! Input arguments
@@ -3943,6 +3946,13 @@ subroutine pblintd_init_pot(&
     integer  :: k                       ! level index
     real(rtype) :: th
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_pblintd_init_pot_f(shcol,nlev,thl,ql,q,&               ! Input
+                                   thv)                     ! Output
+      return
+   endif
+#endif
     ! Compute virtual potential temperature
     do k=1,nlev
       do i=1,shcol

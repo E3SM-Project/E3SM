@@ -52,7 +52,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = params.sublist(ekat::util::strint("Process",i));
+    const auto& params_i = params.sublist(ekat::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
 
@@ -311,7 +311,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
           const auto& gn = fid.get_grid_name();
           auto& f_old = m_bkp_field_repo->get_field(fid);
           bool field_is_unchanged = views_are_equal(f_old,f.second);
-          if (ekat::util::contains(computed,fid) ||
+          if (ekat::contains(computed,fid) ||
               (inputs_remappers.find(gn)!=inputs_remappers.end() &&
                inputs_remappers.at(gn)->has_tgt_field(fid))) {
             // For fields that changed, make sure the time stamp has been updated
@@ -498,7 +498,7 @@ void AtmosphereProcessGroup::set_internal_field (const Field<Real, device_type>&
       proc->set_computed_field(f);
     }
     if (static_cast<bool>(group)) {
-      if (ekat::util::contains(group->get_internal_fields(),fid)) {
+      if (ekat::contains(group->get_internal_fields(),fid)) {
         group->set_internal_field(f);
       }
     }

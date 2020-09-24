@@ -6,6 +6,7 @@ set(SHOC_TESTS_SRCS
     shoc_grid_tests.cpp
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
+    shoc_energy_fixer_tests.cpp
     shoc_energy_update_dse_tests.cpp
     shoc_energy_integral_tests.cpp
     shoc_energy_total_fixer_tests.cpp
@@ -49,6 +50,7 @@ set(SHOC_TESTS_SRCS
     shoc_pdf_compute_cloudvar_tests.cpp
     shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
+    shoc_pblintd_init_pot_test.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

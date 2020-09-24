@@ -1,13 +1,16 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "p3_unit_tests_common.hpp"
+
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
+#include "share/scream_types.hpp"
 
-#include "p3_unit_tests_common.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -101,7 +104,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
           const auto val = interp(vm_table, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::util::max(slope, std::abs((eval(i+1) - eval(i))/delta));
+        slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
       };
 
       Scalar max_slope;
@@ -146,7 +149,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
           const auto val = interp(vm_table, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::util::max(slope, std::abs((eval(i+1) - eval(i))/delta));
+        slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
       };
 
       Scalar max_slope;

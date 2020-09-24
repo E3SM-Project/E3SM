@@ -102,7 +102,7 @@ struct Baseline {
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
-    auto fid = ekat::util::FILEPtr(fopen(filename.c_str(), "w"));
+    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     for (auto ps : params_) {
@@ -119,7 +119,7 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
-    auto fid = ekat::util::FILEPtr(fopen(filename.c_str(), "r"));
+    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     int case_num = 0;
@@ -164,32 +164,32 @@ private:
 
   std::vector<ParamSet> params_;
 
-  static void write (const ekat::util::FILEPtr& fid, const FortranData::Ptr& d) {
+  static void write (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
-      ekat::util::write(&f.dim, 1, fid);
-      ekat::util::write(f.extent, f.dim, fid);
-      ekat::util::write(f.data, f.size, fid);
+      ekat::write(&f.dim, 1, fid);
+      ekat::write(f.extent, f.dim, fid);
+      ekat::write(f.data, f.size, fid);
     }
   }
 
-  static void read (const ekat::util::FILEPtr& fid, const FortranData::Ptr& d) {
+  static void read (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
       int dim, ds[3];
-      ekat::util::read(&dim, 1, fid);
+      ekat::read(&dim, 1, fid);
       EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      ekat::util::read(ds, dim, fid);
+      ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
         EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
                         << ds[i]);
-      ekat::util::read(f.data, f.size, fid);
+      ekat::read(f.data, f.size, fid);
     }
   }
 };
@@ -216,9 +216,9 @@ int main (int argc, char** argv) {
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   for (int i = 1; i < argc-1; ++i) {
-    if (ekat::util::argv_matches(argv[i], "-g", "--generate")) generate = true;
-    if (ekat::util::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
-    if (ekat::util::argv_matches(argv[i], "-t", "--tol")) {
+    if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
+    if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
+    if (ekat::argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
       tol = std::atof(argv[i]);

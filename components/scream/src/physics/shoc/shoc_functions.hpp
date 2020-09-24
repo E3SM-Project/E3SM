@@ -2,7 +2,6 @@
 #define SHOC_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
-#include "shoc_constants.hpp"
 
 #include "share/scream_types.hpp"
 
@@ -32,21 +31,20 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = ekat::pack::Pack<S,SCREAM_PACK_SIZE>;
+  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = ekat::pack::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
 
-  using Mask  = ekat::pack::Mask<Pack::n>;
-  using Smask = ekat::pack::Mask<Spack::n>;
+  using Mask  = ekat::Mask<Pack::n>;
+  using Smask = ekat::Mask<Spack::n>;
 
   using KT = ekat::KokkosTypes<Device>;
 
-  using C  = physics::Constants<Scalar>;
-  using SC = shoc::Constants<Scalar>;
+  using C = physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -57,10 +55,10 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
   template <typename S>
-  using uview_2d = typename ekat::util::template Unmanaged<view_2d<S> >;
+  using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
@@ -72,13 +70,13 @@ struct Functions
   KOKKOS_FUNCTION
   static void calc_shoc_varorcovar(
     const MemberType&            team,
-    const Int&                   nlev, 
+    const Int&                   nlev,
     const Scalar&                tunefac,
-    const uview_1d<const Spack>& isotropy_zi, 
+    const uview_1d<const Spack>& isotropy_zi,
     const uview_1d<const Spack>& tkh_zi,
     const uview_1d<const Spack>& dz_zi,
-    const uview_1d<const Spack>& invar1, 
-    const uview_1d<const Spack>& invar2, 
+    const uview_1d<const Spack>& invar1,
+    const uview_1d<const Spack>& invar2,
     const uview_1d<Spack>&       varorcovar);
 
   KOKKOS_FUNCTION
@@ -112,6 +110,12 @@ struct Functions
     const uview_1d<Spack>& host_dse);
 
   KOKKOS_FUNCTION
+  static void shoc_pblintd_init_pot(
+    const MemberType& team, const Int& nlev,
+    const view_1d<const Spack>& thl, const view_1d<const Spack>& ql, const view_1d<const Spack>& q,
+    const view_1d<Spack>& thv);
+
+KOKKOS_FUNCTION
   static void check_tke(
     const MemberType& team,
     const Int& nlev,
@@ -130,6 +134,7 @@ struct Functions
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
 # include "shoc_update_host_dse_impl.hpp"
+# include "shoc_pblintd_init_pot_impl.hpp"
 # include "shoc_check_tke_impl.hpp"
 #endif
 
