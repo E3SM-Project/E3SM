@@ -43,4 +43,7 @@
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME
 
+// Whether this is a standalone SCREAM build or CIME build
+#cmakedefine CIME_BUILD
+
 #endif // SCREAM_CONFIG_H

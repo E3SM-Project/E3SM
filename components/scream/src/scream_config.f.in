@@ -4,4 +4,8 @@
 ! If defined, Real is double; if not, Real is float.
 #cmakedefine SCREAM_DOUBLE_PRECISION
 
+! Whether this is a standalone SCREAM build or CIME build
+#cmakedefine CIME_BUILD
+
 #endif
+! ^ SCREAM_CONFIG_F
