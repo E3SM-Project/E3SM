@@ -485,6 +485,8 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
             with filepath.open("w") as fd:
                 fd.write(contents)
 
+            print("SUCCESS (Generated from scratch)")
+
         return True
     else:
         return False
@@ -1514,13 +1516,13 @@ class GenBoiler(object):
             // Get data from fortran
             for (auto& d : f90_data) {
               // expects data in C layout
-              calc_shoc_vertflux(d);
+              fake_sub(d);
             }
         <BLANKLINE>
             // Get data from cxx
             for (auto& d : cxx_data) {
               d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout
-              calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+              fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol, d.nlev, d.nlevi, d.ball1, d.ball2);
               d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout
             }
         <BLANKLINE>
@@ -1543,6 +1545,7 @@ class GenBoiler(object):
         data_struct = get_data_struct_name(sub)
         has_array = has_arrays(arg_data)
         need_transpose = needs_transpose(arg_data)
+        arg_data_args    = ", ".join(gen_cxx_data_args(arg_data))
 
         gen_random = "" if not has_array else \
 """
@@ -1592,12 +1595,12 @@ class GenBoiler(object):
     // Get data from fortran
     for (auto& d : f90_data) {{
       // expects data in C layout
-      calc_shoc_vertflux(d);
+      {sub}(d);
     }}
 
     // Get data from cxx
     for (auto& d : cxx_data) {{{c2f_transpose_code}
-      calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);{f2c_transpose_code}
+      {sub}_f({arg_data_args});{f2c_transpose_code}
     }}
 
     // Verify BFB results, all data should be in C layout
@@ -1607,11 +1610,13 @@ class GenBoiler(object):
 {check_scalars}{check_arrays}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
-           gen_random=gen_random,
-           c2f_transpose_code=c2f_transpose_code,
-           f2c_transpose_code=f2c_transpose_code,
-           check_scalars=check_scalars,
-           check_arrays=check_arrays)
+                          sub=sub,
+                          gen_random=gen_random,
+                          c2f_transpose_code=c2f_transpose_code,
+                          f2c_transpose_code=f2c_transpose_code,
+                          arg_data_args=arg_data_args,
+                          check_scalars=check_scalars,
+                          check_arrays=check_arrays)
 
         return result
 
