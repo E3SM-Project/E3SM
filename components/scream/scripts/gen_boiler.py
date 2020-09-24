@@ -396,11 +396,11 @@ def get_data_struct_name(sub):
 ###############################################################################
     """
     >>> get_data_struct_name("my_sub_name")
-    'MySubName'
+    'MySubNameData'
     >>> get_data_struct_name("sub")
-    'Sub'
+    'SubData'
     """
-    return "".join([item.capitalize() for item in sub.split("_")])
+    return "".join([item.capitalize() for item in sub.split("_")]) + "Data"
 
 ###############################################################################
 def get_data_test_struct_name(sub):
@@ -409,7 +409,7 @@ def get_data_test_struct_name(sub):
     >>> get_data_test_struct_name("my_sub_name")
     'TestMySubName'
     """
-    return "Test{}".format(get_data_struct_name(sub))
+    return "Test{}".format(get_data_struct_name(sub).rstrip("Data"))
 
 ###############################################################################
 def get_supported_pieces():
@@ -1325,7 +1325,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_c2f_glue_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        void fake_sub(FakeSub& d);
+        void fake_sub(FakeSubData& d);
         """
         struct_name      = get_data_struct_name(sub)
         result = "void {sub}({struct_name}& d);".format(sub=sub, struct_name=struct_name)
@@ -1337,7 +1337,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        void fake_sub(FakeSub& d)
+        void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
@@ -1367,7 +1367,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_c2f_data("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        struct FakeSub : public PhysicsTestData {
+        struct FakeSubData : public PhysicsTestData {
           // Inputs
           Real *foo1, *foo2, *bar1, *bar2, *bak1, *bak2;
           Real gag;
@@ -1382,10 +1382,10 @@ class GenBoiler(object):
           Int bab1, bab2;
           Int *ball1, *ball2;
         <BLANKLINE>
-          FakeSub(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+          FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
             PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag, &ball1, &ball2}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
         <BLANKLINE>
-          SHOC_SCALARS(FakeSub, 3, 4, gag, bab1, bab2, val)
+          SHOC_SCALARS(FakeSubData, 3, 4, gag, bab1, bab2, val)
         };
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
@@ -1501,11 +1501,11 @@ class GenBoiler(object):
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           static void run_bfb()
           {
-            FakeSub f90_data[] = {
+            FakeSubData f90_data[] = {
               // TODO
             };
         <BLANKLINE>
-            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSub);
+            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
             for (auto& d : f90_data) {
@@ -1514,7 +1514,7 @@ class GenBoiler(object):
         <BLANKLINE>
             // Create copies of data for use by cxx. Needs to happen before fortran calls so that
             // inout data is in original state
-            FakeSub cxx_data[] = {
+            FakeSubData cxx_data[] = {
               // TODO
             };
         <BLANKLINE>
@@ -1535,14 +1535,14 @@ class GenBoiler(object):
         <BLANKLINE>
             // Verify BFB results, all data should be in C layout
             for (Int i = 0; i < num_runs; ++i) {
-              FakeSub& d_f90 = f90_data[i];
-              FakeSub& d_cxx = cxx_data[i];
-              REQUIRE(f90_data.('bab1', 'Int') == cxx_data.('bab1', 'Int'));
-              REQUIRE(f90_data.('bab2', 'Int') == cxx_data.('bab2', 'Int'));
-              for (Int k = 0; k < f90_data.dim1; ++k) {
-                REQUIRE(f90_data.baz[k] == cxx_data.baz[k]);
-                REQUIRE(f90_data.ball1[k] == cxx_data.ball1[k]);
-                REQUIRE(f90_data.ball2[k] == cxx_data.ball2[k]);
+              FakeSubData& d_f90 = f90_data[i];
+              FakeSubData& d_cxx = cxx_data[i];
+              REQUIRE(d_f90.bab1 == d_cxx.bab1);
+              REQUIRE(d_f90.bab2 == d_cxx.bab2);
+              for (Int k = 0; k < d_f90.dim1; ++k) {
+                REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
+                REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
+                REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
               }
         <BLANKLINE>
             }
@@ -1573,13 +1573,13 @@ class GenBoiler(object):
         check_scalars, check_arrays = "", ""
         i_arrays = i_reals + i_ints
         for scalar in scalars:
-            check_scalars += "      REQUIRE(f90_data.{name} == cxx_data.{name});\n".format(name=scalar)
+            check_scalars += "      REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
 
         for items, total_call in [(ik_reals, "total1x2()"), (ij_reals, "total1x3()"), (i_arrays, "dim1")]:
             if len(items) > 0:
-                check_arrays += "      for (Int k = 0; k < f90_data.{}; ++k) {{\n".format(total_call)
+                check_arrays += "      for (Int k = 0; k < d_f90.{}; ++k) {{\n".format(total_call)
                 for item in items:
-                    check_arrays += "        REQUIRE(f90_data.{name}[k] == cxx_data.{name}[k]);\n".format(name=item)
+                    check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=item)
                 check_arrays += "      }\n"
 
         result = \
@@ -1706,7 +1706,7 @@ template struct Functions<Real,DefaultDevice>;
         >>> force_file_lines = [
         ... "fake_line_before_1",
         ... "fake_line_before_2",
-        ... "void fake_sub(FakeSub& d)",
+        ... "void fake_sub(FakeSubData& d)",
         ... "{",
         ... "  // bad line",
         ... "}",
@@ -1715,13 +1715,13 @@ template struct Functions<Real,DefaultDevice>;
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
         In file shoc_functions_f90.cpp, would replace:
-        void fake_sub(FakeSub& d)
+        void fake_sub(FakeSubData& d)
         {
           // bad line
         }
         <BLANKLINE>
         WITH:
-        void fake_sub(FakeSub& d)
+        void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
@@ -1738,7 +1738,7 @@ template struct Functions<Real,DefaultDevice>;
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
         In file shoc_functions_f90.cpp, at line 2, would insert:
-        void fake_sub(FakeSub& d)
+        void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
           d.transpose<ekat::util::TransposeDirection::c2f>();
@@ -1746,11 +1746,11 @@ template struct Functions<Real,DefaultDevice>;
           d.transpose<ekat::util::TransposeDirection::f2c>();
         }
 
-        >>> force_file_lines[2:2] = ["void fake_sub(FakeSub& d)", "{", "}"]
+        >>> force_file_lines[2:2] = ["void fake_sub(FakeSubData& d)", "{", "}"]
         >>> print("\n".join(force_file_lines))
         fake_line_before_1
         fake_line_before_2
-        void fake_sub(FakeSub& d)
+        void fake_sub(FakeSubData& d)
         {
         }
         // end _c impls
