@@ -1,44 +1,33 @@
-set(IO_SRC
+set(SCREAM_SCORPIO_SRCS
   scream_scorpio_interface.F90
   scream_scorpio_interface.cpp
   scream_scorpio_interface_iso_c2f.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
-if (USE_ESMF_LIB)
-  set(ESMFDIR "esmf")
-else()
-  set(ESMFDIR "noesmf")
-endif()
-set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
-
 set (SCREAM_LIBS
      scream_share
      scream_control
 )
 
-# In CIME builds, create imported targets for scorpio and csm_share
-include (Scorpio)
+# Create or import scorpio targets
+include (${SCREAM_SOURCE_DIR}/cmake/tpls/Scorpio.cmake)
 CreateScorpioTarget(TRUE) # Note: the input is whether we want FLIB too. We want/need both, so look for both
-include (CsmShare)
-CreateCsmShareTarget()
 
 set (SCREAM_CIME_LIBS
-     scream_pioc
-     scream_piof
-     scream_csm_share
+     pioc
+     piof
 )
 
 # Create io lib
-add_library(io ${IO_SRC})
-
-# Set includes
-target_include_directories(io PUBLIC ${SCREAM_INCLUDE_DIRS})
+add_library(scream_io ${SCREAM_SCORPIO_SRCS})
 
 # Set f90 compiled modules dir
-set_target_properties(io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
+set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link libraries
-target_link_libraries(io PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
+target_link_libraries(scream_io PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
 
-add_subdirectory(tests)
+if (NOT SCREAM_LIBS_ONLY)
+  add_subdirectory(tests)
+endif()

@@ -46,7 +46,6 @@ public:
   using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
 
   using Int = scream::Int;
-  using Real = scream::Real;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -137,7 +136,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i)
   {
     /* Determine the variable name */
-    std::string var_name = var_params.get<std::string>(ekat::util::strint("field",var_i+1));
+    std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
     /* Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid */
     add_identifier(field_repo,var_name);
   }
@@ -167,8 +166,6 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
 {
   using namespace scream;
   using namespace scream::scorpio;
-  using Int = scream::Int;
-  using Real = scream::Real;
 
   m_status["Run"] += 1;
   m_status["Avg Count"] += 1;
@@ -344,7 +341,7 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
   {
     auto  name = it.first;
     auto& fid  = it.second;
-    Int dof_len, n_dim_len, dof_start, dof_stop;
+    Int dof_len, n_dim_len;
     // Total number of values represented by this rank for this field is given by the field_layout size.
     dof_len = fid.get_layout().size();
     // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
@@ -353,9 +350,10 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
     n_dim_len = dof_len/m_gids.size();
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global output indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
-    Int var_dof[dof_len];
+    std::vector<Int> var_dof(dof_len);
     Int dof_it = 0;
-    for (int ii=0;ii<m_gids.size();++ii)
+    int num_gids = m_gids.size();
+    for (int ii=0;ii<num_gids;++ii)
     {
       for (int jj=0;jj<n_dim_len;++jj)
       {
@@ -363,7 +361,7 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
         ++dof_it;
       }
     }
-    set_dof(m_filename,name,dof_len,var_dof);
+    set_dof(m_filename,name,dof_len,var_dof.data());
     m_dofs.emplace(std::make_pair(name,dof_len));
   }
   // Set degree of freedom for "time"

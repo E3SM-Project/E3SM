@@ -16,6 +16,8 @@
 
 namespace {
 
+using namespace scream;
+
 Real x_i(const Int ii, const Int x_len);
 Real y_i(const Int ii, const Int y_len);
 Real z_i(const Int ii, const Int z_len);
@@ -95,7 +97,7 @@ TEST_CASE("scorpio_output_yaml", "") {
 //ASD  Int myrank, numranks;
 //ASD  MPI_Comm_rank(fcomm, &myrank);
 //ASD  MPI_Comm_size(fcomm, &numranks);
-  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(fcomm,compid);   // Gather the initial PIO subsystem data creater by component coupler
 //ASD
 //ASD//  auto& scorpio_test_params = scorpio_params.sublist("SCORPIO TEST PARAMETERS");
 //ASD//  auto& scorpio_dimensions = scorpio_test_params.sublist("Dimensions");
@@ -212,12 +214,11 @@ TEST_CASE("scorpio_interface_output", "") {
 
   int nerr = 0; // Set a record of the number of errors encountered.
   /* Create the set of SCORPIO output files and their respective dimensions and variables. */
-  int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
   Int myrank, numranks;
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a sub
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);  // Store rank and total number of ranks for determining which chunk of global array this rank is responsible for reading.
   MPI_Comm_size(MPI_COMM_WORLD, &numranks);
-  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   /* Tell the scorpio interface module that we have a new output file to write to */
   std::string outfilename = "scorpio_output_test.nc";  // For simplicity create a variable to store the name of the output file.  This will be used with most calls to make sure the every function is applying the action to the proper file (if multiple files are open)
   register_outfile(outfilename);                       // Register this output file with the scorpio interface module
@@ -263,7 +264,7 @@ TEST_CASE("scorpio_interface_output", "") {
   std::array<Real, 2> z_data;
   std::array<Int,1> xdim = {10};
   std::array<Int,1> ydim = {5};
-  std::array<Int,1> zdim = {2};
+  // std::array<Int,1> zdim = {2};
   std::array<Int,1> dimlen_1d = {10};
   std::array<Int,2> dimlen_2d = {5,10};
   std::array<Int,3> dimlen_3d = {2,5,10};
@@ -273,7 +274,7 @@ TEST_CASE("scorpio_interface_output", "") {
   ekat::md_array<Int,10>        test_index_1d;
   ekat::md_array<Int, 5,10>     test_index_2d;
   ekat::md_array<Int, 2, 5,10>  test_index_3d;
-  Real pi = 2*acos(0.0);
+  // Real pi = 2*acos(0.0);
   /* 
    * Degrees of Freedom decomposition of input arrays, this information is used to tell
    * PIO which global array indices the local MPI rank is responsible for.  Without it, we
@@ -525,12 +526,11 @@ TEST_CASE("scorpio_interface_input", "") {
   Real pi = 2*acos(0.0);
   Real dt = 1.0;
   int nerr = 0;
-  int compid=0;
   Int myrank, numranks;
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &numranks);
-  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   // Register the set of output files:
   std::string infilename = "scorpio_output_baseline.nc";
   register_infile(infilename);
@@ -554,9 +554,9 @@ TEST_CASE("scorpio_interface_input", "") {
   get_variable(infilename,"index_3d","test value for 3d field",3,vec_xyz, PIO_INT,"xyz-int");
 
   // Create data to be written
-  std::array<Int,1> xdim = {10};
-  std::array<Int,1> ydim = {5};
-  std::array<Int,1> zdim = {2};
+  // std::array<Int,1> xdim = {10};
+  // std::array<Int,1> ydim = {5};
+  // std::array<Int,1> zdim = {2};
   std::array<Int,1> dimlen_1d = {10};
   std::array<Int,2> dimlen_2d = {5,10};
   std::array<Int,3> dimlen_3d = {2,5,10};
@@ -718,7 +718,7 @@ Real y_i(const Int ii, const Int y_len) {
   y = 4.0*pi/y_len*(ii+1);
   return y;
 }
-Real z_i(const Int ii, const Int z_len) {
+Real z_i(const Int ii, const Int /* z_len */) {
   Real z;
   z = 100*(ii+1);
   return z;
@@ -733,7 +733,7 @@ Real f_y(const Real y, const Real t) {
   f = sin(y+t);
   return f;
 }
-Real f_z(const Real z, const Real t) {
+Real f_z(const Real z, const Real /* t */) {
   Real f;
   f = z;
   return f;

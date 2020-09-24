@@ -6,21 +6,19 @@
 // TODO, figure out a better way to define netCDF output type for fields
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  ifdef SCREAM_DOUBLE_PRECISION
-  const int PIO_REAL = 6;
+  static constexpr int PIO_REAL = 6;
 #  else
-  const int PIO_REAL = 5;
+  static constexpr int PIO_REAL = 5;
 #  endif // SCREAM_DOUBLE_PRECISION
 #else // SCREAM_CONFIG_IS_CMAKE
-  const int PIO_REAL = 6;
+  static constexpr int PIO_REAL = 6;
 #endif // SCREAM_CONFIG_IS_CMAKE
-const int PIO_INT = 4;
+static constexpr int PIO_INT = 4;
 
-using scream::Real;
-using scream::Int;
 namespace scream {
 namespace scorpio {
 
-  void eam_init_pio_subsystem(const int mpicom, const int compid, const bool local);
+  void eam_init_pio_subsystem(const int mpicom);
   void eam_pio_finalize();
   void eam_pio_closefile(const std::string& filename);
   void register_outfile(const std::string& filename);

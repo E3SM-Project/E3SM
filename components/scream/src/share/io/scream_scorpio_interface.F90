@@ -42,11 +42,6 @@ module scream_scorpio_interface
 ! Finalization: 
 !==============================================================================!
 
-  ! TODO: have the code rely on shr_pio_mod only when the build is of the full
-  ! model. Note, these three variables from shr_pio_mod are only needed in the
-  ! case when we want to use the pio_subsystem that has already been defined by
-  ! the component coupler. 
-  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
   !------------
   use physics_utils, only: rtype, rtype8, itype, btype
   use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
@@ -563,6 +558,13 @@ contains
   ! that has been initialized by the component coupler.  Otherwise, it will be
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
+#ifdef CIME_BUILD
+  ! TODO: have the code rely on shr_pio_mod only when the build is of the full
+  ! model. Note, these three variables from shr_pio_mod are only needed in the
+  ! case when we want to use the pio_subsystem that has already been defined by
+  ! the component coupler.
+  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
+#endif
     
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
@@ -581,11 +583,13 @@ contains
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
    
+#ifdef CIME_BUILD
     if (.not.local) then 
       pio_subsystem  => shr_pio_getiosys(atm_id)
       pio_iotype     = shr_pio_getiotype(atm_id)
       pio_rearranger = shr_pio_getrearranger(atm_id)
     else
+#endif
       allocate(pio_subsystem)
       stride         = 1
       num_aggregator = 0
@@ -594,7 +598,9 @@ contains
       base           = 0
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
+#ifdef CIME_BUILD
     end if
+#endif
 
   end subroutine eam_init_pio_subsystem
 !=====================================================================!

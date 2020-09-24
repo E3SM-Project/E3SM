@@ -33,13 +33,11 @@ TEST_CASE("scorpio_yaml", "") {
   using namespace scream;
   using namespace scream::scorpio;
   using namespace ekat::units;
-  using Device = DefaultDevice;
 
   Int num_cols = 10;
   Int num_levs = 5;
   Int num_comp = 2;
 
-  int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
 
@@ -130,9 +128,9 @@ TEST_CASE("scorpio_yaml", "") {
 /* The next step is to initialize the set of IO class objects to handle output,
  * and sync it with the field manager we just created. */
   // Initialize the PIO subsystem:
-  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   // Gather control data for the test from the scorpio_control.yaml file.  Note this is similar to the scream_control.yaml file used in regular runs.
-  char *input_yaml_file = "scorpio_control.yaml";
+  const char *input_yaml_file = "scorpio_control.yaml";
   printf("[scream] reading parameters from yaml file: %s\n",input_yaml_file);
   ekat::ParameterList scorpio_params("Scorpio Parameters");
   parse_yaml_file (input_yaml_file, scorpio_params);
@@ -141,9 +139,9 @@ TEST_CASE("scorpio_yaml", "") {
 
   // For each output control file create a separate instance of the io class.
   std::vector<AtmosphereOutput> AtmOutput_Instances;
-  for (int ii=0;ii<output_control_files.size();ii++) {
-    ekat::ParameterList out_params(output_control_files[ii]);
-    parse_yaml_file(output_control_files[ii],out_params);
+  for (const auto& fname : output_control_files) {
+    ekat::ParameterList out_params(fname);
+    parse_yaml_file(fname,out_params);
     AtmosphereOutput output_instance(io_comm,out_params);
     AtmOutput_Instances.push_back(output_instance);
   }
