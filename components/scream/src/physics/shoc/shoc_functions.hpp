@@ -2,6 +2,7 @@
 #define SHOC_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
+#include "shoc_constants.hpp"
 
 #include "share/scream_types.hpp"
 
@@ -44,7 +45,8 @@ struct Functions
 
   using KT = ekat::KokkosTypes<Device>;
 
-  using C = physics::Constants<Scalar>;
+  using C  = physics::Constants<Scalar>;
+  using SC = shoc::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;

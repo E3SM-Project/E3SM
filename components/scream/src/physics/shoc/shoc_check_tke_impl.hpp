@@ -17,7 +17,7 @@ void Functions<S,D>
   //obtain minimum TKE allowed
   static constexpr auto mintke   = SC::mintke; // units:m2/s2
 
-  const Int nlev_pack = ekat::pack::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
 
       //take max(mintke,tke(k))
