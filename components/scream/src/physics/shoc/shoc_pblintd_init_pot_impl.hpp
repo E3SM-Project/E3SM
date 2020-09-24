@@ -22,7 +22,7 @@ void Functions<S,D>
    const auto eps   = C::ZVIR; 
    const auto one   = C::ONE; 
 
-   const Int nlev_pack = ekat::pack::npack<Spack>(nlev);
+   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const int& k) {
      auto th = thl(k) + (lcond/cp)*ql(k);
