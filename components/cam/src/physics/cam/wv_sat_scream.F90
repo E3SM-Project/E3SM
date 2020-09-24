@@ -12,7 +12,7 @@ module wv_sat_scream
 
   ! get real kind from utils
   use physics_utils,  only: rtype
-  use micro_p3_utils, only: zerodegc
+  use micro_p3_utils, only: T_zerodegc
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
                                  cxx_log10, cxx_exp, cxx_tanh
@@ -94,12 +94,12 @@ contains
 
     logt = bfb_log(t)
 
-    if (i_type .eq. 1 .and. t .lt. zerodegc) then
+    if (i_type .eq. 1 .and. t .lt. T_zerodegc) then
 
        !(good down to 110 K)
        MurphyKoop_svp = bfb_exp(ic(1) - (ic(2) / t) + (ic(3) * logt) - (ic(4) * t))
 
-    elseif (i_type .eq. 0 .or. t .ge. zerodegc) then
+    elseif (i_type .eq. 0 .or. t .ge. T_zerodegc) then
 
        ! (good for 123 < T < 332 K)
        !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
@@ -164,7 +164,7 @@ contains
     call check_temp(t, "polysvp1")
 
 
-    if (i_type.eq.1 .and. t.lt.zerodegc) then
+    if (i_type.eq.1 .and. t.lt.T_zerodegc) then
        ! ICE
 
        !       Flatau formulation:
@@ -179,7 +179,7 @@ contains
        !          log10(6.1071))*100.
 
 
-    elseif (i_type.eq.0 .or. t.ge.zerodegc) then
+    elseif (i_type.eq.0 .or. t.ge.T_zerodegc) then
        ! LIQUID
 
        !       Flatau formulation:
