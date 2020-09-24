@@ -4,6 +4,8 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/scream_types.hpp"
 
+#include "gptl.h"
+
 #include <string>
 
 using scream::Real;
@@ -41,12 +43,14 @@ extern "C" {
 namespace scream {
 namespace scorpio {
 /* ----------------------------------------------------------------- */
-void eam_init_pio_subsystem(const int mpicom, const int compid, const bool local) {
-  eam_init_pio_subsystem_c2f(mpicom,compid,local);
+void eam_init_pio_subsystem(const int mpicom) {
+  GPTLinitialize();
+  eam_init_pio_subsystem_c2f(mpicom,0,true);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_finalize() {
   eam_pio_finalize_c2f();
+  GPTLfinalize();
 }
 /* ----------------------------------------------------------------- */
 void register_outfile(const std::string& filename) {
