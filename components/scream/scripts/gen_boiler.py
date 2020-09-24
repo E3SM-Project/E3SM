@@ -16,7 +16,7 @@ FILE_TEMPLATES = {
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{physics}/{physics}_functions.hpp"
-#include "physics/{physics}/{phyiscs}_functions_f90.hpp"
+#include "physics/{physics}/{physics}_functions_f90.hpp"
 
 #include "{physics}_unit_tests_common.hpp"
 
@@ -45,7 +45,7 @@ TEST_CASE({sub}_bfb, "[{physics}_functions]")
 }}
 
 }} // empty namespace
-""".format(physics=phys, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
+""".format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
 
     "cxx_func_impl": lambda phys, sub, gen_code:
 """#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
@@ -150,7 +150,7 @@ PIECES = OrderedDict([
 
     ("cxx_func_decl", (
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_hpp"),
+        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),            # ;
@@ -410,13 +410,13 @@ def expect_exists(physics, sub, gb, piece):
     return False # File was not created
 
 ###############################################################################
-def create_template(physics, sub, piece, gb, force=False, force_arg_data=None):
+def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 ###############################################################################
     """
     Create a file based on a template if it doesn't exist. Return True if a file was created.
 
     >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
-    >>> create_template("shoc", "linear_interp", "cxx_func_impl", gb, force=True, force_arg_data=UT_ARG_DATA)
+    >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA)
     Would create file /home/jgfouca/scream/components/scream/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
     #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
     #define SHOC_LINEAR_INTERP_IMPL_HPP
@@ -1725,7 +1725,7 @@ template struct Functions<Real,DefaultDevice>;
                 for piece in self._pieces:
                     try:
                         self.gen_piece(phys, sub, piece)
-                    except Exception as e:
+                    except SystemExit as e:
                         print("Warning: failed to generate subroutine {} piece {} for physics {}, error: {}".\
                               format(sub, piece, phys, e))
                         all_success = False
