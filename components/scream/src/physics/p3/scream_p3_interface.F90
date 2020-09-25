@@ -97,7 +97,7 @@ contains
     end do
     close(981)
     qv_prev(:,:) = q(:,:,1)
-    t_prev(:,:) = T(:,:)
+    t_prev(:,:) = T_atm(:,:)
     
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
@@ -324,7 +324,7 @@ contains
         q(i,k,8) = qm(i,k)
         q(i,k,9) = rimvol(i,k)
         qv_prev(i,k) = qv(i,k)
-        T_prev(i,k) = th(i,k)/exner(icol,k)
+        T_prev(i,k) = Th_atm(i,k)/exner(icol,k)
       end do
     end do
 

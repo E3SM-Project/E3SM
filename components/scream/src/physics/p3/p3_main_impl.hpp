@@ -541,7 +541,7 @@ void Functions<S,D>
 
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
-		     ab,abi,epsr,epsi_tot,t(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,
+		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,
 		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
       
       ice_deposition_sublimation(

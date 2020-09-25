@@ -740,7 +740,7 @@ contains
 
       call evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k), &
            cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k), &
-           ab,abi,epsr,epsi_tot,t(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,&
+           ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,&
            qr2qv_evap_tend,nr_evap_tend)
 
       call ice_deposition_sublimation(qi_incld(k), ni_incld(k), t_atm(k), &
@@ -1108,7 +1108,7 @@ contains
        diag_eff_rad_qi,rho_qi,do_predict_nc, &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,col_location)
+       vap_ice_exchange,qv_prev,t_prev,col_location)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
