@@ -34,8 +34,11 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_output_qp_src_p, real *crm_output_qt_ls_p, real *crm_output_t_ls_p, 
                     real *crm_output_jt_crm_p, real *crm_output_mx_crm_p, real *crm_output_cltot_p, 
                     real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, 
-                    real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
-                    real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, 
+                    real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, real *crm_output_qiltend_p, 
+#ifdef MMF_MOMENTUM_FEEDBACK
+                    real *crm_output_ultend_p, real *crm_output_vltend_p,
+#endif
+                    real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, 
                     real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                     real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p,
                     real *crm_output_precl_p, real *crm_output_precsc_p, 
@@ -77,8 +80,11 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                crm_output_qp_fall_p, crm_output_qp_evp_p, crm_output_qp_src_p, crm_output_qt_ls_p, 
                crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
-               crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, 
-               crm_output_qiltend_p, crm_output_tk_p, crm_output_tkh_p, 
+               crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
+#ifdef MMF_MOMENTUM_FEEDBACK
+               crm_output_ultend_p, crm_output_vltend_p,
+#endif
+               crm_output_tk_p, crm_output_tkh_p, 
                crm_output_qcl_p, crm_output_qci_p, crm_output_qpl_p, crm_output_qpi_p, 
                crm_output_z0m_p, crm_output_taux_p, crm_output_tauy_p, 
                crm_output_precc_p, crm_output_precl_p, crm_output_precsc_p, crm_output_precsl_p, 
@@ -111,8 +117,11 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                            crm_output_qp_fall_p, crm_output_qp_evp_p, crm_output_qp_src_p, crm_output_qt_ls_p, 
                            crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                            crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
-                           crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, 
-                           crm_output_qiltend_p, crm_output_tk_p, crm_output_tkh_p, 
+                           crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
+#ifdef MMF_MOMENTUM_FEEDBACK
+                           crm_output_ultend_p, crm_output_vltend_p,
+#endif
+                           crm_output_tk_p, crm_output_tkh_p, 
                            crm_output_qcl_p, crm_output_qci_p, crm_output_qpl_p, crm_output_qpi_p, 
                            crm_output_z0m_p, crm_output_taux_p, crm_output_tauy_p, 
                            crm_output_precc_p, crm_output_precl_p, crm_output_precsc_p, crm_output_precsl_p, 
