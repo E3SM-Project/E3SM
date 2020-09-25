@@ -253,6 +253,8 @@ void Functions<S,D>
   const uview_1d<const Spack>& cld_frac_i,
   const uview_1d<const Spack>& cld_frac_l,
   const uview_1d<const Spack>& cld_frac_r,
+  const uview_1d<const Spack>& qv_prev,
+  const uview_1d<const Spack>& t_prev,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -537,10 +539,11 @@ void Functions<S,D>
         revap_table, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
 
-      evaporate_sublimate_precip(
-        qr_incld(k), qc_incld(k), nr_incld(k), qi_incld(k), cld_frac_l(k), cld_frac_r(k), qv_sat_l(k), ab, epsr, qv(k),
-        qr2qv_evap_tend, nr_evap_tend, not_skip_micro);
-
+      evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
+		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
+		     ab,abi,epsr,epsi_tot,t(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,
+		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
+      
       ice_deposition_sublimation(
         qi_incld(k), ni_incld(k), t(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k),
         qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
@@ -907,7 +910,7 @@ void Functions<S,D>
   view_dnu_table dnu;
   init_kokkos_ice_lookup_tables(itab, itabcol);
   init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
-
+  
   // per-column bools
   view_2d<bool> bools("bools", nj, 2);
 
@@ -926,7 +929,7 @@ void Functions<S,D>
     //
     uview_1d<Spack>
       mu_r,   // shape parameter of rain
-      t,      // temperature at the beginning of the microhpysics step [K]
+      t,      // temperature at the beginning of the microphysics step [K]
 
       // 2D size distribution and fallspeed parameters
       lamr, logn0r, nu, cdist, cdist1, cdistr,
@@ -1004,6 +1007,8 @@ void Functions<S,D>
     const auto olatent_heat_vapor  = ekat::subview(latent_heat_vapor, i);
     const auto olatent_heat_sublim = ekat::subview(latent_heat_sublim, i);
     const auto olatent_heat_fusion = ekat::subview(latent_heat_fusion, i);
+    const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
+    const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
     // Need to watch out for race conditions with these shared variables
     bool &nucleationPossible  = bools(i, 0);
@@ -1025,6 +1030,7 @@ void Functions<S,D>
       ze_ice, ze_rain, odiag_effc, odiag_effi, inv_cld_frac_i, inv_cld_frac_l,
       inv_cld_frac_r, inv_exner, t, oqv, inv_dz,
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
+
     p3_main_part1(
       team, nk, infrastructure.predictNc, infrastructure.dt,
       opres, odpres, odz, onc_nuceat_tend, oexner, inv_exner, inv_cld_frac_l, inv_cld_frac_i,
@@ -1037,14 +1043,15 @@ void Functions<S,D>
     if (!(nucleationPossible || hydrometeorsPresent)) {
       return; // this is how you do a "continue" in a kokkos lambda
     }
-
+    
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
+    
     p3_main_part2(
       team, nk_pack, infrastructure.predictNc, infrastructure.dt, inv_dt,
       dnu, itab, itabcol, revap_table, opres, odpres, odz, onc_nuceat_tend, oexner,
       inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
-      ocld_frac_l, ocld_frac_r, t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
       olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, omu_c, nu, olamc, cdist, cdist1, cdistr,
@@ -1055,7 +1062,7 @@ void Functions<S,D>
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
     //      (This is not done above simply for efficiency purposes.)
-
+    
     if (!hydrometeorsPresent) return;
 
     // -----------------------------------------------------------------------------------------

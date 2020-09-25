@@ -94,6 +94,12 @@ FortranData::Ptr make_mixed (const Int ncol) {
     // input variables.
     d.dt = 1800;
 
+    // set qv_prev and t_prev to qv and T vals
+    for (k = 0; k < nk; ++k){
+      d.qv_prev(i,k) = d.qv(i,k);
+      d.t_prev(i,k) = T(k);
+    }
+    
     // compute vertical grid spacing dz (in m) from pres and theta.
     static constexpr double
       g = 9.8; // gravity, m/s^2

@@ -771,21 +771,26 @@ Real* qi, Real* ni, Real* qm, Real* bm, Real* qc, Real* nc, Real* qr, Real* nr);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EvapSublimatePrecipData
+struct EvapRainData
 {
   // Inputs
-  Real qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, cld_frac_r, qv_sat_l, ab, epsr, qv;
+  Real qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, cld_frac_r, qv, qv_prev,
+    qv_sat_l, qv_sat_i, ab, abi, epsr, epsi_tot, t, t_prev, latent_heat_sublim, dqsdt, dt;
 
   //Outs
   Real qr2qv_evap_tend, nr_evap_tend;
 };
 
-void evaporate_sublimate_precip(EvapSublimatePrecipData& d);
+void evaporate_rain(EvapRainData& d);
 
 extern "C"{
 
-void evaporate_sublimate_precip_f( Real qr_incld, Real qc_incld, Real nr_incld, Real qi_incld,
-Real cld_frac_l, Real cld_frac_r, Real qv_sat_l, Real ab, Real epsr, Real qv, Real* qr2qv_evap_tend, Real* nr_evap_tend);
+void evaporate_rain_f( Real qr_incld, Real qc_incld, Real nr_incld, Real qi_incld,
+		       Real cld_frac_l, Real cld_frac_r, Real qv, Real qv_prev,
+		       Real qv_sat_l, Real qv_sat_i, Real ab, Real abi,
+		       Real epsr, Real epsi_tot, Real t, Real t_prev,
+		       Real latent_heat_sublim, Real dqsdt, Real dt,
+		       Real* qr2qv_evap_tend, Real* nr_evap_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1077,13 +1082,13 @@ void p3_main_part1_f(
 
 struct P3MainPart2Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 62;
+  static constexpr size_t NUM_ARRAYS = 64;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
   bool do_predict_nc;
   Real dt, inv_dt;
-  Real* pres, *dpres, *dz, *nc_nuceat_tend, *exner, *inv_exner, *inv_cld_frac_l, *inv_cld_frac_i, *inv_cld_frac_r, *ni_activated, *inv_qc_relvar, *cld_frac_i, *cld_frac_l, *cld_frac_r;
+  Real* pres, *dpres, *dz, *nc_nuceat_tend, *exner, *inv_exner, *inv_cld_frac_l, *inv_cld_frac_i, *inv_cld_frac_r, *ni_activated, *inv_qc_relvar, *cld_frac_i, *cld_frac_l, *cld_frac_r, *qv_prev, *t_prev;
 
   // In/out
   Real* t, *rho, *inv_rho, *qv_sat_l, *qv_sat_i, *qv_supersat_i, *rhofacr, *rhofaci, *acn,
@@ -1109,7 +1114,7 @@ extern "C" {
 
 void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, Real dt, Real inv_dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r,
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* precip_total_tend,
@@ -1159,12 +1164,12 @@ void p3_main_part3_f(
 
 struct P3MainData : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 36;
-  static constexpr size_t NUM_INPUT_ARRAYS = 20;
+  static constexpr size_t NUM_ARRAYS = 38;
+  static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
   // Inputs
   Int its, ite, kts, kte, it;
-  Real* pres, *dz, *nc_nuceat_tend, *ni_activated, *dpres, *exner, *cld_frac_i, *cld_frac_l, *cld_frac_r, *inv_qc_relvar;
+  Real* pres, *dz, *nc_nuceat_tend, *ni_activated, *dpres, *exner, *cld_frac_i, *cld_frac_l, *cld_frac_r, *inv_qc_relvar, *qv_prev, *t_prev;
   Real dt;
   bool do_predict_nc;
 
@@ -1177,7 +1182,7 @@ struct P3MainData : public PhysicsTestData
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
   P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_);
-
+  
   PTD_DATA_COPY_CTOR(P3MainData, 7);
   PTD_ASSIGN_OP(P3MainData, 7, its, ite, kts, kte, it, dt, do_predict_nc);
 };
@@ -1194,7 +1199,7 @@ void p3_main_f(
   Real* diag_effi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
   Real* cmeiout, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
-  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 }
 
 }  // namespace p3

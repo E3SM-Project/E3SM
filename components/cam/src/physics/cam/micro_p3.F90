@@ -61,7 +61,7 @@ module micro_p3
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                 cxx_log10, cxx_exp, cxx_tanh
+                                 cxx_log10, cxx_exp, cxx_expm1, cxx_tanh
 #endif
 
   implicit none
@@ -343,8 +343,10 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, &
-       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, xlf, &
-       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
+       inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, xlf, &
+       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, &
+       qc, nc, qr, nr, &
        qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, &
        nc_incld, nr_incld, ni_incld, bm_incld, is_nucleat_possible, is_hydromet_present)
 
@@ -454,7 +456,8 @@ contains
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
-       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
+       inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, &
        qm, bm, latent_heat_vapor, latent_heat_sublim, xlf, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
        ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, &
@@ -469,13 +472,13 @@ contains
     logical(btype), intent(in) :: do_predict_nc
     real(rtype), intent(in) :: dt, inv_dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i,   &
-         inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r
+    real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,  &
+         inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev
 
-    real(rtype), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,        &
-         qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, xlf, qc_incld, qr_incld,                    &
+    real(rtype), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, &
+         qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, xlf, qc_incld, qr_incld,                 &
          qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,      &
-         cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,                            &
+         cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,                         &
          vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
     real(rtype), intent(inout), dimension(kts:kte,49) :: p3_tend_out ! micro physics tendencies
@@ -735,10 +738,11 @@ contains
            dv,mu,sc,mu_r(k),lamr(k),cdistr(k),cdist(k),qr_incld(k),qc_incld(k), &
            epsr,epsc)
 
-      call evaporate_sublimate_precip(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k), &
-           cld_frac_l(k),cld_frac_r(k),qv_sat_l(k),ab,epsr,qv(k), &
+      call evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k), &
+           cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k), &
+           ab,abi,epsr,epsi_tot,t(k),t_prev(k),latent_heat_sublim(k),dqsdt,dt,&
            qr2qv_evap_tend,nr_evap_tend)
-
+      
       call ice_deposition_sublimation(qi_incld(k), ni_incld(k), t(k), &
            qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), &
            qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
@@ -776,9 +780,11 @@ contains
 
       ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
       ! cell-average quantities.
-      call back_to_cell_average(cld_frac_l(k), cld_frac_r(k), cld_frac_i(k), qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,&
-           nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,&
-           qrcol, qc2qr_ice_shed_tend, qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,&
+      call back_to_cell_average(cld_frac_l(k),cld_frac_r(k),cld_frac_i(k), qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,&
+           nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, &
+           qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,&
+           qrcol, qc2qr_ice_shed_tend, qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, &
+      ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,&
            qidep, nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg)
 
       !.................................................................
@@ -810,13 +816,16 @@ contains
       !          cannot possibly overdeplete qv
 
       ! cloud
-      call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep)
+      call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
+           qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep)
 
       ! rain
-      call rain_water_conservation(qr(k), qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt, qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend)
+      call rain_water_conservation(qr(k), qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt, &
+           qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend)
 
       ! ice
-      call ice_water_conservation(qi(k), qidep, qinuc, qiberg, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt, qi2qv_sublim_tend, qi2qr_melt_tend)
+      call ice_water_conservation(qi(k), qidep, qinuc, qiberg, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, &
+           dt, qi2qv_sublim_tend, qi2qr_melt_tend)
 
       !---------------------------------------------------------------------------------
       ! update prognostic microphysics and thermodynamics variables
@@ -826,14 +835,14 @@ contains
       call update_prognostic_ice(qc2qi_hetero_freeze_tend, qccol, qc2qr_ice_shed_tend, &
            nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, &
            qrcol, nr_collect_tend,  qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, &
-           qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qidep, qinuc, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qiberg, &
-           exner(k), latent_heat_sublim(k), xlf(k), &
+           qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qidep, qinuc, ni_nucleat_tend, ni_selfcollect_tend, &
+           ni_sublim_tend, qiberg, exner(k), latent_heat_sublim(k), xlf(k), &
            do_predict_nc, log_wetgrowth, dt, nmltratio, rho_qm_cloud, &
            th(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k), nc(k), qr(k), nr(k) )
 
       !-- warm-phase only processes:
-      call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend,  &
-           qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,                                                  &
+      call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
+           nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,           &
            do_predict_nc, inv_rho(k), exner(k), latent_heat_vapor(k), dt,                     &
            th(k), qv(k), qc(k), nc(k), qr(k), nr(k))
 
@@ -1082,9 +1091,9 @@ contains
   SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qi,qm,ni,bm,   &
        pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_effc,     &
        diag_effi,rho_qi,do_predict_nc, &
-       dpres,exner,cmeiout,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
-       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,col_location)
+       dpres,exner,cmeiout,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r, &
+       cld_frac_l,cld_frac_i, p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+       vap_ice_exchange,qv_prev,t_prev,col_location)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -1153,6 +1162,7 @@ contains
     ! INPUT needed for PBUF variables used by other parameterizations
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: cld_frac_i, cld_frac_l, cld_frac_r ! Ice, Liquid and Rain cloud fraction
+    real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: qv_prev, t_prev                    ! qv and t from previous p3_main call
     ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
     ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be
     ! included in the port to C++, or can be changed if desired.
@@ -1289,8 +1299,8 @@ contains
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
-            inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), xlf(i,:), &
-            t(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), &
+            inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), &
+            xlf(i,:), t(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), &
             rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
             qi(i,:), ni(i,:), qm(i,:), bm(i,:), qc_incld(i,:), qr_incld(i,:), &
             qi_incld(i,:), qm_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
@@ -1307,7 +1317,8 @@ contains
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
-            cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), t(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), &
+            cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &
+            t(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), &
             qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), &
             qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), qm(i,:), &
             bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), &
@@ -1361,7 +1372,8 @@ contains
 
        call rain_sedimentation(kts,kte,ktop,kbot,kdir, &
          qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),cld_frac_r(i,:),inv_dz(i,:),dt,inv_dt, &
-         qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),precip_liq_surf(i),precip_liq_flux(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39))
+         qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),precip_liq_surf(i),precip_liq_flux(i,:),p3_tend_out(i,:,38), &
+         p3_tend_out(i,:,39))
 
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
@@ -1532,6 +1544,7 @@ contains
 
     return
   END SUBROUTINE access_lookup_table_coll
+
 
   !======================================================================================!
 
@@ -1958,7 +1971,9 @@ contains
        print*
        if (source_ind/=100) then
           write(err_msg,*)'Source_ind should be 100, source_ind is:', &
-               source_ind,' in file:',__FILE__,' at line:',__LINE__
+               source_ind,' in file:',&
+               __FILE__,&
+               ' at line:',__LINE__
           call endscreamrun(err_msg)
        endif
     endif
@@ -2693,8 +2708,9 @@ end subroutine cloud_water_autoconversion
 
 subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,                         &
    qc2qr_accret_tend,qr2qv_evap_tend,qc2qr_autoconv_tend,                                                      &
-   nc_accret_tend,nc_selfcollect_tend,nc2nr_autoconv_tend,nr_selfcollect_tend,nr_evap_tend,ncautr,qi2qv_sublim_tend,nr_ice_shed_tend,qc2qi_hetero_freeze_tend,              &
-   qrcol,qc2qr_ice_shed_tend,qi2qr_melt_tend,qccol,qr2qi_immers_freeze_tend,ni2nr_melt_tend,nc_collect_tend,ncshdc,nc2ni_immers_freeze_tend,nr_collect_tend,ni_selfcollect_tend,   &
+   nc_accret_tend,nc_selfcollect_tend,nc2nr_autoconv_tend,nr_selfcollect_tend,nr_evap_tend,ncautr,qi2qv_sublim_tend, &
+   nr_ice_shed_tend,qc2qi_hetero_freeze_tend, qrcol,qc2qr_ice_shed_tend,qi2qr_melt_tend,qccol,qr2qi_immers_freeze_tend, &
+   ni2nr_melt_tend,nc_collect_tend,ncshdc,nc2ni_immers_freeze_tend,nr_collect_tend,ni_selfcollect_tend,   &
    qidep,nr2ni_immers_freeze_tend,ni_sublim_tend,qinuc,ni_nucleat_tend,qiberg)
 
    ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
@@ -2707,8 +2723,10 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    real(rtype), intent(in) :: cld_frac_r
    real(rtype), intent(in) :: cld_frac_i
 
-   real(rtype), intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr
-   real(rtype), intent(inout) :: qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qrcol, qc2qr_ice_shed_tend, qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, &
+   real(rtype), intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, &
+        nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr
+   real(rtype), intent(inout) :: qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qrcol, qc2qr_ice_shed_tend, &
+        qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, &
         nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qidep
    real(rtype), intent(inout) :: nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg
 
@@ -2794,7 +2812,8 @@ subroutine cloud_water_conservation(qc,dt,    &
    implicit none
 
    real(rtype), intent(in) :: qc, dt
-   real(rtype), intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qiberg, qi2qv_sublim_tend, qidep
+   real(rtype), intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, &
+   qiberg, qi2qv_sublim_tend, qidep
    real(rtype) :: sinks, ratio
 
    sinks   = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qiberg)*dt
@@ -2944,7 +2963,8 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    bm = bm + (qrcol*inv_rho_rimeMax+qccol/rho_qm_cloud+(qr2qi_immers_freeze_tend+ &
         qc2qi_hetero_freeze_tend)*inv_rho_rimeMax)*dt
 
-   ni = ni + (ni_nucleat_tend-ni2nr_melt_tend-ni_sublim_tend-ni_selfcollect_tend+nr2ni_immers_freeze_tend+nc2ni_immers_freeze_tend)*dt
+   ni = ni + (ni_nucleat_tend-ni2nr_melt_tend-ni_sublim_tend-ni_selfcollect_tend &
+        +nr2ni_immers_freeze_tend+nc2ni_immers_freeze_tend)*dt
 
    !PMC nCat deleted interactions_loop
 
@@ -2974,8 +2994,8 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
        qc2qi_hetero_freeze_tend+qr2qi_immers_freeze_tend-qi2qr_melt_tend+qiberg)* xlf*inv_cp)*dt
 end subroutine update_prognostic_ice
 
-subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr,nc_selfcollect_tend,    &
-    qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,                                                        &
+subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoconv_tend,nc2nr_autoconv_tend, &
+     ncautr,nc_selfcollect_tend, qr2qv_evap_tend,nr_evap_tend,nr_selfcollect_tend,         &
     do_predict_nc,inv_rho,exner,latent_heat_vapor,dt,                                      &
     th,qv,qc,nc,qr,nr)
 
@@ -3080,61 +3100,198 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
 end subroutine ice_deposition_sublimation
 
+subroutine rain_evap_tscale_weight(dt_over_tau,weight)
+  !Returns weighting between 0 and 1 for how much of the instantaneous
+  !evaporation rate and how much of the equilibrium evaporation rate to
+  !blend to get the timestep-average rain evaporation rate
 
-subroutine evaporate_sublimate_precip(qr_incld,qc_incld,nr_incld,qi_incld,    &
-cld_frac_l,cld_frac_r,qv_sat_l,ab,epsr,qv,    &
+  real(rtype), intent(in) :: dt_over_tau  !microphysics timestep divided by effective evap timescale
+  real(rtype), intent(out) :: weight
+
+  !expm1 is exp(x)-1. This impl is more accurate than exp near x=0.
+  weight= -bfb_expm1(-dt_over_tau)/dt_over_tau
+
+  return
+end subroutine rain_evap_tscale_weight
+
+subroutine rain_evap_equilib_tend(A_c,ab,tau_eff,tau_r, tend)
+  !In equilibrium, the total evaporation must balance the tendency A_c from
+  !all other processes. The rain evaporation is the fraction (1/tau_r)/(1/tau_eff)
+  !of the total tendency and ab corrects for saturation changes due to evaporative
+  !cooling.
+
+  real(rtype), intent(in) :: A_c, ab, tau_eff, tau_r
+  real(rtype), intent(out) :: tend
+
+  !sign convention: Negative A_c causes a supersaturation deficit which needs to be removed
+  !by evaporation (which is signed positive when active) to maintain equilibrium. Thus need
+  !a negative sign here since other terms are always positive.
+  tend = -A_c/ab*tau_eff/tau_r
+
+  return
+end subroutine rain_evap_equilib_tend
+
+subroutine rain_evap_instant_tend(ssat_r, ab, tau_r,tend)
+  !The instantaneous rain evap tendency is just the absolute supersaturation
+  !ssat_r divided by the supersaturation removal timescale for rain tau_r
+  !corrected for the effect of evaporative cooling on saturation ab.
+
+  real(rtype), intent(in) :: ssat_r, ab, tau_r
+  real(rtype), intent(out) :: tend
+
+  !sign convention: ssat_r must be <0 for evap, other terms are always positive,
+  !and we want evap rate positive... so put a minus sign in front.
+  
+  tend = -ssat_r/(ab*tau_r)
+
+  return
+end subroutine rain_evap_instant_tend
+
+
+subroutine evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld, &
+cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt, &
 qr2qv_evap_tend,nr_evap_tend)
 
+  !Evaporation is basically (qv - sv_sat)/(tau_eff*ab) where tau_eff 
+  !is the total effective supersaturation removal timescale
+  !and ab is the psychrometric correction for condensational heating 
+  !changing qv_sat. This formulation depends sensitively on ssat_r, which
+  !can change rapidly within a timestep because liquid saturation
+  !adjustment has a relaxation timescale of seconds. For accuracy and
+  !stability, we analytically integrate ssat_r over the timestep under
+  !the simplifying assumption that all processes other than saturation
+  !relaxation are a constant source/sink term A_c. See Morrison+Milbrandt 2015
+  !https://doi.org/10.1175/JAS-D-14-0065.1 and Morrison+Grabowski 2008
+  !https://doi.org/10.1175/2007JAS2374.1 for details.
+  
    implicit none
 
-   real(rtype), intent(in)  :: qr_incld
+   real(rtype), intent(in)  :: qr_incld 
    real(rtype), intent(in)  :: qc_incld
    real(rtype), intent(in)  :: nr_incld
    real(rtype), intent(in)  :: qi_incld
    real(rtype), intent(in)  :: cld_frac_l
    real(rtype), intent(in)  :: cld_frac_r
-   real(rtype), intent(in)  :: qv_sat_l
-   real(rtype), intent(in)  :: ab
-   real(rtype), intent(in)  :: epsr
-   real(rtype), intent(in)  :: qv
+   real(rtype), intent(in)  :: qv_sat_l,qv_sat_i
+   real(rtype), intent(in)  :: ab,abi
+   real(rtype), intent(in)  :: epsr,epsi_tot
+   real(rtype), intent(in)  :: qv,qv_prev
+   real(rtype), intent(in)  :: t,t_prev,latent_heat_sublim,dqsdt,dt
    real(rtype), intent(out) :: qr2qv_evap_tend
    real(rtype), intent(out) :: nr_evap_tend
+   real(rtype) :: cld_frac, eps_eff, tau_eff, tau_r, ssat_r, A_c, sup_r,inv_dt
+   real(rtype) :: equilib_evap_tend, tscale_weight, instant_evap_tend
 
-   real(rtype) :: qclr, cld
-
-   ! It is assumed that macrophysics handles condensation/evaporation of qc and
-   ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
-   ! been removed from the original P3-WRF.
-
-   ! Determine temporary cloud fraction, set to zero if cloud water + ice is
-   ! very small.  This will ensure that evap/subl of precip occurs over entire
-   ! grid cell, since min cloud fraction is specified otherwise.
+   !Initialize variables
+   qr2qv_evap_tend = 0.0_rtype
+   nr_evap_tend = 0.0_rtype
+   tau_r = 1._rtype/epsr
+   inv_dt=1._rtype/dt
+   
+   !Compute absolute supersaturation.
+   !Ignore the difference between clear-sky and cell-ave qv and T
+   !because micro lacks the info to reliably reconstruct macrophys
+   !subgrid variability
+   ssat_r = qv - qv_sat_l !absolute supersaturation
+   
+   !Cloud fraction in clear-sky conditions has been set to mincld
+   !to avoid divide-by-zero problems. Because rain evap only happens
+   !in rainy portions outside cloud, setting clear-sky cloud fraction
+   !to mincld reduces evaporating area. We fix that here by computing
+   !a temporary cloud fraction which is zero if cloud condensate is small.
    if (qc_incld + qi_incld < 1.e-6_rtype) then
-      cld = 0._rtype
+         cld_frac = 0._rtype
    else
-      cld = cld_frac_l
+         cld_frac = cld_frac_l
    end if
 
-   ! Only calculate if there is some rain fraction > cloud fraction
-   qr2qv_evap_tend = 0.0_rtype
-   if (cld_frac_r > cld) then
-      ! calculate q for out-of-cloud region
-      qclr = (qv-cld*qv_sat_l)/(1._rtype-cld)
+   !Only evaporate in the rainy area outside cloud when subsaturated
+   !Note: ignoring case where cell initially supersaturated but other processes would make
+   !it subsaturated within 1 timestep.
+   if (cld_frac_r > cld_frac .and. ssat_r<0._rtype .and. qr_incld >= qsmall ) then
+      
+      !Compute total effective inverse saturation removal timescale eps_eff
+      !qc saturation is handled by macrophysics so the qc saturation removal timescale is
+      !not included here. Below freezing, eps_eff is the sum of the inverse saturation
+      !removal timescales for liquid and ice. The ice term has extra scaling terms to convert
+      !it from being relative to ice to liquid instead. See Eq C3 of Morrison+Milbrandt 2015
+      !https://doi.org/10.1175/JAS-D-14-0065.1
+      if (t < 273.15_rtype) then
+         eps_eff   = epsr + epsi_tot*(1.0_rtype + latent_heat_sublim*inv_cp*dqsdt)/abi
+      else
+         eps_eff   = epsr
+      endif
+      
+      !Set lower bound on eps_eff to prevent division by zero
+      eps_eff  = max(1.e-20_rtype,eps_eff)   
+      tau_eff = 1.0_rtype/eps_eff
 
-      ! rain evaporation
-      if (qr_incld.ge.qsmall) then
-         qr2qv_evap_tend = epsr * (qclr-qv_sat_l)/ab
+      !Compute the constant source/sink term A_c for analytic integration. See Eq C4 in
+      !Morrison+Milbrandt 2015 https://doi.org/10.1175/JAS-D-14-0065.1
+      if (t < 273.15_rtype) then
+         A_c = (qv - qv_prev)*inv_dt - dqsdt*(t-t_prev)*inv_dt - (qv_sat_l - qv_sat_i)* &
+               (1.0_rtype + latent_heat_sublim*inv_cp*dqsdt)/abi*epsi_tot
+      else
+         A_c = (qv - qv_prev)*inv_dt - dqsdt*(t-t_prev)*inv_dt
+      endif
+      
+      !Now compute evap rate
+
+      !note that qr_incld<qsmall => qr2qv_evap_tend already initialized to zero above.
+      
+      !If there's negligible qr and conditions are subsaturated, evaporate all qr
+      if (qr_incld < 1e-12_rtype .and. qv/qv_sat_l < 0.999_rtype) then
+         qr2qv_evap_tend = qr_incld*inv_dt
+         
+      !If sizable qr, compute tend. 
+      else
+         !Timestep-averaged evap can be written as the weighted average of instantaneous 
+         !and equilibrium evap rates with weighting tscale_weight. L'Hospital's rule 
+         !shows tscale_weight is 1 in the limit of small dt. It approaches 0 as dt
+         !gets big.
+         call rain_evap_tscale_weight(dt/tau_eff,tscale_weight)
+
+         !in limit of very long timescales, evap must balance A_c.
+         !(1/tau_r)/(1/tau_eff) is the fraction of this total tendency assigned to rain
+         !Will be >0 if A_c>0: increased supersat from other procs must be balanced by
+         !evaporation to stay in equilibrium.
+         call  rain_evap_equilib_tend(A_c,ab,tau_eff,tau_r,equilib_evap_tend)
+
+         !in limit of short timesteps, evap can be calculated from ssat_r at the
+         !beginning of the timestep
+         !ssat_r<0 when evap occurs and evap_tend is positive when evaporating, so added
+         !neg in front
+         call  rain_evap_instant_tend(ssat_r, ab, tau_r, instant_evap_tend)
+         
+         qr2qv_evap_tend = instant_evap_tend*tscale_weight &
+              + equilib_evap_tend*(1._rtype-tscale_weight)
+         
       end if
 
-      ! only evap in out-of-cloud region
-      qr2qv_evap_tend = -min(qr2qv_evap_tend*(cld_frac_r-cld),0._rtype)
-      qr2qv_evap_tend = qr2qv_evap_tend/cld_frac_r
-   end if ! rcld>cld
-   if (qr_incld.gt.qsmall)  nr_evap_tend = qr2qv_evap_tend*(nr_incld/qr_incld)
+      !Limit evap from exceeding saturation deficit. Analytic integration
+      !would prevent this from happening if A_c was part of microphysics
+      !timestepping, but it isn't.
+      qr2qv_evap_tend = min(qr2qv_evap_tend,-ssat_r*inv_dt/ab)
 
+      !To maintain equilibrium, the equilibrium evaporation tendency must be
+      !negative (adding mass) if A_c (other processes) are losing mass. We don't
+      !allow rain evap to also condense by forcing qr2qv_evap_tend to be positive
+      qr2qv_evap_tend = max(0._rtype, qr2qv_evap_tend)
+      
+      !Evap rate so far is an average over the rainy area outside clouds.
+      !Turn this into an average over the entire raining area
+      qr2qv_evap_tend = qr2qv_evap_tend*(cld_frac_r-cld_frac)/cld_frac_r
+      
+      !Let nr remove drops proportionally to mass change
+      nr_evap_tend = qr2qv_evap_tend*(nr_incld/qr_incld)
+
+
+   end if !cld_frac_r>cldfrac and ssat_r<0
+   
    return
 
-end subroutine evaporate_sublimate_precip
+end subroutine evaporate_rain
 
 subroutine get_time_space_phys_variables( &
 t,pres,rho,latent_heat_vapor,latent_heat_sublim,qv_sat_l,qv_sat_i, &

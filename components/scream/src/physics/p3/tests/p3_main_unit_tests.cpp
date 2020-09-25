@@ -50,7 +50,7 @@ static void run_phys()
 
 static void run_bfb_p3_main_part1()
 {
-  constexpr Scalar qsmall     = C::QSMALL;
+  constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
   constexpr Scalar zerodegc   = C::ZeroDegC;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
@@ -66,7 +66,7 @@ static void run_bfb_p3_main_part1()
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart1Data);
 
   for (auto& d : isds_fortran) {
-    const auto qsmall_r = std::make_pair(0, qsmall*2);
+    const auto qsmall_r = std::make_pair(0, qsmall*2); //PMC this range seems inappropriately small
     d.randomize({
         {d.t, {zerodegc - 10, zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
@@ -156,6 +156,7 @@ static void run_bfb_p3_main_part2()
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize({
         {d.t, {zerodegc - 10, zerodegc + 10}},
+        {d.t_prev, {zerodegc - 10, zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -178,8 +179,8 @@ static void run_bfb_p3_main_part2()
   for (auto& d : isds_cxx) {
     p3_main_part2_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.dt, d.inv_dt,
-      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
-      d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r,
+      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, 
+      d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev, 
       d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.precip_total_tend,
@@ -355,7 +356,10 @@ static void run_bfb_p3_main()
         {d.ni             , {1.00000000E+06 , 1.00000000E+06}},
         {d.bm             , {0              , 1.00000000E-02}},
         {d.qv             , {0              , 5.00000000E-02}},
-        {d.th             , {6.72653866E+02 , 1.07954335E+03}} });
+        {d.qv_prev        , {0              , 5.00000000E-02}},
+        {d.th             , {6.72653866E+02 , 1.07954335E+03}}, //PMC - this range seems insane
+        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}},
+    });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -379,7 +383,7 @@ static void run_bfb_p3_main()
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_effc, d.diag_effi,
       d.rho_qi, d.do_predict_nc, d.dpres, d.exner, d.cmeiout, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c,
-      d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
+      d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
     d.transpose<ekat::TransposeDirection::f2c>();
   }
 
