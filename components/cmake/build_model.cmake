@@ -110,16 +110,6 @@ function(build_model COMP_CLASS COMP_NAME)
   # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
 
-  if (CIME_MODEL STREQUAL "cesm")
-    if (COMP_LND STREQUAL "clm")
-      set(USE_SHARED_CLM TRUE)
-    else()
-      set(USE_SHARED_CLM FALSE)
-    endif()
-  else()
-    set(USE_SHARED_CLM FALSE)
-  endif()
-
   if (NOT USE_SHARED_CLM)
     set(LNDOBJDIR "${EXEROOT}/lnd/obj")
     set(LNDLIBDIR "${LIBROOT}")

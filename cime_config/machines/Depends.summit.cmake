@@ -1,7 +1,7 @@
 list(APPEND NOOPT_FILES
-  cam/src/dynamics/eul/dyn_comp.F90
-  cam/src/dynamics/fv/dyn_comp.F90
-  cam/src/dynamics/se/dyn_comp.F90
-  cam/src/dynamics/sld/dyn_comp.F90
-  cam/src/physics/cam/microp_aero.F90)
+  eam/src/dynamics/eul/dyn_comp.F90
+  eam/src/dynamics/fv/dyn_comp.F90
+  eam/src/dynamics/se/dyn_comp.F90
+  eam/src/dynamics/sld/dyn_comp.F90
+  eam/src/physics/cam/microp_aero.F90)
 
