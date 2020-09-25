@@ -3,6 +3,6 @@ set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/c
 include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 
 # Enable Broadwell arch in Kokkos
-option(Kokkos_ARCH_SKX "" ON)
+option(Kokkos_ARCH_BDW "" ON)
 
 set(CMAKE_CXX_FLAGS "-w" CACHE STRING "")
