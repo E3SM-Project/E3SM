@@ -913,7 +913,7 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
 
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {tke_d};
-  ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views);
+  ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views, true);
 }
 
 } // namespace shoc
