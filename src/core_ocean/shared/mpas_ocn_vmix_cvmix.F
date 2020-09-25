@@ -61,7 +61,7 @@ module ocn_vmix_cvmix
    type(cvmix_shear_params_type)  :: cvmix_shear_params
    type(cvmix_tidal_params_type)  :: cvmix_tidal_params
 
-   logical :: cvmixOn, cvmixBackgroundOn, cvmixConvectionOn, cvmixKPPOn
+   logical :: cvmixOn, cvmixConvectionOn, cvmixKPPOn
    real (kind=RKIND) :: backgroundVisc, backgroundDiff
 
 
@@ -283,7 +283,7 @@ contains
       !
       ! start by adding the mininum background values to the viscocity/diffusivity arrays
       !
-      if (cvmixBackgroundOn) then
+      if (config_cvmix_background_scheme == 'constant') then
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
@@ -384,8 +384,17 @@ contains
          cvmix_variables % WaterDensity_cntr => density(1:maxLevelCell(iCell), iCell)
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(1:maxLevelCell(iCell), iCell)
 
-         ! fill Ri
          if (kpp_stage == 2) then
+         if (config_cvmix_background_scheme == 'bryanLewis') then
+            do k = 1,maxLevelCell(iCell)
+               vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_bryanLewis_bl1 + &
+                        (config_cvmix_bryanLewis_bl2/pii)*atan((abs(cvmix_variables % zw_iface(k)) -  &
+                        config_cvmix_bryanLewis_transitionDepth) / config_cvmix_bryanLewis_transitionWidth)
+               vertViscTopOfCell(k, iCell) = config_cvmix_prandtl_number*vertDiffTopOfCell(k, iCell)
+            enddo
+         endif
+
+         ! fill Ri
          RiSmoothed(1:maxLevelCell(iCell)) = RiTopOfCell(1:maxLevelCell(iCell),iCell)
          RiSmoothed(maxLevelCell(iCell)+1) = RiSmoothed(maxLevelCell(iCell))
          RiTemp(1:maxLevelCell(iCell)+1) = RiSmoothed(1:maxLevelCell(iCell)+1)
@@ -842,7 +851,6 @@ contains
       err=0
 
       cvmixOn = config_use_cvmix
-      cvmixBackgroundOn = config_use_cvmix_background
       backgroundVisc = config_cvmix_background_viscosity
       backgroundDiff = config_cvmix_background_diffusion
       cvmixConvectionOn = config_use_cvmix_convection
@@ -873,21 +881,21 @@ contains
 
       !
       ! initialize background mixing
-      !
-      if (config_use_cvmix_background .or. config_use_cvmix_shear) then
-        call cvmix_init_bkgnd( &
-               bkgnd_Tdiff = config_cvmix_background_diffusion, &
-               bkgnd_Mdiff = config_cvmix_background_viscosity, &
-               CVmix_bkgnd_params_user = cvmix_background_params)
-      endif
+     !
+      if (config_cvmix_background_scheme == 'constant') then
+           call cvmix_init_bkgnd( &
+                  bkgnd_Tdiff = config_cvmix_background_diffusion, &
+                  bkgnd_Mdiff = config_cvmix_background_viscosity, &
+                  CVmix_bkgnd_params_user = cvmix_background_params)
+      endif 
 
       !
       ! initialize shear-based mixing
       !
       if (config_use_cvmix_shear) then
-        if (.not. config_use_cvmix_background .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
+        if (config_cvmix_background_scheme == 'none' .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
             call mpas_log_write("config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'" &
-                 // "       without config_use_cvmix_background = .true.", MPAS_LOG_CRIT)
+                 // "       without config_cvmix_background_scheme = 'constant' or 'bryanLewis'", MPAS_LOG_CRIT)
             err = 1
             return
         end if
