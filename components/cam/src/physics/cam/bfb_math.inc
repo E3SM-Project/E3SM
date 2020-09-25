@@ -14,6 +14,7 @@
 
 #define bfb_square(val) ((val)*(val))
 #define bfb_cube(val) ((val)*(val)*(val))
+#define bfb_quad(val) (bfb_square(bfb_square(val)))
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
