@@ -736,6 +736,9 @@ void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wt
 void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exner, Real* zt_grid,
                        Real* phis, Real* host_dse);
 void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
+void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
+                                    Real* tscale, Real* zt_grid, Real* l_inf, Real* shoc_mix);
+
 }
 
 }  // namespace shoc

@@ -2,6 +2,7 @@
 #define SHOC_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
+#include "physics/shoc/shoc_constants.hpp"
 
 #include "share/scream_types.hpp"
 
@@ -115,6 +116,17 @@ struct Functions
     const view_1d<const Spack>& thl, const view_1d<const Spack>& ql, const view_1d<const Spack>& q,
     const view_1d<Spack>& thv);
 
+  KOKKOS_FUNCTION
+  static void compute_shoc_mix_shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& brunt,
+    const Scalar&                tscale,
+    const uview_1d<const Spack>& zt_grid,
+    const Scalar&                l_inf,
+    const uview_1d<Spack>&       shoc_mix);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -129,6 +141,7 @@ struct Functions
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
 # include "shoc_update_host_dse_impl.hpp"
 # include "shoc_pblintd_init_pot_impl.hpp"
+# include "shoc_compute_shoc_mix_shoc_length_impl.hpp"
 #endif
 
 #endif
