@@ -577,33 +577,23 @@ contains
          ! variable baroclinic phase speed, the mode can be specified by config_GM_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, countN2, &
-            !$omp             BruntVaisalaFreqTopEdge, lt1, lt2)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
                sumN2 = 0.0
-               ltSum = 0.0
-               countN2 = 0
-
-               cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
 
                do k = 2, maxLevelEdgeTop(iEdge)-1
 
-                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                   lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                  sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
-                                lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-
-                  ltSum = ltSum + 0.5_RKIND*(lt1+lt2)
-                  countN2 = countN2 + 1
+                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                                lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
 
                end do
 
-               if (countN2 > 0) cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed, sqrt(sumN2/ltSum)* &
-                            ltSum/(config_GM_baroclinic_mode*3.141592_RKIND))
+               cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed,                          &
+                                          sumN2/(config_GM_baroclinic_mode*3.141592_RKIND))
 
             end do
             !$omp end do
@@ -683,20 +673,20 @@ contains
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
 
            !$omp parallel
-           !$omp do schedule(runtime) private(cell1, cell2, sumRi, sigma, RiTopOfEdge, &
+           !$omp do schedule(runtime) private(cell1, cell2, sigma, RiTopOfEdge, &
            !$omp             L_rhines, Lr, Length)
            do iEdge=1,nEdges
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
+              Lr = min(config_GM_baroclinic_mode*cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
+                       sqrt(cGMphaseSpeed(iEdge)*config_GM_baroclinic_mode / (2.0_RKIND*betaEdge(iEdge))))
 
               do k=1,maxLevelEdgeTop(iEdge)
                  RiTopOfEdge = 0.5_RKIND*(max(RiTopOfCell(k,cell1),0.0_RKIND) + &
                                           max(RiTopOfCell(k,cell2),0.0_RKIND))
-                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)*cGMphaseSpeed(iEdge))) / &
-                         sqrt(RiTopOfEdge + config_gm_EG_riMin)
-                 L_rhines = sigma / (1.0E-11_RKIND + betaEdge(iEdge))
-                 Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)), sqrt(cGMphaseSpeed(iEdge) / &
-                         (2.0_RKIND*betaEdge(iEdge))))
+                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)*config_GM_baroclinic_mode* &
+                             cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
+                 L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
                  Length = min(Lr,L_rhines)
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
