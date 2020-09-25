@@ -398,9 +398,9 @@
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
 		/>
-		<nml_option name="config_use_cvmix_background" type="logical" default_value=".false." units="NA"
-					description="If true, background diffusivity and viscosity is computed using CVMix"
-					possible_values="True or False"
+		<nml_option name="config_cvmix_background_scheme" type="character" default_value="constant" units="NA"
+					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'bryanLewis' for vertically variable, 'none' for no background diffusivity"
+					possible_values="'constant', 'bryanLewis', and 'none'"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
 					description="Background vertical diffusion applied to tracer quantities"
@@ -409,6 +409,22 @@
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
 					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_cvmix_bryanLewis_bl1" type="real" default_value="8.0e-5" units="m^2/s"
+		  			description="near surface diffusivity for the Bryan and Lewis (1979) profile"
+					possible_values="small positive real numbers"
+		/>
+	  	<nml_option name="config_cvmix_bryanLewis_bl2" type="real" default_value="1.05E-4" units="m^2/s"
+					description="increase in diffusivity at depth for Bryan Lewis (1979) scheme"
+					possible_values="small positive real numbers"
+		/>
+		<nml_option name="config_cvmix_bryanLewis_transitionDepth" type="real" default_value="2500" units="m"
+					description="depth at which the diffusivity transitions to the higher value"
+					possible_values="positive real numbers"
+		/>
+		<nml_option name="config_cvmix_bryanLewis_transitionWidth" type="real" default_value="222." units="m"
+		  			description="width of transition in Bryan Lewis (1979) scheme"
+					possible_values="positive real numbers"
 		/>
 		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
 					description="If true, convective diffusivity and viscosity is computed using CVMix"
