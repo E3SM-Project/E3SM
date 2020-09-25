@@ -64,6 +64,18 @@ module ocn_vmix_cvmix
    logical :: cvmixOn, cvmixConvectionOn, cvmixKPPOn
    real (kind=RKIND) :: backgroundVisc, backgroundDiff
 
+   integer :: cvmixBackgroundChoice        ! user choice of cvmix background scheme
+
+   integer, parameter ::                 & ! supported cvmix background schemes
+      cvmixBackgroundTypeNone = 0,       & ! no background scheme
+      cvmixBackgroundTypeConstant = 1,   & ! Constant background scheme
+      cvmixBackgroundTypeBryanLewis = 2    ! Bryan Lewis background scheme
+
+   integer :: cvmixShearMixingChoice       ! user choice of vmix shear mixing scheme
+
+   integer, parameter ::                 & ! supported cvmix shear mixing schemes
+      cvmixShearMixingTypePP = 1,        & ! PP mixing scheme
+      cvmixShearMixingTypeKPP = 2          ! KPP mixing scheme
 
 !***********************************************************************
 
@@ -283,7 +295,7 @@ contains
       !
       ! start by adding the mininum background values to the viscocity/diffusivity arrays
       !
-      if (config_cvmix_background_scheme == 'constant') then
+      if (cvmixBackgroundChoice == cvmixBackgroundTypeConstant) then
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
@@ -385,7 +397,7 @@ contains
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(1:maxLevelCell(iCell), iCell)
 
          if (kpp_stage == 2) then
-         if (config_cvmix_background_scheme == 'bryanLewis') then
+         if (cvmixBackgroundChoice == cvmixBackgroundTypeBryanLewis) then
             ! See equation 9 in Bryan, K., and Lewis, L. J. (1979), A water mass
             ! model of the World Ocean, J. Geophys. Res., 84( C5), 2503– 2517
             ! https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC084iC05p02503
@@ -438,7 +450,7 @@ contains
             ! at present, shear mixing adds in background values when using PP, but background is
             ! accounted for seperately. so remove bac    kground from shear mixing values
 
-            if(config_cvmix_shear_mixing_scheme=='PP') then
+            if(cvmixShearMixingChoice==cvmixShearMixingTypePP) then
                do k = 1, maxLevelCell(iCell) + 1
                   cvmix_variables % Mdiff_iface(k) = cvmix_variables % Mdiff_iface(k) - config_cvmix_background_viscosity
                   cvmix_variables % Tdiff_iface(k) = cvmix_variables % Tdiff_iface(k) - config_cvmix_background_diffusion
@@ -883,20 +895,69 @@ contains
       call cvmix_put(cvmix_global_params,  'Gravity',  gravity)
 
       !
+      ! set user choice for background scheme
+      !
+      select case (trim(config_cvmix_background_scheme))
+
+      case ('none', 'None', 'NONE')
+
+         cvmixBackgroundChoice = cvmixBackgroundTypeNone
+
+      case ('constant', 'Constant', 'CONSTANT')
+
+         cvmixBackgroundChoice = cvmixBackgroundTypeConstant
+
+      case ('bryanlewis', 'bryanLewis', 'BryanLewis', 'BRYANLEWIS')
+
+         cvmixBackgroundChoice = cvmixBackgroundTypeBryanLewis
+
+      case default
+
+         call mpas_log_write(&
+            'Invalid choice for config_cvmix_background_scheme.  Choices are: none, &
+             constant, bryanLewis')
+
+         err = 1
+
+      end select
+
+      !
+      ! set user choice for background scheme
+      !
+      select case (trim(config_cvmix_shear_mixing_scheme))
+
+      case ('pp', 'Pp', 'PP')
+
+         cvmixShearMixingChoice = cvmixShearMixingTypePP
+
+      case ('kpp', 'Kpp', 'KPP')
+
+         cvmixShearMixingChoice = cvmixShearMixingTypeKPP
+
+      case default
+
+         call mpas_log_write(&
+            'Invalid choice for config_cvmix_shear_mixing_scheme  Choices are: PP, KPP')
+
+         err = 1
+
+      end select
+
+      !
       ! initialize background mixing
-     !
-      if (config_cvmix_background_scheme == 'constant') then
+      !
+      if ( cvmixBackgroundChoice == cvmixBackgroundTypeConstant ) then
            call cvmix_init_bkgnd( &
                   bkgnd_Tdiff = config_cvmix_background_diffusion, &
                   bkgnd_Mdiff = config_cvmix_background_viscosity, &
                   CVmix_bkgnd_params_user = cvmix_background_params)
-      endif 
+      endif
 
       !
       ! initialize shear-based mixing
       !
       if (config_use_cvmix_shear) then
-        if (config_cvmix_background_scheme == 'none' .and. trim(config_cvmix_shear_mixing_scheme) == 'PP') then
+        if (cvmixBackgroundChoice == cvmixBackgroundTypeNone .and. cvmixShearMixingChoice == cvmixShearMixingTypePP) then
             call mpas_log_write("config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'" &
                  // "       without config_cvmix_background_scheme = 'constant' or 'bryanLewis'", MPAS_LOG_CRIT)
             err = 1
