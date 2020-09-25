@@ -20,7 +20,7 @@ module cpp_interface_mod
                    crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
                    crm_output_qg_mean, crm_output_qr_mean, crm_output_mu_crm, crm_output_md_crm, crm_output_eu_crm, &
                    crm_output_du_crm, crm_output_ed_crm, crm_output_flux_qt, crm_output_flux_u, crm_output_flux_v, &
-                   crm_output_fluxsgs_qt, crm_output_tkez, crm_output_wtke, crm_output_tkesgsz, crm_output_tkz, crm_output_flux_qp, &
+                   crm_output_fluxsgs_qt, crm_output_tkez, crm_output_tkew, crm_output_tkesgsz, crm_output_tkz, crm_output_flux_qp, &
                    crm_output_precflux, crm_output_qt_trans, crm_output_qp_trans, crm_output_qp_fall, crm_output_qp_evp, &
                    crm_output_qp_src, crm_output_qt_ls, crm_output_t_ls, crm_output_jt_crm, crm_output_mx_crm, crm_output_cltot, &
                    crm_output_clhgh, crm_output_clmed, crm_output_cllow, crm_output_sltend, crm_output_qltend, crm_output_qcltend, &
@@ -47,7 +47,7 @@ module cpp_interface_mod
                                       crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
                                       crm_output_qg_mean, crm_output_qr_mean, crm_output_mu_crm, crm_output_md_crm, crm_output_eu_crm, &
                                       crm_output_du_crm, crm_output_ed_crm, crm_output_flux_qt, crm_output_flux_u, crm_output_flux_v, &
-                                      crm_output_fluxsgs_qt, crm_output_tkez, crm_output_wtke, crm_output_tkesgsz, crm_output_tkz, crm_output_flux_qp, &
+                                      crm_output_fluxsgs_qt, crm_output_tkez, crm_output_tkew, crm_output_tkesgsz, crm_output_tkz, crm_output_flux_qp, &
                                       crm_output_precflux, crm_output_qt_trans, crm_output_qp_trans, crm_output_qp_fall, crm_output_qp_evp, &
                                       crm_output_qp_src, crm_output_qt_ls, crm_output_t_ls, crm_output_jt_crm, crm_output_mx_crm, crm_output_cltot, &
                                       crm_output_clhgh, crm_output_clmed, crm_output_cllow, crm_output_sltend, crm_output_qltend, crm_output_qcltend, &

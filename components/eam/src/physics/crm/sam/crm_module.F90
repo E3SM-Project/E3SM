@@ -625,6 +625,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         crm_output%flux_v    (icrm,k) = 0.
         crm_output%fluxsgs_qt(icrm,k) = 0.
         crm_output%tkez      (icrm,k) = 0.
+        crm_output%tkew      (icrm,k) = 0.
         crm_output%tkesgsz   (icrm,k) = 0.
         crm_output%tkz       (icrm,k) = 0.
         crm_output%flux_qp   (icrm,k) = 0.
@@ -1577,6 +1578,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
       crm_output%tkesgsz   (icrm,l)= rho(icrm,k)*tmp*factor_xy
       crm_output%tkez      (icrm,l)= rho(icrm,k)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output%tkesgsz(icrm,l)
+      crm_output%tkew      (icrm,l)= rho(icrm,k)*0.5*w2z*factor_xy
       tmp = 0
       do j = 1 , ny
         do i = 1 , nx
