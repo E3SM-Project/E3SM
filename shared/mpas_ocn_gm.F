@@ -686,7 +686,6 @@ contains
            !$omp do schedule(runtime) private(cell1, cell2, sumRi, sigma, RiTopOfEdge, &
            !$omp             L_rhines, Lr, Length)
            do iEdge=1,nEdges
-              sumRi = 0.0_RKIND
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
 
@@ -694,7 +693,7 @@ contains
                  RiTopOfEdge = 0.5_RKIND*(max(RiTopOfCell(k,cell1),0.0_RKIND) + &
                                           max(RiTopOfCell(k,cell2),0.0_RKIND))
                  sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)*cGMphaseSpeed(iEdge))) / &
-                         sqrt(sumRi + config_gm_EG_riMin)
+                         sqrt(RiTopOfEdge + config_gm_EG_riMin)
                  L_rhines = sigma / (1.0E-11_RKIND + betaEdge(iEdge))
                  Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)), sqrt(cGMphaseSpeed(iEdge) / &
                          (2.0_RKIND*betaEdge(iEdge))))
