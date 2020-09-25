@@ -704,10 +704,10 @@ contains
                  gmKappaScaling(k,iEdge) = max(config_GM_visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
                          Length**2.0*sigma, config_GM_visbeck_max_kappa)) / gmBolusKappa(iCell)
               enddo
-            enddo
+           enddo
+           !$omp end do
+           !$omp end parallel
          endif
-         !$omp end do
-         !$omp end parallel
 
          if(config_Redi_set_RediKappa_to_GMKappa) then
             !$omp parallel
