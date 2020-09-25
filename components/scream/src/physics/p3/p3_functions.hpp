@@ -891,6 +891,7 @@ struct Functions
     const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
+    const uview_1d<const Spack>& cld_frac_i,
     const uview_1d<Spack>& rho,
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& rhofaci,

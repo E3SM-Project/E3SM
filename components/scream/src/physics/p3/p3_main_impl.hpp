@@ -434,6 +434,9 @@ void Functions<S,D>
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
         const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), qi_gt_small);
+        qi(k).set(qi_gt_small, qi_incld(k)*cld_frac_i(k) );
+        qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
+        bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
         TableIce table_ice;
         lookup_ice(qi_incld(k), ni_incld(k), qm_incld(k), rhop, table_ice, qi_gt_small);
@@ -712,6 +715,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& cld_frac_l,
   const uview_1d<const Spack>& cld_frac_r,
+  const uview_1d<const Spack>& cld_frac_i,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& rhofaci,
@@ -802,12 +806,19 @@ void Functions<S,D>
 
       // impose lower limits to prevent taking log of # < 0
       ni(k) = max(ni(k), nsmall);
-      nr(k)    = max(nr(k), nsmall);
 
-      const auto rhop = calc_bulk_rho_rime(qi(k), qm(k), bm(k), qi_gt_small);
+      auto qi_incld = qi(k)/cld_frac_i(k);
+      auto ni_incld = ni(k)/cld_frac_i(k);
+      auto qm_incld = qm(k)/cld_frac_i(k);
+      auto bm_incld = bm(k)/cld_frac_i(k);
+
+      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, qi_gt_small);
+      qi(k).set(qi_gt_small, qi_incld*cld_frac_i(k) );
+      qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
+      bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 
       TableIce table_ice;
-      lookup_ice(qi(k), ni(k), qm(k), rhop, table_ice, qi_gt_small);
+      lookup_ice(qi_incld, ni_incld, qm_incld, rhop, table_ice, qi_gt_small);
 
       table_val_qi_fallspd.set(qi_gt_small, apply_table_ice(1,  ice_table_vals, table_ice, qi_gt_small));
       table_val_ice_eff_rad.set(qi_gt_small, apply_table_ice(5,  ice_table_vals, table_ice, qi_gt_small));
@@ -819,8 +830,8 @@ void Functions<S,D>
 
       // impose mean ice size bounds (i.e. apply lambda limiters)
       // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-      ni(k).set(qi_gt_small, min(ni(k), table_val_ni_lammax * ni(k)));
-      ni(k).set(qi_gt_small, max(ni(k), table_val_ni_lammin * ni(k)));
+      ni_incld.set(qi_gt_small, min(ni_incld, table_val_ni_lammax * ni_incld));
+      ni_incld.set(qi_gt_small, max(ni_incld, table_val_ni_lammin * ni_incld));
 
       // --this should already be done in s/r 'calc_bulkRhoRime'
       const auto qm_small = qm(k) < qsmall && qi_gt_small;
@@ -834,15 +845,18 @@ void Functions<S,D>
       rho_qi(k).set(qi_gt_small, table_val_ice_bulk_dens);
 
       // note factor of air density below is to convert from m^6/kg to m^6/m^3
-      ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*table_val_ice_reflectivity*ni(k)*rho(k)); // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
+      ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*table_val_ice_reflectivity*ni_incld*rho(k));   // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
       ze_ice(k).set(qi_gt_small, max(ze_ice(k), sp(1.e-22)));
 
-      qv(k)     .set(qi_small, qv(k) + qi(k));
-      th_atm(k)     .set(qi_small, th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp);
-      qi(k)  .set(qi_small, 0);
-      ni(k)  .set(qi_small, 0);
-      qm(k)  .set(qi_small, 0);
-      bm(k)  .set(qi_small, 0);
+      //above formula for ze only makes sense for in-cloud vals, but users expect cell-ave output.
+      ze_ice(k).set(qi_gt_small, ze_ice(k)*cld_frac_i(k));
+
+      qv(k).set(qi_small, qv(k) + qi(k));
+      th_atm(k).set(qi_small, th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp);
+      qi(k).set(qi_small, 0);
+      ni(k).set(qi_small, 0);
+      qm(k).set(qi_small, 0);
+      bm(k).set(qi_small, 0);
       diag_diam_qi(k).set(qi_small, 0);
     }
 
@@ -1083,7 +1097,7 @@ void Functions<S,D>
     // and compute diagnostic fields for output
     //
     p3_main_part3(
-      team, nk_pack, dnu, ice_table_vals, oexner, ocld_frac_l, ocld_frac_r,
+      team, nk_pack, dnu, ice_table_vals, oexner, ocld_frac_l, ocld_frac_r, ocld_frac_i, 
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, omu_c, nu, olamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_rad_qi, diag_diam_qi,

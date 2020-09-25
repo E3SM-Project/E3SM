@@ -281,7 +281,7 @@ static void run_bfb_p3_main_part3()
   for (auto& d : isds_cxx) {
     p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
-      d.exner, d.cld_frac_l, d.cld_frac_r,
+      d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i, 
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
       d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
       d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_rad_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_rad_qc);

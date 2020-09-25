@@ -214,7 +214,7 @@ void p3_main_part2_c(
 
 void p3_main_part3_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* cld_frac_l, Real* cld_frac_r,
+  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr,
   Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
@@ -773,7 +773,7 @@ void p3_main_part2(P3MainPart2Data& d)
 P3MainPart3Data::P3MainPart3Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_) :
   PhysicsTestData((kte_ - kts_) + 1, {
-    &exner, &cld_frac_l, &cld_frac_r,
+    &exner, &cld_frac_l, &cld_frac_r, &cld_frac_i,
     &rho, &inv_rho, &rhofaci,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim,
     &mu_c, &nu, &lamc, &mu_r,
@@ -787,7 +787,7 @@ void p3_main_part3(P3MainPart3Data& d)
   p3_init();
   p3_main_part3_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
-    d.exner, d.cld_frac_l, d.cld_frac_r,
+    d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i, 
     d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
     d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
     d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_rad_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_rad_qc);
@@ -2964,7 +2964,7 @@ void p3_main_part2_f(
 
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* cld_frac_l, Real* cld_frac_r,
+  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc,
   Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm,
   Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* mu_c, Real* nu, Real* lamc,
@@ -2995,45 +2995,46 @@ void p3_main_part3_f(
   Kokkos::Array<view_1d, P3MainPart3Data::NUM_ARRAYS> temp_d;
 
   ekat::host_to_device({
-      exner, cld_frac_l, cld_frac_r, rho, inv_rho, rhofaci, qv, th_atm, qc,
+      exner, cld_frac_l, cld_frac_r, cld_frac_i, rho, inv_rho, rhofaci, qv, th_atm, qc,
       nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r,
       lamr, vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi,
       rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc},
     nk, temp_d);
 
   view_1d
-    exner_d              (temp_d[0]),
-    cld_frac_l_d         (temp_d[1]),
-    cld_frac_r_d         (temp_d[2]),
-    rho_d                (temp_d[3]),
-    inv_rho_d            (temp_d[4]),
-    rhofaci_d            (temp_d[5]),
-    qv_d                 (temp_d[6]),
-    th_atm_d             (temp_d[7]),
-    qc_d                 (temp_d[8]),
-    nc_d                 (temp_d[9]),
-    qr_d                 (temp_d[10]),
-    nr_d                 (temp_d[11]),
-    qi_d                 (temp_d[12]),
-    ni_d                 (temp_d[13]),
-    qm_d                 (temp_d[14]),
-    bm_d                 (temp_d[15]),
-    latent_heat_vapor_d  (temp_d[16]),
-    latent_heat_sublim_d (temp_d[17]),
-    mu_c_d               (temp_d[18]),
-    nu_d                 (temp_d[19]),
-    lamc_d               (temp_d[20]),
-    mu_r_d               (temp_d[21]),
-    lamr_d               (temp_d[22]),
-    vap_liq_exchange_d   (temp_d[23]),
-    ze_rain_d            (temp_d[24]),
-    ze_ice_d             (temp_d[25]),
-    diag_vm_qi_d           (temp_d[26]),
-    diag_eff_rad_qi_d          (temp_d[27]),
-    diag_diam_qi_d            (temp_d[28]),
-    rho_qi_d             (temp_d[29]),
-    diag_equiv_reflectivity_d            (temp_d[30]),
-    diag_eff_rad_qc_d          (temp_d[31]);
+    exner_d                    (temp_d[0]),
+    cld_frac_l_d               (temp_d[1]),
+    cld_frac_r_d               (temp_d[2]),
+    cld_frac_i_d               (temp_d[3]),
+    rho_d                      (temp_d[4]),
+    inv_rho_d                  (temp_d[5]),
+    rhofaci_d                  (temp_d[6]),
+    qv_d                       (temp_d[7]),
+    th_atm_d                   (temp_d[8]),
+    qc_d                       (temp_d[9]),
+    nc_d                       (temp_d[10]),
+    qr_d                       (temp_d[11]),
+    nr_d                       (temp_d[12]),
+    qi_d                       (temp_d[13]),
+    ni_d                       (temp_d[14]),
+    qm_d                       (temp_d[15]),
+    bm_d                       (temp_d[16]),
+    latent_heat_vapor_d        (temp_d[17]),
+    latent_heat_sublim_d       (temp_d[18]),
+    mu_c_d                     (temp_d[19]),
+    nu_d                       (temp_d[20]),
+    lamc_d                     (temp_d[21]),
+    mu_r_d                     (temp_d[22]),
+    lamr_d                     (temp_d[23]),
+    vap_liq_exchange_d         (temp_d[24]),
+    ze_rain_d                  (temp_d[25]),
+    ze_ice_d                   (temp_d[26]),
+    diag_vm_qi_d               (temp_d[27]),
+    diag_eff_rad_qi_d          (temp_d[28]),
+    diag_diam_qi_d             (temp_d[29]),
+    rho_qi_d                   (temp_d[30]),
+    diag_equiv_reflectivity_d  (temp_d[31]),
+    diag_eff_rad_qc_d          (temp_d[32]);
 
   // Call core function from kernel
   const auto dnu            = P3GlobalForFortran::dnu();
@@ -3042,7 +3043,7 @@ void p3_main_part3_f(
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part3(team, nk_pack, dnu, ice_table_vals,
-                       exner_d, cld_frac_l_d, cld_frac_r_d, rho_d, inv_rho_d,
+                       exner_d, cld_frac_l_d, cld_frac_r_d, cld_frac_i_d, rho_d, inv_rho_d,
                        rhofaci_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d,
                        qi_d, ni_d, qm_d, bm_d, latent_heat_vapor_d,
                        latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d,

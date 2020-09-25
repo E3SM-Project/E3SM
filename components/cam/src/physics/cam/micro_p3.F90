@@ -615,6 +615,9 @@ contains
          nr_incld(k)    = max(nr_incld(k),nsmall)
 
          call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
+         qi(k)=qi_incld(k)*cld_frac_i(k)
+         qm(k)=qm_incld(k)*cld_frac_i(k)
+         bm(k)=bm_incld(k)*cld_frac_i(k)
 
          ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi_incld(k),ni_incld(k),rho(k))
          call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
@@ -926,7 +929,7 @@ contains
  END SUBROUTINE p3_main_part2
 
  subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, &
-      exner, cld_frac_l, cld_frac_r, &
+      exner, cld_frac_l, cld_frac_r, cld_frac_i, &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
       ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc)
@@ -937,7 +940,7 @@ contains
 
    integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
-   real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r
+   real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
    real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
@@ -955,7 +958,11 @@ contains
    real(rtype)    :: table_val_ice_reflectivity   ! reflectivity                         See lines  731 -  808  refl
    real(rtype)    :: table_val_ice_mean_diam   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
    real(rtype)    :: table_val_ice_bulk_dens   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
-
+   real(rtype)    :: qi_incld     !in-cloud qi
+   real(rtype)    :: ni_incld     !in-cloud ni
+   real(rtype)    :: qm_incld     !in-cloud qm
+   real(rtype)    :: bm_incld     !in-cloud bm
+   
    k_loop_final_diagnostics:  do k = kbot,ktop,kdir
 
       ! cloud:
@@ -995,15 +1002,22 @@ contains
 
          !impose lower limits to prevent taking log of # < 0
          ni(k) = max(ni(k),nsmall)
-         nr(k)    = max(nr(k),nsmall)
+         
+         qi_incld=qi(k)/cld_frac_i(k)
+         ni_incld=ni(k)/cld_frac_i(k)
+         qm_incld=qm(k)/cld_frac_i(k)
+         bm_incld=bm(k)/cld_frac_i(k)
 
-         call calc_bulkRhoRime(qi(k),qm(k),bm(k),rhop)
-
+         call calc_bulkRhoRime(qi_incld,qm_incld,bm_incld,rhop)
+         qi(k)=qi_incld*cld_frac_i(k)
+         qm(k)=qm_incld*cld_frac_i(k)
+         bm(k)=bm_incld*cld_frac_i(k)
+ 
          ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi(k),ni(k),rho(k))
          call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
               dum5,dum6,isize,rimsize,densize,     &
-              qi(k),ni(k),           &
-              qm(k),rhop)
+              qi_incld,ni_incld,           &
+              qm_incld,rhop)
          !qm(k),zitot(k),rhop)
 
          call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,table_val_qi_fallspd)
@@ -1016,8 +1030,8 @@ contains
 
          ! impose mean ice size bounds (i.e. apply lambda limiters)
          ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-         ni(k) = min(ni(k),table_val_ni_lammax*ni(k))
-         ni(k) = max(ni(k),table_val_ni_lammin*ni(k))
+         ni_incld = min(ni_incld,table_val_ni_lammax*ni_incld)
+         ni_incld = max(ni_incld,table_val_ni_lammin*ni_incld)
 
          !--this should already be done in s/r 'calc_bulkRhoRime'
          if (qm(k).lt.qsmall) then
@@ -1032,8 +1046,11 @@ contains
          diag_diam_qi(k)    = table_val_ice_mean_diam
          rho_qi(k)  = table_val_ice_bulk_dens
          ! note factor of air density below is to convert from m^6/kg to m^6/m^3
-         ze_ice(k) = ze_ice(k) + 0.1892_rtype*table_val_ice_reflectivity*ni(k)*rho(k)   ! sum contribution from each ice category (note: 0.1892 = 0.176/0.93)
+         ze_ice(k) = ze_ice(k) + 0.1892_rtype*table_val_ice_reflectivity*ni_incld*rho(k)   ! sum contribution from each ice category (note: 0.1892 = 0.176/0.93)
          ze_ice(k) = max(ze_ice(k),1.e-22_rtype)
+
+         !above formula for ze only makes sense for in-cloud vals, but users expect cell-ave output.
+         ze_ice(k) = ze_ice(k)*cld_frac_i(k)
 
       else
 
@@ -1366,7 +1383,7 @@ contains
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
        call p3_main_part3(kts, kte, kbot, ktop, kdir, &
-            exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), &
+            exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:), &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
@@ -3598,6 +3615,10 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
                !--Compute Vq, Vn:
                ni_incld(k) = max(ni_incld(k),nsmall) !impose lower limits to prevent log(<0)
                call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
+               qi(k)=qi_incld(k)*cld_frac_i(k)
+               qm(k)=qm_incld(k)*cld_frac_i(k)
+               bm(k)=bm_incld(k)*cld_frac_i(k)
+               
                !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qi(i,k),ni(i,k),rho(i,k))
                call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,    &
                     dum5,dum6,isize,rimsize,densize,          &
