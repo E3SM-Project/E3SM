@@ -132,27 +132,19 @@ TEST_CASE("scorpio_yaml", "") {
   printf("ASD yaml test p4\n");
 
   // Field Repo    /* TODO: Expand test to support packing */
-  std::shared_ptr<const FieldRepository<Real,DefaultDevice>>  repo = std::make_shared<const FieldRepository<Real,DefaultDevice>>();
-  printf("             --p4.1\n");
-  &repo->registration_begins();
-  printf("             --p4.2\n");
-  repo.register_field(fid_x,"group_1");
-  printf("             --p4.3\n");
-  repo.register_field(fid_y,"group_1");
-  printf("             --p4.4\n");
-  repo.register_field(fid_z,"group_1");
-  printf("             --p4.5\n");
+  std::shared_ptr<FieldRepository<Real,DefaultDevice>>  repo = std::make_shared<FieldRepository<Real,DefaultDevice>>();
+  repo->registration_begins();
+  repo->register_field(fid_x,"group_1");
+  repo->register_field(fid_y,"group_1");
+  repo->register_field(fid_z,"group_1");
   // All fields in the field manager are consider REAL, so index still used but converted to REAL
-  repo.register_field(fid_index_1d,"group_2");
-  repo.register_field(fid_index_2d,"group_2");
-  repo.register_field(fid_index_3d,"group_2");
-  repo.register_field(fid_data_1d,"group_3");
-  repo.register_field(fid_data_2d,"group_3");
-  repo.register_field(fid_data_3d,"group_3");
-  printf("             --p4.6\n");
-  repo.registration_ends();
-  printf("             --p4.7\n");
-  printf("ASD yaml test p5\n");
+  repo->register_field(fid_index_1d,"group_2");
+  repo->register_field(fid_index_2d,"group_2");
+  repo->register_field(fid_index_3d,"group_2");
+  repo->register_field(fid_data_1d,"group_3");
+  repo->register_field(fid_data_2d,"group_3");
+  repo->register_field(fid_data_3d,"group_3");
+  repo->registration_ends();
 
   // Initialize spatial vectors
   auto xd = repo->get_field(fid_x).get_view(); 
