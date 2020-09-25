@@ -901,19 +901,19 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
   view_2d
     tke_d(temp_2d_d[0]);
 
- const Int nk_pack = ekat::npack<Spack>(nlev);
- const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
- Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-   const Int i = team.league_rank();
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
 
-   const auto tke_s   = ekat::subview(tke_d, i);
+    const auto tke_s   = ekat::subview(tke_d, i);
 
-   SHOC::check_tke(team, nlev, tke_s);
- });
+    SHOC::check_tke(team, nlev, tke_s);
+  });
 
- // Sync back to host
- Kokkos::Array<view_2d, 1> inout_views = {tke_d};
- ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views);
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {tke_d};
+  ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views);
 }
 
 } // namespace shoc

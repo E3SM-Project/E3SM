@@ -4,11 +4,11 @@
 namespace scream {
 namespace shoc {
 
-    /*
-     * Explicit instantiation for the default device.
-     */
+/*
+ * Explicit instantiation for the default device.
+ */
 
-    template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real,DefaultDevice>;
 
 } // namespace shoc
 } // namespace scream
