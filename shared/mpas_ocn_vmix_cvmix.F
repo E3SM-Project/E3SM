@@ -728,7 +728,7 @@ contains
             ! add convective mixing to vertical viscosity/diffusivity
             ! if using KPP, then do not apply convective mixing within the ocean boundary layer
             if(config_use_cvmix_kpp) then
-               do k = int(ceiling(indexBoundaryLayerDepth(iCell))) + 1, maxLevelCell(iCell)
+               do k = ceiling(indexBoundaryLayerDepth(iCell)) + 1, maxLevelCell(iCell)
                   vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
                   vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
                enddo
