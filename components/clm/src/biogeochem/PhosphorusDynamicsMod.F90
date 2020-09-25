@@ -687,7 +687,7 @@ contains
             if(use_fates) then
                
                 j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                do p = 1, alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+                do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
 
                     lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
                           max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
@@ -777,12 +777,12 @@ contains
                     if ( biochem_pmin_to_ecosysp_vr_col_pot(c,j) > 0.0_r8 ) then
                         biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) * &
                               biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
-                        do p = 1, alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+                        do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
                             biochem_pmin_to_plant_vr_patch(p,j) = biochem_pmin_to_plant_vr_patch(p,j) * &
                                   biochem_pmin_to_ecosysp_vr_col(c,j) / biochem_pmin_to_ecosysp_vr_col_pot(c,j)
                         end do
                     else
-                        do p = 1, alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+                        do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
                             biochem_pmin_to_plant_vr_patch(p,j) = 0.0_r8
                         end do
                         biochem_pmin_vr(c,j) = 0.0_r8
@@ -791,7 +791,7 @@ contains
 
                 ! units:  [g/m2] = [g/m3/s] * [s] [m]
                 j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                do p = 1, alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+                do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
                     alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = & 
                           alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + & 
                           biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)

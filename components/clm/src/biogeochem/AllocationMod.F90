@@ -1380,7 +1380,7 @@ contains
 
             ci             = bounds%clump_index
             s              = elm_fates%f2hmap(ci)%hsites(c)
-            n_pcomp        = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
+            n_pcomp        = elm_fates%fates(ci)%bc_out(s)%num_plant_comps
             
             if( nu_com.eq.'RD') then
                
@@ -2212,7 +2212,7 @@ contains
       ! Set the FATES N and P uptake fluxes
       
       if(use_fates)then
-         n_pcomp = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
+         n_pcomp = elm_fates%fates(ci)%bc_out(s)%num_plant_comps
          
          if (nu_com .eq. 'RD') then
 
@@ -2246,13 +2246,14 @@ contains
                        elm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
                        (plant_nh4demand_vr_fates(f,j) * fpg_nh4_vr(c,j) + & 
                         plant_no3demand_vr_fates(f,j) * fpg_no3_vr(c,j)) * dzsoi_decomp(j) * dt
-
+                  
                   elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
                        elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + & 
                        (plant_pdemand_vr_fates(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j) * dt
                   
                end do
             end do
+            
          end if
       end if
    end do
