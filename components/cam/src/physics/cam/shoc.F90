@@ -1751,7 +1751,7 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   wsec_diff     = w_sec_kc    - w_sec
   tke_diff      = tke_kc      - tke
 
-  f0 = thedz2 * bfb_cube(bet2) * bfb_square(bfb_square(iso)) * wthl_sec * &
+  f0 = thedz2 * bfb_cube(bet2) * iso**4 * wthl_sec * &
        thl_sec_diff
 
   f1 = thedz2 * bfb_square(bet2) * bfb_cube(iso) * (wthl_sec * &
