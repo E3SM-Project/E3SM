@@ -908,8 +908,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
                crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
                crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
-               crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, &
-               crm_output%qiltend, crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
+               crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
+#if defined(MMF_MOMENTUM_FEEDBACK)
+               crm_output%ultend, crm_output%vltend, &
+#endif /* MMF_MOMENTUM_FEEDBACK */
+               crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &

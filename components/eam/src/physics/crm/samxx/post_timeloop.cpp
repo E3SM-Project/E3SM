@@ -37,6 +37,10 @@ void post_timeloop() {
   auto &crm_output_qltend       = :: crm_output_qltend;
   auto &crm_output_qcltend      = :: crm_output_qcltend;
   auto &crm_output_qiltend      = :: crm_output_qiltend;
+#ifdef MMF_MOMENTUM_FEEDBACK
+  auto &crm_output_ultend       = :: crm_output_ultend;
+  auto &crm_output_vltend       = :: crm_output_vltend;
+#endif
   auto &icrm_run_time           = :: icrm_run_time;
   auto &crm_output_prectend     = :: crm_output_prectend;
   auto &crm_output_precstend    = :: crm_output_precstend;
@@ -239,6 +243,10 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) =      (qln  (k,icrm) - crm_input_ql  (k,icrm)) * icrm_run_time;
     crm_output_qcltend(k,icrm) =      (qccln(k,icrm) - crm_input_qccl(k,icrm)) * icrm_run_time;
     crm_output_qiltend(k,icrm) =      (qiiln(k,icrm) - crm_input_qiil(k,icrm)) * icrm_run_time;
+#ifdef MMF_MOMENTUM_FEEDBACK
+    crm_output_ultend (k,icrm) = cp * (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
+    crm_output_vltend (k,icrm) = cp * (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
+#endif
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -260,6 +268,10 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) = 0.0;
     crm_output_qcltend(k,icrm) = 0.0;
     crm_output_qiltend(k,icrm) = 0.0;
+#ifdef MMF_MOMENTUM_FEEDBACK
+    crm_output_ultend (k,icrm) = 0.0;
+    crm_output_vltend (k,icrm) = 0.0;
+#endif
   });
 
   // Save the last step to the permanent core:
