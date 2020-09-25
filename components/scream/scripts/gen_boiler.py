@@ -1184,7 +1184,6 @@ class GenBoiler(object):
         self._db          = {}
 
         # TODO: support subroutine rename?
-        # TODO: support auto cmake generation?
         # TODO: support smart line wrapping?
 
         if not self._pieces:
