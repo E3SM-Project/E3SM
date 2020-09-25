@@ -408,7 +408,7 @@
 <config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
 
 <!-- AM_ridgingDiagnostics -->
-<config_AM_ridgingDiagnostics_enable>false</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -423,7 +423,7 @@
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 
 <!-- AM_geographicalVectors -->
-<config_AM_geographicalVectors_enable>false</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>
@@ -495,7 +495,7 @@
 <config_AM_icePresent_write_on_startup>false</config_AM_icePresent_write_on_startup>
 
 <!-- AM_timeSeriesStatsDaily -->
-<config_AM_timeSeriesStatsDaily_enable>false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>
