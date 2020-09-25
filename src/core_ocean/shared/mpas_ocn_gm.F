@@ -545,7 +545,7 @@ contains
          ! based on stratification relative to the maximum in the column
          if (local_config_GM_kappa_lat_depth_variable) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN)
+            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN, cell1, cell2)
             do iEdge=1,nEdges
                k=1
                cell1 = cellsOnEdge(1,iEdge)
@@ -553,13 +553,13 @@ contains
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                     BruntVaisalaFreqTop(k,cell2))
                maxN = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               do k = 2, maxLevelCell(iCell)
+               do k = 2, maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                       BruntVaisalaFreqTop(k,cell2))
                  maxN = max(maxN,max(BruntVaisalaFreqTopEdge, 0.0_RKIND))
                enddo
 
-               do k = 1,maxLevelCell(iCell)
+               do k = 1, maxLevelEdgeTop(iEdge)
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
