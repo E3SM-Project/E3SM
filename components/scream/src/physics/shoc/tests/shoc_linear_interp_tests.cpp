@@ -248,9 +248,9 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
       linear_interp_f(d.nlev(), d.nlevi(), d.shcol(), d.x1, d.y1, d.x2, d.minthresh, d.y2);
-      d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout

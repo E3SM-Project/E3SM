@@ -307,13 +307,13 @@ static void run_bfb()
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::util::TransposeDirection::c2f>();
+      d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
       calc_shoc_varorcovar_f(d.shcol(), d.nlev(), d.nlevi(),
                              d.tunefac, d.isotropy_zi,
                              d.tkh_zi, d.dz_zi,
                              d.invar1, d.invar2, d.varorcovar);
-      d.transpose<ekat::util::TransposeDirection::f2c>();
+      d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout

@@ -40,8 +40,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     //   or moisture result in zero integral outputs.  If the
     //   column is positive then verify that wl_int >= wv_int
 
-    // Define host model dry static energy [K]
-    static constexpr Real host_dse[nlev] = {350.0, 325.0, 315.0, 310.0, 300.0};
+    // Define host model dry static energy [J kg-1]
+    static constexpr Real host_dse[nlev] = {350e3, 325e3, 315e3, 310e3, 300e3};
     // Defin the pressure difference [hPa] (converted to Pa later)
     static constexpr Real pdel[nlev]={100.0, 75.0, 50.0, 25.0, 10.0};
     // Define zonal wind on nlev grid [m/s]

@@ -52,7 +52,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = params.sublist(ekat::util::strint("Process",i));
+    const auto& params_i = params.sublist(ekat::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
 
@@ -209,12 +209,11 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   }
 }
 
-void AtmosphereProcessGroup::initialize (const TimeStamp& t0) {
+void AtmosphereProcessGroup::initialize_impl (const TimeStamp& t0) {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
     m_atm_processes[i]->initialize(t0);
   }
-  m_current_ts = t0;
 }
 
 void AtmosphereProcessGroup::
@@ -265,7 +264,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
   }
 }
 
-void AtmosphereProcessGroup::run (const Real dt) {
+void AtmosphereProcessGroup::run_impl (const Real dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {
@@ -274,20 +273,23 @@ void AtmosphereProcessGroup::run (const Real dt) {
 }
 
 void AtmosphereProcessGroup::run_sequential (const Real dt) {
-  m_current_ts += dt;
+  // Get the timestamp at the beginning of the step and advance it.
+  auto ts = timestamp();
+  ts += dt;
+
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     // Reamp the inputs of this process
     const auto& inputs_remappers = m_inputs_remappers[iproc];
     for (const auto& it : inputs_remappers) {
       const auto& remapper = it.second;
       remapper->remap(true);
-      for (int ifield=0; ifield<remapper->get_num_fields(); ++ifield) {  
+      for (int ifield=0; ifield<remapper->get_num_fields(); ++ifield) {
         const auto& f = remapper->get_tgt_field(ifield);
-        f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        f.get_header_ptr()->get_tracking().update_time_stamp(ts);
 #ifdef SCREAM_DEBUG
         // Update the remapped field in the bkp repo
         auto bkp_f = m_bkp_field_repo->get_field(f.get_header().get_identifier());
-        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(ts);
         auto src = f.get_view();
         auto dst = bkp_f.get_view();
         Kokkos::deep_copy(dst,src);
@@ -309,12 +311,12 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
           const auto& gn = fid.get_grid_name();
           auto& f_old = m_bkp_field_repo->get_field(fid);
           bool field_is_unchanged = views_are_equal(f_old,f.second);
-          if (ekat::util::contains(computed,fid) ||
+          if (ekat::contains(computed,fid) ||
               (inputs_remappers.find(gn)!=inputs_remappers.end() &&
                inputs_remappers.at(gn)->has_tgt_field(fid))) {
             // For fields that changed, make sure the time stamp has been updated
             const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
-            EKAT_REQUIRE_MSG(field_is_unchanged || ts==m_current_ts,
+            EKAT_REQUIRE_MSG(field_is_unchanged || ts==timestamp(),
                                "Error! Process '" + atm_proc->name() + "' updated field '" +
                                 fid.get_id_string() + "', but it did not update its time stamp.\n");
           } else {
@@ -345,11 +347,11 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
       remapper->remap(true);
       for (int ifield=0; ifield<remapper->get_num_fields(); ++ifield) {
         const auto& f = remapper->get_tgt_field(ifield);
-        f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        f.get_header_ptr()->get_tracking().update_time_stamp(ts);
 #ifdef SCREAM_DEBUG
         // Update the remapped field in the bkp repo
         auto bkp_f = m_bkp_field_repo->get_field(f.get_header().get_identifier());
-        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(m_current_ts);
+        bkp_f.get_header_ptr()->get_tracking().update_time_stamp(ts);
         auto src = f.get_view();
         auto dst = bkp_f.get_view();
         Kokkos::deep_copy(dst,src);
@@ -363,7 +365,7 @@ void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
   EKAT_REQUIRE_MSG (false,"Error! Parallel splitting not yet implemented.\n");
 }
 
-void AtmosphereProcessGroup::finalize (/* what inputs? */) {
+void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
   for (auto atm_proc : m_atm_processes) {
     atm_proc->finalize(/* what inputs? */);
   }
@@ -496,7 +498,7 @@ void AtmosphereProcessGroup::set_internal_field (const Field<Real, device_type>&
       proc->set_computed_field(f);
     }
     if (static_cast<bool>(group)) {
-      if (ekat::util::contains(group->get_internal_fields(),fid)) {
+      if (ekat::contains(group->get_internal_fields(),fid)) {
         group->set_internal_field(f);
       }
     }

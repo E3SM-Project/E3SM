@@ -23,7 +23,7 @@ extern "C" {
                  Real* precip_liq_flux, Real* precip_ice_flux, // 1 extra column size
                  Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
                  Real* liq_ice_exchange, Real* vap_liq_exchange,
-                 Real* vap_ice_exchange);
+                 Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 }
 
 namespace scream {
@@ -46,6 +46,8 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   bm             = Array2("rime ice volume mixing ratio, m3/kg", ncol, nlev);
   qv             = Array2("water vapor mixing ratio, kg/kg", ncol, nlev);
   th             = Array2("potential temperature, K", ncol, nlev);
+  qv_prev        = Array2("prev-step water vapor mixing ratio, kg/kg", ncol, nlev);
+  t_prev         = Array2("prev-step temperature, K", ncol, nlev);
   pres           = Array2("pressure, Pa", ncol, nlev);
   dz             = Array2("vertical grid spacing, m", ncol, nlev);
   nc_nuceat_tend = Array2("ccn activated number tendency, kg-1 s-1", ncol, nlev);
@@ -96,7 +98,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(nevapr); fdipb(qr_evap_tend); fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
   fdipb(mu_c); fdipb(lamc), fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
-  fdipb(vap_ice_exchange);;
+  fdipb(vap_ice_exchange); fdipb(qv_prev); fdipb(t_prev);;
 #undef fdipb
 }
 
@@ -127,6 +129,7 @@ void p3_init () {
 
 void p3_main (const FortranData& d, bool use_fortran) {
   if (use_fortran) {
+    
     p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
               d.th.data(), d.qv.data(), d.dt, d.qi.data(),
               d.qm.data(), d.ni.data(), d.bm.data(),
@@ -138,9 +141,11 @@ void p3_main (const FortranData& d, bool use_fortran) {
               d.precip_liq_flux.data(), d.precip_ice_flux.data(), d.cld_frac_r.data(), d.cld_frac_l.data(),
               d.cld_frac_i.data(), d.mu_c.data(), d.lamc.data(),
               d.liq_ice_exchange.data(),
-              d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
+              d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data());
+    
   }
   else {
+    
     p3_main_f(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th.data(),
               d.qv.data(), d.dt, d.qi.data(), d.qm.data(), d.ni.data(),
               d.bm.data(), d.pres.data(), d.dz.data(), d.nc_nuceat_tend.data(),
@@ -151,7 +156,8 @@ void p3_main (const FortranData& d, bool use_fortran) {
               d.nevapr.data(), d.qr_evap_tend.data(), d.precip_liq_flux.data(), d.precip_ice_flux.data(),
               d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(), d.mu_c.data(),
               d.lamc.data(), d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),
-              d.vap_ice_exchange.data());
+              d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data() );
+
   }
 }
 

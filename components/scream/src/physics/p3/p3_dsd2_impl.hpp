@@ -47,7 +47,7 @@ get_cloud_dsd2(
     if (P3C::iparam == 1) {
       IntSmallPack dumi = IntSmallPack(mu_c) - 1;
       Spack dnu0, dnu1;
-      ekat::pack::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
+      ekat::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
       nu.set(qc_gt_small, dnu0 + (dnu1 - dnu0) * (mu_c - Spack(dumi) - 1));
     }
 

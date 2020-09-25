@@ -126,14 +126,14 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      ekat::util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::pack::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
@@ -141,6 +141,9 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
           const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
+          qi(pk).set(qi_gt_small, qi_incld(pk)*cld_frac_i(pk) );
+          qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
+          bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 
           TableIce t;
           lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, t, qi_gt_small);
@@ -226,7 +229,7 @@ void Functions<S,D>
 
   // Convert top/bot to pack indices
   Int kmin, kmax;
-  ekat::util::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
@@ -234,7 +237,7 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     // Set up masks
-    const auto range_pack    = ekat::pack::range<IntSmallPack>(pk*Spack::n);
+    const auto range_pack    = ekat::range<IntSmallPack>(pk*Spack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
     const auto t_lt_homogf   = t(pk) < homogfrze;
     const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;

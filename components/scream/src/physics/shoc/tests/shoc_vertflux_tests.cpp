@@ -162,10 +162,10 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::util::TransposeDirection::c2f>();
+      d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
       calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
-      d.transpose<ekat::util::TransposeDirection::f2c>();
+      d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout

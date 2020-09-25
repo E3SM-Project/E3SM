@@ -55,7 +55,7 @@ public:
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
     auto tgt_tags = tgt.tags();
-    ekat::util::erase(tgt_tags,FieldTag::TimeLevel);
+    ekat::erase(tgt_tags,FieldTag::TimeLevel);
 
     return get_layout_type(src.tags())==get_layout_type(tgt_tags);
   }
@@ -134,20 +134,20 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   auto dims = tgt_layout.dims();
 
   // Note down the position of the first 'GaussPoint' tag.
-  int pos = std::distance(tags.cbegin(),ekat::util::find(tags,SFTN::GP));
+  int pos = std::distance(tags.cbegin(),ekat::find(tags,SFTN::GP));
 
   // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
   tags[0] = SFTN::COL;
   dims[0] = this->m_src_grid->get_num_local_dofs();
 
   // Delete GP tags/dims
-  ekat::util::erase(tags,SFTN::GP);
-  ekat::util::erase(tags,SFTN::GP);
+  ekat::erase(tags,SFTN::GP);
+  ekat::erase(tags,SFTN::GP);
   dims.erase(dims.begin()+pos);
   dims.erase(dims.begin()+pos);
 
   // If the tgt layout contains the TimeLevel tag, we slice it off.
-  auto it_tl = ekat::util::find(tags,SFTN::TL);
+  auto it_tl = ekat::find(tags,SFTN::TL);
   if (it_tl!=tags.end()) {
     pos = std::distance(tags.cbegin(),it_tl);
     tags.erase(tags.begin()+pos);
@@ -223,12 +223,12 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   const auto& tgt_tags = tgt_layout.tags();
   const auto& tgt_dims = tgt_layout.dims();
 
-  const bool has_time_level  = ekat::util::contains(tgt_tags,FieldTag::TimeLevel);
+  const bool has_time_level  = ekat::contains(tgt_tags,FieldTag::TimeLevel);
   if (has_time_level) {
     const auto& data = tgt.get_header().get_extra_data();
 
     const bool is_tracer = data.find("Is Tracer State")!=data.end() &&
-                           ekat::util::any_cast<bool>(data.at("Is Tracer State"));
+                           ekat::any_cast<bool>(data.at("Is Tracer State"));
     const bool valid_tl_dim = (tgt_dims[1]==HOMMEXX_NUM_TIME_LEVELS) || (tgt_dims[1]==HOMMEXX_Q_NUM_TIME_LEVELS);
     EKAT_REQUIRE_MSG (valid_tl_dim, "Error! Field has the TimeLevel tag, but it does not appear to be either a 'state' or 'tracer state'.\n");
     m_is_tracer_field.push_back(is_tracer);
@@ -276,8 +276,8 @@ template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_remap_fwd() const
 {
-  using pack_type = ekat::pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+  using pack_type = ekat::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = ekat::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
 
   const auto& tl = Homme::Context::singleton().get_time_level();
 
@@ -334,8 +334,8 @@ do_remap_fwd() const
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_remap_bwd() const {
-  using pack_type = ekat::pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-  using small_pack_type = ekat::pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+  using pack_type = ekat::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = ekat::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
 
   const auto& tl = Homme::Context::singleton().get_time_level();
 

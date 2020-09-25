@@ -6,9 +6,7 @@
 namespace scream {
 namespace util {
 
-// Micro-struct, to hold a time stamp
-// Note: this is NOT to store the current OS time, but rather
-//       the time of the simulation.
+// Micro-struct, to hold a simulation time stamp
 class TimeStamp {
 public:
 
@@ -31,7 +29,7 @@ public:
 
   TimeStamp& operator= (const TimeStamp&) = default;
 
-  // This methods will check that time shifts forward
+  // This method checks that time shifts forward (i.e. that seconds is positive)
   TimeStamp& operator+= (const double seconds);
 
 protected:

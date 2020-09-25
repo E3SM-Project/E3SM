@@ -14,12 +14,12 @@ namespace scream {
 
     }  // RRTMGPRadiation::set_grids
 
-    void RRTMGPRadiation::initialize(const util::TimeStamp& t0) {
+    void RRTMGPRadiation::initialize_impl(const util::TimeStamp& t0) {
         // Call RRTMGP initialize routine
         //rrtmgp_initialize()
     }
-    void RRTMGPRadiation::run       (const Real dt) {}
-    void RRTMGPRadiation::finalize  () {}
+    void RRTMGPRadiation::run_impl      (const Real dt) {}
+    void RRTMGPRadiation::finalize_impl  () {}
 
     // Register all required and computed field in the field repository
     void RRTMGPRadiation::register_fields(FieldRepository<Real, device_type>& field_repo) const {

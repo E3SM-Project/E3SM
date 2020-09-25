@@ -53,7 +53,7 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
     }
 
     for (auto fid : to_be_erased) {
-      ekat::util::erase(unmet,fid);
+      ekat::erase(unmet,fid);
     }
   }
 
@@ -185,10 +185,10 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       }
       for (const auto& fid : n.required) {
         std::string fc = "<font color=\"";
-        fc += (ekat::util::contains(unmet,fid) ? "red" : "black");
+        fc += (ekat::contains(unmet,fid) ? "red" : "black");
         fc += "\">  ";
         ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid],fid_verb));
-        if (ekat::util::contains(m_unmet_deps.at(n.id),fid)) {
+        if (ekat::contains(m_unmet_deps.at(n.id),fid)) {
           ofile << "<b>  *** MISSING ***</b>";
         }
         ofile << "</font></td></tr>\n";
@@ -337,7 +337,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
 }
 
 int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
-  auto it = ekat::util::find(m_fids,fid);
+  auto it = ekat::find(m_fids,fid);
   if (it==m_fids.end()) {
     m_fids.push_back(fid);
     return m_fids.size()-1;

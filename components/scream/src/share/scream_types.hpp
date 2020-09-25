@@ -30,6 +30,12 @@ enum class RepoState {
   Closed
 };
 
+#ifdef NDEBUG
+static constexpr bool SCREAM_BFB_TESTING = true;
+#else
+static constexpr bool SCREAM_BFB_TESTING = false;
+#endif
+
 /*
  * Utility function for handling floating point literals,
  * so that they match the scream precision. This is

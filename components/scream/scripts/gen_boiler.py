@@ -1338,16 +1338,16 @@ class GenBoiler(object):
         void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
-          d.transpose<ekat::util::TransposeDirection::c2f>();
+          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
-          d.transpose<ekat::util::TransposeDirection::f2c>();
+          d.transpose<ekat::TransposeDirection::f2c>();
         }
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_data_args    = ", ".join(gen_cxx_data_args(arg_data))
         need_transpose   = needs_transpose(arg_data)
-        transpose_code_1 = "\n  d.transpose<ekat::util::TransposeDirection::c2f>();" if need_transpose else ""
-        transpose_code_2 = "\n  d.transpose<ekat::util::TransposeDirection::f2c>();" if need_transpose else ""
+        transpose_code_1 = "\n  d.transpose<ekat::TransposeDirection::c2f>();" if need_transpose else ""
+        transpose_code_2 = "\n  d.transpose<ekat::TransposeDirection::f2c>();" if need_transpose else ""
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE)
 
@@ -1442,12 +1442,12 @@ class GenBoiler(object):
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_func_decl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           KOKKOS_FUNCTION
-          void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2);
+          static void fake_sub(const uview_1d<const Spack>& foo1, const uview_1d<const Spack>& foo2, const uview_1d<const Spack>& bar1, const uview_1d<const Spack>& bar2, const uview_1d<const Spack>& bak1, const uview_1d<const Spack>& bak2, const Spack& gag, const uview_1d<Spack>& baz, const uview_1d<const Int>& bag, Int& bab1, Int& bab2, const bool& val, const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<Int>& ball1, const uview_1d<Int>& ball2);
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
-        return "  KOKKOS_FUNCTION\n  void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
+        return "  KOKKOS_FUNCTION\n  static void {sub}({arg_sig});".format(sub=sub, arg_sig=", ".join(arg_decls))
 
     ###########################################################################
     def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
@@ -1473,7 +1473,7 @@ class GenBoiler(object):
           // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
         }
         """
-        decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";").replace("void ", "void Functions<S,D>::")
+        decl = self.gen_cxx_func_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";").replace("void ", "void Functions<S,D>::").replace("static ", "")
         decl = "\n".join(line.strip() for line in decl.splitlines())
 
         # I don't think any intelligent guess at an impl is possible here
@@ -1531,9 +1531,9 @@ class GenBoiler(object):
         <BLANKLINE>
             // Get data from cxx
             for (auto& d : cxx_data) {
-              d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout
+              d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
               fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
-              d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout
+              d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
             }
         <BLANKLINE>
             // Verify BFB results, all data should be in C layout
@@ -1567,10 +1567,10 @@ class GenBoiler(object):
 
         c2f_transpose_code = "" if not need_transpose else \
 """
-      d.transpose<ekat::util::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
         f2c_transpose_code = "" if not need_transpose else \
 """
-      d.transpose<ekat::util::TransposeDirection::f2c>(); // go back to C layout"""
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
 
         _, _, _, scalars, ik_reals, ij_reals, i_reals, i_ints = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
@@ -1727,9 +1727,9 @@ template struct Functions<Real,DefaultDevice>;
         void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
-          d.transpose<ekat::util::TransposeDirection::c2f>();
+          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
-          d.transpose<ekat::util::TransposeDirection::f2c>();
+          d.transpose<ekat::TransposeDirection::f2c>();
         }
 
         >>> force_file_lines = [
@@ -1744,9 +1744,9 @@ template struct Functions<Real,DefaultDevice>;
         void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
-          d.transpose<ekat::util::TransposeDirection::c2f>();
+          d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
-          d.transpose<ekat::util::TransposeDirection::f2c>();
+          d.transpose<ekat::TransposeDirection::f2c>();
         }
 
         >>> force_file_lines[2:2] = ["void fake_sub(FakeSubData& d)", "{", "}"]

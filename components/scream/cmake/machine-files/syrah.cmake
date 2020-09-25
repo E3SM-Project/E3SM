@@ -1,6 +1,8 @@
+# Load all kokkos settings from Ekat's mach file
+set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
+include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
+
+# Enable Sandy Bridge arch in Kokkos
+option(Kokkos_ARCH_SNB "" ON)
+
 set(CMAKE_CXX_FLAGS "-w" CACHE STRING "")
-set(KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION TRUE CACHE BOOL "")
-set(KOKKOS_ENABLE_OPENMP TRUE CACHE BOOL "")
-set(KOKKOS_ARCH SNB CACHE STRING "")
-set(KOKKOS_ENABLE_DEPRECATED_CODE FALSE CACHE BOOL "")
-set(KOKKOS_ENABLE_EXPLICIT_INSTANTIATION FALSE CACHE BOOL "")
