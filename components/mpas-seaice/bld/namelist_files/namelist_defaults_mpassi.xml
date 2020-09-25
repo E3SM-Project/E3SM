@@ -82,10 +82,27 @@
 <config_calculate_coriolis>true</config_calculate_coriolis>
 
 <!-- use_sections -->
+<config_use_dynamics>true</config_use_dynamics>
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
 <config_use_column_package>true</config_use_column_package>
+<config_use_prescribed_ice>false</config_use_prescribed_ice>
+<config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>
+
+<!-- prescribed_mode -->
+<stream_fldvarname>'ice_cov'</stream_fldvarname>
+<stream_domfilename>"unset"</stream_domfilename>
+<stream_fldfilename>"unset"</stream_fldfilename>
+<stream_fldvarname>"unset"</stream_fldvarname>
+<stream_year_first>-999</stream_year_first>
+<stream_year_last>-999</stream_year_last>
+<model_year_align>-999</model_year_align>
+<stream_domtvarname>"time"</stream_domtvarname>
+<stream_domxvarname>"xc"</stream_domxvarname>
+<stream_domyvarname>"yc"</stream_domyvarname>
+<stream_domareaname>"area"</stream_domareaname>
+<stream_dommaskname>"mask"</stream_dommaskname>
 
 <!-- forcing -->
 <config_atmospheric_forcing_type>'CORE'</config_atmospheric_forcing_type>
