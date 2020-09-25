@@ -702,7 +702,7 @@ contains
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
                  gmKappaScaling(k,iEdge) = max(config_GM_visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
-                         Length**2.0*sigma, config_GM_visbeck_max_kappa)) / gmBolusKappa(iCell)
+                         Length**2.0*sigma, config_GM_visbeck_max_kappa)) / gmBolusKappa(iEdge)
               enddo
            enddo
            !$omp end do
