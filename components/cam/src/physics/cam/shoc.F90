@@ -1815,7 +1815,7 @@ subroutine x_y_terms_diag_third_shoc_moment(&
 ! local variables
   real(rtype) :: a0, a1, a2, a3
 
-  a0=(0.52_rtype*bfb_pow(c_diag_3rd_mom,-2))/(c_diag_3rd_mom-2._rtype)
+  a0=(0.52_rtype*bfb_pow(c_diag_3rd_mom,-2._rtype))/(c_diag_3rd_mom-2._rtype)
   a1=0.87_rtype/bfb_square(c_diag_3rd_mom)
   a2=0.5_rtype/c_diag_3rd_mom
   a3=0.6_rtype/(c_diag_3rd_mom*(c_diag_3rd_mom-2._rtype))
