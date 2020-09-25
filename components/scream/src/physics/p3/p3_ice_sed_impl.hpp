@@ -141,6 +141,9 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
           const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
+          qi(pk).set(qi_gt_small, qi_incld(pk)*cld_frac_i(pk) );
+          qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
+          bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 
           TableIce t;
           lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, t, qi_gt_small);

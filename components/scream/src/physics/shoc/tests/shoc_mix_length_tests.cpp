@@ -119,7 +119,57 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCMixlengthData SDS_f90[] = {
+      //               shcol, nlev
+      SHOCMixlengthData(10, 71),
+      SHOCMixlengthData(10, 12),
+      SHOCMixlengthData(7,  16),
+      SHOCMixlengthData(2, 7)
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCMixlengthData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCMixlengthData SDS_cxx[] = {
+      SHOCMixlengthData(SDS_f90[0]),
+      SHOCMixlengthData(SDS_f90[1]),
+      SHOCMixlengthData(SDS_f90[2]),
+      SHOCMixlengthData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      compute_shoc_mix_shoc_length(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      compute_shoc_mix_shoc_length_f(d.nlev(), d.shcol(),
+                                     d.tke, d.brunt,
+                                     d.tscale, d.zt_grid,
+                                     d.l_inf, d.shoc_mix);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCMixlengthData& d_f90 = SDS_f90[i];
+      SHOCMixlengthData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+      }
+    }
   }
 };
 

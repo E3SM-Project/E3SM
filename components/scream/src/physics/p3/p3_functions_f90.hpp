@@ -1122,11 +1122,11 @@ void p3_main_part2_f(
 
 struct P3MainPart3Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 32;
+  static constexpr size_t NUM_ARRAYS = 33;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
-  Real* exner, *cld_frac_l, *cld_frac_r;
+  Real* exner, *cld_frac_l, *cld_frac_r, *cld_frac_i;
 
   // In/out
   Real* rho, *inv_rho, *rhofaci,
@@ -1149,7 +1149,7 @@ extern "C" {
 
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* cld_frac_l, Real* cld_frac_r,
+  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
   Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* rho_qi, Real* diag_ze, Real* diag_effc);
