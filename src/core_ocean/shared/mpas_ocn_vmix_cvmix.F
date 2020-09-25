@@ -162,7 +162,7 @@ contains
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
-      real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth
+      real (kind=RKIND) :: x, r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth
       real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
@@ -401,10 +401,14 @@ contains
             ! See equation 9 in Bryan, K., and Lewis, L. J. (1979), A water mass
             ! model of the World Ocean, J. Geophys. Res., 84( C5), 2503– 2517
             ! https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC084iC05p02503
+            ! The standard atan formulation is approximated following equation (13) of Girones et al (2012)
+            ! https://doi.org/10.1109/MSP.2012.2219677
             do k = 1,maxLevelCell(iCell)
+               x = (abs(cvmix_variables % zw_iface(k)) - config_cvmix_bryanLewis_transitionDepth) / &
+                   config_cvmix_bryanLewis_transitionWidth
                vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_bryanLewis_bl1 + &
-                        (config_cvmix_bryanLewis_bl2/pii)*atan((abs(cvmix_variables % zw_iface(k)) -  &
-                        config_cvmix_bryanLewis_transitionDepth) / config_cvmix_bryanLewis_transitionWidth)
+                        (config_cvmix_bryanLewis_bl2/2.0_RKIND)*(sign(1.0_RKIND, x)*(0.596227_RKIND*     &
+                        abs(x)+x**2)/(1.0_RKIND+1.192454_RKIND*abs(x)+x**2))
                vertViscTopOfCell(k, iCell) = config_cvmix_prandtl_number*vertDiffTopOfCell(k, iCell)
             enddo
          endif
