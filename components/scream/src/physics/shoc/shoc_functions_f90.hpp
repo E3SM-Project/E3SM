@@ -58,7 +58,7 @@ struct SHOCCheckTkeData : public PhysicsTestData {
 //Create data structure to hold data for shoc_tke
 struct SHOCTkeData : public PhysicsTestData {
   // Inputs
-  Real dtime; 
+  Real dtime;
   Real *wthv_sec, *shoc_mix, *dz_zi, *u_wind, *v_wind, *pblh;
   Real *brunt, *obklen, *zt_grid, *zi_grid, *dz_zt, *pres;
 
@@ -398,7 +398,7 @@ struct SHOCAAdiagthirdmomsData
 {
   // inputs
   Real omega0, omega1, omega2, x0, x1, y0, y1;
-  
+
   // outputs
   Real aa0, aa1;
 
@@ -410,7 +410,7 @@ struct SHOCFtermdiagthirdmomsData
   Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc;
   Real wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec;
   Real w_sec_kc, w_sec_zi, tke, tke_kc;
-  
+
   // outputs
   Real f0, f1, f2, f3, f4, f5;
 
@@ -420,7 +420,7 @@ struct SHOCOmegadiagthirdmomsData
 {
   // inputs
   Real buoy_sgs2, f3, f4;
-  
+
   // outputs
   Real omega0, omega1, omega2;
 
@@ -430,7 +430,7 @@ struct SHOCXYdiagthirdmomsData
 {
   // inputs
   Real buoy_sgs2, f0, f1, f2;
-  
+
   // outputs
   Real x0, y0, x1, y1;
 
@@ -440,7 +440,7 @@ struct SHOCW3diagthirdmomsData
 {
   // inputs
   Real aa0, aa1, x0, x1, f5;
-  
+
   // outputs
   Real w3;
 
@@ -450,7 +450,7 @@ struct SHOCFterminputthirdmomsData
 {
   // inputs
   Real dz_zi, dz_zt, dz_zt_kc, isotropy_zi, brunt_zi, thetal_zi;
-  
+
   // outputs
   Real thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2;
 
@@ -727,8 +727,9 @@ void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exn
 void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
                                     Real* tscale, Real* zt_grid, Real* l_inf, Real* shoc_mix);
-
+void check_tke_f(Int shcol, Int nlev, Real* tke);
 void linear_interp_f(Int km1, Int km2, Int ncol, Real* x1, Real* y1, Real* x2, Real minthresh, Real* y2);
+
 } // end _f function decls
 
 }  // namespace shoc

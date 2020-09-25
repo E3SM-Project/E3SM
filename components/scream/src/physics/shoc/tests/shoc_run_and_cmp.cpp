@@ -15,22 +15,22 @@ namespace {
 using namespace scream;
 using namespace scream::shoc;
 
-  /* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline 
-   * runs the baseline (aka reference, probably git master) version of 
+  /* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline
+   * runs the baseline (aka reference, probably git master) version of
    * the code and saves its output as a raw binary file. Then run_and_cmp
    * runs the new/experimental version of the code and compares it against
    * the baseline data you've saved to file. Both baseline and cmp modes
-   * start from an initial condition in ../shoc_ic_cases.cpp. Each call to 
-   * shoc_main loops through nadv=15 steps with dt=5 min. On top of this, 
-   * shoc_main is called iteratively num_iters=10 steps, performing checks 
-   * and potentiallywriting output each time. This means that shoc_run_and_cmp 
+   * start from an initial condition in ../shoc_ic_cases.cpp. Each call to
+   * shoc_main loops through nadv=15 steps with dt=5 min. On top of this,
+   * shoc_main is called iteratively num_iters=10 steps, performing checks
+   * and potentiallywriting output each time. This means that shoc_run_and_cmp
    * is really a single 150-step shoc run.
    */
-  
 
-/* Given a column of data for variable "label" from the reference run 
- * (probably master) and from your new exploratory run, loop over all 
- * heights and confirm whether or not the relative difference between  
+
+/* Given a column of data for variable "label" from the reference run
+ * (probably master) and from your new exploratory run, loop over all
+ * heights and confirm whether or not the relative difference between
  * runs is within tolerance "tol". If not, print debug info. Here, "a"
  * is the value from the reference run and "b" is from the new run.
  */
@@ -50,7 +50,7 @@ static Int compare (const std::string& label, const Scalar* a,
       ++nerr1;
       continue;
     }
-    
+
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr2;
@@ -62,23 +62,23 @@ static Int compare (const std::string& label, const Scalar* a,
     std::cout << label << " has " << nerr1 << " infs + nans.\n";
 
   }
-  
+
   if (nerr2) {
     std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
 	      << " normalized by ref impl val=" << den << ".\n";
 
   }
-  
+
   return nerr1 + nerr2;
 }
 
- /* When called with the below 3 args, compare loops over all variables 
-  * and calls the above version of "compare" to check for and report 
+ /* When called with the below 3 args, compare loops over all variables
+  * and calls the above version of "compare" to check for and report
   * large discrepancies.
   */
  Int compare (const double& tol,
              const FortranData::Ptr& ref, const FortranData::Ptr& d) {
-  
+
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
   EKAT_ASSERT(refi.nfield() == di.nfield());

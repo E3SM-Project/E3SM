@@ -967,6 +967,11 @@ contains
    real(rtype)    :: table_val_ice_reflectivity   ! reflectivity                         See lines  731 -  808  refl
    real(rtype)    :: table_val_ice_mean_diam   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
    real(rtype)    :: table_val_ice_bulk_dens   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
+
+   real(rtype)    :: qc_incld     !in-cloud qi
+   real(rtype)    :: nc_incld     !in-cloud ni
+   real(rtype)    :: qr_incld     !in-cloud qi
+   real(rtype)    :: nr_incld     !in-cloud ni
    real(rtype)    :: qi_incld     !in-cloud qi
    real(rtype)    :: ni_incld     !in-cloud ni
    real(rtype)    :: qm_incld     !in-cloud qm
@@ -976,9 +981,12 @@ contains
 
       ! cloud:
       if (qc(k).ge.qsmall) then
-         call get_cloud_dsd2(qc(k),nc(k),mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
+         qc_incld = qc(k)/cld_frac_l(k)
+         nc_incld = nc(k)/cld_frac_l(k)
+         call get_cloud_dsd2(qc_incld,nc_incld,mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
               tmp1,tmp2,cld_frac_l(k))
          diag_effc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
+         nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
          qv(k) = qv(k)+qc(k)
          th(k) = th(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
@@ -989,9 +997,14 @@ contains
 
       ! rain:
       if (qr(k).ge.qsmall) then
+         qr_incld = qr(k)/cld_frac_r(k)
+         nr_incld = nr(k)/cld_frac_r(k)
+         call get_rain_dsd2(qr_incld,nr_incld,mu_r(k),lamr(k),tmp1,tmp2,cld_frac_r(k))
+         nr(k) = nr_incld*cld_frac_r(k) !limiters might change nc_incld... enforcing consistency
 
-         call get_rain_dsd2(qr(k),nr(k),mu_r(k),lamr(k),tmp1,tmp2,cld_frac_r(k))
-
+         !Note that integrating over the drop-size PDF as done here should only be done to in-cloud
+         !quantities but radar reflectivity is likely meant to be a cell ave. Thus nr in the next line
+         !really should be cld_frac_r * nr/cld_frac_r. Not doing that since cld_frac_r cancels out.
          ze_rain(k) = nr(k)*(mu_r(k)+6._rtype)*(mu_r(k)+5._rtype)*(mu_r(k)+4._rtype)*           &
               (mu_r(k)+3._rtype)*(mu_r(k)+2._rtype)*(mu_r(k)+1._rtype)/bfb_pow(lamr(k), 6._rtype)
          ze_rain(k) = max(ze_rain(k),1.e-22_rtype)
@@ -1005,6 +1018,7 @@ contains
 
       ! ice:
 
+      !BUG BELOW: *all* of this qi stuff needs to be incld. will fix in future PR.
       call impose_max_total_Ni(ni(k),max_total_Ni,inv_rho(k))
 
       qi_not_small:  if (qi(k).ge.qsmall) then
@@ -1751,7 +1765,7 @@ contains
        endif
 
        cdist  = nc*(mu_c+1._rtype)/lamc
-       cdist1 = nc*cld_frac_l/bfb_gamma(mu_c+1._rtype)
+       cdist1 = nc/bfb_gamma(mu_c+1._rtype)
 
     else
 
@@ -1808,7 +1822,7 @@ contains
           nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        endif
 
-       cdistr  = nr*cld_frac_r/bfb_gamma(mu_r+1._rtype)
+       cdistr  = nr/bfb_gamma(mu_r+1._rtype)
        logn0r  = bfb_log10(nr)+(mu_r+1._rtype)*bfb_log10(lamr)-bfb_log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
 
     else

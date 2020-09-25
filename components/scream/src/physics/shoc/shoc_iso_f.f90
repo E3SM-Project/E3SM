@@ -70,16 +70,6 @@ interface
 
   end subroutine shoc_diag_second_moments_ubycond_f
 
-  subroutine linear_interp_f(km1, km2, ncol, x1, y1, x2, minthresh, y2) bind(C)
-    use iso_c_binding
-
-    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
-    real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
-    real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
-    real(kind=c_real) , value, intent(in) :: minthresh
-    real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
-  end subroutine linear_interp_f
-
   subroutine update_host_dse_f(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
        phis, host_dse) bind (C)
     use iso_c_binding
@@ -95,6 +85,17 @@ interface
     real(kind=c_real), intent(out) :: host_dse(shcol,nlev)
 
   end subroutine update_host_dse_f
+
+  subroutine check_tke_f(shcol, nlev, tke) bind(C)
+
+    use iso_c_binding
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+
+    real(kind=c_real), intent(inout) :: tke(shcol,nlev)
+
+  end subroutine check_tke_f
 
   subroutine shoc_pblintd_init_pot_f(shcol, nlev, thl, ql, q, thv) bind(C)
     use iso_c_binding
@@ -120,6 +121,16 @@ interface
     real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
 
   end subroutine compute_shoc_mix_shoc_length_f
+
+  subroutine linear_interp_f(km1, km2, ncol, x1, y1, x2, minthresh, y2) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
+    real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
+    real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
+    real(kind=c_real) , value, intent(in) :: minthresh
+    real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
+  end subroutine linear_interp_f
 
 end interface
 

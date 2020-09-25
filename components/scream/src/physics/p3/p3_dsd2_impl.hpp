@@ -67,7 +67,7 @@ get_cloud_dsd2(
     nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
-    cdist1.set(qc_gt_small, nc * cld_frac_l / tgamma(mu_c + 1));
+    cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
   }
 }
 
@@ -125,7 +125,7 @@ get_rain_dsd2 (
       }
     }
 
-    cdistr.set(qr_gt_small, nr*cld_frac_r/tgamma(mu_r + 1));
+    cdistr.set(qr_gt_small, nr/tgamma(mu_r + 1));
     // note: logn0r is calculated as log10(n0r)
     logn0r.set(qr_gt_small, log10(nr) + (mu_r + 1) * log10(lamr) - log10(tgamma(mu_r+1)));
   }

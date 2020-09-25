@@ -45,7 +45,8 @@ struct Functions
 
   using KT = ekat::KokkosTypes<Device>;
 
-  using C = physics::Constants<Scalar>;
+  using C  = physics::Constants<Scalar>;
+  using SC = shoc::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -71,13 +72,13 @@ struct Functions
   KOKKOS_FUNCTION
   static void calc_shoc_varorcovar(
     const MemberType&            team,
-    const Int&                   nlev, 
+    const Int&                   nlev,
     const Scalar&                tunefac,
-    const uview_1d<const Spack>& isotropy_zi, 
+    const uview_1d<const Spack>& isotropy_zi,
     const uview_1d<const Spack>& tkh_zi,
     const uview_1d<const Spack>& dz_zi,
-    const uview_1d<const Spack>& invar1, 
-    const uview_1d<const Spack>& invar2, 
+    const uview_1d<const Spack>& invar1,
+    const uview_1d<const Spack>& invar2,
     const uview_1d<Spack>&       varorcovar);
 
   KOKKOS_FUNCTION
@@ -128,10 +129,14 @@ struct Functions
     const uview_1d<Spack>&       shoc_mix);
 
   KOKKOS_FUNCTION
+  static void check_tke(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<Spack>& tke);
+
   static void linear_interp(
     const Int& km1, const Int& km2, const Int& ncol, const uview_1d<const Spack>& x1,
     const uview_1d<const Spack>& y1, const uview_1d<const Spack>& x2, const Spack& minthresh, const uview_1d<Spack>& y2);
-
 }; // struct Functions
 
 } // namespace shoc
@@ -147,6 +152,7 @@ struct Functions
 # include "shoc_update_host_dse_impl.hpp"
 # include "shoc_pblintd_init_pot_impl.hpp"
 # include "shoc_compute_shoc_mix_shoc_length_impl.hpp"
+# include "shoc_check_tke_impl.hpp"
 # include "shoc_linear_interp_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 

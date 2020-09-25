@@ -942,6 +942,38 @@ void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
   ekat::device_to_host<int,1>({shoc_mix}, {shcol}, {nlev}, inout_views, true);
 }
 
+void check_tke_f(Int shcol, Int nlev, Real* tke)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using view_2d    = typename SHOC::view_2d<Spack>;
+  using KT         = typename SHOC::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHOC::MemberType;
+
+  Kokkos::Array<view_2d, 1> temp_2d_d;
+
+  // Sync to device
+  ekat::host_to_device({tke}, shcol, nlev, temp_2d_d, true);
+
+  view_2d
+    tke_d(temp_2d_d[0]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto tke_s   = ekat::subview(tke_d, i);
+
+    SHOC::check_tke(team, nlev, tke_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {tke_d};
+  ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views, true);
+}
+
 void linear_interp_f(Int km1, Int km2, Int ncol, Real* x1, Real* y1, Real* x2, Real minthresh, Real* y2)
 {
   // TODO
