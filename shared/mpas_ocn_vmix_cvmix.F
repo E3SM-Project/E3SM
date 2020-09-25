@@ -386,6 +386,9 @@ contains
 
          if (kpp_stage == 2) then
          if (config_cvmix_background_scheme == 'bryanLewis') then
+            ! See equation 9 in Bryan, K., and Lewis, L. J. (1979), A water mass
+            ! model of the World Ocean, J. Geophys. Res., 84( C5), 2503– 2517
+            ! https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/JC084iC05p02503
             do k = 1,maxLevelCell(iCell)
                vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_bryanLewis_bl1 + &
                         (config_cvmix_bryanLewis_bl2/pii)*atan((abs(cvmix_variables % zw_iface(k)) -  &
