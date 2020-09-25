@@ -108,7 +108,7 @@ contains
        pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_rad_qc,     &
        diag_eff_rad_qi,rho_qi,do_predict_nc, dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr, &
        qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,mu_c,lamc,liq_ice_exchange, &
-       vap_liq_exchange, vap_ice_exchange) bind(C)
+       vap_liq_exchange, vap_ice_exchange, qv_prev, t_prev) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qv, th_atm
@@ -136,6 +136,8 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: qv_prev
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: t_prev
 
     real(kind=c_real), dimension(its:ite,kts:kte,49)   :: p3_tend_out
     real(kind=c_real), dimension(its:ite,3) :: col_location
@@ -148,7 +150,7 @@ contains
          pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_rad_qc, &
          diag_eff_rad_qi,rho_qi,do_predict_nc,dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr, &
          qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,p3_tend_out,mu_c,lamc,liq_ice_exchange,&
-         vap_liq_exchange, vap_ice_exchange, col_location)
+         vap_liq_exchange, vap_ice_exchange, qv_prev, t_prev, col_location)
   end subroutine p3_main_c
 
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RHO_H2O, &
@@ -656,18 +658,24 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
                              qi_incld, ni_incld, ni_selfcollect_tend)
   end subroutine ice_self_collection_c
 
-  subroutine evaporate_sublimate_precip_c(qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
-       cld_frac_r, qv_sat_l, ab, epsr, qv, qr2qv_evap_tend, nr_evap_tend) bind(C)
-    use micro_p3, only: evaporate_sublimate_precip
+  subroutine evaporate_rain_c(qr_incld,qc_incld,nr_incld,qi_incld, &
+       cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+       ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt,&
+       qr2qv_evap_tend,nr_evap_tend) bind(C)
+    use micro_p3, only: evaporate_rain
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
-        cld_frac_r, qv_sat_l, ab, epsr, qv
+    real(kind=c_real), value, intent(in) :: qr_incld,qc_incld,nr_incld,qi_incld, &
+         cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+         ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt
+
     real(kind=c_real), intent(out) :: qr2qv_evap_tend, nr_evap_tend
 
-    call evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
-       cld_frac_r, qv_sat_l, ab, epsr, qv, qr2qv_evap_tend, nr_evap_tend)
-  end subroutine evaporate_sublimate_precip_c
+    call evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld, &
+       cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+       ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt,&
+       qr2qv_evap_tend,nr_evap_tend)
+  end subroutine evaporate_rain_c
 
   subroutine  update_prognostic_liquid_c(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend,nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, &
        qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner, latent_heat_vapor, dt, th_atm, qv, qc, nc, qr, nr) bind(C)
@@ -855,7 +863,8 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
  end subroutine p3_main_part1_c
 
  subroutine p3_main_part2_c(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
-       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, &
+       ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
        ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, &
@@ -870,7 +879,7 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
    real(kind=c_real), value, intent(in) :: dt, inv_dt
 
    real(kind=c_real), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
-        inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r
+        inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev
 
    real(kind=c_real), intent(inout), dimension(kts:kte) :: T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, &
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, &
@@ -884,7 +893,7 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
    real(kind=c_real), dimension(kts:kte,49) :: p3_tend_out
 
    call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
-        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
+        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
         qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
         ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, &

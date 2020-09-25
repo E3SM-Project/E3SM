@@ -135,6 +135,10 @@ struct Functions
     view_2d<const Spack> dpres;
     // Exner expression
     view_2d<const Spack> exner;
+    // qv from previous step [kg/kg]
+    view_2d<const Spack> qv_prev;
+    // T from previous step [K]
+    view_2d<const Spack> t_prev;
   };
 
   // This struct stores diagnostic outputs computed by P3.
@@ -637,14 +641,33 @@ struct Functions
                                   const Spack& ni_incld, Spack& ni_selfcollect_tend,
                                   const Smask& context = Smask(true));
 
+  // helper fn for evaporate_rain
+  KOKKOS_FUNCTION
+  static void rain_evap_tscale_weight(const Spack& dt_over_tau,
+				      Spack& weight,
+				      const Smask& context=Smask(true));
+
+  // helper fn for evaporate_rain
+  KOKKOS_FUNCTION
+  static void rain_evap_equilib_tend(const Spack& A_c,const Spack& ab,
+				     const Spack& tau_eff,const Spack& tau_r,
+				     Spack& tend,const Smask& context=Smask(true));
+
+  // helper fn for evaporate_rain
+  KOKKOS_FUNCTION
+  static void rain_evap_instant_tend(const Spack& ssat_r, const Spack& ab,
+				     const Spack& tau_r,
+				     Spack& tend, const Smask& context=Smask(true));
+  
   // TODO (comments)
   KOKKOS_FUNCTION
-  static void evaporate_sublimate_precip(const Spack& qr_incld, const Spack& qc_incld,
-					 const Spack& nr_incld, const Spack& qi_incld,
-					 const Spack& cld_frac_l, const Spack& cld_frac_r,
-					 const Spack& qv_sat_l, const Spack& ab, const Spack& epsr,
-					 const Spack& qv, Spack& qr2qv_evap_tend, Spack& nr_evap_tend,
-                                         const Smask& context = Smask(true));
+  static void evaporate_rain(const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qi_incld,
+			     const Spack& cld_frac_l, const Spack& cld_frac_r, const Spack& qv, const Spack& qv_prev,
+			     const Spack& qv_sat_l, const Spack& qv_sat_i, const Spack& ab, const Spack& abi,
+			     const Spack& epsr, const Spack & epsi_tot, const Spack& t, const Spack& t_prev,
+			     const Spack& latent_heat_sublim, const Spack& dqsdt, const Scalar& dt,
+			     Spack& qr2qv_evap_tend, Spack& nr_evap_tend,
+			     const Smask& context = Smask(true));
 
   //get number and mass tendencies due to melting ice
   KOKKOS_FUNCTION
@@ -831,6 +854,8 @@ struct Functions
     const uview_1d<const Spack>& cld_frac_i,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
+    const uview_1d<const Spack>& qv_prev,
+    const uview_1d<const Spack>& t_prev,
     const uview_1d<Spack>& T_atm,
     const uview_1d<Spack>& rho,
     const uview_1d<Spack>& inv_rho,
@@ -968,7 +993,7 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_rain_sed_impl.hpp"
 # include "p3_rain_imm_freezing_impl.hpp"
 # include "p3_get_time_space_phys_variables_impl.hpp"
-# include "p3_evaporate_sublimate_precip_impl.hpp"
+# include "p3_evaporate_rain_impl.hpp"
 # include "p3_update_prognostics_impl.hpp"
 # include "p3_ice_collection_impl.hpp"
 # include "p3_ice_deposition_sublimation_impl.hpp"

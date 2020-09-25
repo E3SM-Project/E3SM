@@ -45,7 +45,7 @@ if (NOT CUDA_BUILD)
     p3_rain_imm_freezing.cpp
     p3_droplet_self_coll.cpp
     p3_update_prognostics.cpp
-    p3_evaporate_sublimate_precip.cpp
+    p3_evaporate_rain.cpp
     p3_impose_max_total_ni.cpp
     p3_calc_liq_relaxation_timescale.cpp
     p3_ice_relaxation_timescale.cpp

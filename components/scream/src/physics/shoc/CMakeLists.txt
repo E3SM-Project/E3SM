@@ -18,6 +18,7 @@ set(SHOC_SRCS
   shoc_diag_second_moments_srf.cpp
   shoc_diag_second_moments_ubycond.cpp
   shoc_pblintd_init_pot.cpp
+  shoc_check_tke.cpp
 )
 
 set(SHOC_HEADERS
@@ -48,4 +49,3 @@ target_link_libraries(shoc physics_share scream_share ${SCREAM_TPL_LIBRARIES})
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
-
