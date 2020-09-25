@@ -391,8 +391,8 @@ Default: Defined in namelist_defaults.xml
 <!-- use_sections -->
 
 <entry id="config_use_dynamics" type="logical"
-        category="use_sections" group="use_sections">
-If true calculate the sea ice dynamics.
+	category="use_sections" group="use_sections">
+If true calculate dynamics.
 
 Valid values: true or .false
 Default: Defined in namelist_defaults.xml
@@ -431,7 +431,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_prescribed_ice" type="logical"
-        category="use_sections" group="use_sections">
+	category="use_sections" group="use_sections">
 If true use prescribed ice mode.
 
 Valid values: true or .false
@@ -439,104 +439,11 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_use_prescribed_ice_forcing" type="logical"
-        category="use_sections" group="use_sections">
-If true use prescribed ice mode streams forcing system.
+	category="use_sections" group="use_sections">
+If true use prescribed ice mode forcing through the MPAS streams system.
 
 Valid values: true or .false
 Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- prescribed_mode -->
-
-<entry id="stream_fldvarname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-ifrac variable name on sst/ifrac dataset
-
-</entry>
-
-<entry id="stream_fldfilename" type="char*256(400)"
-       category="prescribed_mode" group="prescribed_mode"
-       input_pathname="stream" >
-file name containing sst/ifrac data
-
-Valid values: Path to a file.
-</entry>
-
-<entry id="stream_domtvarname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode">
-domain file: time-dim var name
-
-</entry>
-
-<entry id="stream_domxvarname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-domain file: x-dim var name
-
-Default: lon
-</entry>
-
-<entry id="stream_domyvarname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-domain file: y-dim varname
-
-Default: lat
-</entry>
-
-<entry id="stream_domareaname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-domain file: area varname
-
-Default: area
-</entry>
-
-<entry id="stream_dommaskname" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-domain file: mask varname
-
-Default: mask
-</entry>
-
-<entry id="stream_domfilename" type="char*256"
-       category="prescribed_mode" group="prescribed_mode"
-       input_pathname="stream" >
-domain file name
-
-</entry>
-
-<entry id="stream_mapread" type="char*256"
-       category="prescribed_mode" group="prescribed_mode" >
-Map file to read to map stream data to domain data
-
-Default: NOT_SET
-</entry>
-
-<entry id="stream_year_first" type="integer"
-       category="prescribed_mode" group="prescribed_mode" >
-first year in stream to use
-
-Default: 1
-</entry>
-
-<entry id="stream_year_last" type="integer"
-       category="prescribed_mode" group="prescribed_mode" >
-Last year in stream to use
-
-Default: 1
-</entry>
-
-<entry id="model_year_align" type="integer"
-       category="prescribed_mode" group="prescribed_mode" >
-Align stream_year_first with this model year
-
-Default: 1
-</entry>
-
-<entry id="prescribed_ice_fill" type="logical"
-       category="prescribed_mode" group="prescribed_mode" >
-true => pice data fill required
-
-Default: FALSE
 </entry>
 
 
