@@ -222,7 +222,9 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
   static void run_bfb()
   {
     SHOCLinearInterpData f90_data[] = {
-      // TODO
+      //                   shcol, nlev(km1), nlevi(km2), minthresh
+      SHOCLinearInterpData(10, 72, 71, 1e-15),
+      SHOCLinearInterpData(10, 71, 72, 1e-15),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCLinearInterpData);
@@ -235,7 +237,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     SHOCLinearInterpData cxx_data[] = {
-      // TODO
+      SHOCLinearInterpData(f90_data[0]),
+      SHOCLinearInterpData(f90_data[1]),
     };
 
     // Assume all data is in C layout
