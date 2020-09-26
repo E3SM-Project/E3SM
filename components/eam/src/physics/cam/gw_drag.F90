@@ -28,7 +28,7 @@ module gw_drag
   use cam_abortutils,    only: endrun
 
   use ref_pres,      only: do_molec_diff, ntop_molec, nbot_molec
-  use physconst,     only: cpair
+  use physconst,     only: cpair, gravit
 
   ! These are the actual switches for different gravity wave sources.
   use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect
@@ -686,7 +686,17 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   lchnk = state1%lchnk
   ncol  = state1%ncol
 
+!!!!! OG does it need SE or enthalpy?
+!original
   dse = state1%s(:ncol,:)
+!since
+!          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+!                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+!redefine
+!  do k=1,pver
+!  dse(:ncol,k) = state1%s(:ncol,k) - gravit*state1%zm(:ncol,k) - state1%phis(:ncol)
+!  enddo
+
   t = state1%t(:ncol,:)
   u = state1%u(:ncol,:)
   v = state1%v(:ncol,:)
@@ -886,13 +896,23 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
         vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
         ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+
+!!!!!! OG redefine ptend%s to conserve TE
+!!!!!! gw only uses ptend%u,v, no heat flx
+#if 0
         ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
         ttgw(:,k) = ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+#else
+        ptend%s(:ncol,k) =   -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
+             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+        ttgw(:,k) = ptend%s(:ncol,k) 
+#endif
         ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
+
      end do
 
      do m = 1, pcnst

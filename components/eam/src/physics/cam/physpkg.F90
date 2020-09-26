@@ -2019,6 +2019,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
     real(r8) :: flx_cnd(pcols)
     real(r8) :: flx_heat(pcols)
+    real(r8) :: flx_vap(pcols)
     type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
     real(r8) :: zero_tracers(pcols,pcnst)
 
@@ -2341,6 +2342,16 @@ end if
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
+
+    !sum it
+flx_vap(:ncol) = 0.0
+do k = 1, pver
+do i = 1, ncol 
+flx_vap(i) = flx_vap(i) + ptend%q(i,k,1)*state%pdel(i,k)/gravit
+enddo
+enddo
+
+
     call physics_update(state, ptend, ztodt, tend)
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
@@ -2361,7 +2372,11 @@ end if
 
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
+!!!!! OG original, flx_vap is set to zero but it is not correct, zm modifies
+!ptend%q(1)
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
+!new
+!    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, flx_vap, flx_cnd, snow_dp, zero)
 
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
@@ -2375,6 +2390,7 @@ end if
 
     call physics_update(state, ptend, ztodt, tend)
 
+!!!!! OG prec_sh is obtained from pbuf BEFORE call to conv_shallow?
     flx_cnd(:ncol) = prec_sh(:ncol) + rliq2(:ncol)
     call check_energy_chng(state, tend, "convect_shallow", nstep, ztodt, zero, flx_cnd, snow_sh, zero)
 

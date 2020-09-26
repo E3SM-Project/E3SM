@@ -1172,7 +1172,11 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! heating (cooling) and moistening due to evaporation 
 ! - latent heat of vaporization for precip production has already been accounted for
 ! - snow is contained in prec
-          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+
+!!!!!!OG original does not have +latice
+!          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+!!!!! new
+          tend_s(i,k)   =-evpprec(i)*(latvap+latice) + ntsnprd(i,k)*latice
           tend_q(i,k) = evpprec(i)
        end do
     end do

@@ -601,6 +601,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
      ptend_loc%u(:ncol,:pver) = wind_tends(:ncol,:pver,1)
      ptend_loc%v(:ncol,:pver) = wind_tends(:ncol,:pver,2)
+
+!!!!! OG this routine is active and it leads to changes in ptend%s computed with 
+!!!!! vapor and liq flx
      ptend_loc%s(:ncol,:pver) = seten(:ncol,:pver)  
 
      call physics_ptend_sum(ptend_loc,ptend_all, ncol)

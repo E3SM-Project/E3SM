@@ -2231,6 +2231,9 @@ end subroutine clubb_init_cnst
       enddo
      
       ! Take into account the surface fluxes of heat and moisture
+!!!!!!OG cam_in is (in) only
+!!!!!!does this sum old fluxes, not clubb fluxes, into TE?
+!!!!!!hdtime=host dtime
       te_b(i) = te_b(i)+(cam_in%shf(i)+(cam_in%cflx(i,1))*(latvap+latice))*hdtime
 
       ! Limit the energy fixer to find highest layer where CLUBB is active
