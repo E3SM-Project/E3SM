@@ -16,6 +16,7 @@ module physpkg
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
   use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
+  use physics_types,    only: physics_almost_update, physics_finish_update
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
        physics_type_alloc, physics_ptend_dealloc,&
@@ -1883,6 +1884,7 @@ subroutine tphysbc (ztodt,               &
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
     use time_manager,    only: is_first_step, get_nstep
     use convect_shallow, only: convect_shallow_tend
+    use check_energy,    only: check_energy_save_local_te
     use check_energy,    only: check_energy_chng, check_energy_fix, &
                                check_qflx, check_water, check_prect, & 
                                check_energy_timestep_init, &
@@ -2067,6 +2069,8 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+    real(r8) :: teloc1(pcols,pver)    
+    real(r8) :: teloc2(pcols,pver)    
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2332,6 +2336,12 @@ end if
     ! Since the PBL doesn't pass constituent perturbations, they
     ! are zeroed here for input to the moist convection routine
     !
+
+!!!!OG compute te before
+
+    call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc1)
+
+
     call t_startf ('convect_deep_tend')
     call convect_deep_tend(  &
          cmfmc,      cmfcme,             &
@@ -2342,7 +2352,7 @@ end if
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
-
+#if 0
     !sum it
 flx_vap(:ncol) = 0.0
 do k = 1, pver
@@ -2350,9 +2360,25 @@ do i = 1, ncol
 flx_vap(i) = flx_vap(i) + ptend%q(i,k,1)*state%pdel(i,k)/gravit
 enddo
 enddo
+#endif
+
+!    call physics_update(state, ptend, ztodt, tend)
+    call physics_almost_update(state, ptend, ztodt, tend)
+    call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc2)
+!now difference teloc2 - teloc1 has dTE, update ptend%s with it
+    do k = 1, pver
+    do i = 1, ncol
+       ptend%s(i,k) = teloc2(i,k) - teloc1(i,k)
+    enddo
+    enddo
+    call physics_finish_update(state, ptend, ztodt, tend)
+!and check again
+    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, zero, zero, zero)
 
 
-    call physics_update(state, ptend, ztodt, tend)
+
+
+
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2370,6 +2396,8 @@ enddo
       call pbuf_get_field(pbuf, snow_str_idx, snow_str_sc, col_type=col_type_subcol)
     end if
 
+
+#if 0
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
 !!!!! OG original, flx_vap is set to zero but it is not correct, zm modifies
@@ -2377,6 +2405,7 @@ enddo
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
 !new
 !    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, flx_vap, flx_cnd, snow_dp, zero)
+#endif
 
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection

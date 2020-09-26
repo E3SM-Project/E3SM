@@ -50,6 +50,7 @@ module check_energy
   public :: check_energy_init      ! initialization of module
   public :: check_energy_timestep_init  ! timestep initialization of energy integrals and cumulative boundary fluxes
   public :: check_energy_chng      ! check changes in integrals against cumulative boundary fluxes
+  public :: check_energy_save_local_te
   public :: check_energy_gmean     ! global means of physics input and output total energy
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
@@ -355,7 +356,122 @@ end subroutine check_energy_get_integrals
 
   end subroutine check_energy_timestep_init
 
+
+
+
+
 !===============================================================================
+ subroutine check_energy_save_local_te(state, tend, name, nstep, ztodt, teloc)
+    use cam_history,       only: outfld
+    type(physics_state)    , intent(inout) :: state
+    type(physics_tend )    , intent(inout) :: tend
+    character*(*),intent(in) :: name               ! parameterization name for
+    integer , intent(in   ) :: nstep               ! current timestep number
+    real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time
+    real(r8), intent(inout) :: teloc(pcols,pver)
+
+    real(r8) :: ke(state%ncol)                     ! vertical integral of
+    real(r8) :: se(state%ncol)                     ! vertical integral of static
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water
+    real(r8) :: te(state%ncol)                     ! vertical integral of total
+
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+
+    integer lchnk                                  ! chunk identifier
+    integer ncol                                   ! number of atmospheric
+    integer  i,k                                   ! column, level indices
+    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    integer :: ixrain
+    integer :: ixsnow
+!-----------------------------------------------------------------------
+    lchnk = state%lchnk
+    ncol  = state%ncol
+    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('check_energy....')
+    end if
+
+    ! Compute vertical integrals of dry static energy and water (vapor, liquid,
+    ! ice)
+    ke = 0._r8
+    se = 0._r8
+    wv = 0._r8
+    wl = 0._r8
+    wr = 0._r8
+    teloc = 0.0
+
+    do k = 1, pver
+       do i = 1, ncol
+          ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
+          se(i) = se(i) + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
+
+          teloc (i, k) = 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit &
+                       + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit &
+                       + state%q(i,k,1       )*state%pdel(i,k)/gravit &
+                       + (latvap+latice)*( state%q(i,k,1)*state%pdel(i,k)/gravit ) 
+
+       end do
+    end do
+
+!ignore bc term as we want only difference for teloc
+    do i = 1, ncol
+       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+    end do
+
+    if (ixcldliq > 1  .and.  ixcldice > 1) then
+       do k = 1, pver
+          do i = 1, ncol
+             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
+
+             teloc(i,k) = teloc(i,k) + latice*state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
+
+          end do
+       end do
+    end if
+
+    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+
+             teloc(i,k) = teloc(i,k) + latice*state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+
+          end do
+       end do
+    end if
+
+    ! Compute vertical integrals of frozen static energy and total water.
+    do i = 1, ncol
+!!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
+       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
+    end do
+
+!!!!divide by cp here
+!!!    teloc=teloc/cpair
+
+end subroutine check_energy_save_local_te
+
+
+
+
+
+
+
+
+
+
 
   subroutine check_energy_chng(state, tend, name, nstep, ztodt,        &
        flx_vap, flx_cnd, flx_ice, flx_sen)

@@ -30,6 +30,8 @@ module physics_types
 ! Public interfaces
 
   public physics_update_main
+  public physics_almost_update
+  public physics_finish_update
   public physics_state_check ! Check state object for invalid data.
   public physics_ptend_reset
   public physics_ptend_init
@@ -200,6 +202,373 @@ contains
     end do
 
   end subroutine physics_type_alloc
+
+
+
+
+!===============================================================================
+  subroutine physics_almost_update(state, ptend, dt, tend)
+    use shr_sys_mod,  only: shr_sys_flush
+    use constituents, only: cnst_get_ind, cnst_mw
+    use scamMod,      only: scm_crm_mode, single_column
+    use phys_control, only: phys_getopts
+    use physconst,    only: physconst_update ! Routine which updates physconst
+    use ppgrid,       only: begchunk, endchunk
+!------------------------------Arguments--------------------------------
+    type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
+    type(physics_state), intent(inout)  :: state   ! Physics state variables
+    real(r8), intent(in) :: dt                     ! time step
+    type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies
+    integer :: i,k,m                               ! column,level,constituent
+    integer :: ixcldice, ixcldliq                  ! indices for CLDICE and
+    integer :: ixnumice, ixnumliq
+    integer :: ixnumsnow, ixnumrain
+    integer :: ncol                                ! number of columns
+    character*40 :: name    ! param and tracer name for qneg3
+    integer :: ixo, ixo2, ixh, ixh2, ixn    ! indices for O, O2, H2, and N
+    real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+    real(r8),allocatable :: rairv_loc(:,:,:)
+
+    ! PERGRO limits cldliq/ice for macro/microphysics:
+    character(len=24), parameter :: pergro_cldlim_names(4) = &
+         (/ "stratiform", "cldwat    ", "micro_mg  ", "macro_park" /)
+
+    ! cldliq/ice limits that are always on.
+    character(len=24), parameter :: cldlim_names(2) = &
+         (/ "convect_deep", "zm_conv_tend" /)
+
+    ! Whether to do validation of state on each call.
+    logical :: state_debug_checks
+
+    if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
+       ptend%name  = "ptend_return"
+       ptend%psetcols = 0
+       return
+    end if
+
+    if (state%psetcols /= ptend%psetcols) then
+       call endrun('ERROR in .... ptend%name='//trim(ptend%name) &
+            //': state and ptend must have the same number of psetcols.')
+    end if
+    if (present(tend)) then
+       if (state%psetcols /= tend%psetcols) then
+          call endrun('ERROR in ....ptend%name='//trim(ptend%name) &
+               //': state and tend must have the same number of psetcols.')
+       end if
+    end if
+
+    call t_startf ('physics_almost')
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('physics_.....subcolumns are turned on')
+    end if
+    if (state%psetcols == pcols) then
+       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
+       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rair
+    else
+       call endrun('physics_ ... subcolumns are turned on')
+    end if
+
+    !-----------------------------------------------------------------------
+    call phys_getopts(state_debug_checks_out=state_debug_checks)
+
+    ncol = state%ncol
+
+    ! Update u,v fields
+    if(ptend%lu) then
+       do k = ptend%top_level, ptend%bot_level
+          state%u  (:ncol,k) = state%u  (:ncol,k) + ptend%u(:ncol,k) * dt
+          if (present(tend)) &
+               tend%dudt(:ncol,k) = tend%dudt(:ncol,k) + ptend%u(:ncol,k)
+       end do
+    end if
+
+    if(ptend%lv) then
+       do k = ptend%top_level, ptend%bot_level
+          state%v  (:ncol,k) = state%v  (:ncol,k) + ptend%v(:ncol,k) * dt
+          if (present(tend)) &
+               tend%dvdt(:ncol,k) = tend%dvdt(:ncol,k) + ptend%v(:ncol,k)
+       end do
+    end if
+
+   ! Update constituents, all schemes use time split q: no tendency kept
+    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+    ! Check for number concentration of cloud liquid and cloud ice (if not
+    ! present
+    ! the indices will be set to -1)
+    call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
+    call cnst_get_ind('NUMLIQ', ixnumliq, abort=.false.)
+    call cnst_get_ind('NUMRAI', ixnumrain, abort=.false.)
+    call cnst_get_ind('NUMSNO', ixnumsnow, abort=.false.)
+    do m = 1, pcnst
+       if(ptend%lq(m)) then
+          do k = ptend%top_level, ptend%bot_level
+             state%q(:ncol,k,m) = state%q(:ncol,k,m) + ptend%q(:ncol,k,m) * dt
+          end do
+
+          ! now test for mixing ratios which are too small
+          ! don't call qneg3 for number concentration variables
+          if (m /= ixnumice  .and.  m /= ixnumliq .and. &
+              m /= ixnumrain .and.  m /= ixnumsnow ) then
+             name = trim(ptend%name) // '/' // trim(cnst_name(m))
+!!== KZ_WATCON 
+             if(use_mass_borrower) then
+                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver,m, m, qmin(m), state%q(1,1,m),.False.)
+                call massborrow(trim(name), state%lchnk, ncol, state%psetcols,m, m, qmin(m), state%q(1,1,m), state%pdel)
+             else
+                call qneg3(trim(name), state%lchnk, ncol, state%psetcols, pver,m, m, qmin(m), state%q(1,1,m),.True.)
+             end if
+!!== KZ_WATCON 
+          else
+             do k = ptend%top_level, ptend%bot_level
+                ! checks for number concentration
+                state%q(:ncol,k,m) = max(1.e-12_r8,state%q(:ncol,k,m))
+                state%q(:ncol,k,m) = min(1.e10_r8,state%q(:ncol,k,m))
+             end do
+          end if
+       end if
+    end do
+
+    if (ixcldliq > 1) then
+       if(ptend%lq(ixcldliq)) then
+#ifdef PERGRO
+          if ( any(ptend%name == pergro_cldlim_names) ) &
+               call state_cnst_min_nz(1.e-12_r8, ixcldliq, ixnumliq)
+#endif
+          if ( any(ptend%name == cldlim_names) ) &
+               call state_cnst_min_nz(1.e-36_r8, ixcldliq, ixnumliq)
+       end if
+    end if
+
+    if (ixcldice > 1) then
+       if(ptend%lq(ixcldice)) then
+#ifdef PERGRO
+          if ( any(ptend%name == pergro_cldlim_names) ) &
+               call state_cnst_min_nz(1.e-12_r8, ixcldice, ixnumice)
+#endif
+          if ( any(ptend%name == cldlim_names) ) &
+               call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
+       end if
+    end if
+
+
+#if 0
+    !-------------------------------------------------------------------------------------------
+    ! Update dry static energy(moved from above for WACCM-X so updating after
+    ! cpairv_loc update)
+    !-------------------------------------------------------------------------------------------
+    if(ptend%ls) then
+       do k = ptend%top_level, ptend%bot_level
+          if (present(tend)) &
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
+! dT = dEn/c_p, so, state%t += ds/c_p.
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
+       end do
+    end if
+#endif
+
+
+#if 0 
+!!!! leave this to the end
+    ! Derive new zi,zm,s if heating or water tendency not 0.
+    if (ptend%ls .or. ptend%lq(1)) then
+      call geopotential_t(state%lnpint, state%lnpmid  ,&
+                          state%pint  , state%pmid    ,&
+                          state%pdel  , state%rpdel   ,&
+                          state%t     , state%q(:,:,1),&
+                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
+                          state%zi    , state%zm      ,&
+                          ncol)
+       do k = ptend%top_level, ptend%bot_level
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+       end do
+    end if
+#endif
+
+    if (state_debug_checks) call physics_state_check(state, ptend%name)
+
+    deallocate(cpairv_loc, rairv_loc)
+
+    ! Deallocate ptend
+#if 0
+    call physics_ptend_dealloc(ptend)
+
+    ptend%name  = "default"
+    ptend%lq(:) = .false.
+    ptend%ls    = .false.
+    ptend%lu    = .false.
+    ptend%lv    = .false.
+    ptend%psetcols = 0
+#endif 
+    call t_stopf ('physics_almost')
+
+
+contains
+    subroutine state_cnst_min_nz(lim, qix, numix)
+      ! Small utility function for setting minimum nonzero
+      ! constituent concentrations.
+
+      ! Lower limit and constituent index
+      real(r8), intent(in) :: lim
+      integer,  intent(in) :: qix
+      ! Number concentration that goes with qix.
+      ! Ignored if <= 0 (and therefore constituent is not present).
+      integer,  intent(in) :: numix
+
+      if (numix > 0) then
+         ! Where q is too small, zero mass and number
+         ! concentration.
+         where (state%q(:ncol,:,qix) < lim)
+            state%q(:ncol,:,qix) = 0._r8
+            state%q(:ncol,:,numix) = 0._r8
+         end where
+      else
+         ! If no number index, just do mass.
+          where (state%q(:ncol,:,qix) < lim)
+             state%q(:ncol,:,qix) = 0._r8
+          end where
+      end if
+
+    end subroutine state_cnst_min_nzd 
+end subroutine physics_almost_update
+
+
+
+
+
+!===============================================================================
+  subroutine physics_finish_update(state, ptend, dt, tend)
+    use shr_sys_mod,  only: shr_sys_flush
+    use constituents, only: cnst_get_ind, cnst_mw
+    use scamMod,      only: scm_crm_mode, single_column
+    use phys_control, only: phys_getopts
+    use physconst,    only: physconst_update ! Routine which updates physconst
+    use ppgrid,       only: begchunk, endchunk
+!------------------------------Arguments--------------------------------
+    type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
+    type(physics_state), intent(inout)  :: state   ! Physics state variables
+    real(r8), intent(in) :: dt                     ! time step
+    type(physics_tend ), intent(inout), optional  :: tend  ! Physics tendencies
+    integer :: i,k,m                               ! column,level,constituent
+    integer :: ncol                                ! number of columns
+    character*40 :: name    ! param and tracer name for qneg3
+    real(r8),allocatable :: cpairv_loc(:,:,:)
+
+    ! PERGRO limits cldliq/ice for macro/microphysics:
+    character(len=24), parameter :: pergro_cldlim_names(4) = &
+         (/ "stratiform", "cldwat    ", "micro_mg  ", "macro_park" /)
+
+    ! cldliq/ice limits that are always on.
+    character(len=24), parameter :: cldlim_names(2) = &
+         (/ "convect_deep", "zm_conv_tend" /)
+
+    ! Whether to do validation of state on each call.
+    logical :: state_debug_checks
+
+    if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
+       ptend%name  = "ptend_return"
+       ptend%psetcols = 0
+       return
+    end if
+
+    if (state%psetcols /= ptend%psetcols) then
+       call endrun('ERROR in .... ptend%name='//trim(ptend%name) &
+            //': state and ptend must have the same number of psetcols.')
+    end if
+    if (present(tend)) then
+       if (state%psetcols /= tend%psetcols) then
+          call endrun('ERROR in ....ptend%name='//trim(ptend%name) &
+               //': state and tend must have the same number of psetcols.')
+       end if
+    end if
+
+    call t_startf ('physics_finish')
+    if (state%psetcols == pcols) then
+       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
+       cpairv_loc(:,:,:) = cpair
+    else
+       call endrun('physics_.....subcolumns are turned on')
+    end if
+
+    !-----------------------------------------------------------------------
+    call phys_getopts(state_debug_checks_out=state_debug_checks)
+
+    ncol = state%ncol
+
+#if 
+    if(ptend%ls) then
+       do k = ptend%top_level, ptend%bot_level
+          if (present(tend)) &
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
+! dT = dEn/c_p, so, state%t += ds/c_p.
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
+       end do
+    end if
+#endif
+
+
+#if 1
+!!!! leave this to the end
+    ! Derive new zi,zm,s if heating or water tendency not 0.
+    if (ptend%ls .or. ptend%lq(1)) then
+      call geopotential_t(state%lnpint, state%lnpmid  ,&
+                          state%pint  , state%pmid    ,&
+                          state%pdel  , state%rpdel   ,&
+                          state%t     , state%q(:,:,1),&
+                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
+                          state%zi    , state%zm      ,&
+                          ncol)
+       do k = ptend%top_level, ptend%bot_level
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+       end do
+    end if
+#endif
+
+    if (state_debug_checks) call physics_state_check(state, ptend%name)
+
+    deallocate(cpairv_loc)
+
+    ! Deallocate ptend
+#if 1
+    call physics_ptend_dealloc(ptend)
+
+    ptend%name  = "default"
+    ptend%lq(:) = .false.
+    ptend%ls    = .false.
+    ptend%lu    = .false.
+    ptend%lv    = .false.
+    ptend%psetcols = 0
+#endif 
+    call t_stopf ('physics_finish')
+
+end subroutine physics_finish_update
+
+
+
+
+
+
+
+
+
+
 !===============================================================================
   subroutine physics_update_main(state, ptend, dt, tend)
 !-----------------------------------------------------------------------
