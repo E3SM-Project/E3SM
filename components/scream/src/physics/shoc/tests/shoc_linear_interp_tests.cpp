@@ -249,7 +249,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      linear_interp_f(d.nlev(), d.nlevi(), d.shcol(), d.x1, d.y1, d.x2, d.minthresh, d.y2);
+      linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.nlev(), d.nlevi(), d.shcol(), d.minthresh);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 

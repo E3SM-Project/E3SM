@@ -153,8 +153,7 @@ void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_se
                                       Real *w_sec_zi, Real *thetal_zi,
                                       Real *wthv_sec_zi, Real *w3);
 
-void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
-                     Int km2, Int ncol, Real minthresh);
+void linear_interp_c(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
@@ -974,7 +973,7 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
   ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views, true);
 }
 
-void linear_interp_f(Int km1, Int km2, Int ncol, Real* x1, Real* y1, Real* x2, Real minthresh, Real* y2)
+void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh)
 {
   // TODO
 }

@@ -134,9 +134,8 @@ struct Functions
     const Int& nlev,
     const uview_1d<Spack>& tke);
 
-  static void linear_interp(
-    const Int& km1, const Int& km2, const Int& ncol, const uview_1d<const Spack>& x1,
-    const uview_1d<const Spack>& y1, const uview_1d<const Spack>& x2, const Spack& minthresh, const uview_1d<Spack>& y2);
+  KOKKOS_FUNCTION
+  static void linear_interp(const uview_1d<const Spack>& x1, const uview_1d<const Spack>& x2, const uview_1d<const Spack>& y1, const uview_1d<Spack>& y2, const Int& km1, const Int& km2, const Int& ncol, const Spack& minthresh);
 }; // struct Functions
 
 } // namespace shoc

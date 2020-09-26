@@ -13,13 +13,13 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::linear_interp(const Int& km1, const Int& km2, const Int& ncol, const uview_1d<const Spack>& x1, const uview_1d<const Spack>& y1, const uview_1d<const Spack>& x2, const Spack& minthresh, const uview_1d<Spack>& y2)
+void Functions<S,D>::linear_interp(const uview_1d<const Spack>& x1, const uview_1d<const Spack>& x2, const uview_1d<const Spack>& y1, const uview_1d<Spack>& y2, const Int& km1, const Int& km2, const Int& ncol, const Spack& minthresh)
 {
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
 }
 
-} // namespace p3
+} // namespace shoc
 } // namespace scream
 
 #endif
