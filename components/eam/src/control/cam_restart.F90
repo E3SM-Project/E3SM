@@ -54,7 +54,7 @@ module cam_restart
 
    ! Filename specifiers for master restart filename
    ! (%c = caseid, $y = year, $m = month, $d = day, $s = seconds in day, %t = number)
-   character(len=nlen) :: rfilename_spec = '%c.cam.r.%y-%m-%d-%s.nc'
+   character(len=nlen) :: rfilename_spec = '%c.eam.r.%y-%m-%d-%s.nc'
 
    logical :: aeres                ! true => write absorptivities/emissivities to restart file
    integer :: nsds = -1            ! Logical unit number for restart pointer file
@@ -103,7 +103,7 @@ subroutine restart_setopts( nsrest, cam_branch_file_in )
   ! Set pointer file name based on instance suffix
   rest_pfile = trim(rest_pfile) // trim(inst_suffix)
 
-  rfilename_spec = '%c.cam' // trim(inst_suffix) //'.r.%y-%m-%d-%s.nc'
+  rfilename_spec = '%c.eam' // trim(inst_suffix) //'.r.%y-%m-%d-%s.nc'
 
   ! Set continuation run flags
   if (nsrest==0) then

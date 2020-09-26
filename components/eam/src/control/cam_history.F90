@@ -272,7 +272,7 @@ module cam_history
   ! Filename specifiers for history, initial files and restart history files
   ! (%c = caseid, $y = year, $m = month, $d = day, $s = seconds in day, %t = tape number)
   !
-  character(len=max_string_len) :: rhfilename_spec = '%c.cam.rh%t.%y-%m-%d-%s.nc' ! history restart
+  character(len=max_string_len) :: rhfilename_spec = '%c.eam.rh%t.%y-%m-%d-%s.nc' ! history restart
   character(len=max_string_len) :: hfilename_spec(ptapes) = (/ (' ', i=1, ptapes) /) ! filename specifyer
 
 
@@ -717,9 +717,9 @@ CONTAINS
         if ( len_trim(hfilename_spec(t)) == 0 )then
           if ( nhtfrq(t) == 0 )then
             ! Monthly files
-            hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
           else
-            hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
           end if
         end if
         !
@@ -1997,7 +1997,7 @@ CONTAINS
     do t=1,mtapes
       if (is_initfile(file_index=t)) then
         ! Initialize filename specifier for IC file
-        hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.i.%y-%m-%d-%s.nc'
+        hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.i.%y-%m-%d-%s.nc'
         nfils(t) = 0
       else if (nflds(t) == 0) then
         nfils(t) = 0
@@ -2223,7 +2223,7 @@ CONTAINS
     nflds(:) = 0
     ! IC history file is to be created, set properties
     if(is_initfile()) then
-      hfilename_spec(ptapes) = '%c.cam' // trim(inst_suffix) // '.i.%y-%m-%d-%s.nc'
+      hfilename_spec(ptapes) = '%c.eam' // trim(inst_suffix) // '.i.%y-%m-%d-%s.nc'
 
       ncprec(ptapes) = pio_double
       ndens (ptapes) = 1
@@ -3768,18 +3768,14 @@ end subroutine print_active_fldlst
     !
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'CAM')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model')
 #if defined (E3SM_SCM_REPLAY)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title',ctitle)
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'logname',logname)
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'host', host)
-    ierr= pio_put_att (tape(t)%File, PIO_GLOBAL, 'Version', &
-         '$Name$')
-    ierr= pio_put_att (tape(t)%File, PIO_GLOBAL, 'revision_Id', &
-         '$Id$')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title','EAM History file information')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'username',logname)
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'hostname', host)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 
@@ -4618,7 +4614,7 @@ end subroutine print_active_fldlst
         !
         if (nfils(t)==0 .or. (restart.and.rgnht(t))) then
           if(restart) then
-            rhfilename_spec = '%c.cam' // trim(inst_suffix) // '.rh%t.%y-%m-%d-%s.nc' 
+            rhfilename_spec = '%c.eam' // trim(inst_suffix) // '.rh%t.%y-%m-%d-%s.nc'
             fname = interpret_filename_spec( rhfilename_spec, number=(t-1))
             hrestpath(t)=fname
           else if(is_initfile(file_index=t)) then

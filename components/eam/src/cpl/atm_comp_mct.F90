@@ -178,7 +178,7 @@ CONTAINS
 
        ! Set filename specifier for restart surface file
        ! (%c=caseid, $y=year, $m=month, $d=day, $s=seconds in day)
-       rsfilename_spec_cam = '%c.cam' // trim(inst_suffix) // '.rs.%y-%m-%d-%s.nc' 
+       rsfilename_spec_cam = '%c.eam' // trim(inst_suffix) // '.rs.%y-%m-%d-%s.nc'
 
        ! Determine attribute vector indices
 
