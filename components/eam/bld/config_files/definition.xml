@@ -62,6 +62,9 @@ Switch to turn on/off CLUBB_SGS using clubb to calculate deep: 0 => no, 1 => yes
 <entry id="clubb_do_adv" valid_values="0,1" value="0">
 Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 </entry>
+<entry id="clubb_single_prec" valid_values="0,1" value="0">
+Switch to turn on/off CLUBB single : 0 => double precision, 1 => single precision
+</entry>
 <entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  (Holtslag, Boville, and Rasch), clubb_sgs.

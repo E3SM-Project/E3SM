@@ -128,11 +128,11 @@ OPTIONS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection)
      -co2_cycle         This option is meant to be used with the -ccsm_seq option.  It modifies the
-                        EAM configuration by increasing the number of advected constituents by 4.
+                        CAM configuration by increasing the number of advected constituents by 4.
      -comp_intf         Specify the component interfaces [mct | esmf] (default: mct).
      -cppdefs <string>  A string of user specified CPP defines.  Appended to
                         Makefile defaults.  E.g. -cppdefs '-DVAR1 -DVAR2'
-     -dyn <name>        Build EAM with specified dynamical core [eul | sld | fv | se].
+     -dyn <name>        Build CAM with specified dynamical core [eul | sld | fv | se].
      -edit_chem_mech    Invokes CAMCHEM_EDITOR to allow the user to edit the chemistry mechanism file
      -hgrid <name>      Specify horizontal grid.  Use nlatxnlon for spectral grids;
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
@@ -617,7 +617,7 @@ EOF
 if ($print>=2) { print "EAM build directory: $cam_bld$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# EAM install directory.
+# CAM install directory.
 my $cam_exedir;
 if (defined $opts{'cam_exedir'}) {
     $cam_exedir = absolute_path($opts{'cam_exedir'});
@@ -633,11 +633,11 @@ if ($cam_build) {
 	$cfg_ref->set('cam_exedir', $cam_exedir);
     } else {
 	die <<"EOF";
-** Could not create the specified EAM installation directory: $cam_exedir
+** Could not create the specified CAM installation directory: $cam_exedir
 EOF
     }
 
-    if ($print>=2) { print "EAM executable will be created in: $cam_exedir$eol"; }
+    if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
 }
 
 if (defined $opts{'caseroot'}) {
@@ -799,7 +799,7 @@ if (defined $opts{'dyn'}) {
     } else {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
     }
-    if (defined $opts{'dyn_target'}) {
+    if (defined $opts{'dyn_target'}) {                                                        
         #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
         if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
             # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
@@ -999,7 +999,7 @@ EOF
 
 if (defined $opts{'clubb_opts'}) {
      my @clubb_temp_opts = split /,/, $opts{'clubb_opts'};
-     foreach (@clubb_temp_opts) {
+     foreach (@clubb_temp_opts) {     
         $cfg_ref->set("$_", '1');
      }
 }
@@ -1139,11 +1139,11 @@ if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # RCE mode (radiative-convective equilibrium)
-# This provides a flag to indicate that we are running an RCE case. This is normally used
-# along with the aquaplanet flag, but could be used with an idealized land surface.
+# This provides a flag to indicate that we are running an RCE case. This is normally used 
+# along with the aquaplanet flag, but could be used with an idealized land surface. 
 # This flag is mainly used to set the initial condition files that matches the grid.
 # this flag is not sufficient to run an RCE case, as many namelist variables need to be set
-# by the use case file to use idleaized ozone, disable rotation, and homogenize
+# by the use case file to use idleaized ozone, disable rotation, and homogenize 
 # radiation, albedo, SST, and solar zenith angle.
 my $rce = 0;
 # user override
@@ -1160,7 +1160,7 @@ my $ocn_pkg = 'docn';
 # If the physics package is adiabatic, or ideal, change the default
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ocn_pkg = 'socn';
-}
+} 
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'ocn'}) {
@@ -1172,7 +1172,7 @@ $cfg_ref->set('ocn', $ocn_pkg);
 if ($print>=2) { print "Ocean package: $ocn_pkg$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Land model
+# Land model 
 my $lnd_pkg = 'clm';
 # If the physics package is adiabatic, or ideal, change the default
 if ($phys_pkg =~ m/ideal|adiabatic/) {
@@ -1180,7 +1180,7 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 }
 elsif ($ocn_pkg eq 'aquaplanet') {
     $lnd_pkg = 'slnd';
-}
+} 
 
 # If building for CESM then do nothing for land component
 if ($ccsm_seq) {
@@ -1271,7 +1271,7 @@ if ($scam eq 'ON' and $dyn_pkg ne 'se') {
 EOF
 }
 
-if ($print>=2) { print "EAM single column mode (SCAM): $scam$eol"; }
+if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP
@@ -1307,12 +1307,12 @@ if (defined $opts{'use_MMF'}) {
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
     $cfg_ref->set('crm', $opts{'crm'});
-    # Check that model is not using threading for the MMF
+    # Check that model is not using threading for the MMF 
     if ($nthreads > 1) {
      die <<"EOF";
 **  ERROR: MMF mode may only use single thread
 **         nthreads set to $nthreads
-**
+**         
 EOF
     }
 }
@@ -1390,7 +1390,7 @@ else {
         # adiabatic physics as well as cam5.  We may change this to 32 once
         # IC files are available.
         $cfg_ref->set('nlev', 30);
-
+        
 	if ($phys_pkg eq 'cam3' or $phys_pkg eq 'cam4') {
 	    $cfg_ref->set('nlev', 26);
 	}
@@ -1412,7 +1412,7 @@ EOF
 if ($print>=2) { print "Number of vertical levels: $nlev$eol"; }
 
 #------------------------------------------------------------------------------------------------
-# chemistry preprocessor....
+# chemistry preprocessor.... 
 #  -- avoid using the chem_preprocessor unless it's required
 #------------------------------------------------------------------------------------------------
 my $chem_nadv = 0;
@@ -1427,7 +1427,7 @@ if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg eq 'trop_mam4_mom')) {
 }
 
 if (!$prog_species) {
-  $chem_src_dir = "$cam_root/components/eam/src/chemistry/pp_$chem_pkg";
+  $chem_src_dir = "$cam_root/components/cam/src/chemistry/pp_$chem_pkg";
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
 }
 
@@ -1437,7 +1437,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
     my $edit_chem_mech = $cfg_ref->get('edit_chem_mech');
     my $usr_mech_infile = $cfg_ref->get('usr_mech_infile');
     my $prog_species = $cfg_ref->get('prog_species');
-
+    
     my $customize = $prog_species || $edit_chem_mech || $usr_mech_infile;
 
     if ($customize) {
@@ -1447,7 +1447,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 	my $fc_type;
         if (defined $ENV{COMPILER}) {
 	    $fc_type = $ENV{COMPILER};
-	} elsif (defined $opts{'fc_type'}) {
+	} elsif (defined $opts{'fc_type'}) { 
 	    $fc_type = $opts{'fc_type'};
 	}
 	($chem_nadv) = chem_preprocess($cfg_ref,$print,$fc_type);
@@ -1456,7 +1456,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 	copy("$chem_src_dir/chem_mech.doc",$cam_bld) or die "copy failed $! \n";
 	copy("$chem_src_dir/chem_mech.in" ,$cam_bld) or die "copy failed $! \n";
         ($chem_nadv) = chem_number_adv($chem_src_dir);
-    }
+    } 
 
 }
 if ($chem_pkg =~ '_mam3') {
@@ -1527,7 +1527,7 @@ else {
         # Chemistry package:
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
-
+  
 
         # UNICON tracers
         if ($unicon) {
@@ -1541,7 +1541,7 @@ else {
     $nadv += $ttrac_nadv;
     if ($print>=2 and $ttrac_nadv) { print "Advected constituents added by test tracer package: $ttrac_nadv$eol"; }
 
-    if ($age_of_air_trcs eq "ON") {
+    if ($age_of_air_trcs eq "ON") { 
 	$nadv += 4;
         if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
     }
@@ -1554,20 +1554,20 @@ if ($print>=2) { print "Total advected constituents: $nadv$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Setup the CICE build
-# cice setup is controlled by cime. The block in eam's configure is remove
+# cice setup is controlled by cime. The block in cam's configure is remove
 
 #-----------------------------------------------------------------------------------------------
 # Makefile configuration #######################################################################
 #-----------------------------------------------------------------------------------------------
 
 #-----------------------------------------------------------------------------------------------
-# Name of EAM executable.
+# Name of CAM executable.
 if (defined $opts{'cam_exe'}) {
     $cfg_ref->set('cam_exe', $opts{'cam_exe'});
 }
 my $cam_exe = $cfg_ref->get('cam_exe');
 
-if ($print>=2) { print "Name of EAM executable: $cam_exe$eol"; }
+if ($print>=2) { print "Name of CAM executable: $cam_exe$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Set default Fortran and C compilers
@@ -1818,24 +1818,24 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
     if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
-    if (defined $opts{'crm_nx_rad'}) {
-        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad "
+    if (defined $opts{'crm_nx_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
     } else {
-        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx "
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
     }
-    if (defined $opts{'crm_ny_rad'}) {
-        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad "
+    if (defined $opts{'crm_ny_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
     } else {
-        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny "
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
     }
     if ($crm_ny eq 1) {$yes3Dval = 0;}
     my $crm = $cfg_ref->get('crm');
     if    ($crm eq 'sam') {
-        $cfg_cppdefs .= " -DMMF_SAM "
+        $cfg_cppdefs .= " -DMMF_SAM " 
     } elsif ($crm eq 'samxx') {
-        $cfg_cppdefs .= " -DMMF_SAMXX "
+        $cfg_cppdefs .= " -DMMF_SAMXX " 
     }
-
+      
 }
 
 # Configure CAM to produce IOP files for SCAM
@@ -1854,7 +1854,7 @@ if (!$ccsm_seq){
 
 # Resolution parameters for spectral element cubed sphere grids.
 # F2003 definition turns on standard-conforming method of causing edge
-# buffers to overlap. This method works in all EAM compilers, but fails
+# buffers to overlap. This method works in all CAM compilers, but fails
 # on some older compilers used by HOMME standalone.
 if ($dyn_pkg eq 'se') {
     my $csnp = $cfg_ref->get('csnp');
@@ -1900,7 +1900,7 @@ if($dyn_pkg eq 'se'){
     $cfg_cppdefs .= " -DCAM -D_PRIM ";
 }
 
-# -DSPMD only added for CESM build.  The EAM Makefile has a separate SPMD macro.
+# -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
 if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
@@ -1932,7 +1932,7 @@ if ($unicon) { $cfg_cppdefs .= ' -DUSE_UNICON'; }
 # The GPTL configure script in timing/gptl/suggestions may help
 # if modifications are needed here.
 $cfg_cppdefs .= ' -DHAVE_VPRINTF -DHAVE_TIMES -DHAVE_GETTIMEOFDAY -DHAVE_COMM_F2C';
-unless ($target_os eq 'aix' or $target_os =~ 'bg' or $target_os eq 'darwin') {
+unless ($target_os eq 'aix' or $target_os =~ 'bg' or $target_os eq 'darwin') { 
     $cfg_cppdefs .= ' -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC';
 }
 if ($clubb_do_deep == 1) {
@@ -1985,7 +1985,7 @@ if ($cam_build) {
 	if (-f "$nc_lib/../bin/nf-config") {
 	    $nc_ldflags = `$nc_lib/../bin/nf-config --flibs`;
 	    chomp $nc_ldflags;
-	    if ($?) {
+	    if ($?) { 
 		print "Encountered error in nf-config --flibs call.\n";
 		$nc_ldflags = '';
 	    }
@@ -2041,12 +2041,12 @@ if ($cam_build) {
     }
     # if not there check in the netcdf lib directory
     elsif ($nc_lib and (-f "$nc_lib/netcdf.mod"    or -f "$nc_lib/NETCDF.mod")
-                   and (-f "$nc_lib/typesizes.mod" or -f "$nc_lib/TYPESIZES.mod") ) {
+                   and (-f "$nc_lib/typesizes.mod" or -f "$nc_lib/TYPESIZES.mod") ) { 
 	$nc_mod = $nc_lib;
-    }
+    } 
     # then check in the netcdf include directory
     elsif ($nc_inc and (-f "$nc_inc/netcdf.mod"    or -f "$nc_inc/NETCDF.mod")
-                   and (-f "$nc_inc/typesizes.mod" or -f "$nc_inc/TYPESIZES.mod") ) {
+                   and (-f "$nc_inc/typesizes.mod" or -f "$nc_inc/TYPESIZES.mod") ) { 
 	$nc_mod = $nc_inc;
     }
     else {
@@ -2125,7 +2125,7 @@ if ($cam_build) {
 	else {
 	    die <<"EOF";
 ** Cannot find liblapack.a in specified directory: $lapack_libdir
-**
+** 
 ** The LAPACK library directory is determined from the following set of options listed
 ** from highest to lowest precedence:
 ** * by the command-line option -lapack_libdir
@@ -2172,7 +2172,7 @@ if ($cam_build and $spmd eq 'ON') {
     else {
 	die <<"EOF";
 ** Cannot find mpif.h in specified directory: $mpi_inc
-**
+** 
 ** The MPI include directory is determined from the following set of options listed
 ** from highest to lowest precedence:
 ** * by the command-line option -mpi_inc
@@ -2210,7 +2210,7 @@ EOF
     else {
 	die <<"EOF";
 ** Cannot find libmpi.a, libmpi.so or libmpich.a in specified directory: $mpi_lib
-**
+** 
 ** The MPI library directory is determined from the following set of options listed
 ** from highest to lowest precedence:
 ** * by the command-line option -mpi_lib
@@ -2247,7 +2247,7 @@ if ($cam_build and $esmf_libdir) {
     else {
 	die <<"EOF";
 ** Cannot find libesmf.a, libesmf.so, or esmf.mk in specified directory: $esmf_libdir
-**
+** 
 ** The ESMF library directory is determined from the following set of options listed
 ** from highest to lowest precedence:
 ** * by the command-line option -esmf_libdir
@@ -2278,7 +2278,7 @@ if ($cosp) {
     } else
     {
 	$cosp_libdir = "$cam_bld/cosp";
-    }
+    } 
 
     $cfg_ref->set('cosp_libdir', "$cosp_libdir");
 
@@ -2300,7 +2300,7 @@ if ($cosp) {
 
 #-----------------------------------------------------------------------------------------------
 # MCT library.
-# Only build MCT as a separate library if doing a EAM standalone build.
+# Only build MCT as a separate library if doing a CAM standalone build.
 # If -mct_libdir is specified, then check for existing libs and build
 # only if necessary.  Note that separate versions of the lib must be built
 # for parallel and serial use.
@@ -2327,19 +2327,19 @@ if ($cam_build) {
 
     my $ldflags = $cfg_ref->get('ldflags');
     $ldflags .= " -L$mct_libdir/mct -lmct -L$mct_libdir/mpeu -lmpeu ";
-    if ($spmd eq 'OFF') {
+    if ($spmd eq 'OFF') { 
       $ldflags .= " -L$mct_libdir/mpi-serial -lmpi-serial ";
     }
     $cfg_ref->set('ldflags', $ldflags);
-
-    # Check whether the MCT libs already exist.  The MCT configuration here is
+   
+    # Check whether the MCT libs already exist.  The MCT configuration here is 
     # set up to build mct, mpeu, and mpi-serial libs.  So either they all should
     # exist, or non of them should exist.  Otherwise it's an error.
     my $libs_exist = 0;
     my $libs_expected = 2;
-    if (-f "$mct_libdir/mct/libmct.a" or
+    if (-f "$mct_libdir/mct/libmct.a" or 
 	-f "$mct_libdir/mct/libmct.so") {++$libs_exist;}
-    if (-f "$mct_libdir/mpeu/libmpeu.a" or
+    if (-f "$mct_libdir/mpeu/libmpeu.a" or 
 	-f "$mct_libdir/mpeu/libmpeu.so") {++$libs_exist;}
     if ($spmd eq 'OFF') {
 	$libs_expected = 3;
@@ -2357,7 +2357,7 @@ if ($cam_build) {
     else {
 	die <<"EOF";
 ** The MCT build in $mct_libdir is incomplete.  Remove the contents of
-   $mct_libdir and run the EAM configure script again. **
+   $mct_libdir and run the CAM configure script again. **
 EOF
     }
 
@@ -2468,7 +2468,7 @@ EOF
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for eam's cppdefs in ccsm
+my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for cam's cppdefs in ccsm
 
 # Write the filepath file.
 write_filepath("$cam_bld/$fp_filename", $cfg_ref);
@@ -2496,7 +2496,7 @@ if ($print) { print "creating $config_cache_file\n"; }
 # Finished unless testing requested ############################################################
 #-----------------------------------------------------------------------------------------------
 unless ($cam_build and $opts{'test'}) {
-    if ($print) { print "EAM configure done.\n"; }
+    if ($print) { print "CAM configure done.\n"; }
     exit;
 }
 
@@ -2506,7 +2506,7 @@ chdir( $cwd ) || die <<"EOF";
 ** Trouble changing directory back to $cwd
 **
 EOF
-if ($print) { print "EAM configure done.\n"; }
+if ($print) { print "CAM configure done.\n"; }
 exit;
 
 #-----------------------------------------------------------------------------------------------
@@ -2560,11 +2560,11 @@ sub write_filepath
 
     # CESM has a standard source mods location.
     if ($ccsm_seq) {
-	print $fh "$caseroot/SourceMods/src.eam\n";
+	print $fh "$caseroot/SourceMods/src.cam\n";
     }
 
     # offline unit driver (defaults to stub)
-    print $fh "$camsrcdir/eam/src/unit_drivers\n";
+    print $fh "$camsrcdir/cam/src/unit_drivers\n";
 
     # MMF/super-parameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
@@ -2572,19 +2572,19 @@ sub write_filepath
     if (defined $opts{'use_MMF'}) {
 
         # interface and base model code
-        print $fh "$camsrcdir/eam/src/physics/crm\n";
+        print $fh "$camsrcdir/cam/src/physics/crm\n";
 
         # MMF-specific radiation drivers (overrides default drivers that exist
         # in each individual radiation package; done this way to avoid
         # dependency on MMF-specific variables)
         if ($rad eq 'rrtmg') {
-            print $fh "$camsrcdir/eam/src/physics/crm/rrtmg\n";
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmg\n";
         } elsif ($rad eq 'rrtmgp') {
-            print $fh "$camsrcdir/eam/src/physics/crm/rrtmgp\n";
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
         }
 
         if (defined $opts{'use_ECPP'}) {
-            print $fh "$camsrcdir/eam/src/physics/crm/ecpp\n";
+            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
         }
 
         my $crm = $cfg_ref->get('crm');
@@ -2592,25 +2592,25 @@ sub write_filepath
           #####################################################
           ## -crm sam will GLOB directories for CMake
           #####################################################
-          print $fh "$camsrcdir/eam/src/physics/crm/sam\n";
+          print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
           #
           # microphysics
           my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
           if ($MMF_microphysics_scheme eq 'sam1mom') {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_SAM1MOM\n";
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
           } elsif ($MMF_microphysics_scheme eq 'm2005') {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/MICRO_M2005\n";
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
           }
 
           # turbulence closure
-          print $fh "$camsrcdir/eam/src/physics/crm/sam/SGS_TKE\n";
-
+          print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
+          
           # advection scheme
           my $crm_adv = $cfg_ref->get('crm_adv');
           if ($crm_adv eq 'UM5') {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
           } else {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
           }
 
         } elsif ($crm eq 'samxx') {
@@ -2622,7 +2622,7 @@ sub write_filepath
 
     }
 
-    # EAM chemistry, dynamics, physics, control and shared utilities.
+    # CAM chemistry, dynamics, physics, control and shared utilities.
     if ($chem_proc_src) {
         print $fh "$chem_proc_src\n";
     }
@@ -2630,54 +2630,54 @@ sub write_filepath
         print $fh "$chem_src_dir\n";
     }
     if ($chem =~ /_mam/) {
-	print $fh "$camsrcdir/eam/src/chemistry/modal_aero\n";
+	print $fh "$camsrcdir/cam/src/chemistry/modal_aero\n";
     } else {
-	print $fh "$camsrcdir/eam/src/chemistry/bulk_aero\n";
+	print $fh "$camsrcdir/cam/src/chemistry/bulk_aero\n";
     }
-    print $fh "$camsrcdir/eam/src/chemistry/aerosol\n";
-    print $fh "$camsrcdir/eam/src/chemistry/mozart\n";
+    print $fh "$camsrcdir/cam/src/chemistry/aerosol\n";
+    print $fh "$camsrcdir/cam/src/chemistry/mozart\n";
     if ($waccm_phys) {
-	print $fh "$camsrcdir/eam/src/physics/waccm\n";
+	print $fh "$camsrcdir/cam/src/physics/waccm\n";
     }
 
     if ($waccmx) {
-        print $fh "$camsrcdir/eam/src/physics/waccmx\n";
+        print $fh "$camsrcdir/cam/src/physics/waccmx\n";
     }
 
-    print $fh "$camsrcdir/eam/src/chemistry/utils\n";
+    print $fh "$camsrcdir/cam/src/chemistry/utils\n";
 
     # Add source code directories for selected radiation package
     if ($rad eq 'rrtmg') {
-        print $fh "$camsrcdir/eam/src/physics/rrtmg\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_mcica\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_lw\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_sw\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmg\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_mcica\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_lw\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmg/ext/rrtmg_sw\n";
     } elsif ($rad eq 'rrtmgp') {
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte/kernels\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp/kernels\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions/rng\n";
-        print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/examples\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/rte\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/rte/kernels\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/rrtmgp\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/rrtmgp/kernels\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/extensions\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/extensions/rng\n";
+        print $fh "$camsrcdir/cam/src/physics/rrtmgp/external/examples\n";
     } elsif ($rad eq 'camrt') {
-        print $fh "$camsrcdir/eam/src/physics/camrt\n";
+        print $fh "$camsrcdir/cam/src/physics/camrt\n";
     }
 
-    print $fh "$camsrcdir/eam/src/physics/cam\n";
+    print $fh "$camsrcdir/cam/src/physics/cam\n";
     if ($clubb_sgs eq '1') {
-       print $fh "$camsrcdir/eam/src/physics/clubb\n";
-       print $fh "$camsrcdir/eam/src/physics/silhs\n";
+       print $fh "$camsrcdir/cam/src/physics/clubb\n";
+       print $fh "$camsrcdir/cam/src/physics/silhs\n";
     }
 
-    print $fh "$camsrcdir/eam/src/dynamics/$dyn\n";
+    print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
       print $fh "$camsrcdir/homme/src/share\n";
       if ($opts{'dyn_target'} eq 'preqx') {
         print $fh "$camsrcdir/homme/src/preqx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
-      }
+      } 
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
         print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
@@ -2696,25 +2696,25 @@ sub write_filepath
 
     # Parallelization utilies
     if ($dyn eq 'fv' or $cppdefs =~ /MODCM_DP_TRANSPOSE/) {
-	print $fh "$camsrcdir/eam/src/utils/pilgrim\n";
+	print $fh "$camsrcdir/cam/src/utils/pilgrim\n";
     }
 
     # Advective transport
     if ($dyn eq 'eul' or $dyn eq 'sld') {
-	print $fh "$camsrcdir/eam/src/advection/slt\n";
+	print $fh "$camsrcdir/cam/src/advection/slt\n";
     }
 
-    print $fh "$camsrcdir/eam/src/cpl\n";
-    print $fh "$camsrcdir/eam/src/control\n";
-    print $fh "$camsrcdir/eam/src/utils\n";
+    print $fh "$camsrcdir/cam/src/cpl\n";
+    print $fh "$camsrcdir/cam/src/control\n";
+    print $fh "$camsrcdir/cam/src/utils\n";
 
     if ($cam_build) {
 
-	# These paths are only needed for EAM standalone builds
+	# These paths are only needed for CAM standalone builds
 
 	print $fh "$cam_root/cime/src/externals/pio/pio\n";
 
-	unless ($esmf_libdir) {
+	unless ($esmf_libdir) { 
 	    print $fh "$cam_root/cime/src/share/esmf_wrf_timemgr\n";
 	}
 
@@ -2727,14 +2727,14 @@ sub write_filepath
 
 	# Ocean package.
 	if ($ocn eq 'dom') {
-	    print $fh "$camsrcdir/eam/src/utils/cam_dom\n";
+	    print $fh "$camsrcdir/cam/src/utils/cam_dom\n";
 	}
 	elsif ($ocn eq 'docn') {
 	    print $fh "$cam_root/cime/src/components/data_comps/docn\n";
 	}
 	elsif ($ocn eq 'aquaplanet') {
-	    print $fh "$camsrcdir/eam/src/utils/cam_aqua\n";
-	    print $fh "$camsrcdir/eam/src/utils/cam_aqua/cpl\n";
+	    print $fh "$camsrcdir/cam/src/utils/cam_aqua\n";
+	    print $fh "$camsrcdir/cam/src/utils/cam_aqua/cpl\n";
 	}
 	elsif ($ocn eq 'socn') {
 	    print $fh "$cam_root/cime/src/components/stub_comps/socn/cpl\n";
@@ -2794,7 +2794,7 @@ sub write_cppdefs
 
     my $dyn           = $cfg_ref->get('dyn');
 
-    print "Writing CPPDEFS for EAM in $file, with $dyn and $opts{'dyn_target'}\n";
+    print "Writing CPPDEFS for CAM in $file, with $dyn and $opts{'dyn_target'}\n";
 
     $fh->open(">$file") or die "** can't open cpp defs file: $file\n";
 
@@ -2818,7 +2818,7 @@ sub write_cppdefs
 sub write_makefile
 {
     # Add macro definitions to the beginning of the Makefile
-    # in the EAM configuration script directory
+    # in the CAM configuration script directory
 
     my ($file_in, $file_out, $cfg_ref, $make_cppdefs) = @_;
     my  $fh_in = new IO::File;
@@ -2868,7 +2868,7 @@ sub write_makefile
 		      );
 
     print $fh_out  <<"EOF";
-# Make macros for EAM.
+# Make macros for CAM.
 
 UNAMES       := $uname_map{$target_os}
 ROOTDIR      := $cam_root
@@ -2929,14 +2929,14 @@ sub write_cosp_makefile
 
 
 CAM_BLD    := $cam_bld
-COSP_PATH  := $cam_root/components/eam/src/physics/cosp2
-ISCCP_PATH := $cam_root/components/eam/src/physics/cosp2/src/simulator/icarus
-RS_PATH    := $cam_root/components/eam/src/physics/cosp2/src/simulator/quickbeam
-CS_PATH    := $cam_root/components/eam/src/physics/cosp2/src/simulator/actsim
-RT_PATH    := $cam_root/components/eam/src/physics/cosp2/src/simulator/rttov
-MISR_PATH  := $cam_root/components/eam/src/physics/cosp2/src/simulator/MISR_simulator
-MODIS_PATH := $cam_root/components/eam/src/physics/cosp2/src/simulator/MODIS_simulator
-PARASOL_PATH  := $cam_root/components/eam/src/physics/cosp2/src/simulator/parasol
+COSP_PATH  := $cam_root/components/cam/src/physics/cosp2
+ISCCP_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/icarus
+RS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/quickbeam
+CS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/actsim
+RT_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/rttov
+MISR_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/MISR_simulator
+MODIS_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/MODIS_simulator
+PARASOL_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/parasol
 
 EOF
 
@@ -3043,9 +3043,9 @@ sub set_horiz_grid
 	$cfg_ref->set('nlat', 1);
 	$cfg_ref->set('nlon', $a{'ncol'});
         # To allow more flexibility when matching grid attributes in the namelist
-        # defaults file, split the dynamics (GLL) and physics grid specifiers in
-        # the hgrid argument to configure, and just store the dynamics (GLL) part
-        # in the hgrid parameter of the config_cache file.  The physics grid
+        # defaults file, split the dynamics (GLL) and physics grid specifiers in 
+        # the hgrid argument to configure, and just store the dynamics (GLL) part 
+        # in the hgrid parameter of the config_cache file.  The physics grid 
         # specifier is stored separately in the npg parameter.
         $hgrid =~ s/\.pg\d//;   # strip the '.pgN' extension
         $cfg_ref->set('hgrid', $hgrid);
@@ -3195,7 +3195,7 @@ sub mkdirp {
     my (@subdirs, $path);
 
     # if $dir is absolute pathname then @dirs will start with ""
-    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }
+    if ($dirs[0] eq "") { push @subdirs, shift @dirs; }  
 
     while ( @dirs ) { # check that each subdir exists and mkdir if it doesn't
 	push @subdirs, shift @dirs;
@@ -3207,7 +3207,7 @@ sub mkdirp {
 
 
 sub version {
-# The version is found in EAM's ChangeLog file.
+# The version is found in CAM's ChangeLog file.
 # $cfgdir is set by the configure script to the name of its directory.
 
     my ($cfgdir) = @_;
