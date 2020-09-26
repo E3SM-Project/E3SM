@@ -64,7 +64,7 @@ namespace {physics} {{
 template<typename S, typename D>
 {gen_code}
 
-}} // namespace p3
+}} // namespace {physics}
 }} // namespace scream
 
 #endif
@@ -153,7 +153,7 @@ PIECES = OrderedDict([
         lambda phys, sub, gb: "{}_functions.hpp".format(phys),
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_func_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="struct Functions"), # end of struct, reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx decl
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub, static=True), # cxx decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),            # ;
         lambda *x           : "The cxx kokkos function declaration(<name>)"
     )),
@@ -171,7 +171,7 @@ PIECES = OrderedDict([
         lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),   # insert at end of namespace
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx begin
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub, template="Functions<S,D>"), # cxx begin
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
         lambda *x           : "The cxx kokkos function stub implementation(<name>)"
     )),
@@ -306,7 +306,7 @@ def get_subroutine_end_regex(name):
     return re.compile(subroutine_end_regex_str)
 
 ###############################################################################
-def get_cxx_function_begin_regex(name, static=False):
+def get_cxx_function_begin_regex(name, static=False, template=None):
 ###############################################################################
     """
     >>> bool(get_cxx_function_begin_regex("fake_sub").match("void fake_sub("))
@@ -323,9 +323,12 @@ def get_cxx_function_begin_regex(name, static=False):
     False
     >>> bool(get_cxx_function_begin_regex("fake_sub", static=True).match("static void fake_sub("))
     True
+    >>> bool(get_cxx_function_begin_regex("fake_sub", template="Foo<T>").match("void Foo<T>::fake_sub("))
+    True
     """
     static_regex_str = r"static\s+" if static else ""
-    function_begin_regex_str = r"^\s*{}void\s+{}\s*[(]".format(static_regex_str, name)
+    template_regex_str = r"{}::".format(template) if template else ""
+    function_begin_regex_str = r"^\s*{}void\s+{}{}\s*[(]".format(static_regex_str, template_regex_str, name)
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
@@ -468,7 +471,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
       // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
     }
     <BLANKLINE>
-    } // namespace p3
+    } // namespace shoc
     } // namespace scream
     <BLANKLINE>
     #endif
