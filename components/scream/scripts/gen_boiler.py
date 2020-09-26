@@ -607,6 +607,18 @@ def split_top_commas(line):
 
     return top_splits
 
+###############################################################################
+def get_arg_order(line):
+###############################################################################
+    """
+    Given a line of fortran declaring a subroutine, return the arg names in order
+
+    >>> get_arg_order("subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )")
+    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user']
+    """
+    args_raw = line.rstrip(")").split("(", maxsplit=1)[-1]
+    return [item.strip() for item in args_raw.split(",") if item]
+
 ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS = range(4)
 ###############################################################################
 def parse_f90_args(line):
@@ -669,7 +681,8 @@ def parse_origin(contents, subs):
 
     >>> teststr = '''
     ...
-    ...   SUBROUTINE p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
+    ...   SUBROUTINE p3_get_tables(mu_r_user, revap_user, &
+    ...           vn_user, vm_user)
     ...     ! This can be called after p3_init_b.
     ...     implicit none
     ...     real(rtype), dimension(150), intent(out) :: mu_r_user
@@ -683,11 +696,11 @@ def parse_origin(contents, subs):
     ...
     ...   end SUBROUTINE p3_get_tables
     ...
-    ...   subroutine p3_set_tables(mu_r_user, revap_user, vn_user, vm_user)
+    ...   subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )
     ...     ! This can be called instead of p3_init_b.
     ...     implicit none
-    ...     real(rtype), dimension(150), intent(in) :: mu_r_user
     ...     real(rtype), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
+    ...     real(rtype), dimension(150), intent(in) :: mu_r_user
     ...     mu_r_table(:) = mu_r_user(:)
     ...     revap_table(:,:) = revap_user(:,:)
     ...     vn_table(:,:) = vn_user(:,:)
@@ -709,7 +722,7 @@ def parse_origin(contents, subs):
     ...   END SUBROUTINE p3_init_b
     ... '''
     >>> sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())
-    [('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10')), ('revap_user', 'real', 'out', ('300', '10'))]), ('p3_init_b', [])]
+    [('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))]), ('p3_init_b', [])]
     """
     begin_regexes = [get_subroutine_begin_regex(sub) for sub in subs]
     arg_decl_regex = re.compile(r"^.+intent\s*[(]\s*(in|out|inout)\s*[)]")
@@ -718,6 +731,7 @@ def parse_origin(contents, subs):
 
     db = {}
     active_sub = None
+    arg_order = []
     arg_decls = []
     for line in contents.splitlines():
         begin_match = None
@@ -726,6 +740,7 @@ def parse_origin(contents, subs):
             if begin_match is not None:
                 expect(active_sub is None, "subroutine {} was still active when {} began".format(active_sub, sub))
                 active_sub = sub
+                arg_order = get_arg_order(line)
 
         if active_sub:
             decl_match = arg_decl_regex.match(line)
@@ -736,7 +751,22 @@ def parse_origin(contents, subs):
             end_match = end_regex.match(line)
             if end_match is not None:
                 expect(active_sub not in db, "Found multiple matches for {}".format(active_sub))
-                db[active_sub] = arg_decls
+                expect(len(arg_order) == len(arg_decls),
+                       "Number of decls:\n{}\nDid not match arg list: {}".format(arg_decls, arg_order))
+
+                # we need our decls to be ordered based on arg list order
+                ordered_decls = []
+                for arg in arg_order:
+                    found = False
+                    for arg_decl in arg_decls:
+                        if arg_decl[ARG_NAME] == arg:
+                            ordered_decls.append(arg_decl)
+                            found = True
+                            break
+
+                    expect(found, "Could not find decl for arg {} in\n{}".format(arg, arg_decls))
+
+                db[active_sub] = ordered_decls
                 active_sub = None
                 arg_decls = []
 
@@ -1185,6 +1215,7 @@ class GenBoiler(object):
 
         # TODO: support subroutine rename?
         # TODO: support smart line wrapping?
+        # TODO: support generation in main physics file
 
         if not self._pieces:
             self._pieces = get_supported_pieces()
