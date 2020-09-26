@@ -339,6 +339,24 @@ contains
        end if
     end do
 
+    !------------------------------------------------------------------------
+    ! This is a temporary fix for the large H, H2 in WACCM-X
+    ! Well, it was supposed to be temporary, but it has been here
+    ! for a while now.
+    !------------------------------------------------------------------------
+    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+       call cnst_get_ind('H', ixh)
+       do k = ptend%top_level, ptend%bot_level
+          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
+       end do
+
+       call cnst_get_ind('H2', ixh2)
+       do k = ptend%top_level, ptend%bot_level
+          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
+       end do
+    endif
+
+
     if (ixcldliq > 1) then
        if(ptend%lq(ixcldliq)) then
 #ifdef PERGRO
@@ -360,6 +378,25 @@ contains
                call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
        end if
     end if
+
+    !------------------------------------------------------------------------
+    ! Get indices for molecular weights and call WACCM-X physconst_update
+    !------------------------------------------------------------------------
+    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+      call cnst_get_ind('O', ixo)
+      call cnst_get_ind('O2', ixo2)
+      call cnst_get_ind('N', ixn)
+
+      call physconst_update(state%q, state%t, &
+              cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
+              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
+    endif
+
+    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
+    else
+      zvirv(:,:) = zvir
+    endif
 
 
 #if 0
@@ -441,7 +478,7 @@ contains
           end where
       end if
 
-    end subroutine state_cnst_min_nzd 
+    end subroutine state_cnst_min_nz
 end subroutine physics_almost_update
 
 
@@ -464,7 +501,9 @@ end subroutine physics_almost_update
     integer :: i,k,m                               ! column,level,constituent
     integer :: ncol                                ! number of columns
     character*40 :: name    ! param and tracer name for qneg3
+    real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
     real(r8),allocatable :: cpairv_loc(:,:,:)
+    real(r8),allocatable :: rairv_loc(:,:,:)
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
@@ -494,6 +533,17 @@ end subroutine physics_almost_update
        end if
     end if
 
+    if (state%psetcols == pcols) then
+       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rairv(:,:,:)
+    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
+       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
+       rairv_loc(:,:,:) = rair
+    else
+       call endrun('physics_ ... subcolumns are turned on')
+    end if
+
+
     call t_startf ('physics_finish')
     if (state%psetcols == pcols) then
        allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
@@ -510,7 +560,16 @@ end subroutine physics_almost_update
 
     ncol = state%ncol
 
-#if 
+    !------------------------------------------------------------------------
+    ! Get indices for molecular weights and call WACCM-X physconst_update
+    !------------------------------------------------------------------------
+    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
+    else
+      zvirv(:,:) = zvir
+    endif
+
+#if 1 
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
           if (present(tend)) &
