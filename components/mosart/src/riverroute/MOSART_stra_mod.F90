@@ -9,6 +9,7 @@ MODULE MOSART_stra_mod
     
 ! !USES:
     use shr_kind_mod  , only : r8 => shr_kind_r8
+    use shr_infnan_mod   , only : isnan => shr_infnan_isnan
     use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TPara, rtmCTL
     use rof_cpl_indices, only : nt_nliq, nt_nice
     use RtmVar         , only : iulog, ngeom, nlayers
