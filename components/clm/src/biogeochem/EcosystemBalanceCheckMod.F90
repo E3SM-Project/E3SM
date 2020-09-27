@@ -542,6 +542,8 @@ contains
          totcolp                   => col_ps%totcolp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          supplement_to_sminp       => col_pf%supplement_to_sminp       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
          sminp_leached             => col_pf%sminp_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         sminp_runoff              => col_pf%sminp_runoff              , & ! Input:  [real(r8) (:)] soil mineral p loss to runoff (gP/m2/s)
+         som_p_leached             => col_pf%som_p_leached             , & ! Input: [real(r8) (:)] som p loss through leaching (gP/m2/s)
          col_fire_ploss            => col_pf%fire_ploss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
          hrv_deadstemp_to_prod10p  => col_pf%hrv_deadstemp_to_prod10p  , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemp_to_prod100p => col_pf%hrv_deadstemp_to_prod100p , & ! Input:  [real(r8) (:)]  (gP/m2/s) dead stem C harvest mortality to 100-year product pool
@@ -647,7 +649,8 @@ contains
              end if
          end if
 
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
+         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c) + sminp_runoff(c) 
+         col_poutputs(c) = col_poutputs(c) - som_p_leached(c)
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to

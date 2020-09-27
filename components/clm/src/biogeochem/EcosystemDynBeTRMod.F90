@@ -966,6 +966,7 @@ module EcosystemDynBeTRMod
             cnstate_vars,col_ps, veg_ps, col_pf, veg_pf,ldecomp_on=.false.)
      call t_stopf('PUpdate3')
 
+     call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
   end subroutine CNEcosystemDynBeTR1
   !-----------------------------------------------------------------------
   subroutine CNEcosystemDynBeTR2(bounds,                             &
@@ -1621,7 +1622,6 @@ module EcosystemDynBeTRMod
        call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
-       call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
 
        call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
        call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')

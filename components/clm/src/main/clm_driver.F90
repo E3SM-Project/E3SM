@@ -1130,7 +1130,7 @@ contains
 
          if (use_lch4) then
            if(use_betr)then
-             if (do_betr_bgc_type('type0_bgc'))then
+             if (do_betr_bgc_type('type0_bgc') .or. do_betr_bgc_type('type1_bgc'))then
                call t_startf('ch4')
                call CH4 (bounds_clump,&
                  filter(nc)%num_soilc, filter(nc)%soilc,&

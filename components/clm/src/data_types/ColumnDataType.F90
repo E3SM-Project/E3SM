@@ -10253,6 +10253,16 @@ contains
          avgflag='A', long_name='desorp P flux', &
          ptr_col=this%desorb_to_solutionp, default='active')
 
+    this%sminp_runoff(begc:endc) = spval
+    call hist_addfld1d (fname='SMINP_RUNOFF', units='gP/m^2/s', &
+         avgflag='A', long_name='runoff P flux', &
+         ptr_col=this%sminp_runoff, default='active')   
+
+   this%som_p_runoff(begc:endc) = spval
+   call hist_addfld1d (fname='SOM_P_RUNOFF', units='gP/m^2/s', &
+            avgflag='A', long_name='soil organic P pool loss to runoff', &
+            ptr_col=this%som_p_runoff)
+ 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_pf
     !-----------------------------------------------------------------------
@@ -10611,7 +10621,6 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%supplement_to_sminp(c) = 0._r8
-       this%som_p_leached(c)       = 0._r8
        this%somp_erode(c)          = 0._r8
        this%somp_deposit(c)        = 0._r8
        this%somp_yield(c)          = 0._r8
@@ -10624,7 +10633,6 @@ contains
        this%labilep_to_secondp(c) = 0._r8
        this%secondp_to_labilep(c) = 0._r8
        this%secondp_to_occlp(c) = 0._r8
-       this%sminp_leached(c) = 0._r8
     end do
 
     do k = 1, ndecomp_pools
@@ -10675,17 +10683,17 @@ contains
                this%secondp_to_occlp_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
-
-    ! vertically integrate leaching flux
-    do j = 1, nlevdecomp
-       do fc = 1,num_soilc
+    if ( .not. is_active_betr_bgc) then
+      ! vertically integrate leaching flux
+      do j = 1, nlevdecomp
+        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%sminp_leached(c) = &
                this%sminp_leached(c) + &
                this%sminp_leached_vr(c,j) * dzsoi_decomp(j)
-       end do
-    end do
-
+        end do
+      end do
+    endif
     ! vertically integrate erosional flux
     if (use_erosion) then
        do j = 1, nlevdecomp
