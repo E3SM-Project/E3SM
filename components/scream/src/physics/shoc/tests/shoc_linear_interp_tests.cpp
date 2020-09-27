@@ -225,6 +225,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       //                   shcol, nlev(km1), nlevi(km2), minthresh
       SHOCLinearInterpData(10, 72, 71, 1e-15),
       SHOCLinearInterpData(10, 71, 72, 1e-15),
+      SHOCLinearInterpData(1, 15, 16, 1e-15),
+      SHOCLinearInterpData(1, 16, 15, 1e-15),
+      SHOCLinearInterpData(1, 5, 6, 1e-15),
+      SHOCLinearInterpData(1, 6, 5, 1e-15),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCLinearInterpData);
@@ -239,6 +243,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     SHOCLinearInterpData cxx_data[] = {
       SHOCLinearInterpData(f90_data[0]),
       SHOCLinearInterpData(f90_data[1]),
+      SHOCLinearInterpData(f90_data[2]),
+      SHOCLinearInterpData(f90_data[3]),
+      SHOCLinearInterpData(f90_data[4]),
+      SHOCLinearInterpData(f90_data[5]),
     };
 
     // Assume all data is in C layout
