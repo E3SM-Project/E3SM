@@ -83,8 +83,8 @@ def buildnml(case, caseroot, compname):
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
 
     elif ice_grid == 'oEC60to30v3_ICG':
-        grid_date += '171101'
-        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvil0926'
+        grid_date += '200927'
+        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvilG'
         decomp_date += '161222'
         decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'oEC60to30wLI':
