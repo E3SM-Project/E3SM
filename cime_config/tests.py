@@ -132,7 +132,7 @@ _TESTS = {
         },
 
     "homme_integration" : {
-        "time"    : "0:45:00",
+        "time"    : "0:120:00",
         "tests"   : (
             "HOMME_P24.f19_g16_rx1.A",
             "HOMMEBFB_P24.f19_g16_rx1.A",
