@@ -678,13 +678,13 @@ contains
            do iEdge=1,nEdges
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
-              Lr = min(config_GM_baroclinic_mode*cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
-                       sqrt(cGMphaseSpeed(iEdge)*config_GM_baroclinic_mode / (2.0_RKIND*betaEdge(iEdge))))
+              Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
+                       sqrt(cGMphaseSpeed(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
 
               do k=1,maxLevelEdgeTop(iEdge)
                  RiTopOfEdge = 0.5_RKIND*(max(RiTopOfCell(k,cell1),0.0_RKIND) + &
                                           max(RiTopOfCell(k,cell2),0.0_RKIND))
-                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)*config_GM_baroclinic_mode* &
+                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)* &
                              cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
                  L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
                  Length = min(Lr,L_rhines)
