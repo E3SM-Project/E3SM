@@ -236,16 +236,6 @@ contains
       !$omp end do
 
       !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-         do k = 1, nVertLevels
-            slopeTriadUp(k, :, iEdge) = 0.0_RKIND
-            slopeTriadDown(k, :, iEdge) = 0.0_RKIND
-            gmKappaScaling(k,iEdge) = 1.0_RKIND
-         end do
-      end do
-      !$omp end do
-
-      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells + 1
          do k = 1, nVertLevels
             k33(k, iCell) = 0.0_RKIND
