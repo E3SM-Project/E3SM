@@ -320,28 +320,28 @@
 		<nml_option name="config_GM_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
 		/>
-		<nml_option name="config_GM_closure" type="character" default_value="edenGreatbatch" units="unitless"
-					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. edenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'N2_dependent', 'constant', 'visbeck', 'edenGreatbatch'"
+		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch" units="unitless"
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
+					possible_values="'N2_dependent', 'constant', 'Visbeck', 'EdenGreatbatch'"
 		/>
 		<nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
 					description="baroclinic wave mode chosen for the ferrari et al 2010 calculation"
 					possible_values="small positive numbers"
 		/>
-		<nml_option name="config_GM_visbeck_alpha" type="real" default_value="0.005" units="NA"
-					description="scaling factor on the visbeck diffusivity parameterization"
+		<nml_option name="config_GM_Visbeck_alpha" type="real" default_value="0.005" units="NA"
+					description="scaling factor on the Visbeck diffusivity parameterization"
 					possible_values="small positive numbers"
 		/>
-		<nml_option name="config_GM_visbeck_max_depth" type="real" default_value="1000.0" units="m"
+		<nml_option name="config_GM_Visbeck_max_depth" type="real" default_value="1000.0" units="m"
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"
 		/>
-		<nml_option name="config_GM_visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for visbeck scheme"
+		<nml_option name="config_GM_Visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for Visbeck scheme"
 					possible_values="values around 100s"
 		/>
-		<nml_option name="config_GM_visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for visbeck scheme"
+		<nml_option name="config_GM_Visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for Visbeck scheme"
 					possible_values="values around 100s"
 		/>
 		<nml_option name="config_gm_EG_riMin" type="real" default_value="200.0" units="NA"
@@ -349,7 +349,7 @@
 					possible_values="numbers greater than zero"
 		/>
 		<nml_option name="config_gm_EG_kappa_factor" type="real" default_value="2.0" units="NA"
-					description="factor to scale diffusivity for eden greatbach scheme"
+					description="factor to scale diffusivity for Eden Greatbach scheme"
 					possible_values="small positive reals"
 		/>
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
@@ -2527,14 +2527,14 @@
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
 			description="meridional gradient of the coriolis parameter"
 		/>
-		<var name="c_visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
-			description="baroclinic wave speed from visbeck parameterization"
+		<var name="c_Visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			description="baroclinic wave speed from Visbeck parameterization"
 		/>
 		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
-			description="eddy length scale in visbeck 1997 closure"
+			description="eddy length scale in Visbeck 1997 closure"
 		/>
 		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
-			description="inverse eddy time scale in visbeck 1997 closure"
+			description="inverse eddy time scale in Visbeck 1997 closure"
 		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
