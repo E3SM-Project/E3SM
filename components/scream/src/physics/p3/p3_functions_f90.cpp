@@ -3122,7 +3122,7 @@ void p3_main_f(
   Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS> dim2_sizes;
   Kokkos::Array<const Real*, P3MainData::NUM_ARRAYS> ptr_array = {
     pres, dz, nc_nuceat_tend, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
-    qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_rad_qc, diag_eff_rad_qi,
+    qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_rad_qc, diag_eff_rad_qi,
     rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
     vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
