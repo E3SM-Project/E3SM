@@ -74,11 +74,11 @@ void tke_srf_flux_term_c(Int shcol, Real *uw_sfc, Real *vw_sfc,
 
 void check_tke_c(Int shcol, Int nlev, Real *tke);
 
-void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec, 
-                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres, 
-		Real *u_wind, Real *v_wind, Real *brunt, Real *obklen, 
-		Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke, 
-		Real *tk, Real *tkh, Real *isotropy);
+void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec,
+                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres,
+                Real *u_wind, Real *v_wind, Real *brunt, Real *obklen,
+                Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke,
+                Real *tk, Real *tkh, Real *isotropy);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      Real *brunt, Real *brunt_int);
