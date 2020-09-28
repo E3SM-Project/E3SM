@@ -36,7 +36,7 @@ static void run_bfb()
   constexpr Scalar qi2qv_sublim_tend = 1.0;
 
   PreventIceOverdepletionData prevent_ice_overdepletion_data[max_pack_size] = {
-    // pres, t, qv, latent_heat_sublim, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend
+    // pres, T_atm, qv, latent_heat_sublim, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend
     {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
     {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
     {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
@@ -75,17 +75,17 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack pres, t, qv, latent_heat_sublim, qv2qi_vapdep_tend, qi2qv_sublim_tend;
+    Spack pres, T_atm, qv, latent_heat_sublim, qv2qi_vapdep_tend, qi2qv_sublim_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       pres[s]               = device_data(vs).pres;
-      t[s]                  = device_data(vs).t;
+      T_atm[s]                  = device_data(vs).T_atm;
       qv[s]                 = device_data(vs).qv;
       latent_heat_sublim[s] = device_data(vs).latent_heat_sublim;
       qv2qi_vapdep_tend[s]  = device_data(vs).qv2qi_vapdep_tend;
       qi2qv_sublim_tend[s]  = device_data(vs).qi2qv_sublim_tend;
     }
 
-    Functions::prevent_ice_overdepletion(pres, t, qv, latent_heat_sublim, device_data(0).inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend);
+    Functions::prevent_ice_overdepletion(pres, T_atm, qv, latent_heat_sublim, device_data(0).inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

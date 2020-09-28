@@ -33,9 +33,9 @@ struct Constants
   static constexpr Scalar LatIce        = 333700.0;
   static constexpr Scalar CpLiq         = 4188.0;
   static constexpr Scalar Tmelt         = 273.15;
-  static constexpr Scalar ZeroDegC      = Tmelt;
-  static constexpr Scalar homogfrze     = Tmelt - 40;
-  static constexpr Scalar RainFrze      = Tmelt - 4;
+  static constexpr Scalar T_zerodegc    = Tmelt;
+  static constexpr Scalar T_homogfrz    = Tmelt - 40;
+  static constexpr Scalar T_rainfrz     = Tmelt - 4;
   static constexpr Scalar Pi            = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc    = true;
@@ -90,7 +90,7 @@ struct Constants
   static constexpr Scalar MWWV          = 18.016;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
-  static constexpr Scalar max_total_Ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
+  static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
   static constexpr Scalar nmltratio     = 0.2; // ratio of rain number produced to ice number loss from melting

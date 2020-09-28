@@ -81,6 +81,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
                                    const ekat::ParameterList& params,
                                    const util::TimeStamp& t0)
 {
+  using device_type = DefaultDevice;
   m_atm_comm = atm_comm;
   m_atm_params = params;
   m_current_ts = t0;
@@ -106,31 +107,32 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
 
   // By now, the processes should have fully built the ids of their
   // required/computed fields. Let them register them in the repo
-  m_device_field_repo.registration_begins();
-  m_atm_process_group->register_fields(m_device_field_repo);
-  m_device_field_repo.registration_ends();
+  m_device_field_repo = std::make_shared<FieldRepository<Real,device_type>>();
+  m_device_field_repo->registration_begins();
+  m_atm_process_group->register_fields(*m_device_field_repo);
+  m_device_field_repo->registration_ends();
 
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
   for (const auto& id : inputs) {
-    m_atm_process_group->set_required_field(m_device_field_repo.get_field(id).get_const());
+    m_atm_process_group->set_required_field(m_device_field_repo->get_field(id).get_const());
   }
   // Internal fields are fields that the atm proc group both computes and requires
   // (in that order). These are present only in case of sequential splitting
   for (const auto& id : m_atm_process_group->get_internal_fields()) {
-    m_atm_process_group->set_internal_field(m_device_field_repo.get_field(id));
+    m_atm_process_group->set_internal_field(m_device_field_repo->get_field(id));
   }
   // Output fields are handed to the processes as writable
   for (const auto& id : outputs) {
-    m_atm_process_group->set_computed_field(m_device_field_repo.get_field(id));
+    m_atm_process_group->set_computed_field(m_device_field_repo->get_field(id));
   }
 
   // Note: remappers should be setup *after* fields have been set in the atm processes,
   //       just in case some atm proc sets some extra data in the field header,
   //       that some remappers may actually need.
-  m_atm_process_group->setup_remappers(m_device_field_repo);
+  m_atm_process_group->setup_remappers(*m_device_field_repo);
 
   // Initialize the processes
   m_atm_process_group->initialize(t0);
@@ -144,7 +146,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   inspect_atm_dag ();
 
   // Set time steamp t0 to all fields
-  for (auto& field_map_it : m_device_field_repo) {
+  for (auto& field_map_it : *m_device_field_repo) {
     for (auto& f_it : field_map_it.second) {
       f_it.second.get_header().get_tracking().update_time_stamp(t0);
     }
@@ -152,7 +154,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
 
 #ifdef SCREAM_DEBUG
   create_bkp_device_field_repo();
-  m_atm_process_group->set_field_repos(m_device_field_repo,m_bkp_device_field_repo);
+  m_atm_process_group->set_field_repos(*m_device_field_repo,m_bkp_device_field_repo);
 #endif
 }
 
@@ -171,7 +173,7 @@ void AtmosphereDriver::run (const Real dt) {
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 
-  m_device_field_repo.clean_up();
+  m_device_field_repo->clean_up();
 #ifdef SCREAM_DEBUG
   m_bkp_device_field_repo.clean_up();
 #endif
@@ -180,7 +182,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 void AtmosphereDriver::init_atm_inputs () {
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
   for (const auto& id : atm_inputs) {
-    auto& f = m_device_field_repo.get_field(id);
+    auto& f = m_device_field_repo->get_field(id);
     auto init_type = f.get_header_ptr()->get_tracking().get_init_type();
     if (init_type!=InitType::None) {
       auto initializer = f.get_header_ptr()->get_tracking().get_initializer().lock();
@@ -231,7 +233,7 @@ void AtmosphereDriver::inspect_atm_dag () {
 #ifdef SCREAM_DEBUG
 void AtmosphereDriver::create_bkp_device_field_repo () {
   m_bkp_device_field_repo.registration_begins();
-  for (const auto& it : m_device_field_repo) {
+  for (const auto& it : *m_device_field_repo) {
     for (const auto& id_field : it.second) {
       const auto& id = id_field.first;
       const auto& f = id_field.second;
@@ -248,7 +250,7 @@ void AtmosphereDriver::create_bkp_device_field_repo () {
   m_bkp_device_field_repo.registration_ends();
 
   // Deep copy the fields
-  for (const auto& it : m_device_field_repo) {
+  for (const auto& it : *m_device_field_repo) {
     for (const auto& id_field : it.second) {
       const auto& id = id_field.first;
       const auto& f  = id_field.second;

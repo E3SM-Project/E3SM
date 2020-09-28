@@ -193,7 +193,7 @@ static void run_bfb_homogeneous_freezing()
   // Set up random input data
   for (auto& d : hfds_fortran) {
     const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
-    d.randomize({ {d.t, {C::homogfrze - 10, C::homogfrze + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
+    d.randomize({ {d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -213,8 +213,8 @@ static void run_bfb_homogeneous_freezing()
   // Get data from cxx
   for (auto& d : hfds_cxx) {
     homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                           d.t, d.exner, d.latent_heat_fusion,
-                           d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th);
+                           d.T_atm, d.exner, d.latent_heat_fusion,
+                           d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -222,15 +222,15 @@ static void run_bfb_homogeneous_freezing()
     Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(hfds_fortran[i].qc[k] == hfds_cxx[i].qc[k]);
-      REQUIRE(hfds_fortran[i].nc[k] == hfds_cxx[i].nc[k]);
-      REQUIRE(hfds_fortran[i].qr[k] == hfds_cxx[i].qr[k]);
-      REQUIRE(hfds_fortran[i].nr[k] == hfds_cxx[i].nr[k]);
-      REQUIRE(hfds_fortran[i].qi[k] == hfds_cxx[i].qi[k]);
-      REQUIRE(hfds_fortran[i].ni[k] == hfds_cxx[i].ni[k]);
-      REQUIRE(hfds_fortran[i].qm[k] == hfds_cxx[i].qm[k]);
-      REQUIRE(hfds_fortran[i].bm[k] == hfds_cxx[i].bm[k]);
-      REQUIRE(hfds_fortran[i].th[k] == hfds_cxx[i].th[k]);
+      REQUIRE(hfds_fortran[i].qc[k]     == hfds_cxx[i].qc[k]);
+      REQUIRE(hfds_fortran[i].nc[k]     == hfds_cxx[i].nc[k]);
+      REQUIRE(hfds_fortran[i].qr[k]     == hfds_cxx[i].qr[k]);
+      REQUIRE(hfds_fortran[i].nr[k]     == hfds_cxx[i].nr[k]);
+      REQUIRE(hfds_fortran[i].qi[k]     == hfds_cxx[i].qi[k]);
+      REQUIRE(hfds_fortran[i].ni[k]     == hfds_cxx[i].ni[k]);
+      REQUIRE(hfds_fortran[i].qm[k]     == hfds_cxx[i].qm[k]);
+      REQUIRE(hfds_fortran[i].bm[k]     == hfds_cxx[i].bm[k]);
+      REQUIRE(hfds_fortran[i].th_atm[k] == hfds_cxx[i].th_atm[k]);
     }
   }
 }

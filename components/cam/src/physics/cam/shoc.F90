@@ -3413,7 +3413,7 @@ subroutine shoc_energy_integrals(&
     do i=1,shcol
        rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
        se_int(i) = se_int(i) + host_dse(i,k)*pdel(i,k)/ggr
-       ke_int(i) = ke_int(i) + 0.5_rtype*(u_wind(i,k)**2+v_wind(i,k)**2)*pdel(i,k)/ggr
+       ke_int(i) = ke_int(i) + 0.5_rtype*(bfb_square(u_wind(i,k))+bfb_square(v_wind(i,k)))*pdel(i,k)/ggr
        wv_int(i) = wv_int(i) + rvm*pdel(i,k)/ggr
        wl_int(i) = wl_int(i) + rcm(i,k)*pdel(i,k)/ggr
     enddo
