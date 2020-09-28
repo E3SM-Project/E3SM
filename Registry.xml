@@ -2536,7 +2536,7 @@
 		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
 			description="inverse eddy time scale in Visbeck 1997 closure"
 		/>
-		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA"
+		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
@@ -2645,11 +2645,11 @@
 		<var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
 			description="index of model where mixed layer depth occurs (always one past)"
 		/>
-		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
+		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
+		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
