@@ -27,9 +27,6 @@
 	path = externals/scorpio_classic
 	url = git@github.com:E3SM-Project/scorpio.git
 	branch = scorpio_classic
-[submodule "externals/yaml-cpp"]
-  path = externals/yaml-cpp
-  url = git@github.com:SNLComputation/yaml-cpp.git
 [submodule "components/cam/src/physics/cosp2/external"]
 	path = components/cam/src/physics/cosp2/external
 	url = git@github.com:CFMIP/COSPv2.0.git

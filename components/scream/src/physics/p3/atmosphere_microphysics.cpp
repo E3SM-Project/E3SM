@@ -60,6 +60,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("pmid",           scalar3d_layout_mid,   Pa, grid_name);
   m_required_fields.emplace("dp",             scalar3d_layout_mid,   Pa, grid_name);
   m_required_fields.emplace("zi",             scalar3d_layout_int,   m, grid_name);
+  m_required_fields.emplace("T_prev",  scalar3d_layout_mid, K, grid_name);
+  m_required_fields.emplace("qv_prev", vector3d_layout_mid, Q, grid_name);
 
   // Input-Outputs
   m_required_fields.emplace("FQ", tracers_layout,      Q, grid_name);
@@ -69,10 +71,12 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("FQ", tracers_layout,      Q, grid_name);
   m_computed_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
   m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
+  m_computed_fields.emplace("T_prev",  scalar3d_layout_mid, K, grid_name);
+  m_computed_fields.emplace("qv_prev", vector3d_layout_mid, Q, grid_name);
 }
 
 // =========================================================================================
-void P3Microphysics::initialize (const util::TimeStamp& t0)
+void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
@@ -91,12 +95,12 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
   //  - initable fields may not need initialization (e.g., some other atm proc that
   //    appears earlier in the atm dag might provide them).
 
-  std::vector<std::string> p3_inputs = {"q","T","FQ","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi"};
+  std::vector<std::string> p3_inputs = {"q","T","FQ","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev"};
   using strvec = std::vector<std::string>;
   const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
   const bool can_init_all = m_p3_params.get<bool>("Can Initialize All Inputs", false);
   const bool init_all_or_none = m_p3_params.get<bool>("Must Init All Inputs Or None", true);
-  
+
   const strvec& initable = can_init_all ? p3_inputs : allowed_to_init;
   if (initable.size()>0) {
     bool all_inited = true, all_uninited = true;
@@ -123,7 +127,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void P3Microphysics::run (const Real dt)
+void P3Microphysics::run_impl (const Real dt)
 {
   // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "dpres", "ast", "ni_activated", "nc_nuceat_tend"};
 
@@ -139,20 +143,24 @@ void P3Microphysics::run (const Real dt)
   }
 
   // Call f90 routine
-  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["ni_activated"], m_raw_ptrs_in["nc_nuceat_tend"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
+  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["ni_activated"], m_raw_ptrs_in["nc_nuceat_tend"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"], m_raw_ptrs_out["qv_prev"], m_raw_ptrs_out["T_prev"]);
 
   // Copy outputs back to device
   for (auto& it : m_p3_fields_out) {
     Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
   }
-  m_current_ts += dt;
-  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);
-  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(m_current_ts);
-  m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(m_current_ts);
+
+  // Get a copy of the current timestamp (at the beginning of the step) and
+  // advance it, updating the p3 fields.
+  auto ts = timestamp();
+  ts += dt;
+  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
+  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
+  m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(ts);
 }
 
 // =========================================================================================
-void P3Microphysics::finalize()
+void P3Microphysics::finalize_impl()
 {
   p3_finalize_f90 ();
 }

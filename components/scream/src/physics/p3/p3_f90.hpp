@@ -26,11 +26,11 @@ struct FortranData {
   // In
   Real dt;
   Int it;
-  Array2 qv, th, pres, dz, nc_nuceat_tend, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
-    ni, qm, bm, dpres, exner;
+  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
+    ni, qm, bm, dpres, exner, qv_prev, t_prev;
   // Out
   Array1 precip_liq_surf, precip_ice_surf;
-  Array2 diag_effc, diag_effi, rho_qi, cmeiout, precip_total_tend, nevapr, qr_evap_tend,
+  Array2 diag_eff_rad_qc, diag_eff_rad_qi, rho_qi, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
          precip_liq_flux, precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;

@@ -56,7 +56,7 @@ TEST_CASE("remap", "") {
 
   // Some type defs
   using Device = DefaultDevice;
-  using PackType = ekat::pack::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
+  using PackType = ekat::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
   using Remapper = PhysicsDynamicsRemapper<Homme::Real,Device>;
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
@@ -418,14 +418,14 @@ TEST_CASE("remap", "") {
 
       // Generate random numbers
       if (fwd) {
-        ekat::util::genRandArray(scalar_2d_field_phys,  engine, pdf);
-        ekat::util::genRandArray(vector_2d_field_phys,  engine, pdf);
-        ekat::util::genRandArray(scalar_3d_field_phys,  engine, pdf);
-        ekat::util::genRandArray(vector_3d_field_phys,  engine, pdf);
+        ekat::genRandArray(scalar_2d_field_phys,  engine, pdf);
+        ekat::genRandArray(vector_2d_field_phys,  engine, pdf);
+        ekat::genRandArray(scalar_3d_field_phys,  engine, pdf);
+        ekat::genRandArray(vector_3d_field_phys,  engine, pdf);
 
-        ekat::util::genRandArray(scalar_state_3d_field_phys,  engine, pdf);
-        ekat::util::genRandArray(vector_state_3d_field_phys,  engine, pdf);
-        ekat::util::genRandArray(tracer_state_3d_field_phys,  engine, pdf);
+        ekat::genRandArray(scalar_state_3d_field_phys,  engine, pdf);
+        ekat::genRandArray(vector_state_3d_field_phys,  engine, pdf);
+        ekat::genRandArray(tracer_state_3d_field_phys,  engine, pdf);
       } else {
         // Note: for the dyn->phys test to run correctly, the dynamics input vector must be synced,
         //       meaning that the values at the interface between two elements must match.

@@ -27,9 +27,9 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
   static void run_cloud_bfb()
   {
     // Read in tables
-    view_2d_table vn_table; view_2d_table vm_table; view_2d_table revap_table;
-    view_1d_table mu_r_table; view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+    view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
+    view_1d_table mu_r_table_vals; view_dnu_table dnu;
+    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {

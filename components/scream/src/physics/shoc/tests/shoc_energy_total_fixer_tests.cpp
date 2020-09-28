@@ -21,7 +21,7 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
+struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
 
   static void run_property()
   {
@@ -146,14 +146,14 @@ namespace {
 
 TEST_CASE("shoc_energy_total_fixer_property", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTotEnergyFixer;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_energy_total_fixer_bfb", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTotEnergyFixer;
 
   TestStruct::run_bfb();
 }

@@ -258,7 +258,7 @@ void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type
     tl_ptr = &Homme::Context::singleton().get_time_level().np1;
     is_tracer = false;
   }
-  ekat::util::any tl, tracer;
+  ekat::any tl, tracer;
   tl.reset<int*>(tl_ptr);
   tracer.reset<bool>(is_tracer);
 

@@ -12,7 +12,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_melting(
-  const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
+  const Spack& rho, const Spack& T_atm, const Spack& pres, const Spack& rhofaci,
   const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion,
   const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
   const Spack& qv, const Spack& qi_incld, const Spack& ni_incld,
@@ -32,14 +32,14 @@ void Functions<S,D>
   const auto Tmelt  = C::Tmelt;
 
   //Find cells above freezing AND which have ice
-  const auto has_melt_qi = (qi_incld >= QSMALL ) && (t > Tmelt) && context;
+  const auto has_melt_qi = (qi_incld >= QSMALL ) && (T_atm > Tmelt) && context;
 
   if (has_melt_qi.any()) {
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
     const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false, range_mask); //"false" here means NOT saturation w/ respect to ice.
 
     qi2qr_melt_tend.set(has_melt_qi, ( (table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))
-			     *((t-Tmelt)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))
+			     *((T_atm-Tmelt)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))
 			     * 2 * Pi /latent_heat_fusion)*ni_incld );
 
     //make sure qi2qr_melt_tend is always negative

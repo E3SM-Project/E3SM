@@ -50,10 +50,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
 }
 // =========================================================================================
-void SHOCMacrophysics::initialize (const util::TimeStamp& t0)
+void SHOCMacrophysics::initialize_impl (const util::TimeStamp& t0)
 {
-  m_current_ts = t0;
-
   // TODO: create the host mirrors once.
   auto q_dev = m_shoc_fields_out.at("q").get_view();
   auto q_host = Kokkos::create_mirror_view(q_dev);
@@ -66,7 +64,7 @@ void SHOCMacrophysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run (const Real dt)
+void SHOCMacrophysics::run_impl (const Real dt)
 {
   // TODO: create the host mirrors once.
   auto q_dev   = m_shoc_fields_out.at("q").get_view();
@@ -83,12 +81,14 @@ void SHOCMacrophysics::run (const Real dt)
   Kokkos::deep_copy(q_dev,q_host);
   Kokkos::deep_copy(fq_dev,fq_host);
 
-  m_current_ts += dt;
-  m_shoc_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);
-  m_shoc_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(m_current_ts);
+  // Get the beginning-of-step timestamp and advance it to update our fields.
+  auto ts = timestamp();
+  ts += dt;
+  m_shoc_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
+  m_shoc_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void SHOCMacrophysics::finalize()
+void SHOCMacrophysics::finalize_impl()
 {
   shoc_finalize_f90 ();
 }

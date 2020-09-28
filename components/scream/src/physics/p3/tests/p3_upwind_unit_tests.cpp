@@ -10,6 +10,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -37,7 +38,7 @@ struct UnitWrap::UnitTest<D>::TestUpwind {
 
 static void run_phys()
 {
-  using ekat::pack::repack;
+  using ekat::repack;
   constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
 
   static const Int nfield = 2;
@@ -74,7 +75,7 @@ static void run_phys()
       const auto init_fields = KOKKOS_LAMBDA (const MemberType& team) {
         const auto set_fields = [&] (const Int& k) {
           for (Int i = 0; i < nfield; ++i) {
-            const auto range = ekat::pack::range<Pack>(k*Pack::n);
+            const auto range = ekat::range<Pack>(k*Pack::n);
             rho(k) = 1 + range/nk;
             inv_rho(k) = 1 / rho(k);
             inv_dz(k) = 1 / (min_dz + range*range / (nk*nk));
@@ -94,7 +95,7 @@ static void run_phys()
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npack), set_fields);
         team.team_barrier();
       };
-      Kokkos::parallel_for(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+      Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                            init_fields);
 
       const auto sflux = scalarize(flux[1]);
@@ -130,14 +131,14 @@ static void run_phys()
               // but it works, so we might as well use it.
               if (eps*sr0(k) < eps) return;
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_max = ekat::util::max(mixing_ratio_true, r_max);
+              r_max = ekat::impl::max(mixing_ratio_true, r_max);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_max_r,
                                     Kokkos::Max<Scalar>(r_max));
 
             const auto find_min_r = [&] (const Int& k, Scalar& r_min) {
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_min = ekat::util::min(mixing_ratio_true, r_min);
+              r_min = ekat::impl::min(mixing_ratio_true, r_min);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_min_r,
                                     Kokkos::Min<Scalar>(r_min));
@@ -182,13 +183,13 @@ static void run_phys()
 
           // Check diagnostics.
           //   1. Check for conservation of mass.
-          if (ekat::util::rel_diff(mass0, mass1) > 1e1*eps) ++nerr;
+          if (ekat::impl::rel_diff(mass0, mass1) > 1e1*eps) ++nerr;
           //   2. Check for non-violation of global extrema.
           if (r_min1 < r_min0 - 10*eps) ++nerr;
           if (r_max1 > r_max0 + 10*eps) ++nerr;
         };
         Int lnerr;
-        Kokkos::parallel_reduce(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+        Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();

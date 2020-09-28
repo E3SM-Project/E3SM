@@ -15,16 +15,16 @@ namespace p3 {
 
 template <typename S, typename D>
 void Functions<S,D>
-::init_kokkos_ice_lookup_tables(view_itab_table& itab, view_itabcol_table& itabcol) {
+::init_kokkos_ice_lookup_tables(view_ice_table& ice_table_vals, view_collect_table& collect_table_vals) {
 
-  using DeviceItab    = typename view_itab_table::non_const_type;
-  using DeviceItabcol = typename view_itabcol_table::non_const_type;
+  using DeviceIcetable = typename view_ice_table::non_const_type;
+  using DeviceColtable = typename view_collect_table::non_const_type;
 
-  const auto itab_d    = DeviceItab("itab");
-  const auto itabcol_d = DeviceItabcol("itabcol");
+  const auto ice_table_vals_d     = DeviceIcetable("ice_table_vals");
+  const auto collect_table_vals_d = DeviceColtable("collect_table_vals");
 
-  const auto itab_h    = Kokkos::create_mirror_view(itab_d);
-  const auto itabcol_h = Kokkos::create_mirror_view(itabcol_d);
+  const auto ice_table_vals_h    = Kokkos::create_mirror_view(ice_table_vals_d);
+  const auto collect_table_vals_h = Kokkos::create_mirror_view(collect_table_vals_d);
 
   //
   // read in ice microphysics table into host views
@@ -50,7 +50,7 @@ void Functions<S,D>
         for (int j = 0; j < 15; ++j) {
           in >> dum_s;
           if (j > 1 && j != 10) {
-            itab_h(jj, ii, i, j_idx++) = dum_s;
+            ice_table_vals_h(jj, ii, i, j_idx++) = dum_s;
           }
         }
       }
@@ -62,7 +62,7 @@ void Functions<S,D>
           for (int k = 0; k < 6; ++k) {
             in >> dum_s;
             if (k == 3 || k == 4) {
-              itabcol_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
+              collect_table_vals_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
             }
           }
         }
@@ -71,17 +71,17 @@ void Functions<S,D>
   }
 
   // deep copy to device
-  Kokkos::deep_copy(itab_d, itab_h);
-  Kokkos::deep_copy(itabcol_d, itabcol_h);
-  itab    = itab_d;
-  itabcol = itabcol_d;
+  Kokkos::deep_copy(ice_table_vals_d, ice_table_vals_h);
+  Kokkos::deep_copy(collect_table_vals_d, collect_table_vals_h);
+  ice_table_vals    = ice_table_vals_d;
+  collect_table_vals = collect_table_vals_d;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::lookup_ice (const Spack& qi, const Spack& ni,
-              const Spack& qm, const Spack& rhop, TableIce& t,
+              const Spack& qm, const Spack& rhop, TableIce& tab,
               const Smask& context)
 {
   // find index for qi (normalized ice mass mixing ratio = qi/ni)
@@ -94,53 +94,53 @@ void Functions<S,D>
   if (!context.any()) return;
 
   const auto lookup_table_1a_dum1_c = P3C::lookup_table_1a_dum1_c;
-  t.dum1 = (log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
-  t.dumi = IntSmallPack(t.dum1);
+  tab.dum1 = (log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
+  tab.dumi = IntSmallPack(tab.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
-  t.dum1 = min(t.dum1, static_cast<Scalar>(P3C::isize));
-  t.dum1 = max(t.dum1, sp(1.));
-  t.dumi = max(1, t.dumi);
-  t.dumi = min(P3C::isize-1, t.dumi);
+  tab.dum1 = min(tab.dum1, static_cast<Scalar>(P3C::isize));
+  tab.dum1 = max(tab.dum1, sp(1.));
+  tab.dumi = max(1, tab.dumi);
+  tab.dumi = min(P3C::isize-1, tab.dumi);
 
   // find index for rime mass fraction
-  t.dum4  = (qm/qi)*3 + 1;
-  t.dumii = IntSmallPack(t.dum4);
+  tab.dum4  = (qm/qi)*3 + 1;
+  tab.dumii = IntSmallPack(tab.dum4);
 
   // set limits
-  t.dum4  = min(t.dum4, static_cast<Scalar>(P3C::rimsize));
-  t.dum4  = max(t.dum4, sp(1.));
-  t.dumii = max(1, t.dumii);
-  t.dumii = min(P3C::rimsize-1, t.dumii);
+  tab.dum4  = min(tab.dum4, static_cast<Scalar>(P3C::rimsize));
+  tab.dum4  = max(tab.dum4, sp(1.));
+  tab.dumii = max(1, tab.dumii);
+  tab.dumii = min(P3C::rimsize-1, tab.dumii);
 
   // find index for bulk rime density
   // (account for uneven spacing in lookup table for density)
   const auto rhop_le_650 = context && (rhop <= 650);
   const auto rhop_gt_650 = !rhop_le_650 && context;
-  t.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
-  t.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
+  tab.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
+  tab.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
 
   // set limits
-  t.dumjj = IntSmallPack(t.dum5);
-  t.dum5  = min(t.dum5, static_cast<Scalar>(P3C::densize));
-  t.dum5  = max(t.dum5, sp(1.));
-  t.dumjj = max(1, t.dumjj);
-  t.dumjj = min(P3C::densize-1, t.dumjj);
+  tab.dumjj = IntSmallPack(tab.dum5);
+  tab.dum5  = min(tab.dum5, static_cast<Scalar>(P3C::densize));
+  tab.dum5  = max(tab.dum5, sp(1.));
+  tab.dumjj = max(1, tab.dumjj);
+  tab.dumjj = min(P3C::densize-1, tab.dumjj);
 
-  t.dum6  = -99;
-  t.dumzz = -99;
+  tab.dum6  = -99;
+  tab.dumzz = -99;
 
   // adjust for 0-based indexing
-  t.dumi  -= 1;
-  t.dumjj -= 1;
-  t.dumii -= 1;
-  t.dumzz -= 1;
+  tab.dumi  -= 1;
+  tab.dumjj -= 1;
+  tab.dumii -= 1;
+  tab.dumzz -= 1;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup_rain(const Spack& qr, const Spack& nr, TableRain& t,
+::lookup_rain(const Spack& qr, const Spack& nr, TableRain& tab,
               const Smask& context)
 {
   if (!context.any()) return;
@@ -156,29 +156,29 @@ void Functions<S,D>
   if (gt_small.any()) {
     dumlr.set(gt_small, cbrt(qr/(C::Pi * C::RHO_H2O * nr)));
   }
-  t.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
-  t.dumj = IntSmallPack(t.dum3);
+  tab.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
+  tab.dumj = IntSmallPack(tab.dum3);
 
   // set limits
-  t.dum3 = min(t.dum3, static_cast<Scalar>(P3C::rcollsize));
-  t.dum3 = max(t.dum3, 1);
-  t.dumj = max(1, t.dumj);
-  t.dumj = min(P3C::rcollsize-1, t.dumj);
+  tab.dum3 = min(tab.dum3, static_cast<Scalar>(P3C::rcollsize));
+  tab.dum3 = max(tab.dum3, 1);
+  tab.dumj = max(1, tab.dumj);
+  tab.dumj = min(P3C::rcollsize-1, tab.dumj);
 
-  t.dumj.set(lt_small, 1);
-  t.dum3.set(lt_small, 1);
+  tab.dumj.set(lt_small, 1);
+  tab.dum3.set(lt_small, 1);
 
   // adjust for 0-based indexing
-  t.dumj -= 1;
+  tab.dumj -= 1;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table_ice(const int& idx, const view_itab_table& itab, const TableIce& t,
+::apply_table_ice(const int& idx, const view_ice_table& ice_table_vals, const TableIce& tab,
                   const Smask& context)
 {
-  using ekat::pack::index;
+  using ekat::index;
 
   Spack proc;
   IntSmallPack idxpk(idx);
@@ -188,42 +188,42 @@ typename Functions<S,D>::Spack Functions<S,D>
   // get value at current density index
 
   // first interpolate for current rimed fraction index
-  auto iproc1 = index(itab, t.dumjj, t.dumii, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
-    (index(itab, t.dumjj, t.dumii, t.dumi+1, idxpk) - index(itab, t.dumjj, t.dumii, t.dumi, idxpk));
+  auto iproc1 = index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi+1, idxpk) - index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
-  auto gproc1 = index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
-    (index(itab, t.dumjj, t.dumii+1, t.dumi+1, idxpk) - index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk));
+  auto gproc1 = index(ice_table_vals, tab.dumjj, tab.dumii+1, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(ice_table_vals, tab.dumjj, tab.dumii+1, tab.dumi+1, idxpk) - index(ice_table_vals, tab.dumjj, tab.dumii+1, tab.dumi, idxpk));
 
-  const auto tmp1   = iproc1 + (t.dum4-Spack(t.dumii)-1) * (gproc1-iproc1);
+  const auto tmp1   = iproc1 + (tab.dum4-Spack(tab.dumii)-1) * (gproc1-iproc1);
 
   // get value at density index + 1
 
   // first interpolate for current rimed fraction index
 
-  iproc1 = index(itab, t.dumjj+1, t.dumii, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
-    (index(itab, t.dumjj+1, t.dumii, t.dumi+1, idxpk) - index(itab, t.dumjj+1, t.dumii, t.dumi, idxpk));
+  iproc1 = index(ice_table_vals, tab.dumjj+1, tab.dumii, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(ice_table_vals, tab.dumjj+1, tab.dumii, tab.dumi+1, idxpk) - index(ice_table_vals, tab.dumjj+1, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
 
-  gproc1 = index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
-    (index(itab, t.dumjj+1, t.dumii+1, t.dumi+1, idxpk)-index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk));
+  gproc1 = index(ice_table_vals, tab.dumjj+1, tab.dumii+1, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(ice_table_vals, tab.dumjj+1, tab.dumii+1, tab.dumi+1, idxpk)-index(ice_table_vals, tab.dumjj+1, tab.dumii+1, tab.dumi, idxpk));
 
-  const auto tmp2 = iproc1+(t.dum4 - Spack(t.dumii) - 1) * (gproc1-iproc1);
+  const auto tmp2 = iproc1+(tab.dum4 - Spack(tab.dumii) - 1) * (gproc1-iproc1);
 
   // get final process rate
-  proc = tmp1 + (t.dum5 - Spack(t.dumjj) - 1) * (tmp2-tmp1);
+  proc = tmp1 + (tab.dum5 - Spack(tab.dumjj) - 1) * (tmp2-tmp1);
   return proc;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table_coll(const int& idx, const view_itabcol_table& itabcoll,
+::apply_table_coll(const int& idx, const view_collect_table& collect_table_vals,
                    const TableIce& ti, const TableRain& tr,
                    const Smask& context)
 {
-  using ekat::pack::index;
+  using ekat::index;
 
   Spack proc;
   IntSmallPack idxpk(idx);
@@ -233,29 +233,29 @@ typename Functions<S,D>::Spack Functions<S,D>
   // current density index
 
   // current rime fraction index
-  auto dproc1  = index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+  auto dproc1  = index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1) *
-    (index(itabcoll, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
-     index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk));
+    (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
+     index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
-  auto dproc2  = index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
+  auto dproc2  = index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1)*
-    (index(itabcoll, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
-     index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
+    (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
+     index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
 
   auto iproc1  = dproc1+(tr.dum3 - Spack(tr.dumj) - 1) * (dproc2 - dproc1);
 
   // rime fraction index + 1
 
-  dproc1  = index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
+  dproc1  = index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1) *
-    (index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
-     index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
+    (index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
+     index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
 
-  dproc2  = index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
+  dproc2  = index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1) *
-    (index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
-     index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
+    (index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
+     index(collect_table_vals, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
   auto gproc1  = dproc1+(tr.dum3 - Spack(tr.dumj) - 1) * (dproc2-dproc1);
   const auto tmp1    = iproc1+(ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);
@@ -264,29 +264,29 @@ typename Functions<S,D>::Spack Functions<S,D>
 
   // current rime fraction index
 
-  dproc1  = index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+  dproc1  = index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1)*
-    (index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
-     index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk));
+    (index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
+     index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
-  dproc2  = index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
+  dproc2  = index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1) *
-    (index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
-     index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
+    (index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
+     index(collect_table_vals, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
 
   iproc1  = dproc1 + (tr.dum3 - Spack(tr.dumj) - 1) * (dproc2-dproc1);
 
   // rime fraction index + 1
 
-  dproc1  = index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
+  dproc1  = index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1)*
-    (index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
-     index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
+    (index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
+     index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
 
-  dproc2  = index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
+  dproc2  = index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
     (ti.dum1 - Spack(ti.dumi) - 1) *
-    (index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
-     index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
+    (index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
+     index(collect_table_vals, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
   gproc1  = dproc1 + (tr.dum3 - Spack(tr.dumj) - 1) * (dproc2-dproc1);
   const auto tmp2    = iproc1 + (ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);

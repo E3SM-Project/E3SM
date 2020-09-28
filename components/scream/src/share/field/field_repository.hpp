@@ -175,7 +175,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   // Finally, add the field to the given groups
   for (const auto& group_name : groups_names) {
     // First, make sure it's not a reserved group
-    EKAT_REQUIRE_MSG(!ekat::util::contains(m_reserved_groups,group_name),"");
+    EKAT_REQUIRE_MSG(!ekat::contains(m_reserved_groups,group_name),"");
 
     // Add the group name to the field tracking of all the fields with that name
     // Remember: fields with the same name can differ only because of tags/extents (i.e., different grids).

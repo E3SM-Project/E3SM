@@ -33,7 +33,7 @@ TEST_CASE("scorpio_interface_output", "") {
   /* load namespaces needed for I/O and for data management */
   using namespace scream;
   using namespace scream::scorpio;
-  using ekat::util::data;
+  using ekat::data;
 
   int nerr = 0; // Set a record of the number of errors encountered.
   /* Create the set of SCORPIO output files and their respective dimensions and variables. */
@@ -92,12 +92,12 @@ TEST_CASE("scorpio_interface_output", "") {
   std::array<Int,1> dimlen_1d = {10};
   std::array<Int,2> dimlen_2d = {5,10};
   std::array<Int,3> dimlen_3d = {2,5,10};
-  ekat::util::md_array<Real,10>       test_data_1d;
-  ekat::util::md_array<Real, 5,10>    test_data_2d;
-  ekat::util::md_array<Real, 2, 5,10> test_data_3d;
-  ekat::util::md_array<Int,10>        test_index_1d;
-  ekat::util::md_array<Int, 5,10>     test_index_2d;
-  ekat::util::md_array<Int, 2, 5,10>  test_index_3d;
+  ekat::md_array<Real,10>       test_data_1d;
+  ekat::md_array<Real, 5,10>    test_data_2d;
+  ekat::md_array<Real, 2, 5,10> test_data_3d;
+  ekat::md_array<Int,10>        test_index_1d;
+  ekat::md_array<Int, 5,10>     test_index_2d;
+  ekat::md_array<Int, 2, 5,10>  test_index_3d;
   Real pi = 2*acos(0.0);
   /* 
    * Degrees of Freedom decomposition of input arrays, this information is used to tell
@@ -129,21 +129,21 @@ TEST_CASE("scorpio_interface_output", "") {
   // Time is special since it is a single value:
   set_dof(outfilename,"time",0,0);
   // start with x
-  get_dof(ekat::util::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
+  get_dof(ekat::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
   std::vector<Int> x_dof(dof_x[0]);
   for (int ii=xstart,cnt=0;ii<=xstop;++ii,++cnt) {
     x_dof[cnt] = ii+1;  // Add one to index since C++ starts at 0 and Fortran starts at 1
   }
   set_dof(outfilename,"x",dof_x[0],x_dof.data());
   // next y
-  get_dof(ekat::util::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
+  get_dof(ekat::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
   std::vector<Int> y_dof(dof_y[0]);
   for (int ii=ystart,cnt=0;ii<=ystop;++ii,++cnt) {
     y_dof[cnt] = ii+1;
   }
   set_dof(outfilename,"y",dof_y[0],y_dof.data());
   // next z
-  get_dof(ekat::util::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
+  get_dof(ekat::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
   std::vector<Int> z_dof(dof_z[0]);
   for (int ii=zstart,cnt=0;ii<=zstop;++ii,++cnt) {
     z_dof[cnt] = ii+1;
@@ -200,9 +200,9 @@ TEST_CASE("scorpio_interface_output", "") {
    * So here we note, that you will most likely want to define all
    * dimensions as variables as well.
    */
-  grid_write_data_array(outfilename,"x",dof_x[0],ekat::util::data(x_data)+xstart);
-  grid_write_data_array(outfilename,"y",dof_y[0],ekat::util::data(y_data)+ystart);
-  grid_write_data_array(outfilename,"z",dof_z[0],ekat::util::data(z_data)+zstart);
+  grid_write_data_array(outfilename,"x",dof_x[0],ekat::data(x_data)+xstart);
+  grid_write_data_array(outfilename,"y",dof_y[0],ekat::data(y_data)+ystart);
+  grid_write_data_array(outfilename,"z",dof_z[0],ekat::data(z_data)+zstart);
   /* To test multiple timelevels, generate unique data for multiple timesnaps, then write the data to file. */
   Real dt = 1.0;
   for (int tt=0;tt<3;tt++) {
@@ -224,12 +224,12 @@ TEST_CASE("scorpio_interface_output", "") {
      * overwrite the current timesnap each time.
      */
     pio_update_time(outfilename,tt*dt);
-    grid_write_data_array(outfilename,"index_1d",dof_test_1d[0],ekat::util::data(test_index_1d)+test_1d_start);
-    grid_write_data_array(outfilename,"index_2d",dof_test_2d[0],ekat::util::data(test_index_2d)+test_2d_start);
-    grid_write_data_array(outfilename,"index_3d",dof_test_3d[0],ekat::util::data(test_index_3d)+test_3d_start);
-    grid_write_data_array(outfilename,"data_1d", dof_test_1d[0],ekat::util::data(test_data_1d) +test_1d_start);
-    grid_write_data_array(outfilename,"data_2d", dof_test_2d[0],ekat::util::data(test_data_2d) +test_2d_start);
-    grid_write_data_array(outfilename,"data_3d", dof_test_3d[0],ekat::util::data(test_data_3d) +test_3d_start);
+    grid_write_data_array(outfilename,"index_1d",dof_test_1d[0],ekat::data(test_index_1d)+test_1d_start);
+    grid_write_data_array(outfilename,"index_2d",dof_test_2d[0],ekat::data(test_index_2d)+test_2d_start);
+    grid_write_data_array(outfilename,"index_3d",dof_test_3d[0],ekat::data(test_index_3d)+test_3d_start);
+    grid_write_data_array(outfilename,"data_1d", dof_test_1d[0],ekat::data(test_data_1d) +test_1d_start);
+    grid_write_data_array(outfilename,"data_2d", dof_test_2d[0],ekat::data(test_data_2d) +test_2d_start);
+    grid_write_data_array(outfilename,"data_3d", dof_test_3d[0],ekat::data(test_data_3d) +test_3d_start);
     /* Call sync_outfile to ensure that all the fields are syncronized for this timesnap */
     sync_outfile(outfilename); 
   } //tt
@@ -277,9 +277,9 @@ TEST_CASE("scorpio_interface_output", "") {
   // Now that the variables have been gathered and the dof set for each one, set the iodesc decomposition from PIO.
   set_decomp(outfilename);
   /* Read input data for x, y and z, and compare with expected value.  Report mismatches as an error. */
-  grid_read_data_array(outfilename,"x",dof_x[0],ekat::util::data(x_data)+xstart);
-  grid_read_data_array(outfilename,"y",dof_y[0],ekat::util::data(y_data)+ystart);
-  grid_read_data_array(outfilename,"z",dof_z[0],ekat::util::data(z_data)+zstart);
+  grid_read_data_array(outfilename,"x",dof_x[0],ekat::data(x_data)+xstart);
+  grid_read_data_array(outfilename,"y",dof_y[0],ekat::data(y_data)+ystart);
+  grid_read_data_array(outfilename,"z",dof_z[0],ekat::data(z_data)+zstart);
   for (Int ii=xstart;ii<=xstop;ii++) {
     if (x_data[ii] != x_i(ii,x_data.size())) { ++nerr;}
   }
@@ -295,30 +295,30 @@ TEST_CASE("scorpio_interface_output", "") {
   /* Now read and compare the field data for each of the timestep */
   for (int tt=0;tt<3;tt++) {
     pio_update_time(outfilename,-999.0);
-    grid_read_data_array(outfilename,"index_1d",dof_test_1d[0],ekat::util::data(test_index_1d)+test_1d_start);
-    grid_read_data_array(outfilename,"data_1d", dof_test_1d[0],ekat::util::data(test_data_1d) +test_1d_start);
+    grid_read_data_array(outfilename,"index_1d",dof_test_1d[0],ekat::data(test_index_1d)+test_1d_start);
+    grid_read_data_array(outfilename,"data_1d", dof_test_1d[0],ekat::data(test_data_1d) +test_1d_start);
     for (int ii=0,ind=test_1d_start;ind<test_1d_stop;ii++,ind++) {
-      if (*(ekat::util::data(test_data_1d) + ind)  != f_x(x_data[ind],tt*dt)) {++nerr;}
-      if (*(ekat::util::data(test_index_1d) + ind) != ind_x(ind) + ind_t(tt))  {++nerr;}
+      if (*(ekat::data(test_data_1d) + ind)  != f_x(x_data[ind],tt*dt)) {++nerr;}
+      if (*(ekat::data(test_index_1d) + ind) != ind_x(ind) + ind_t(tt))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    grid_read_data_array(outfilename,"index_2d",dof_test_2d[0],ekat::util::data(test_index_2d)+test_2d_start);
-    grid_read_data_array(outfilename,"data_2d", dof_test_2d[0],ekat::util::data(test_data_2d) +test_2d_start);
+    grid_read_data_array(outfilename,"index_2d",dof_test_2d[0],ekat::data(test_index_2d)+test_2d_start);
+    grid_read_data_array(outfilename,"data_2d", dof_test_2d[0],ekat::data(test_data_2d) +test_2d_start);
     for (int ind=test_2d_start;ind<=test_2d_stop;ind++) {
       int jj = (int) ind / xdim[0]; 
       int ii = ind - (jj*xdim[0]);
-      if (*(ekat::util::data(test_data_2d) + ind)  != f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt)) {++nerr;}
-      if (*(ekat::util::data(test_index_2d) + ind) != ind_y(jj) + ind_x(ii) + ind_t(tt))  {++nerr;}
+      if (*(ekat::data(test_data_2d) + ind)  != f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt)) {++nerr;}
+      if (*(ekat::data(test_index_2d) + ind) != ind_y(jj) + ind_x(ii) + ind_t(tt))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    grid_read_data_array(outfilename,"index_3d",dof_test_3d[0],ekat::util::data(test_index_3d)+test_3d_start);
-    grid_read_data_array(outfilename,"data_3d", dof_test_3d[0],ekat::util::data(test_data_3d) +test_3d_start);
+    grid_read_data_array(outfilename,"index_3d",dof_test_3d[0],ekat::data(test_index_3d)+test_3d_start);
+    grid_read_data_array(outfilename,"data_3d", dof_test_3d[0],ekat::data(test_data_3d) +test_3d_start);
     for (int ind=test_3d_start;ind<=test_3d_stop;ind++) {
       int kk = (int) ind / (xdim[0]*ydim[0]);
       int jj = (int) (ind - (kk*xdim[0]*ydim[0]))/xdim[0];
       int ii = ind - (kk*xdim[0]*ydim[0] + jj*xdim[0]);
-      if (*(ekat::util::data(test_data_3d) + ind)  != f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt) + f_z(z_data[kk],tt*dt)) {++nerr;}
-      if (*(ekat::util::data(test_index_3d) + ind) != ind_z(kk) + ind_y(jj) + ind_x(ii) + ind_t(tt))  {++nerr;}
+      if (*(ekat::data(test_data_3d) + ind)  != f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt) + f_z(z_data[kk],tt*dt)) {++nerr;}
+      if (*(ekat::data(test_index_3d) + ind) != ind_z(kk) + ind_y(jj) + ind_x(ii) + ind_t(tt))  {++nerr;}
     }
     REQUIRE(nerr==0);
   } //tt
@@ -345,7 +345,7 @@ TEST_CASE("scorpio_interface_input", "") {
 
   using namespace scream;
   using namespace scream::scorpio;
-  using ekat::util::data;
+  using ekat::data;
 
   Real pi = 2*acos(0.0);
   Real dt = 1.0;
@@ -389,22 +389,22 @@ TEST_CASE("scorpio_interface_input", "") {
   std::array<Real,10> x_data;
   std::array<Real, 5> y_data;
   std::array<Real, 2> z_data;
-  ekat::util::md_array<Real,10>       test_data_1d;
-  ekat::util::md_array<Real, 5,10>    test_data_2d;
-  ekat::util::md_array<Real, 2, 5,10> test_data_3d;
-  ekat::util::md_array<Int,10>        test_index_1d;
-  ekat::util::md_array<Int, 5,10>     test_index_2d;
-  ekat::util::md_array<Int, 2, 5,10>  test_index_3d;
+  ekat::md_array<Real,10>       test_data_1d;
+  ekat::md_array<Real, 5,10>    test_data_2d;
+  ekat::md_array<Real, 2, 5,10> test_data_3d;
+  ekat::md_array<Int,10>        test_index_1d;
+  ekat::md_array<Int, 5,10>     test_index_2d;
+  ekat::md_array<Int, 2, 5,10>  test_index_3d;
   // Local arrays for BFB comparison
   std::array<Real,10> comp_x;
   std::array<Real, 5> comp_y;
   std::array<Real, 2> comp_z;
-  ekat::util::md_array<Real,3,10>       comp_data_1d;
-  ekat::util::md_array<Real,3, 5,10>    comp_data_2d;
-  ekat::util::md_array<Real,3, 2, 5,10> comp_data_3d;
-  ekat::util::md_array<Int, 3,10>       comp_index_1d;
-  ekat::util::md_array<Int, 3, 5,10>    comp_index_2d;
-  ekat::util::md_array<Int, 3, 2, 5,10> comp_index_3d;
+  ekat::md_array<Real,3,10>       comp_data_1d;
+  ekat::md_array<Real,3, 5,10>    comp_data_2d;
+  ekat::md_array<Real,3, 2, 5,10> comp_data_3d;
+  ekat::md_array<Int, 3,10>       comp_index_1d;
+  ekat::md_array<Int, 3, 5,10>    comp_index_2d;
+  ekat::md_array<Int, 3, 2, 5,10> comp_index_3d;
   for (int tt=0;tt<3;tt++) {
     for (decltype(comp_x)::size_type ii=0;ii<x_data.size();ii++) {
       comp_x[ii] = 2.0*pi/comp_x.size()*(ii+1);
@@ -439,21 +439,21 @@ TEST_CASE("scorpio_interface_input", "") {
 
   set_dof(infilename,"time",0,0);
 
-  get_dof(ekat::util::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
+  get_dof(ekat::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
   std::vector<Int> x_dof(dof_x[0]);
   for (int ii=xstart,cnt=0;ii<=xstop;++ii,++cnt) {
     x_dof[cnt] = ii+1;
   }
   set_dof(infilename,"x",dof_x[0],x_dof.data());
 
-  get_dof(ekat::util::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
+  get_dof(ekat::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
   std::vector<Int> y_dof(dof_y[0]);
   for (int ii=ystart,cnt=0;ii<=ystop;++ii,++cnt) {
     y_dof[cnt] = ii+1;
   }
   set_dof(infilename,"y",dof_y[0],y_dof.data());
 
-  get_dof(ekat::util::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
+  get_dof(ekat::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
   std::vector<Int> z_dof(dof_z[0]);
   for (int ii=zstart,cnt=0;ii<=zstop;++ii,++cnt) {
     z_dof[cnt] = ii+1;
@@ -486,9 +486,9 @@ TEST_CASE("scorpio_interface_input", "") {
 
   set_decomp(infilename);
   // Read input data and compare
-  grid_read_data_array(infilename,"x",dof_x[0],ekat::util::data(x_data)+xstart);
-  grid_read_data_array(infilename,"y",dof_y[0],ekat::util::data(y_data)+ystart);
-  grid_read_data_array(infilename,"z",dof_z[0],ekat::util::data(z_data)+zstart);
+  grid_read_data_array(infilename,"x",dof_x[0],ekat::data(x_data)+xstart);
+  grid_read_data_array(infilename,"y",dof_y[0],ekat::data(y_data)+ystart);
+  grid_read_data_array(infilename,"z",dof_z[0],ekat::data(z_data)+zstart);
 
   for (Int ii=xstart;ii<=xstop;ii++) {
     if (x_data[ii] != comp_x[ii]) { ++nerr;}
@@ -504,25 +504,25 @@ TEST_CASE("scorpio_interface_input", "") {
   REQUIRE(nerr==0);
   for (int tt=0;tt<3;tt++) {
     pio_update_time(infilename,-999.0);
-    grid_read_data_array(infilename,"index_1d",dof_test_1d[0],ekat::util::data(test_index_1d)+test_1d_start);
-    grid_read_data_array(infilename,"index_2d",dof_test_2d[0],ekat::util::data(test_index_2d)+test_2d_start);
-    grid_read_data_array(infilename,"index_3d",dof_test_3d[0],ekat::util::data(test_index_3d)+test_3d_start);
-    grid_read_data_array(infilename,"data_1d", dof_test_1d[0],ekat::util::data(test_data_1d) +test_1d_start);
-    grid_read_data_array(infilename,"data_2d", dof_test_2d[0],ekat::util::data(test_data_2d) +test_2d_start);
-    grid_read_data_array(infilename,"data_3d", dof_test_3d[0],ekat::util::data(test_data_3d) +test_3d_start);
+    grid_read_data_array(infilename,"index_1d",dof_test_1d[0],ekat::data(test_index_1d)+test_1d_start);
+    grid_read_data_array(infilename,"index_2d",dof_test_2d[0],ekat::data(test_index_2d)+test_2d_start);
+    grid_read_data_array(infilename,"index_3d",dof_test_3d[0],ekat::data(test_index_3d)+test_3d_start);
+    grid_read_data_array(infilename,"data_1d", dof_test_1d[0],ekat::data(test_data_1d) +test_1d_start);
+    grid_read_data_array(infilename,"data_2d", dof_test_2d[0],ekat::data(test_data_2d) +test_2d_start);
+    grid_read_data_array(infilename,"data_3d", dof_test_3d[0],ekat::data(test_data_3d) +test_3d_start);
     for (int ii=test_1d_start;ii<test_1d_stop;ii++) {
-      if (*(ekat::util::data(test_index_1d) + ii) != *(ekat::util::data(comp_index_1d[tt]) + ii)) {++nerr;}
-      if (*(ekat::util::data(test_data_1d) + ii)  != *(ekat::util::data(comp_data_1d[tt]) + ii))  {++nerr;}
+      if (*(ekat::data(test_index_1d) + ii) != *(ekat::data(comp_index_1d[tt]) + ii)) {++nerr;}
+      if (*(ekat::data(test_data_1d) + ii)  != *(ekat::data(comp_data_1d[tt]) + ii))  {++nerr;}
     }
     REQUIRE(nerr==0);
     for (int ii=test_2d_start;ii<test_2d_stop;ii++) {
-      if (*(ekat::util::data(test_index_2d) + ii) != *(ekat::util::data(comp_index_2d[tt]) + ii)) {++nerr;}
-      if (*(ekat::util::data(test_data_2d) + ii)  != *(ekat::util::data(comp_data_2d[tt]) + ii))  {++nerr;}
+      if (*(ekat::data(test_index_2d) + ii) != *(ekat::data(comp_index_2d[tt]) + ii)) {++nerr;}
+      if (*(ekat::data(test_data_2d) + ii)  != *(ekat::data(comp_data_2d[tt]) + ii))  {++nerr;}
     }
     REQUIRE(nerr==0);
     for (int ii=test_3d_start;ii<test_3d_stop;ii++) {
-      if (*(ekat::util::data(test_index_3d) + ii) != *(ekat::util::data(comp_index_3d[tt]) + ii)) {++nerr;}
-      if (*(ekat::util::data(test_data_3d) + ii)  != *(ekat::util::data(comp_data_3d[tt]) + ii))  {++nerr;}
+      if (*(ekat::data(test_index_3d) + ii) != *(ekat::data(comp_index_3d[tt]) + ii)) {++nerr;}
+      if (*(ekat::data(test_data_3d) + ii)  != *(ekat::data(comp_data_3d[tt]) + ii))  {++nerr;}
     }
     REQUIRE(nerr==0);
   } //tt

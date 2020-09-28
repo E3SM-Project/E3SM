@@ -19,7 +19,7 @@ void Functions<S,D>
   const Scalar& phis,
   const uview_1d<Spack>& host_dse)
 {
-  const Int nlev_pack = ekat::pack::npack<Spack>(nlev);
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   // Constants used
   const auto lcond = C::LatVap;

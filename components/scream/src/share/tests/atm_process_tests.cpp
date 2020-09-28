@@ -40,17 +40,6 @@ public:
   // The communicator associated with this atm process
   const ekat::Comm& get_comm () const { return m_comm; }
 
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
-  void initialize (const util::TimeStamp& /* t0 */ ) {}
-
-  // The run method is responsible for exporting atm states to the e3sm coupler, and
-  // import surface states from the e3sm coupler.
-  void run (const Real /* dt */) {}
-
-  // Clean up
-  void finalize ( /* inputs */ ) {}
-
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& /* field_repo */) const {}
 
@@ -59,6 +48,17 @@ public:
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_fids_out; }
 
 protected:
+
+  // The initialization method should prepare all stuff needed to import/export from/to
+  // f90 structures.
+  void initialize_impl (const util::TimeStamp& /* t0 */ ) {}
+
+  // The run method is responsible for exporting atm states to the e3sm coupler, and
+  // import surface states from the e3sm coupler.
+  void run_impl (const Real /* dt */) {}
+
+  // Clean up
+  void finalize_impl ( /* inputs */ ) {}
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& /* f */) {}
