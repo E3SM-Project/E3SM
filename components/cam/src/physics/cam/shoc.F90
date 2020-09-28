@@ -1751,7 +1751,7 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   wsec_diff     = w_sec_kc    - w_sec
   tke_diff      = tke_kc      - tke
 
-  f0 = thedz2 * bfb_cube(bet2) * iso**4 * wthl_sec * &
+  f0 = thedz2 * bfb_cube(bet2) * bfb_quad(iso) * wthl_sec * &
        thl_sec_diff
 
   f1 = thedz2 * bfb_square(bet2) * bfb_cube(iso) * (wthl_sec * &
@@ -1815,7 +1815,7 @@ subroutine x_y_terms_diag_third_shoc_moment(&
 ! local variables
   real(rtype) :: a0, a1, a2, a3
 
-  a0=(0.52_rtype*(c_diag_3rd_mom**(-2._rtype)))/(c_diag_3rd_mom-2._rtype)
+  a0=(0.52_rtype*(1._rtype/bfb_square(c_diag_3rd_mom)))/(c_diag_3rd_mom-2._rtype)
   a1=0.87_rtype/bfb_square(c_diag_3rd_mom)
   a2=0.5_rtype/c_diag_3rd_mom
   a3=0.6_rtype/(c_diag_3rd_mom*(c_diag_3rd_mom-2._rtype))
@@ -1894,7 +1894,7 @@ subroutine clipping_diag_third_shoc_moments(&
 
       tsign = 1._rtype
       theterm = w_sec_zi(i,k)
-      cond = w3clip * bfb_sqrt(2._rtype * bfb_cube(theterm))
+      cond = w3clip * bfb_sqrt(2._rtype * (theterm**3))
       if (w3(i,k) .lt. 0) tsign = -1._rtype
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
 
