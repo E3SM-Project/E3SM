@@ -122,7 +122,8 @@ contains
    !
    ! !LOCAL VARIABLES:
    integer  :: g, c    ! index
-   real(r8) :: wtpft_sum, wtcft_sum
+   real(r8) :: wtpft_sum, wtcft_sum, tmp
+   real(r8), parameter :: eps = 1.e-14_r8
    !-----------------------------------------------------------------------
 
    do g = begg, endg
@@ -138,14 +139,21 @@ contains
          if (wtcft_sum > 0.0_r8) then ! Crops are present in the PFTs
 
             ! Set the CFT landunit fraction and update the PFT landunit fraction
-            wt_lunit(g,istcrop) = wtcft_sum * wt_lunit(g,istsoil)
+            wt_lunit(g,istcrop) = wtcft_sum/100._r8 * wt_lunit(g,istsoil)
             wt_lunit(g,istsoil) = wt_lunit(g,istsoil) - wt_lunit(g,istcrop)
 
             ! Update the CFT fraction w.r.t. CFT landunit
+            tmp = 0._r8
             do c = cft_lb, cft_ub
                wt_cft(g,c) = wt_cft(g,c)/wtcft_sum * 100._r8
+               tmp = tmp + wt_cft(g,c);
                wt_nat_patch(g,c) = 0.0_r8
             enddo
+            if (abs(tmp - 100._r8) > eps) then
+               do c = cft_lb, cft_ub
+                  wt_cft(g,c) = wt_cft(g,c) + (100._r8 - tmp)/cft_size
+               enddo
+            endif
 
             ! Determine the PFT fraction
             wtpft_sum = 0.0_r8
@@ -175,6 +183,7 @@ contains
          ! Natural vegetation landunit is not present, so crop landunit is also
          ! not present
          wt_cft(g,:) = 0.0_r8
+         wt_cft(g,cft_lb) = 100.0_r8
       end if
    end do
 
