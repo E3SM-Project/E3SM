@@ -1089,5 +1089,75 @@ void clipping_diag_third_shoc_moments_f(Int nlevi, Int shcol, Real *w_sec_zi,
   ekat::device_to_host<int,1>({w3}, {shcol}, {nlevi}, inout_views, true);
 }
 
+void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
+                             Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
+                             Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using Pack1d     = typename ekat::Pack<Real,1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_2d, 6> temp_d;
+  Kokkos::Array<int, 6> dim1_sizes        = {shcol,   shcol, shcol, shcol, shcol,  shcol};
+  Kokkos::Array<int, 6> dim2_sizes        = {nlev,     nlev, nlev,  nlev,  nlev,   nlev};
+  Kokkos::Array<const Real*, 6> ptr_array = {host_dse, pdel, rtm,   rcm,   u_wind, v_wind};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // inputs
+  view_2d
+    host_dse_d(temp_d[0]),
+    pdel_d    (temp_d[1]),
+    rtm_d     (temp_d[2]),
+    rcm_d     (temp_d[3]),
+    u_wind_d  (temp_d[4]),
+    v_wind_d  (temp_d[5]);
+
+  // outputs
+  view_1d
+    se_int_d("se_int", shcol),
+    ke_int_d("ke_int", shcol),
+    wv_int_d("wv_int", shcol),
+    wl_int_d("wl_int", shcol);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto host_dse_s = ekat::subview(host_dse_d, i);
+    const auto pdel_s     = ekat::subview(pdel_d, i);
+    const auto rtm_s      = ekat::subview(rtm_d, i);
+    const auto rcm_s      = ekat::subview(rcm_d, i);
+    const auto u_wind_s   = ekat::subview(u_wind_d, i);
+    const auto v_wind_s   = ekat::subview(v_wind_d, i);
+
+    Scalar se_int_s{0};
+    Scalar ke_int_s{0};
+    Scalar wv_int_s{0};
+    Scalar wl_int_s{0};
+
+    SHF::shoc_energy_integrals(team, nlev, host_dse_s, pdel_s, rtm_s, rcm_s, u_wind_s, v_wind_s,
+                               se_int_s, ke_int_s, wv_int_s, wl_int_s);
+
+    se_int_d(i)[0] = se_int_s;
+    ke_int_d(i)[0] = ke_int_s;
+    wv_int_d(i)[0] = wv_int_s;
+    wl_int_d(i)[0] = wl_int_s;
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 4> inout_views = {se_int_d, ke_int_d, wv_int_d, wl_int_d};
+  ekat::device_to_host<int,4>({se_int,ke_int,wv_int,wl_int},shcol,inout_views);
+}
+
 } // namespace shoc
 } // namespace scream
