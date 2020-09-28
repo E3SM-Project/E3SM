@@ -404,10 +404,10 @@ contains
             ! The standard atan formulation is approximated following equation (13) of Girones et al (2012)
             ! https://doi.org/10.1109/MSP.2012.2219677
             do k = 1,maxLevelCell(iCell)
-               x = (abs(cvmix_variables % zw_iface(k)) - config_cvmix_bryanLewis_transitionDepth) / &
-                   config_cvmix_bryanLewis_transitionWidth
-               vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_bryanLewis_bl1 + &
-                        (config_cvmix_bryanLewis_bl2/2.0_RKIND)*(sign(1.0_RKIND, x)*(0.596227_RKIND*     &
+               x = (abs(cvmix_variables % zw_iface(k)) - config_cvmix_BryanLewis_transitionDepth) / &
+                   config_cvmix_BryanLewis_transitionWidth
+               vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) + config_cvmix_BryanLewis_bl1 + &
+                        (config_cvmix_BryanLewis_bl2/2.0_RKIND)*(sign(1.0_RKIND, x)*(0.596227_RKIND*     &
                         abs(x)+x**2)/(1.0_RKIND+1.192454_RKIND*abs(x)+x**2))
                vertViscTopOfCell(k, iCell) = config_cvmix_prandtl_number*vertDiffTopOfCell(k, iCell)
             enddo
@@ -919,7 +919,7 @@ contains
 
          call mpas_log_write(&
             'Invalid choice for config_cvmix_background_scheme.  Choices are: none, &
-             constant, bryanLewis')
+             constant, BryanLewis')
 
          err = 1
 
@@ -963,7 +963,7 @@ contains
       if (config_use_cvmix_shear) then
         if (cvmixBackgroundChoice == cvmixBackgroundTypeNone .and. cvmixShearMixingChoice == cvmixShearMixingTypePP) then
             call mpas_log_write("config_use_cvmix_shear cannot be used with with config_cvmix_shear_mixing_scheme = 'PP'" &
-                 // "       without config_cvmix_background_scheme = 'constant' or 'bryanLewis'", MPAS_LOG_CRIT)
+                 // "       without config_cvmix_background_scheme = 'constant' or 'BryanLewis'", MPAS_LOG_CRIT)
             err = 1
             return
         end if
