@@ -46,11 +46,11 @@ module ocn_gm
    real(kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
    ! The following logical variables are used to configure the three 
-   ! available GM closures (constant, N2_dependent, visbeck, edenGreatbatch)
-   logical :: local_config_GM_compute_visbeck
+   ! available GM closures (constant, N2_dependent, Visbeck, EdenGreatbatch)
+   logical :: local_config_GM_compute_Visbeck
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
-   logical :: local_config_GM_compute_edenGreatbatch
+   logical :: local_config_GM_compute_EdenGreatbatch
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 
 !***********************************************************************
@@ -124,7 +124,7 @@ contains
                                                     inSituSalineContractionCoeff, RediKappaScaling, gmKappaScaling, RediKappaSfcTaper, &
                                                     zTop, RiTopOfCell
 
-      real(kind=RKIND), dimension(:), pointer   :: c_visbeck, gmBolusKappa, cGMphaseSpeed, &
+      real(kind=RKIND), dimension(:), pointer   :: c_Visbeck, gmBolusKappa, cGMphaseSpeed, &
                 ssh, eddyLength, eddyTime, betaEdge, fEdge, gmResolutionTaper, RediKappa
       real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
@@ -573,7 +573,7 @@ contains
            !$omp end parallel
          end if
 
-         ! For config_GM_closure = 'N2_dependent' or 'visbeck' or 'edenGreatbatch' compute a spatially
+         ! For config_GM_closure = 'N2_dependent' or 'Visbeck' or 'EdenGreatbatch' compute a spatially
          ! variable baroclinic phase speed, the mode can be specified by config_GM_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
@@ -609,16 +609,16 @@ contains
             !$omp end parallel
          end if
 
-         ! When config_GM_closure = 'visbeck' actually modify the value of gmBolusKappa based on
+         ! When config_GM_closure = 'Visbeck' actually modify the value of gmBolusKappa based on
          ! Visbeck et al (1997), JPO as recast by Cessi (2008), JPO
-         if (local_config_GM_compute_visbeck) then
+         if (local_config_GM_compute_Visbeck) then
            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
            call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
            call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-           call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
+           call mpas_pool_get_array(diagnosticsPool, 'c_Visbeck', c_Visbeck)
            !$omp parallel
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2)
@@ -633,7 +633,7 @@ contains
 
               k = 2
               zEdge = -layerThicknessEdge(k-1,iEdge)
-              do while(zEdge > -config_GM_visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
+              do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
                 sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
@@ -648,26 +648,26 @@ contains
               end do
 
               if (countN2 > 0) then
-                c_visbeck(iEdge) = sqrt(sumN2*ltsum)
+                c_Visbeck(iEdge) = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
-                eddyLength(iEdge) = min(c_visbeck(iEdge)/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
-                                sqrt(c_visbeck(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
-                eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_visbeck(iEdge)*betaEdge(iEdge))) /  &
+                eddyLength(iEdge) = min(c_Visbeck(iEdge)/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
+                                sqrt(c_Visbeck(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
+                eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_Visbeck(iEdge)*betaEdge(iEdge))) /  &
                                       (1.0E-11_RKIND + sqrt(sumRi)))
-                gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
-                gmBolusKappa(iEdge) = max(config_GM_visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_visbeck_max_kappa))
+                gmBolusKappa(iEdge) = config_GM_Visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
+                gmBolusKappa(iEdge) = max(config_GM_Visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_Visbeck_max_kappa))
              else !for really shallow columns use min bolus kappa
-                gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
+                gmBolusKappa(iEdge) = config_GM_Visbeck_min_kappa
              end if
            end do
            !$omp end do
            !$omp end parallel
          end if
 
-         ! When config_GM_closure = 'edenGreatbatch' actually modify the value of gmBolusKappa based on
+         ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
          ! Eden and Greatbach (2008), Ocean Model., but assuming quasi-geostrophy to simplify the EKE budget
-         if (local_config_GM_compute_edenGreatbatch) then
+         if (local_config_GM_compute_EdenGreatbatch) then
            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
@@ -690,8 +690,8 @@ contains
                  Length = min(Lr,L_rhines)
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
-                 gmKappaScaling(k,iEdge) = max(config_GM_visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
-                         Length**2.0*sigma, config_GM_visbeck_max_kappa)) / gmBolusKappa(iEdge)
+                 gmKappaScaling(k,iEdge) = max(config_GM_Visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
+                         Length**2.0*sigma, config_GM_Visbeck_max_kappa)) / gmBolusKappa(iEdge)
               enddo
            enddo
            !$omp end do
@@ -957,8 +957,8 @@ contains
          if (config_GM_closure == 'constant') then
             local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
-            local_config_GM_compute_visbeck = .false.
-            local_config_GM_compute_edenGreatbatch = .false.
+            local_config_GM_compute_Visbeck = .false.
+            local_config_GM_compute_EdenGreatbatch = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
@@ -970,8 +970,8 @@ contains
          else if (config_GM_closure == 'N2_dependent') then
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .true.
-            local_config_GM_compute_visbeck = .false.
-            local_config_GM_compute_edenGreatbatch = .false.
+            local_config_GM_compute_Visbeck = .false.
+            local_config_GM_compute_EdenGreatbatch = .false.
 
             RediGMinitValue = 0.0_RKIND
             ! for N2 dependence, we still assign Kappa as a constant.
@@ -982,11 +982,12 @@ contains
             end do
             !$omp end do
             !$omp end parallel
-         else if (config_GM_closure == 'visbeck') then
+         else if (config_GM_closure == 'Visbeck'.or. &
+                  config_GM_closure == 'visbeck') then
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .false.
-            local_config_GM_compute_visbeck = .true.
-            local_config_GM_compute_edenGreatbatch = .false.
+            local_config_GM_compute_Visbeck = .true.
+            local_config_GM_compute_EdenGreatbatch = .false.
 
             call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
@@ -995,15 +996,16 @@ contains
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-              gmBolusKappa(iEdge) = config_GM_visbeck_max_kappa
+              gmBolusKappa(iEdge) = config_GM_Visbeck_max_kappa
             end do
             !$omp end do
             !$omp end parallel
-         else if (config_GM_closure == 'edenGreatbatch') then
+         else if (config_GM_closure == 'EdenGreatbatch'.or. &
+                  config_GM_closure == 'edenGreatbatch') then
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .false.
-            local_config_GM_compute_visbeck = .false.
-            local_config_GM_compute_edenGreatbatch = .true.
+            local_config_GM_compute_Visbeck = .false.
+            local_config_GM_compute_EdenGreatbatch = .true.
 
             call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
@@ -1012,7 +1014,7 @@ contains
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-              gmBolusKappa(iEdge) = config_GM_visbeck_max_kappa
+              gmBolusKappa(iEdge) = config_GM_Visbeck_max_kappa
             end do
             !$omp end do
             !$omp end parallel
