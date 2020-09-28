@@ -1751,10 +1751,10 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   wsec_diff     = w_sec_kc    - w_sec
   tke_diff      = tke_kc      - tke
 
-  f0 = thedz2 * bet2**3 * iso**4 * wthl_sec * &
+  f0 = thedz2 * bet2**3 * bfb_quad(iso) * wthl_sec * &
        thl_sec_diff
 
-  f1 = thedz2 * bfb_square(bet2) * iso**3 * (wthl_sec * &
+  f1 = thedz2 * bfb_square(bet2) * bfb_cube(iso) * (wthl_sec * &
        wthl_sec_diff + 0.5_rtype * &
        w_sec_zi*thl_sec_diff)
 
@@ -1894,7 +1894,7 @@ subroutine clipping_diag_third_shoc_moments(&
 
       tsign = 1._rtype
       theterm = w_sec_zi(i,k)
-      cond = w3clip * bfb_sqrt(2._rtype * (theterm**3))
+      cond = w3clip * bfb_sqrt(2._rtype * bfb_cube(theterm))
       if (w3(i,k) .lt. 0) tsign = -1._rtype
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
 
