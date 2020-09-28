@@ -24,7 +24,7 @@ module micro_p3_utils
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
        inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
-       rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
+       rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep, &
        p3_qc_autocon_expon, p3_qc_accret_expon
 
@@ -33,10 +33,10 @@ module micro_p3_utils
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
     real(rtype), public, parameter :: lookup_table_1a_dum1_c =  4.135985029041767d+00 ! 1.0/(0.1*log10(261.7))
 
-    real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
-    real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
-    real(rtype),public :: homogfrze ! Homogeneous freezing temperature, -40C  ~K
-    real(rtype),public :: icenuct   ! Ice nucleation temperature, -5C ~K
+    real(rtype),public :: T_zerodegc  ! Temperature at zero degree celcius ~K
+    real(rtype),public :: T_rainfrz  ! Contact and immersion freexing temp, -4C  ~K
+    real(rtype),public :: T_homogfrz ! Homogeneous freezing temperature, -40C  ~K
+    real(rtype),public :: T_icenuc   ! Ice nucleation temperature, -5C ~K
 
     real(rtype),public :: pi_e3sm
     ! ice microphysics lookup table array dimensions
@@ -44,8 +44,8 @@ module micro_p3_utils
     integer, public,parameter :: densize      =  5
     integer, public,parameter :: rimsize      =  4
     integer, public,parameter :: rcollsize    = 30
-    integer, public,parameter :: tabsize      = 12  ! number of quantities used from lookup table
-    integer, public,parameter :: colltabsize  =  2  ! number of ice-rain collection  quantities used from lookup table
+    integer, public,parameter :: ice_table_size      = 12  ! number of quantities used from lookup table
+    integer, public,parameter :: collect_table_size  =  2  ! number of ice-rain collection  quantities used from lookup table
     ! switch for warm-rain parameterization
     ! = 1 Seifert and Beheng 2001
     ! = 2 Beheng 1994
@@ -71,7 +71,7 @@ module micro_p3_utils
     real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 
     ! in-cloud values
-    REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
+    REAL(rtype), PARAMETER :: min_cld_frac   = 1.e-20_rtype !! threshold min value for cloud fraction
     real(rtype), parameter :: incloud_limit = 5.1E-3
     real(rtype), parameter :: precip_limit  = 1.0E-2
 
@@ -109,7 +109,7 @@ module micro_p3_utils
     piov6 = pi*sxth
 
     ! maximum total ice concentration (sum of all categories)
-     max_total_Ni = 500.e+3_rtype  !(m)
+     max_total_ni = 500.e+3_rtype  !(m)
 
     ! droplet concentration (m-3)
     nccnst = 200.e+6_rtype
@@ -119,10 +119,10 @@ module micro_p3_utils
     kr     = 5.78e+3_rtype
 
     ! Temperature parameters
-    zerodegc  = tmelt 
-    homogfrze = tmelt-40._rtype
-    icenuct   = tmelt-15._rtype
-    rainfrze  = tmelt-4._rtype
+    T_zerodegc  = tmelt 
+    T_homogfrz = tmelt-40._rtype
+    T_icenuc   = tmelt-15._rtype
+    T_rainfrz  = tmelt-4._rtype
 
     ! physical constants
     cp     = cpair ! specific heat of dry air (J/K/kg) !1005.
@@ -131,7 +131,7 @@ module micro_p3_utils
     rd     = rair ! Dry air gas constant     ~ J/K/kg
     rv     = rh2o ! Water vapor gas constant ~ J/K/kg     !461.51
     ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
-    rho_1000mb = 100000._rtype/(rd*zerodegc) ! density of air at surface
+    rho_1000mb = 100000._rtype/(rd*T_zerodegc) ! density of air at surface
     rho_600mb = 60000._rtype/(rd*253.15_rtype)
     ar     = 841.99667_rtype 
     br     = 0.8_rtype

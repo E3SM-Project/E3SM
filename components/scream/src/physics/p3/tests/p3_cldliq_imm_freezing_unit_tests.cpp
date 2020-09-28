@@ -31,8 +31,8 @@ static void run_bfb()
   // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
-  constexpr Scalar t_freezing = 0.9 * C::RainFrze,
-                   t_not_freezing = 2.0 * C::RainFrze;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
+                   t_not_freezing = 2.0 * C::T_rainfrz;
   constexpr Scalar qc_incld_small = 0.9 * qsmall;
   constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
   constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
@@ -41,7 +41,7 @@ static void run_bfb()
   constexpr Scalar inv_qc_relvar_val = 1;
 
   CldliqImmersionFreezingData cldliq_imm_freezing_data[max_pack_size] = {
-    // t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
+    // T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
     {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small,inv_qc_relvar_val},
     {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small,inv_qc_relvar_val},
     {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small,inv_qc_relvar_val},
@@ -80,9 +80,9 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
+    Spack T_atm, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]            = device_data(vs).t;
+      T_atm[s]        = device_data(vs).T_atm;
       lamc[s]         = device_data(vs).lamc;
       mu_c[s]         = device_data(vs).mu_c;
       cdist1[s]       = device_data(vs).cdist1;
@@ -93,7 +93,7 @@ static void run_bfb()
     Spack qc2qi_hetero_freeze_tend{0.0};
     Spack nc2ni_immers_freeze_tend{0.0};
 
-    Functions::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
+    Functions::cldliq_immersion_freezing(T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
                                          qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend);
 
     // Copy results back into views

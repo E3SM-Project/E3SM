@@ -11,14 +11,14 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::get_time_space_phys_variables(
-  const Spack& t, const Spack& pres, const Spack& rho, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim,
+  const Spack& T_atm, const Spack& pres, const Spack& rho, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim,
   const Spack& qv_sat_l, const Spack& qv_sat_i, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
   Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii,
   const Smask& context)
 {
   //time/space varying physical variables
-  mu.set(context, sp(1.496e-6) * pow(t,sp(1.5))/(t+120));
-  dv.set(context, sp(8.794e-5) * pow(t,sp(1.81))/pres);
+  mu.set(context, sp(1.496e-6) * pow(T_atm,sp(1.5))/(T_atm+120));
+  dv.set(context, sp(8.794e-5) * pow(T_atm,sp(1.81))/pres);
   sc.set(context, mu/(rho*dv));
 
   constexpr Scalar RV     = C::RV;
@@ -26,7 +26,7 @@ void Functions<S,D>
   constexpr Scalar tval1  = 253.15;
   constexpr Scalar tval2  = 268.15;
 
-  const auto dum = 1/(RV*square(t));
+  const auto dum = 1/(RV*square(T_atm));
   dqsdt.set(context, latent_heat_vapor*qv_sat_l*dum);
   dqsidt.set(context, latent_heat_sublim*qv_sat_i*dum);
   ab.set(context, 1+dqsdt*latent_heat_vapor*INV_CP);
@@ -34,11 +34,11 @@ void Functions<S,D>
   kap.set(context, sp(1.414e+3)*mu);
 
   //very simple temperature dependent aggregation efficiency
-  const auto t_lt_tval1 = t < tval1;
-  const auto t_lt_tval2 = t < tval2;
+  const auto t_lt_tval1 = T_atm < tval1;
+  const auto t_lt_tval2 = T_atm < tval2;
 
   eii.set(t_lt_tval1 && context,sp(0.1));
-  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.1)+(t-sp(253.15))/15*sp(0.9));
+  eii.set(!t_lt_tval1 && t_lt_tval2 && context, sp(0.1)+(T_atm-sp(253.15))/15*sp(0.9));
   eii.set(!t_lt_tval1 && !t_lt_tval2 && context, 1);
 }
 

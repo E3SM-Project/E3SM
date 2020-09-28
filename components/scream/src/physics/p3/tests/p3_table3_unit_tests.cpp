@@ -69,14 +69,14 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
   }
 
   static void run () {
-    // This test doesn't use mu_r_table, as that is not a table3 type. It
-    // doesn't matter whether we use vm_table or vn_table, as the table values
+    // This test doesn't use mu_r_table_vals, as that is not a table3 type. It
+    // doesn't matter whether we use vm_table_vals or vn_table_vals, as the table values
     // don't matter in what we are testing; we are testing interpolation
     // procedures that are indepennt of particular table values.
-    view_1d_table mu_r_table;
-    view_2d_table vn_table, vm_table, revap_table;
+    view_1d_table mu_r_table_vals;
+    view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
     view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.
@@ -101,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
         const auto eval = [&] (const Int& i) {
           const auto alpha = double(i)/N;
           const auto mu_r = calc_mu_r(alpha);
-          const auto val = interp(vm_table, mu_r, lamr);
+          const auto val = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
         slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
@@ -146,7 +146,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
         const auto eval = [&] (const Int& i) {
           const auto alpha = double(i)/N;
           const auto lamr = calc_lamr(mu_r, alpha);
-          const auto val = interp(vm_table, mu_r, lamr);
+          const auto val = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
         slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
