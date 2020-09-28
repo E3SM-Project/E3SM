@@ -118,7 +118,7 @@ contains
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:, :), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
-                                                    layerThicknessEdge, &
+                                                    normalVelocity, tangentialVelocity, layerThicknessEdge, &
                                                     k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
                                                     layerThickness, inSituThermalExpansionCoeff, &
                                                     inSituSalineContractionCoeff, RediKappaScaling, gmKappaScaling, RediKappaSfcTaper, &
@@ -137,7 +137,7 @@ contains
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
       real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz
-      real(kind=RKIND) :: L, sigma, Lr, Length, L_rhines
+      real(kind=RKIND) :: L, sigma, Lr, Length, L_rhines, shearEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
@@ -163,6 +163,7 @@ contains
 
       call mpas_timer_start('gm bolus velocity')
 
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
@@ -170,6 +171,7 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
+      call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff', inSituThermalExpansionCoeff)
@@ -674,7 +676,7 @@ contains
 
            !$omp parallel
            !$omp do schedule(runtime) private(cell1, cell2, sigma, RiTopOfEdge, &
-           !$omp             L_rhines, Lr, Length)
+           !$omp             L_rhines, Lr, Length, BruntVaisalaFreqTopEdge, shearEdge)
            do iEdge=1,nEdges
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
@@ -682,8 +684,13 @@ contains
                        sqrt(cGMphaseSpeed(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
 
               do k=1,maxLevelEdgeTop(iEdge)
-                 RiTopOfEdge = 0.5_RKIND*(max(RiTopOfCell(k,cell1),0.0_RKIND) + &
-                                          max(RiTopOfCell(k,cell2),0.0_RKIND))
+                 BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                          max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
+                 shearEdge = ((normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge)) / (0.5_RKIND*     &
+                   (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))))**2.0 +             &
+                   ((tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge)) / (0.5_RKIND*       &
+                   (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))))**2.0
+                 RiTopOfEdge = BruntVaisalaFreqTopEdge / (1.0E-15_RKIND + shearEdge)
                  sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)* &
                              cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
                  L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
