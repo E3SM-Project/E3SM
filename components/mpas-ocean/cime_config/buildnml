@@ -94,8 +94,8 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
     elif ocn_grid == 'oEC60to30v3_ICG':
-        ic_date += '171101'
-        ic_prefix += 'oEC60to30v3_60layer.restartFrom_anvil0926'
+        ic_date += '200927'
+        ic_prefix += 'oEC60to30v3.restartFrom_anvilG'
         decomp_date += '161222'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'

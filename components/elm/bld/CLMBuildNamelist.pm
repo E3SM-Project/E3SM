@@ -99,15 +99,15 @@ OPTIONS
                                 bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
                                         CENTURY decomposition
                                         (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
-                                         use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true,
-                                         use_dynroot)
+                                         use_century_decomp=true, use_nitrif_denitrif=true, use_lch4=true,
+                                         and use_snicar_ad=true, use_dynroot)
                                         This toggles on the namelist variables:
-                                         use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
+                                         use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp, use_snicar_ad
                                          use_dynroot
                                 fates    = functionaly assembled terrestrial ecosystem simulator
                                           with native below ground bgc
                                           This toggles on the namelist variables:
-                                          use_fates, use_vertsoilc, use_century_decomp
+                                          use_fates, use_vertsoilc, use_snicar_ad, use_century_decomp
 
      -bgc_spinup "on|off"     CLM 4.5 Only. For CLM 4.0, spinup is controlled from configure.
                               Turn on given spinup mode for BGC setting of CN
@@ -794,7 +794,8 @@ sub setup_cmdl_fates_mode {
       my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys", 
 		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "fates_inventory_ctrl_filename","use_fates_logging",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking");
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking",
+	             "use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -1005,7 +1006,7 @@ sub setup_cmdl_bgc {
     }
 
     # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp" );
+    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
     my $ndiff = 0;
     foreach my $var ( @list ) {
        if ( ! defined($nl->get_value($var))  ) {
@@ -1017,6 +1018,9 @@ sub setup_cmdl_bgc {
           $nl_flags->{$var} = $nl->get_value($var);
        }
        if ($var eq "use_vertsoilc") {
+          $nl_flags->{$var} = ".true.";
+       }
+       if ($var eq "use_snicar_ad") {
           $nl_flags->{$var} = ".true.";
        }
        $val = $nl_flags->{$var};
@@ -2244,6 +2248,7 @@ sub setup_logic_snow {
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsnowaging' );
 }
 
+
 #-------------------------------------------------------------------------------
 
 sub setup_logic_glacier {
@@ -2475,6 +2480,7 @@ sub setup_logic_demand {
     $settings{'use_lch4'}            = $nl_flags->{'use_lch4'};
     $settings{'use_nitrif_denitrif'} = $nl_flags->{'use_nitrif_denitrif'};
     $settings{'use_vertsoilc'}       = $nl_flags->{'use_vertsoilc'};
+    $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
     $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
     $settings{'use_crop'}            = $nl_flags->{'use_crop'};
   }
@@ -2593,6 +2599,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+                    'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
@@ -2619,6 +2626,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+                    'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
@@ -2645,6 +2653,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+                    'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
