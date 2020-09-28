@@ -561,7 +561,7 @@ contains
                  maxN = max(maxN,max(BruntVaisalaFreqTopEdge, 0.0_RKIND))
                enddo
 
-               do k = 1, maxLevelEdgeTop(iEdge)
+               do k = 2, maxLevelEdgeTop(iEdge)
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
@@ -683,7 +683,7 @@ contains
               Lr = min(cGMphaseSpeed(iEdge) / abs(fEdge(iEdge)),          &
                        sqrt(cGMphaseSpeed(iEdge) / (2.0_RKIND*betaEdge(iEdge))))
 
-              do k=1,maxLevelEdgeTop(iEdge)
+              do k=2,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
                  shearEdgeInv = (0.5_RKIND*(layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)))**2.0 &

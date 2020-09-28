@@ -410,8 +410,7 @@ contains
 
       deallocate(div_hu,div_huTransport,div_huGMBolus)
 
-      nEdges = nEdgesArray( 2 )
-
+      nEdges = nEdgesArray( 3 )
       !$omp parallel
       !$omp do schedule(runtime) private(i, eoe, weightsOnEdge_temp, k)
       do iEdge = 1, nEdges
