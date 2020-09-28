@@ -4,6 +4,6 @@
 # include <slt.h>
 # include <files.h>
 #if defined(MOZART)
-MODSPATH/mo_grid.mod
+MODSPATH/mo_grid.in
 #endif
-MODSPATH/mo_chem.mod
+MODSPATH/mo_chem.in

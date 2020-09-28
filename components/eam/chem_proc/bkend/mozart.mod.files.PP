@@ -3,5 +3,5 @@
 # include <hist.h>
 # include <slt.h>
 # include <files.h>
-MODSPATH/mo_grid.mod
-MODSPATH/mo_chem.mod
+MODSPATH/mo_grid.in
+MODSPATH/mo_chem.in
