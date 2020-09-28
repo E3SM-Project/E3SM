@@ -1309,7 +1309,6 @@ contains
 
     logical, pointer :: &
          config_use_aerosols, &
-         config_use_prescribed_ice, &
          config_use_snow_liquid_ponds
 
     ! dimensions
@@ -1503,7 +1502,6 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
-       call MPAS_pool_get_config(block % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
        call MPAS_pool_get_config(block % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -1850,8 +1848,7 @@ contains
                freezeOnset(iCell), &
                dayOfYear, &
                abortFlag, &
-               abortMessage, &
-               config_use_prescribed_ice)
+               abortMessage)
           call column_write_warnings(abortFlag)
 
           ! cell-specific abort message
