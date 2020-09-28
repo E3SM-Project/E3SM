@@ -1,5 +1,13 @@
 #!/bin/bash
 
+case="master.A_WCYCL1850.ne4_oQU240.baseline"
+compset="A_WCYCL1850"
+res="ne4_oQU240"
+
+bldlog_dir="${HOME}/projects/e3sm/scratch/$case/bld"
+
+shopt -s extglob
+shopt -s nullglob
 
 function command_yellow
 {
@@ -17,15 +25,26 @@ function command_yellow_rc
     fi
 }
 
+function print_bldlog
+{
+    bldlog=$1
+    bldlog_path=(${bldlog_dir}/$bldlog.bldlog.+([[:digit:]])-+([[:digit:]]))
+    if [ -n "${bldlog_path}" ]; then
+        command_yellow "cat ${bldlog_path}"
+    fi
+}
+
 command_yellow_rc "mkdir -p $HOME/projects/e3sm/cesm-inputdata"
-command_yellow_rc 'cd cime/scripts'
-command_yellow_rc './create_newcase --case master.A_WCYCL1850.ne4_oQU240.baseline --compset A_WCYCL1850 --res ne4_oQU240'
-command_yellow_rc 'cd master.A_WCYCL1850.ne4_oQU240.baseline'
-command_yellow_rc './case.setup'
-command_yellow './case.build'
+command_yellow_rc "cd cime/scripts"
+command_yellow_rc "./create_newcase --case $case --compset $compset --res $res"
+command_yellow_rc "cd $case"
+command_yellow_rc "./case.setup"
+command_yellow "./case.build"
 rc=$?
 if [ $rc -ne 0 ]; then
-    log=`ls ${HOME}/projects/e3sm/scratch/master.A_WCYCL1850.ne4_oQU240.baseline/bld/pio.bldlog*`
-    command_yellow "cat $log"
+    print_bldlog "csm_share"
+    print_bldlog "pio"
+    print_bldlog "mct"
+    print_bldlog "gptl"
     exit $rc
 fi
