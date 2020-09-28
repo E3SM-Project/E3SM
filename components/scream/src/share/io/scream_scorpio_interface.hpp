@@ -30,6 +30,7 @@ namespace scorpio {
   void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void eam_pio_enddef(const std::string &filename);
   void pio_update_time(const std::string &filename, const Real time);
 

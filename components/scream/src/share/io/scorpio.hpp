@@ -26,16 +26,17 @@
  *  5) Make it so that all dimensions that are registered are automatically registered as variables and the values written (only once, not with time).  Probably need this information from the grid manager(?)
  *  6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.  #3
  * 6a) Also need restart history, in case you stop mid-out frequency and need to pick it up in the next run.
- *  7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?  #2
+ *--7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?  --DONE--
  *--8) Create average, min, max and instantaneous options for output.  --DONE--
  *  9) Assure that IO is compatible with PACKing of variables.
  * 10) Add control of netCDF header information to the YAML file and this class.
  * 11) Better naming convention for output files?  Currently just keeps a counter, but in EAM the date/time range is used.
  * 12) Better handling of output frequency.  Need to a) gather time info from driver and b) parse that info for frequency units.
  * 13) Expand compatability of IO class to handle Dynamics grids.  This will require a different approach to "set_dofs"
- *-14) Hook up the AD for the unit test.
+ *-14) Hook up the AD for the unit test.  --DONE--
  * 15) SCORPIO in stand-alone build.
  * 16) When dynamics is ready, write output from a dynamics run.
+ * 17) Remove the F90 layer and call PIO C routines directly.
  */
 
 namespace scream
@@ -87,8 +88,6 @@ protected:
   Int m_out_frequency;
   std::string m_out_units;
 
-  // Aaron: You were thinking about making each atmoutput have it's own local field repo where you could store the
-  // data needed to handle "averaging" types that are not "instant".  But you keep running into a compilation error.
   std::map<std::string,FieldIdentifier>  m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
@@ -118,7 +117,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   m_filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";  //TODO: The filename should be treated as a prefix to enable multiple files for the same control.  Like in the case of monthly output with 1 snap/file.
   EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
 
-  // Parse the yaml file that controls this output instance.
+  // Parse the parameters that controls this output instance.
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
   m_grid_name       = m_params.get<std::string>("GRID");
   auto& freq_params = m_params.sublist("FREQUENCY");
@@ -192,7 +191,7 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
     // Get all the info for this field.
     auto name   = f_map.first;
     auto g_view = field_repo.get_field(f_map.second).get_view();
-    auto l_view = m_view.at(name);
+    auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.  Use g_view for Instant?
     Int  f_len  = f_map.second.get_layout().size();
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type != "Instant")

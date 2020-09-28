@@ -4,16 +4,16 @@ FILENAME: scorpio_output_test_yaml_2
 AVERAGING TYPE: Instant
 GRID: Physics
 FREQUENCY:
-  OUT_N: 2
+  OUT_N: 5
   OUT_OPTION: Steps
-  OUT_MAX_STEPS: 3
+  OUT_MAX_STEPS: 1
 FIELDS:
   Number of Fields: 5
   field 1: x
-  field 2: y
-  field 3: z
-  field 4: data_3d
-  field 5: index_3d
+  field 2: index_1d
+  field 3: index_2d
+  field 4: index_3d
+  field 5: data_3d
 
 ...
 

@@ -5,6 +5,7 @@
 
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scorpio.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/io/output_manager.hpp"
 
 #include "share/grid/user_provided_grids_manager.hpp"
@@ -20,6 +21,7 @@
 namespace {
 /* ======= Internal Functions needed for test ======*/
 using namespace scream;
+using input_type = AtmosphereInput;
 using gid_type       = long;          // TODO: use int64_t? int? template class on gid_type?
 using device_type    = DefaultDevice; // TODO: template class on device type
 using kokkos_types   = KokkosTypes<device_type>;
@@ -194,15 +196,33 @@ TEST_CASE("scorpio_yaml", "") {
     auto data_2d_h = Kokkos::create_mirror_view( data_2d_dev );
     auto data_3d_h = Kokkos::create_mirror_view( data_3d_dev );
     update_data_output(data_1d_dev, data_2d_dev, data_3d_dev, xh.data(), yh.data(), zh.data(), dims3d, l_time, gids);
-    Kokkos::deep_copy(data_1d_dev,data_1d_h);
-    Kokkos::deep_copy(data_2d_dev,data_2d_h);
-    Kokkos::deep_copy(data_3d_dev,data_3d_h);
+    Kokkos::deep_copy(data_1d_h,data_1d_dev);
+    Kokkos::deep_copy(data_2d_h,data_2d_dev);
+    Kokkos::deep_copy(data_3d_h,data_3d_dev);
 
     m_output_manager.run(l_time);
   }
 
+  // Test Input:
+  ekat::ParameterList input_params = scorpio_params.sublist("Input Parameters"); //TODO: We need to make this work with parameter lists built on the fly, don't always want to have to use a YAML control.
+  input_type input_instance(io_comm,input_params);
+  input_instance.pull_input(*repo,*upgm); 
+  //input_instance.run(*repo); 
+  auto index_1d_dev = repo->get_field(fid_index_1d).get_view(); 
+  auto index_2d_dev = repo->get_field(fid_index_2d).get_reshaped_view<Real**>();
+  for (int ii = 0;ii<dims3d[0];++ii)
+  {
+    for (int jj=0;jj<dims3d[1];++jj)
+    {
+      printf("Rank %2d: %12.2f  %12.2f\n",io_comm.rank(),index_1d_dev(ii),index_2d_dev(ii,jj));
+    }
+  }
+  
+  
   //Finished with PIO, finalize the system
   m_output_manager.finalize();
+
+  // Finalize the grids manager.
   (*upgm).clean_up();
 } // TEST_CASE scorpio_yaml
 
