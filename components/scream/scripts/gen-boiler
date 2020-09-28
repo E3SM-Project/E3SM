@@ -28,16 +28,16 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Generate all boilerplate p3 subroutine foo_bar \033[0m
-    > {0} foo_bar
+    > {0} foo_bar --physics=p3
 
     \033[1;32m# Generate all boilerplate for shoc subroutine bar_baz and func_name \033[0m
-    > {0} bar_baz func_name
+    > {0} bar_baz func_name --physics=shoc
 
     \033[1;32m# Generate only f90->cxx bindings for p3 subroutine foo_bar \033[0m
-    > {0} foo_bar --piece=f90_f2c_bind
+    > {0} foo_bar --piece=f90_f2c_bind --physics=p3
 
     \033[1;32m# Overwrite only f90->cxx and cxx->f90 bindings for p3 subroutine foo_bar \033[0m
-    > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o
+    > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o --physics=p3
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.RawTextHelpFormatter

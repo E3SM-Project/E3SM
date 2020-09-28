@@ -47,6 +47,8 @@ TEST_CASE({sub}_bfb, "[{physics}_functions]")
 }} // empty namespace
 """.format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
 
+###############################################################################
+
     "cxx_func_impl": lambda phys, sub, gen_code:
 """#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
 #define {phys_upper}_{sub_upper}_IMPL_HPP
@@ -69,6 +71,8 @@ template<typename S, typename D>
 
 #endif
 """.format(physics=phys, sub=sub, gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+
+###############################################################################
 
     "cxx_eti": lambda phys, sub, gen_code: gen_code
 }
@@ -628,6 +632,8 @@ def parse_f90_args(line):
 ###############################################################################
     """
     Given a line of fortran code declaring an argument[s], return [(argname, argtype, intent, dims)]
+    Anywhere you see "arg_data" in this program, it's referring to a list of data produced by
+    this function. Anywhere you see "arg_datum", it's referring to a single item in this list.
 
     >>> parse_f90_args('integer, intent(in) :: kts, kte, kbot')
     [('kts', 'integer', 'in', None), ('kte', 'integer', 'in', None), ('kbot', 'integer', 'in', None)]
