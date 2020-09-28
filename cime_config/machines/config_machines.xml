@@ -1574,18 +1574,20 @@
         <command name="swap">gcc/9.3.0</command>
       </modules>
       <modules compiler="cray">
-        <command name="load">PrgEnv-cray/6.0.5</command>
-        <command name="rm">cce</command>
-        <command name="load">cce/9.0.2-classic</command>
-      </modules>
-      <modules compiler="!intel">
-        <command name="swap">cray-libsci/20.06.1</command>
+        <command name="swap">craype craype/2.6.1</command>
+        <command name="load">gcc/9.3.0</command>
+        <command name="load">PrgEnv-cray/6.0.7</command>
+        <command name="swap">cray-libsci cray-libsci/20.03.1</command>
       </modules>
       <modules>
+        <command name="load">craype-mic-knl</command>
         <command name="load">cray-mpich/7.7.14</command>
         <command name="load">cray-hdf5-parallel/1.10.6.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
         <command name="load">cray-parallel-netcdf/1.12.0.1</command>
+      </modules>
+      <modules compiler="!cray">
+        <command name="load">darshan</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1606,6 +1608,9 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
+    </environment_variables>
+    <environment_variables compiler="cray">
+      <env name="PKG_CONFIG_PATH">$ENV{PE_CRAYCLANG_FIXED_PKGCONFIG_PATH}:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
   </machine>
 
