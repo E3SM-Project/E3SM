@@ -157,10 +157,12 @@
 <config_GM_kappa ocn_forcing="datm_forced_restoring" ocn_grid="EC30to60E2r2">600.0</config_GM_kappa>
 <config_GM_closure>'visbeck'</config_GM_closure>
 <config_GM_baroclinic_mode>3.0</config_GM_baroclinic_mode>
-<config_GM_visbeck_alpha>0.13</config_GM_visbeck_alpha>
-<config_GM_visbeck_max_depth>1000.0</config_GM_visbeck_max_depth>
-<config_GM_visbeck_min_kappa>300.0</config_GM_visbeck_min_kappa>
-<config_GM_visbeck_max_kappa>1200.0</config_GM_visbeck_max_kappa>
+<config_GM_Visbeck_alpha>0.005</config_GM_Visbeck_alpha>
+<config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
+<config_GM_Visbeck_min_kappa>300.0</config_GM_Visbeck_min_kappa>
+<config_GM_Visbeck_max_kappa>1800.0</config_GM_Visbeck_max_kappa>
+<config_gm_EG_riMin>200.0</config_gm_EG_riMin>
+<config_gm_EG_kappa_factor>2.0</config_gm_EG_kappa_factor>
 <config_GM_min_stratification_ratio>0.1</config_GM_min_stratification_ratio>
 <config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
 
@@ -178,11 +180,14 @@
 
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
-<config_cvmix_use_kpp_buoyancyForcing_fix>.true.</config_cvmix_use_kpp_buoyancyForcing_fix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
-<config_use_cvmix_background>.true.</config_use_cvmix_background>
+<config_cvmix_background_scheme>'constant'</config_cvmix_background_scheme>
 <config_cvmix_background_diffusion>0.0</config_cvmix_background_diffusion>
 <config_cvmix_background_viscosity>1.0e-4</config_cvmix_background_viscosity>
+<config_cvmix_BryanLewis_bl1>8.0e-5</config_cvmix_BryanLewis_bl1>
+<config_cvmix_BryanLewis_bl2>1.05E-4</config_cvmix_BryanLewis_bl2>
+<config_cvmix_BryanLewis_transitionDepth>2500</config_cvmix_BryanLewis_transitionDepth>
+<config_cvmix_BryanLewis_transitionWidth>222.</config_cvmix_BryanLewis_transitionWidth>
 <config_use_cvmix_convection>.true.</config_use_cvmix_convection>
 <config_cvmix_convective_diffusion>1.0</config_cvmix_convective_diffusion>
 <config_cvmix_convective_viscosity>1.0</config_cvmix_convective_viscosity>

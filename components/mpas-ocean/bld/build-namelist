@@ -565,10 +565,12 @@ add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_kappa');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_baroclinic_mode');
-add_default($nl, 'config_GM_visbeck_alpha');
-add_default($nl, 'config_GM_visbeck_max_depth');
-add_default($nl, 'config_GM_visbeck_min_kappa');
-add_default($nl, 'config_GM_visbeck_max_kappa');
+add_default($nl, 'config_GM_Visbeck_alpha');
+add_default($nl, 'config_GM_Visbeck_max_depth');
+add_default($nl, 'config_GM_Visbeck_min_kappa');
+add_default($nl, 'config_GM_Visbeck_max_kappa');
+add_default($nl, 'config_gm_EG_riMin');
+add_default($nl, 'config_gm_EG_kappa_factor');
 add_default($nl, 'config_GM_min_stratification_ratio');
 add_default($nl, 'config_GM_constant_gravWaveSpeed');
 
@@ -595,11 +597,14 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 #########################
 
 add_default($nl, 'config_use_cvmix');
-add_default($nl, 'config_cvmix_use_kpp_buoyancyForcing_fix');
 add_default($nl, 'config_cvmix_prandtl_number');
-add_default($nl, 'config_use_cvmix_background');
+add_default($nl, 'config_cvmix_background_scheme');
 add_default($nl, 'config_cvmix_background_diffusion');
 add_default($nl, 'config_cvmix_background_viscosity');
+add_default($nl, 'config_cvmix_BryanLewis_bl1');
+add_default($nl, 'config_cvmix_BryanLewis_bl2');
+add_default($nl, 'config_cvmix_BryanLewis_transitionDepth');
+add_default($nl, 'config_cvmix_BryanLewis_transitionWidth');
 add_default($nl, 'config_use_cvmix_convection');
 add_default($nl, 'config_cvmix_convective_diffusion');
 add_default($nl, 'config_cvmix_convective_viscosity');
