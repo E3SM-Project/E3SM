@@ -69,9 +69,6 @@ contains
          seaice_column_reinitialize_diagnostics_bgc, &
          seaice_column_reinitialize_diagnostics_dynamics
 
-    use seaice_prescribed, only: &
-         seaice_run_prescribed_ice
-
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -89,7 +86,6 @@ contains
 
     logical, pointer :: &
          config_perform_unit_test, &
-         config_use_dynamics, &
          config_use_advection
 
     integer, pointer :: &
@@ -128,45 +124,37 @@ contains
        return
     endif
 
-    ! prescribed ice mode
-    call seaice_run_prescribed_ice(domain)
-
     ! pre dynamics column physics
     call mpas_timer_start("Column pre-dynamics")
     call seaice_column_predynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column pre-dynamics")
 
-    ! dynamics
-    call MPAS_pool_get_config(configs, "config_use_dynamics", config_use_dynamics)
-    if (config_use_dynamics) then
+    ! loop of dynamcis subcycle
+    call MPAS_pool_get_config(configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
+    do iDynamicsSubcycle = 1, config_dynamics_subcycle_number
 
-       ! loop of dynamcis subcycle
-       call MPAS_pool_get_config(configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
-       do iDynamicsSubcycle = 1, config_dynamics_subcycle_number
+       ! reinitialize dynamics diagnostics
+       call mpas_timer_start("Reinitialize diagnostics dynamics")
+       call seaice_column_reinitialize_diagnostics_dynamics(domain)
+       call mpas_timer_stop("Reinitialize diagnostics dynamics")
 
-          ! reinitialize dynamics diagnostics
-          call mpas_timer_start("Reinitialize diagnostics dynamics")
-          call seaice_column_reinitialize_diagnostics_dynamics(domain)
-          call mpas_timer_stop("Reinitialize diagnostics dynamics")
+       ! velocity solve
+       call mpas_timer_start("Velocity solver")
+       call seaice_run_velocity_solver(domain, clock)
+       call mpas_timer_stop("Velocity solver")
 
-          ! velocity solve
-          call mpas_timer_start("Velocity solver")
-          call seaice_run_velocity_solver(domain, clock)
-          call mpas_timer_stop("Velocity solver")
+       ! advection
+       call mpas_timer_start("Advection")
+       if (config_use_advection) &
+            call seaice_run_advection(domain, clock)
+       call mpas_timer_stop("Advection")
 
-          ! advection
-          call mpas_timer_start("Advection")
-          if (config_use_advection) &
-               call seaice_run_advection(domain, clock)
-          call mpas_timer_stop("Advection")
+       ! ridging
+       call mpas_timer_start("Column")
+       call seaice_column_dynamics_time_integration(domain, clock)
+       call mpas_timer_stop("Column")
 
-          ! ridging
-          call mpas_timer_start("Column")
-          call seaice_column_dynamics_time_integration(domain, clock)
-          call mpas_timer_stop("Column")
-
-       enddo ! iDynamicsSubcycle
-    endif ! config_use_dynamics
+    enddo ! iDynamicsSubcycle
 
     ! shortwave
     call mpas_timer_start("Column post-dynamics")
