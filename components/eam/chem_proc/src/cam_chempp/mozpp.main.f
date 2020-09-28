@@ -1894,7 +1894,7 @@ sparse_matrix_loop : &
                call system( 'cat '// trim( mod_src(i) ) // ' >> wrk.F' )
 !              write(*,*) 'cpp file ',trim(mod_src(i))
 	       il = index( mod_src(i), '/', back = .true. ) + 1
-	       iu = index( mod_src(i), '.mod', back = .true. ) - 1
+	       iu = index( mod_src(i), '.in', back = .true. ) - 1
                select case( mod_src(i)(il:iu) )
                   case( 'mo_chem' )
                      tmp_filenm = 'chem_mods'
