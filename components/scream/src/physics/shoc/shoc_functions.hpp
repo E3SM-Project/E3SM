@@ -112,6 +112,23 @@ struct Functions
     const uview_1d<Spack>& host_dse);
 
   KOKKOS_FUNCTION
+  static void compute_diag_third_shoc_moment(
+    const MemberType& team,
+    const Int& nlev,
+    const Int& nlevi,
+    const uview_1d<const Spack>& w_sec,
+    const uview_1d<const Spack>& thl_sec,
+    const uview_1d<const Spack>& wthl_sec,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& isotropy_zi,
+    const uview_1d<const Spack>& brunt_zi,
+    const uview_1d<const Spack>& w_sec_zi,
+    const uview_1d<const Spack>& thetal_zi,
+    const uview_1d<Spack>& w3);
+
+  KOKKOS_FUNCTION
   static void shoc_pblintd_init_pot(
     const MemberType& team, const Int& nlev,
     const view_1d<const Spack>& thl, const view_1d<const Spack>& ql, const view_1d<const Spack>& q,
@@ -149,6 +166,7 @@ struct Functions
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
 # include "shoc_update_host_dse_impl.hpp"
+# include "shoc_compute_diag_third_shoc_moment_impl.hpp"
 # include "shoc_pblintd_init_pot_impl.hpp"
 # include "shoc_compute_shoc_mix_shoc_length_impl.hpp"
 # include "shoc_check_tke_impl.hpp"
