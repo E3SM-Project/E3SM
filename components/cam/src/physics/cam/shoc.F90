@@ -1894,7 +1894,7 @@ subroutine clipping_diag_third_shoc_moments(&
 
       tsign = 1._rtype
       theterm = w_sec_zi(i,k)
-      cond = w3clip * bfb_sqrt(2._rtype * bfb_cube(theterm))
+      cond = w3clip * bfb_sqrt(2._rtype * (theterm**3))
       if (w3(i,k) .lt. 0) tsign = -1._rtype
       if (tsign * w3(i,k) .gt. cond) w3(i,k) = tsign * cond
 

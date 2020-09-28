@@ -12,8 +12,8 @@
 #ifndef SCREAM_BFB_MATH_INC
 #define SCREAM_BFB_MATH_INC
 
-#define bfb_square(val) ((val)*(val))
 #define bfb_cube(val) ((val)*(val)*(val))
+#define bfb_square(val) ((val)*(val))
 #define bfb_quad(val) (bfb_square(bfb_square(val)))
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
