@@ -19,7 +19,7 @@ TEST_CASE("p3-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
 
-  constexpr int num_iters = 10;
+  constexpr int num_iters = 2;
 
   // Load ad parameter list
   std::string fname = "scorpio_ad_test.yaml";

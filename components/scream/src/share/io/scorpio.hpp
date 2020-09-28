@@ -33,7 +33,7 @@
  * 11) Better naming convention for output files?  Currently just keeps a counter, but in EAM the date/time range is used.
  * 12) Better handling of output frequency.  Need to a) gather time info from driver and b) parse that info for frequency units.
  * 13) Expand compatability of IO class to handle Dynamics grids.  This will require a different approach to "set_dofs"
- * 14) Hook up the AD for the unit test.  #1
+ *-14) Hook up the AD for the unit test.
  * 15) SCORPIO in stand-alone build.
  * 16) When dynamics is ready, write output from a dynamics run.
  */

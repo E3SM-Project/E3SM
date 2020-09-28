@@ -48,6 +48,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   using namespace ShortFieldTagsNames;
 
   FieldLayout scalar3d_layout_mid { {COL,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout scalar2d_layout_mid { {COL}, {nc} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout scalar3d_layout_int { {COL,VL}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
   FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
   FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
@@ -73,6 +74,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
   m_computed_fields.emplace("T_prev",  scalar3d_layout_mid, K, grid_name);
   m_computed_fields.emplace("qv_prev", vector3d_layout_mid, Q, grid_name);
+  m_computed_fields.emplace("test",  scalar2d_layout_mid, nondim, grid_name);
 }
 
 // =========================================================================================
@@ -80,6 +82,13 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
+  auto d_test = m_p3_fields_out.at("test").get_view();
+  auto h_test = Kokkos::create_mirror_view(d_test); 
+  for (int ii=0;ii<d_test.size();++ii)
+  {
+    d_test(ii) = (Real) ii;
+  }
+  Kokkos::deep_copy(d_test,h_test);
   // Call f90 routine
   p3_init_f90 ();
 
@@ -142,6 +151,13 @@ void P3Microphysics::run_impl (const Real dt)
     Kokkos::deep_copy(m_p3_host_views_out.at(it.first),it.second.get_view());
   }
 
+  auto d_test = m_p3_fields_out.at("test").get_view();
+  auto h_test = Kokkos::create_mirror_view(d_test); 
+  for (int ii=0;ii<d_test.size();++ii)
+  {
+    d_test(ii)+=dt;
+  }
+  Kokkos::deep_copy(d_test,h_test);
   // Call f90 routine
   p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["ni_activated"], m_raw_ptrs_in["nc_nuceat_tend"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"], m_raw_ptrs_out["qv_prev"], m_raw_ptrs_out["T_prev"]);
 
@@ -157,6 +173,7 @@ void P3Microphysics::run_impl (const Real dt)
   m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
   m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
   m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(ts);
+  m_p3_fields_out.at("test").get_header().get_tracking().update_time_stamp(ts);
 }
 
 // =========================================================================================

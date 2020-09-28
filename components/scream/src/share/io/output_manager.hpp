@@ -26,6 +26,7 @@ public:
   void run(Real current_ts);
   void finalize();
 
+  void new_output(const ekat::ParameterList& params);
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
@@ -45,7 +46,17 @@ protected:
   bool                                 no_output = true;  //TODO, when restarts are active then this paradigm won't work.  We will still need an output stream for restarts.  Possible solution, have restart information be a part of YAML control entries for output.  Then this will still work.
 
 }; // class OutputManager
-
+/*===============================================================================================*/
+/* Short function to add a new output stream to the output manager.  By making this a stand-alone
+ * function it is possible to add an output stream after initialization has been called.         */
+inline void OutputManager::new_output(const ekat::ParameterList& params)
+{
+  output_type output_instance(pio_comm,params);
+  output_instance.init(*m_device_field_repo, *m_grids_manager);
+  m_output_streams.push_back(output_instance);
+  if( no_output ) {no_output = false;}
+}
+/*===============================================================================================*/
 inline void OutputManager::init()
 {
   using namespace scorpio;
@@ -70,17 +81,10 @@ inline void OutputManager::init()
   {
     ekat::ParameterList out_params(it);
     parse_yaml_file(it,out_params);
-    output_type output_instance(pio_comm,out_params);
-    m_output_streams.push_back(output_instance);
+    new_output(out_params);
   }
-  // Initialize each instance.
-  for (auto& it : m_output_streams)
-  {
-    it.init(*m_device_field_repo, *m_grids_manager);
-  }
-  // Set no_output to false so that output will be created for the remainder of simulation
-  no_output = false;
 }
+/*===============================================================================================*/
 // Overload run to allow for passing a TimeStamp or just directly a Real
 inline void OutputManager::run(util::TimeStamp& current_ts)
 {
@@ -90,6 +94,7 @@ inline void OutputManager::run(util::TimeStamp& current_ts)
     it.run(*m_device_field_repo, *m_grids_manager, current_ts.get_seconds());
   }
 }
+/*-----------------------------------------------------------------------------------------------*/
 inline void OutputManager::run(Real current_ts)
 {
   if (no_output) { return; }
@@ -98,8 +103,7 @@ inline void OutputManager::run(Real current_ts)
     it.run(*m_device_field_repo, *m_grids_manager, current_ts);
   }
 }
-
-
+/*===============================================================================================*/
 inline void OutputManager::finalize()
 {
   if (no_output) { return; }
@@ -111,5 +115,6 @@ inline void OutputManager::finalize()
   // Finalize PIO overall
   eam_pio_finalize();
 }
+/*===============================================================================================*/
 } // namespace scream
 #endif // SCREAM_OUTPUT_MANAGER_HPP
