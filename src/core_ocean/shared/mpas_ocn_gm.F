@@ -137,7 +137,7 @@ contains
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
       real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz
-      real(kind=RKIND) :: L, sigma, Lr, Length, L_rhines, shearEdge
+      real(kind=RKIND) :: L, sigma, Lr, Length, L_rhines, shearEdgeInv
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
@@ -676,7 +676,7 @@ contains
 
            !$omp parallel
            !$omp do schedule(runtime) private(cell1, cell2, sigma, RiTopOfEdge, &
-           !$omp             L_rhines, Lr, Length, BruntVaisalaFreqTopEdge, shearEdge)
+           !$omp             L_rhines, Lr, Length, BruntVaisalaFreqTopEdge, shearEdgeInv)
            do iEdge=1,nEdges
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
@@ -686,12 +686,12 @@ contains
               do k=1,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-                 shearEdge = ((normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge)) / (0.5_RKIND*     &
-                   (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))))**2.0 +             &
-                   ((tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge)) / (0.5_RKIND*       &
-                   (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge))))**2.0
-                 RiTopOfEdge = BruntVaisalaFreqTopEdge / (1.0E-15_RKIND + shearEdge)
-                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0*betaEdge(iEdge)* &
+                 shearEdgeInv = (0.5_RKIND*(layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)))**2.0 &
+                    / (  (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2.0 &
+                       + (tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge))**2.0 &
+                       + 1.0e-18_RKIND )
+                 RiTopOfEdge = BruntVaisalaFreqTopEdge * shearEdgeInv
+                 sigma = max(abs(fEdge(iEdge)),sqrt(2.0_RKIND*betaEdge(iEdge)* &
                              cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
                  L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
                  Length = min(Lr,L_rhines)
