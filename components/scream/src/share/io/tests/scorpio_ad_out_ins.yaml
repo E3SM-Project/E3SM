@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-FILENAME: scorpio_ad_out_avg
+FILENAME: scorpio_ad_out_ins
 AVERAGING TYPE: Instant
 GRID: Physics
 FREQUENCY:

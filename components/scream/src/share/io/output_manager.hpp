@@ -28,16 +28,16 @@ public:
 
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
-  void set_grids(const std::shared_ptr<GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
-  void set_repo(const std::shared_ptr<FieldRepository<Real,device_type>>& repo) { m_device_field_repo = repo; repo_set=true;}
+  void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
+  void set_repo(const std::shared_ptr<const FieldRepository<Real,device_type>>& repo) { m_device_field_repo = repo; repo_set=true;}
 
 protected:
   std::vector<output_type>             m_output_streams;
   ekat::Comm                           atm_comm;
   ekat::Comm                           pio_comm; 
   ekat::ParameterList                  m_params;
-  std::shared_ptr<FieldRepository<Real,device_type>>   m_device_field_repo;
-  std::shared_ptr<GridsManager>        m_grids_manager;
+  std::shared_ptr<const FieldRepository<Real,device_type>> m_device_field_repo;
+  std::shared_ptr<const GridsManager>  m_grids_manager;
 
   bool                                 param_set = false;
   bool                                 gm_set    = false;
@@ -48,7 +48,6 @@ protected:
 
 inline void OutputManager::init()
 {
-  printf("ASD out_man init p0\n");
   using namespace scorpio;
   // Make sure params, repo and grids manager are already set
   EKAT_REQUIRE_MSG(param_set and gm_set and repo_set,"Error! Output manager requires a parameter list, grids manager and field repo to be set before initialization");
@@ -65,7 +64,6 @@ inline void OutputManager::init()
   MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
   
-  printf("ASD out_man init p1\n");
   // Construct and store an output stream instance for each output request.
   auto& list_of_files = m_params.get<std::vector<std::string>>("Output YAML Files");    // First grab the list of Output files from the control YAML
   for (auto& it : list_of_files)
@@ -75,7 +73,6 @@ inline void OutputManager::init()
     output_type output_instance(pio_comm,out_params);
     m_output_streams.push_back(output_instance);
   }
-  printf("ASD out_man init p2\n");
   // Initialize each instance.
   for (auto& it : m_output_streams)
   {
@@ -83,44 +80,36 @@ inline void OutputManager::init()
   }
   // Set no_output to false so that output will be created for the remainder of simulation
   no_output = false;
-  printf("ASD out_man init p3\n");
 }
 // Overload run to allow for passing a TimeStamp or just directly a Real
 inline void OutputManager::run(util::TimeStamp& current_ts)
 {
-  printf("ASD out_man run p0\n");
   if (no_output) { return; }
   for (auto& it : m_output_streams)
   {
     it.run(*m_device_field_repo, *m_grids_manager, current_ts.get_seconds());
   }
-  printf("ASD out_man run p1\n");
 }
 inline void OutputManager::run(Real current_ts)
 {
-  printf("ASD out_man run p0\n");
   if (no_output) { return; }
   for (auto& it : m_output_streams)
   {
     it.run(*m_device_field_repo, *m_grids_manager, current_ts);
   }
-  printf("ASD out_man run p1\n");
 }
 
 
 inline void OutputManager::finalize()
 {
-  printf("ASD out_man final p0\n");
   if (no_output) { return; }
   using namespace scorpio;
   for (auto& it : m_output_streams)
   {
     it.finalize();
   }
-  printf("ASD out_man final p1\n");
   // Finalize PIO overall
   eam_pio_finalize();
-  printf("ASD out_man final p2\n");
 }
 } // namespace scream
 #endif // SCREAM_OUTPUT_MANAGER_HPP
