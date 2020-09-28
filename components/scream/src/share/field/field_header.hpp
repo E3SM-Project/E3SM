@@ -37,7 +37,7 @@ public:
 
   using identifier_type = FieldIdentifier;
   using tracking_type   = FieldTracking;
-  using extra_data_type = std::map<std::string,ekat::util::any>;
+  using extra_data_type = std::map<std::string,ekat::any>;
 
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
@@ -48,14 +48,14 @@ public:
 
   // Set extra data
   void set_extra_data (const std::string& key,
-                       const ekat::util::any& data,
+                       const ekat::any& data,
                        const bool throw_if_existing = false);
 
   template<typename T>
   void set_extra_data (const std::string& key,
                        const T& data,
                        const bool throw_if_existing = false) {
-    ekat::util::any data_any;
+    ekat::any data_any;
     data_any.reset<T>(data);
     set_extra_data(key,data_any,throw_if_existing);
   }

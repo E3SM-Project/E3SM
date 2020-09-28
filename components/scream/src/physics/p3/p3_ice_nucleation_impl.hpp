@@ -17,16 +17,16 @@ void Functions<S,D>
 {
    constexpr Scalar nsmall  = C::NSMALL;
    constexpr Scalar tmelt   = C::Tmelt;
-   constexpr Scalar icenuct = C::Tmelt-sp(15.0);
+   constexpr Scalar T_icenuc = C::Tmelt-sp(15.0);
    constexpr Scalar zero    = C::ZERO;
    constexpr Scalar piov3   = C::PIOV3;
    constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
 
-   const auto t_lt_icenuct = temp < icenuct;
+   const auto t_lt_T_icenuc = temp < T_icenuc;
    const auto qv_supersat_i_ge_005 = qv_supersat_i >= 0.05;
 
-   const auto any_if_log     = t_lt_icenuct && qv_supersat_i_ge_005 && do_predict_nc && context;
-   const auto any_if_not_log = t_lt_icenuct && qv_supersat_i_ge_005 && (!do_predict_nc) && context;
+   const auto any_if_log     = t_lt_T_icenuc && qv_supersat_i_ge_005 && do_predict_nc && context;
+   const auto any_if_not_log = t_lt_T_icenuc && qv_supersat_i_ge_005 && (!do_predict_nc) && context;
 
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 

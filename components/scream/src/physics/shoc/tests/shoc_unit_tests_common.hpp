@@ -38,7 +38,7 @@ struct UnitWrap {
     using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
     template <typename S>
-    using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
+    using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
     using Functions          = scream::shoc::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
@@ -59,8 +59,9 @@ struct UnitWrap {
     struct TestImpSfcStress;
     struct TestImpTkeSfcStress;
     struct TestShocUpdateDse;
-    struct TestShocEnergyInt;
     struct TestShocEnergyFixer;
+    struct TestShocEnergyInt;
+    struct TestShocTotEnergyFixer;
     struct TestShocEnergyDseFixer;
     struct TestShocEnergyThreshFixer;
     struct TestShocEddyDiff;
@@ -104,6 +105,7 @@ struct UnitWrap {
     struct TestShocPdfCompLiqFlux;
     struct TestShocPdfCompBuoyFlux;
     struct TestSecondMomUbycond;
+    struct TestPblintdInitPot;
   };
 
 };

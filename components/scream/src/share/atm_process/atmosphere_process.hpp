@@ -46,7 +46,7 @@ namespace scream
  *     input field to achieve this result.
  */
 
-class AtmosphereProcess : public ekat::util::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using device_type = DefaultDevice; // may need to template class on this
@@ -131,8 +131,8 @@ public:
   virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires (const FieldIdentifier& id) const { return ekat::util::contains(get_required_fields(),id); }
-  bool computes (const FieldIdentifier& id) const { return ekat::util::contains(get_computed_fields(),id); }
+  bool requires (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
+  bool computes (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
 
 protected:
 
@@ -177,8 +177,8 @@ private:
 //          This is *necessary* until we can safely switch to std::enable_shared_from_this.
 //          For more details, see the comments at the top of util/scream_std_enable_shared_from_this.hpp.
 using AtmosphereProcessFactory =
-    ekat::util::Factory<AtmosphereProcess,
-                  ekat::util::CaseInsensitiveString,
+    ekat::Factory<AtmosphereProcess,
+                  ekat::CaseInsensitiveString,
                   std::shared_ptr<AtmosphereProcess>,
                   const ekat::Comm&,const ekat::ParameterList&>;
 

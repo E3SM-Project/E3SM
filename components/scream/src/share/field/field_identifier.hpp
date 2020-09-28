@@ -22,7 +22,7 @@ namespace scream
 class FieldIdentifier {
 public:
   using layout_type = FieldLayout;
-  using ci_string   = ekat::util::CaseInsensitiveString;
+  using ci_string   = ekat::CaseInsensitiveString;
   using Units       = ekat::units::Units;
 
   // Constructor(s)

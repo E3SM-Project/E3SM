@@ -40,9 +40,9 @@ static void run_phys()
 static void run_bfb_rain_vel()
 {
   // Read in tables
-  view_2d_table vn_table; view_2d_table vm_table; view_2d_table revap_table;
-  view_1d_table mu_r_table; view_dnu_table dnu;
-  Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+  view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
+  view_1d_table mu_r_table_vals; view_dnu_table dnu;
+  Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
   // Load some lookup inputs, need at least one per pack value
   ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
@@ -95,7 +95,7 @@ static void run_bfb_rain_vel()
 
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      vn_table, vm_table, qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table_vals, vm_table_vals, qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

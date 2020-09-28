@@ -18,7 +18,7 @@ void P3InputsInitializer::add_field (const field_type &f)
 void P3InputsInitializer::initialize_fields ()
 {
   // Safety check: if we're asked to init anything at all,
-  // then we should have been asked to init 7 fields.
+  // then we should have been asked to init 10 fields.
   int count = 0;
   count += m_fields.count("q");
   count += m_fields.count("T");
@@ -28,13 +28,15 @@ void P3InputsInitializer::initialize_fields ()
   count += m_fields.count("pmid");
   count += m_fields.count("dp");
   count += m_fields.count("zi");
-
+  count += m_fields.count("qv_prev");
+  count += m_fields.count("T_prev");
+  
   if (count==0) {
     return;
   }
 
-  EKAT_REQUIRE_MSG (count==8,
-    "Error! P3InputsInitializer is expected to init 'q','T','ast','ni_activated','nc_nuceat_tend','pmid','dp','zi'.\n"
+  EKAT_REQUIRE_MSG (count==10,
+    "Error! P3InputsInitializer is expected to init 'q','T','ast','ni_activated','nc_nuceat_tend','pmid','dp','zi','qv_prev','T_prev'.\n"
     "       Only " + std::to_string(count) + " of those have been found.\n"
     "       Please, check the atmosphere processes you are using,"
     "       and make sure they agree on who's initializing each field.\n");
@@ -48,7 +50,9 @@ void P3InputsInitializer::initialize_fields ()
   auto d_pmid  = m_fields.at("pmid").get_view();
   auto d_dpres  = m_fields.at("dp").get_view();
   auto d_zi    = m_fields.at("zi").get_view();
-
+  auto d_qv_prev = m_fields.at("qv_prev").get_view();
+  auto d_t_prev  = m_fields.at("T_prev").get_view();
+  
   // Create host mirrors
   auto h_q     = Kokkos::create_mirror_view(d_q);
   auto h_T     = Kokkos::create_mirror_view(d_T);
@@ -58,19 +62,23 @@ void P3InputsInitializer::initialize_fields ()
   auto h_pmid  = Kokkos::create_mirror_view(d_pmid);
   auto h_dpres  = Kokkos::create_mirror_view(d_dpres);
   auto h_zi    = Kokkos::create_mirror_view(d_zi);
-
+  auto h_qv_prev = Kokkos::create_mirror_view(d_qv_prev);
+  auto h_t_prev = Kokkos::create_mirror_view(d_t_prev);
+  
   // Get host mirros' raw pointers
   auto q     = h_q.data();
-  auto T     = h_T.data();
+  auto T_atm     = h_T.data();
   auto ast   = h_ast.data();
   auto ni_activated  = h_ni_activated.data();
   auto nc_nuceat_tend = h_nc_nuceat_tend.data();
   auto pmid  = h_pmid.data();
   auto dpres  = h_dpres.data();
   auto zi    = h_zi.data();
-
+  auto qv_prev = h_qv_prev.data();
+  auto t_prev  = h_t_prev.data();
+  
   // Call f90 routine
-  p3_standalone_init_f90 (q, T, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend);
+  p3_standalone_init_f90 (q, T_atm, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend, qv_prev, t_prev);
 
   // Deep copy back to device
   Kokkos::deep_copy(d_q,h_q);
@@ -81,6 +89,8 @@ void P3InputsInitializer::initialize_fields ()
   Kokkos::deep_copy(d_pmid,h_pmid);
   Kokkos::deep_copy(d_dpres,h_dpres);
   Kokkos::deep_copy(d_zi,h_zi);
+  Kokkos::deep_copy(d_qv_prev,h_qv_prev);
+  Kokkos::deep_copy(d_t_prev,h_t_prev);
 
   // If we are in charge of init-ing FQ as well, init it to 0.
   if (m_fields.count("FQ")==1) {

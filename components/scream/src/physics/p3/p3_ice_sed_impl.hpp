@@ -84,7 +84,7 @@ void Functions<S,D>
   const uview_1d<Spack>& bm_incld,
   const uview_1d<Spack>& qi_tend,
   const uview_1d<Spack>& ni_tend,
-  const view_itab_table& itab,
+  const view_ice_table& ice_table_vals,
   Scalar& precip_ice_surf)
 {
   // Get temporary workspaces needed for the ice-sed calculation
@@ -126,14 +126,14 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      ekat::util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = ekat::pack::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
@@ -141,14 +141,17 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
           const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
+          qi(pk).set(qi_gt_small, qi_incld(pk)*cld_frac_i(pk) );
+          qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
+          bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 
-          TableIce t;
-          lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, t, qi_gt_small);
+          TableIce tab;
+          lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, tab, qi_gt_small);
 
-          const auto table_val_ni_fallspd = apply_table_ice(0, itab, t, qi_gt_small);
-          const auto table_val_qi_fallspd = apply_table_ice(1, itab, t, qi_gt_small);
-          const auto table_val_ni_lammax = apply_table_ice(6, itab, t, qi_gt_small);
-          const auto table_val_ni_lammin = apply_table_ice(7, itab, t, qi_gt_small);
+          const auto table_val_ni_fallspd = apply_table_ice(0, ice_table_vals, tab, qi_gt_small);
+          const auto table_val_qi_fallspd = apply_table_ice(1, ice_table_vals, tab, qi_gt_small);
+          const auto table_val_ni_lammax = apply_table_ice(6, ice_table_vals, tab, qi_gt_small);
+          const auto table_val_ni_lammin = apply_table_ice(7, ice_table_vals, tab, qi_gt_small);
 
           // impose mean ice size bounds (i.e. apply lambda limiters)
           // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
@@ -200,7 +203,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::homogeneous_freezing(
-  const uview_1d<const Spack>& t,
+  const uview_1d<const Spack>& T_atm,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& latent_heat_fusion,
   const MemberType& team,
@@ -213,11 +216,11 @@ void Functions<S,D>
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
   const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& th)
+  const uview_1d<Spack>& th_atm)
 {
   constexpr Scalar qsmall          = C::QSMALL;
   constexpr Scalar nsmall          = C::NSMALL;
-  constexpr Scalar homogfrze       = C::homogfrze;
+  constexpr Scalar T_homogfrz       = C::T_homogfrz;
   constexpr Scalar inv_rho_rimeMax = C::INV_RHO_RIMEMAX;
   constexpr Scalar inv_cp          = C::INV_CP;
 
@@ -226,7 +229,7 @@ void Functions<S,D>
 
   // Convert top/bot to pack indices
   Int kmin, kmax;
-  ekat::util::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
@@ -234,9 +237,9 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     // Set up masks
-    const auto range_pack    = ekat::pack::range<IntSmallPack>(pk*Spack::n);
+    const auto range_pack    = ekat::range<IntSmallPack>(pk*Spack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-    const auto t_lt_homogf   = t(pk) < homogfrze;
+    const auto t_lt_homogf   = T_atm(pk) < T_homogfrz;
     const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
     const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
 
@@ -246,13 +249,13 @@ void Functions<S,D>
     qi(pk).set(qc_gt_small, qi(pk) + Qc_nuc);
     bm(pk).set(qc_gt_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
     ni(pk).set(qc_gt_small, ni(pk) + Nc_nuc);
-    th(pk).set   (qc_gt_small, th(pk) + exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
+    th_atm(pk).set   (qc_gt_small, th_atm(pk) + exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
 
     qm(pk).set(qr_gt_small, qm(pk) + Qr_nuc);
     qi(pk).set(qr_gt_small, qi(pk) + Qr_nuc);
     bm(pk).set(qr_gt_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_gt_small, ni(pk) + Nr_nuc);
-    th(pk).set   (qr_gt_small, th(pk) + exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
+    th_atm(pk).set   (qr_gt_small, th_atm(pk) + exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
 
     qc(pk).set(qc_gt_small, 0);
     nc(pk).set(qc_gt_small, 0);

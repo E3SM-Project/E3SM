@@ -116,8 +116,8 @@ GridsManager::get_grid(const std::string& name) const
 
 // A short name for the factory for grid managers
 using GridsManagerFactory 
-    = ekat::util::Factory<GridsManager,
-                    ekat::util::CaseInsensitiveString,
+    = ekat::Factory<GridsManager,
+                    ekat::CaseInsensitiveString,
                     std::shared_ptr<GridsManager>,
                     const ekat::Comm&,const ekat::ParameterList&>;
 

@@ -34,7 +34,7 @@ void Functions<S,D>
             rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld);
   nc_collect_tend.set(both_gt_small, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
 
-  // for T > 273.15, assume cloud water is collected and shed as rain drops
+  // for T_atm > 273.15, assume cloud water is collected and shed as rain drops
   // sink for cloud water mass and number, note qcshed is source for rain mass
   qc2qr_ice_shed_tend.set(both_gt_small_pos_t, rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld);
   nc_collect_tend.set(both_gt_small_pos_t, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
@@ -72,7 +72,7 @@ void Functions<S,D>
   nr_collect_tend.set(both_gt_small_neg_t, pow(ten, table_val_nr_collect+logn0r)*rho*rhofaci*eri*ni_incld);
 
   // rain number sink due to collection
-  // for T > 273.15, assume collected rain number is shed as
+  // for T_atm > 273.15, assume collected rain number is shed as
   // 1 mm drops
   // note that melting of ice number is scaled to the loss
   // rate of ice mass due to melting

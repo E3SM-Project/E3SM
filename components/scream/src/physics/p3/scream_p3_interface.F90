@@ -57,18 +57,20 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_standalone_init_f90 (q,T,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend) bind(c)
+  subroutine p3_standalone_init_f90 (q,T_atm,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend, qv_prev, t_prev) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize)  ! State array  kg/kg Pa
-    real(kind=c_real), intent(inout) :: T(pcols,pver)        !
+    real(kind=c_real), intent(inout) :: T_atm(pcols,pver)        !
     real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     !
     real(kind=c_real), intent(inout) :: pmid(pcols,pver)     !
     real(kind=c_real), intent(inout) :: dpres(pcols,pver)     !
     real(kind=c_real), intent(inout) :: ast(pcols,pver)      !
     real(kind=c_real), intent(inout) :: ni_activated(pcols,pver)     ! ice nucleation number
     real(kind=c_real), intent(inout) :: nc_nuceat_tend(pcols,pver)    ! liquid activation number tendency
+    real(kind=c_real), intent(inout) :: qv_prev(pcols,pver)     ! prev_step qv
+    real(kind=c_real), intent(inout) :: t_prev(pcols,pver)    ! prev-step T
 
     character(len=100) :: case_title
 
@@ -87,36 +89,40 @@ contains
     read(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
     do i = 1,ncol
       do k = 1,nlev
-        read(981,'(16E16.8)') ast(i,k), ni_activated(i,k), nc_nuceat_tend(i,k), pmid(i,k), zi(i,k), T(i,k), &
+        read(981,'(16E16.8)') ast(i,k), ni_activated(i,k), nc_nuceat_tend(i,k), pmid(i,k), zi(i,k), T_atm(i,k), &
                          q(i,k,1), q(i,k,2), q(i,k,3), q(i,k,4), q(i,k,5), q(i,k,6), &
                          q(i,k,7), q(i,k,8), q(i,k,9), dpres(i,k)
       end do
       read(981,'(E16.8)') zi(i,nlev+1)
     end do
     close(981)
-
+    qv_prev(:,:) = q(:,:,1)
+    t_prev(:,:) = T_atm(:,:)
+    
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,0,masterproc)
     print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend,q,FQ,T) bind(c)
+  subroutine p3_main_f90 (dtime,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend,q,FQ,T_atm,qv_prev,T_prev) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(inout) :: FQ(pcols,4,pver)    ! Tracer mass tendency for physics
-    real(kind=c_real), intent(inout) :: T(pcols,pver)       ! temperature
+    real(kind=c_real), intent(inout) :: T_atm(pcols,pver)       ! temperature
     real(kind=c_real), intent(in)    :: zi(pcols,pver+1)    ! vertical level interfaces
     real(kind=c_real), intent(in)    :: pmid(pcols,pver)    ! pressure mid-levels
     real(kind=c_real), intent(in)    :: dpres(pcols,pver)    ! pressure thickness
     real(kind=c_real), intent(in)    :: ast(pcols,pver)     ! cloud fraction
     real(kind=c_real), intent(in)    :: ni_activated(pcols,pver)    ! ice nucleation number
     real(kind=c_real), intent(in)    :: nc_nuceat_tend(pcols,pver)   ! liquid activation number tendency
+    real(kind=c_real), intent(inout)    :: qv_prev(pcols,pver)    ! prev_step qv
+    real(kind=c_real), intent(inout)    :: t_prev(pcols,pver)   ! prev-step T
     !INTERNAL VARIABLES
-    real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
+    real(kind=c_real) :: th_atm(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dz(pcols,pver)        !geometric layer thickness              m
     real(kind=c_real) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
     real(kind=c_real) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
@@ -131,11 +137,11 @@ contains
     ! real(kind=c_real) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(kind=c_real) :: precip_liq_surf(pcols)         !precipitation rate, liquid             m s-1
     real(kind=c_real) :: precip_ice_surf(pcols)         !precipitation rate, solid              m s-1
-    real(kind=c_real) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
-    ! real(kind=c_real) :: diag_effc(pcols,pver)  !effective radius, cloud                m
-    ! real(kind=c_real) :: diag_effi(pcols,pver)  !effective radius, ice                  m
-    real(kind=c_real) :: diag_vmi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
-    real(kind=c_real) :: diag_di(pcols,pver)    !mean diameter of ice                   m
+    real(kind=c_real) :: diag_equiv_reflectivity(pcols,pver)    !equivalent reflectivity                dBZ
+    ! real(kind=c_real) :: diag_eff_rad_qc(pcols,pver)  !effective radius, cloud                m
+    ! real(kind=c_real) :: diag_eff_rad_qi(pcols,pver)  !effective radius, ice                  m
+    real(kind=c_real) :: diag_vm_qi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
+    real(kind=c_real) :: diag_diam_qi(pcols,pver)    !mean diameter of ice                   m
     real(kind=c_real) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
     real(kind=c_real) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(kind=c_real) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
@@ -146,7 +152,7 @@ contains
     real(kind=c_real) :: tend_out(pcols,pver,49) !microphysical tendencies
     real(kind=c_real) :: rel(pcols,pver)        !liq. effective drop radius (microns)
     real(kind=c_real) :: rei(pcols,pver)        !ice effective drop radius (microns)
-    real(kind=c_real) :: cmeiout(pcols,pver)    !deposition/sublimation rate of cloud ice
+    real(kind=c_real) :: qv2qi_depos_tend(pcols,pver)    !deposition/sublimation rate of cloud ice
     real(kind=c_real) :: precip_total_tend(pcols,pver)      !total precip
     real(kind=c_real) :: nevapr(pcols,pver)     !evap. of total precip
     real(kind=c_real) :: qr_evap_tend(pcols,pver)  !rain evaporation
@@ -184,7 +190,7 @@ contains
     ! WHAT DOES P3 NEED FROM THE OUTSIDE WORLD?
     ! Q                      tracer concentrations
     ! pres                   vertical pressure profile
-    ! T                      temperature profile
+    ! T_atm                      temperature profile
     ! zi                     vertical height of layer interfaces.  Note this could be backed out from pres and rho using the hydrostatic approximation
     ! dpres                   pressure layer thickness, again can be gotten from pres
     ! lcdlm, cld_frac_i, cld_frac_r    cloud fractions
@@ -231,7 +237,7 @@ contains
 ! Note: dz is calculated in the opposite direction that dpres is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = zi(icol,k) - zi(icol,k+1) !100.0_rtype   !state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
+          th_atm(icol,k)  = T_atm(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
 !          dpres(icol,k)  = (1e3_rtype-0.1)/real(pver) ! should be changed to come from model state.
        end do
     end do
@@ -257,7 +263,7 @@ contains
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
          rain(its:ite,kts:kte),       & ! INOUT  rain, mass mixing ratio          kg kg-1
          numrain(its:ite,kts:kte),    & ! INOUT  rain, number mixing ratio        #  kg-1
-         th(its:ite,kts:kte),         & ! INOUT  potential temperature            K
+         th_atm(its:ite,kts:kte),         & ! INOUT  potential temperature            K
          qv(its:ite,kts:kte),         & ! INOUT  water vapor mixing ratio         kg kg-1
          dtime,                       & ! IN     model time step                  s
          ice(its:ite,kts:kte),        & ! INOUT  ice, total mass mixing ratio     kg kg-1
@@ -283,7 +289,7 @@ contains
          ! AaronDonahue new stuff
          dpres(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
-         cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
+         qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
          qr_evap_tend(its:ite,kts:kte),  & ! OUT rain evaporation
@@ -298,6 +304,8 @@ contains
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
+         qv_prev(its:ite,kts:kte),&          ! IN qv from prev step
+         t_prev(its:ite,kts:kte),&           ! IN T from prev step
          col_location(its:ite,3)           & ! IN location of columns
          )
     do i = its,ite
@@ -315,6 +323,8 @@ contains
         q(i,k,7) = numrain(i,k)
         q(i,k,8) = qm(i,k)
         q(i,k,9) = rimvol(i,k)
+        qv_prev(i,k) = qv(i,k)
+        T_prev(i,k) = Th_atm(i,k)/exner(icol,k)
       end do
     end do
 

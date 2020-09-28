@@ -46,6 +46,7 @@ static Scalar wrap_name(Scalar input) {                 \
   cuda_wrap_single_arg(cxx_log, std::log)
   cuda_wrap_single_arg(cxx_log10, std::log10)
   cuda_wrap_single_arg(cxx_exp, std::exp)
+  cuda_wrap_single_arg(cxx_expm1, std::expm1)
   cuda_wrap_single_arg(cxx_tanh, std::tanh)
 
 #undef cuda_wrap_single_arg
@@ -116,6 +117,15 @@ Real cxx_exp(Real input)
 #endif
 }
 
+Real cxx_expm1(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_expm1(input);
+#else
+  return std::expm1(input);
+#endif
+}
+  
 Real cxx_tanh(Real input)
 {
 #ifdef KOKKOS_ENABLE_CUDA

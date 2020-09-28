@@ -19,7 +19,7 @@ namespace scream {
  * since they will claim the role of initializer for some fields.
  */
 
-class FieldInitializer : public ekat::util::enable_shared_from_this<FieldInitializer> {
+class FieldInitializer : public ekat::enable_shared_from_this<FieldInitializer> {
 public:
   using device_type = DefaultDevice; // may need to template class on this
 

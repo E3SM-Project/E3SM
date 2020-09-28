@@ -65,11 +65,11 @@ interface
                                         qc2qi_berg_tend
   end subroutine back_to_cell_average_f
 
-  subroutine prevent_ice_overdepletion_f(pres,t,qv,latent_heat_sublim,inv_dt,    &
+  subroutine prevent_ice_overdepletion_f(pres,T_atm,qv,latent_heat_sublim,inv_dt,    &
      qv2qi_vapdep_tend,qi2qv_sublim_tend) bind(C)
     use iso_c_binding
 
-    real(kind=c_real), value, intent(in) :: pres, t, qv, latent_heat_sublim, inv_dt
+    real(kind=c_real), value, intent(in) :: pres, T_atm, qv, latent_heat_sublim, inv_dt
     real(kind=c_real), intent(inout) :: qv2qi_vapdep_tend, qi2qv_sublim_tend
 
   end subroutine prevent_ice_overdepletion_f
@@ -119,27 +119,27 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
-  subroutine calc_rime_density_f(t,rhofaci,table_val_qi_fallspd,acn,lamc,mu_c,qc_incld,qc2qi_collect_tend,vtrmi1,rho_qm_cloud) bind(C)
+  subroutine calc_rime_density_f(T_atm,rhofaci,table_val_qi_fallspd,acn,lamc,mu_c,qc_incld,qc2qi_collect_tend,vtrmi1,rho_qm_cloud) bind(C)
     use iso_c_binding
 
     !arguments:
-    real(kind=c_real), value, intent(in) :: t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
+    real(kind=c_real), value, intent(in) :: T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
     real(kind=c_real), intent(out) :: vtrmi1, rho_qm_cloud
   end subroutine calc_rime_density_f
 
-  subroutine cldliq_immersion_freezing_f(t,lamc,mu_c,cdist1,qc_incld,inv_qc_relvar,qc2qi_hetero_freeze_tend,nc2ni_immers_freeze_tend) bind(C)
+  subroutine cldliq_immersion_freezing_f(T_atm,lamc,mu_c,cdist1,qc_incld,inv_qc_relvar,qc2qi_hetero_freeze_tend,nc2ni_immers_freeze_tend) bind(C)
     use iso_c_binding
 
     !arguments:
-    real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
+    real(kind=c_real), value, intent(in) :: T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
     real(kind=c_real), intent(out) :: qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend
   end subroutine cldliq_immersion_freezing_f
 
-  subroutine rain_immersion_freezing_f(t,lamr,mu_r,cdistr,qr_incld,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend) bind(C)
+  subroutine rain_immersion_freezing_f(T_atm,lamr,mu_r,cdistr,qr_incld,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend) bind(C)
     use iso_c_binding
 
     !arguments:
-    real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
+    real(kind=c_real), value, intent(in) :: T_atm, lamr, mu_r, cdistr, qr_incld
     real(kind=c_real), intent(out) :: qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend
   end subroutine rain_immersion_freezing_f
 
@@ -176,22 +176,22 @@ interface
 
   end subroutine rain_self_collection_f
 
-  subroutine ice_melting_f(rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt, &
+  subroutine ice_melting_f(rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt, &
              latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend) bind(C)
     use iso_c_binding
 
     !arguments:
-    real(kind=c_real), value, intent(in) :: rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt, &
+    real(kind=c_real), value, intent(in) :: rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt, &
         latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld
     real(kind=c_real), intent(out) :: qi2qr_melt_tend,ni2nr_melt_tend
   end subroutine ice_melting_f
 
-  subroutine impose_max_total_ni_f(ni_local, max_total_Ni, inv_rho_local) bind(C)
+  subroutine impose_max_total_ni_f(ni_local, max_total_ni, inv_rho_local) bind(C)
     use iso_c_binding
 
     !arguments:
     real(kind=c_real), intent(inout) :: ni_local
-    real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
+    real(kind=c_real), value, intent(in) :: max_total_ni, inv_rho_local
   end subroutine impose_max_total_ni_f
 
   subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dz, num_arrays, fluxes, vs, qnx) bind(C)
@@ -312,13 +312,13 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
-  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,t,exner,latent_heat_fusion,    &
-   qc,nc,qr,nr,qi,ni,qm,bm,th) bind(C)
+  subroutine homogeneous_freezing_f(kts,kte,ktop,kbot,kdir,T_atm,exner,latent_heat_fusion,    &
+   qc,nc,qr,nr,qi,ni,qm,bm,th_atm) bind(C)
     use iso_c_binding
 
     ! arguments:
     integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
-    real(kind=c_real), intent(in), dimension(kts:kte) :: t
+    real(kind=c_real), intent(in), dimension(kts:kte) :: T_atm
     real(kind=c_real), intent(in), dimension(kts:kte) :: exner
     real(kind=c_real), intent(in), dimension(kts:kte) :: latent_heat_fusion
 
@@ -331,7 +331,7 @@ interface
     real(kind=c_real), intent(inout), dimension(kts:kte) :: ni
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qm
     real(kind=c_real), intent(inout), dimension(kts:kte) :: bm
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: th
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: th_atm
   end subroutine homogeneous_freezing_f
 
   subroutine compute_rain_fall_velocity_f(qr_incld, cld_frac_r, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
@@ -343,12 +343,12 @@ interface
     real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
   end subroutine compute_rain_fall_velocity_f
 
-  subroutine get_time_space_phys_variables_f(t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, &
+  subroutine get_time_space_phys_variables_f(T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, &
        ab, abi, kap, eii) bind(C)
     use iso_c_binding
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i
+    real(kind=c_real), value, intent(in) :: T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i
     real(kind=c_real), intent(out) :: mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii
   end subroutine get_time_space_phys_variables_f
 
@@ -356,7 +356,7 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
        qr2qi_collect_tend,nr_collect_tend,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend,nr_ice_shed_tend, &
        qi2qr_melt_tend,ni2nr_melt_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend,qv2qi_nucleat_tend,ni_nucleat_tend,ni_selfcollect_tend,ni_sublim_tend, &
        qc2qi_berg_tend,exner,latent_heat_sublim,latent_heat_fusion,do_predict_nc,log_wetgrowth, &
-       dt,nmltratio,rho_qm_cloud,th,qv,qi,ni,qm,bm,qc,nc,qr,nr) bind(C)
+       dt,nmltratio,rho_qm_cloud,th_atm,qv,qi,ni,qm,bm,qc,nc,qr,nr) bind(C)
     use iso_c_binding
 
     ! arguments
@@ -369,26 +369,26 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
     logical(kind=c_bool), value, intent(in) :: do_predict_nc
     logical(kind=c_bool), value, intent(in) :: log_wetgrowth
 
-    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qi, ni, qm, bm
+    real(kind=c_real), intent(inout) :: th_atm, qv, qc, nc, qr, nr, qi, ni, qm, bm
 
   end subroutine update_prognostic_ice_f
 
-  subroutine ice_cldliq_collection_f(rho, t, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, &
+  subroutine ice_cldliq_collection_f(rho, T_atm, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, &
                                      nc_incld, qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc) bind(C)
     use iso_c_binding
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, table_val_qc2qi_collect
+    real(kind=c_real), value, intent(in) :: rho, T_atm, rhofaci, table_val_qc2qi_collect
     real(kind=c_real), value, intent(in) :: qi_incld, qc_incld, ni_incld, nc_incld
     real(kind=c_real), intent(out) :: qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc
   end subroutine ice_cldliq_collection_f
 
-  subroutine ice_rain_collection_f(rho, t, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, &
+  subroutine ice_rain_collection_f(rho, T_atm, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, &
                                    qi_incld, ni_incld, qr_incld, qr2qi_collect_tend, nr_collect_tend) bind(C)
     use iso_c_binding
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho, t, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect
+    real(kind=c_real), value, intent(in) :: rho, T_atm, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect
     real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, qr_incld
     real(kind=c_real), intent(out) :: qr2qi_collect_tend, nr_collect_tend
   end subroutine ice_rain_collection_f
@@ -401,19 +401,23 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
     real(kind=c_real), intent(out) :: ni_selfcollect_tend
   end subroutine ice_self_collection_f
 
-  subroutine evaporate_sublimate_precip_f(qr_incld, qc_incld, nr_incld, qi_incld,  cld_frac_l, cld_frac_r, qv_sat_l, ab, &
-       epsr, qv, qr2qv_evap_tend, nr_evap_tend) bind(C)
+  subroutine evaporate_rain_f(qr_incld,qc_incld,nr_incld,qi_incld, &
+       cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+       ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt,&
+       qr2qv_evap_tend,nr_evap_tend) bind(C)
     use iso_c_binding
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qi_incld,  cld_frac_l, cld_frac_r, qv_sat_l, ab, &
-         epsr, qv
+    real(kind=c_real), value, intent(in) :: qr_incld,qc_incld,nr_incld,qi_incld, &
+         cld_frac_l,cld_frac_r,qv,qv_prev,qv_sat_l,qv_sat_i, &
+         ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt
+
     real(kind=c_real), intent(out) :: qr2qv_evap_tend, nr_evap_tend
 
-  end subroutine evaporate_sublimate_precip_f
+  end subroutine evaporate_rain_f
 
   subroutine update_prognostic_liquid_f(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend,nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, &
-       qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner, latent_heat_vapor, dt, th, qv, qc, nc, qr, nr) bind(C)
+       qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner, latent_heat_vapor, dt, th_atm, qv, qc, nc, qr, nr) bind(C)
     use iso_c_binding
 
     ! arguments
@@ -424,17 +428,17 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
     real(kind=c_real), value, intent(in) :: inv_rho, exner, latent_heat_vapor, dt
 
-    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+    real(kind=c_real), intent(inout) :: th_atm, qv, qc, nc, qr, nr
 
   end subroutine update_prognostic_liquid_f
 
-  subroutine ice_deposition_sublimation_f(qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv, &
+  subroutine ice_deposition_sublimation_f(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, &
        qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend) bind(C)
 
     use iso_c_binding
     !arguments
 
-    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv
+    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv
     real(kind=c_real), intent(out) :: qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend
 
   end subroutine ice_deposition_sublimation_f
@@ -530,7 +534,7 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
  subroutine p3_main_part1_f(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, &
        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, &
-       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, &
        qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, &
        nc_incld, nr_incld, ni_incld, bm_incld, is_nucleat_possible, is_hydromet_present) bind(C)
 
@@ -544,18 +548,18 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
    real(kind=c_real), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
         inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion
 
-   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
-        acn, qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, &
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
+        acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, &
         qm_incld, nc_incld, nr_incld, ni_incld, bm_incld
 
    logical(kind=c_bool), intent(out) :: is_nucleat_possible, is_hydromet_present
  end subroutine p3_main_part1_f
 
  subroutine p3_main_part2_f(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
-       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
-       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, &
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
+       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
-       ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, &
+       ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, &
        nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
        prctot, is_hydromet_present) bind(C)
 
@@ -567,12 +571,12 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
    real(kind=c_real), value, intent(in) :: dt, inv_dt
 
    real(kind=c_real), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
-        inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r
+        inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev
 
-   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, &
-        qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, &
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, &
+        qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, &
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, &
-        cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange, &
+        cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange, &
         vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
    logical(kind=c_bool), intent(out) :: is_hydromet_present
@@ -580,43 +584,42 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
  end subroutine p3_main_part2_f
 
  subroutine p3_main_part3_f(kts, kte, kbot, ktop, kdir, &
-      exner, cld_frac_l, cld_frac_r, &
-      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
+      exner, cld_frac_l, cld_frac_r, cld_frac_i, &
+      rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
-      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, rho_qi, diag_ze, diag_effc) bind(C)
+      ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc) bind(C)
 
    use iso_c_binding
 
    ! args
 
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
-   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r
+   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
    real(kind=c_real), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
-        qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
+        qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, &
         lamr, vap_liq_exchange, &
-        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, rho_qi, diag_ze, diag_effc
+        ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc
 
  end subroutine p3_main_part3_f
 
- subroutine p3_main_f(qc,nc,qr,nr,th,qv,dt,qi,qm,ni,bm,   &
-      pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_ze,diag_effc,     &
-      diag_effi,diag_vmi,diag_di,rho_qi,do_predict_nc, &
-      dpres,exner,cmeiout,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
+ subroutine p3_main_f(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
+      pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_equiv_reflectivity,diag_eff_rad_qc,     &
+      diag_eff_rad_qi,diag_vm_qi,diag_diam_qi,rho_qi,do_predict_nc, &
+      dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
       pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, vap_ice_exchange) bind(C)
 
    use iso_c_binding
 
    ! args
 
-   real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qi, qm, ni, bm, qv, th
+   integer(kind=c_int), value, intent(in)  :: its, ite, kts, kte, it
+   real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm
    real(kind=c_real), intent(in),  dimension(its:ite,kts:kte) :: pres, dz, nc_nuceat_tend, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar
-   real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, rho_qi, mu_c, &
-        lamc, cmeiout, precip_total_tend, nevapr, qr_evap_tend, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
+   real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_equiv_reflectivity, diag_eff_rad_qc, diag_eff_rad_qi, diag_vm_qi, diag_diam_qi, rho_qi, mu_c, &
+        lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
    real(kind=c_real), intent(out), dimension(its:ite,kts:kte+1) :: precip_liq_flux, precip_ice_flux
    real(kind=c_real), intent(out), dimension(its:ite) :: precip_liq_surf, precip_ice_surf
-
-   integer(kind=c_int), value, intent(in)  :: its, ite, kts, kte, it
    logical(kind=c_bool), value, intent(in) :: do_predict_nc
    real(kind=c_real), value, intent(in)    :: dt
 

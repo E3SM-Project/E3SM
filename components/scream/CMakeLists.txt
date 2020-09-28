@@ -15,10 +15,12 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
 endif()
 
 # Add the ./cmake folder to cmake path. Also add EKAT's cmake folder
-set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-     ${EKAT_SOURCE_DIR}/cmake
+     ${EKAT_CMAKE_PATH}
+     ${EKAT_CMAKE_PATH}/mpi
+     ${EKAT_CMAKE_PATH}/pkg_build
 )
 include(EkatMpiUtils)
 
@@ -27,8 +29,11 @@ include(EkatMpiUtils)
 # (for openpmi; -lmpicxx for mpich) flag.
 DisableMpiCxxBindings()
 
-if (KOKKOS_ENABLE_CUDA)
-  set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
+if (Kokkos_ENABLE_CUDA)
+  include(EkatBuildKokkos)
+  # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
+  EkatSetKokkosSourceDir()
+
   include (EkatSetNvccWrapper)
   EkatSetNvccWrapper()
 endif()
@@ -73,16 +78,13 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
 enable_testing()
 include(CTest)
 
-set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
-include(Kokkos)
-
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 
 # Determine if this is a Cuda build.
-string(FIND "${KOKKOS_GMAKE_DEVICES}" "Cuda" cuda_str_pos)
-set(CUDA_BUILD FALSE)
-if (${cuda_str_pos} GREATER -1)
+if (Kokkos_ENABLE_CUDA)
   set(CUDA_BUILD TRUE)
+else()
+  set(CUDA_BUILD FALSE)
 endif ()
 
 ### Scream configuration options>
@@ -136,7 +138,7 @@ set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE STRING
 # With the master pack size determined, we have constraints on the others.
 set(DEFAULT_SMALL_PACK_SIZE ${SCREAM_PACK_SIZE})
 # For some routines, SKX may have better performance with pksize=1
-if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "SKX")
+if (Kokkos_ARCH_SKX)
   set(DEFAULT_POSSIBLY_NO_PACK TRUE)
 endif ()
 set(SCREAM_SMALL_PACK_SIZE ${DEFAULT_SMALL_PACK_SIZE} CACHE STRING
@@ -171,15 +173,12 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
 
-# Proecess the EKAT package
-set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
-
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
-include(Ekat)
+include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
-buildEkat(${EKAT_SOURCE_DIR} PREFIX "SCREAM")
+BuildEkat(PREFIX "SCREAM")
 
 # Init scream TPLs info to whatever EKAT set.
 set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
@@ -189,7 +188,6 @@ set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL includ
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
 
-set (SCREAM_LINK_FLAGS ${KOKKOS_LDFLAGS_STR})
 set (SCREAM_INCLUDE_DIRS
   ${SCREAM_SRC_DIR}
   ${EKAT_INCLUDE_DIRS}
@@ -204,7 +202,6 @@ if (${SCREAM_DOUBLE_PRECISION})
   endif()
 endif()
 
-print_var(KOKKOS_GMAKE_DEVICES)
 print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_MIMIC_GPU)
