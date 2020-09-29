@@ -1031,5 +1031,44 @@ void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, I
   // TODO
 }
 
+void clipping_diag_third_shoc_moments_f(Int nlevi, Int shcol, Real *w_sec_zi,
+                                        Real *w3)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_2d, 2> temp_d;
+  Kokkos::Array<size_t, 2> dim1_sizes     = {shcol, shcol};
+  Kokkos::Array<size_t, 2> dim2_sizes     = {nlevi, nlevi};
+  Kokkos::Array<const Real*, 2> ptr_array = {w_sec_zi, w3};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    w_sec_zi_d(temp_d[0]),
+    w3_d      (temp_d[1]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlevi);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto w_sec_zi_s = ekat::subview(w_sec_zi_d, i);
+    const auto w3_s       = ekat::subview(w3_d, i);
+
+    SHF::clipping_diag_third_shoc_moments(team, nlevi, w_sec_zi_s, w3_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {w3_d};
+  ekat::device_to_host<int,1>({w3}, {shcol}, {nlevi}, inout_views, true);
+}
+
 } // namespace shoc
 } // namespace scream
