@@ -1174,6 +1174,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! - snow is contained in prec
 
 !!!!!!OG original does not have +latice
+!leaving old version since ptend%s will be recomputed in the interface
 #if 1
 !old
           tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice

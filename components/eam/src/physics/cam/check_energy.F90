@@ -417,11 +417,13 @@ end subroutine check_energy_get_integrals
           se(i) = se(i) + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
 
-          teloc (i, k) = 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit &
-                       + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit &
-                       + state%q(i,k,1       )*state%pdel(i,k)/gravit &
-                       + (latvap+latice)*( state%q(i,k,1)*state%pdel(i,k)/gravit ) 
+!          teloc (i, k) = 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit &
+!                       + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit &
+!                       + (latvap+latice)*( state%q(i,k,1)*state%pdel(i,k)/gravit ) 
 
+!without cp term
+          teloc (i, k) = 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit &
+                       + (latvap+latice)*( state%q(i,k,1)*state%pdel(i,k)/gravit)
        end do
     end do
 
@@ -457,9 +459,6 @@ end subroutine check_energy_get_integrals
 !!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
        te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
     end do
-
-!!!!divide by cp here
-!!!    teloc=teloc/cpair
 
 end subroutine check_energy_save_local_te
 

@@ -2026,7 +2026,7 @@ type(physics_ptend)   :: ptend2            ! indivdual parameterization tendenci
     real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
     real(r8) :: flx_cnd(pcols)
     real(r8) :: flx_heat(pcols)
-    real(r8) :: flx_vap(pcols)
+    real(r8) :: flx_vap(pcols), flx_sen(pcols)
     type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
     real(r8) :: zero_tracers(pcols,pcnst)
 
@@ -2042,6 +2042,8 @@ type(physics_ptend)   :: ptend2            ! indivdual parameterization tendenci
     real(r8):: md(pcols,pver)
     real(r8):: ed(pcols,pver)
     real(r8):: dp(pcols,pver)
+
+    real(r8):: tbefore(pcols,pver)
     
     ! wg layer thickness in mbs (between upper/lower interface).
     real(r8):: dsubcld(pcols)
@@ -2075,7 +2077,7 @@ type(physics_ptend)   :: ptend2            ! indivdual parameterization tendenci
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
     real(r8) :: teloc1(pcols,pver)    
-    real(r8) :: teloc2(pcols,pver)    
+    real(r8) :: teloc2(pcols,pver), ddd(pcols)
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2342,15 +2344,13 @@ end if
     ! are zeroed here for input to the moist convection routine
     !
 
-!!!!OG compute te before
-#if 0
+!!!!OG compute te without cp term before
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc1)
-#endif
-
-
+!!!! save old T
+    tbefore(:ncol,:pver)=state%T(:ncol,:pver)
 
 !call physics_state_copy(state,state_in)
-icol = phys_debug_col(state%lchnk)
+!icol = phys_debug_col(state%lchnk)
 
 
     call t_startf ('convect_deep_tend')
@@ -2363,29 +2363,20 @@ icol = phys_debug_col(state%lchnk)
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
-#if 0 
-call physics_ptend_copy(ptend,ptend2)
-#endif
-
-#if 0
+!updates everything except T, s, and zm, zi
     call physics_almost_update(state, ptend, ztodt, tend)
+
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc2)
-!now difference teloc2 - teloc1 has dTE, update ptend%s with it
-    do k = 1, pver
-    do i = 1, ncol
-       ptend%s(i,k) = (teloc2(i,k) - teloc1(i,k))/ztodt
-    enddo
-    enddo
-    call physics_finish_update(state, ptend, ztodt, tend)
-!and check again
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, zero, zero, zero)
-#endif
+
 
 !old
 !    call physics_update(state, ptend, ztodt, tend)
 !new
-    call physics_almost_update(state, ptend, ztodt, tend)
-    call physics_finish_update(state, ptend, ztodt, tend)
+!    call physics_almost_update(state, ptend, ztodt, tend)
+!    call physics_finish_update(state, ptend, ztodt, tend)
+
+
+
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2403,15 +2394,24 @@ call physics_ptend_copy(ptend,ptend2)
       call pbuf_get_field(pbuf, snow_str_idx, snow_str_sc, col_type=col_type_subcol)
     end if
 
-
-#if 1
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-!!!!! OG original, flx_vap is set to zero
+
+!block to bring dT to balance
+flx_vap(:ncol) = zero
+flx_sen(:ncol) = zero
+ddd(:ncol) = flx_vap(:ncol)*(latvap+latice) - (flx_cnd(:ncol)-snow_dp(:ncol))*latice*1000.0 + flx_sen(:ncol)
+ddd(:ncol) = ddd(:ncol)/(state%pint(:ncol,pverp) - state%pint(:ncol,1))*gravit
+
+do k = 1, pver
+do i = 1, ncol
+ptend%s(i,k) = ddd(i) - (teloc2(i,k) - teloc1(i,k))/ztodt / state%pdel(i,k) * gravit
+enddo
+enddo
+call physics_finish_update(state, ptend, ztodt, tend)
+
+
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
-!new
-!    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, flx_vap, flx_cnd, snow_dp, zero)
-#endif
 
     !
     ! Call Hack (1994) convection scheme to deal with shallow/mid-level convection
