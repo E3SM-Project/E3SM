@@ -592,6 +592,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      l_windt(2) = .true.
 
      call t_startf ('momtran')
+!!!!! OG this routine is active and it leads to changes in ptend%s computed with 
+!!!!! vapor and liq flx
      call momtran (lchnk, ncol,                                        &
                    l_windt,winds, 2,  mu(1,1), md(1,1),   &
                    du(1,1), eu(1,1), ed(1,1), dp(1,1), dsubcld(1),  &
@@ -602,8 +604,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      ptend_loc%u(:ncol,:pver) = wind_tends(:ncol,:pver,1)
      ptend_loc%v(:ncol,:pver) = wind_tends(:ncol,:pver,2)
 
-!!!!! OG this routine is active and it leads to changes in ptend%s computed with 
-!!!!! vapor and liq flx
      ptend_loc%s(:ncol,:pver) = seten(:ncol,:pver)  
 
      call physics_ptend_sum(ptend_loc,ptend_all, ncol)

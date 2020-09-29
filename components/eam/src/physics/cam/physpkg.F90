@@ -1907,7 +1907,12 @@ subroutine tphysbc (ztodt,               &
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
 
+use phys_debug_util, only: phys_debug_col
+use physics_types,   only: physics_ptend_copy, physics_ptend_dealloc
+
     implicit none
+integer icol
+type(physics_ptend)   :: ptend2            ! indivdual parameterization tendencies
 
     !
     ! Arguments
@@ -2338,8 +2343,14 @@ end if
     !
 
 !!!!OG compute te before
-
+#if 0
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc1)
+#endif
+
+
+
+!call physics_state_copy(state,state_in)
+icol = phys_debug_col(state%lchnk)
 
 
     call t_startf ('convect_deep_tend')
@@ -2352,33 +2363,29 @@ end if
          dsubcld, jt, maxg, ideep, lengath) 
     call t_stopf('convect_deep_tend')
 
-#if 0
-    !sum it
-flx_vap(:ncol) = 0.0
-do k = 1, pver
-do i = 1, ncol 
-flx_vap(i) = flx_vap(i) + ptend%q(i,k,1)*state%pdel(i,k)/gravit
-enddo
-enddo
+#if 0 
+call physics_ptend_copy(ptend,ptend2)
 #endif
 
-!    call physics_update(state, ptend, ztodt, tend)
+#if 0
     call physics_almost_update(state, ptend, ztodt, tend)
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc2)
 !now difference teloc2 - teloc1 has dTE, update ptend%s with it
     do k = 1, pver
     do i = 1, ncol
-       ptend%s(i,k) = teloc2(i,k) - teloc1(i,k)
+       ptend%s(i,k) = (teloc2(i,k) - teloc1(i,k))/ztodt
     enddo
     enddo
     call physics_finish_update(state, ptend, ztodt, tend)
 !and check again
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, zero, zero, zero)
+#endif
 
-
-
-
-
+!old
+!    call physics_update(state, ptend, ztodt, tend)
+!new
+    call physics_almost_update(state, ptend, ztodt, tend)
+    call physics_finish_update(state, ptend, ztodt, tend)
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2397,11 +2404,10 @@ enddo
     end if
 
 
-#if 0
+#if 1
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-!!!!! OG original, flx_vap is set to zero but it is not correct, zm modifies
-!ptend%q(1)
+!!!!! OG original, flx_vap is set to zero
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
 !new
 !    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, flx_vap, flx_cnd, snow_dp, zero)

@@ -1174,9 +1174,13 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! - snow is contained in prec
 
 !!!!!!OG original does not have +latice
-!          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+#if 1
+!old
+          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+#else
 !!!!! new
           tend_s(i,k)   =-evpprec(i)*(latvap+latice) + ntsnprd(i,k)*latice
+#endif
           tend_q(i,k) = evpprec(i)
        end do
     end do

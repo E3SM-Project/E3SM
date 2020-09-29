@@ -648,7 +648,7 @@ end subroutine check_energy_save_local_te
 	  do i = 1,ncol
              if (abs(te_rer(i)) > 1.E-14_r8 ) then 
                 state%count = state%count + 1
-                write(iulog,"(i5,2f10.2,6e15.7)") i, state%lat(i), state%lon(i), te(i),te_xpd(i),te_dif(i),  &
+                write(iulog,"(i5,2f10.7,6e15.7)") i, state%lat(i), state%lon(i), te(i),te_xpd(i),te_dif(i),  &
                       te_tnd(i)*ztodt,te_rer(i), tend%te_tnd(i)*ztodt
              endif
           end do

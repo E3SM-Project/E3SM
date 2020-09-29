@@ -214,6 +214,9 @@ contains
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst
     use ppgrid,       only: begchunk, endchunk
+
+use phys_debug_util, only: phys_debug_col
+
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
     type(physics_state), intent(inout)  :: state   ! Physics state variables
@@ -240,6 +243,13 @@ contains
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
+
+
+integer icol
+type(physics_state) :: state_in                ! Local copy of state variable
+
+call physics_state_copy(state,state_in)
+icol = phys_debug_col(state%lchnk)
 
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
        ptend%name  = "ptend_return"
@@ -449,6 +459,7 @@ contains
     ptend%lv    = .false.
     ptend%psetcols = 0
 #endif 
+
     call t_stopf ('physics_almost')
 
 
@@ -493,6 +504,9 @@ end subroutine physics_almost_update
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst
     use ppgrid,       only: begchunk, endchunk
+
+use phys_debug_util, only: phys_debug_col
+
 !------------------------------Arguments--------------------------------
     type(physics_ptend), intent(inout)  :: ptend   ! Parameterization tendencies
     type(physics_state), intent(inout)  :: state   ! Physics state variables
@@ -515,6 +529,13 @@ end subroutine physics_almost_update
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
+
+
+integer icol
+type(physics_state) :: state_in                ! Local copy of state variable
+
+call physics_state_copy(state,state_in)
+icol = phys_debug_col(state%lchnk)
 
     if (.not. (any(ptend%lq(:)) .or. ptend%ls .or. ptend%lu .or. ptend%lv)) then
        ptend%name  = "ptend_return"
@@ -602,7 +623,7 @@ end subroutine physics_almost_update
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
 
-    deallocate(cpairv_loc)
+    deallocate(cpairv_loc, rairv_loc)
 
     ! Deallocate ptend
 #if 1
