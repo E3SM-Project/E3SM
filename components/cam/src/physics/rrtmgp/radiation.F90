@@ -616,6 +616,16 @@ contains
                   'Shortwave diffuse-beam albedo', &
                   flag_xyfill=.true., sampling_seq='rad_lwsw') 
 
+      ! Band-by-band aerosol optical properties
+      call addfld('AER_TAU_SW', (/'lev   ','swband'/), 'I', '1', &
+                  'Aerosol shortwave extinction optical depth', sampling_seq='rad_lwsw') 
+      call addfld('AER_SSA_SW', (/'lev   ','swband'/), 'I', '1', &
+                  'Aerosol shortwave single scattering albedo', sampling_seq='rad_lwsw') 
+      call addfld('AER_G_SW', (/'lev   ','swband'/), 'I', '1', &
+                  'Aerosol shortwave assymmetry parameter', sampling_seq='rad_lwsw')
+      call addfld('AER_TAU_LW', (/'lev   ','lwband'/), 'I', '1', &
+                  'Aerosol longwave absorption optical depth', sampling_seq='rad_lwsw') 
+
       ! get list of active radiation calls
       call rad_cnst_get_call_list(active_calls)
 
@@ -1347,6 +1357,10 @@ contains
                call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
 
+               ! Output the aerosol optical depth, single-scattering albedlo, &
+               ! asymmetry parameter (col, lev, swband)
+               call output_aerosol_optics_sw(state, aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw)
+               
                ! Call the shortwave radiation driver
                call radiation_driver_sw( &
                   ncol, active_gases, gas_vmr, &
@@ -1426,6 +1440,9 @@ contains
                call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
 
+               ! Output aerosol LW optical depth
+               call output_aerosol_optics_lw(state, aer_tau_bnd_lw)
+               
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &
                   ncol, active_gases, gas_vmr, &
@@ -1831,6 +1848,59 @@ contains
 
    end subroutine output_cloud_optics_lw
 
+   !----------------------------------------------------------------------------
+
+   subroutine output_aerosol_optics_sw(state, tau, ssa, asm)
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+      use radconstants, only: idx_sw_diag
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      character(len=*), parameter :: subname = 'output_aerosol_optics_sw'
+
+      ! Check values   CRT: What does this assertion test?
+      call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%optical_depth')
+      call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%single_scattering_albedo')
+      call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%assymmetry_parameter')
+
+      ! Send outputs to history buffer
+      call outfld('AER_TAU_SW', &
+                  tau(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('AER_SSA_SW', &
+                  ssa(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('AER_G_SW', &
+                  asm(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+   end subroutine output_aerosol_optics_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine output_aerosol_optics_lw(state, tau)
+
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau
+
+      ! Check values
+      call assert_valid(tau(1:state%ncol,1:pver,1:nlwbands), 'aer_tau_lw')
+
+      ! Output
+      call outfld('AER_TAU_LW', &
+                  tau(1:state%ncol,1:pver,1:nlwbands), &
+                  state%ncol, state%lchnk)
+
+   end subroutine output_aerosol_optics_lw
+    
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_lw(ncol, &
