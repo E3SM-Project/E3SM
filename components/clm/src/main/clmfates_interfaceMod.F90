@@ -304,7 +304,7 @@ contains
         call set_fates_ctrlparms('nir_sw_index',ival=inir)
 
         call set_fates_ctrlparms('num_lev_ground',ival=nlevgrnd)
-        call set_fates_ctrlparms('hlm_name',cval='CLM')
+        call set_fates_ctrlparms('hlm_name',cval='ALM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
         call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1))
