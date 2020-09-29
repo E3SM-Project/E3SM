@@ -147,7 +147,6 @@ contains
             do c = cft_lb, cft_ub
                wt_cft(g,c) = wt_cft(g,c)/wtcft_sum * 100._r8
                tmp = tmp + wt_cft(g,c);
-               wt_nat_patch(g,c) = 0.0_r8
             enddo
             if (abs(tmp - 100._r8) > eps) then
                do c = cft_lb, cft_ub
