@@ -645,7 +645,9 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2a_a
     type(mct_aVect)             ,intent(inout) :: a2x_a
 
+    call t_startf("cam_final")
     call cam_final( cam_out, cam_in )
+    call t_stopf("cam_final")
 
   end subroutine atm_final_mct
 

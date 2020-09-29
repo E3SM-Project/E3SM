@@ -391,7 +391,11 @@ end subroutine clubb_init_cnst
     use cam_abortutils,  only: endrun
     use stats_variables, only: l_stats, l_output_rad_files
     use mpishorthand
-    use model_flags,     only: l_diffuse_rtm_and_thlm, l_stability_correct_Kh_N2_zm
+    use model_flags,     only: l_diffuse_rtm_and_thlm, l_stability_correct_Kh_N2_zm, &
+                               l_vert_avg_closure, l_trapezoidal_rule_zt, &
+                               l_trapezoidal_rule_zm, l_call_pdf_closure_twice,&
+                               ipdf_call_placement
+
     use parameters_tunable, only: clubb_param_readnl
 #endif
 
@@ -401,14 +405,18 @@ end subroutine clubb_init_cnst
     logical :: clubb_history, clubb_rad_history, clubb_cloudtop_cooling, clubb_rainevap_turb, &
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)      
     logical :: clubb_use_sgv !PMA This flag controls tuning for tpert and gustiness
-
+    logical :: clubb_vert_avg_closure !XZheng This flag sets four clubb config flags for pdf_closure and the trapezoidal rule to  compute the varibles that are output from high order closure
+    integer :: clubb_ipdf_call_placement  !XZheng This flag sets options for the placement of the call to CLUBB's PDF. 
+ 
     integer :: iunit, read_status
 
     namelist /clubb_his_nl/ clubb_history, clubb_rad_history
     namelist /clubbpbl_diff_nl/ clubb_cloudtop_cooling, clubb_rainevap_turb, clubb_expldiff, &
                                 clubb_do_adv, clubb_do_deep, clubb_timestep, clubb_stabcorrect, &
                                 clubb_rnevap_effic, clubb_liq_deep, clubb_liq_sh, clubb_ice_deep, &
-                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix, clubb_use_sgv
+                                clubb_ice_sh, clubb_tk1, clubb_tk2, relvar_fix, clubb_use_sgv, &
+                                clubb_vert_avg_closure, clubb_ipdf_call_placement
+
 
     !----- Begin Code -----
 
@@ -423,6 +431,9 @@ end subroutine clubb_init_cnst
     clubb_do_adv       = .false.   ! Initialize to false
     clubb_do_deep      = .false.   ! Initialize to false
     use_sgv            = .false.
+    clubb_vert_avg_closure = .true.
+    clubb_ipdf_call_placement = -999
+
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
@@ -469,9 +480,12 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_tk2,                1,   mpir8,   0, mpicom)
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
       call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
+      call mpibcast(clubb_vert_avg_closure,   1,   mpilog,   0, mpicom)
+      call mpibcast(clubb_ipdf_call_placement,   1,   mpiint,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
+    if (clubb_ipdf_call_placement > 0) ipdf_call_placement = clubb_ipdf_call_placement
     if (clubb_history) l_stats = .true.
     if (clubb_rad_history) l_output_rad_files = .true. 
     if (clubb_cloudtop_cooling) do_cldcool = .true.
@@ -486,7 +500,19 @@ end subroutine clubb_init_cnst
       l_diffuse_rtm_and_thlm       = .true.   ! CLUBB flag set to true
       l_stability_correct_Kh_N2_zm = .true.   ! CLUBB flag set to true
     endif
-      
+
+    if (clubb_vert_avg_closure) then
+      l_vert_avg_closure       = .true.   ! CLUBB flag set to true
+      l_trapezoidal_rule_zt    = .true.   ! CLUBB flag set to true
+      l_trapezoidal_rule_zm    = .true.   ! CLUBB flag set to true
+      l_call_pdf_closure_twice = .true.   ! CLUBB flag set to true
+    else
+      l_vert_avg_closure       = .false.   ! CLUBB flag set to false
+      l_trapezoidal_rule_zt    = .false.   ! CLUBB flag set to false
+      l_trapezoidal_rule_zm    = .false.   ! CLUBB flag set to false
+      l_call_pdf_closure_twice = .false.   ! CLUBB flag set to false
+    endif
+    
     ! read tunable parameters from namelist, handlings of masterproc vs others
     ! are done within clubb_param_readnl
     call clubb_param_readnl(nlfile)

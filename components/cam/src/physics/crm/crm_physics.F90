@@ -70,7 +70,12 @@ subroutine crm_physics_register()
    use phys_control,        only: phys_getopts
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, &
                                   crm_nx_rad, crm_ny_rad
-   use setparm_mod,         only: setparm
+#if defined(MMF_SAMXX)
+   use cpp_interface_mod,   only: setparm
+   use gator_mod, only: gator_init
+#elif defined(MMF_SAM)
+   use setparm_mod      ,   only: setparm
+#endif
    use crm_history,         only: crm_history_register
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
@@ -89,6 +94,9 @@ subroutine crm_physics_register()
    integer, dimension(5) :: dims_crm_aer
 #endif
    !----------------------------------------------------------------------------
+#ifdef MMF_SAMXX
+   call gator_init()
+#endif
    dims_gcm_1D  = (/pcols/)
    dims_gcm_2D  = (/pcols, pver/)
    dims_crm_2D  = (/pcols, crm_nx, crm_ny/)
@@ -136,11 +144,6 @@ subroutine crm_physics_register()
    call pbuf_add_field('CRM_QI_RAD',  'physpkg', dtype_r8, dims_crm_rad, idx)
    call pbuf_add_field('CRM_CLD_RAD', 'physpkg', dtype_r8, dims_crm_rad, idx)
    call pbuf_add_field('CRM_QRAD',    'global',  dtype_r8, dims_crm_rad, idx)
-
-#ifdef MODAL_AERO
-   call pbuf_add_field('CRM_QAERWAT', 'physpkg', dtype_r8, dims_crm_aer, crm_qaerwat_idx)
-   call pbuf_add_field('CRM_DGNUMWET','physpkg', dtype_r8, dims_crm_aer, crm_dgnumwet_idx)
-#endif
    
    cldo_idx = pbuf_get_index('CLDO')
    call pbuf_add_field('CLDO', 'global', dtype_r8, (/pcols ,pver, dyn_time_lvls/), cldo_idx  )
@@ -210,7 +213,6 @@ subroutine crm_physics_init(species_class)
 !---------------------------------------------------------------------------------------------------
    use physics_buffer,        only: pbuf_get_index
    use phys_control,          only: phys_getopts
-   use accelerate_crm_mod,    only: crm_accel_init
    use crm_history,           only: crm_history_init
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
@@ -256,8 +258,6 @@ subroutine crm_physics_init(species_class)
 
    call crm_history_init(species_class)
 
-   call crm_accel_init()
-
    prec_dp_idx  = pbuf_get_index('PREC_DP')
    snow_dp_idx  = pbuf_get_index('SNOW_DP')
    prec_sh_idx  = pbuf_get_index('PREC_SH')
@@ -274,8 +274,8 @@ end subroutine crm_physics_init
 !===================================================================================================
 
 subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
-                            species_class, crm_ecpp_output, &
-                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                            species_class, crm_ecpp_output, mmf_clear_rh, &
+                            mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
    !------------------------------------------------------------------------------------------------
    !
@@ -294,10 +294,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
    use physconst,       only: cpair, latvap, latice, gravit, cappa
    use constituents,    only: pcnst, cnst_get_ind
-   use crm_module,      only: crm
-   use params,          only: crm_rknd
+#if defined(MMF_SAMXX)
+   use cpp_interface_mod, only: crm
+#elif defined(MMF_SAM)
+   use crm_module       , only: crm
+#endif
+   use params_kind,          only: crm_rknd
    use phys_control,    only: phys_getopts
    use crm_history,     only: crm_history_out
+   use wv_saturation,   only: qsat_water
 #if (defined  m2005 && defined MODAL_AERO)  
    ! modal_aero_data only exists if MODAL_AERO
    use modal_aero_data, only: ntot_amode, ntot_amode
@@ -314,18 +319,23 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module, only: crm_ecpp_output_type
 
-   real(r8),                   intent(in   ) :: ztodt            ! global model time increment
-   type(physics_state),        intent(in   ) :: state            ! Global model state 
-   type(physics_tend),         intent(in   ) :: tend             ! 
-   type(physics_ptend),        intent(  out) :: ptend            ! output tendencies
-   type(physics_buffer_desc),  pointer       :: pbuf(:)          ! physics buffer
-   type(cam_in_t),             intent(in   ) :: cam_in           ! atm input from coupler
-   type(cam_out_t),            intent(inout) :: cam_out          ! atm output to coupler
-   integer,                    intent(in   ) :: species_class(:) ! aerosol species type
-   type(crm_ecpp_output_type), intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
-   real(r8), dimension(pcols), intent(out  ) :: sp_qchk_prec_dp  ! precipitation diagostic (liq+ice)  used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: sp_qchk_snow_dp  ! precipitation diagostic (ice only) used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: sp_rad_flux      ! radiative flux diagnostic used for check_energy_chng
+   use iso_c_binding, only: c_bool
+   use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
+   use spmd_utils,          only: masterproc
+
+   real(r8),                        intent(in   ) :: ztodt            ! global model time increment
+   type(physics_state),             intent(in   ) :: state            ! Global model state 
+   type(physics_tend),              intent(in   ) :: tend             ! 
+   type(physics_ptend),             intent(  out) :: ptend            ! output tendencies
+   type(physics_buffer_desc),       pointer       :: pbuf(:)          ! physics buffer
+   type(cam_in_t),                  intent(in   ) :: cam_in           ! atm input from coupler
+   type(cam_out_t),                 intent(inout) :: cam_out          ! atm output to coupler
+   integer,                         intent(in   ) :: species_class(:) ! aerosol species type
+   type(crm_ecpp_output_type),      intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
+   real(r8), dimension(pcols,pver), intent(  out) :: mmf_clear_rh     ! clear air relative humidity used for aerosol water uptake
+   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
+   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
+   real(r8), dimension(pcols),      intent(  out) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
 
    !------------------------------------------------------------------------------------------------
    ! Local variables 
@@ -373,7 +383,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
-   integer  :: i, k, m, ii, jj                     ! loop iterators
+   integer  :: i, icrm, icol, k, m, ii, jj         ! loop iterators
    integer  :: ixcldliq, ixcldice                  ! constituent indices
    integer  :: ixnumliq, ixnumice                  ! constituent indices
    integer  :: ixrain, ixsnow                      ! constituent indices
@@ -384,6 +394,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical  :: use_ECPP                            ! flag for ECPP mode
    character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
+   real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
+   real(r8) :: tmp_q_sat                           ! temporary saturation specific humidity
+   real(r8) :: tmp_rh_sum                          ! temporary relative humidity sum
+   real(r8) :: tmp_rh_cnt                          ! temporary relative humidity count
 
    ! variables for changing CRM orientation
    real(crm_rknd), parameter        :: pi   = 3.14159265359
@@ -411,6 +426,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: crm_rotation_std     ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
 #endif
+
+   real(crm_rknd), allocatable :: crm_clear_rh(:,:) ! clear air relative humidity for aerosol wateruptake
+
+   real(crm_rknd), allocatable :: longitude0(:)
+   real(crm_rknd), allocatable :: latitude0 (:)
+   integer       , allocatable :: gcolp     (:)
+   real(crm_rknd)              :: crm_accel_factor
+   logical                     :: use_crm_accel_tmp
+   logical                     :: crm_accel_uv_tmp
+   logical(c_bool)             :: use_crm_accel
+   logical(c_bool)             :: crm_accel_uv
+   integer                     :: igstep
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -672,6 +699,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! only need to do this once when crm_angle is static
       call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
 
+      ! Set this output to zero on first step
+      mmf_clear_rh(1:ncol,1:pver) = 0
+
    else  ! not is_first_step
 
       ptend%s(:,:) = 0.    ! necessary?
@@ -813,11 +843,85 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%q)) write(*,*) '=== ptend%q not allocated ==='
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
+      if (.not.allocated(crm_clear_rh)) allocate(crm_clear_rh(ncol,crm_nz))
+
+      ! Load latitude, longitude, and unique column ID for all CRMs
+      allocate(longitude0(ncol))
+      allocate(latitude0 (ncol))
+      allocate(gcolp     (ncol))
+      do icrm = 1 , ncol
+        latitude0 (icrm) = get_rlat_p(lchnk,icrm) * 57.296_r8
+        longitude0(icrm) = get_rlon_p(lchnk,icrm) * 57.296_r8
+        gcolp     (icrm) = get_gcol_p(lchnk,icrm)
+      enddo
+      ! set CRM mean state acceleration (MSA) parameters from namelist
+      use_crm_accel = .false.
+      crm_accel_factor = 0.
+      crm_accel_uv = .false.
+      call phys_getopts(use_crm_accel_out    = use_crm_accel_tmp, &
+                        crm_accel_factor_out = crm_accel_factor, &
+                        crm_accel_uv_out     = crm_accel_uv_tmp)
+      use_crm_accel = use_crm_accel_tmp
+      crm_accel_uv = crm_accel_uv_tmp
+
+      if (masterproc) then
+        if (use_crm_accel) then
+#if !defined(sam1mom)
+          write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
+          call endrun('crm main')
+#endif
+        endif
+      endif
+
+      ! Load the nstep
+      igstep = get_nstep()
+
+#if defined(MMF_SAM)
+
       call t_startf ('crm_call')
-      call crm( lchnk, ncol, ztodt, pver,       &
-                crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+
+      call crm(lchnk, ncol, ztodt, pver, &
+               crm_input, crm_state, crm_rad, &
+               crm_ecpp_output, crm_output, crm_clear_rh, &
+               latitude0, longitude0, gcolp, igstep, &
+               use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
+
       call t_stopf('crm_call')
+
+#elif defined(MMF_SAMXX)
+
+      call t_startf ('crm_call')
+
+      ! Fortran classes don't translate to C++ classes, we we have to separate
+      ! this stuff out when calling the C++ routinte crm(...)
+      call crm(ncol, pcols, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
+               crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
+               crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
+               crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
+               crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
+               crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
+               crm_output%prectend, crm_output%precstend, crm_output%cld, crm_output%cldtop, &
+               crm_output%gicewp, crm_output%gliqwp, crm_output%mctot, crm_output%mcup, crm_output%mcdn, &
+               crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
+               crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
+               crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
+               crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
+               crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
+               crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
+               crm_output%clhgh, crm_output%clmed, crm_output%cllow, crm_output%sltend, crm_output%qltend, crm_output%qcltend, &
+               crm_output%qiltend, crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
+               crm_output%precsl, crm_output%prec_crm, crm_clear_rh, &
+               latitude0, longitude0, gcolp, igstep, &
+               use_crm_accel, crm_accel_factor, crm_accel_uv)
+
+      call t_stopf('crm_call')
+      
+#endif
+
+      deallocate(longitude0)
+      deallocate(latitude0 )
+      deallocate(gcolp     )
 
       !---------------------------------------------------------------------------------------------
       ! Copy tendencies from CRM output to ptend
@@ -846,10 +950,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%s(:ncol, :pver-crm_nz+2) = qrs(:ncol,:pver-crm_nz+2) + qrl(:ncol,:pver-crm_nz+2)
 
       ! This will be used to check energy conservation
-      sp_rad_flux(:ncol) = 0.0_r8
+      mmf_rad_flux(:ncol) = 0.0_r8
       do k = 1,pver
          do i = 1,ncol
-            sp_rad_flux(i) = sp_rad_flux(i) + ( qrs(i,k) + qrl(i,k) ) * state%pdel(i,k)/gravit
+            mmf_rad_flux(i) = mmf_rad_flux(i) + ( qrs(i,k) + qrl(i,k) ) * state%pdel(i,k)/gravit
          end do
       end do
 
@@ -1048,10 +1152,25 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          qi_hydro_after(i)  =  qi_hydro_after(i)/(crm_nx*crm_ny)
       end do ! i = 1,ncold
 
-      sp_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
-                                                 qli_hydro_before(:ncol))/crm_run_time/1000._r8
-      sp_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
-                                                  qi_hydro_before(:ncol))/crm_run_time/1000._r8
+      mmf_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
+                                                  qli_hydro_before(:ncol))/crm_run_time/1000._r8
+      mmf_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
+                                                   qi_hydro_before(:ncol))/crm_run_time/1000._r8
+
+      !---------------------------------------------------------------------------------------------
+      ! copy clear air relative humdity for aerosol water uptake
+      !---------------------------------------------------------------------------------------------
+      ! initialize to zero, so no aerosol water uptake occurs by default
+      mmf_clear_rh(1:ncol,1:pver) = 0
+      do icol = 1,ncol
+         do m = 1,crm_nz
+            k = pver-m+1
+            mmf_clear_rh(icol,k) = crm_clear_rh(icol,m)
+         end do ! m = 1,crm_nz
+      end do ! i = 1,ncol
+      deallocate(crm_clear_rh)
+      !---------------------------------------------------------------------------------------------
+      !---------------------------------------------------------------------------------------------
 
    end if ! (is_first_step())
 

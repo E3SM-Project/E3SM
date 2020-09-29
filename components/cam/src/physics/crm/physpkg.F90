@@ -41,8 +41,12 @@ module physpkg
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
 
-  use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_diag, modal_aero_calcsize_reg, modal_aero_calcsize_sub
-  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, modal_aero_wateruptake_reg
+  use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
+                                    modal_aero_calcsize_reg, &
+                                    modal_aero_calcsize_sub
+  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
+                                    modal_aero_wateruptake_dr, &
+                                    modal_aero_wateruptake_reg
 #ifdef MAML
   use seq_comm_mct,       only : num_inst_atm
 #endif
@@ -140,7 +144,6 @@ subroutine phys_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
     use check_energy,       only: check_energy_register
-    use carma_intr,         only: carma_register
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_register
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_register
     use ghg_data,           only: ghg_data_register
@@ -306,10 +309,6 @@ subroutine phys_register
 
        ! register various data model gasses with pbuf
        call ghg_data_register()
-
-       ! carma microphysics
-       ! 
-       call carma_register()
 
        ! Register iondrag variables with pbuf
        call iondrag_register()
@@ -704,8 +703,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
     use ref_pres,           only: pref_edge, pref_mid
-
-    use carma_intr,         only: carma_init
     use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
     use check_energy,       only: check_energy_init
@@ -836,9 +833,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call rad_cnst_init()
     call aer_rad_props_init()
     call cloud_rad_props_init()
-
-    ! initialize carma
-    call carma_init()
 
     ! solar irradiance data modules
     call solar_data_init()
@@ -1218,7 +1212,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use cam_diagnostics,only: diag_deallocate, diag_surf
     use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
-    use carma_intr,     only: carma_accumulate_stats
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
@@ -1336,10 +1329,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
 
-    call t_startf ('carma_accumulate_stats')
-    call carma_accumulate_stats()
-    call t_stopf ('carma_accumulate_stats')
-
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
 
@@ -1356,7 +1345,6 @@ end subroutine phys_run2
 subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
     use chemistry, only : chem_final
-    use carma_intr, only : carma_final
     use wv_saturation, only : wv_sat_final
     !----------------------------------------------------------------------- 
     ! 
@@ -1375,10 +1363,18 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     end if
     deallocate(phys_state)
     deallocate(phys_tend)
+
+    call t_startf ('chem_final')
     call chem_final
-    call carma_final
+    call t_stopf ('chem_final')
+
+    call t_startf ('wv_sat_final')
     call wv_sat_final
+    call t_stopf ('wv_sat_final')
+
+    call t_startf ('print_cost_p')
     call print_cost_p
+    call t_stopf ('print_cost_p')
 
 end subroutine phys_final
 
@@ -1419,8 +1415,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use aoa_tracers,        only: aoa_tracers_timestep_tend
     use physconst,          only: rhoh2o, latvap,latice, rga
     use aero_model,         only: aero_model_drydep
-    use carma_intr,         only: carma_emission_tend, carma_timestep_tend
-    use carma_flags_mod,    only: carma_do_aerosol, carma_do_emission
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
@@ -1601,12 +1595,6 @@ if (l_tracer_aero) then
     ! emissions of aerosols and gas-phase chemistry constituents at surface
     call chem_emissions( state, cam_in )
 
-    if (carma_do_emission) then
-       ! carma emissions
-       call carma_emission_tend (state, ptend, cam_in, ztodt)
-       call physics_update(state, ptend, ztodt, tend)
-    end if
-
 end if ! l_tracer_aero
 
     ! get nstep and zero array for energy checker
@@ -1743,22 +1731,6 @@ if (l_tracer_aero) then
     call aero_model_drydep( state, pbuf, obklen, surfric, cam_in, ztodt, cam_out, ptend )
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
-
-   ! CARMA microphysics
-   !
-   ! NOTE: This does both the timestep_tend for CARMA aerosols as well as doing the dry
-   ! deposition for CARMA aerosols. It needs to follow vertical_diffusion_tend, so that
-   ! obklen and surfric have been calculated. It needs to follow aero_model_drydep, so
-   ! that cam_out%xxxdryxxx fields have already been set for CAM aerosols and cam_out
-   ! can be added to for CARMA aerosols.
-   if (carma_do_aerosol) then
-     call t_startf('carma_timestep_tend')
-     call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, obklen=obklen, ustar=surfric)
-     call physics_update(state, ptend, ztodt, tend)
-   
-     call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, zero, zero, zero)
-     call t_stopf('carma_timestep_tend')
-   end if
 
     !---------------------------------------------------------------------------------
     !  ... enforce charge neutrality
@@ -1971,8 +1943,6 @@ subroutine tphysbc (ztodt,               &
                                check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
-    use carma_intr,      only: carma_wetdep_tend, carma_timestep_tend
-    use carma_flags_mod, only: carma_do_detrain, carma_do_cldice, carma_do_cldliq,  carma_do_wetdep
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
@@ -2092,10 +2062,6 @@ subroutine tphysbc (ztodt,               &
 
     real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
 
-    ! carma precipitation variables
-    real(r8) :: prec_sed_carma(pcols)          ! total precip from cloud sedimentation (CARMA)
-    real(r8) :: snow_sed_carma(pcols)          ! snow from cloud ice sedimentation (CARMA)
-
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
     real(r8),pointer :: snow_str(:)     ! sfc flux of snow from stratiform   (m/s)
@@ -2177,9 +2143,10 @@ subroutine tphysbc (ztodt,               &
     logical           :: use_ECPP
     character(len=16) :: MMF_microphysics_scheme
     real(r8)          :: crm_run_time              ! length of CRM integration
-    real(r8), dimension(pcols) :: sp_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
-    real(r8), dimension(pcols) :: sp_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
-    real(r8), dimension(pcols) :: sp_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
+    real(r8), dimension(pcols,pver) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
+    real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
+    real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
+    real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
 
     type(crm_ecpp_output_type)      :: crm_ecpp_output   ! CRM output data for ECPP calculations
 #if defined( ECPP )
@@ -2560,34 +2527,6 @@ if (l_tracer_aero) then
     ! from the stratiform interface has access to the same aerosols as the radiation
     ! code.
     call sslt_rebin_adv(pbuf,  state)
-    
-    !===================================================
-    ! Calculate tendencies from CARMA bin microphysics.
-    !===================================================
-    !
-    ! If CARMA is doing detrainment, then on output, rliq no longer represents water reserved
-    ! for detrainment, but instead represents potential snow fall. The mass and number of the
-    ! snow are stored in the physics buffer and will be incorporated by the MG microphysics.
-    !
-    ! Currently CARMA cloud microphysics is only supported with the MG microphysics.
-    call t_startf('carma_timestep_tend')
-
-    if (carma_do_cldice .or. carma_do_cldliq) then
-       call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, dlf=dlf, rliq=rliq, &
-            prec_str=prec_str, snow_str=snow_str, prec_sed=prec_sed_carma, snow_sed=snow_sed_carma)
-       call physics_update(state, ptend, ztodt, tend)
-
-       ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
-       ! detrainment, then the reserved condensate is snow.
-       if (carma_do_detrain) then
-          call check_energy_chng(state, tend, "carma_tend", &
-               nstep, ztodt, zero, prec_str(:ncol)+rliq(:ncol), snow_str(:ncol)+rliq(:ncol), zero)
-       else
-          call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
-       end if
-    end if
-
-    call t_stopf('carma_timestep_tend')
 
 end if
 
@@ -2865,18 +2804,18 @@ end if
       ! Run the CRM 
       !-------------------------------------------------------------------------
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
-                            species_class, crm_ecpp_output,                     &
-                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                            species_class, crm_ecpp_output, mmf_clear_rh,       &
+                            mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
       call physics_update(state, ptend, crm_run_time, tend)
 
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
-                             zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                             zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
       !-------------------------------------------------------------------------
       ! Modal aerosol wet radius for radiative calculation
       !-------------------------------------------------------------------------
-#if defined(MODAL_AERO)  
+#if defined( ECPP ) && defined(MODAL_AERO)
       ! temporarily turn on all lq, so it is allocated
       lq(:) = .true.
       call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
@@ -2884,16 +2823,15 @@ end if
       ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
       ptend%lq(:) = .false.
       call modal_aero_calcsize_sub (state, ptend, ztodt, pbuf)
-      call modal_aero_wateruptake_dr(state, pbuf)
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
 
-      ! When ECPP is included, wet deposition is done ECPP,
-      ! So tendency from wet depostion is not updated 
-      ! in mz_aero_wet_intr (mz_aerosols_intr.F90)
-      ! tendency from other parts of crmclouds_aerosol_wet_intr() are still updated here.
+      ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
+      ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
+      ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
       call physics_update (state, ptend, crm_run_time, tend)
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time, zero, zero, zero, zero)
-#endif /* MODAL_AERO */
 
+#endif /* ECPP and MODAL_AERO */
       !-------------------------------------------------------------------------
       ! ECPP - Explicit-Cloud Parameterized-Pollutant
       !-------------------------------------------------------------------------
@@ -2960,73 +2898,52 @@ end if
    !------------------------------------------------------------------------------------------------
    !================================================================================================
 
-    if (l_tracer_aero) then
-
-      ! Add the precipitation from CARMA to the precipitation from stratiform.
-      if (carma_do_cldice .or. carma_do_cldliq) then
-         prec_sed(:ncol) = prec_sed(:ncol) + prec_sed_carma(:ncol)
-         snow_sed(:ncol) = snow_sed(:ncol) + snow_sed_carma(:ncol)
-      end if
-
-      if(use_MMF .and. use_ECPP .and. MMF_microphysics_scheme .eq. 'm2005') then
-        ! As ECPP is not linked with the sam1mom yet, conventional convective transport
-        ! and wet savenging are still needed for sam1mom to drive the BAM aerosol treatment
+   if (l_tracer_aero) then
+      if (use_MMF.and.use_ECPP.and.MMF_microphysics_scheme.eq.'m2005') then
+         ! With 2-mom MMF+ ECPP we can skip the conventional aerosol routines.
+         ! With 1-mom MMF we use prescribed or bulk aerosols so the conventional
+         ! convective transport and wet savenging are still needed.
       else if ( .not. deep_scheme_does_scav_trans() ) then
 
-        ! -------------------------------------------------------------------------------
-        ! 1. Wet Scavenging of Aerosols by Convective and Stratiform Precipitation.
-        ! 2. Convective Transport of Non-Water Aerosol Species.
-        !
-        !  . Aerosol wet chemistry determines scavenging fractions, and transformations
-        !  . Then do convective transport of all trace species except qv,ql,qi.
-        !  . We needed to do the scavenging first to determine the interstitial fraction.
-        !  . When UNICON is used as unified convection, we should still perform
-        !    wet scavenging but not 'convect_deep_tend2'.
-        ! -------------------------------------------------------------------------------
+         !======================================================================
+         ! Aerosol wet chemistry determines scavenging and transformations.
+         ! This is followed by convective transport of all trace species except
+         ! water vapor and condensate. Scavenging needs to occur prior to
+         ! transport in order to determine interstitial fraction.
+         !======================================================================
 
-        call t_startf('bc_aerosols')
-        if (clim_modal_aero .and. .not. prog_modal_aero) then
-          call modal_aero_calcsize_diag(state, pbuf)
-          call modal_aero_wateruptake_dr(state, pbuf)
-        endif
+         call t_startf('tphysbc_aerosols')
 
-        if (do_clubb_sgs) then
-          sh_e_ed_ratio = 0.0_r8
-        endif
+         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,      & !Intent-ins
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-            cam_out,                                                                 & !Intent-inout
-            pbuf,                                                                    & !Pointer
-            ptend                                                                    ) !Intent-out
-        call physics_update(state, ptend, ztodt, tend)
+         ! Aerosol wet removal (including aerosol water uptake)
+         if (use_MMF) then
+            call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                   sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                   jt, maxg, ideep, lengath, species_class,           &
+                   cam_out, pbuf, ptend,                              & ! outputs
+                   clear_rh=mmf_clear_rh) ! clear air relative humidity for water uptake
+         else
+            call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                   sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                   jt, maxg, ideep, lengath, species_class,           &
+                   cam_out, pbuf, ptend )                               ! outputs
+         end if
+         call physics_update(state, ptend, ztodt, tend)
 
-        if (carma_do_wetdep) then
-          ! CARMA wet deposition
-          !
-          ! NOTE: It needs to follow aero_model_wetdep, so that cam_out%xxxwetxxx
-          ! fields have already been set for CAM aerosols and cam_out can be added
-          ! to for CARMA aerosols.
-          call t_startf ('carma_wetdep_tend')
-          call carma_wetdep_tend(state, ptend, ztodt, pbuf, dlf, cam_out)
-          call physics_update(state, ptend, ztodt, tend)
-          call t_stopf ('carma_wetdep_tend')
-        end if
+         ! deep convective aerosol transport
+         call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
+                mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
+                ideep, lengath, species_class )
+         call physics_update(state, ptend, ztodt, tend)
 
-        !!! deep convective transport (ZM)
-        call t_startf ('convect_deep_tend2')
-        call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
-        call physics_update(state, ptend, ztodt, tend)
-        call t_stopf ('convect_deep_tend2')
+         ! check tracer integrals
+         call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
-        ! check tracer integrals
-        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
+         call t_stopf('tphysbc_aerosols')
 
-        call t_stopf('bc_aerosols')
-
-   endif
-end if ! l_tracer_aero
+      end if
+   end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
    if(deep_scheme.eq.'ZM' .and. trigmem)then
@@ -3128,7 +3045,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use chem_surfvals,       only: chem_surfvals_set
   use physics_types,       only: physics_state
   use physics_buffer,      only: physics_buffer_desc
-  use carma_intr,          only: carma_timestep_init
   use ghg_data,            only: ghg_data_timestep_init
   use cam3_aero_data,      only: cam3_aero_data_on, cam3_aero_data_timestep_init
   use cam3_ozone_data,     only: cam3_ozone_data_on, cam3_ozone_data_timestep_init
@@ -3211,8 +3127,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
      call get_efield
      call t_stopf ('efield')
   endif
-
-  call carma_timestep_init()
 
   ! Time interpolate for tracers, if appropriate
   call tracers_timestep_init(phys_state)

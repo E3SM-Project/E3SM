@@ -15,7 +15,7 @@ module zm_conv_intr
    use physconst,    only: cpair                              
    use physconst,    only: latvap, gravit   !songxl 2014-05-20
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
-   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigmem, trigdcape_ull
+   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigmem, trigdcape_ull, trig_dcape_only
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog
@@ -93,7 +93,7 @@ subroutine zm_conv_register
 
 ! DCAPE-UPL
 
-   if (trigdcape_ull) then
+   if (trigdcape_ull .or. trig_dcape_only) then
     ! temperature from physics in n-1 time step
     call pbuf_add_field('T_STAR','global',dtype_r8,(/pcols,pver/), t_star_idx)
     ! moisturetendency from physics in n-1 time step 
@@ -429,7 +429,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !<songxl 2014-05-20-----------------
 
 ! DCAPE-ULL
-   if(trigdcape_ull)then
+   if(trigdcape_ull .or. trig_dcape_only)then
      call pbuf_get_field(pbuf, t_star_idx,     t_star)
      call pbuf_get_field(pbuf, q_star_idx,     q_star)
      if ( is_first_step()) then

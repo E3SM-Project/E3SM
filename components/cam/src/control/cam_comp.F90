@@ -455,11 +455,18 @@ subroutine cam_final( cam_out, cam_in )
    real(r8) :: mpi_wtime
 #endif
 
+   call t_startf ('phys_final')
    call phys_final( phys_state, phys_tend , pbuf2d)
+   call t_stopf ('phys_final')
+
+   call t_startf ('stepon_final')
    call stepon_final(dyn_in, dyn_out)
+   call t_stopf ('stepon_final')
 
    if(nsrest==0) then
+      call t_startf ('cam_initfiles_close')
       call cam_initfiles_close()
+      call t_stopf ('cam_initfiles_close')
    end if
 
    call hub2atm_deallocate(cam_in)

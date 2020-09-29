@@ -18,8 +18,9 @@ module radiation
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
-      set_sw_spectral_boundaries, set_lw_spectral_boundaries, &
-      get_sw_spectral_midpoints, get_lw_spectral_midpoints
+      get_band_index_sw, get_band_index_lw, test_get_band_index, &
+      get_sw_spectral_midpoints, get_lw_spectral_midpoints, &
+      rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
@@ -109,6 +110,12 @@ module radiation
    ! irradiance at TOA). Used for idealized experiments such as RCE.
    ! Disabled when value is less than 0.
    real(r8) :: fixed_total_solar_irradiance = -1
+
+   ! The RRTMGP warnings are printed when the state variables need to be limted,
+   ! such as when the temperature drops too low. This is not normally an issue,
+   ! but in aquaplanet and RCE configurations these situations occur much more 
+   ! frequently, so this flag was added to be able to disable those messages.
+   logical :: rrtmgp_enable_temperature_warnings = .true.
 
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
@@ -214,7 +221,9 @@ contains
                               rrtmgp_coefficients_file_sw,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
-                              do_aerosol_rad, fixed_total_solar_irradiance
+                              do_aerosol_rad,                  &
+                              fixed_total_solar_irradiance,    &
+                              rrtmgp_enable_temperature_warnings
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -243,6 +252,7 @@ contains
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
+      call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -265,7 +275,8 @@ contains
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux, &
-                         do_aerosol_rad, fixed_total_solar_irradiance
+                         do_aerosol_rad, fixed_total_solar_irradiance, &
+                         rrtmgp_enable_temperature_warnings
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -275,7 +286,8 @@ contains
              '  Use average zenith angle:                           ',l5/, &
              '  Output spectrally resolved fluxes:                  ',l5/, &
              '  Do aerosol radiative calculations:                  ',l5/, &
-             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
+             '  Fixed solar consant (disabled with -1):             ',f10.4/, &
+             '  Enable temperature warnings:                        ',l5/ )
 
    end subroutine radiation_readnl
 
@@ -505,10 +517,6 @@ contains
       ! by the absorption coefficient data.
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
-
-      ! Set band intervals based on inputdata
-      call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
-      call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1214,14 +1222,10 @@ contains
          mu, lambdac, dei, des, rei, rel
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
-      real(r8), pointer, dimension(:,:,:,:,:) :: crm_qaerwat, crm_dgnumwet
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
       integer :: ixwatvap, ixcldliq, ixcldice
 
       real(r8), pointer, dimension(:,:,:) :: qaerwat, dgnumwet
-#ifdef MODAL_AERO
-      real(r8), dimension(pcols,pver,ntot_amode) :: qaerwat_save, dgnumwet_save
-#endif
       real(r8), dimension(pcols,pver) :: dei_save, rei_save, rel_save
 
       ! Arrays to hold gas volume mixing ratios
@@ -1276,6 +1280,9 @@ contains
       ! NOTE: these are diagnostic only
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
+
+      ! Loop variables
+      integer :: icol, ilay
 
       !----------------------------------------------------------------------
 
@@ -1332,10 +1339,6 @@ contains
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
-#ifdef MODAL_AERO
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QAERWAT' ), crm_qaerwat )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_DGNUMWET'), crm_dgnumwet)
-#endif
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
@@ -1359,10 +1362,6 @@ contains
       dei_save   = dei
       rei_save   = rei
       rel_save   = rel
-#ifdef MODAL_AERO
-      qaerwat_save = qaerwat
-      dgnumwet_save = dgnumwet
-#endif
  
       ! Indices into rad constituents arrays
       ixwatvap = 1
@@ -1450,6 +1449,41 @@ contains
                aer_optics_sw%ssa = 0
                aer_optics_sw%g   = 0
 
+               ! Do aerosol optics; this was moved outside the CRM loop to 
+               ! optimize performance. The impact was estimated to be negligible.
+               aer_tau_bnd_sw = 0
+               aer_ssa_bnd_sw = 0
+               aer_asm_bnd_sw = 0
+               aer_tau_bnd_lw = 0
+               if (do_aerosol_rad) then
+                  if (radiation_do('sw')) then
+                     call t_startf('rad_aerosol_optics_sw')
+                     call set_aerosol_optics_sw( &
+                        icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                        aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
+                     )
+                     ! Now reorder bands to be consistent with RRTMGP
+                     ! TODO: fix the input files themselves!
+                     do icol = 1,size(aer_tau_bnd_sw,1)
+                        do ilay = 1,size(aer_tau_bnd_sw,2)
+                           aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           aer_ssa_bnd_sw(icol,ilay,:) = reordered(aer_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           aer_asm_bnd_sw(icol,ilay,:) = reordered(aer_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        end do
+                     end do
+                     call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+                     call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+                     call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+                     call t_stopf('rad_aerosol_optics_sw')
+                  end if ! radiation_do('sw')
+                  if (radiation_do('lw')) then
+                     call t_startf('rad_aerosol_optics_lw')
+                     call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
+                     call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
+                     call t_stopf('rad_aerosol_optics_lw')
+                  end if ! radiation_do('lw')
+               end if ! do_aerosol_rad
+
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
                ! into arrays dimensioned ncol_tot = ncol * ncrms
@@ -1482,19 +1516,7 @@ contains
                                  iclwp(ic,ilev) = 0
                                  iciwp(ic,ilev) = 0
                               end if
-#ifdef MODAL_AERO
-                              ! Use CRM scale aerosol water to calculate aerosol optical depth. Here we assume no
-                              ! aerosol water uptake for cloudy sky on CRM grids. This is not really physically
-                              ! correct, but if we assume 100% of relative humidity for aerosol water uptake, this
-                              ! will bias 'AODVIS' to be large, since 'AODVIS' is used to compare with observed
-                              ! clear sky AOD. In the future, AODVIS should be calculated from clear sky CRM AOD
-                              ! only. But before this is done, we will assume no water uptake on CRM grids for
-                              ! cloudy conditions (The radiative effects of this assumption will be small, since
-                              ! aerosol effects are small relative to cloud effects for cloudy sky anyway.
-                              ! -Minghuai Wang (minghuai.wang@pnl.gov)
-                              qaerwat (ic,ilev,1:ntot_amode) =  crm_qaerwat(ic,ix,iy,iz,1:ntot_amode)
-                              dgnumwet(ic,ilev,1:ntot_amode) = crm_dgnumwet(ic,ix,iy,iz,1:ntot_amode)
-#endif
+
                               ! DEI is used for 2-moment optics
                               dei(1:ncol,1:pver) = 2._r8 * rei(1:ncol,1:pver)
                            end do  ! ic = 1,ncol
@@ -1519,11 +1541,11 @@ contains
                      call handle_error(clip_values( &
                         tmid_col(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
                         trim(subname) // ' tmid' &
-                     ), fatal=.false.)
+                     ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call handle_error(clip_values( &
                         tint_col(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
                         trim(subname) // ' tint' &
-                     ), fatal=.false.)
+                     ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call t_stopf('rad_check_temperatures')
 
                      ! Set gas concentrations
@@ -1550,31 +1572,34 @@ contains
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
                         )
+                        ! Output the band-by-band cloud optics BEFORE we reorder bands, because
+                        ! we hard-coded the indices for diagnostic bands in radconstants.F90 to
+                        ! correspond to the optical property look-up tables.
+                        call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+                        ! Now reorder bands to be consistent with RRTMGP
+                        ! We need to fix band ordering because the old input files assume RRTMG
+                        ! band ordering, but this has changed in RRTMGP.
+                        ! TODO: fix the input files themselves!
+                        do icol = 1,size(cld_tau_bnd_sw,1)
+                           do ilay = 1,size(cld_tau_bnd_sw,2)
+                              cld_tau_bnd_sw(icol,ilay,:) = reordered(cld_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              cld_ssa_bnd_sw(icol,ilay,:) = reordered(cld_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              cld_asm_bnd_sw(icol,ilay,:) = reordered(cld_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           end do
+                        end do
+                        ! And now do the MCICA sampling to get cloud optical properties by
+                        ! gpoint/cloud state
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
-                        call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
                         call t_stopf('rad_cloud_optics_sw')
-                        ! Do aerosol optics
-                        call t_startf('rad_aerosol_optics_sw')
-                        aer_tau_bnd_sw = 0._r8
-                        aer_ssa_bnd_sw = 0._r8
-                        aer_asm_bnd_sw = 0._r8
-                        call set_aerosol_optics_sw( &
-                           icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                           aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
-                        )
-                        call t_stopf('rad_aerosol_optics_sw')
                         ! Check (and possibly clip) values before passing to RRTMGP driver
                         call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
-                        call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
-                        call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
-                        call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
                      end if
 
                      ! Longwave cloud and aerosol optics
@@ -1594,14 +1619,8 @@ contains
                         )
                         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
-                        ! Do aerosol optics
-                        call t_startf('rad_aerosol_optics_lw')
-                        aer_tau_bnd_lw = 0._r8
-                        call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
-                        call t_stopf('rad_aerosol_optics_lw')
                         ! Check (and possibly clip) values before passing to RRTMGP driver
                         call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
-                        call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
                      end if
 
                      ! Pack data
@@ -1618,17 +1637,10 @@ contains
                         cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
                         cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
                         cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
-                        if (do_aerosol_rad) then
-                           aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
-                           aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
-                           aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
-                           aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
-                        else
-                           aer_optics_lw%tau(j,ktop:kbot,:) = 0
-                           aer_optics_sw%tau(j,ktop:kbot,:) = 0
-                           aer_optics_sw%ssa(j,ktop:kbot,:) = 0
-                           aer_optics_sw%g  (j,ktop:kbot,:) = 0
-                        end if
+                        aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
+                        aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                        aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                        aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
                         j = j + 1
                      end do  ! ic = 1,ncol
@@ -1861,10 +1873,6 @@ contains
       dei   = dei_save
       rei   = rei_save
       rel   = rel_save
-#ifdef MODAL_AERO
-      qaerwat = qaerwat_save
-      dgnumwet = dgnumwet_save
-#endif
 
       ! Compute net radiative heating tendency
       call t_startf('radheat_tend')
@@ -2005,6 +2013,7 @@ contains
 
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_day%delta_scale())
+      call handle_error(aer_optics_day%delta_scale())
 
       ! Check incoming optical properties
       call handle_error(cld_optics_day%validate())
@@ -2025,9 +2034,6 @@ contains
       end do
       deallocate(gas_names_lower)
 
-      call handle_error(cld_optics_day%validate())
-      call handle_error(aer_optics_day%validate())
-        
       ! Compute fluxes
       call t_startf('rad_rte_sw')
       call handle_error(rte_sw(k_dist_sw, gas_concs, &
@@ -2090,7 +2096,7 @@ contains
       real(r8), intent(in) :: gas_vmr(:,:,:)
       real(r8), intent(in) :: emis_sfc(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
-      type(ty_optical_props_1scl), intent(in) :: cld_optics, aer_optics
+      type(ty_optical_props_1scl), intent(inout) :: cld_optics, aer_optics
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
 
       type(ty_gas_concs) :: gas_concs
@@ -2117,6 +2123,9 @@ contains
       end do
       deallocate(gas_names_lower)
 
+      ! Apply delta-scaling to account for forward scattering
+      call handle_error(cld_optics%delta_scale())
+      call handle_error(aer_optics%delta_scale())
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_rte_lw')
@@ -2670,6 +2679,31 @@ contains
 
    !----------------------------------------------------------------------------
 
+   ! Utility function to reorder an array given a new indexing
+   function reordered(array_in, new_indexing) result(array_out)
+
+      ! Inputs
+      real(r8), intent(in) :: array_in(:)
+      integer, intent(in) :: new_indexing(:)
+
+      ! Output, reordered array
+      real(r8), dimension(size(array_in)) :: array_out
+
+      ! Loop index
+      integer :: ii
+
+      ! Check inputs
+      call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
+
+      ! Reorder array based on input index mapping, which maps old indices to new
+      do ii = 1,size(new_indexing)
+         array_out(ii) = array_in(new_indexing(ii))
+      end do
+
+   end function reordered
+
+   !----------------------------------------------------------------------------
+
    subroutine output_cloud_optics_sw(state, tau, ssa, asm)
       use ppgrid, only: pver
       use physics_types, only: physics_state
@@ -2678,6 +2712,7 @@ contains
 
       type(physics_state), intent(in) :: state
       real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      integer :: sw_band_index
       character(len=*), parameter :: subname = 'output_cloud_optics_sw'
 
       ! Check values
@@ -2698,8 +2733,9 @@ contains
       call outfld('CLOUD_G_SW', &
                   asm(1:state%ncol,1:pver,1:nswbands), &
                   state%ncol, state%lchnk)
+      sw_band_index = get_band_index_sw(550._r8, 'nm')
       call outfld('TOT_ICLD_VISTAU', &
-                  tau(1:state%ncol,1:pver,idx_sw_diag), &
+                  tau(1:state%ncol,1:pver,sw_band_index), &
                   state%ncol, state%lchnk)
    end subroutine output_cloud_optics_sw
 

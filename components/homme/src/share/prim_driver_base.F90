@@ -147,6 +147,9 @@ contains
     use quadrature_mod, only : test_gauss, test_gausslobatto
     use repro_sum_mod,  only : repro_sum_defaultopts, repro_sum_setopts
     use time_mod,       only : nmax, time_at
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use common_io_mod,  only : homme_pio_init
+#endif
     !
     ! Inputs
     !
@@ -169,6 +172,9 @@ contains
     else
        total_nelem = CubeElemCount()
     end if
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    call homme_pio_init(par%rank,par%comm)
+#endif
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
@@ -938,11 +944,6 @@ contains
     ! advective and viscious CFL estimates
     ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
-
-    ! smooth elem%phis if requested.
-    if (smooth_phis_numcycle>0) &
-          call smooth_topo_datasets(elem,hybrid,nets,nete)
-
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
@@ -1810,7 +1811,7 @@ contains
 
 
     subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle
+    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1830,8 +1831,11 @@ contains
     enddo
     
     minf=-9e9
-    if (hybrid%masterthread) &
+    if (hybrid%masterthread) then
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
+       write(iulog,'(a,i10)')  " smooth_phis_numcycle =",smooth_phis_numcycle
+       write(iulog,'(a,e13.5)')" smooth_phis_nudt =",smooth_phis_nudt
+    endif
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
 

@@ -15,6 +15,7 @@ my @groups = qw(run_modes
                 forcing
                 coupling
                 shortwaveradiation
+                tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes
                 advection
@@ -64,4 +65,7 @@ my @groups = qw(run_modes
                 am_mocstreamfunction
                 am_oceanheatcontent
                 am_mixedlayerheatbudget
+                am_sedimentfluxindex
+                am_sedimenttransport
+                am_harmonicanalysis
                 );

@@ -11,7 +11,7 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
-  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag
+  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag
 
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
 
@@ -213,6 +213,12 @@ contains
            avgflag='A', long_name='Water temperature of main channels', &
            ptr_rof=rtmCTL%templand_Tchanr_nt1)         
     end if     
+
+    if (wrmflag .and. heatflag .and. rstraflag) then
+      call RtmHistAddfld (fname='RSRV_SURF', units='Kelvin',  &
+           avgflag='A', long_name='Reservoir surface temperature', &
+           ptr_rof=WRMUnit%resrv_surf)
+    endif
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()

@@ -283,6 +283,7 @@ my $MOSART_FLOOD_MODE  = $xmlvars{'MOSART_FLOOD_MODE'};
 my $ROF_GRID        = $xmlvars{'ROF_GRID'};
 my $LND_GRID        = $xmlvars{'LND_GRID'};
 my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
+my $NCPL_BASE_PERIOD = $xmlvars{'NCPL_BASE_PERIOD'};
 
 (-d $DIN_LOC_ROOT)  or  mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
@@ -311,8 +312,12 @@ else {
     add_default($nl, 'smat_option');
     add_default($nl, 'wrmflag');
     add_default($nl, 'inundflag');
-	add_default($nl, 'sediflag');
+    add_default($nl, 'sediflag');
     add_default($nl, 'heatflag');
+    add_default($nl, 'rstraflag');
+    add_default($nl, 'rinittemp');
+    add_default($nl, 'ngeom');						 
+    add_default($nl, 'nlayers');						 
     add_default($nl, 'frivinp_rtm' , 'rof_grid'=>$ROF_GRID );
     add_default($nl, 'ice_runoff'  , 'lnd_grid'=>$LND_GRID );
     add_default($nl, 'rtmhist_mfilt');
@@ -323,7 +328,16 @@ else {
     add_default($nl, 'DLevelH2R');
     add_default($nl, 'DLevelR');
 #    add_default($nl, 'finidat_rtm' , 'rof_grid'=>$ROF_GRID, 'simyr'=>$opts{'simyr'}, 'nofail'=>1 );
-    my $val = ( 3600 * 24 ) / $ROF_NCPL;
+    my $val = 0;
+    if ($NCPL_BASE_PERIOD eq "year") {
+        $val = ( 3600 * 24 *365 ) / $ROF_NCPL;
+    } elsif ($NCPL_BASE_PERIOD eq "day") {
+        $val = ( 3600 * 24 ) / $ROF_NCPL;
+    } elsif ($NCPL_BASE_PERIOD eq "hour") {
+        $val = ( 3600 ) / $ROF_NCPL;
+    } else {
+        die "$ProgName ERROR:: NCPL_BASE_PERIOD not valid.\n";
+    }
     add_default($nl, 'coupling_period', 'val'=>$val);
     if ($print>=2) { 
         print "River Transport Model (MOSART) mode is $MOSART_MODE \n"; 
@@ -339,8 +353,9 @@ else {
     add_default($nl, 'ReturnFlowFlag');
     add_default($nl, 'TotalDemandFlag');
     add_default($nl, 'GroundWaterFlag');
-    add_default($nl, 'ExternalDemandFlag');   # added by Tian Apr. 2018
-    add_default($nl, 'DemandVariableName');   # added by Tian Apr. 2018
+    add_default($nl, 'ExternalDemandFlag');
+    add_default($nl, 'DemandVariableName');
+    add_default($nl, 'DamConstructionFlag');
 
     add_default($nl, 'OPT_inund');
     add_default($nl, 'OPT_trueDW');

@@ -151,7 +151,7 @@ logical, public, protected :: use_gw_convect = .false.
 ! were responsible for the poor convergence of the full model. 
 ! We did not make any attempt to test details of MAM
 ! or the non-standard model configurations/components such as 
-! WACCM, CLUBB, CARMA. It is unlikely that the switches will work
+! WACCM, CLUBB. It is unlikely that the switches will work
 ! for those configurations. 
 
 logical :: l_tracer_aero   = .true.

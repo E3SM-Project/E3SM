@@ -44,7 +44,6 @@ contains
                                        pio_get_local_array_size, pio_freedecomp
     use dyn_grid,                only: get_horiz_grid_dim_d, dyn_decomp, fv_nphys
     use chemistry,               only: chem_implements_cnst, chem_init_cnst
-    use carma_intr,              only: carma_implements_cnst, carma_init_cnst
     use tracers,                 only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers,             only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
@@ -400,10 +399,6 @@ contains
              call aoa_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "aoa_tracers_init_cnst"'
-          else if (carma_implements_cnst(cnst_name(m_cnst))) then
-             call carma_init_cnst(cnst_name(m_cnst), qtmp, gcid)
-              if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
-                   ' initialized by "carma_init_cnst"'
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
              call co2_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
