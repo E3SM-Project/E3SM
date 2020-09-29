@@ -4595,7 +4595,8 @@
       components that need to look at the same data.
     </desc>
     <values>
-      <value>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+      <value cime_model='cesm'>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
+      <value cime_model='e3sm'>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
     </values>
   </entry>
 
