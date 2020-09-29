@@ -244,14 +244,13 @@ void post_timeloop() {
     crm_output_qcltend(k,icrm) =      (qccln(k,icrm) - crm_input_qccl(k,icrm)) * icrm_run_time;
     crm_output_qiltend(k,icrm) =      (qiiln(k,icrm) - crm_input_qiil(k,icrm)) * icrm_run_time;
 #ifdef MMF_MOMENTUM_FEEDBACK
-    crm_output_ultend (k,icrm) = cp * (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
-    crm_output_vltend (k,icrm) = cp * (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
+    crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
+    crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
 #endif
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-
     crm_output_prectend (icrm) = (colprec (icrm)-crm_output_prectend (icrm))/ggr*factor_xy * icrm_run_time;
     crm_output_precstend(icrm) = (colprecs(icrm)-crm_output_precstend(icrm))/ggr*factor_xy * icrm_run_time;
   });

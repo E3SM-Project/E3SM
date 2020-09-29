@@ -1199,20 +1199,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 #endif
 
-#if defined(MMF_MOMENTUM_FEEDBACK)
-  !$acc wait(asyncid)
-  do icrm=1,ncrms
-    ! resolved convective momentum transport (CMT) tendencies
-    crm_output%ultend(icrm,:) = (uln(icrm,:) - crm_input%ul(icrm,:))*icrm_run_time
-    crm_output%vltend(icrm,:) = (vln(icrm,:) - crm_input%vl(icrm,:))*icrm_run_time
-
-    ! don't use tendencies from two top levels
-    crm_output%ultend(icrm,ptop:ptop+1) = 0.
-    crm_output%vltend(icrm,ptop:ptop+1) = 0.
-  enddo
-#endif /* MMF_MOMENTUM_FEEDBACK */
-
-
   !$acc parallel loop collapse(2) async(asyncid)
   do k = ptop , plev
     do icrm = 1 , ncrms
@@ -1232,6 +1218,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qltend (icrm,k) =      (qln  (icrm,k) - crm_input%ql  (icrm,k)) * icrm_run_time
       crm_output%qcltend(icrm,k) =      (qccln(icrm,k) - crm_input%qccl(icrm,k)) * icrm_run_time
       crm_output%qiltend(icrm,k) =      (qiiln(icrm,k) - crm_input%qiil(icrm,k)) * icrm_run_time
+#if defined(MMF_MOMENTUM_FEEDBACK)
+      crm_output%ultend(icrm,:) =       (uln  (icrm,k) - crm_input%ul  (icrm,k)) * icrm_run_time
+      crm_output%vltend(icrm,:) =       (vln  (icrm,k) - crm_input%vl  (icrm,k)) * icrm_run_time
+#endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
   !$acc parallel loop async(asyncid)
@@ -1249,6 +1239,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qltend (icrm,k) = 0.
       crm_output%qcltend(icrm,k) = 0.
       crm_output%qiltend(icrm,k) = 0.
+#if defined(MMF_MOMENTUM_FEEDBACK)
+      crm_output%ultend (icrm,k) = 0.
+      crm_output%vltend (icrm,k) = 0.
+#endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
 

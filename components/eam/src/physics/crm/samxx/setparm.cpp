@@ -4,7 +4,11 @@
 extern "C" void setparm() {
   doprecip  = true;
   dosgs     = true;
+#ifdef MMF_MOMENTUM_FEEDBACK
+  dosurface = false;
+#else
   dosurface = true;
+#endif
   dodamping = true;
   dt        = crm_dt;
   dx        = crm_dx;
