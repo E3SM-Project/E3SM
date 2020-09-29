@@ -43,6 +43,85 @@ struct SHOCGridData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCGridData, 3);
 };
 
+//Create data structure to hold data for compute_tmpi
+struct SHOCComptmpiData : public PhysicsTestData {
+  //Inputs
+  Real dtime;
+  Real *rho_zi, *dz_zi;
+
+  //Outputs
+  Real *tmpi;
+
+  SHOCComptmpiData(Int shcol_, Int nlevi_, Real dtime_) :
+    PhysicsTestData(shcol_, nlevi_, {&rho_zi, &dz_zi, &tmpi}), dtime(dtime_) {}
+
+//  SHOC_SCALARS(SHOCComptmpiData, 2, 1, dtime);
+  PTD_STD_DEF(SHOCComptmpiData, 2, 1, dtime);
+  PTD_DIM_RENAME(2, shcol, nlevi);
+
+}; // SHOCComptmpiData
+
+//Create data structure to hold data for dp_inverse
+struct SHOCDpinverseData : public PhysicsTestData {
+  //Inputs
+  Real *rho_zt, *dz_zt;
+
+  //Outputs
+  Real *rdp_zt;
+
+  SHOCDpinverseData(Int shcol_, Int nlev_) :
+    PhysicsTestData(shcol_, nlev_, {&rho_zt, &dz_zt, &rdp_zt}) {}
+
+  SHOC_NO_SCALAR(SHOCDpinverseData, 2);
+
+}; // SHOCDpinverseData
+
+//Create data structure to hold data for sfc_fluxes
+struct SHOCSfcfluxesData : public PhysicsTestData {
+  //Inputs
+  Real dtime;
+  Real *rdp_zt_sfc, *rho_zi_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc;
+
+  //In/Outputs
+  Real *thetal, *qw, *tke;
+
+  SHOCSfcfluxesData(Int shcol_, Real dtime_) :
+    PhysicsTestData(shcol_, {&rdp_zt_sfc, &rho_zi_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke}), dtime(dtime_) {}
+
+  SHOC_SCALARS(SHOCSfcfluxesData, 1, 1, dtime);
+
+}; // SHOCSfcfluxesData
+
+//Create data structure to hold data for impli_srf_stress_term
+struct SHOCImplsrfstressData : public PhysicsTestData {
+  //Inputs
+  Real *rho_zi_sfc, *uw_sfc, *vw_sfc, *u_wind_sfc, *v_wind_sfc;
+
+  //Outputs
+  Real *ksrf;
+
+  SHOCImplsrfstressData(Int shcol_) :
+    PhysicsTestData(shcol_, {&rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf}) {}
+
+  SHOC_NO_SCALAR(SHOCImplsrfstressData, 1);
+
+}; // SHOCImplsrfstressData
+
+//Create data structure to hold data for tke_srf_flux_term
+struct SHOCTkesrffluxData : public PhysicsTestData {
+  //Inputs
+  Real *uw_sfc, *vw_sfc;
+
+  //Outputs
+  Real *wtke_sfc;
+
+  SHOCTkesrffluxData(Int shcol_) :
+    PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wtke_sfc}) {}
+
+  SHOC_NO_SCALAR(SHOCTkesrffluxData, 1);
+
+}; // SHOCTkesrffluxData
+
 //Create data structure to hold data for check_tke
 struct SHOCCheckTkeData : public PhysicsTestData {
 
@@ -502,7 +581,7 @@ struct SHOCCompThirdMomData : public PhysicsTestData {
 };//SHOCCompThirdMomData
 
 //Create data structure to hold data for linear_interp
-struct SHOCLinearintData : public PhysicsTestData {
+struct SHOCLinearInterpData : public PhysicsTestData {
   // Inputs
   Real minthresh;
   Real *x1, *x2, *y1;
@@ -510,11 +589,11 @@ struct SHOCLinearintData : public PhysicsTestData {
   // In/out
   Real *y2;
 
-  SHOCLinearintData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
+  SHOCLinearInterpData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
 
-  SHOC_SCALARS(SHOCLinearintData, 3, 1, minthresh);
-};//SHOCLinearintData
+  SHOC_SCALARS(SHOCLinearInterpData, 3, 1, minthresh);
+};//SHOCLinearInterpData
 
 //Create data structure to hold data for compute_shr_prod
 struct SHOCAssumedpdfData : public PhysicsTestData {
@@ -677,15 +756,7 @@ struct SHOCPblintdInitPotData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCPblintdInitPotData, 2);
 };
 
-//
 // Glue functions to call fortran from from C++ with the Data struct
-//
-
-// This function initialzes the grid used by shoc. Given the
-// locations of the cell center (location of thermodynaics quantities), cell
-// interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
-// and density.
-
 void shoc_grid                                      (SHOCGridData &d);
 void update_host_dse                                (SHOCEnergydseData &d);
 void shoc_energy_fixer                              (SHOCEnergyfixerData &d);
@@ -695,6 +766,11 @@ void shoc_energy_threshold_fixer                    (SHOCEnergythreshfixerData &
 void shoc_energy_dse_fixer                          (SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux                             (SHOCVertfluxData &d);
 void calc_shoc_varorcovar                           (SHOCVarorcovarData &d);
+void compute_tmpi                                   (SHOCComptmpiData &d);
+void dp_inverse                                     (SHOCDpinverseData &d);
+void sfc_fluxes                                     (SHOCSfcfluxesData &d);
+void impli_srf_stress_term                          (SHOCImplsrfstressData &d);
+void tke_srf_flux_term                              (SHOCTkesrffluxData &d);
 void integ_column_stability                         (SHOCColstabData &d);
 void check_tke                                      (SHOCCheckTkeData &d);
 void shoc_tke                                       (SHOCTkeData &d);
@@ -717,9 +793,9 @@ void x_y_terms_diag_third_shoc_moment               (SHOCXYdiagthirdmomsData &d)
 void w3_diag_third_shoc_moment                      (SHOCW3diagthirdmomsData &d);
 void clipping_diag_third_shoc_moments               (SHOCClipthirdmomsData &d);
 void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d);
+void linear_interp                                  (SHOCLinearInterpData &d);
 void diag_third_shoc_moments                        (SHOCDiagThirdMomData &d);
 void compute_diag_third_shoc_moment                 (SHOCCompThirdMomData &d);
-void linear_interp                                  (SHOCLinearintData &d);
 void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
 void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
@@ -736,10 +812,7 @@ void shoc_assumed_pdf_compute_buoyancy_flux         (SHOCPDFcompbuoyfluxData &d)
 void shoc_diag_second_moments_ubycond               (SHOCSecondMomentUbycondData& d);
 void shoc_pblintd_init_pot                          (SHOCPblintdInitPotData &d);
 
-//
-// _f functions decls
-//
-extern "C" {
+extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
@@ -756,7 +829,9 @@ void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, 
 void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt,
                                     Real* tscale, Real* zt_grid, Real* l_inf, Real* shoc_mix);
 void check_tke_f(Int shcol, Int nlev, Real* tke);
-}
+void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
+
+} // end _f function decls
 
 }  // namespace shoc
 }  // namespace scream
