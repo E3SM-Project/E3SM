@@ -452,8 +452,8 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
     Create a file based on a template if it doesn't exist. Return True if a file was created.
 
     >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
-    >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA)
-    Would create file /home/jgfouca/scream/components/scream/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
+    >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA) #doctest: +ELLIPSIS
+    Would create file .../components/scream/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
     #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
     #define SHOC_LINEAR_INTERP_IMPL_HPP
     <BLANKLINE>
