@@ -105,9 +105,55 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
   
   static void run_bfb()
   {
-    // TODO
-  }  
+    SHOCClipthirdmomsData SDS_f90[] = {
+      //               shcol, nlevi
+      SHOCClipthirdmomsData(10, 72),
+      SHOCClipthirdmomsData(10, 13),
+      SHOCClipthirdmomsData(7, 17),
+      SHOCClipthirdmomsData(2, 8),
+    };
 
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCClipthirdmomsData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCClipthirdmomsData SDS_cxx[] = {
+      SHOCClipthirdmomsData(SDS_f90[0]),
+      SHOCClipthirdmomsData(SDS_f90[1]),
+      SHOCClipthirdmomsData(SDS_f90[2]),
+      SHOCClipthirdmomsData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      clipping_diag_third_shoc_moments(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      clipping_diag_third_shoc_moments_f(d.nlevi(),d.shcol(),d.w_sec_zi,d.w3);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCClipthirdmomsData& d_f90 = SDS_f90[i];
+      SHOCClipthirdmomsData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+      }
+    }
+  }
 };
 
 }  // namespace unit_test
