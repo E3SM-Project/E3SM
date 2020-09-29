@@ -26,6 +26,12 @@ TEST_CASE("simple_grid", "") {
   REQUIRE(grid.get_num_vertical_levels() == num_levels);
   REQUIRE(grid.get_num_local_dofs() == num_cols / num_procs);
 
+  auto lid_to_idx = grid.get_lid_to_idx_map();
+  for (int i = 0; i < grid.get_num_local_dofs(); ++i) {
+    REQUIRE(lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == lid_to_idx(i, 0));
+  }
+
   auto layout = grid.get_native_dof_layout();
   REQUIRE(layout.tags().size() == 1);
   REQUIRE(layout.tag(0) == COL);
@@ -71,13 +77,13 @@ TEST_CASE("se_cell_based_grid", "") {
   auto dofs_gids = grid.get_dofs_gids();
   auto lid_to_idx = grid.get_lid_to_idx_map();
   auto idx_to_lid = grid.get_idx_to_lid_map();
-  Kokkos::parallel_for(kokkos_types::RangePolicy(0,dofs_gids.extent_int(0)),
-                       KOKKOS_LAMBDA(const int i) {
+  for (int i = 0; i < dofs_gids.extent_int(0); ++i) {
+    REQUIRE(lid_to_idx.extent_int(1) == 3);
     int ie  = lid_to_idx(i,0);
     int igp = lid_to_idx(i,1);
     int jgp = lid_to_idx(i,2);
     REQUIRE(i == idx_to_lid(ie, igp, jgp));
-  });
+  }
 }
 
 TEST_CASE("se_node_based_grid", "") {
@@ -95,14 +101,23 @@ TEST_CASE("se_node_based_grid", "") {
   // Set the degrees of freedom.
   SEGrid::dofs_list_type dofs("", num_cols);
   SEGrid::lid_to_idx_map_type dofs_map("", num_cols, 1);
+  for (int i = 0; i < num_cols; ++i) {
+    dofs(i) = i + 10;
+    dofs_map(i, 0) = i;
+  }
   grid.set_dofs(dofs, dofs_map);
   REQUIRE(grid.get_num_local_dofs() == num_cols);
+
+  auto dofs_gids = grid.get_dofs_gids();
+  auto lid_to_idx = grid.get_lid_to_idx_map();
+  for (int i = 0; i < dofs_gids.extent_int(0); ++i) {
+    REQUIRE(lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == lid_to_idx(i, 0));
+  }
 
   auto layout = grid.get_native_dof_layout();
   REQUIRE(layout.tags().size() == 1);
   REQUIRE(layout.tag(0) == COL);
-
-  REQUIRE(grid.get_num_local_dofs() == num_cols);
 }
 
 } // anonymous namespace
