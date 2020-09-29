@@ -305,8 +305,7 @@ contains
       !$omp do schedule(runtime)  &
       !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
       !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-      !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper) &
-      !$omp firstprivate(slopeTriadUp, slopeTriadDown)
+      !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          k33(1:maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
