@@ -1,5 +1,5 @@
-#ifndef SCREAM_SCORPIO_HPP
-#define SCREAM_SCORPIO_HPP
+#ifndef SCREAM_SCORPIO_OUTPUT_HPP
+#define SCREAM_SCORPIO_OUTPUT_HPP
 
 #include "scream_config.h"
 #include "ekat/ekat_parameter_list.hpp"
@@ -126,7 +126,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   m_out_units       = freq_params.get<std::string>("OUT_OPTION");
 
   // Gather data from grid manager:
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio.hpp class only supports output on a Physics grid for now.\n");
+  EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
   m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
@@ -374,4 +374,4 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
 } //namespace scream
-#endif // SCREAM_SCORPIO_HPP
+#endif // SCREAM_SCORPIO_OUTPUT_HPP

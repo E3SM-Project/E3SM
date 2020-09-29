@@ -4,7 +4,7 @@
 #include "share/scream_types.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scorpio.hpp"
+#include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/output_manager.hpp"
 
@@ -304,12 +304,25 @@ void update_data_output(Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2
 }
 /* ========== Unit Test Ideas to Implement ========== */
 /*
- * 1) Same fields but written on physics for one file and dynamics for another: Tests output grid.
- * 2) Same run but output in instant, averaged, min, max: Tests output type.
- * 3) Set max steps per file to 4 for a 10 step run, make sure steps 1-4, 4-8 and 9-10 are on three separate files: Tests max steps/file
- *    -xtra test, do 1 snap per file averaged over 3 steps.  Tests average works with multiple files.
- * 4) Write restart, i.e. use DAG to determine which fields are required by a process and write as output.  Should be done with a full AD test.
- * 5) Have # PIO tasks < Total number of tasks.  Thus any one PIO task is responsible for writing the info from >1 MPI tasks.  Tests the ability
- *    to use PIO_STRIDE or to distribute PIO tasks over nodes.
+ *  1) Same fields but written on physics for one file and dynamics for another: Tests output grid.
+ *  2) Same run but output in instant, averaged, min, max: Tests output type.
+ *     a) write one field with 1 column and 1 level.  Starts at 0 and add 1 for each step.
+ *     b) instant should be steady progression of 1-10 (if 10 steps)
+ *     c) average would be 1/N*sum(i,i=1,10).  Write only one file at step 10
+ *     d) min would be 1.  Write only one file at step 10
+ *     e) max would be 10. Write only one file at step 10
+ *  3) Set max steps per file to 4 for a 10 step run, make sure steps 1-4, 4-8 and 9-10 are on three separate files: Tests max steps/file
+ *     -xtra test, do 1 snap per file averaged over 3 steps.  Tests average works with multiple files.
+ *  4) Write restart, i.e. use DAG to determine which fields are required by a process and write as output.  Should be done with a full AD test.
+ *  5) Have # PIO tasks < Total number of tasks.  Thus any one PIO task is responsible for writing the info from >1 MPI tasks.  Tests the ability
+ *     to use PIO_STRIDE or to distribute PIO tasks over nodes.
+ *  6) History restart test.  10 steps, stop at 5 steps and then restart for 5 more;  start with 0 and add 1 per step.
+ *     a) test average output at step 10, should be 1/N*sum(i,i=1,10)
+ *     b) test max output at step 10, should be 10
+ *     c) test max output at step 10, should be 0
+ *  7) Test input and output together by setting a file as input and then writing a copy of the file as output.  Should match.
+ *  8) Test that you can't list the same field twice in the YAML control file for output.
+ *  9) Test that you can't have two instances for the same output file.  Should probably return error if there is an attempt to register the same filename, or something like that.
+ * 10) 
  */    
 } // namespace

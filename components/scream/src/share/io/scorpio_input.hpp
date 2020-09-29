@@ -91,7 +91,7 @@ inline void AtmosphereInput::init(const FieldRepository<Real, device_type>& fiel
   m_grid_name       = m_params.get<std::string>("GRID");
 
   // Gather data from grid manager:
-  EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio.hpp class only supports input on a Physics grid for now.\n");
+  EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
   m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;

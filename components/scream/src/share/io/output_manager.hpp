@@ -1,7 +1,7 @@
 #ifndef SCREAM_OUTPUT_MANAGER_HPP
 #define SCREAM_OUTPUT_MANAGER_HPP
 
-#include "share/io/scorpio.hpp"
+#include "share/io/scorpio_output.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
