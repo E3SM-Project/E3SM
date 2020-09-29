@@ -513,12 +513,12 @@ void linear_interp(SHOCLinearintData& d)
 void shoc_assumed_pdf(SHOCAssumedpdfData &d)
 {
   shoc_init(d.nlev(), true);
-  d.transpose<ekat::util::TransposeDirection::c2f>();
+  d.transpose<ekat::TransposeDirection::c2f>();
   shoc_assumed_pdf_c(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.w_field,
                      d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec,
                      d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid,
                      d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
-  d.transpose<ekat::util::TransposeDirection::f2c>();
+  d.transpose<ekat::TransposeDirection::f2c>();
 }
 
 void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
