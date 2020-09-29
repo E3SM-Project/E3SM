@@ -364,7 +364,7 @@
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
-  <entry id="CAM_USER_MODS">
+  <entry id="EAM_USER_MODS">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
