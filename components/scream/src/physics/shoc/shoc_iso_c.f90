@@ -906,22 +906,17 @@ contains
 
   end subroutine compute_diag_third_shoc_moment_c			     
  
-  subroutine linear_interp_c(x1,x2,y1,y2,km1,km2,ncol,minthresh) bind (C)
-    use shoc, only: linear_interp
+  subroutine linear_interp_c(x1, x2, y1, y2, km1, km2, ncol, minthresh) bind(C)
+    use shoc, only : linear_interp
 
-    integer(kind=c_int), intent(in), value :: ncol
-    integer(kind=c_int), intent(in), value :: km1
-    integer(kind=c_int), intent(in), value :: km2
-    real(kind=c_real), intent(in), value :: minthresh
-    real(kind=c_real), intent(in) :: x1(ncol,km1)
-    real(kind=c_real), intent(in) :: y1(ncol,km1)
-    real(kind=c_real), intent(in) :: x2(ncol,km2)
-    
-    real(kind=c_real), intent(out) :: y2(ncol,km2)
+    real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
+    real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
+    real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
+    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
+    real(kind=c_real) , value, intent(in) :: minthresh
 
-    call linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
-
-  end subroutine linear_interp_c  
+    call linear_interp(x1, x2, y1, y2, km1, km2, ncol, minthresh)
+  end subroutine linear_interp_c
   
   subroutine shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1) bind (C)
     use shoc, only: shoc_assumed_pdf_tilda_to_real

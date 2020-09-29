@@ -169,8 +169,7 @@ void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_se
                                       Real *w_sec_zi, Real *thetal_zi,
                                       Real *wthv_sec_zi, Real *w3);
 
-void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
-                     Int km2, Int ncol, Real minthresh);
+void linear_interp_c(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
 void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
@@ -225,7 +224,7 @@ void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wt
 
 void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 
-}
+} // end _c function decls
 
 namespace scream {
 namespace shoc {
@@ -547,7 +546,7 @@ void compute_diag_third_shoc_moment(SHOCCompThirdMomData &d) {
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
-void linear_interp(SHOCLinearintData& d)
+void linear_interp(SHOCLinearInterpData& d)
 {
   shoc_init(d.nlev(), true);
   d.transpose<ekat::TransposeDirection::c2f>();
@@ -660,6 +659,8 @@ void shoc_pblintd_init_pot(SHOCPblintdInitPotData& d)
   shoc_pblintd_init_pot_c(d.shcol(), d.nlev(), d.thl, d.ql, d.q, d.thv);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
+
+// end _c impls
 
 //
 // _f function definitions. These expect data in C layout
@@ -1023,6 +1024,11 @@ void check_tke_f(Int shcol, Int nlev, Real* tke)
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {tke_d};
   ekat::device_to_host<int,1>({tke}, {shcol}, {nlev}, inout_views, true);
+}
+
+void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh)
+{
+  // TODO
 }
 
 } // namespace shoc

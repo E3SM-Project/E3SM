@@ -39,9 +39,9 @@ set(SHOC_TESTS_SRCS
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
+    shoc_linear_interp_tests.cpp
     shoc_diag_third_tests.cpp
     shoc_compute_diag_third_tests.cpp
-    shoc_linearinterp_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
     shoc_pdf_thl_parameters_tests.cpp
@@ -56,7 +56,8 @@ set(SHOC_TESTS_SRCS
     shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
     shoc_pblintd_init_pot_test.cpp
-    shoc_unit_tests.cpp)
+    shoc_unit_tests.cpp
+    ) # SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
@@ -70,4 +71,3 @@ add_custom_target(shoc_baseline
   COMMAND $<TARGET_FILE:shoc_run_and_cmp> -f -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
 
 add_dependencies(baseline shoc_baseline)
-

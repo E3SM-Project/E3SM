@@ -955,7 +955,7 @@ struct Functions
     const P3HistoryOnly& history_only,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
-};
+}; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
 constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;

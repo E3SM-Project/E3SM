@@ -53,7 +53,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     static constexpr Real minthresh = -99999.0;
 
     // Initialzie data structure for bridgeing to F90
-    SHOCLinearintData SDS(shcol, km1, km2, minthresh);
+    SHOCLinearInterpData SDS(shcol, km1, km2, minthresh);
 
     // For this test we need exactly two columns
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == km1 && SDS.nlevi() == km2 && SDS.minthresh == minthresh) );
@@ -168,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Initialzie data structure for bridgeing to F90
     // NOTE that km2 and km1 grid must be switched here.
     // Must initialize a new data structure since km1 and km2 are swapped.
-    SHOCLinearintData SDS2(shcol, km2, km1, minthresh);
+    SHOCLinearInterpData SDS2(shcol, km2, km1, minthresh);
 
     // Fill in test data on zi_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -218,10 +218,52 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
   }
 
+
   static void run_bfb()
   {
+    SHOCLinearInterpData f90_data[] = {
+      // TODO
+    };
 
-  }
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCLinearInterpData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCLinearInterpData cxx_data[] = {
+      // TODO
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      linear_interp(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.nlev(), d.nlevi(), d.shcol(), d.minthresh);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCLinearInterpData& d_f90 = f90_data[i];
+      SHOCLinearInterpData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+        REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
+      }
+
+    }
+  } // run_bfb
+
 };
 
 }  // namespace unit_test
