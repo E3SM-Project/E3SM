@@ -52,6 +52,7 @@ module lnd2atmType
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
      real(r8), pointer :: qflx_rofliq_qsur_grc (:) => null() ! rof liq -- surface runoff component
+     real(r8), pointer :: coszen_str         (:)   => null() ! cosine of zenith angle used in stratification
      real(r8), pointer :: qflx_rofliq_qsurp_grc(:) => null() ! rof liq -- surface ponding runoff component
      real(r8), pointer :: qflx_rofliq_qsub_grc (:) => null() ! rof liq -- subsurface runoff component
      real(r8), pointer :: qflx_rofliq_qsubp_grc(:) => null() ! rof liq -- perched subsurface runoff component
@@ -132,6 +133,7 @@ contains
     allocate(this%flux_ch4_grc         (begg:endg))            ; this%flux_ch4_grc         (:) =ival
     allocate(this%qflx_rofliq_grc      (begg:endg))            ; this%qflx_rofliq_grc      (:) =ival
     allocate(this%qflx_rofliq_qsur_grc (begg:endg))            ; this%qflx_rofliq_qsur_grc (:) =ival
+    allocate(this%coszen_str           (begg:endg))            ; this%coszen_str           (:) =ival
     allocate(this%qflx_rofliq_qsurp_grc(begg:endg))            ; this%qflx_rofliq_qsurp_grc(:) =ival
     allocate(this%qflx_rofliq_qsub_grc (begg:endg))            ; this%qflx_rofliq_qsub_grc (:) =ival
     allocate(this%qflx_rofliq_qsubp_grc(begg:endg))            ; this%qflx_rofliq_qsubp_grc(:) =ival

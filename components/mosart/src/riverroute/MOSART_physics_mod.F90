@@ -13,10 +13,11 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm
   use MOSART_heat_mod
+  use MOSART_stra_mod
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
 
@@ -388,7 +389,10 @@ MODULE MOSART_physics_mod
                 ! moved out of loop
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
                       call Regulation(iunit, localDeltaT)
-                      if (heatflag) then
+                      if (heatflag .and. rstraflag) then
+                          call stratification(iunit, localDeltaT,nt)
+                          call reservoirHeat(iunit, localDeltaT)
+                      elseif (heatflag .and. (.not.rstraflag)) then
                           call reservoirHeat(iunit, localDeltaT)
                       end if
                    endif
