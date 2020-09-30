@@ -605,14 +605,12 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    dgnumdry_m(:,:,:) = huge(1.0_r8)
    dgnumwet_m(:,:,:) = huge(1.0_r8)
    qaerwat_m(:,:,:)  = huge(1.0_r8)
-   if (list_idx == 0) then
-      call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-   else
-      call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-   endif
 
+   !Compute new sizes (dry diameters as dgnumdry_m) of aerosol particles
+   call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
+        list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+
+   !Compute water uptake by particles to reach their new size "dgnumwet_m"
    call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
 
    do m = 1, nmodes
@@ -1269,17 +1267,19 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
+   !BSINGH-Future work:
+   !1. Deallocate dgnumdry_m etc. variables in a finalize call
+
+   !Assign unphysical values to detect any inadvertant use of these variables
    dgnumdry_m(:,:,:) = huge(1.0_r8)
    dgnumwet_m(:,:,:) = huge(1.0_r8)
    qaerwat_m(:,:,:)  = huge(1.0_r8)
 
-   if ( list_idx == 0 ) then
-      call modal_aero_calcsize_sub(state, pbuf, deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-   else
-      call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-   endif
+   !Compute new sizes (dry diameters as dgnumdry_m) of aerosol particles
+   call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
+        list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+
+   !Compute water uptake by particles to reach their new size "dgnumwet_m"
    call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
 
    do m = 1, nmodes

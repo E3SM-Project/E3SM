@@ -40,7 +40,21 @@ use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, lmas
            cnst_name_cw
 
 #endif
-
+!---------------------------------------------------------------------------------------------------------
+!---------------------------------------------------------------------------------------------------------
+!BSINGH: THINGS TO DO:
+!1. In compute_dry_volume, find out if two nested do loops for _a and _c can be combined
+!2. State_q should not be used to get mass mmr as some species may be missing in the diagnostic calls.
+!   Use radiation calls to get mmrs
+!3. fldcw, qqcw_get_field index should correspond to the interstitial species
+!   as some species might be missing in the diagnostic calls
+!4. ipair should be used for diagnostic calls as well
+!5. Find out if we can remove the "if (masterproc)" from the subroutines called during time stepping
+!6. cloud borne and interstitial species processes can be combined and refactored into one subroutine.(aitken_accum_exchange)
+!7. init and register routine should be re-worked/streamlined to remove redundant logics
+!8. improve update_mmr logic in refactored subroutines
+!---------------------------------------------------------------------------------------------------------
+!---------------------------------------------------------------------------------------------------------
 
 implicit none
 private
@@ -136,7 +150,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
    ! init entities required for both prescribed and prognostic modes
 
-   if (is_first_step()) then ! bsingh- why do we need this conditional in a init routine?
+   if (is_first_step()) then ! bsingh- Do we need this conditional in a init routine?
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
    endif
@@ -476,7 +490,7 @@ end subroutine modal_aero_calcsize_init
 
 !===============================================================================
 
-subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
+subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m)
 
   implicit none
@@ -500,8 +514,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    type(physics_state), target, intent(in)    :: state       ! Physics state variables
    type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
    type(physics_ptend), target, optional, intent(inout) :: ptend       ! indivdual parameterization tendencies
-   real(r8),                    optional, intent(in)    :: deltat      ! model time-step size (s)
 
+   real(r8), intent(in) :: deltat      ! model time-step size (s)
 
    logical,  optional, intent(in) :: do_adjust_in
    logical,  optional, intent(in) :: do_aitacc_transfer_in
@@ -515,7 +529,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    logical :: do_adjust
    logical :: do_aitacc_transfer
-   logical :: is_list_present, update_mmr
+   logical :: update_mmr
 
    integer  :: lchnk                ! chunk identifier
    integer  :: ncol                 ! number of columns
@@ -566,29 +580,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    ! 3rd index --
    !    1="standard" number adjust gain;
    !    2="standard" number adjust loss;
-   !    3=aitken-->accum transfer;
-   !    4=accum-->aitken transferk
+   !    3=aitken-->accum transfer
+   !    4=accum -->aitken transfer
    ! 4th index --
    !    1="a" species (interstitial); 2="c" species(cloud borne)
    !-----------------------------------------------------------------------
    integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
-
-   !BSINGH: THINGS TO DO:
-   !2. In compute_dry_volume, find if _c spec for radiation diags is same as _a spec
-   !3. In compute_dry_volume, see if two nested do loops for _a and _c can be combined
-   !4. state_q should not be used as some specs may be missing in the diganostic calls
-   !5. fldcw, qqcw_get_field should be called with the right index as some species may be missing from radiation diagnostics
-   !4. deltat should NOT be optional
-   !5. remove unused vars
-   !6. update mmr should not happen for diagnostics, add a check!!!
-   !7. add comments and author, date , called by and calls
-   !8. ipair seems to take value of 1 only
-   !9. why call master proc......is it tp print something during first time step? (aitken_accum_exchange)
-   !10. cloud borne processes and interstital can be combined and refactored into one subroutine.(aitken_accum_exchange)
-   !11. init and register routine should be re-worked/streamlined to remove redundant logics
-   !12. improve update_mmr logic in refactored subroutines
-
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -605,7 +603,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !For adjusting aerosol sizes
    do_adjust = do_adjust_default
    if (present(do_adjust_in)) do_adjust = do_adjust_in
-
 
    !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
    do_aitacc_transfer = do_aitacc_transfer_default
@@ -635,7 +632,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
-   pdel     => state%pdel !balli add if for only update_mmr
+   pdel     => state%pdel !Only required if update_mmr = .true.
    state_q  => state%q    !BSINGH - it is okay to use it for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
@@ -647,7 +644,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    !grid parameters
    ncol  = state%ncol  !# of columns
-   lchnk = state%lchnk !chunk # !BALLI- add if for only for cld borne
+   lchnk = state%lchnk !chunk #
 
    !inverse of time step
    deltatinv = 1.0_r8/(deltat*close_to_one)
@@ -696,19 +693,15 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    end do  ! do imode = 1, ntot_amode
 
 
-   !
-   !
-   ! the following section (from here to label 49000)
-   !    does aitken <--> accum mode transfer
-   !
+   !------------------------------------------------------------------------------
    ! when the aitken mode mean size is too big, the largest
    !    aitken particles are transferred into the accum mode
    !    to reduce the aitken mode mean size
    ! when the accum mode mean size is too small, the smallest
    !    accum particles are transferred into the aitken mode
    !    to increase the accum mode mean size
-   !
-   !
+   !------------------------------------------------------------------------------
+
    if ( do_aitacc_transfer ) then
       call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
            deltat, pdel, state_q, state, &
@@ -809,7 +802,7 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
      dgncur, v2ncur, dryvol )                                       !output
 
   !-----------------------------------------------------------------------------
-  !Purpose: Set initial defaults for the dry diameter, volum to num
+  !Purpose: Set initial defaults for the dry diameter, volume to num
   ! and dry volume
   !
   !Called by: modal_aero_calcsize_sub
@@ -817,6 +810,7 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   !Author: Balwinder Singh based on the code by Richard Easter (RCE)
   !-----------------------------------------------------------------------------
   implicit none
+
   !inputs
   integer, intent(in) :: top_lev, pver !for model level loop
   integer, intent(in) :: ncol          !# of columns
@@ -898,13 +892,13 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
         end do
      end do
 
-     !For radiation diagnostic calls, some species might be missing. We accomodate that,
-     !we first get the specie name and then find its index from cnst_name array
+     !For radiation diagnostic calls, some species might be missing. We accomodate that by
+     !first getting the specie name and then finding its index from cnst_name array.
+     !Cloud borne specie index extracted below corresponds to the interstitial specie above
      !This index is exactly the same as pbuf index for that specie
      call rad_cnst_get_info(list_idx_in, imode, ispec,spec_name=spec_name)
      call cnst_get_ind(trim(adjustl(spec_name)), idx_cw)
 
-     !fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec,imode),lchnk)
      fldcw => qqcw_get_field(pbuf,idx_cw,lchnk)
      do klev = top_lev, pver
         do icol = 1, ncol
@@ -912,7 +906,7 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
                 + max(0.0_r8,fldcw(icol,klev))*dummwdens
         end do
      end do
-  end do
+  end do ! nspec loop
 
   return
 end subroutine compute_dry_volume
@@ -952,7 +946,7 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
   type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
 
   !outputs
-  real(r8), intent(inout) :: dgncur_a(:,:,:) !BALLI- comments
+  real(r8), intent(inout) :: dgncur_a(:,:,:) ! TODO: Add comments here!
   real(r8), intent(inout) :: dgncur_c(:,:,:)
   real(r8), intent(inout) :: v2ncur_a(:,:,:)
   real(r8), intent(inout) :: v2ncur_c(:,:,:)
@@ -1379,7 +1373,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
 
   !outputs
-  real(r8), intent(inout) :: dgncur_a(:,:,:) !BALLI- comments
+  real(r8), intent(inout) :: dgncur_a(:,:,:) !TODO: Add comments here!
   real(r8), intent(inout) :: dgncur_c(:,:,:)
   real(r8), intent(inout) :: v2ncur_a(:,:,:)
   real(r8), intent(inout) :: v2ncur_c(:,:,:)
@@ -1593,7 +1587,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                  drv_c = drv_c_acc
               end if
 
-              cmn_factor = exp(4.5_r8*alnsg_amode(4)**2)*pi/6.0_r8 !THIS SHOULD BE FIXED : replac 4 with imode
+              cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
 
               if (drv_a > 0.0_r8) then
                  if (num_a <= drv_a*voltonumbhi_amode(imode)) then
@@ -1728,14 +1722,14 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                           qsrflx(icol,lstoo,jsrflx,aer_type) = qsrflx(icol,lstoo,jsrflx,aer_type) + xfertend*pdel_fac
                        end if
 
-                    end do
-                 end do
+                    end do !aer_type
+                 end do !nspecfrm_csizxf
               end if
-           end do
+           end do !jmode
 
         end if
-     end do
-  end do
+     end do !ncol
+  end do !pver
 
   return
 end subroutine aitken_accum_exchange
