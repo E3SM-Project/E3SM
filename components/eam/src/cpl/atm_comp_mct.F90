@@ -733,10 +733,12 @@ CONTAINS
     !
     allocate(data(lsize))
     !
-    ! Initialize attribute vector with special value
+    ! Initialize attribute vector with special value,
+    ! then deallocate storage pointed to by idata
     !
     call mct_gsMap_orderedPoints(gsMap_a, iam, idata)
     call mct_gGrid_importIAttr(dom_a,'GlobGridNum',idata,lsize)
+    if (associated(idata)) deallocate(idata)
     !
     ! Determine domain (numbering scheme is: West to East and South to North to South pole)
     ! Initialize attribute vector with special value
