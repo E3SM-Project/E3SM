@@ -140,10 +140,7 @@ template<typename ScalarType, typename Device>
 template<typename RequestedValueType>
 void FieldRepository<ScalarType,Device>::
 register_field (const identifier_type& id, const std::initializer_list<std::string>& groups_names) {
-  for (auto name : groups_names)
-  {
-    register_field<RequestedValueType>(id,name);
-  }
+  register_field<RequestedValueType>(id,std::set<std::string>(groups_names));
 }
 
 template<typename ScalarType, typename Device>
