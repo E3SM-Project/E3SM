@@ -4348,6 +4348,10 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
   ! determine the convective velocity scale of
   !   the planetary boundary layer
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_conv_vel_shoc_length_f
+#endif
+
   implicit none
   integer, intent(in) :: nlev, shcol
 ! Planetary boundary layer (PBL) height [m]
@@ -4358,6 +4362,15 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
   real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   real(rtype), intent(inout) :: conv_vel(shcol)
   integer k, i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,&  ! Input
+                                         conv_vel)                                     ! Output)
+     return
+  endif
+#endif
+
   conv_vel(:) = 0._rtype
 
   do k=nlev,1,-1
