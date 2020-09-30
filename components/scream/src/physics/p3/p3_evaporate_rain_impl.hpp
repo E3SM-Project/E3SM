@@ -88,7 +88,6 @@ void Functions<S,D>
   //Initialize variables
   qr2qv_evap_tend = 0;
   nr_evap_tend = 0;
-  const Spack tau_r(1/epsr);
   const Scalar inv_dt = 1/dt;
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar Tmelt  = C::Tmelt;
@@ -118,7 +117,11 @@ void Functions<S,D>
   const Smask is_evap_area = cld_frac_r > cld_frac;
   const Smask is_rain_evap = qr_ge_qsmall && is_subsat && is_evap_area && context;
   if (is_rain_evap.any()){
-							 
+
+    //if qr_incld<QSMALL, epsr=0 causes div by 0 error for tau_r even though it isn't used.
+    Spack tau_r(0);
+    tau_r.set(is_rain_evap, 1/epsr);
+    
     //Compute total effective inverse saturation removal timescale eps_eff
     //qc saturation is handled by macrophysics so the qc saturation removal timescale is
     //not included here. Below freezing, eps_eff is the sum of the inverse saturation

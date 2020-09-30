@@ -3201,7 +3201,6 @@ qr2qv_evap_tend,nr_evap_tend)
    !Initialize variables
    qr2qv_evap_tend = 0.0_rtype
    nr_evap_tend = 0.0_rtype
-   tau_r = 1._rtype/epsr
    inv_dt=1._rtype/dt
    
    !Compute absolute supersaturation.
@@ -3267,6 +3266,10 @@ qr2qv_evap_tend,nr_evap_tend)
          !gets big.
          call rain_evap_tscale_weight(dt/tau_eff,tscale_weight)
 
+         !tau_r is only used in this "else" branch so only define it here.
+         !outside this branch qr_incld could be < qsmall, in which case epsr=0.
+         tau_r = 1._rtype/epsr
+         
          !in limit of very long timescales, evap must balance A_c.
          !(1/tau_r)/(1/tau_eff) is the fraction of this total tendency assigned to rain
          !Will be >0 if A_c>0: increased supersat from other procs must be balanced by
