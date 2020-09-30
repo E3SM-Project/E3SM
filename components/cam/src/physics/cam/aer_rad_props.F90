@@ -123,21 +123,21 @@ end subroutine aer_rad_props_init
 
 !==============================================================================
 
-subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
-                            tau, tau_w, tau_w_g, tau_w_f,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
+                            tau, tau_w, tau_w_g, tau_w_f)
 
    ! Return bulk layer tau, omega, g, f for all spectral intervals.
 
    ! Arguments
-   real(r8) :: dt
    integer,             intent(in) :: list_idx      ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state,state_bef_aero
+   type(physics_state), intent(in), target :: state
    
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite                ! number of night columns
    integer,             intent(in) :: idxnite(:)           ! local column indices of night columns
    logical,             intent(in) :: is_cmip6_volc        ! true if cmip6 style volcanic file is read otherwise false
-   real(r8), intent(in) :: cld_brn_copy(pcols,pver,7,4), cld_brn_num_copy(pcols,pver,4)
+   real(r8),            intent(in) :: dt
+
    real(r8), intent(out) :: tau    (pcols,0:pver,nswbands) ! aerosol extinction optical depth
    real(r8), intent(out) :: tau_w  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
    real(r8), intent(out) :: tau_w_g(pcols,0:pver,nswbands) ! aerosol assymetry parameter * tau * w
@@ -263,8 +263,8 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
-                         tau, tau_w, tau_w_g, tau_w_f,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+      call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
+                         tau, tau_w, tau_w_g, tau_w_f)
    else
       tau    (1:ncol,:,:) = 0._r8
       tau_w  (1:ncol,:,:) = 0._r8
@@ -347,7 +347,7 @@ end subroutine aer_rad_props_sw
 
 !==============================================================================
 
-subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer)
 
    use radconstants,  only: ot_length
 
@@ -359,14 +359,14 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer,stat
    ! similar to the sw with routines like get_hygro_lw_abs
 
    ! Arguments
-   real(r8) :: dt
    logical,             intent(in)  :: is_cmip6_volc
    integer,             intent(in)  :: list_idx                      ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state,state_bef_aero
+   real(r8),            intent(in)  :: dt
+   type(physics_state), intent(in), target :: state
    
    type(physics_buffer_desc), pointer :: pbuf(:)
    real(r8),            intent(out) :: odap_aer(pcols,pver,nlwbands) ! [fraction] absorption optical depth, per layer
-   real(r8), intent(in) ::cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4)
+
    ! Local variables
 
    integer :: bnd_idx     ! LW band index
@@ -420,7 +420,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer,stat
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_lw(list_idx, state, pbuf, odap_aer,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+      call modal_aero_lw(list_idx, dt, state, pbuf, odap_aer)
    else
       odap_aer = 0._r8
    end if

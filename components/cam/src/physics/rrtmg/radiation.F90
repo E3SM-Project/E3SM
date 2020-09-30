@@ -1,3 +1,4 @@
+
 module radiation
 
 !---------------------------------------------------------------------------------
@@ -792,7 +793,7 @@ end function radiation_nextsw_cday
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, is_cmip6_volc,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+       fsds, net_flx, is_cmip6_volc, dt)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -852,7 +853,7 @@ end function radiation_nextsw_cday
     real(r8), intent(in)    :: landfrac(pcols),dt  ! land fraction
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
-    real(r8), intent(in)    :: snowh(pcols),cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4)     ! Snow depth (liquid water equivalent)
+    real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
     real(r8), intent(inout) :: fsnt(pcols)      ! Net column abs solar flux at model top
     real(r8), intent(inout) :: flns(pcols)      ! Srf longwave cooling (up-down) flux
@@ -860,7 +861,7 @@ end function radiation_nextsw_cday
     real(r8), intent(inout) :: fsds(pcols)      ! Surface solar down flux
     real(r8), intent(inout) :: net_flx(pcols)
 
-    type(physics_state), intent(in), target :: state, state_bef_aero
+    type(physics_state), intent(in), target :: state
     type(physics_ptend), intent(out)        :: ptend
     
     type(physics_buffer_desc), pointer      :: pbuf(:)
@@ -1275,8 +1276,8 @@ end function radiation_nextsw_cday
                   ! update the concentrations in the RRTMG state object
                   call  rrtmg_state_update( state, pbuf, icall, r_state )
 
-                  call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
-                                         aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+                  call aer_rad_props_sw( icall, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, &
+                                         aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
                   call t_startf ('rad_rrtmg_sw')
                   call rad_rrtmg_sw( &
@@ -1428,7 +1429,7 @@ end function radiation_nextsw_cday
                   ! update the conctrations in the RRTMG state object
                   call  rrtmg_state_update( state, pbuf, icall, r_state)
 
-                  call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
+                  call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf,  aer_lw_abs)
                   
                   call t_startf ('rad_rrtmg_lw')
                   call rad_rrtmg_lw( &

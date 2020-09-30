@@ -12,9 +12,9 @@ module physpkg
   ! July 2015   B. Singh       Added code for unified convective transport
   !-----------------------------------------------------------------------
 
-  use omp_lib 
+
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
-  use spmd_utils,       only: masterproc, iam
+  use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
@@ -1905,7 +1905,7 @@ subroutine tphysbc (ztodt,               &
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
     use physics_types,   only: physics_state, physics_tend, physics_ptend, &
-         physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale,physics_state_copy
+         physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld, fieldname_len
     use physconst,       only: cpair, latvap, gravit, rga
@@ -1936,7 +1936,6 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
-    use modal_aero_data
 
     implicit none
 
@@ -1966,7 +1965,7 @@ subroutine tphysbc (ztodt,               &
     !
 
     type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
-    type(physics_state)   :: state_sc,state_bef_aero         ! state for sub-columns
+    type(physics_state)   :: state_sc         ! state for sub-columns
     type(physics_ptend)   :: ptend_sc         ! ptend for sub-columns
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
     type(physics_ptend)   :: ptend_aero_sc    ! ptend for microp_aero on sub-columns
@@ -1985,7 +1984,6 @@ subroutine tphysbc (ztodt,               &
     real(r8) dlf2(pcols,pver)                  ! Detraining cld H20 from shallow convections
     real(r8) pflx(pcols,pverp)                 ! Conv rain flux thru out btm of lev
     real(r8) rtdt                              ! 1./ztodt
-    real(r8) cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4)
 
     integer lchnk                              ! chunk identifier
     integer ncol                               ! number of atmospheric columns
@@ -2086,7 +2084,7 @@ subroutine tphysbc (ztodt,               &
     integer :: ideep(pcols)
     
     ! w holds position of gathered points vs longitude index
-    integer :: lengath, mb, nb
+    integer :: lengath
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
@@ -2718,25 +2716,13 @@ if (l_tracer_aero) then
        if (do_clubb_sgs) then
           sh_e_ed_ratio = 0.0_r8
        endif
-       !BSINGH - copy pbuf cld borne fields
-       do nb = 1, 4
-          do mb = 1, nspec_amode(nb)
-             cld_brn_copy(:,:,mb,nb) = qqcw_get_field(pbuf,lmassptrcw_amode(mb,nb),lchnk)
-          enddo
-          cld_brn_num_copy(:,:,nb)   = qqcw_get_field(pbuf,numptrcw_amode(nb),lchnk,.true.)
-       enddo
-
-
 
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
             cam_out,                                                                 & !Intent-inout
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
-
-       !BSINGH - copy sate
-       call physics_state_copy(state,state_bef_aero)
-
+       
        call physics_update(state, ptend, ztodt, tend)
 
 
@@ -2815,7 +2801,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc,state_bef_aero,ztodt,cld_brn_copy,cld_brn_num_copy)
+         fsds, net_flx,is_cmip6_volc, ztodt)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

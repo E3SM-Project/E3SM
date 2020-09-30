@@ -21,8 +21,6 @@ use cam_history,      only: addfld, horiz_only, add_default, fieldname_len, outf
 use constituents,     only: pcnst, cnst_name, cnst_get_ind
 
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
-use time_manager,  only: is_first_step !DELETE IT BALLI
-
 
 #ifdef MODAL_AERO
 
@@ -138,7 +136,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
    ! init entities required for both prescribed and prognostic modes
 
-   if (is_first_step()) then ! bsingh- why do we need this conditional in init routine?
+   if (is_first_step()) then ! bsingh- why do we need this conditional in a init routine?
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
    endif
@@ -479,7 +477,7 @@ end subroutine modal_aero_calcsize_init
 !===============================================================================
 
 subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
-   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m,cp_buf,cp_num_buf)
+   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m)
 
   implicit none
    !-----------------------------------------------------------------------
@@ -494,6 +492,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !    be within bounds determined by mass, Dgnum bounds, and sigma bounds
    !
    ! Author: R. Easter
+   ! 09/2020: Refacotred by Balwinder Singh
    !
    !-----------------------------------------------------------------------
 
@@ -501,7 +500,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    type(physics_state), target, intent(in)    :: state       ! Physics state variables
    type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
    type(physics_ptend), target, optional, intent(inout) :: ptend       ! indivdual parameterization tendencies
-   real(r8),                    optional, intent(in)    :: deltat, cp_buf(pcols,pver,7,4),cp_num_buf(pcols,pver,4)      ! model time-step size (s)
+   real(r8),                    optional, intent(in)    :: deltat      ! model time-step size (s)
 
 
    logical,  optional, intent(in) :: do_adjust_in
@@ -683,12 +682,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       !
       !Volume = sum_over_components{ component_mass mixrat / density }
       !----------------------------------------------------------------------
-      if(present(cp_buf)) then!<<TO BE REMOVED
-         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local, cp_buf)
-         !^^TO BE REMOVED
-      else!<<TO BE REMOVED
-         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
-      endif
+      call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
+
 
       ! do size adjustment based on computed dry diameter values
       call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
@@ -696,7 +691,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
            dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
            drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
            num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
-           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)                                  !output
+           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)                                              !output
 
    end do  ! do imode = 1, ntot_amode
 
@@ -715,24 +710,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !
    !
    if ( do_aitacc_transfer ) then
-      if(present(cp_buf)) then!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
-              deltat, pdel, state_q, state, &
-              pbuf, &
-              drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
-              drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,  &
-              dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
-              dqdt, dqqcwdt, qsrflx, cp_buf)
-      else!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
-              deltat, pdel, state_q, state, &
-              pbuf, &
-              drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
-              drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,  &
-              dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
-              dqdt, dqqcwdt, qsrflx)
-      endif
-   end if  !  do_aitacc_transfer
+      call aitken_accum_exchange(ncol, lchnk, list_idx_local, ipair, tadjinv, &
+           deltat, pdel, state_q, state, &
+           pbuf, &
+           drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
+           drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,  &
+           dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
+           dqdt, dqqcwdt, qsrflx)
+   end if
 
    lsfrm = -huge(lsfrm) !initialize
 
@@ -860,7 +845,7 @@ end subroutine set_initial_sz_and_volumes
 !---------------------------------------------------------------------------------------------
 
 subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
-     dryvol_a, dryvol_c, list_idx_in, cp_buf)
+     dryvol_a, dryvol_c, list_idx_in)
 
   !-----------------------------------------------------------------------------
   !Purpose: Compute initial dry volume based on mmr and specie density
@@ -882,7 +867,6 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   integer,  intent(in) :: list_idx_in
   type(physics_state), target, intent(in)    :: state       ! Physics state variables
   type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
-  real(r8), intent(in), optional    :: cp_buf(:,:,:,:)
 
   !in-outs
   real(r8), intent(inout) :: dryvol_a(:,:)                    ! interstital aerosol dry
@@ -922,23 +906,12 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
 
      !fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec,imode),lchnk)
      fldcw => qqcw_get_field(pbuf,idx_cw,lchnk)
-     !######################## TO BE REMOVED
-     if(present(cp_buf)) then
-        do klev=top_lev,pver
-           do icol=1,ncol
-              dryvol_c(icol,klev) = dryvol_c(icol,klev)    &
-                   + max(0.0_r8,cp_buf(icol,klev,ispec,imode))*dummwdens
-           end do
+     do klev = top_lev, pver
+        do icol = 1, ncol
+           dryvol_c(icol,klev) = dryvol_c(icol,klev)    &
+                + max(0.0_r8,fldcw(icol,klev))*dummwdens
         end do
-     else
-     !######################## TO BE REMOVED ^^^^^^^^^^^^^^^
-        do klev = top_lev, pver
-           do icol = 1, ncol
-              dryvol_c(icol,klev) = dryvol_c(icol,klev)    &
-                   + max(0.0_r8,fldcw(icol,klev))*dummwdens
-           end do
-        end do
-     endif
+     end do
   end do
 
   return
@@ -951,7 +924,7 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
      dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &
      drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, &
      num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv, &
-     dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)
+     dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)
 
   !-----------------------------------------------------------------------------
   !Purpose: Do the aerosol size adjustment if needed
@@ -977,9 +950,6 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
 
   logical, intent(in) :: do_adjust, update_mmr, do_aitacc_transfer
   type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
-
-  !TO BE REMOVED
-  real(r8), intent(in), optional :: cp_num_buf(:,:,:)
 
   !outputs
   real(r8), intent(inout) :: dgncur_a(:,:,:) !BALLI- comments
@@ -1035,11 +1005,7 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
         num_a0 = state_q(icol,klev,num_mode_idx)
         num_a  = max( 0.0_r8, num_a0 )
         drv_c  = dryvol_c(icol,klev)
-        if(present(cp_num_buf)) then
-           num_c0 = cp_num_buf(icol,klev,imode)
-        else
-           num_c0 = fldcw(icol,klev)
-        endif
+        num_c0 = fldcw(icol,klev)
         num_c = max( 0.0_r8, num_c0 )
 
         if (do_adjust) then
@@ -1385,7 +1351,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
      drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
      drv_a_accsv,num_a_accsv, drv_c_accsv, num_c_accsv,      &
      dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
-     dqdt, dqqcwdt, qsrflx, cp_buf )
+     dqdt, dqqcwdt, qsrflx)
 
   !-----------------------------------------------------------------------------
   !Purpose: Exchange aerosols between aitken and accumulation modes based on new
@@ -1411,7 +1377,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   real(r8), intent(in) :: drv_c_accsv(:,:), num_c_accsv(:,:)
   type(physics_state), intent(in)    :: state       ! Physics state variables
   type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
-  real(r8), intent(in), optional    :: cp_buf(:,:,:,:)! TO BE REMOVED
 
   !outputs
   real(r8), intent(inout) :: dgncur_a(:,:,:) !BALLI- comments
@@ -1556,23 +1521,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                     call rad_cnst_get_aer_mmr(list_idx, nacc, ispec, 'a', state, pbuf, specmmr) !get mmr
                     drv_a_noxf = drv_a_noxf    &
                          + max(0.0_r8,specmmr(icol,klev))*dummwdens
-                    !if(masterproc)then
-                    !   call rad_cnst_get_info(list_idx, nacc, ispec,spec_name=spec_name)
-                    !   call cnst_get_ind(trim(adjustl(spec_name)), idx_cw)
-                    !   if(lmassptrcw_amode(ispec,nacc) == idx_cw) then
-                    !      write(iulog,*)'BALLI, it okay:', list_idx, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
-                    !   else
-                    !      write(iulog,*)'BALLI, it NOTokay:', list_idx, lmassptrcw_amode(ispec,nacc), idx_cw, ispec,nacc, spec_name
-                    !   endif
-                    !endif
                     fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec,nacc),lchnk)
-                    if(present(cp_buf)) then !<< remove cp_buf stuff
-                       drv_c_noxf = drv_c_noxf    &
-                            + max(0.0_r8,cp_buf(icol,klev,ispec,nacc))*dummwdens
-                    else
-                       drv_c_noxf = drv_c_noxf    &
-                            + max(0.0_r8,fldcw(icol,klev))*dummwdens
-                    endif
+                    drv_c_noxf = drv_c_noxf + max(0.0_r8,fldcw(icol,klev))*dummwdens
                  end if
               end do
               drv_t_noxf = drv_a_noxf + drv_c_noxf
@@ -1715,7 +1665,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            end if
            idiagaa = -1
 
-
            ! jmode=1 does aitken-->accum; jmode=2 does accum-->aitken
            do  jmode = 1, 2
 
@@ -1770,21 +1719,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                                 xfertend = xfertend_num(jmode,aer_type)
                              else
                                 fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
-                                if(present(cp_buf)) then
-                                   n_use = huge(1)
-                                   m_use = huge(1)
-                                   do nb = 1,4
-                                      do mb = 1,nspec_amode(nb)
-                                         if(lsfrm == lmassptr_amode(mb,nb)) then
-                                            n_use = nb
-                                            m_use = mb
-                                         endif
-                                      enddo
-                                   enddo
-                                   xfertend = max(0.0_r8,cp_buf(icol,klev,m_use,n_use))*xfercoef
-                                else
-                                   xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
-                                endif
+                                xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
                              end if
                              dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
                              dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend

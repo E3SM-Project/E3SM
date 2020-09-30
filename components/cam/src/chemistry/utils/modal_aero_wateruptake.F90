@@ -281,7 +281,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    hygro(:,:,:)    = 0._r8
 
 
-   !if (list_idx == 0) then
    if (.not. present(list_idx_in)) then
       call pbuf_get_field(pbuf, dgnum_idx,      dgncur_a )
       call pbuf_get_field(pbuf, dgnumwet_idx,   dgncur_awet )
@@ -424,7 +423,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    end do    ! modes
 
-   !if (list_idx == 0) then
    if (.not.present(list_idx_in)) then
 
       aerosol_water(:ncol,:) = 0._r8
