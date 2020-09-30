@@ -1799,8 +1799,6 @@ contains
        end if
        call ncd_pio_createfile(lnfid, trim(locfnh(t)), avoid_pnetcdf=avoid_pnetcdf)
        call ncd_putatt(lnfid, ncd_global, 'title', 'ELM History file information' )
-       call ncd_putatt(lnfid, ncd_global, 'comment', &
-          "NOTE: None of the variables are weighted by land fraction!" )
     else
        if (masterproc) then
           write(iulog,*) trim(subname),' : Opening netcdf rhtape ', &
@@ -1818,20 +1816,21 @@ contains
     ! about the data set. Global attributes are information about the
     ! data set as a whole, as opposed to a single variable
 
-    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
+    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
+    call ncd_putatt(lnfid, ncd_global, 'git_version' , trim(version))
     call getdatetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
-    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
-    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
-    call ncd_putatt(lnfid, ncd_global, 'version' , trim(version))
-
-    str = &
-    '$Id: histFileMod.F90 42903 2012-12-21 15:32:10Z muszala $'
-    call ncd_putatt(lnfid, ncd_global, 'revision_id', trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'case_title', trim(ctitle))
-    call ncd_putatt(lnfid, ncd_global, 'case_id', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'institution', 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'institution_id', 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'contact', &
+          'E3SM-DATA-SUPPORT@LISTSERV.LLNL.GOV')
+    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'comment', &
+          "NOTE: None of the variables are weighted by land fraction!" )
     str = get_filename(fsurdat)
     call ncd_putatt(lnfid, ncd_global, 'Surface_dataset', trim(str))
     if (finidat == ' ') then
