@@ -1145,6 +1145,7 @@ contains
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
             energyflux_vars, canopystate_vars,surfalb_vars, dtime_mod, nstep_mod)
 
+
        call GridBalanceCheck(bounds_clump                , &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c , &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
@@ -1276,8 +1277,13 @@ contains
         if (mod(step_count,tape(t)%nhtfrq) == 0) transfer_hist = .true.
     end do 
 
+<<<<<<< HEAD
     !call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
     call hist_update_hbuf(bounds_proc)
+=======
+    call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
+    
+>>>>>>> 882015ba88a1145a41a190acc323504cb5973cf8
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
