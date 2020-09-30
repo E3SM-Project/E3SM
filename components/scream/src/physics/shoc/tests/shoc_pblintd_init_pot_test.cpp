@@ -23,53 +23,115 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
 
-static void run_pblintd_init_pot_bfb()
-{
-  SHOCPblintdInitPotData pblintd_init_pot_data_f90[] = {
-    //                     shcol, nlev
-    SHOCPblintdInitPotData(36,  72),
-    SHOCPblintdInitPotData(72,  72),
-    SHOCPblintdInitPotData(128, 72),
-    SHOCPblintdInitPotData(256, 72),
-  };
+  static void run_property()
+  {
+    static constexpr Int shcol    = 2;
+    static constexpr Int nlev     = 1;  
+  
+    // Tests for the SHOC function:
+    //   pblintd_init_pot
+    
+    // FIRST TEST
+    //  Dry atmosphere test.  Verify that in a dry atmosphere
+    //  with no water vapor or liquid water loading that the output
+    //  thv (virtual potential temperature) is equal to the input
+    //  thl (liquid water potential temperature).  
 
-  static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(SHOCPblintdInitPotData);
+    // Define the liquid water potential temperature [K]
+    Real thl_dry[shcol] = {300, 295};
+    // Define the water vapor [kg/kg]
+    Real qv = 0.0;
+    // Define the liquid water mixing ratio [kg/kg]
+    Real ql = 0.0;
 
-  for (auto& d : pblintd_init_pot_data_f90) {
-    d.randomize();
+    // Initialize data structure for bridging to F90
+    SHOCPblintdInitPotData SDS(shcol, nlev);
+
+    // Test that the inputs are reasonable.
+    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.nlev() == nlev);
+    // for this test require two columns
+    REQUIRE(shcol == 2);
+    
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.thl[offset] = thl_dry[s];
+        SDS.ql[offset] = ql;
+        SDS.q[offset] = qv;
+      }
+    }   
+    
+     // Check that the inputs are expected
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.thl[offset] > 0);
+        // For this test require ql and q be zero
+        REQUIRE(SDS.q[offset] == 0);
+        REQUIRE(SDS.ql[offset] == 0);
+      }
+    }
+    
+    // call the fortran implementation
+    shoc_pblintd_init_pot(SDS);
+    
+    // Check the result.  
+    // Verify that virtual potential temperature is idential 
+    //  to potential temperatuer
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.thl[offset] == SDS.thv[offset]);
+      }
+    }
+        
   }
 
-  SHOCPblintdInitPotData pblintd_init_pot_data_cxx[] = {
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[0]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[1]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[2]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[3]),
-  };
+  static void run_bfb()
+  {
+    SHOCPblintdInitPotData pblintd_init_pot_data_f90[] = {
+      //                     shcol, nlev
+      SHOCPblintdInitPotData(36,  72),
+      SHOCPblintdInitPotData(72,  72),
+      SHOCPblintdInitPotData(128, 72),
+      SHOCPblintdInitPotData(256, 72),
+    };
 
-  for (auto& d : pblintd_init_pot_data_f90) {
-    // expects data in C layout
-    shoc_pblintd_init_pot(d);
-  }
+    static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(SHOCPblintdInitPotData);
 
-  for (auto& d : pblintd_init_pot_data_cxx) {
-    shoc_pblintd_init_pot_f(d.shcol(), d.nlev(), d.thl, d.ql, d.q, d.thv);
-  }
+    for (auto& d : pblintd_init_pot_data_f90) {
+      d.randomize();
+    }
 
-  for (Int i = 0; i < num_runs; ++i) {
-    Int shcol = pblintd_init_pot_data_cxx[i].shcol();
-    Int nlev  = pblintd_init_pot_data_cxx[i].nlev();
-    for (Int j = 0; j < shcol; ++j ) {
-      for (Int k = 0; k < nlev; ++k) {
-        REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
+    SHOCPblintdInitPotData pblintd_init_pot_data_cxx[] = {
+      SHOCPblintdInitPotData(pblintd_init_pot_data_f90[0]),
+      SHOCPblintdInitPotData(pblintd_init_pot_data_f90[1]),
+      SHOCPblintdInitPotData(pblintd_init_pot_data_f90[2]),
+      SHOCPblintdInitPotData(pblintd_init_pot_data_f90[3]),
+    };
+
+    for (auto& d : pblintd_init_pot_data_f90) {
+      // expects data in C layout
+      shoc_pblintd_init_pot(d);
+    }
+
+    for (auto& d : pblintd_init_pot_data_cxx) {
+      shoc_pblintd_init_pot_f(d.shcol(), d.nlev(), d.thl, d.ql, d.q, d.thv);
+    }
+
+    for (Int i = 0; i < num_runs; ++i) {
+      Int shcol = pblintd_init_pot_data_cxx[i].shcol();
+      Int nlev  = pblintd_init_pot_data_cxx[i].nlev();
+      for (Int j = 0; j < shcol; ++j ) {
+        for (Int k = 0; k < nlev; ++k) {
+          REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
+        }
       }
     }
   }
-}
-
-static void run_pblintd_init_pot_phys()
-{
-  // TODO
-}
 
 };
 
@@ -79,10 +141,18 @@ static void run_pblintd_init_pot_phys()
 
 namespace {
 
-TEST_CASE("shoc_pblintd_init_pot_property", "shoc") {
-  using TRS = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+TEST_CASE("shoc_pblintd_init_pot_property", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
 
-  TRS::run_pblintd_init_pot_phys();
-  TRS::run_pblintd_init_pot_bfb();
+  TestStruct::run_property();
 }
+
+TEST_CASE("shoc_pblintd_init_pot_bfb", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+
+  TestStruct::run_bfb();
 }
+
+}  // namespace
