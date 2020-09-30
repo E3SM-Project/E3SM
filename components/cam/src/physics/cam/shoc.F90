@@ -3387,6 +3387,10 @@ subroutine shoc_energy_integrals(&
          rtm,rcm,u_wind,v_wind,&        ! Input
          se_int,ke_int,wv_int,wl_int)   ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_energy_integrals_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -3420,6 +3424,15 @@ subroutine shoc_energy_integrals(&
 ! LOCAL VARIABLES
   integer :: i, k
   real(rtype) :: rvm
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_energy_integrals_f(shcol,nlev,host_dse,pdel,&   ! Input
+                                   rtm,rcm,u_wind,v_wind,&      ! Input
+                                   se_int,ke_int,wv_int,wl_int) ! Output
+      return
+   endif
+#endif
 
   se_int(:) = 0._rtype
   ke_int(:) = 0._rtype
