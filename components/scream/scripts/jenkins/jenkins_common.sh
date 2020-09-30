@@ -31,7 +31,9 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  COMPILER_FLAGS="-c EKAT_DISABLE_TPL_WARNINGS=ON -c EKAT_DEFAULT_BFB=ON"
+
+  ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler $COMPILER_FLAGS -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 else
   echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
 fi
