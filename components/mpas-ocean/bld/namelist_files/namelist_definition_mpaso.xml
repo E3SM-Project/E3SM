@@ -1478,7 +1478,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_open_ocean_freezing_temperature_coeff_0" type="real"
 	category="eos" group="eos">
-The freezing temperature at zero pressure in open ocean.
+The freezing temperature at zero pressure and salinity in open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1494,7 +1494,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_open_ocean_freezing_temperature_coeff_p" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean.
+The coefficient for the term proportional to the pressure in the freezing temperature in the open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1508,17 +1508,17 @@ Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_open_ocean_freezing_temperature_reference_pressure" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_mushy_az1_liq" type="real"
 	category="eos" group="eos">
-The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean.
+The coefficient for the mushy sea-ice physics term az1_liq in the open ocean.
 
-Valid values: Any positive real number
+Valid values: Any non-positive number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_land_ice_cavity_freezing_temperature_coeff_0" type="real"
 	category="eos" group="eos">
-The freezing temperature at zero pressure in land-ice cavities.
+The freezing temperature at zero pressure and salinity in land-ice cavities.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1534,7 +1534,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_land_ice_cavity_freezing_temperature_coeff_p" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities.
+The coefficient for the term proportional to the pressure in the freezing temperature in land-ice cavities.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1545,14 +1545,6 @@ Default: Defined in namelist_defaults.xml
 The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities.
 
 Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real"
-	category="eos" group="eos">
-The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities.
-
-Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

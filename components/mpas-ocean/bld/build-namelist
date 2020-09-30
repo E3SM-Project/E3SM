@@ -770,12 +770,11 @@ add_default($nl, 'config_open_ocean_freezing_temperature_coeff_0');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_S');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_p');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_pS');
-add_default($nl, 'config_open_ocean_freezing_temperature_reference_pressure');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_mushy_az1_liq');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_0');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_S');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_p');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_pS');
-add_default($nl, 'config_land_ice_cavity_freezing_temperature_reference_pressure');
 
 ##############################
 # Namelist group: eos_linear #
