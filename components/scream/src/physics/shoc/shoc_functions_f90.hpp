@@ -595,6 +595,22 @@ struct SHOCLinearInterpData : public PhysicsTestData {
   SHOC_SCALARS(SHOCLinearInterpData, 3, 1, minthresh);
 };//SHOCLinearInterpData
 
+//Create data structure to hold data for compute_shr_prod
+struct SHOCAssumedpdfData : public PhysicsTestData {
+  // Inputs
+  Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec;
+  Real *wqw_sec, *qwthl_sec, *w3, *pres, *zt_grid, *zi_grid;
+
+  // Outputs
+  Real *shoc_cldfrac, *shoc_ql, *wqls, *wthv_sec, *shoc_ql2;
+
+  //functions to initialize data
+  SHOCAssumedpdfData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2}, {&w3, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &zi_grid}) {}
+
+  SHOC_NO_SCALAR(SHOCAssumedpdfData, 3);
+};//SHOCAssumedpdfData
+
 //Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
 struct SHOCPDFtildaData
 {
@@ -780,6 +796,7 @@ void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d)
 void linear_interp                                  (SHOCLinearInterpData &d);
 void diag_third_shoc_moments                        (SHOCDiagThirdMomData &d);
 void compute_diag_third_shoc_moment                 (SHOCCompThirdMomData &d);
+void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
 void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);

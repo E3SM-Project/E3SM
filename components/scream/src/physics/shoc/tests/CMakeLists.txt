@@ -42,6 +42,7 @@ set(SHOC_TESTS_SRCS
     shoc_linear_interp_tests.cpp
     shoc_diag_third_tests.cpp
     shoc_compute_diag_third_tests.cpp
+    shoc_assumed_pdf_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
     shoc_pdf_thl_parameters_tests.cpp

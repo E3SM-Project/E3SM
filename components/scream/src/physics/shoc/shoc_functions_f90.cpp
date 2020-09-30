@@ -170,6 +170,14 @@ void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_se
                                       Real *wthv_sec_zi, Real *w3);
 
 void linear_interp_c(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh);
+
+void shoc_assumed_pdf_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *qw,
+                        Real *w_first, Real *thl_sec, Real *qw_sec, Real *wthl_sec,
+                        Real *w_sec, Real *wqw_sec, Real *qwthl_sec, Real *w3,
+                        Real *pres, Real *zt_grid, Real *zi_grid,
+                        Real *shoc_cldfrac, Real *shoc_ql, Real *wqls,
+                        Real *wthv_sec, Real *shoc_ql2);
+
 void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
@@ -551,6 +559,17 @@ void linear_interp(SHOCLinearInterpData& d)
   shoc_init(d.nlev(), true);
   d.transpose<ekat::TransposeDirection::c2f>();
   linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev(),d.nlevi(),d.shcol(),d.minthresh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void shoc_assumed_pdf(SHOCAssumedpdfData &d)
+{
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  shoc_assumed_pdf_c(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.w_field,
+                     d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec,
+                     d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid,
+                     d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

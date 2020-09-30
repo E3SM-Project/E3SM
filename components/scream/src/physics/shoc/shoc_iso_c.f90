@@ -905,7 +905,7 @@ contains
                              w3)
 
   end subroutine compute_diag_third_shoc_moment_c			     
- 
+
   subroutine linear_interp_c(x1, x2, y1, y2, km1, km2, ncol, minthresh) bind(C)
     use shoc, only : linear_interp
 
@@ -917,7 +917,45 @@ contains
 
     call linear_interp(x1, x2, y1, y2, km1, km2, ncol, minthresh)
   end subroutine linear_interp_c
-  
+
+  subroutine shoc_assumed_pdf_c(shcol, nlev, nlevi, thetal, qw, &
+                                w_field, thl_sec, qw_sec, wthl_sec, &
+                                w_sec, wqw_sec, qwthl_sec, w3, pres, &
+                                zt_grid, zi_grid, shoc_cldfrac, &
+                                shoc_ql, wqls, wthv_sec, shoc_ql2) bind(C)
+    use shoc, only: shoc_assumed_pdf
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+    real(kind=c_real), intent(in) :: qw(shcol,nlev)
+    real(kind=c_real), intent(in) :: w_field(shcol,nlev)
+    real(kind=c_real), intent(in) :: thl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: qw_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: wthl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: w_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: wqw_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: qwthl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: w3(shcol,nlevi)
+    real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: shoc_cldfrac(shcol,nlev)
+    real(kind=c_real), intent(out) :: shoc_ql(shcol,nlev)
+    real(kind=c_real), intent(out) :: wqls(shcol,nlev)
+    real(kind=c_real), intent(out) :: wthv_sec(shcol,nlev)
+    real(kind=c_real), intent(out) :: shoc_ql2(shcol,nlev)
+
+    call shoc_assumed_pdf(shcol, nlev, nlevi, thetal, qw, &
+                          w_field, thl_sec, qw_sec, wthl_sec, &
+                          w_sec, wqw_sec, qwthl_sec, w3, pres, &
+                          zt_grid, zi_grid, shoc_cldfrac, &
+                          shoc_ql, wqls, wthv_sec, shoc_ql2)
+
+  end subroutine shoc_assumed_pdf_c
+
   subroutine shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1) bind (C)
     use shoc, only: shoc_assumed_pdf_tilda_to_real
 
