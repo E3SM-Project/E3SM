@@ -863,6 +863,8 @@ void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* 
 void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
                                     Real *dz_zt, Real *thv, Real *wthv_sec,
                                     Real *conv_vel);
+void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
+                                 Real *tke, Real *l_inf);
 
 } // end _f function decls
 
