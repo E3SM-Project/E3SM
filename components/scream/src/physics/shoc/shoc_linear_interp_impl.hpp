@@ -49,7 +49,8 @@ void Functions<S,D>::linear_interp(
     });
     team.team_barrier();
 
-    // Handle boundary cases
+    // Handle boundary cases.
+    // TODO: we may need to optimize this approach
     Kokkos::single(Kokkos::PerTeam(team), [&] () {
       const auto sx2 = scalarize(x2);
       const auto sy2 = scalarize(y2);
