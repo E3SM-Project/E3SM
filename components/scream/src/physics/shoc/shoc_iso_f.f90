@@ -157,6 +157,17 @@ interface
     real(kind=c_real) , value, intent(in) :: minthresh
   end subroutine linear_interp_f
 
+subroutine clipping_diag_third_shoc_moments_f(nlevi,shcol,w_sec_zi,w3) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: nlevi
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in) :: w_sec_zi(shcol,nlevi)
+
+  real(kind=c_real), intent(inout) :: w3(shcol,nlevi)
+
+end subroutine clipping_diag_third_shoc_moments_f
+
 end interface
 
 end module shoc_iso_f

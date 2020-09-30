@@ -1874,6 +1874,10 @@ subroutine clipping_diag_third_shoc_moments(&
            nlevi,shcol,w_sec_zi,& ! Input
 	   w3)                    ! Input/Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: clipping_diag_third_shoc_moments_f
+#endif
+
   ! perform clipping to prevent unrealistically large values from occuring
 
   implicit none
@@ -1889,6 +1893,14 @@ subroutine clipping_diag_third_shoc_moments(&
   real(rtype) :: theterm
 
   integer k, i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call clipping_diag_third_shoc_moments_f(nlevi,shcol,w_sec_zi, & ! Input
+                                              w3)                     ! Input/Output
+      return
+   endif
+#endif
 
   do k=1, nlevi
     do i=1, shcol

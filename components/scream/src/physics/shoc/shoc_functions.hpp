@@ -153,6 +153,14 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void linear_interp(const uview_1d<const Spack>& x1, const uview_1d<const Spack>& x2, const uview_1d<const Spack>& y1, const uview_1d<Spack>& y2, const Int& km1, const Int& km2, const Int& ncol, const Spack& minthresh);
+
+  KOKKOS_FUNCTION
+   static void clipping_diag_third_shoc_moments(
+     const MemberType& team,
+     const Int& nlevi,
+     const uview_1d<const Spack>& w_sec_zi,
+     const uview_1d<Spack>& w3);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -171,6 +179,7 @@ struct Functions
 # include "shoc_compute_shoc_mix_shoc_length_impl.hpp"
 # include "shoc_check_tke_impl.hpp"
 # include "shoc_linear_interp_impl.hpp"
+# include "shoc_clipping_diag_third_shoc_moments_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
