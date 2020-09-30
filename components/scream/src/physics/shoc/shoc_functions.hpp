@@ -150,7 +150,6 @@ struct Functions
     const uview_1d<Spack>& y2,
     const Int& km1,
     const Int& km2,
-    const Int& ncol,
     const Scalar& minthresh);
 
 }; // struct Functions

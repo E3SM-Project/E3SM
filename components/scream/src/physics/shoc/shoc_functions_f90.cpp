@@ -1082,7 +1082,7 @@ void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, I
     const auto y1_s  = ekat::subview(y1_d, i);
     const auto y2_s  = ekat::subview(y2_d, i);
 
-    SHF::linear_interp(team, x1_s, x2_s, y1_s, y2_s, km1, km2, ncol, minthresh);
+    SHF::linear_interp(team, x1_s, x2_s, y1_s, y2_s, km1, km2, minthresh);
   });
 
   // Sync back to host
