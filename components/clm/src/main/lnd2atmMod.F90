@@ -107,11 +107,6 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2g_scale_type='unity')
 
     do g = bounds%begg,bounds%endg
-       if (masterproc) then  ! TKT debugging
-            write(iulog,*) ' lnd2atm_vars%eflx_lwrad_out_grc(g) =  ', lnd2atm_vars%eflx_lwrad_out_grc(g) 
-            write(iulog,*) ' sb ', sb
-            write(iulog,*) ' g ', g
-          end if
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))
     end do
     
@@ -123,13 +118,6 @@ contains
             p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
     
        do t = bounds%begt,bounds%endt
-          if (masterproc) then  ! TKT debugging
-            write(iulog,*) ' top_es%eflx_lwrad_out_topo(t) =  ', top_es%eflx_lwrad_out_topo(t) 
-            write(iulog,*) ' sb ', sb
-            write(iulog,*) ' t ', t
-            write(iulog,*) ' top_af%lwrad(t) ', top_af%lwrad(t)
-            write(iulog,*) ' top_af%solar(t) ', top_af%solar(t)
-          end if
           top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))   
        end do
     end if

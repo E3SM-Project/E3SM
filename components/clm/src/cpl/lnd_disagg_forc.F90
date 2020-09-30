@@ -221,11 +221,11 @@ contains
                 top_af%rain(t) = rain_g + (deltaRain(t2) - (rain_g/mxElv)*(sum_of_hrise/numt_pg))
                 top_af%snow(t) = snow_g + (deltaSnow(t2) - (snow_g/mxElv)*(sum_of_hrise/numt_pg))
              end if
-             if (masterproc) then  ! TKT debugging
-                write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
-                write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
-                write(iulog,*) ' mxElv =  ', mxElv
-             end if
+             !if (masterproc) then  ! TKT debugging
+             !   write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
+             !   write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
+             !   write(iulog,*) ' mxElv =  ', mxElv
+             !end if
           end do
           deallocate(deltaRain)
           deallocate(deltaSnow)
@@ -380,24 +380,8 @@ contains
     tsfc_t = top_es%t_rad(t)
     if (method == 0 .or. (method == 1 .and. nstep == 0)) then
        tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
-    else
-       !if (masterproc) then  ! TKT debugging
-       !     write(iulog,*) ' Dowinscaling on for g =  ', g 
-       !     write(iulog,*) ' tsfc_t of topounit ',t, ' ', tsfc_t 
-       !     write(iulog,*) ' tbot_g of topounit ',t, ' ', tbot_g
-       !     write(iulog,*) ' tsfc_g of topounit ',t, ' ', tsfc_g
-       !end if
-            
-       tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
-!       if(masterproc) then
-!         write(iulog, *) 'gridcell = ', g
-!         write(iulog, *) 'topounit = ', t
-!         write(iulog, *) 'tsfc_t = ', tsfc_t
-!         write(iulog, *) 'tbot_g = ', tbot_g
-!         write(iulog, *) 'tsfc_g = ', tsfc_g
-!         write(iulog, *) 'tbot_t = ', tbot_t
-!       end if  
-              
+    else            
+       tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step              
     end if
  
     Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
@@ -580,17 +564,17 @@ contains
     else
        deltaS = (snow_g*(hrise/mxEl))
     end if
-    if (masterproc) then  ! TKT debugging
-       write(iulog,*) ' uovern_t =  ', uovern_t 
-       write(iulog,*) ' grdElv ', grdElv 
-       write(iulog,*) ' topoElv ', topoElv       
-       write(iulog,*) ' mxElv ', mxElv
-       write(iulog,*) ' rain_g ', rain_g
-       write(iulog,*) ' snow_g ', snow_g
-       write(iulog,*) ' hrise ', hrise
-       write(iulog,*) ' deltaR ', deltaR
-       write(iulog,*) ' deltaS ', deltaS
-    end if
+    !if (masterproc) then  ! TKT debugging
+    !   write(iulog,*) ' uovern_t =  ', uovern_t 
+    !   write(iulog,*) ' grdElv ', grdElv 
+    !   write(iulog,*) ' topoElv ', topoElv       
+    !   write(iulog,*) ' mxElv ', mxElv
+    !   write(iulog,*) ' rain_g ', rain_g
+    !   write(iulog,*) ' snow_g ', snow_g
+    !   write(iulog,*) ' hrise ', hrise
+    !   write(iulog,*) ' deltaR ', deltaR
+    !   write(iulog,*) ' deltaS ', deltaS
+    !end if
   end subroutine downscale_precip_to_topounit_FNM  
   
   !-------------------------------------------------------

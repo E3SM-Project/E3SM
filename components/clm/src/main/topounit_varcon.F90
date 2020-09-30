@@ -11,7 +11,7 @@ module topounit_varcon
   use clm_varctl      , only: fsurdat, iulog
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use abortutils      , only : endrun
+  !use abortutils      , only : endrun
   use clm_varcon      , only : grlnd
   use pio
   use spmdMod
@@ -100,21 +100,17 @@ module topounit_varcon
        call ncd_inqdlen(ncid, dimid, topounits_size)  ! Get the dimension size of topounit from file
        max_topounits = topounits_size
     endif
-    write(iulog,*)' TKT max_topounits ', max_topounits
     if(has_topounit .and. max_topounits > 1) then
-       !write(iulog,*)' TKT Surface dataset checking max_topounits '
        call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
        if (readvar) then
           call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
              dim1name=grlnd, readvar=readvar)
        endif    
        if (.not. readvar) then
-          write(iulog,*)' TKT ERROR: Reading number of topounits per grid from lfsurfdat file '
+          write(iulog,*)' ERROR: While reading number of topounits per grid from lfsurfdat file '
           !call endrun(msg=errMsg(__FILE__, __LINE__))
         end if
-       
-       !call ncd_io(ncid=ncid, varname='topoPerGrid', data=idata2d, flag='read', readvar=readvar)
-       
+  
        ! Make sure the number of topounits per grid consistent with the land mask
        do n = begg,endg
           !write(iulog,*)'TKT num_tunits_per_grd(n), ldomain%mask(n) ', ldomain%num_tunits_per_grd(n), '<====>', ldomain%mask(n)
@@ -126,54 +122,6 @@ module topounit_varcon
              !call endrun(msg=errMsg(__FILE__, __LINE__))
           endif
        enddo
-        
-       !! Determine dimensions and if grid file is 2d or 1d
-       ! call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)        
-       ! allocate(ntpu_per_grd(ns))
-       ! 
-       ! if (isgrid2d) then
-       !    allocate(idata2d(ni,nj))
-       !    idata2d(:,:) = 1	
-       !    call ncd_io(ncid=ncid, varname='topoPerGrid', data=idata2d, flag='read', readvar=readvar)           
-       !    if (readvar) then
-       !       do j = 1,nj
-       !       do i = 1,ni
-       !          n = (j-1)*ni + i	
-       !          ntpu_per_grd(n) = idata2d(i,j)
-       !       enddo
-       !       enddo
-       !    end if
-       !    deallocate(idata2d)
-       ! else
-       !    call ncd_io(ncid=ncid, varname='topoPerGrid', data=ntpu_per_grd, flag='read', readvar=readvar)           
-       ! end if
-       ! if (.not. readvar) then
-       !    write(iulog,*)' ERROR: Reading number of topounits per grid from lfsurfdat file '
-       ! !   call endrun(msg=errMsg(__FILE__, __LINE__))
-       ! end if       
-       
-       ! !count total land gridcells
-       !!lns = ni*nj
-       !numg = 0
-       !!ns = len(amask(:))
-       !do ln = 1, ns
-       !   if (amask(ln) == 1) then
-       !      numg = numg + 1
-       !   endif
-       !enddo
-       !! Extract the number of topounits per grid for the land domain
-       !if(has_topounit .and. max_topounits > 1) then
-       !   allocate(tpu_glo_ind(numg))
-       !   allocate(tpu_lnd(numg)) 
-       !   t = 0
-       !   do ln = 1,ns
-       !      if (amask(ln) == 1) then
-       !         t = t + 1
-       !         tpu_lnd(t) = ntpu_per_grd(ln)
-       !         tpu_glo_ind(t) = ln          
-       !      endif
-       !   enddo
-       !endif    
     end if
     
     call ncd_pio_closefile(ncid)

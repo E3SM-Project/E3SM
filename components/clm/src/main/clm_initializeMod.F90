@@ -298,9 +298,6 @@ contains
           call decompInit_clumps(ldomain%glcmask,ldomain%num_tunits_per_grd)
           call decompInit_ghosts(ldomain%glcmask,ldomain%num_tunits_per_grd)
        else
-          !write(iulog,*)'TKT   begg and endg  = ',begg, ' and ', endg
-          !write(iulog,*)'TKT   ldomain%num_tunits_per_grd(begg) = ', ldomain%num_tunits_per_grd(begg)
-          !write(iulog,*)'TKT   ldomain%num_tunits_per_grd(endg) = ', ldomain%num_tunits_per_grd(endg)
           call decompInit_clumps(ldomain%num_tunits_per_grd)
           call decompInit_ghosts(ldomain%num_tunits_per_grd)
        endif

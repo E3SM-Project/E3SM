@@ -133,13 +133,6 @@ contains
           tmp_msk = ldomain%mask(gdc)
           if(has_topounit .and. max_topounits > 1) then
              ntopos = tmp_tpu                                
-             !! TKT debugging begin
-             !if (masterproc) then
-             !   write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc),tmp_tpu2, tmp_msk, gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',tmp_tpu2,', ',tmp_msk,' ',gdc
-             !   write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
-             !   write(iulog,*) 'grc_pp%MaxElevation(gdc), grc_pp%elevation(gdc)  ', grc_pp%MaxElevation(gdc), ' ', grc_pp%elevation(gdc)
-             !endif
-             !! TKT debugging end
           else 
              ntopos = max_topounits
           endif
@@ -157,8 +150,6 @@ contains
                      is_tpu_active = .false.
                  endif                    
              endif
-             !write(iulog,*) ' wttopounit: ',wttopounit2gridcell !TKT
-             !write(iulog,*) ' Grid ID: ', gdc !TKT
              elv = elv_tunit(gdc,topounit) !grc_pp%televation(gdc,topounit) 
              slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
              asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 

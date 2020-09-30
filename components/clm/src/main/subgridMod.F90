@@ -120,15 +120,6 @@ contains
     !ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
     !ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! For future improvement the number of valid topounits can be used from surface data
-    ! TKT debugging begin
-    !tmp_tpu_ind_glb = tpu_glo_ind(gi)
-    !tmp_tpu_lnd = tpu_lnd(gi)
-    !tmp_tpu_glb = ntpu_per_grd(tmp_tpu_ind_glb)
-    
-    !if (masterproc) then
-    !   write(iulog,*) 'tmp_tpu_ind_glb, tmp_tpu_glb, gi, tmp_tpu_lnd ',tmp_tpu_ind_glb, ', ',tmp_tpu_glb, ', ',gi, ', ',tmp_tpu_lnd
-    !endif
-    !! TKT debugging end
     if(has_topounit .and. max_topounits > 1) then
        ntopounits_per_gcell = num_tunits_per_grd                 !grc_pp%ntopounits2(gi) !tpu_lnd(gi)
     else 

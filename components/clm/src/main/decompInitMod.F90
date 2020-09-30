@@ -314,9 +314,6 @@ contains
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
 
     call get_proc_bounds(beg, end)
-    ! TKT debugging
-    !write(iulog,*)'TKT   beg and end  = ',beg, ' and ', end
-  !  write(iulog,*)'TKT   lni and lnj  = ',lni, ' and ', lnj
     allocate(gindex(beg:end))
     do n = beg,end
        gindex(n) = ldecomp%gdc2glo(n)
@@ -417,19 +414,10 @@ contains
     ! Loop through the gridcells on this proc
     do anumg = begg,endg
        ! an is the row-major order 1d-index into the global ixj grid.
-       ! TKT debugging begin
-       !if (masterproc) then
-       !   write(iulog,*) 'TKT begg, endg ',begg, ', ',endg 
-       !endif
-       ! TKT debugging end
        an  = ldecomp%gdc2glo(anumg)
        cid = lcid(an)
        ln  = anumg
        if(has_topounit .and. max_topounits > 1) then
-          !write(iulog,*) 'gegg, endg ', begg, endg
-          !write(iulog,*) 'ln ', ln
-          !write(iulog,*) 'len(num_tunits_per_grd) ', ldomain%num_tunits_per_grd(ln)
-          !write(iulog,*) 'TKT Number of topounits ', num_tunits_per_grd(ln)
           if (present(glcmask)) then
              call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                  ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln))

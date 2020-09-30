@@ -480,7 +480,7 @@ module UrbanParamsType
              call endrun(msg=errmsg(__FILE__, __LINE__))
           end if
        else
-          write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns
+          !write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns
           if (ldomain%ns /= ns) then
              write(iulog,*)trim(subname), 'ldomain and input file do not match dims '
              write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns

@@ -1864,7 +1864,8 @@ contains
 
     ! Global compressed dimensions (not including non-land points)
     call ncd_defdim(lnfid, trim(nameg), numg, dimid)
-    call ncd_defdim(lnfid, trim(namet), max_topounits, dimid) !TKT topounit dimension needs to be max_topounits
+    !call ncd_defdim(lnfid, trim(namet), max_topounits, dimid) !TKT topounit dimension needs to be max_topounits
+    call ncd_defdim(lnfid, trim(namet), numt, dimid)  ! TKT output at topounit level numt is the total number of topounits
     call ncd_defdim(lnfid, trim(namel), numl, dimid)
     call ncd_defdim(lnfid, trim(namec), numc, dimid)
     call ncd_defdim(lnfid, trim(namep), nump, dimid)
