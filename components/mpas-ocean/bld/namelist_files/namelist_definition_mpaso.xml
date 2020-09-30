@@ -452,9 +452,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_GM_closure" type="char*1024"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997
+Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling
 
-Valid values: 'N2_dependent', 'constant', 'visbeck'
+Valid values: 'N2_dependent', 'constant', 'Visbeck', 'EdenGreatbatch'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -466,15 +466,15 @@ Valid values: small positive numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_alpha" type="real"
+<entry id="config_GM_Visbeck_alpha" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-scaling factor on the visbeck diffusivity parameterization
+scaling factor on the Visbeck diffusivity parameterization
 
 Valid values: small positive numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_max_depth" type="real"
+<entry id="config_GM_Visbeck_max_depth" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 minimum depth for calculation of vertical average
 
@@ -482,19 +482,35 @@ Valid values: values between zero and bottom depth
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_min_kappa" type="real"
+<entry id="config_GM_Visbeck_min_kappa" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum value of bolus diffusivity for visbeck scheme
+minimum value of bolus diffusivity for Visbeck scheme
 
 Valid values: values around 100s
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_max_kappa" type="real"
+<entry id="config_GM_Visbeck_max_kappa" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum value of bolus diffusivity for visbeck scheme
+minimum value of bolus diffusivity for Visbeck scheme
 
 Valid values: values around 100s
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gm_EG_riMin" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum Richardson number to prevent overly large bolus Kappa values
+
+Valid values: numbers greater than zero
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gm_EG_kappa_factor" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+factor to scale diffusivity for Eden Greatbach scheme
+
+Valid values: small positive reals
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -595,14 +611,6 @@ Valid values: True or False
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical"
-	category="cvmix" group="cvmix">
-If true CVMix KPP buoyancy forcing fix for sea ice is enabled
-
-Valid values: True or False
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_cvmix_prandtl_number" type="real"
 	category="cvmix" group="cvmix">
 Prandtl number to be used within the CVMix parameterization suite
@@ -611,11 +619,11 @@ Valid values: Any non-negative real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_cvmix_background" type="logical"
+<entry id="config_cvmix_background_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
-If true, background diffusivity and viscosity is computed using CVMix
+Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
 
-Valid values: True or False
+Valid values: 'constant', 'BryanLewis', and 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -632,6 +640,38 @@ Default: Defined in namelist_defaults.xml
 Background vertical viscosity applied to horizontal velocity
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_bl1" type="real"
+	category="cvmix" group="cvmix">
+near surface diffusivity for the Bryan and Lewis (1979) profile
+
+Valid values: small positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_bl2" type="real"
+	category="cvmix" group="cvmix">
+increase in diffusivity at depth for Bryan Lewis (1979) scheme
+
+Valid values: small positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_transitionDepth" type="real"
+	category="cvmix" group="cvmix">
+depth at which the diffusivity transitions to the higher value
+
+Valid values: positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_transitionWidth" type="real"
+	category="cvmix" group="cvmix">
+width of transition in Bryan Lewis (1979) scheme
+
+Valid values: positive real numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
