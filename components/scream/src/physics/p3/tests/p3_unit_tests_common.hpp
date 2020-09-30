@@ -1,9 +1,7 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
+#include "share/scream_types.hpp"
 #include "physics/p3/p3_functions.hpp"
 
 namespace scream {
@@ -39,11 +37,11 @@ struct UnitWrap {
     using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
     template <typename S>
-    using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+    using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
     using Functions          = scream::p3::Functions<Real, Device>;
-    using view_itab_table    = typename Functions::view_itab_table;
-    using view_itabcol_table = typename Functions::view_itabcol_table;
+    using view_ice_table    = typename Functions::view_ice_table;
+    using view_collect_table = typename Functions::view_collect_table;
     using view_1d_table      = typename Functions::view_1d_table;
     using view_2d_table      = typename Functions::view_2d_table;
     using view_dnu_table     = typename Functions::view_dnu_table;

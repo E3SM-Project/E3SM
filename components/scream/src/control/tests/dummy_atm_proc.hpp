@@ -1,6 +1,8 @@
-#include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
-#include "ekat/scream_pack.hpp"
+
+#include "share/atm_process/atmosphere_process.hpp"
+
+#include "ekat/ekat_pack.hpp"
 
 namespace scream {
 
@@ -12,7 +14,7 @@ public:
   using device_type = DeviceType;
   using exec_space  = typename device_type::execution_space;
 
-  DummyProcess (const Comm& comm, const ParameterList& params)
+  DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
    : m_comm(comm)
   {
     m_iter = 0;
@@ -40,7 +42,7 @@ public:
   std::string name () const { return m_name; }
 
   // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     m_grid = grids_manager->get_grid(m_name);
@@ -61,15 +63,14 @@ public:
       out_name += "0";
     }
 
-    m_input_fids.emplace(in_name,layout,units::m,m_grid->name());
-    m_output_fids.emplace(out_name,layout,units::m,m_grid->name());
+    m_input_fids.emplace(in_name,layout,ekat::units::m,m_grid->name());
+    m_output_fids.emplace(out_name,layout,ekat::units::m,m_grid->name());
   }
 
-  void initialize (const util::TimeStamp& t0) {
-    m_time_stamp = t0;
+  void initialize_impl (const util::TimeStamp& t0) {
   }
 
-  void run (const Real dt) {
+  void run_impl (const Real dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
     auto iter = m_iter % 4;
@@ -81,22 +82,23 @@ public:
           case 2: out(i) = in(i) - 2.0; break;
           case 3: out(i) = in(i) / 2.0; break;
           default:
-            scream_kassert(false);
+            EKAT_KERNEL_ASSERT(false);
         }
     });
     Kokkos::fence();
 
     ++m_iter;
-    m_time_stamp += dt;
-    m_output.get_header().get_tracking().update_time_stamp(m_time_stamp);
+    auto ts = timestamp();
+    ts += dt;
+    m_output.get_header().get_tracking().update_time_stamp(ts);
   }
 
   // Clean up
-  void finalize ( ) {}
+  void finalize_impl ( ) {}
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const {
-    using pack_type = pack::Pack<Real,PackSize>;
+    using pack_type = ekat::Pack<Real,PackSize>;
     field_repo.template register_field<pack_type>(*m_input_fids.begin());
     field_repo.template register_field<pack_type>(*m_output_fids.begin());
   }
@@ -117,8 +119,6 @@ protected:
 
   int m_iter;
 
-  util::TimeStamp           m_time_stamp;
-
   std::set<FieldIdentifier> m_input_fids;
   std::set<FieldIdentifier> m_output_fids;
 
@@ -129,10 +129,10 @@ protected:
 
   std::string m_name;
 
-  ParameterList m_params;
-  int     m_id;
+  ekat::ParameterList m_params;
+  int           m_id;
 
-  Comm    m_comm;
+  ekat::Comm    m_comm;
 };
 
 } // namespace scream

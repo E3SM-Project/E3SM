@@ -1,36 +1,36 @@
-#include "ekat/scream_session.hpp"
-#include "ekat/util/file_utils.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_assert.hpp"
-
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "physics/shoc/shoc_ic_cases.hpp"
+
+#include "share/scream_types.hpp"
+#include "share/scream_session.hpp"
+
+#include "ekat/util/ekat_file_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 #include <vector>
 
 namespace {
 using namespace scream;
-using namespace scream::util;
 using namespace scream::shoc;
 
-  /* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline 
-   * runs the baseline (aka reference, probably git master) version of 
+  /* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline
+   * runs the baseline (aka reference, probably git master) version of
    * the code and saves its output as a raw binary file. Then run_and_cmp
    * runs the new/experimental version of the code and compares it against
    * the baseline data you've saved to file. Both baseline and cmp modes
-   * start from an initial condition in ../shoc_ic_cases.cpp. Each call to 
-   * shoc_main loops through nadv=15 steps with dt=5 min. On top of this, 
-   * shoc_main is called iteratively num_iters=10 steps, performing checks 
-   * and potentiallywriting output each time. This means that shoc_run_and_cmp 
+   * start from an initial condition in ../shoc_ic_cases.cpp. Each call to
+   * shoc_main loops through nadv=15 steps with dt=5 min. On top of this,
+   * shoc_main is called iteratively num_iters=10 steps, performing checks
+   * and potentiallywriting output each time. This means that shoc_run_and_cmp
    * is really a single 150-step shoc run.
    */
-  
 
-/* Given a column of data for variable "label" from the reference run 
- * (probably master) and from your new exploratory run, loop over all 
- * heights and confirm whether or not the relative difference between  
+
+/* Given a column of data for variable "label" from the reference run
+ * (probably master) and from your new exploratory run, loop over all
+ * heights and confirm whether or not the relative difference between
  * runs is within tolerance "tol". If not, print debug info. Here, "a"
  * is the value from the reference run and "b" is from the new run.
  */
@@ -50,7 +50,7 @@ static Int compare (const std::string& label, const Scalar* a,
       ++nerr1;
       continue;
     }
-    
+
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr2;
@@ -62,30 +62,30 @@ static Int compare (const std::string& label, const Scalar* a,
     std::cout << label << " has " << nerr1 << " infs + nans.\n";
 
   }
-  
+
   if (nerr2) {
     std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
 	      << " normalized by ref impl val=" << den << ".\n";
 
   }
-  
+
   return nerr1 + nerr2;
 }
 
- /* When called with the below 3 args, compare loops over all variables 
-  * and calls the above version of "compare" to check for and report 
+ /* When called with the below 3 args, compare loops over all variables
+  * and calls the above version of "compare" to check for and report
   * large discrepancies.
   */
  Int compare (const double& tol,
              const FortranData::Ptr& ref, const FortranData::Ptr& d) {
-  
+
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
-  scream_assert(refi.nfield() == di.nfield());
+  EKAT_ASSERT(refi.nfield() == di.nfield());
   for (Int i = 0, n = refi.nfield(); i < n; ++i) {
     const auto& fr = refi.getfield(i);
     const auto& fd = di.getfield(i);
-    scream_assert(fr.size == fd.size);
+    EKAT_ASSERT(fr.size == fd.size);
     nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
@@ -102,8 +102,8 @@ struct Baseline {
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
-    auto fid = FILEPtr(fopen(filename.c_str(), "w"));
-    scream_require_msg( fid, "generate_baseline can't write " << filename);
+    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
+    EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     for (auto ps : params_) {
       // Run reference shoc on this set of parameters.
@@ -119,8 +119,8 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
-    auto fid = FILEPtr(fopen(filename.c_str(), "r"));
-    scream_require_msg( fid, "generate_baseline can't read " << filename);
+    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
+    EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {
@@ -164,38 +164,38 @@ private:
 
   std::vector<ParamSet> params_;
 
-  static void write (const FILEPtr& fid, const FortranData::Ptr& d) {
+  static void write (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
-      util::write(&f.dim, 1, fid);
-      util::write(f.extent, f.dim, fid);
-      util::write(f.data, f.size, fid);
+      ekat::write(&f.dim, 1, fid);
+      ekat::write(f.extent, f.dim, fid);
+      ekat::write(f.data, f.size, fid);
     }
   }
 
-  static void read (const FILEPtr& fid, const FortranData::Ptr& d) {
+  static void read (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
       int dim, ds[3];
-      util::read(&dim, 1, fid);
-      scream_require_msg(dim == f.dim,
+      ekat::read(&dim, 1, fid);
+      EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      util::read(ds, dim, fid);
+      ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
-        scream_require_msg(ds[i] == f.extent[i],
+        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
                         << ds[i]);
-      util::read(f.data, f.size, fid);
+      ekat::read(f.data, f.size, fid);
     }
   }
 };
 
 void expect_another_arg (int i, int argc) {
-  scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
+  EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
 }
 
 } // namespace anon
@@ -216,9 +216,9 @@ int main (int argc, char** argv) {
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   for (int i = 1; i < argc-1; ++i) {
-    if (util::eq(argv[i], "-g", "--generate")) generate = true;
-    if (util::eq(argv[i], "-f", "--fortran")) use_fortran = true;
-    if (util::eq(argv[i], "-t", "--tol")) {
+    if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
+    if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
+    if (ekat::argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
       tol = std::atof(argv[i]);

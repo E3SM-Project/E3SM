@@ -10,33 +10,14 @@
 
 namespace scream {
 
-class DummySEGrid : public SEGrid
-{
-public:
-  static constexpr int nlev = 128;
-
-  DummySEGrid (const int ne, const GridType gt)
-   : SEGrid(std::string(e2str(gt)),gt,
-            gt==GridType::SE_NodeBased ? 6*ne*ne*4*4 : 6*ne*ne*9+2)
-  {
-    m_ne = ne;
-    m_ncol = 6*ne*ne*9 + 2;
-  }
-  ~DummySEGrid () = default;
-
-  int get_ne   () const { return m_ne; }
-  int get_ncol () const { return m_ncol; }
-
-protected:
-  int m_ne;
-  int m_ncol;
-};
+static constexpr auto SEDyn  = GridType::SE_CellBased;
+static constexpr auto SEPhys = GridType::SE_NodeBased;
 
 template<AtmosphereProcessType PType>
 class DummyProcess : public scream::AtmosphereProcess {
 public:
 
-  DummyProcess (const Comm& comm,const ParameterList& params)
+  DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
    : m_comm(comm)
   {
     m_name = params.get<std::string> ("Process Name");
@@ -57,18 +38,7 @@ public:
   std::string name () const { return m_name; }
 
   // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
-
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
-  void initialize (const util::TimeStamp& /* t0 */ ) {}
-
-  // The run method is responsible for exporting atm states to the e3sm coupler, and
-  // import surface states from the e3sm coupler.
-  void run (const Real /* dt */) {}
-
-  // Clean up
-  void finalize ( /* inputs */ ) {}
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& /* field_repo */) const {}
@@ -78,6 +48,17 @@ public:
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_fids_out; }
 
 protected:
+
+  // The initialization method should prepare all stuff needed to import/export from/to
+  // f90 structures.
+  void initialize_impl (const util::TimeStamp& /* t0 */ ) {}
+
+  // The run method is responsible for exporting atm states to the e3sm coupler, and
+  // import surface states from the e3sm coupler.
+  void run_impl (const Real /* dt */) {}
+
+  // Clean up
+  void finalize_impl ( /* inputs */ ) {}
 
   // Setting the field in the atmosphere process
   void set_required_field_impl (const Field<const Real, device_type>& /* f */) {}
@@ -92,7 +73,7 @@ protected:
   std::string m_name;
   std::string m_grid_name;
 
-  Comm    m_comm;
+  ekat::Comm    m_comm;
 };
 
 class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>
@@ -100,11 +81,11 @@ class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Dynamics>;
 
-  MyDynamics (const Comm& comm,const ParameterList& params)
+  MyDynamics (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier tend("Temperature tendency",{EL,GP,GP,VL},K/s);
     m_vec_fids_in.push_back(tend);
@@ -115,16 +96,17 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto dyn_lt = grid->get_native_dof_layout();
 
     auto& tend = m_vec_fids_in.front();
     tend.set_grid_name(grid->name());
-    tend.set_dimensions({dummy_se_grid->get_ne(),4,4,DummySEGrid::nlev});
+    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
     m_fids_in.insert(tend);
 
     auto& temp = m_vec_fids_out.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ne(),4,4,DummySEGrid::nlev});
+    temp.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
     m_fids_out.insert(temp);
   }
 };
@@ -134,11 +116,11 @@ class MyPhysicsA : public DummyProcess<AtmosphereProcessType::Physics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Physics>;
 
-  MyPhysicsA (const Comm& comm,const ParameterList& params)
+  MyPhysicsA (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier temp("Temperature",{COL,VL},K);
     m_vec_fids_in.push_back(temp);
@@ -149,16 +131,17 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto phys_lt = grid->get_native_dof_layout();
 
     auto& temp = m_vec_fids_in.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(temp);
 
     auto& qA = m_vec_fids_out.front();
     qA.set_grid_name(grid->name());
-    qA.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    qA.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(qA);
   }
 };
@@ -168,11 +151,11 @@ class MyPhysicsB : public DummyProcess<AtmosphereProcessType::Physics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Physics>;
 
-  MyPhysicsB (const Comm& comm,const ParameterList& params)
+  MyPhysicsB (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier temp("Temperature",{COL,VL},K);
     m_vec_fids_in.push_back(temp);
@@ -185,30 +168,47 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto phys_lt = grid->get_native_dof_layout();
 
     auto& temp = m_vec_fids_in.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(temp);
+
     auto& qA = m_vec_fids_in[1];
     qA.set_grid_name(grid->name());
-    qA.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    qA.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(qA);
 
     auto& tend = m_vec_fids_out.front();
     tend.set_grid_name(grid->name());
-    tend.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    tend.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(tend);
   }
 };
 
 std::shared_ptr<UserProvidedGridsManager>
 setup_upgm (const int ne) {
+  const int nelem = 6*ne*ne;
+  const int np = 4;
+  const int nvl = 128;
+  const int ncols = 6*ne*ne*9 + 2;
+
+  // Note: our test does not use actual dof info, but we need to set these
+  //       views in the SEGrid's, so that the num local dofs is set
+  SEGrid::dofs_list_type dyn_dofs("",nelem*np*np);
+  SEGrid::dofs_list_type phys_dofs("",ncols);
+
+  SEGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
+  SEGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
+
   // Greate a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_CellBased);
-  auto dummy_phys_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_NodeBased);
+  auto dummy_dyn_grid  = std::make_shared<SEGrid>(e2str(SEDyn), SEDyn, nelem,np,nvl);
+  auto dummy_phys_grid = std::make_shared<SEGrid>(e2str(SEPhys),SEPhys,nelem,np,nvl);
+  dummy_dyn_grid->set_dofs(dyn_dofs,dyn_dofs_map);
+  dummy_phys_grid->set_dofs(phys_dofs,phys_dofs_map);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());
@@ -230,17 +230,17 @@ TEST_CASE("process_factory", "") {
   using namespace scream;
 
   // A world comm
-  Comm comm(MPI_COMM_WORLD);
+  ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a parameter list for inputs
-  ParameterList params ("Atmosphere Processes");
+  ekat::ParameterList params ("Atmosphere Processes");
 
   params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");
 
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", e2str(GridType::SE_CellBased));
+  p0.set<std::string>("Grid Name", e2str(SEDyn));
 
   auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "Group");
@@ -249,11 +249,11 @@ TEST_CASE("process_factory", "") {
 
   auto& p1_0 = p1.sublist("Process 0");
   p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_0.set<std::string>("Grid Name", e2str(SEPhys));
 
   auto& p1_1 = p1.sublist("Process 1");
   p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_1.set<std::string>("Grid Name", e2str(SEPhys));
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
@@ -290,10 +290,10 @@ TEST_CASE("atm_proc_dag", "") {
   constexpr int ne = 4;
 
   // A world comm
-  Comm comm(MPI_COMM_WORLD);
+  ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a parameter list for inputs
-  ParameterList params ("Atmosphere Processes");
+  ekat::ParameterList params ("Atmosphere Processes");
 
   params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");

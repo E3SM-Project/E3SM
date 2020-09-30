@@ -12,10 +12,11 @@ namespace p3 {
  */
 
 template <typename S, typename D>
+KOKKOS_FUNCTION
 void Functions<S,D>::
 get_cloud_dsd2(
   const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm,
+  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& cld_frac_l,
   const Smask& context)
 {
   lamc.set(context   , 0);
@@ -33,11 +34,11 @@ get_cloud_dsd2(
     // set minimum nc to prevent floating point error
     {
       Spack mu_c_local;
-      nc.set(qc_gt_small, pack::max(nc, nsmall));
+      nc.set(qc_gt_small, max(nc, nsmall));
       mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
       mu_c_local = 1/(mu_c_local * mu_c_local) - 1;
-      mu_c_local = pack::max(mu_c_local, 2);
-      mu_c_local = pack::min(mu_c_local, 15);
+      mu_c_local = max(mu_c_local, 2);
+      mu_c_local = min(mu_c_local, 15);
 
       mu_c.set(qc_gt_small, mu_c_local);
     }
@@ -46,12 +47,12 @@ get_cloud_dsd2(
     if (P3C::iparam == 1) {
       IntSmallPack dumi = IntSmallPack(mu_c) - 1;
       Spack dnu0, dnu1;
-      pack::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
+      ekat::index_and_shift<1>(dnu, dumi, dnu0, dnu1);
       nu.set(qc_gt_small, dnu0 + (dnu1 - dnu0) * (mu_c - Spack(dumi) - 1));
     }
 
     // calculate lamc
-    lamc.set(qc_gt_small, pack::cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
+    lamc.set(qc_gt_small, cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
 
     // apply lambda limiters
     Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
@@ -63,10 +64,10 @@ get_cloud_dsd2(
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHOW * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
-    cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1));
+    cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
   }
 }
 
@@ -74,7 +75,7 @@ template <typename S, typename D>
 void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,
-  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm,
+  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& cld_frac_r,
   const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
@@ -96,12 +97,12 @@ get_rain_dsd2 (
     // (scaled N/q for lookup table parameter space)
     const auto nr_lim = max(nr, nsmall);
     Spack inv_dum(0);
-    inv_dum.set(qr_gt_small, pack::cbrt(qr / (cons1 * nr_lim * 6)));
+    inv_dum.set(qr_gt_small, cbrt(qr / (cons1 * nr_lim * 6)));
 
     // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
     mu_r.set(qr_gt_small, mu_r_const);
     // recalculate slope based on mu_r
-    lamr.set(qr_gt_small, pack::cbrt(cons1 * nr_lim * (mu_r + 3) *
+    lamr.set(qr_gt_small, cbrt(cons1 * nr_lim * (mu_r + 3) *
                                      (mu_r + 2) * (mu_r + 1)/qr));
 
     // check for slope
@@ -117,20 +118,20 @@ get_rain_dsd2 (
     if (either.any()) {
       lamr.set(lt, lammin);
       lamr.set(gt, lammax);
-      scream_masked_loop(either, s) {
+      ekat_masked_loop(either, s) {
         nr[s] = std::exp(3*std::log(lamr[s]) + std::log(qr[s]) +
                          std::log(std::tgamma(mu_r[s] + 1)) - std::log(std::tgamma(mu_r[s] + 4)))
           / cons1;
       }
     }
 
-    cdistr.set(qr_gt_small, nr*rcldm/pack::tgamma(mu_r + 1));
+    cdistr.set(qr_gt_small, nr/tgamma(mu_r + 1));
     // note: logn0r is calculated as log10(n0r)
-    logn0r.set(qr_gt_small, pack::log10(nr) + (mu_r + 1) * pack::log10(lamr) - pack::log10(pack::tgamma(mu_r+1)));
+    logn0r.set(qr_gt_small, log10(nr) + (mu_r + 1) * log10(lamr) - log10(tgamma(mu_r+1)));
   }
 }
 
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_DSD2_IMPL_HPP

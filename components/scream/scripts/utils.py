@@ -413,9 +413,10 @@ def checkout_git_ref(git_ref, verbose=False, repo=None):
 def get_git_toplevel_dir(repo=None):
 ###############################################################################
     """
-    Get repo toplevel directory
+    Get repo toplevel directory. Return None if it could not be found
     """
-    return run_cmd_no_fail("git rev-parse --show-toplevel", from_dir=repo)
+    stat, output, _ = run_cmd("git rev-parse --show-toplevel", from_dir=repo)
+    return output if stat == 0 else None
 
 ###############################################################################
 def cleanup_repo(orig_branch, orig_commit, repo=None):

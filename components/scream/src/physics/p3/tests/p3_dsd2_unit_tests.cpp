@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -29,9 +27,9 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
   static void run_cloud_bfb()
   {
     // Read in tables
-    view_2d_table vn_table; view_2d_table vm_table; view_2d_table revap_table;
-    view_1d_table mu_r_table; view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+    view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
+    view_1d_table mu_r_table_vals; view_dnu_table dnu;
+    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
@@ -72,24 +70,24 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qc, rho, lcldm, nc;
+      Spack qc, rho, cld_frac_l, nc;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc[s]    = gcdd_device(vs).qc;
         rho[s]   = gcdd_device(vs).rho;
-        lcldm[s] = gcdd_device(vs).lcldm;
+        cld_frac_l[s] = gcdd_device(vs).cld_frac_l;
         nc[s]    = gcdd_device(vs).nc_in;
       }
 
       Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
-      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
+      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, cld_frac_l);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         gcdd_device(vs).nc_out = nc[s];
-        gcdd_device(vs).mu_c = mu_c[s];
-        gcdd_device(vs).nu = nu[s];
-        gcdd_device(vs).lamc = lamc[s];
-        gcdd_device(vs).cdist = cdist[s];
+        gcdd_device(vs).mu_c   = mu_c[s];
+        gcdd_device(vs).nu     = nu[s];
+        gcdd_device(vs).lamc   = lamc[s];
+        gcdd_device(vs).cdist  = cdist[s];
         gcdd_device(vs).cdist1 = cdist1[s];
       }
     });
@@ -155,15 +153,15 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qr, rcldm, nr;
+      Spack qr, cld_frac_r, nr;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qr[s]    = grdd_device(vs).qr;
-        rcldm[s] = grdd_device(vs).rcldm;
+        cld_frac_r[s] = grdd_device(vs).cld_frac_r;
         nr[s]    = grdd_device(vs).nr_in;
       }
 
       Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, cld_frac_r);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

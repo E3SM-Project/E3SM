@@ -1,0 +1,5 @@
+module load python/3.7.3
+
+source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
+
+SCREAM_MACHINE=weaver

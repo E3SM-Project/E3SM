@@ -177,12 +177,6 @@
 <iradsw hgrid="ne1024np4"> 4 </iradsw>
 <iradlw hgrid="ne1024np4"> 4 </iradlw>
 
-<!-- Settings related to the SCREAM NH dycore -->
-<theta_hydrostatic_mode>.true.</theta_hydrostatic_mode>
-
-<!-- Dynamics/physics coupling; should be the default, but set to make sure -->
-<se_ftype>2</se_ftype>
-
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
 

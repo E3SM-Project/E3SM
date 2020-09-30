@@ -1,5 +1,5 @@
 #include "p3_ice_cldliq_wet_growth_impl.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

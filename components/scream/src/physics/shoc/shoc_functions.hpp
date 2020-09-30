@@ -1,10 +1,13 @@
 #ifndef SHOC_FUNCTIONS_HPP
 #define SHOC_FUNCTIONS_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_pack_kokkos.hpp"
-#include "ekat/scream_workspace.hpp"
-#include "physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
+#include "physics/shoc/shoc_constants.hpp"
+
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_workspace.hpp"
 
 namespace scream {
 namespace shoc {
@@ -29,25 +32,21 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = scream::pack::BigPack<S>;
+  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = scream::pack::SmallPack<S>;
-  using IntSmallPack = scream::pack::IntSmallPack;
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
+  using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
 
-  template <typename S>
-  using Mask = scream::pack::Mask<BigPack<S>::n>;
+  using Mask  = ekat::Mask<Pack::n>;
+  using Smask = ekat::Mask<Spack::n>;
 
-  template <typename S>
-  using SmallMask = scream::pack::Mask<SmallPack<S>::n>;
+  using KT = ekat::KokkosTypes<Device>;
 
-  using Smask = SmallMask<Scalar>;
-
-  using KT = KokkosTypes<Device>;
-
-  using C = scream::physics::Constants<Scalar>;
+  using C  = physics::Constants<Scalar>;
+  using SC = shoc::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -58,15 +57,93 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
+
+  template <typename S>
+  using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
+  using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
 
   //
   // --------- Functions ---------
   //
+  KOKKOS_FUNCTION
+  static void calc_shoc_varorcovar(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Scalar&                tunefac,
+    const uview_1d<const Spack>& isotropy_zi,
+    const uview_1d<const Spack>& tkh_zi,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& invar1,
+    const uview_1d<const Spack>& invar2,
+    const uview_1d<Spack>&       varorcovar);
+
+  KOKKOS_FUNCTION
+  static void calc_shoc_vertflux(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<const Spack>& tkh_zi,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& invar,
+    const uview_1d<Spack>& vertflux);
+
+  KOKKOS_FUNCTION
+  static void shoc_diag_second_moments_srf(
+    const Scalar& wthl_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc,
+    Scalar& ustar2, Scalar& wstar);
+
+  KOKKOS_FUNCTION
+  static void shoc_diag_second_moments_ubycond(
+    Scalar& thl_sec, Scalar& qw_sec, Scalar& wthl_sec, Scalar& wqw_sec,
+    Scalar& qwthl_sec, Scalar& uw_sec, Scalar& vw_sec, Scalar& wtke_sec);
+
+  KOKKOS_FUNCTION
+  static void update_host_dse(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<const Spack>& thlm,
+    const uview_1d<const Spack>& shoc_ql,
+    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& zt_grid,
+    const Scalar& phis,
+    const uview_1d<Spack>& host_dse);
+
+  KOKKOS_FUNCTION
+  static void shoc_pblintd_init_pot(
+    const MemberType& team, const Int& nlev,
+    const view_1d<const Spack>& thl, const view_1d<const Spack>& ql, const view_1d<const Spack>& q,
+    const view_1d<Spack>& thv);
+
+  KOKKOS_FUNCTION
+  static void compute_shoc_mix_shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& brunt,
+    const Scalar&                tscale,
+    const uview_1d<const Spack>& zt_grid,
+    const Scalar&                l_inf,
+    const uview_1d<Spack>&       shoc_mix);
+
+  KOKKOS_FUNCTION
+  static void check_tke(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<Spack>& tke);
+
+  KOKKOS_FUNCTION
+  static void linear_interp(const uview_1d<const Spack>& x1, const uview_1d<const Spack>& x2, const uview_1d<const Spack>& y1, const uview_1d<Spack>& y2, const Int& km1, const Int& km2, const Int& ncol, const Spack& minthresh);
+
+  KOKKOS_FUNCTION
+   static void clipping_diag_third_shoc_moments(
+     const MemberType& team,
+     const Int& nlevi,
+     const uview_1d<const Spack>& w_sec_zi,
+     const uview_1d<Spack>& w3);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -75,8 +152,16 @@ struct Functions
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
-//# include "shoc_functions_math_impl.hpp"
-
-#endif
+# include "shoc_calc_shoc_varorcovar_impl.hpp"
+# include "shoc_calc_shoc_vertflux_impl.hpp"
+# include "shoc_diag_second_moments_srf_impl.hpp"
+# include "shoc_diag_second_moments_ubycond_impl.hpp"
+# include "shoc_update_host_dse_impl.hpp"
+# include "shoc_pblintd_init_pot_impl.hpp"
+# include "shoc_compute_shoc_mix_shoc_length_impl.hpp"
+# include "shoc_check_tke_impl.hpp"
+# include "shoc_linear_interp_impl.hpp"
+# include "shoc_clipping_diag_third_shoc_moments_impl.hpp"
+#endif // KOKKOS_ENABLE_CUDA
 
 #endif

@@ -34,9 +34,9 @@ public:
   DummySEGridRemapper (const grid_ptr_type node_based, const grid_ptr_type cell_based)
    : base_type(node_based, cell_based)
   {
-    scream_require_msg(node_based->type()==GridType::SE_NodeBased,
+    EKAT_REQUIRE_MSG(node_based->type()==GridType::SE_NodeBased,
                        "Error in DummySEGridRemapper! Invalid input node based grid.\n");
-    scream_require_msg(cell_based->type()==GridType::SE_CellBased,
+    EKAT_REQUIRE_MSG(cell_based->type()==GridType::SE_CellBased,
                        "Error in DummySEGridRemapper! Invalid input cell based grid.\n");
   }
 
@@ -56,7 +56,7 @@ public:
       FieldLayout src({COL,CMP,VL},{ncol,tgt.dim(1),tgt.dim(4)});
       return src;
     } else {
-      scream_error_msg ("Error! Target layout not supported. Remember that this class has limited support.\n");
+      EKAT_ERROR_MSG ("Error! Target layout not supported. Remember that this class has limited support.\n");
     }
     FieldLayout src({},{});
     return src;
@@ -77,7 +77,7 @@ public:
       FieldLayout tgt({EL,CMP,GP,GP,VL},{nele,4,4,src.dim(1),src.dim(2)});
       return tgt;
     } else {
-      scream_error_msg ("Error! Target layout not supported. Remember that this class has limited support.\n");
+      EKAT_ERROR_MSG ("Error! Target layout not supported. Remember that this class has limited support.\n");
     }
     FieldLayout tgt ({},{});
     return tgt;

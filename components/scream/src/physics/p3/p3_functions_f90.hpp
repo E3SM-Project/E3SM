@@ -1,13 +1,13 @@
 #ifndef SCREAM_P3_FUNCTIONS_F90_HPP
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
-
-#include "p3_functions.hpp"
+#include "physics/p3/p3_functions.hpp"
+#include "physics/share/physics_test_data.hpp"
+#include "share/scream_types.hpp"
 
 #include <array>
 #include <utility>
+#include <memory>   // for shared_ptr
 
 //
 // Bridge functions to call fortran version of p3 functions from C++
@@ -27,19 +27,19 @@ struct P3GlobalForFortran
 
   using view_1d_table = typename P3F::view_1d_table;
   using view_2d_table = typename P3F::view_2d_table;
-  using view_itab_table = typename P3F::view_itab_table;
-  using view_itabcol_table = typename P3F::view_itabcol_table;
+  using view_ice_table = typename P3F::view_ice_table;
+  using view_collect_table = typename P3F::view_collect_table;
   using view_dnu_table = typename P3F::view_dnu_table;
 
   // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();
 
-  static const view_1d_table& mu_r_table()   { return get().m_mu_r_table; }
-  static const view_2d_table& vn_table()     { return get().m_vn_table; }
-  static const view_2d_table& vm_table()     { return get().m_vm_table; }
-  static const view_2d_table& revap_table()  { return get().m_revap_table; }
-  static const view_itab_table& itab()       { return get().m_itab; }
-  static const view_itabcol_table& itabcol() { return get().m_itabcol; }
+  static const view_1d_table& mu_r_table_vals()   { return get().m_mu_r_table_vals; }
+  static const view_2d_table& vn_table_vals()     { return get().m_vn_table_vals; }
+  static const view_2d_table& vm_table_vals()     { return get().m_vm_table_vals; }
+  static const view_2d_table& revap_table_vals()  { return get().m_revap_table_vals; }
+  static const view_ice_table& ice_table_vals()       { return get().m_ice_table_vals; }
+  static const view_collect_table& collect_table_vals() { return get().m_collect_table_vals; }
   static const view_dnu_table& dnu()         { return get().m_dnu; }
 
   P3GlobalForFortran() = delete;
@@ -49,10 +49,10 @@ struct P3GlobalForFortran
 
  private:
   struct Views {
-    view_1d_table m_mu_r_table;
-    view_2d_table m_vn_table, m_vm_table, m_revap_table;
-    view_itab_table m_itab;
-    view_itabcol_table m_itabcol;
+    view_1d_table m_mu_r_table_vals;
+    view_2d_table m_vn_table_vals, m_vm_table_vals, m_revap_table_vals;
+    view_ice_table m_ice_table_vals;
+    view_collect_table m_collect_table_vals;
     view_dnu_table m_dnu;
   };
 
@@ -68,16 +68,16 @@ struct P3InitAFortranData
   using P3F = Functions<Real, HostDevice>;
   using P3C = typename P3F::P3C;
 
-  using view_itab_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
-  using view_itabcol_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
+  using view_ice_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
+  using view_collect_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
 
   // Need to be LayoutLeft to be fortran compatible
-  view_itab_table itab;
-  view_itabcol_table itabcol;
+  view_ice_table ice_table_vals;
+  view_collect_table collect_table_vals;
 
   P3InitAFortranData() :
-    itab("P3InitAFortranData::itab"),
-    itabcol("P3InitAFortranData::itabcol")
+    ice_table_vals("P3InitAFortranData::ice_table_vals"),
+    collect_table_vals("P3InitAFortranData::collect_table_vals")
   {}
 };
 void p3_init_a(P3InitAFortranData& d);
@@ -87,7 +87,7 @@ void p3_init_a(P3InitAFortranData& d);
 struct LookupIceData
 {
   // Inputs
-  Real qitot, nitot, qirim, rhop;
+  Real qi, ni, qm, rhop;
 
   // Outputs
   Int  dumi, dumjj, dumii, dumzz;
@@ -99,7 +99,7 @@ extern "C" {
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
-                                   Real qitot, Real nitot, Real qirim, Real rhop);
+                                   Real qi, Real ni, Real qm, Real rhop);
 
 }
 
@@ -168,13 +168,13 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 struct BackToCellAverageData
 {
   // inputs
-  Real lcldm, rcldm, icldm;
+  Real cld_frac_l, cld_frac_r, cld_frac_i;
 
   // in/out
-  Real qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc,
-       ncnuc, qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt,
-       nccol, ncshdc, ncheti, nrcol, nislf, qidep, nrheti, nisub, qinuc, ninuc,
-       qiberg;
+  Real qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qcnuc,
+       nc_nuceat_tend, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend,
+       nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend,
+       qc2qi_berg_tend;
 
   // This populates all fields with test data within [0,1].
   void randomize();
@@ -183,18 +183,18 @@ struct BackToCellAverageData
 void back_to_cell_average(BackToCellAverageData& d);
 
 extern "C"{
-  void back_to_cell_average_f(Real lcldm, Real rcldm, Real icldm,
-                              Real* qcacc, Real* qrevp, Real* qcaut,
-                              Real* ncacc, Real* ncslf, Real* ncautc,
-                              Real* nrslf, Real* nrevp, Real* ncautr,
-                              Real* qisub,
-                              Real* nrshdr, Real* qcheti, Real* qrcol,
-                              Real* qcshd, Real* qimlt, Real* qccol,
-                              Real* qrheti, Real* nimlt, Real* nccol,
-                              Real* ncshdc, Real* ncheti, Real* nrcol,
-                              Real* nislf, Real* qidep, Real* nrheti,
-                              Real* nisub, Real* qinuc, Real* ninuc,
-                              Real* qiberg);
+  void back_to_cell_average_f(Real cld_frac_l, Real cld_frac_r, Real cld_frac_i,
+                              Real* qc2qr_accret_tend, Real* qr2qv_evap_tend, Real* qc2qr_autoconv_tend,
+                              Real* nc_accret_tend, Real* nc_selfcollect_tend, Real* nc2nr_autoconv_tend,
+                              Real* nr_selfcollect_tend, Real* nr_evap_tend, Real* ncautr,
+                              Real* qi2qv_sublim_tend,
+                              Real* nr_ice_shed_tend, Real* qc2qi_hetero_freeze_tend, Real* qr2qi_collect_tend,
+                              Real* qc2qr_ice_shed_tend, Real* qi2qr_melt_tend, Real* qc2qi_collect_tend,
+                              Real* qr2qi_immers_freeze_tend, Real* ni2nr_melt_tend, Real* nc_collect_tend,
+                              Real* ncshdc, Real* nc2ni_immers_freeze_tend, Real* nr_collect_tend,
+                              Real* ni_selfcollect_tend, Real* qv2qi_vapdep_tend, Real* nr2ni_immers_freeze_tend,
+                              Real* ni_sublim_tend, Real* qv2qi_nucleat_tend, Real* ni_nucleat_tend,
+                              Real* qc2qi_berg_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,17 +202,17 @@ extern "C"{
 struct PreventIceOverdepletionData
 {
   // inputs
-  Real pres, t, qv, xxls, odt;
+  Real pres, T_atm, qv, latent_heat_sublim, inv_dt;
 
   //output
-  Real qidep, qisub;
+  Real qv2qi_vapdep_tend, qi2qv_sublim_tend;
 };
 
 void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
 
 extern "C"{
-  void prevent_ice_overdepletion_f(Real pres, Real t, Real qv, Real xxls,
-    Real odt, Real* qidep, Real* qisub);
+  void prevent_ice_overdepletion_f(Real pres, Real T_atm, Real qv, Real latent_heat_sublim,
+    Real inv_dt, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,63 +223,63 @@ struct CloudWaterConservationData
   Real qc, dt;
 
   //output
-  Real qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+  Real qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
 };
 
 void cloud_water_conservation(CloudWaterConservationData& d);
 
 extern "C"{
-  void cloud_water_conservation_f(Real qc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
-    Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
+  void cloud_water_conservation_f(Real qc, Real dt, Real* qc2qr_autoconv_tend, Real* qc2qr_accret_tend, Real* qc2qi_collect_tend,
+    Real* qc2qi_hetero_freeze_tend, Real* qc2qr_ice_shed_tend, Real* qc2qi_berg_tend, Real* qi2qv_sublim_tend, Real* qv2qi_vapdep_tend);
 }
 
 struct RainWaterConservationData
 {
   // inputs
-  Real qr, qcaut, qcacc, qimlt, qcshd, dt;
+  Real qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt;
 
   //output
-  Real qrevp, qrcol, qrheti;
+  Real qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend;
 };
 
 void rain_water_conservation(RainWaterConservationData& d);
 
 extern "C"{
-  void rain_water_conservation_f(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
-  Real dt, Real* qrevp, Real* qrcol, Real* qrheti);
+  void rain_water_conservation_f(Real qr, Real qc2qr_autoconv_tend, Real qc2qr_accret_tend, Real qi2qr_melt_tend, Real qc2qr_ice_shed_tend,
+  Real dt, Real* qr2qv_evap_tend, Real* qr2qi_collect_tend, Real* qr2qi_immers_freeze_tend);
 }
 
 struct IceWaterConservationData
 {
   //inputs
-  Real qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt;
+  Real qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt;
 
   //output
-  Real qisub, qimlt;
+  Real qi2qv_sublim_tend, qi2qr_melt_tend;
 };
 
 void ice_water_conservation(IceWaterConservationData& d);
 
 extern "C"{
-  void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
-  Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+  void ice_water_conservation_f(Real qi, Real qv2qi_vapdep_tend, Real qv2qi_nucleat_tend, Real qc2qi_berg_tend, Real qr2qi_collect_tend, Real qc2qi_collect_tend,
+  Real qr2qi_immers_freeze_tend, Real qc2qi_hetero_freeze_tend, Real dt, Real* qi2qv_sublim_tend, Real* qi2qr_melt_tend);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CalcRimeDensityData
 {
   // inputs
-  Real t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
+  Real T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
 
   // output
-  Real vtrmi1, rhorime_c;
+  Real vtrmi1, rho_qm_cloud;
 };
 
 void calc_rime_density(CalcRimeDensityData& d);
 extern "C"{
-  void calc_rime_density_f(Real t, Real rhofaci, Real f1pr02, Real acn,
-    Real lamc, Real mu_c, Real qc_incld, Real qccol, Real* vtrmi1,
-    Real* rhorime_c);
+  void calc_rime_density_f(Real T_atm, Real rhofaci, Real table_val_qi_fallspd, Real acn,
+    Real lamc, Real mu_c, Real qc_incld, Real qc2qi_collect_tend, Real* vtrmi1,
+    Real* rho_qm_cloud);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -287,16 +287,16 @@ extern "C"{
 struct CldliqImmersionFreezingData
 {
   // inputs
-  Real t, lamc, mu_c, cdist1, qc_incld, qc_relvar;
+  Real T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar;
 
   // output
-  Real qcheti, ncheti;
+  Real qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend;
 };
 
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
 extern "C"{
-  void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
-       Real cdist1, Real qc_incld, Real qc_relvar, Real* qcheti, Real* ncheti);
+  void cldliq_immersion_freezing_f(Real T_atm, Real lamc, Real mu_c,
+       Real cdist1, Real qc_incld, Real inv_qc_relvar, Real* qc2qi_hetero_freeze_tend, Real* nc2ni_immers_freeze_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,17 +304,17 @@ extern "C"{
 struct RainImmersionFreezingData
 {
   // inputs
-  Real t, lamr, mu_r, cdistr, qr_incld;
+  Real T_atm, lamr, mu_r, cdistr, qr_incld;
 
   // output
-  Real qrheti, nrheti;
+  Real qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend;
 };
 
 void rain_immersion_freezing(RainImmersionFreezingData& d);
 extern "C"{
 
-  void rain_immersion_freezing_f(Real t, Real lamr, Real mu_r,
-    Real cdistr, Real qr_incld, Real* qrheti, Real* nrheti);
+  void rain_immersion_freezing_f(Real T_atm, Real lamr, Real mu_r,
+    Real cdistr, Real qr_incld, Real* qr2qi_immers_freeze_tend, Real* nr2ni_immers_freeze_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -322,17 +322,17 @@ extern "C"{
 struct DropletSelfCollectionData
 {
   // inputs
-  Real rho, inv_rho, qc_incld, mu_c, nu, ncautc;
+  Real rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend;
 
   // output
-  Real ncslf;
+  Real nc_selfcollect_tend;
 };
 
 void droplet_self_collection(DropletSelfCollectionData& d);
 extern "C"{
 
   void droplet_self_collection_f(Real rho, Real inv_rho, Real qc_incld,
-    Real mu_c, Real nu, Real ncautc, Real* ncslf);
+    Real mu_c, Real nu, Real nc2nr_autoconv_tend, Real* nc_selfcollect_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -340,17 +340,17 @@ extern "C"{
 struct CloudRainAccretionData
 {
   // inputs
-  Real rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar;
 
   // output
-  Real qcacc, ncacc;
+  Real qc2qr_accret_tend, nc_accret_tend;
 };
 
 void cloud_rain_accretion(CloudRainAccretionData& d);
 extern "C"{
 
   void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
-       Real nc_incld, Real qr_incld, Real qc_relvar, Real* qcacc, Real* ncacc);
+       Real nc_incld, Real qr_incld, Real inv_qc_relvar, Real* qc2qr_accret_tend, Real* nc_accret_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,19 +361,19 @@ struct CloudWaterAutoconversionData
   Real rho;
   Real qc_incld;
   Real nc_incld;
-  Real qc_relvar;
+  Real inv_qc_relvar;
 
   // output
-  Real qcaut;
-  Real ncautc;
+  Real qc2qr_autoconv_tend;
+  Real nc2nr_autoconv_tend;
   Real ncautr;
 };
 
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
-  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, Real qc_relvar,
-    Real* qcaut, Real* ncautc, Real* ncautr);
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, Real inv_qc_relvar,
+    Real* qc2qr_autoconv_tend, Real* nc2nr_autoconv_tend, Real* ncautr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -385,28 +385,28 @@ struct RainSelfCollectionData
   Real rho, qr_incld, nr_incld;
 
   //output
-  Real nrslf;
+  Real nr_selfcollect_tend;
 };
 
 void rain_self_collection(RainSelfCollectionData& d);
 extern "C"{
 
-  void rain_self_collection_f(Real rho, Real qr_incld, Real nr_incld, Real* nrslf);
+  void rain_self_collection_f(Real rho, Real qr_incld, Real nr_incld, Real* nr_selfcollect_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ImposeMaxTotalNiData{
   // inout
-  Real nitot_local;
+  Real ni_local;
 
   //input
-  Real max_total_Ni, inv_rho_local;
+  Real max_total_ni, inv_rho_local;
 };
-void impose_max_total_Ni(ImposeMaxTotalNiData& d);
+void impose_max_total_ni(ImposeMaxTotalNiData& d);
 extern "C"{
 
-  void impose_max_total_ni_f(Real* nitot_local, Real max_total_Ni, Real inv_rho_local);
+  void impose_max_total_ni_f(Real* ni_local, Real max_total_ni, Real inv_rho_local);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -414,16 +414,16 @@ extern "C"{
 struct IceMeltingData
 {
   // inputs
-  Real rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld;
+  Real rho,T_atm,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld;
 
   // output
-  Real qimlt,nimlt;
+  Real qi2qr_melt_tend,ni2nr_melt_tend;
 };
 
 void ice_melting(IceMeltingData& d);
 
 extern "C"{
-void ice_melting_f(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld,Real nitot_incld,Real* qimlt,Real* nimlt);
+void ice_melting_f(Real rho,Real T_atm,Real pres,Real rhofaci,Real table_val_qi2qr_melting,Real table_val_qi2qr_vent_melt,Real latent_heat_vapor,Real latent_heat_fusion,Real dv,Real sc,Real mu,Real kap,Real qv,Real qi_incld,Real ni_incld,Real* qi2qr_melt_tend,Real* ni2nr_melt_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -446,7 +446,7 @@ extern "C"{
 struct GetCloudDsd2Data
 {
   // Inputs
-  Real qc, rho, lcldm, nc_in;
+  Real qc, rho, cld_frac_l, nc_in;
 
   // Outputs
   Real nc_out, mu_c, nu, lamc, cdist, cdist1;
@@ -456,7 +456,7 @@ void get_cloud_dsd2(GetCloudDsd2Data& d);
 extern "C" {
 
 void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
-                      Real* cdist, Real* cdist1, Real lcldm);
+                      Real* cdist, Real* cdist1, Real cld_frac_l);
 
 }
 
@@ -465,7 +465,7 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 struct GetRainDsd2Data
 {
   // Inputs
-  Real qr, rcldm, nr_in;
+  Real qr, cld_frac_r, nr_in;
 
   // Outputs
   Real nr_out, lamr, mu_r, cdistr, logn0r;
@@ -474,47 +474,41 @@ void get_rain_dsd2(GetRainDsd2Data& d);
 
 extern "C" {
 
-void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real cld_frac_r);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CalcUpwindData
+struct CalcUpwindData : public PhysicsTestData
 {
   // Inputs
   Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
   Real dt_sub;
-  Real* rho, *inv_rho, *inv_dzq;
-  Real **vs;
+  Real* rho, *inv_rho, *inv_dz;
+  Real *vs; // num_arrays x nk
 
   // In/out
-  Real **qnx;
+  Real *qnx; // num_arrays x nk
 
   // Outputs
-  Real** fluxes;
+  Real *fluxes; // num_arrays x nk
 
-  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
-                 std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
-                 std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_);
 
-  // deep copy
-  CalcUpwindData(const CalcUpwindData& rhs);
+  PTD_DATA_COPY_CTOR(CalcUpwindData, 7);
+  PTD_ASSIGN_OP(CalcUpwindData, 7, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub);
 
-  Int nk() const { return m_nk; }
+  Int nk() const { return dim1; }
 
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
-  std::vector<Real*> m_ptr_data;
+  void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
 };
 void calc_first_order_upwind_step(CalcUpwindData& d);
 
 extern "C" {
 
 void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho,
-                                    Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+                                    Real* inv_rho, Real* inv_dz, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 }
 
@@ -530,50 +524,44 @@ struct GenSedData : public CalcUpwindData
   Real dt_left, prt_accum;
 
   GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-             Real prt_accum_, Int num_arrays_,
-             std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
-             std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+             Real prt_accum_, Int num_arrays_);
 
+  PTD_DATA_COPY_CTOR(GenSedData, 10);
+  PTD_ASSIGN_OP(GenSedData, 11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
 };
 void generalized_sedimentation(GenSedData& d);
 
 extern "C" {
 
 void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k_qxbot, Int kbot, Real Co_max,
-                                 Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+                                 Real* dt_left, Real* prt_accum, Real* inv_dz, Real* inv_rho, Real* rho,
                                  Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CloudSedData
+struct CloudSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 13;
 
   // Inputs
   Int kts, kte, ktop, kbot, kdir;
-  Real *qc_incld, *rho, *inv_rho, *lcldm, *acn, *inv_dzq;
-  Real dt, odt;
-  bool log_predictNc;
+  Real *qc_incld, *rho, *inv_rho, *cld_frac_l, *acn, *inv_dz;
+  Real dt, inv_dt;
+  bool do_predict_nc;
 
   // In/out
   Real *qc, *nc, *nc_incld, *mu_c, *lamc, *qc_tend, *nc_tend;
-  Real prt_liq;
+  Real precip_liq_surf;
 
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
-               const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+               Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_);
 
-  // deep copy
-  CloudSedData(const CloudSedData& rhs);
+  PTD_DATA_COPY_CTOR(CloudSedData, 9);
+  PTD_ASSIGN_OP(CloudSedData, 9, kts, kte, ktop, kbot, kdir, dt, inv_dt, do_predict_nc, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 void cloud_sedimentation(CloudSedData& d);
 
@@ -581,40 +569,34 @@ extern "C" {
 
 void cloud_sedimentation_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
-  Real dt, Real odt, bool log_predictNc,
-  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* cld_frac_l, Real* acn, Real* inv_dz,
+  Real dt, Real inv_dt, bool do_predict_nc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* precip_liq_surf, Real* qc_tend, Real* nc_tend);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IceSedData
+struct IceSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 15;
 
   // Inputs
   Int kts, kte, ktop, kbot, kdir;
-  Real *rho, *inv_rho, *rhofaci, *icldm, *inv_dzq;
-  Real dt, odt;
+  Real *rho, *inv_rho, *rhofaci, *cld_frac_i, *inv_dz;
+  Real dt, inv_dt;
 
   // In/out
-  Real *qitot, *qitot_incld, *nitot, *nitot_incld, *qirim, *qirim_incld, *birim, *birim_incld, *qi_tend, *ni_tend;
-  Real prt_sol;
+  Real *qi, *qi_incld, *ni, *ni_incld, *qm, *qm_incld, *bm, *bm_incld, *qi_tend, *ni_tend;
+  Real precip_ice_surf;
 
   IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-             Real dt_, Real odt_, Real prt_sol_,
-             const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+             Real dt_, Real inv_dt_, Real precip_ice_surf_);
 
-  // deep copy
-  IceSedData(const IceSedData& rhs);
+  PTD_DATA_COPY_CTOR(IceSedData, 8);
+  PTD_ASSIGN_OP(IceSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_ice_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 
 void ice_sedimentation(IceSedData& d);
@@ -623,42 +605,36 @@ extern "C" {
 
 void ice_sedimentation_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
-  Real dt, Real odt,
-  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
-  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* cld_frac_i, Real* inv_dz,
+  Real dt, Real inv_dt,
+  Real* qi, Real* qi_incld, Real* ni, Real* qm, Real* qm_incld, Real* bm, Real* bm_incld,
+  Real* ni_incld, Real* precip_ice_surf, Real* qi_tend, Real* ni_tend);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RainSedData
+struct RainSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 14;
 
   // Inputs
   Int kts, kte, ktop, kbot, kdir;
-  Real *rho, *inv_rho, *rhofacr, *rcldm, *inv_dzq, *qr_incld;
-  Real dt, odt;
+  Real *rho, *inv_rho, *rhofacr, *cld_frac_r, *inv_dz, *qr_incld;
+  Real dt, inv_dt;
 
   // In/out
   Real *qr, *nr, *nr_incld, *mu_r, *lamr, *qr_tend, *nr_tend;
-  Real *rflx; // has special size (nk+1)
-  Real prt_liq;
+  Real *precip_liq_flux; // has special size (nk+1)
+  Real precip_liq_surf;
 
   RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-              Real dt_, Real odt_, Real prt_liq_,
-              const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+              Real dt_, Real inv_dt_, Real precip_liq_surf_);
 
-  // deep copy
-  RainSedData(const RainSedData& rhs);
+  PTD_DATA_COPY_CTOR(RainSedData, 8);
+  PTD_ASSIGN_OP(RainSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 
 void rain_sedimentation(RainSedData& d);
@@ -667,9 +643,9 @@ extern "C" {
 
 void rain_sedimentation_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* qr_incld, Real* rho, Real* inv_rho, Real* rhofacr, Real* rcldm, Real* inv_dzq,
-  Real dt, Real odt,
-  Real* qr, Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* prt_liq, Real* rflx, Real* qr_tend, Real* nr_tend);
+  Real* qr_incld, Real* rho, Real* inv_rho, Real* rhofacr, Real* cld_frac_r, Real* inv_dz,
+  Real dt, Real inv_dt,
+  Real* qr, Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* precip_liq_surf, Real* precip_liq_flux, Real* qr_tend, Real* nr_tend);
 
 }
 
@@ -696,30 +672,23 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct HomogeneousFreezingData
+struct HomogeneousFreezingData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 12;
 
   // Inputs
   Int kts, kte, ktop, kbot, kdir;
-  Real* t, *exner, *xlf;
+  Real* T_atm, *exner, *latent_heat_fusion;
 
   // In/out
-  Real* qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *th;
+  Real* qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *th_atm;
 
-  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-                          const std::array<std::pair<Real, Real>, NUM_ARRAYS>& ranges);
+  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_);
 
-  // deep copy
-  HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
+  PTD_DATA_COPY_CTOR(HomogeneousFreezingData, 5);
+  PTD_ASSIGN_OP(HomogeneousFreezingData, 5, kts, kte, ktop, kbot, kdir);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
-
+  Int nk() const { return dim1; }
 };
 void homogeneous_freezing(HomogeneousFreezingData& d);
 
@@ -727,8 +696,8 @@ extern "C" {
 
 void homogeneous_freezing_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* t, Real* exner, Real* xlf,
-  Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* th);
+  Real* T_atm, Real* exner, Real* latent_heat_fusion,
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm);
 
 }
 
@@ -737,7 +706,7 @@ void homogeneous_freezing_f(
 struct ComputeRainFallVelocityData
 {
   // Inputs
-  Real qr_incld, rcldm, rhofacr;
+  Real qr_incld, cld_frac_r, rhofacr;
 
   // In/out
   Real nr_incld;
@@ -749,7 +718,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d);
 
 extern "C" {
 
-void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
+void compute_rain_fall_velocity_f(Real qr_incld, Real cld_frac_r, Real rhofacr,
                                   Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
@@ -758,7 +727,7 @@ void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
 struct GetTimeSpacePhysVarsData
 {
   //Inputs
-  Real t, pres, rho, xxlv, xxls, qvs, qvi;
+  Real T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i;
 
   //Outs
   Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
@@ -768,7 +737,7 @@ void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
 
 extern "C"{
 
-void get_time_space_phys_variables_f(Real t, Real pres, Real rho, Real xxlv, Real xxls, Real qvs, Real qvi,
+void get_time_space_phys_variables_f(Real T_atm, Real pres, Real rho, Real latent_heat_vapor, Real latent_heat_sublim, Real qv_sat_l, Real qv_sat_i,
 				     Real* mu, Real* dv, Real* sc, Real* dqsdt, Real* dqsidt, Real* ab,
 				     Real* abi, Real* kap, Real* eii);
 
@@ -779,44 +748,49 @@ void get_time_space_phys_variables_f(Real t, Real pres, Real rho, Real xxlv, Rea
 struct P3UpdatePrognosticIceData
 {
   // Inputs
-  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt,
-    nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xxls, xlf;
-  bool log_predictNc, log_wetgrowth;
-  Real dt, nmltratio, rhorime_c;
+  Real qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend,
+    ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, exner, latent_heat_sublim, latent_heat_fusion;
+  bool do_predict_nc, log_wetgrowth;
+  Real dt, nmltratio, rho_qm_cloud;
 
   // In/outs
-  Real th, qv, qitot, nitot, qirim, birim, qc, nc, qr, nr;
+  Real th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr;
 };
 
 void update_prognostic_ice(P3UpdatePrognosticIceData& d);
 
 extern "C"{
 
-void update_prognostic_ice_f( Real qcheti,Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
-Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr, Real qimlt, Real nimlt, Real qisub,
-Real qidep, Real qinuc, Real ninuc, Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
-bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c, Real* th, Real* qv,
-Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
+void update_prognostic_ice_f( Real qc2qi_hetero_freeze_tend,Real qc2qi_collect_tend, Real qc2qr_ice_shed_tend,  Real nc_collect_tend,  Real nc2ni_immers_freeze_tend, Real ncshdc,
+Real qr2qi_collect_tend,  Real nr_collect_tend, Real qr2qi_immers_freeze_tend, Real nr2ni_immers_freeze_tend, Real nr_ice_shed_tend, Real qi2qr_melt_tend, Real ni2nr_melt_tend, Real qi2qv_sublim_tend,
+Real qv2qi_vapdep_tend, Real qv2qi_nucleat_tend, Real ni_nucleat_tend, Real ni_selfcollect_tend, Real ni_sublim_tend, Real qc2qi_berg_tend, Real exner, Real latent_heat_sublim, Real latent_heat_fusion,
+bool do_predict_nc, bool log_wetgrowth, Real dt, Real nmltratio, Real rho_qm_cloud, Real* th_atm, Real* qv,
+Real* qi, Real* ni, Real* qm, Real* bm, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EvapSublimatePrecipData
+struct EvapRainData
 {
   // Inputs
-  Real qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv;
+  Real qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, cld_frac_r, qv, qv_prev,
+    qv_sat_l, qv_sat_i, ab, abi, epsr, epsi_tot, t, t_prev, latent_heat_sublim, dqsdt, dt;
 
   //Outs
-  Real qrevp, nrevp;
+  Real qr2qv_evap_tend, nr_evap_tend;
 };
 
-void evaporate_sublimate_precip(EvapSublimatePrecipData& d);
+void evaporate_rain(EvapRainData& d);
 
 extern "C"{
 
-void evaporate_sublimate_precip_f( Real qr_incld, Real qc_incld, Real nr_incld, Real qitot_incld,
-Real lcldm, Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real* nrevp);
+void evaporate_rain_f( Real qr_incld, Real qc_incld, Real nr_incld, Real qi_incld,
+		       Real cld_frac_l, Real cld_frac_r, Real qv, Real qv_prev,
+		       Real qv_sat_l, Real qv_sat_i, Real ab, Real abi,
+		       Real epsr, Real epsi_tot, Real t, Real t_prev,
+		       Real latent_heat_sublim, Real dqsdt, Real dt,
+		       Real* qr2qv_evap_tend, Real* nr_evap_tend);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -824,23 +798,23 @@ Real lcldm, Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real
 struct P3UpdatePrognosticLiqData
 {
   // Inputs
-  Real qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf;
+  Real qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend;
 
-  bool log_predictNc;
+  bool do_predict_nc;
 
-  Real inv_rho, exner, xxlv, dt;
+  Real inv_rho, exner, latent_heat_vapor, dt;
 
   // In/outs
-  Real th, qv, qc, nc, qr, nr;
+  Real th_atm, qv, qc, nc, qr, nr;
 };
 
 void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
 
 extern "C"{
 
-void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real ncautr,
-Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
-Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+void update_prognostic_liquid_f( Real qc2qr_accret_tend, Real nc_accret_tend, Real qc2qr_autoconv_tend, Real nc2nr_autoconv_tend, Real ncautr,
+Real nc_selfcollect_tend, Real  qr2qv_evap_tend, Real nr_evap_tend, Real nr_selfcollect_tend , bool do_predict_nc,
+Real inv_rho, Real exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
 }
 
@@ -849,80 +823,80 @@ Real* qc, Real* nc, Real* qr, Real* nr);
 struct IceDepSublimationData
 {
   //Inputs
-  Real qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv;
+  Real qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv;
 
   //Outs
-  Real qidep, qisub, nisub, qiberg;
+  Real qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
 };
 
 void ice_deposition_sublimation(IceDepSublimationData& d);
 
 extern "C"{
-void ice_deposition_sublimation_f( Real qitot_incld, Real nitot_incld, Real t, Real qvs, Real qvi,
-Real epsi, Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
+void ice_deposition_sublimation_f( Real qi_incld, Real ni_incld, Real T_atm, Real qv_sat_l, Real qv_sat_i,
+Real epsi, Real abi, Real qv, Real* qv2qi_vapdep_tend, Real* qi2qv_sublim_tend, Real* ni_sublim_tend, Real* qc2qi_berg_tend);
 }
 
 struct IceCldliqCollectionData
 {
   // Inputs
-  Real rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld;
-  Real nitot_incld, nc_incld;
+  Real rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld;
+  Real ni_incld, nc_incld;
 
   // Outputs
-  Real qccol, nccol, qcshd, ncshdc;
+  Real qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc;
 
 };
 void ice_cldliq_collection(IceCldliqCollectionData& d);
 
 extern "C" {
 
-void ice_cldliq_collection_f(Real rho, Real temp, Real rhofaci, Real f1pr04,
-                             Real qitot_incld,Real qc_incld, Real nitot_incld, Real nc_incld,
-                             Real* qccol, Real* nccol, Real* qcshd, Real* ncshdc);
+void ice_cldliq_collection_f(Real rho, Real temp, Real rhofaci, Real table_val_qc2qi_collect,
+                             Real qi_incld,Real qc_incld, Real ni_incld, Real nc_incld,
+                             Real* qc2qi_collect_tend, Real* nc_collect_tend, Real* qc2qr_ice_shed_tend, Real* ncshdc);
 }
 
 struct IceRainCollectionData
 {
   // Inputs
-  Real rho, temp, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld;
-  Real nitot_incld, qr_incld;
+  Real rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld;
+  Real ni_incld, qr_incld;
 
   // Outputs
-  Real qrcol, nrcol;
+  Real qr2qi_collect_tend, nr_collect_tend;
 
 };
 void ice_rain_collection(IceRainCollectionData& d);
 
 extern "C" {
 
-void ice_rain_collection_f(Real rho, Real temp, Real rhofaci, Real logn0r, Real f1pr07, Real f1pr08,
-                         Real qitot_incld, Real nitot_incld, Real qr_incld, Real* qrcol, Real* nrcol);
+void ice_rain_collection_f(Real rho, Real temp, Real rhofaci, Real logn0r, Real table_val_nr_collect, Real table_val_qr2qi_collect,
+                         Real qi_incld, Real ni_incld, Real qr_incld, Real* qr2qi_collect_tend, Real* nr_collect_tend);
 
 }
 
 struct IceSelfCollectionData
 {
   // Inputs
-  Real rho, rhofaci, f1pr03, eii, qirim_incld;
-  Real qitot_incld, nitot_incld;
+  Real rho, rhofaci, table_val_ni_self_collect, eii, qm_incld;
+  Real qi_incld, ni_incld;
 
   // Outputs
-  Real nislf;
+  Real ni_selfcollect_tend;
 
 };
 void ice_self_collection(IceSelfCollectionData& d);
 
 extern "C" {
 
-void ice_self_collection_f(Real rho, Real rhofaci, Real f1pr03, Real eii,
-                           Real qirim_incld, Real qitot_incld, Real nitot_incld, Real* nislf);
+void ice_self_collection_f(Real rho, Real rhofaci, Real table_val_ni_self_collect, Real eii,
+                           Real qm_incld, Real qi_incld, Real ni_incld, Real* ni_selfcollect_tend);
 
 }
 
 struct IceRelaxationData
 {
   // Inputs
-  Real rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld;
+  Real rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld, ni_incld;
 
   // Outputs
   Real epsi, epsi_tot;
@@ -930,8 +904,8 @@ struct IceRelaxationData
 void ice_relaxation_timescale(IceRelaxationData& d);
 
 extern "C" {
- void ice_relaxation_timescale_f(Real rho, Real temp, Real rhofaci, Real f1pr05, Real f1pr14,
-                                 Real dv, Real mu, Real sc, Real qitot_incld, Real nitot_incld,
+ void ice_relaxation_timescale_f(Real rho, Real temp, Real rhofaci, Real table_val_qi2qr_melting, Real table_val_qi2qr_vent_melt,
+                                 Real dv, Real mu, Real sc, Real qi_incld, Real ni_incld,
                                  Real* epsi, Real* epsi_tot);
 }
 
@@ -958,43 +932,43 @@ void calc_liq_relaxation_timescale_f(Real rho, Real f1r, Real f2r, Real dv,
 struct IceNucleationData
 {
   // Inputs
-  Real temp, inv_rho, nitot, naai, supi, odt;
+  Real temp, inv_rho, ni, ni_activated, qv_supersat_i, inv_dt;
 
-  bool log_predictNc;
+  bool do_predict_nc;
 
   // Outputs
-  Real qinuc, ninuc;
+  Real qv2qi_nucleat_tend, ni_nucleat_tend;
 };
 void ice_nucleation(IceNucleationData& d);
 
 extern "C" {
-void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
-                      Real supi, Real odt, bool log_predictNc,
-                      Real* qinuc, Real* ninuc);
+void ice_nucleation_f(Real temp, Real inv_rho, Real ni, Real ni_activated,
+                      Real qv_supersat_i, Real inv_dt, bool do_predict_nc,
+                      Real* qv2qi_nucleat_tend, Real* ni_nucleat_tend);
 }
 
 struct IceWetGrowthData
 {
   // Inputs
-  Real rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld;
-  Real qitot_incld, nitot_incld, qr_incld;
+  Real rho, temp, pres, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor, latent_heat_fusion, dv, kap, mu, sc, qv, qc_incld;
+  Real qi_incld, ni_incld, qr_incld;
 
   // In/Outs
   bool log_wetgrowth;
 
-  Real qrcol, qccol, qwgrth, nrshdr, qcshd;
+  Real qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend;
 };
 void ice_cldliq_wet_growth(IceWetGrowthData& d);
 
 extern "C" {
-void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real f1pr05,
-                             Real f1pr14, Real xxlv, Real xlf, Real dv,
+void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real table_val_qi2qr_melting,
+                             Real table_val_qi2qr_vent_melt, Real latent_heat_vapor, Real latent_heat_fusion, Real dv,
                              Real kap, Real mu, Real sc, Real qv, Real qc_incld,
-                             Real qitot_incld, Real nitot_incld, Real qr_incld, bool* log_wetgrowth,
-                             Real* qrcol, Real* qccol, Real* qwgrth, Real* nrshdr, Real* qcshd);
+                             Real qi_incld, Real ni_incld, Real qr_incld, bool* log_wetgrowth,
+                             Real* qr2qi_collect_tend, Real* qc2qi_collect_tend, Real* qc_growth_rate, Real* nr_ice_shed_tend, Real* qc2qr_ice_shed_tend);
 }
 
-struct LatentHeatData
+struct LatentHeatData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 3;
 
@@ -1005,15 +979,9 @@ struct LatentHeatData
   Real* v, *s, *f;
 
   LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
-  LatentHeatData(const LatentHeatData& rhs);
-  LatentHeatData& operator=(const LatentHeatData& rhs);
 
-  void transpose();
-  void init_ptrs();
-
-  // Internals
-  Int m_ni, m_nk, m_total;
-  std::vector<Real> m_data;
+  PTD_DATA_COPY_CTOR(LatentHeatData, 4);
+  PTD_ASSIGN_OP(LatentHeatData, 4, its, ite, kts, kte);
 };
 void get_latent_heat(LatentHeatData& d);
 
@@ -1021,32 +989,25 @@ extern "C" {
 void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
 }
 
-struct CheckValuesData
+struct CheckValuesData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 2;
 
   // Inputs
-   Int kts, kte;
-   Int timestepcount, source_ind;
+  Int kts, kte;
+  Int timestepcount, source_ind;
 
-   bool force_abort;
+  bool force_abort;
 
-   Real *qv, *temp, *col_loc;
+  Real *qv, *temp, *col_loc;
 
-   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
-                   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_);
 
   // deep copy
+  PTD_DATA_COPY_CTOR(CheckValuesData, 5);
+  PTD_ASSIGN_OP(CheckValuesData, 5, kts, kte, timestepcount, source_ind, force_abort);
 
-  CheckValuesData(const CheckValuesData& rhs);
-
-  Int nk() const { return m_nk; }
-
-  private:
-  // Internals
-
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 void check_values(CheckValuesData& d);
 
@@ -1058,53 +1019,47 @@ void check_values_f(Real* Qv, Real* temp, Int kstart, Int kend,
 struct IncloudMixingData
 {
   // Inputs
-  Real qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm;
+  Real qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
 
   // Outputs
-  Real qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld;
+  Real qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld;
 };
 void calculate_incloud_mixingratios(IncloudMixingData& d);
 
 extern "C" {
-void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, Real nc, Real nr, Real nitot, Real birim,
-                                      Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
-                                      Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
-                                      Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
+void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qi, Real qm, Real nc, Real nr, Real ni, Real bm,
+                                      Real inv_cld_frac_l, Real inv_cld_frac_i, Real inv_cld_frac_r,
+                                      Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld,
+                                      Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart1Data
+struct P3MainPart1Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 39;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
-  bool log_predictNc;
+  bool do_predict_nc;
   Real dt;
-  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *xxlv, *xxls, *xlf;
+  Real* pres, *dpres, *dz, *nc_nuceat_tend, *exner, *inv_exner, *inv_cld_frac_l, *inv_cld_frac_i, *inv_cld_frac_r, *latent_heat_vapor, *latent_heat_sublim, *latent_heat_fusion;
 
   // In/out
-  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci,
-    *acn, *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *qc_incld, *qr_incld, *qitot_incld,
-    *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld;
+  Real* T_atm, *rho, *inv_rho, *qv_sat_l, *qv_sat_i, *qv_supersat_i, *rhofacr, *rhofaci,
+    *acn, *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *qc_incld, *qr_incld, *qi_incld,
+    *qm_incld, *nc_incld, *nr_incld, *ni_incld, *bm_incld;
 
   // Output
-  bool log_nucleationPossible, log_hydrometeorsPresent;
+  bool is_nucleat_possible, is_hydromet_present;
 
   P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                    bool log_predictNc_, Real dt_,
-                    const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart1Data(const P3MainPart1Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart1Data, 7);
+  PTD_ASSIGN_OP(P3MainPart1Data, 7, kts, kte, kbot, ktop, kdir, do_predict_nc, dt);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part1(P3MainPart1Data& d);
@@ -1113,50 +1068,44 @@ extern "C" {
 
 void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  bool log_predictNc,
+  bool do_predict_nc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
-  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci,
-  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
-  Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
-  bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
+  Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
+  Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
+  Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
+  bool* is_nucleat_possible, bool* is_hydromet_present);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart2Data
+struct P3MainPart2Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 62;
+  static constexpr size_t NUM_ARRAYS = 64;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
-  bool log_predictNc;
-  Real dt, odt;
-  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *naai, *qc_relvar, *icldm, *lcldm, *rcldm;
+  bool do_predict_nc;
+  Real dt, inv_dt;
+  Real* pres, *dpres, *dz, *nc_nuceat_tend, *exner, *inv_exner, *inv_cld_frac_l, *inv_cld_frac_i, *inv_cld_frac_r, *ni_activated, *inv_qc_relvar, *cld_frac_i, *cld_frac_l, *cld_frac_r, *qv_prev, *t_prev;
 
   // In/out
-  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci, *acn,
-    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls, *xlf, *qc_incld, *qr_incld,
-    *qitot_incld, *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
-    *cdistr, *mu_r, *lamr, *logn0r, *cmeiout, *prain, *nevapr, *prer_evap, *vap_liq_exchange,
+  Real* T_atm, *rho, *inv_rho, *qv_sat_l, *qv_sat_i, *qv_supersat_i, *rhofacr, *rhofaci, *acn,
+    *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim, *latent_heat_fusion, *qc_incld, *qr_incld,
+    *qi_incld, *qm_incld, *nc_incld, *nr_incld, *ni_incld, *bm_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
+    *cdistr, *mu_r, *lamr, *logn0r, *qv2qi_depos_tend, *precip_total_tend, *nevapr, *qr_evap_tend, *vap_liq_exchange,
     *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
 
-  bool log_hydrometeorsPresent;
+  bool is_hydromet_present;
 
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     bool log_predictNc_, Real dt_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart2Data(const P3MainPart2Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart2Data, 7);
+  PTD_ASSIGN_OP(P3MainPart2Data, 9, kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, is_hydromet_present);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part2(P3MainPart2Data& d);
@@ -1164,45 +1113,39 @@ void p3_main_part2(P3MainPart2Data& d);
 extern "C" {
 
 void p3_main_part2_f(
-  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
-  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
-  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
-  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
-  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
-  Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
-  Real* prctot, bool* log_hydrometeorsPresent);
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, Real dt, Real inv_dt,
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
+  Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
+  Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
+  Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
+  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* is_hydromet_present);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart3Data
+struct P3MainPart3Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 32;
+  static constexpr size_t NUM_ARRAYS = 33;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
-  Real* exner, *lcldm, *rcldm;
+  Real* exner, *cld_frac_l, *cld_frac_r, *cld_frac_i;
 
   // In/out
   Real* rho, *inv_rho, *rhofaci,
-    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls,
+    *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
     *mu_c, *nu, *lamc, *mu_r,
     *lamr, *vap_liq_exchange,
-    *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *diag_rhoi, *diag_ze, *diag_effc;
+    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_rad_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_rad_qc;
 
-  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
-  // deep copy
-  P3MainPart3Data(const P3MainPart3Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart3Data, 5);
+  PTD_ASSIGN_OP(P3MainPart3Data, 5, kts, kte, kbot, ktop, kdir);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return dim1; }
 };
 
 void p3_main_part3(P3MainPart3Data& d);
@@ -1211,90 +1154,37 @@ extern "C" {
 
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
-  Real* exner, Real* lcldm, Real* rcldm,
-  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i, 
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
-  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
+  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_rad_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_rad_qc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainData
+struct P3MainData : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 36;
-  static constexpr size_t NUM_INPUT_ARRAYS = 20;
+  static constexpr size_t NUM_ARRAYS = 38;
+  static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
   // Inputs
   Int its, ite, kts, kte, it;
-  Real* pres, *dzq, *ncnuc, *naai, *pdel, *exner, *icldm, *lcldm, *rcldm, *qc_relvar;
+  Real* pres, *dz, *nc_nuceat_tend, *ni_activated, *dpres, *exner, *cld_frac_i, *cld_frac_l, *cld_frac_r, *inv_qc_relvar, *qv_prev, *t_prev;
   Real dt;
-  bool log_predictNc;
+  bool do_predict_nc;
 
   // In/out
-  Real* qc, *nc, *qr, *nr, *qitot, *qirim, *nitot, *birim, *qv, *th;
+  Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
 
   // Out
-  Real *diag_effc, *diag_effi, *diag_rhoi, *mu_c, *lamc, *cmeiout, *prain, *nevapr,
-       *prer_evap, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
-       *rflx, *sflx, *prt_liq, *prt_sol;
+  Real *diag_eff_rad_qc, *diag_eff_rad_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
+       *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
+       *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
-  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
-             const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
-
-  template <util::TransposeDirection::Enum D>
-  void transpose()
-  {
-    P3MainData d_trans(*this);
-
-    util::transpose<D>(pres, d_trans.pres, m_ni, m_nk);
-    util::transpose<D>(dzq, d_trans.dzq, m_ni, m_nk);
-    util::transpose<D>(ncnuc, d_trans.ncnuc, m_ni, m_nk);
-    util::transpose<D>(naai, d_trans.naai, m_ni, m_nk);
-    util::transpose<D>(pdel, d_trans.pdel, m_ni, m_nk);
-    util::transpose<D>(exner, d_trans.exner, m_ni, m_nk);
-    util::transpose<D>(icldm, d_trans.icldm, m_ni, m_nk);
-    util::transpose<D>(lcldm, d_trans.lcldm, m_ni, m_nk);
-    util::transpose<D>(rcldm, d_trans.rcldm, m_ni, m_nk);
-    util::transpose<D>(qc_relvar, d_trans.qc_relvar, m_ni, m_nk);
-    util::transpose<D>(qc, d_trans.qc, m_ni, m_nk);
-    util::transpose<D>(nc, d_trans.nc, m_ni, m_nk);
-    util::transpose<D>(qr, d_trans.qr, m_ni, m_nk);
-    util::transpose<D>(nr, d_trans.nr, m_ni, m_nk);
-    util::transpose<D>(qitot, d_trans.qitot, m_ni, m_nk);
-    util::transpose<D>(qirim, d_trans.qirim, m_ni, m_nk);
-    util::transpose<D>(nitot, d_trans.nitot, m_ni, m_nk);
-    util::transpose<D>(birim, d_trans.birim, m_ni, m_nk);
-    util::transpose<D>(qv, d_trans.qv, m_ni, m_nk);
-    util::transpose<D>(th, d_trans.th, m_ni, m_nk);
-    util::transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
-    util::transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
-    util::transpose<D>(diag_rhoi, d_trans.diag_rhoi, m_ni, m_nk);
-    util::transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
-    util::transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
-    util::transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
-    util::transpose<D>(prain, d_trans.prain, m_ni, m_nk);
-    util::transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
-    util::transpose<D>(prer_evap, d_trans.prer_evap, m_ni, m_nk);
-    util::transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
-    util::transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
-    util::transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
-    util::transpose<D>(rflx, d_trans.rflx, m_ni, m_nk+1);
-    util::transpose<D>(sflx, d_trans.sflx, m_ni, m_nk+1);
-
-    *this = std::move(d_trans);
-  }
-
-  // deep copy
-  P3MainData(const P3MainData& rhs);
-
-  P3MainData& operator=(P3MainData&&) = default;
-
-  Int nt() const { return m_nt; }
-
- private:
-  // Internals
-  Int m_ni, m_nk, m_nt;
-  std::vector<Real> m_data;
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_);
+  
+  PTD_DATA_COPY_CTOR(P3MainData, 7);
+  PTD_ASSIGN_OP(P3MainData, 7, its, ite, kts, kte, it, dt, do_predict_nc);
 };
 
 void p3_main(P3MainData& d);
@@ -1302,31 +1192,14 @@ void p3_main(P3MainData& d);
 extern "C" {
 
 void p3_main_f(
-  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt,
-  Real* qitot, Real* qirim, Real* nitot, Real* birim, Real* pres, Real* dzq,
-  Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq,
-  Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_effc,
-  Real* diag_effi, Real* diag_rhoi, bool log_predictNc, Real* pdel, Real* exner,
-  Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx,
-  Real* sflx, Real* rcldm, Real* lcldm, Real* icldm, Real* mu_c, Real* lamc,
-  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// BFB math stuff
-///////////////////////////////////////////////////////////////////////////////
-
-extern "C" {
-
-Real cxx_pow(Real base, Real exp);
-Real cxx_sqrt(Real base);
-Real cxx_cbrt(Real base);
-Real cxx_gamma(Real input);
-Real cxx_log(Real input);
-Real cxx_log10(Real input);
-Real cxx_exp(Real input);
-Real cxx_tanh(Real input);
-
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm, Real* qv, Real dt,
+  Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
+  Real* nc_nuceat_tend, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
+  Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_rad_qc,
+  Real* diag_eff_rad_qi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
+  Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
+  Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 }
 
 }  // namespace p3

@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -30,7 +28,7 @@ static void run_phys()
 static void run_bfb()
 {
   // This is the threshold for whether the qc and qr cloud mixing ratios are
-  // large enough to affect the warm-phase process rates qcacc and ncacc.
+  // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
   constexpr Scalar rho1 = 4.056E-03, rho2 = 6.852E-02,
@@ -45,7 +43,7 @@ static void run_bfb()
                    nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
 
   DropletSelfCollectionData droplet_self_coll_data[max_pack_size] = {
-    // rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf
+    // rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend, nc_selfcollect_tend
     {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small},
     {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small},
     {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small},
@@ -84,24 +82,24 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, mu_c, nu, ncautc;
+    Spack rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      rho[s]      = device_data(vs).rho;
-      inv_rho[s]  = device_data(vs).inv_rho;
-      qc_incld[s] = device_data(vs).qc_incld;
-      mu_c[s]     = device_data(vs).mu_c;
-      nu[s]       = device_data(vs).nu;
-      ncautc[s]   = device_data(vs).ncautc;
+      rho[s]                   = device_data(vs).rho;
+      inv_rho[s]               = device_data(vs).inv_rho;
+      qc_incld[s]              = device_data(vs).qc_incld;
+      mu_c[s]                  = device_data(vs).mu_c;
+      nu[s]                    = device_data(vs).nu;
+      nc2nr_autoconv_tend[s]   = device_data(vs).nc2nr_autoconv_tend;
     }
 
-    Spack ncslf{0.0};
+    Spack nc_selfcollect_tend{0.0};
 
-    Functions::droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc,
-                                       ncslf);
+    Functions::droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend,
+                                       nc_selfcollect_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      device_data(vs).ncslf  = ncslf[s];
+      device_data(vs).nc_selfcollect_tend  = nc_selfcollect_tend[s];
     }
   });
 
@@ -110,7 +108,7 @@ static void run_bfb()
 
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(droplet_self_coll_data[s].ncslf == host_data[s].ncslf);
+    REQUIRE(droplet_self_coll_data[s].nc_selfcollect_tend == host_data[s].nc_selfcollect_tend);
   }
 }
 

@@ -1,20 +1,22 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include <string>
-#include <set>
-
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "ekat/scream_assert.hpp"
-#include "ekat/mpi/scream_comm.hpp"
-#include "ekat/util/scream_factory.hpp"
+
+#include "ekat/ekat_assert.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/scream_std_enable_shared_from_this.hpp"
-#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
+
+#include <string>
+#include <set>
 
 namespace scream
 {
@@ -44,10 +46,11 @@ namespace scream
  *     input field to achieve this result.
  */
 
-class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using device_type = DefaultDevice; // may need to template class on this
+  using TimeStamp = util::TimeStamp;
 
   virtual ~AtmosphereProcess () = default;
 
@@ -61,7 +64,7 @@ public:
   virtual std::string name () const = 0;
 
   // The communicator associated with this atm process
-  virtual const Comm& get_comm () const = 0;
+  virtual const ekat::Comm& get_comm () const = 0;
 
   // Give the grids manager to the process, so it can grab its grid
   // IMPORTANT: the process is *expected* to have valid field ids for
@@ -77,14 +80,25 @@ public:
   //     be running at the same time, or whether each process can assume
   //     that no other process is currently inside a call to 'run'.
   //   - the finalize method makes sure, if necessary, that all resources are freed.
+  // NOTE: You don't override these methods. Override the protected methods
+  // NOTE: initialize_impl, run_impl, and finalize_impl instead.
   // The initialize/finalize method should be called just once per simulation (should
   // we enforce that? It depends on what resources we init/free, and how), while the
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize (const util::TimeStamp& t0) = 0;
-  virtual void run        (const Real dt) = 0;
-  virtual void finalize   (/* what inputs? */) = 0;
+  void initialize (const TimeStamp& t0) {
+    t_ = t0;
+    initialize_impl(t_);
+  }
+  void run        (const Real dt) {
+    // Call the subclass's run method and update it afterward.
+    run_impl(dt);
+    t_ += dt;
+  }
+  void finalize   (/* what inputs? */) {
+    finalize_impl(/* what inputs? */);
+  }
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
@@ -96,13 +110,13 @@ public:
   //       as provider/customer. The group is just a 'design layer', and the stored processes
   //       are the actuall providers/customers.
   void set_required_field (const Field<const Real, device_type>& f) {
-    error::runtime_check(requires(f.get_header().get_identifier()),
+    ekat::error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real, device_type>& f) {
-    error::runtime_check(computes(f.get_header().get_identifier()),
+    ekat::error::runtime_check(computes(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not compute this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_computed_field_impl (f);
@@ -117,10 +131,25 @@ public:
   virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
 
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
-  bool requires (const FieldIdentifier& id) const { return util::contains(get_required_fields(),id); }
-  bool computes (const FieldIdentifier& id) const { return util::contains(get_computed_fields(),id); }
+  bool requires (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
+  bool computes (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
 
 protected:
+
+  // Override this method to initialize your subclass.
+  virtual void initialize_impl(const TimeStamp& t0) = 0;
+
+  // Override this method to define how your subclass runs forward one step
+  // (of size dt). This method is called before the timestamp is updated.
+  virtual void run_impl(const Real dt) = 0;
+
+  // Override this method to finalize your subclass.
+  virtual void finalize_impl(/* what inputs? */) = 0;
+
+  // This provides access to this process's timestamp.
+  const TimeStamp& timestamp() const {
+    return t_;
+  }
 
   void add_me_as_provider (const Field<Real, device_type>& f) {
     f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
@@ -132,10 +161,13 @@ protected:
 
   virtual void set_required_field_impl (const Field<const Real, device_type>& f) = 0;
   virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
-};
 
-// Forward declarations
-class ParameterList;
+private:
+
+  // This process's copy of the timestamp, which is set on initialization and
+  // updated during stepping.
+  TimeStamp t_;
+};
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
@@ -145,15 +177,15 @@ class ParameterList;
 //          This is *necessary* until we can safely switch to std::enable_shared_from_this.
 //          For more details, see the comments at the top of util/scream_std_enable_shared_from_this.hpp.
 using AtmosphereProcessFactory =
-    util::Factory<AtmosphereProcess,
-                  util::CaseInsensitiveString,
+    ekat::Factory<AtmosphereProcess,
+                  ekat::CaseInsensitiveString,
                   std::shared_ptr<AtmosphereProcess>,
-                  const Comm&,const ParameterList&>;
+                  const ekat::Comm&,const ekat::ParameterList&>;
 
 // Create an atmosphere process, and correctly set up the (weak) pointer to self.
 template <typename AtmProcType>
 inline std::shared_ptr<AtmosphereProcess>
-create_atmosphere_process (const Comm& comm, const ParameterList& p) {
+create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
   auto ptr = std::make_shared<AtmProcType>(comm,p);
   ptr->setSelfPointer(ptr);
   return ptr;

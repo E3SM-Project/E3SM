@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -29,7 +27,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
   static void run_rain_self_collection_bfb_tests(){
 
     RainSelfCollectionData dc[max_pack_size] = {
-      //  rho, qr_incld, nr_incld, nrslf
+      //  rho, qr_incld, nr_incld, nr_selfcollect_tend
       {1.060E+00, 1.354E-03, 1.401E+04, 0.000E+00},
       {1.136E+00, 1.319E-04, 4.210E+03, 0.000E+00},
       {1.166E+00, 5.339E-03, 1.804E+04, 0.000E+00},
@@ -68,22 +66,22 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho_local, qr_incld_local, nr_incld_local, nrslf_local;
+      Spack rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         rho_local[s]      = dc_device(vs).rho;
         qr_incld_local[s] = dc_device(vs).qr_incld;
         nr_incld_local[s] = dc_device(vs).nr_incld;
-        nrslf_local[s]    = dc_device(vs).nrslf;
+        nr_selfcollect_tend_local[s]    = dc_device(vs).nr_selfcollect_tend;
       }
 
-      Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
+      Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        dc_device(vs).rho      = rho_local[s];
-        dc_device(vs).qr_incld = qr_incld_local[s];
-        dc_device(vs).nr_incld = nr_incld_local[s];
-        dc_device(vs).nrslf    = nrslf_local[s];
+        dc_device(vs).rho                  = rho_local[s];
+        dc_device(vs).qr_incld             = qr_incld_local[s];
+        dc_device(vs).nr_incld             = nr_incld_local[s];
+        dc_device(vs).nr_selfcollect_tend  = nr_selfcollect_tend_local[s];
       }
     });
 
@@ -92,10 +90,10 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(dc[s].rho      == dc_host(s).rho);
-      REQUIRE(dc[s].qr_incld == dc_host(s).qr_incld);
-      REQUIRE(dc[s].nr_incld == dc_host(s).nr_incld);
-      REQUIRE(dc[s].nrslf    == dc_host(s).nrslf);
+      REQUIRE(dc[s].rho                 == dc_host(s).rho);
+      REQUIRE(dc[s].qr_incld            == dc_host(s).qr_incld);
+      REQUIRE(dc[s].nr_incld            == dc_host(s).nr_incld);
+      REQUIRE(dc[s].nr_selfcollect_tend == dc_host(s).nr_selfcollect_tend);
     }
   }
 

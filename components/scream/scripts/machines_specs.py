@@ -33,12 +33,12 @@ MACHINE_METADATA = {
                   48,
                   48,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
-    "waterman" : (["module purge", "module load devpack/latest/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-waterman/bin:$PATH"],
+    "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7W",
-                  80,
+                  40,
                   4,
-                  ""),
+                  "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "white"    : (["module purge", "module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3 cmake/3.18.0", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7G",
@@ -173,11 +173,12 @@ def setup_mach_env (machine):
             # BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
             # }
             # Which breaks the assumption that each env var is on one line.
+            # On some systems, this variable seems to have a different name,
+            # and there can potentially be other BASH_FUNC_blah variables.
             # To get around this, discard lines that either do not contain '=',
-            # or that start with BASH_FUNC_module.
-            if item.find("BASH_FUNC_module") != -1 or item.find("=") == -1:
+            # or that start with BASH_FUNC_.
+            if item.find("BASH_FUNC_") != -1 or item.find("=") == -1:
                 continue
-
 
             # 2 means only 1st occurence will cause a split.
             # Just in case some env var value contains '='

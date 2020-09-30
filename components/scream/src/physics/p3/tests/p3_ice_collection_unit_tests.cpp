@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -29,15 +27,15 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
   static void run_ice_cldliq_bfb()
   {
     // Read in tables
-    view_2d_table vn_table;
-    view_2d_table vm_table;
-    view_2d_table revap_table;
-    view_1d_table mu_r_table; view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
+    view_2d_table vn_table_vals;
+    view_2d_table vm_table_vals;
+    view_2d_table revap_table_vals;
+    view_1d_table mu_r_table_vals; view_dnu_table dnu;
+    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Load some lookup inputs, need at least one per pack value
     IceCldliqCollectionData cldliq[max_pack_size] = {
-      //  rho      temp      rhofaci     f1pr04     qitot      qc           nitot      nc
+      //  rho      temp      rhofaci     table_val_qc2qi_collect     qi      qc           ni      nc
       {4.056E-03, 4.02E+01, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E+04, 9.952E+05},
       {6.852E-02, 5.01E+01, 8.852E-01, 0.374E+00, 1.221E-15, 4.100E-15, 9.558E+04, 9.952E+05},
       {8.852E-02, 6.00E+01, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E+04, 9.952E+05},
@@ -75,33 +73,33 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld;
+      Spack rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, nc_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]            = cldliq_device(vs).rho;
-        temp[s]           = cldliq_device(vs).temp;
-        rhofaci[s]        = cldliq_device(vs).rhofaci;
-        f1pr04[s]         = cldliq_device(vs).f1pr04;
-        qitot_incld[s]    = cldliq_device(vs).qitot_incld;
-        qc_incld[s]       = cldliq_device(vs).qc_incld;
-        nitot_incld[s]    = cldliq_device(vs).nitot_incld;
-        nc_incld[s]       = cldliq_device(vs).nc_incld;
+        rho[s]                     = cldliq_device(vs).rho;
+        temp[s]                    = cldliq_device(vs).temp;
+        rhofaci[s]                 = cldliq_device(vs).rhofaci;
+        table_val_qc2qi_collect[s] = cldliq_device(vs).table_val_qc2qi_collect;
+        qi_incld[s]                = cldliq_device(vs).qi_incld;
+        qc_incld[s]                = cldliq_device(vs).qc_incld;
+        ni_incld[s]                = cldliq_device(vs).ni_incld;
+        nc_incld[s]                = cldliq_device(vs).nc_incld;
       }
 
-      Spack qccol{0.0};
-      Spack nccol{0.0};
-      Spack qcshd{0.0};
+      Spack qc2qi_collect_tend{0.0};
+      Spack nc_collect_tend{0.0};
+      Spack qc2qr_ice_shed_tend{0.0};
       Spack ncshdc{0.0};
 
-      Functions::ice_cldliq_collection(rho, temp, rhofaci, f1pr04, qitot_incld,
-                                       qc_incld, nitot_incld, nc_incld,
-                                       qccol, nccol, qcshd, ncshdc);
+      Functions::ice_cldliq_collection(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld,
+                                       qc_incld, ni_incld, nc_incld,
+                                       qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        cldliq_device(vs).qccol  = qccol[s];
-        cldliq_device(vs).nccol  = nccol[s];
-        cldliq_device(vs).qcshd  = qcshd[s];
-        cldliq_device(vs).ncshdc = ncshdc[s];
+        cldliq_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
+        cldliq_device(vs).nc_collect_tend     = nc_collect_tend[s];
+        cldliq_device(vs).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[s];
+        cldliq_device(vs).ncshdc              = ncshdc[s];
       }
     });
 
@@ -110,10 +108,10 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(cldliq[s].qccol   == cldliq_host(s).qccol);
-      REQUIRE(cldliq[s].nccol   == cldliq_host(s).nccol);
-      REQUIRE(cldliq[s].qcshd   == cldliq_host(s).qcshd);
-      REQUIRE(cldliq[s].ncshdc  == cldliq_host(s).ncshdc);
+      REQUIRE(cldliq[s].qc2qi_collect_tend   == cldliq_host(s).qc2qi_collect_tend);
+      REQUIRE(cldliq[s].nc_collect_tend      == cldliq_host(s).nc_collect_tend);
+      REQUIRE(cldliq[s].qc2qr_ice_shed_tend  == cldliq_host(s).qc2qr_ice_shed_tend);
+      REQUIRE(cldliq[s].ncshdc               == cldliq_host(s).ncshdc);
     }
   }
 
@@ -127,7 +125,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     using KTH = KokkosTypes<HostDevice>;
 
     IceRainCollectionData rain[max_pack_size] = {
-      //  rho      temp      rhofaci     logn0r     f1pr07    f1pr08        qitot      nitot    qr (required)
+      //  rho      temp      rhofaci     logn0r     table_val_nr_collect    table_val_qr2qi_collect        qi      ni    qr (required)
       {4.056E-03, 4.02E+01, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E-04, 9.952E+02, 5.100E-03},
       {6.852E-02, 5.01E+01, 8.852E-01, 0.374E+00, 1.221E-13, 4.100E-03, 9.558E-15, 9.952E+02, 5.100E-15},
       {8.852E-02, 6.00E+01, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E-04, 9.952E+02, 5.100E-03},
@@ -165,28 +163,28 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho, temp, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld, nitot_incld, qr_incld;
+      Spack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = rain_device(vs).rho;
-        temp[s]        = rain_device(vs).temp;
-        rhofaci[s]     = rain_device(vs).rhofaci;
-        logn0r[s]      = rain_device(vs).logn0r;
-        f1pr07[s]      = rain_device(vs).f1pr07;
-        f1pr08[s]      = rain_device(vs).f1pr08;
-        qitot_incld[s] = rain_device(vs).qitot_incld;
-        nitot_incld[s] = rain_device(vs).nitot_incld;
-        qr_incld[s]    = rain_device(vs).qr_incld;
+        rho[s]                     = rain_device(vs).rho;
+        temp[s]                    = rain_device(vs).temp;
+        rhofaci[s]                 = rain_device(vs).rhofaci;
+        logn0r[s]                  = rain_device(vs).logn0r;
+        table_val_nr_collect[s]    = rain_device(vs).table_val_nr_collect;
+        table_val_qr2qi_collect[s] = rain_device(vs).table_val_qr2qi_collect;
+        qi_incld[s]                = rain_device(vs).qi_incld;
+        ni_incld[s]                = rain_device(vs).ni_incld;
+        qr_incld[s]                = rain_device(vs).qr_incld;
       }
 
-      Spack qrcol(0.0), nrcol(0.0);
-      Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,
-                                     qitot_incld, nitot_incld, qr_incld,
-                                     qrcol, nrcol);
+      Spack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
+      Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect,
+                                     qi_incld, ni_incld, qr_incld,
+                                     qr2qi_collect_tend, nr_collect_tend);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rain_device(vs).qrcol = qrcol[s];
-        rain_device(vs).nrcol = nrcol[s];
+        rain_device(vs).qr2qi_collect_tend = qr2qi_collect_tend[s];
+        rain_device(vs).nr_collect_tend    = nr_collect_tend[s];
       }
     });
 
@@ -195,8 +193,8 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(rain[s].qrcol == rain_host(s).qrcol);
-      REQUIRE(rain[s].nrcol == rain_host(s).nrcol);
+      REQUIRE(rain[s].qr2qi_collect_tend == rain_host(s).qr2qi_collect_tend);
+      REQUIRE(rain[s].nr_collect_tend    == rain_host(s).nr_collect_tend);
     }
   }
 
@@ -210,7 +208,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     using KTH = KokkosTypes<HostDevice>;
 
     IceSelfCollectionData self[max_pack_size] = {
-     //   rho      rhofaci    f1pr03     eii       qirim      qitot        nitot
+     //   rho      rhofaci    table_val_ni_self_collect     eii       qm      qi        ni
       {4.056E-03, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E-04, 9.952E+03},
       {6.852E-02, 8.852E-01, 0.374E+00, 1.221E-13, 0.000E+00, 9.558E-15, 9.952E+03},
       {8.852E-02, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E-04, 9.952E+03},
@@ -248,30 +246,30 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld;
+      Spack rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        f1pr03[s]      = self_device(vs).f1pr03;
-        eii[s]         = self_device(vs).eii;
-        qirim_incld[s] = self_device(vs).qirim_incld;
-        qitot_incld[s] = self_device(vs).qitot_incld;
-        nitot_incld[s] = self_device(vs).nitot_incld;
+        rho[s]                        = self_device(vs).rho;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_ni_self_collect[s]  = self_device(vs).table_val_ni_self_collect;
+        eii[s]                        = self_device(vs).eii;
+        qm_incld[s]                   = self_device(vs).qm_incld;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
       }
 
-      Spack nislf{0.0};
-      Functions::ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld,
-                                     nislf);
+      Spack ni_selfcollect_tend{0.0};
+      Functions::ice_self_collection(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld,
+                                     ni_selfcollect_tend);
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        self_device(vs).nislf = nislf[s];
+        self_device(vs).ni_selfcollect_tend = ni_selfcollect_tend[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(self[s].nislf == self_host(s).nislf);
+      REQUIRE(self[s].ni_selfcollect_tend == self_host(s).ni_selfcollect_tend);
     }
   }
 

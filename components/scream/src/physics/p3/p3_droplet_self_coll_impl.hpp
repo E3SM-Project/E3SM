@@ -17,7 +17,7 @@ void Functions<S,D>
 ::droplet_self_collection(
   const Spack&, const Spack&,
   const Spack& qc_incld, const Spack&,
-  const Spack&, const Spack&, Spack& ncslf,
+  const Spack&, const Spack&, Spack& nc_selfcollect_tend,
   const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
@@ -25,7 +25,7 @@ void Functions<S,D>
   const auto qc_not_small = (qc_incld >= qsmall) && context;
   if (qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
-    ncslf.set(qc_not_small, 0);
+    nc_selfcollect_tend.set(qc_not_small, 0);
   }
 }
 

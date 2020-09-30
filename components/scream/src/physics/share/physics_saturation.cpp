@@ -1,5 +1,6 @@
 #include "physics_saturation_impl.hpp"
-#include "ekat/scream_types.hpp"
+
+#include "share/scream_types.hpp"
 
 namespace scream {
 namespace physics {

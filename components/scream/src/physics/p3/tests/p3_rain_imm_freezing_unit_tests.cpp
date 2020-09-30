@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -30,11 +28,11 @@ static void run_phys()
 static void run_bfb()
 {
   // This is the threshold for whether the qc and qr cloud mixing ratios are
-  // large enough to affect the warm-phase process rates qcacc and ncacc.
+  // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
-  constexpr Scalar t_freezing = 0.9 * C::RainFrze,
-                   t_not_freezing = 2.0 * C::RainFrze;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
+                   t_not_freezing = 2.0 * C::T_rainfrz;
   constexpr Scalar qr_incld_small = 0.9 * qsmall;
   constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
   constexpr Scalar lamr1 = 0.1, lamr2 = 0.2, lamr3 = 0.3, lamr4 = 0.4;
@@ -42,7 +40,7 @@ static void run_bfb()
   constexpr Scalar cdistr1 = 0.25, cdistr2 = 0.5, cdistr3 = 0.75, cdistr4 = 1.0;
 
   RainImmersionFreezingData rain_imm_freezing_data[max_pack_size] = {
-    // t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti
+    // T_atm, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend
     {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_small},
     {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_small},
     {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_small},
@@ -81,25 +79,25 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, lamr, mu_r, cdistr, qr_incld;
+    Spack T_atm, lamr, mu_r, cdistr, qr_incld;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
+      T_atm[s]    = device_data(vs).T_atm;
       lamr[s]     = device_data(vs).lamr;
       mu_r[s]     = device_data(vs).mu_r;
       cdistr[s]   = device_data(vs).cdistr;
       qr_incld[s] = device_data(vs).qr_incld;
     }
 
-    Spack qrheti{0.0};
-    Spack nrheti{0.0};
+    Spack qr2qi_immers_freeze_tend{0.0};
+    Spack nr2ni_immers_freeze_tend{0.0};
 
-    Functions::rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld,
-                                       qrheti, nrheti);
+    Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
+                                       qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      device_data(vs).qrheti  = qrheti[s];
-      device_data(vs).nrheti  = nrheti[s];
+      device_data(vs).qr2qi_immers_freeze_tend  = qr2qi_immers_freeze_tend[s];
+      device_data(vs).nr2ni_immers_freeze_tend  = nr2ni_immers_freeze_tend[s];
     }
   });
 
@@ -108,8 +106,8 @@ static void run_bfb()
 
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(rain_imm_freezing_data[s].qrheti == host_data[s].qrheti);
-    REQUIRE(rain_imm_freezing_data[s].nrheti == host_data[s].nrheti);
+    REQUIRE(rain_imm_freezing_data[s].qr2qi_immers_freeze_tend == host_data[s].qr2qi_immers_freeze_tend);
+    REQUIRE(rain_imm_freezing_data[s].nr2ni_immers_freeze_tend == host_data[s].nr2ni_immers_freeze_tend);
   }
 
 }

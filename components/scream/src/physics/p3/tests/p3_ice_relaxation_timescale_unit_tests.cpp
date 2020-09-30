@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -29,7 +27,7 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
 
     IceRelaxationData self[max_pack_size] = {
 
-     // rho,     temp,    rhofaci,   f1pr05,    f1pr14,     dv,       mu,          sc,      qitot_incld, nitot_incld, epsi,epsi_tot
+     // rho,     temp,    rhofaci,   table_val_qi2qr_melting,    table_val_qi2qr_vent_melt,     dv,       mu,          sc,      qi_incld, ni_incld, epsi,epsi_tot
       {4.056E-03, 1.021E+01, 8.852E-01, 0.174E+00, 0.021E+00, 1.221E-14, 5.100E-03, 9.558E-04, 1.234E-03, 9.952E+03},
       {6.852E-02, 2.022E+01, 8.852E-01, 0.374E+00, 0.042E+00, 1.221E-13, 4.100E-03, 9.558E-04, 2.670E-03, 9.952E+03},
       {8.852E-02, 3.086E+01, 8.900E-01, 0.123E+00, 0.081E+00, 1.221E-12, 3.100E-03, 9.558E-04, 3.451E-03, 9.952E+03},
@@ -67,24 +65,24 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld;
+      Spack rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld, ni_incld;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        temp[s]        = self_device(vs).temp;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        f1pr05[s]      = self_device(vs).f1pr05;
-        f1pr14[s]      = self_device(vs).f1pr14;
-        dv[s]          = self_device(vs).dv;
-        mu[s]          = self_device(vs).mu;
-        sc[s]          = self_device(vs).sc;
-        qitot_incld[s] = self_device(vs).qitot_incld;
-        nitot_incld[s] = self_device(vs).nitot_incld;
+        rho[s]                        = self_device(vs).rho;
+        temp[s]                       = self_device(vs).temp;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_qi2qr_melting[s]    = self_device(vs).table_val_qi2qr_melting;
+        table_val_qi2qr_vent_melt[s]  = self_device(vs).table_val_qi2qr_vent_melt;
+        dv[s]                         = self_device(vs).dv;
+        mu[s]                         = self_device(vs).mu;
+        sc[s]                         = self_device(vs).sc;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
       }
 
       Spack epsi{0.0};
       Spack epsi_tot{0.0};
-      Functions::ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14, dv, mu, sc, qitot_incld, nitot_incld,
+      Functions::ice_relaxation_timescale(rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld, ni_incld,
                                           epsi, epsi_tot);
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

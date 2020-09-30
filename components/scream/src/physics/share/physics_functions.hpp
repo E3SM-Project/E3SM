@@ -1,10 +1,12 @@
 #ifndef PHYSICS_FUNCTIONS_HPP
 #define PHYSICS_FUNCTIONS_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_pack_kokkos.hpp"
-#include "ekat/scream_workspace.hpp"
 #include "physics_constants.hpp"
+
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_workspace.hpp"
 
 namespace scream {
 namespace physics {
@@ -32,19 +34,19 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = scream::pack::BigPack<S>;
+  using BigPack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = scream::pack::SmallPack<S>;
-  using IntSmallPack = scream::pack::IntSmallPack;
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
-
-  template <typename S>
-  using Mask = scream::pack::Mask<BigPack<S>::n>;
+  using IntSmallPack = SmallPack<Int>;
+  using Pack         = BigPack<Scalar>;
+  using Spack        = SmallPack<Scalar>;
 
   template <typename S>
-  using SmallMask = scream::pack::Mask<SmallPack<S>::n>;
+  using Mask = ekat::Mask<Pack::n>;
+
+  template <typename S>
+  using SmallMask = ekat::Mask<SmallPack<S>::n>;
 
   using Smask = SmallMask<Scalar>;
 
@@ -61,13 +63,13 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S>
-  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
+  using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
+  using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
 
   //
   // --------- Functions ---------
@@ -78,20 +80,24 @@ struct Functions
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack polysvp1(const Spack& t, const bool ice);
+  static Spack polysvp1(const Spack& t, const bool ice, const Smask& range_mask);
 
   //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
   //  MurphyKoop_svp returned in units of pa.
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack MurphyKoop_svp(const Spack& t, const bool ice);
+  static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const SaturationFcn func_idx = MurphyKoop);
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop);
+
+  //checks temperature for negatives and NaNs
+  KOKKOS_FUNCTION
+  static void check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask);
 };
 
 } // namespace physics
@@ -103,4 +109,4 @@ struct Functions
 # include "physics_saturation_impl.hpp"
 #endif
 
-#endif
+#endif // PHYSICS_FUNCTIONS_HPP

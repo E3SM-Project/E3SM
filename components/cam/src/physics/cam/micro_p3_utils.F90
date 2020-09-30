@@ -18,25 +18,25 @@ module micro_p3_utils
     real(rtype), public, parameter :: qsmall = 1.e-14_rtype
     real(rtype), public, parameter :: nsmall = 1.e-16_rtype
 
-    real(rtype) :: xxlv, xxls, xlf
+    real(rtype) :: latent_heat_vapor, latent_heat_sublim, xlf
 
-    real(rtype),public :: rhosur,rhosui,ar,br,f1r,f2r,ecr,rhow,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
+    real(rtype),public :: rho_1000mb,rho_600mb,ar,br,f1r,f2r,ecr,rho_h2o,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rhow,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
+       inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
-       rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
+       rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep, &
-       p3_QcAutoCon_Expon, p3_QcAccret_Expon
+       p3_qc_autocon_expon, p3_qc_accret_expon
 
     real(rtype),dimension(16), public :: dnu
 
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
     real(rtype), public, parameter :: lookup_table_1a_dum1_c =  4.135985029041767d+00 ! 1.0/(0.1*log10(261.7))
 
-    real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
-    real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
-    real(rtype),public :: homogfrze ! Homogeneous freezing temperature, -40C  ~K
-    real(rtype),public :: icenuct   ! Ice nucleation temperature, -5C ~K
+    real(rtype),public :: T_zerodegc  ! Temperature at zero degree celcius ~K
+    real(rtype),public :: T_rainfrz  ! Contact and immersion freexing temp, -4C  ~K
+    real(rtype),public :: T_homogfrz ! Homogeneous freezing temperature, -40C  ~K
+    real(rtype),public :: T_icenuc   ! Ice nucleation temperature, -5C ~K
 
     real(rtype),public :: pi_e3sm
     ! ice microphysics lookup table array dimensions
@@ -44,8 +44,8 @@ module micro_p3_utils
     integer, public,parameter :: densize      =  5
     integer, public,parameter :: rimsize      =  4
     integer, public,parameter :: rcollsize    = 30
-    integer, public,parameter :: tabsize      = 12  ! number of quantities used from lookup table
-    integer, public,parameter :: colltabsize  =  2  ! number of ice-rain collection  quantities used from lookup table
+    integer, public,parameter :: ice_table_size      = 12  ! number of quantities used from lookup table
+    integer, public,parameter :: collect_table_size  =  2  ! number of ice-rain collection  quantities used from lookup table
     ! switch for warm-rain parameterization
     ! = 1 Seifert and Beheng 2001
     ! = 2 Beheng 1994
@@ -53,7 +53,7 @@ module micro_p3_utils
     integer, public,parameter :: iparam = 3
 
     real(rtype), parameter, public :: mincld=0.0001_rtype
-    real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
+    real(rtype), parameter, public :: rho_h2os = 917._rtype  ! bulk density water solid
     real(rtype), parameter, public :: dropmass = 5.2e-7_rtype
 
     ! particle mass-diameter relationship
@@ -71,7 +71,7 @@ module micro_p3_utils
     real(rtype), parameter :: min_mean_mass_ice = 1.e-20_rtype
 
     ! in-cloud values
-    REAL(rtype), PARAMETER :: cldm_min   = 1.e-20_rtype !! threshold min value for cloud fraction
+    REAL(rtype), PARAMETER :: min_cld_frac   = 1.e-20_rtype !! threshold min value for cloud fraction
     real(rtype), parameter :: incloud_limit = 5.1E-3
     real(rtype), parameter :: precip_limit  = 1.0E-2
 
@@ -109,7 +109,7 @@ module micro_p3_utils
     piov6 = pi*sxth
 
     ! maximum total ice concentration (sum of all categories)
-     max_total_Ni = 500.e+3_rtype  !(m)
+     max_total_ni = 500.e+3_rtype  !(m)
 
     ! droplet concentration (m-3)
     nccnst = 200.e+6_rtype
@@ -119,10 +119,10 @@ module micro_p3_utils
     kr     = 5.78e+3_rtype
 
     ! Temperature parameters
-    zerodegc  = tmelt 
-    homogfrze = tmelt-40._rtype
-    icenuct   = tmelt-15._rtype
-    rainfrze  = tmelt-4._rtype
+    T_zerodegc  = tmelt 
+    T_homogfrz = tmelt-40._rtype
+    T_icenuc   = tmelt-15._rtype
+    T_rainfrz  = tmelt-4._rtype
 
     ! physical constants
     cp     = cpair ! specific heat of dry air (J/K/kg) !1005.
@@ -131,20 +131,20 @@ module micro_p3_utils
     rd     = rair ! Dry air gas constant     ~ J/K/kg
     rv     = rh2o ! Water vapor gas constant ~ J/K/kg     !461.51
     ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
-    rhosur = 100000._rtype/(rd*zerodegc) ! density of air at surface
-    rhosui = 60000._rtype/(rd*253.15_rtype)
+    rho_1000mb = 100000._rtype/(rd*T_zerodegc) ! density of air at surface
+    rho_600mb = 60000._rtype/(rd*253.15_rtype)
     ar     = 841.99667_rtype 
     br     = 0.8_rtype
     f1r    = 0.78_rtype
     f2r    = 0.32_rtype
     ecr    = 1._rtype
-    rhow   = rhoh2o ! Density of liquid water (STP) !997.
+    rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
     cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
-    inv_rhow = 1._rtype/rhow  !inverse of (max.) density of liquid water
+    inv_rho_h2o = 1._rtype/rho_h2o  !inverse of (max.) density of liquid water
     inv_dropmass = 1._rtype/dropmass  !inverse of dropmass
 
-    xxlv = latvap           ! latent heat of vaporization
-    xxls = latvap + latice  ! latent heat of sublimation
+    latent_heat_vapor = latvap           ! latent heat of vaporization
+    latent_heat_sublim = latvap + latice  ! latent heat of sublimation
     xlf  = latice           ! latent heat of fusion
 
     ! limits for rime density [kg m-3]
@@ -170,13 +170,13 @@ module micro_p3_utils
     ! ratio of rain number produced to ice number loss from melting
     nmltratio = 0.2_rtype
 
-    cons1 = piov6*rhow
-    cons2 = 4._rtype*piov3*rhow
+    cons1 = piov6*rho_h2o
+    cons2 = 4._rtype*piov3*rho_h2o
     cons3 = 1._rtype/(cons2*1.562500000000000d-14)  ! 1._rtype/(cons2*bfb_pow(25.e-6_rtype,3.0_rtype))
-    cons4 = 1._rtype/(dbrk**3*pi*rhow)
+    cons4 = 1._rtype/(dbrk**3*pi*rho_h2o)
     cons5 = piov6*bimm
-    cons6 = piov6**2*rhow*bimm
-    cons7 = 4._rtype*piov3*rhow*1.e-18_rtype
+    cons6 = piov6**2*rho_h2o*bimm
+    cons7 = 4._rtype*piov3*rho_h2o*1.e-18_rtype
 
     ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
     ! warm rain autoconversion/accretion option only (iparam = 1)
@@ -217,16 +217,16 @@ module micro_p3_utils
 
 !       integer i,k
 
-       v(:,:) = xxlv !latvap           ! latent heat of vaporization
-       s(:,:) = xxls !latvap + latice  ! latent heat of sublimation
+       v(:,:) = latent_heat_vapor !latvap           ! latent heat of vaporization
+       s(:,:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation
        f(:,:) = xlf  !latice           ! latent heat of fusion
  
 ! Original P3 definition of latent heats:   
 !       do i = its,ite
 !          do k = kts,kte
-!          xxlv(i,k)    = 3.1484e6-2370.*t(i,k)
-!          xxls(i,k)    = xxlv(i,k)+0.3337e6
-!          xlf(i,k)     = xxls(i,k)-xxlv(i,k)
+!          latent_heat_vapor(i,k)    = 3.1484e6-2370.*t(i,k)
+!          latent_heat_sublim(i,k)    = latent_heat_vapor(i,k)+0.3337e6
+!          xlf(i,k)     = latent_heat_sublim(i,k)-latent_heat_vapor(i,k)
 !          end do
 !       end do
        return
@@ -235,54 +235,54 @@ module micro_p3_utils
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
-    subroutine calculate_incloud_mixingratios(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
-          inv_lcldm,inv_icldm,inv_rcldm, &
-          qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
+    subroutine calculate_incloud_mixingratios(qc,qr,qi,qm,nc,nr,ni,bm, &
+          inv_cld_frac_l,inv_cld_frac_i,inv_cld_frac_r, &
+          qc_incld,qr_incld,qi_incld,qm_incld,nc_incld,nr_incld,ni_incld,bm_incld)
 
-       real(rtype),intent(in)   :: qc, qr, qitot, qirim
-       real(rtype),intent(in)   :: nc, nr, nitot, birim
-       real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
-       real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
-       real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
+       real(rtype),intent(in)   :: qc, qr, qi, qm
+       real(rtype),intent(in)   :: nc, nr, ni, bm
+       real(rtype),intent(in)   :: inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r
+       real(rtype),intent(out)  :: qc_incld, qr_incld, qi_incld, qm_incld
+       real(rtype),intent(out)  :: nc_incld, nr_incld, ni_incld, bm_incld
 
        if (qc.ge.qsmall) then
-          qc_incld = qc*inv_lcldm
-          nc_incld = max(nc*inv_lcldm,0._rtype)
+          qc_incld = qc*inv_cld_frac_l
+          nc_incld = max(nc*inv_cld_frac_l,0._rtype)
           !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
           qc_incld = 0._rtype
           nc_incld = 0._rtype
        end if 
-       if (qitot.ge.qsmall) then
-          qitot_incld = qitot*inv_icldm
-          nitot_incld = max(nitot*inv_icldm,0._rtype)
+       if (qi.ge.qsmall) then
+          qi_incld = qi*inv_cld_frac_i
+          ni_incld = max(ni*inv_cld_frac_i,0._rtype)
           !AaronDonahue, kai has something about if nicons then ni=ninst/rho
        else
-          qitot_incld = 0._rtype
-          nitot_incld = 0._rtype
+          qi_incld = 0._rtype
+          ni_incld = 0._rtype
        end if 
-       if (qirim.ge.qsmall.and.qitot.ge.qsmall) then
-          qirim_incld = qirim*inv_icldm
-          birim_incld = max(birim*inv_lcldm,0._rtype)
+       if (qm.ge.qsmall.and.qi.ge.qsmall) then
+          qm_incld = qm*inv_cld_frac_i
+          bm_incld = max(bm*inv_cld_frac_l,0._rtype)
        else
-          qirim_incld = 0._rtype
-          birim_incld = 0._rtype
+          qm_incld = 0._rtype
+          bm_incld = 0._rtype
        end if 
        if (qr.ge.qsmall) then
-          qr_incld = qr*inv_rcldm
-          nr_incld = max(nr*inv_rcldm,0._rtype)
+          qr_incld = qr*inv_cld_frac_r
+          nr_incld = max(nr*inv_cld_frac_r,0._rtype)
           !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
           qr_incld = 0._rtype
           nr_incld = 0._rtype
        end if
-       if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit &
-            .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
+       if (qc_incld.gt.incloud_limit .or.qi_incld.gt.incloud_limit &
+            .or. qr_incld.gt.precip_limit .or.bm_incld.gt.incloud_limit) then
           !write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, &
-          !     ', qi:',qitot_incld,', qr:',qr_incld
+          !     ', qi:',qi_incld,', qr:',qr_incld
           qc_incld    = min(qc_incld,incloud_limit)
-          qitot_incld = min(qitot_incld,incloud_limit)
-          birim_incld = min(birim_incld,incloud_limit)
+          qi_incld = min(qi_incld,incloud_limit)
+          bm_incld = min(bm_incld,incloud_limit)
           qr_incld    = min(qr_incld,precip_limit)
 !          if (masterproc) write(iulog,*)  errmsg
 

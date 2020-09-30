@@ -6,7 +6,7 @@ namespace scream
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const layout_type& layout,
-                 const units::Units& units,
+                 const Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (layout)
@@ -19,7 +19,7 @@ FieldIdentifier (const std::string& name,
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const std::vector<FieldTag>& tags,
-                 const units::Units& units,
+                 const Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (tags)
@@ -32,7 +32,7 @@ FieldIdentifier (const std::string& name,
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const std::initializer_list<FieldTag>& tags,
-                 const units::Units& units,
+                 const Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (tags)
@@ -54,7 +54,7 @@ void FieldIdentifier::set_dimensions (const std::vector<int>& dims) {
 
 void FieldIdentifier::set_grid_name (const std::string& grid_name) {
   // Only allow overwriting if the stored grid name is empty
-  scream_require_msg (m_grid_name=="", "Error! Cannot overwrite a non-empty grid name.\n");
+  EKAT_REQUIRE_MSG (m_grid_name=="", "Error! Cannot overwrite a non-empty grid name.\n");
 
   m_grid_name = grid_name;
 

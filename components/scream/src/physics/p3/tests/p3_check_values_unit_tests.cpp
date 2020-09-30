@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
@@ -25,20 +23,19 @@ struct UnitWrap::UnitTest<D>::TestCheckValues {
 
 static void run_check_values_bfb()
 {
-  const std::array< std::pair<Real, Real>, CheckValuesData::NUM_ARRAYS > ranges = {
-    std::make_pair(-4.056E-01, 1.153E+00), // qv
-    std::make_pair( 1.000E+02, 5.000E+02), // temp
-  };
-
   CheckValuesData cvd_fortran[] = {
-    // kts_, kte_, timestepcount_, source_ind_, force_abort_, ranges
-    CheckValuesData(1,  72,   2,   100,   false,  ranges),
-    CheckValuesData(1,  72,   3,   100,   false,  ranges),
-    CheckValuesData(1,  72,   4,   100,   false,  ranges),
-    CheckValuesData(1,  72,   5,   100,   false,  ranges),
+    //          kts_, kte_, timestepcount_, source_ind_, force_abort_
+    CheckValuesData(1,  72,              2,         100,       false),
+    CheckValuesData(1,  72,              3,         100,       false),
+    CheckValuesData(1,  72,              4,         100,       false),
+    CheckValuesData(1,  72,              5,         100,       false),
   };
 
   static constexpr Int num_runs = sizeof(cvd_fortran) / sizeof(CheckValuesData);
+
+  for (auto& d : cvd_fortran) {
+    d.randomize({ {d.qv, {-4.056E-01, 1.153E+00}}, {d.temp, {1.000E+02, 5.000E+02}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -49,21 +46,20 @@ static void run_check_values_bfb()
     CheckValuesData(cvd_fortran[3]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    check_values(cvd_fortran[i]);
+  // Get data from fortran
+  for (auto& d : cvd_fortran) {
+    check_values(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    CheckValuesData& d = cvd_cxx[i];
+  for (auto& d : cvd_cxx) {
     check_values_f(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind, d.col_loc);
   }
 }
 
 static void run_check_values_phys()
 {
-    // TODO
+  // TODO
 }
 
 };

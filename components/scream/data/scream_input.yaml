@@ -6,14 +6,15 @@ Atmosphere Driver:
     Schedule Type: Sequential
     Process 0:
       Process Name: P3
-      Grid:         SE Physics
+      Grid:         Physics
       Can Initialize All Inputs: true
     Process 1:
       Process Name: SHOC
-      Grid:         SE Physics
+      Grid:         Physics
   Grids Manager:
     Type: Physics Only
-    Reference Grid: SE Physics
+    Reference Grid: Physics
     Physics Only:
       Number of global columns: 1024
+      Number of vertical levels: 128
 ...

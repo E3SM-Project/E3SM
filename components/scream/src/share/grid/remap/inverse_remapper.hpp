@@ -19,7 +19,7 @@ public:
   InverseRemapper (std::shared_ptr<base_type> remapper) :
     base_type(remapper->get_tgt_grid(),remapper->get_src_grid())
   {
-    error::runtime_check(static_cast<bool>(remapper), "Error! Null pointer for inner remapper.\n");
+    ekat::error::runtime_check(static_cast<bool>(remapper), "Error! Null pointer for inner remapper.\n");
 
     m_remapper = remapper;
   }

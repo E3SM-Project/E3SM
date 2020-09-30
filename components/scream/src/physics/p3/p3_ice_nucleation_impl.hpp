@@ -10,50 +10,50 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_nucleation(
-  const Spack& temp, const Spack& inv_rho, const Spack& nitot, const Spack& naai,
-  const Spack& supi, const Scalar& odt, const bool& log_predictNc,
-  Spack& qinuc, Spack& ninuc,
+  const Spack& temp, const Spack& inv_rho, const Spack& ni, const Spack& ni_activated,
+  const Spack& qv_supersat_i, const Scalar& inv_dt, const bool& do_predict_nc,
+  Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
   const Smask& context)
 {
    constexpr Scalar nsmall  = C::NSMALL;
    constexpr Scalar tmelt   = C::Tmelt;
-   constexpr Scalar icenuct = C::Tmelt-sp(15.0);
+   constexpr Scalar T_icenuc = C::Tmelt-sp(15.0);
    constexpr Scalar zero    = C::ZERO;
    constexpr Scalar piov3   = C::PIOV3;
    constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
 
-   const auto t_lt_icenuct = temp < icenuct;
-   const auto supi_ge_005 = supi >= 0.05;
+   const auto t_lt_T_icenuc = temp < T_icenuc;
+   const auto qv_supersat_i_ge_005 = qv_supersat_i >= 0.05;
 
-   const auto any_if_log     = t_lt_icenuct && supi_ge_005 && log_predictNc && context;
-   const auto any_if_not_log = t_lt_icenuct && supi_ge_005 && (!log_predictNc) && context;
+   const auto any_if_log     = t_lt_T_icenuc && qv_supersat_i_ge_005 && do_predict_nc && context;
+   const auto any_if_not_log = t_lt_T_icenuc && qv_supersat_i_ge_005 && (!do_predict_nc) && context;
 
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
    if (any_if_not_log.any()) {
-     dum = sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
+     dum = sp(0.005)*exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
 
-     dum = pack::min(dum, sp(1.0e5)*inv_rho);
+     dum = min(dum, sp(1.0e5)*inv_rho);
 
-     N_nuc = pack::max(zero, (dum-nitot)*odt);
+     N_nuc = max(zero, (dum-ni)*inv_dt);
 
      const auto n_nuc_ge_nsmall = N_nuc >= nsmall && context;
 
      if (n_nuc_ge_nsmall.any()) {
-       Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);
+       Q_nuc = max(zero, (dum-ni)*mi0*inv_dt);
 
-       qinuc.set(any_if_not_log && n_nuc_ge_nsmall, Q_nuc);
+       qv2qi_nucleat_tend.set(any_if_not_log && n_nuc_ge_nsmall, Q_nuc);
 
-       ninuc.set(any_if_not_log && n_nuc_ge_nsmall, N_nuc);
+       ni_nucleat_tend.set(any_if_not_log && n_nuc_ge_nsmall, N_nuc);
      }
    }
    else {
-     ninuc.set(any_if_log, pack::max(zero, (naai-nitot)*odt));
-     qinuc.set(any_if_log, ninuc*mi0);
+     ni_nucleat_tend.set(any_if_log, max(zero, (ni_activated-ni)*inv_dt));
+     qv2qi_nucleat_tend.set(any_if_log, ni_nucleat_tend*mi0);
    }
 }
 
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_NUCLEATION_IMPL_HPP

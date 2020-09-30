@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -29,32 +27,21 @@ static void run_phys()
 
 static void run_bfb()
 {
-  const std::array< std::pair<Real, Real>, CloudSedData::NUM_ARRAYS > ranges = {
-    std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-    std::make_pair(4.056E-03, 1.153E+00), // rho_range
-    std::make_pair(0,         1.),        // inv_rho (ignored)
-    std::make_pair(0.9, 1.1),             // lcldm_range
-    std::make_pair(2.959E+07, 5.348E+07), // acn_range
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-    std::make_pair(7.701E-16, 2.119E-04), // qc_range
-    std::make_pair(7.701E-16, 2.119E-04), // nc_range
-    std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-    std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-    std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-    std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-    std::make_pair(9.952E+05, 1.743E+08), // nc_tend_range
-  };
-
   CloudSedData csds_fortran[] = {
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq, ranges
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
-    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
-    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
-    CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
+    //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0),
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,          true,     0.0),
+    CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0),
   };
 
   static constexpr Int num_runs = sizeof(csds_fortran) / sizeof(CloudSedData);
+
+  // Set up random input data
+  for (auto& d : csds_fortran) {
+    d.randomize({ {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -67,17 +54,16 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    cloud_sedimentation(csds_fortran[i]);
+  for (auto& d : csds_fortran) {
+    cloud_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    CloudSedData& d = csds_cxx[i];
+  for (auto& d : csds_cxx) {
     cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                          d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
-                          d.dt, d.odt, d.log_predictNc,
-                          d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
+                          d.qc_incld, d.rho, d.inv_rho, d.cld_frac_l, d.acn, d.inv_dz,
+                          d.dt, d.inv_dt, d.do_predict_nc,
+                          d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -93,7 +79,7 @@ static void run_bfb()
       REQUIRE(csds_fortran[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
       REQUIRE(csds_fortran[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
     }
-    REQUIRE(csds_fortran[i].prt_liq == csds_cxx[i].prt_liq);
+    REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
   }
 
 }

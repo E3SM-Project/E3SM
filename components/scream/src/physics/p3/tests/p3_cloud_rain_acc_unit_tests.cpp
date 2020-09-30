@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -30,7 +28,7 @@ static void run_phys()
 static void run_bfb()
 {
   // This is the threshold for whether the qc and qr cloud mixing ratios are
-  // large enough to affect the warm-phase process rates qcacc and ncacc.
+  // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
   constexpr Scalar rho1 = 4.056E-03, rho2 = 6.852E-02,
@@ -43,29 +41,29 @@ static void run_bfb()
   constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
   constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06,
                    nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
-  constexpr Scalar qc_relvar_val = 1;
+  constexpr Scalar inv_qc_relvar_val = 1;
 
   CloudRainAccretionData cloud_rain_acc_data[max_pack_size] = {
-    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc, qc_relvar
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small,qc_relvar_val},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small,qc_relvar_val},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small,qc_relvar_val},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small,qc_relvar_val},
+    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qc2qr_accret_tend, nc_accret_tend, inv_qc_relvar
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small,inv_qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small,inv_qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small,inv_qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small,inv_qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small,qc_relvar_val},
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small,inv_qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small,inv_qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small,inv_qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small,inv_qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small,qc_relvar_val},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small,qc_relvar_val},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small,qc_relvar_val},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small,qc_relvar_val},
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small,inv_qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small,inv_qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small,inv_qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small,inv_qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small,qc_relvar_val}
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small,inv_qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small,inv_qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small,inv_qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small,inv_qc_relvar_val}
   };
 
   // Sync to device
@@ -85,26 +83,26 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
+    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       rho[s]            = device_data(vs).rho;
       inv_rho[s]        = device_data(vs).inv_rho;
       qc_incld[s]       = device_data(vs).qc_incld;
       nc_incld[s]       = device_data(vs).nc_incld;
       qr_incld[s]       = device_data(vs).qr_incld;
-      qc_relvar[s]      = device_data(vs).qc_relvar;
+      inv_qc_relvar[s]  = device_data(vs).inv_qc_relvar;
     }
 
-    Spack qcacc{0.0};
-    Spack ncacc{0.0};
+    Spack qc2qr_accret_tend{0.0};
+    Spack nc_accret_tend{0.0};
 
     Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
-                                    qc_relvar, qcacc, ncacc);
+                                    inv_qc_relvar, qc2qr_accret_tend, nc_accret_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      device_data(vs).qcacc  = qcacc[s];
-      device_data(vs).ncacc  = ncacc[s];
+      device_data(vs).qc2qr_accret_tend  = qc2qr_accret_tend[s];
+      device_data(vs).nc_accret_tend     = nc_accret_tend[s];
     }
   });
 
@@ -113,8 +111,8 @@ static void run_bfb()
 
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cloud_rain_acc_data[s].qcacc == host_data[s].qcacc);
-    REQUIRE(cloud_rain_acc_data[s].ncacc == host_data[s].ncacc);
+    REQUIRE(cloud_rain_acc_data[s].qc2qr_accret_tend == host_data[s].qc2qr_accret_tend);
+    REQUIRE(cloud_rain_acc_data[s].nc_accret_tend == host_data[s].nc_accret_tend);
   }
 }
 

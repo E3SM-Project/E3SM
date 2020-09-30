@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -27,7 +25,7 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
 static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   CloudWaterAutoconversionData cwadc[max_pack_size] = {
-    // rho, qc_incld, nc_incld, qc_relvar
+    // rho, qc_incld, nc_incld, inv_qc_relvar
     {9.703E-01, 5.100E-03, 2.061E+08, 1.0},
     {1.006E+00,  5.100E-03, 1.988E+08,1.0},
     //{1.139E+00 },
@@ -71,29 +69,29 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr, qc_relvar;
+    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      rho[s]       = cwadc_device(vs).rho;
-      qc_incld[s]  = cwadc_device(vs).qc_incld;
-      nc_incld[s]  = cwadc_device(vs).nc_incld;
-      qc_relvar[s] = cwadc_device(vs).qc_relvar;
-      qcaut[s]     = cwadc_device(vs).qcaut;
-      ncautc[s]    = cwadc_device(vs).ncautc;
-      ncautr[s]    = cwadc_device(vs).ncautr;
+      rho[s]                 = cwadc_device(vs).rho;
+      qc_incld[s]            = cwadc_device(vs).qc_incld;
+      nc_incld[s]            = cwadc_device(vs).nc_incld;
+      inv_qc_relvar[s]       = cwadc_device(vs).inv_qc_relvar;
+      qc2qr_autoconv_tend[s] = cwadc_device(vs).qc2qr_autoconv_tend;
+      nc2nr_autoconv_tend[s] = cwadc_device(vs).nc2nr_autoconv_tend;
+      ncautr[s]              = cwadc_device(vs).ncautr;
     }
 
     Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
-      qc_relvar, qcaut, ncautc, ncautr);
+      inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      cwadc_device(vs).rho       = rho[s];
-      cwadc_device(vs).qc_incld  = qc_incld[s];
-      cwadc_device(vs).nc_incld  = nc_incld[s];
-      cwadc_device(vs).qc_relvar = qc_relvar[s];
-      cwadc_device(vs).qcaut     = qcaut[s];
-      cwadc_device(vs).ncautc    = ncautc[s];
-      cwadc_device(vs).ncautr    = ncautr[s];
+      cwadc_device(vs).rho                 = rho[s];
+      cwadc_device(vs).qc_incld            = qc_incld[s];
+      cwadc_device(vs).nc_incld            = nc_incld[s];
+      cwadc_device(vs).inv_qc_relvar       = inv_qc_relvar[s];
+      cwadc_device(vs).qc2qr_autoconv_tend = qc2qr_autoconv_tend[s];
+      cwadc_device(vs).nc2nr_autoconv_tend = nc2nr_autoconv_tend[s];
+      cwadc_device(vs).ncautr              = ncautr[s];
     }
   });
 
@@ -102,13 +100,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   // Validate results
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cwadc[s].rho       == cwadc_host(s).rho);
-    REQUIRE(cwadc[s].qc_incld  == cwadc_host(s).qc_incld);
-    REQUIRE(cwadc[s].nc_incld  == cwadc_host(s).nc_incld);
-    REQUIRE(cwadc[s].qc_relvar == cwadc_host(s).qc_relvar);
-    REQUIRE(cwadc[s].qcaut     == cwadc_host(s).qcaut);
-    REQUIRE(cwadc[s].ncautc    == cwadc_host(s).ncautc);
-    REQUIRE(cwadc[s].ncautr    == cwadc_host(s).ncautr);
+    REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
+    REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
+    REQUIRE(cwadc[s].nc_incld             == cwadc_host(s).nc_incld);
+    REQUIRE(cwadc[s].inv_qc_relvar        == cwadc_host(s).inv_qc_relvar);
+    REQUIRE(cwadc[s].qc2qr_autoconv_tend  == cwadc_host(s).qc2qr_autoconv_tend);
+    REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
+    REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
   }
 }
 
@@ -118,13 +116,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   KOKKOS_FUNCTION  static void autoconversion_is_positive(const Int &i, Int &errors){
 
-    const Spack rho(1.0), qc_relvar(1.0);
-    Spack qc_incld, nc_incld(1e7), qcaut(0.0), ncautc(0.0), ncautr(0.0);
+    const Spack rho(1.0), inv_qc_relvar(1.0);
+    Spack qc_incld, nc_incld(1e7), qc2qr_autoconv_tend(0.0), nc2nr_autoconv_tend(0.0), ncautr(0.0);
     for(int si=0; si<Spack::n; ++si){
         qc_incld[si] = 1e-6 * i * Spack::n + si;
       }
-    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, qc_relvar, qcaut, ncautc, ncautr);
-        if((qcaut < 0.0).any()){errors++;}
+    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr);
+        if((qc2qr_autoconv_tend < 0.0).any()){errors++;}
     }
 
   static void run_physics(){

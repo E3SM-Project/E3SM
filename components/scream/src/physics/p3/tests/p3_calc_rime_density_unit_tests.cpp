@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -35,14 +33,14 @@ static void run_bfb()
   constexpr Scalar qc_incld_small = 0.9 * qsmall;
   constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
 
-  // Same goes for qccol.
-  constexpr Scalar qccol_small = 0.9 * qsmall;
-  constexpr Scalar qccol_not_small = 2.0 * qsmall;
+  // Same goes for qc2qi_collect_tend.
+  constexpr Scalar qc2qi_collect_tend_small = 0.9 * qsmall;
+  constexpr Scalar qc2qi_collect_tend_not_small = 2.0 * qsmall;
 
   // We need to test the calculation under freezing and not-freezing
   // conditions.
-  constexpr Scalar t_freezing = 0.9 * C::RainFrze,
-                   t_not_freezing = 2.0 * C::RainFrze;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
+                   t_not_freezing = 2.0 * C::T_rainfrz;
 
   // Ideally, we'd also test the calculation based on the mass-weighted mean
   // size Ri--whether it's above or below 8, specifically. Unfortunately,
@@ -50,36 +48,36 @@ static void run_bfb()
   // So maybe we run the gambit with various values given for other params
   // until we think of a better approach.
   constexpr Scalar rhofaci1 = 0.25, rhofaci2 = 0.5;
-  constexpr Scalar f1pr021 = 0.125, f1pr022 = 0.875;
+  constexpr Scalar table_val_qi_fallspd1 = 0.125, table_val_qi_fallspd2 = 0.875;
   constexpr Scalar acn1 = 0.1, acn2 = 0.6;
   constexpr Scalar lamc1 = 0.4, lamc2 = 0.8;
   constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.7;
 
   CalcRimeDensityData calc_rime_density_data[max_pack_size] = {
-    // t, rhofaci, f1pr021, acn, lamc, mu_c, qc_incld, qccol
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_small},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_small},
+    // T_atm, rhofaci, table_val_qi_fallspd1, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
+    {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_small},
+    {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_small},
 
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_not_small},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_not_small},
+    {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_not_small},
+    {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_not_small},
 
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_small},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_small},
+    {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small, qc2qi_collect_tend_small},
+    {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small, qc2qi_collect_tend_small},
 
-    {t_not_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_not_small},
-    {t_not_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_not_small},
+    {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small, qc2qi_collect_tend_not_small},
+    {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small, qc2qi_collect_tend_not_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_small},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_small},
+    {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_small},
+    {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_small, qccol_not_small},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_small, qccol_not_small},
+    {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_not_small},
+    {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_not_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_small},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_small},
+    {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small, qc2qi_collect_tend_small},
+    {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small, qc2qi_collect_tend_small},
 
-    {t_freezing, rhofaci1, f1pr021, acn1, lamc1, mu_c1, qc_incld_not_small, qccol_not_small},
-    {t_freezing, rhofaci2, f1pr022, acn2, lamc2, mu_c2, qc_incld_not_small, qccol_not_small},
+    {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small, qc2qi_collect_tend_not_small},
+    {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small, qc2qi_collect_tend_not_small},
   };
 
   // Sync to device
@@ -99,28 +97,28 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
+    Spack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
-      rhofaci[s]  = device_data(vs).rhofaci;
-      f1pr02[s]   = device_data(vs).f1pr02;
-      acn[s]      = device_data(vs).acn;
-      lamc[s]     = device_data(vs).lamc;
-      mu_c[s]     = device_data(vs).mu_c;
-      qc_incld[s] = device_data(vs).qc_incld;
-      qccol[s]    = device_data(vs).qccol;
+      T_atm[s]                = device_data(vs).T_atm;
+      rhofaci[s]              = device_data(vs).rhofaci;
+      table_val_qi_fallspd[s] = device_data(vs).table_val_qi_fallspd;
+      acn[s]                  = device_data(vs).acn;
+      lamc[s]                 = device_data(vs).lamc;
+      mu_c[s]                 = device_data(vs).mu_c;
+      qc_incld[s]             = device_data(vs).qc_incld;
+      qc2qi_collect_tend[s]   = device_data(vs).qc2qi_collect_tend;
     }
 
     Spack vtrmi1{0.0};
-    Spack rhorime_c{0.0};
+    Spack rho_qm_cloud{0.0};
 
-    Functions::calc_rime_density(t, rhofaci, f1pr02, acn, lamc, mu_c,
-                                 qc_incld, qccol, vtrmi1, rhorime_c);
+    Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
+                                 qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       device_data(vs).vtrmi1  = vtrmi1[s];
-      device_data(vs).rhorime_c  = rhorime_c[s];
+      device_data(vs).rho_qm_cloud  = rho_qm_cloud[s];
     }
   });
 
@@ -130,7 +128,7 @@ static void run_bfb()
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(calc_rime_density_data[s].vtrmi1 == host_data[s].vtrmi1);
-    REQUIRE(calc_rime_density_data[s].rhorime_c == host_data[s].rhorime_c);
+    REQUIRE(calc_rime_density_data[s].rho_qm_cloud == host_data[s].rho_qm_cloud);
   }
 }
 

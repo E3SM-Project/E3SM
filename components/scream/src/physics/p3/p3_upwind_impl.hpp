@@ -18,7 +18,7 @@ void Functions<S,D>
 ::calc_first_order_upwind_step (
   const uview_1d<const Spack>& rho,
   const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dzq,
+  const uview_1d<const Spack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
   const view_1d_ptr_array<Spack, nfield>& flux,
@@ -47,7 +47,7 @@ void Functions<S,D>
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
       {
-        const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
+        const auto range_pack = ekat::range<IntSmallPack>(k_top_pack*Spack::n);
         const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {
@@ -60,7 +60,7 @@ void Functions<S,D>
         const auto flux_pkdir = (kdir == -1) ?
           shift_right(0, (*flux[f])(k)) :
           shift_left (0, (*flux[f])(k));
-        const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
+        const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dz(k);
 
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
@@ -80,7 +80,7 @@ void Functions<S,D>
         const auto flux_pkdir = (kdir == -1) ?
           shift_right((*flux[f])(k+kdir), (*flux[f])(k)) :
           shift_left ((*flux[f])(k+kdir), (*flux[f])(k));
-        const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
+        const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dz(k);
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
       }
@@ -94,7 +94,7 @@ void Functions<S,D>
 ::generalized_sedimentation (
   const uview_1d<const Spack>& rho,
   const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dzq,
+  const uview_1d<const Spack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
   const view_1d_ptr_array<Spack, nfield>& fluxes,
@@ -103,12 +103,12 @@ void Functions<S,D>
 {
   // compute dt_sub
   const Int tmpint1 = static_cast<int>(Co_max + 1);
-  const Scalar dt_sub = util::min(dt_left, dt_left/tmpint1);
+  const Scalar dt_sub = ekat::impl::min(dt_left, dt_left/tmpint1);
 
   // Move bottom cell down by 1 if not at ground already
   const Int k_temp = (k_qxbot == kbot) ? k_qxbot : k_qxbot - kdir;
 
-  calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dzq, team, nk, k_temp, k_qxtop, kdir, dt_sub, fluxes, Vs, rs);
+  calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dz, team, nk, k_temp, k_qxtop, kdir, dt_sub, fluxes, Vs, rs);
   team.team_barrier();
 
   // accumulated precip during time step
@@ -131,7 +131,7 @@ void Functions<S,D>
 ::calc_first_order_upwind_step (
   const uview_1d<const Spack>& rho,
   const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dzq,
+  const uview_1d<const Spack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
   const view_1d_ptr_array<Spack, nfield>& flux,
@@ -140,10 +140,10 @@ void Functions<S,D>
 {
   if (kdir == 1)
     calc_first_order_upwind_step< 1, nfield>(
-      rho, inv_rho, inv_dzq, team, nk, k_bot, k_top, dt_sub, flux, V, r);
+      rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, flux, V, r);
   else
     calc_first_order_upwind_step<-1, nfield>(
-      rho, inv_rho, inv_dzq, team, nk, k_bot, k_top, dt_sub, flux, V, r);
+      rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, flux, V, r);
 }
 
 template <typename S, typename D>
@@ -152,7 +152,7 @@ void Functions<S,D>
 ::calc_first_order_upwind_step (
   const uview_1d<const Spack>& rho,
   const uview_1d<const Spack>& inv_rho,
-  const uview_1d<const Spack>& inv_dzq,
+  const uview_1d<const Spack>& inv_dz,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
   const uview_1d<Spack>& flux,
@@ -169,11 +169,11 @@ void Functions<S,D>
                                           V.extent_int(0));
   if (kdir == 1)
     calc_first_order_upwind_step< 1, 1>(
-      rho, inv_rho, inv_dzq, team, nk, k_bot, k_top, dt_sub,
+      rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
       {&flux}, {&V_nonconst}, {&r});
   else
     calc_first_order_upwind_step<-1, 1>(
-      rho, inv_rho, inv_dzq, team, nk, k_bot, k_top, dt_sub,
+      rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
       {&flux}, {&V_nonconst}, {&r});
 }
 

@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
@@ -28,7 +26,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     using KTH = KokkosTypes<HostDevice>;
 
     IceWetGrowthData self[max_pack_size] = {
-      // rho,temp,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,qv,qc_incld,qitot_incld,nitot_incld,qr_incld,log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd
+      // rho,temp,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,kap,mu,sc,qv,qc_incld,qi_incld,ni_incld,qr_incld,log_wetgrowth,qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend
       {4.056000E-03, 1.023000E+02, 1.201000E+02, 9.002000E-04, 8.215000E-04, 8.852000E-01, 0.174000E+00, 1.221000E-14, 5.100000E-03, 9.558000E-04, 1.213000E-03, 9.653000E-04, 1.023000E-01, 4.098000E-02, 2.098000E-02, 9.952000E+03, 1.023000E-05, false, 1.241456E-04, 9.021345E-02, 1.043000E-01, 1.921000E-02, 0.242000E-02},
       {6.852000E-02, 1.120000E+02, 2.450000E+02, 9.321000E-04, 9.124000E-04, 8.852000E-01, 0.374000E+00, 1.221000E-13, 4.100000E-03, 9.558000E-04, 2.560000E-03, 1.764000E-03, 2.346000E-01, 5.632000E-02, 3.024000E-02, 9.952000E+03, 2.093000E-05, false, 2.341678E-04, 1.092432E-02, 2.903000E-01, 2.125000E-02, 0.342000E-02},
       {8.852000E-02, 1.210000E+02, 3.420000E+02, 9.623000E-04, 9.432000E-04, 8.900000E-01, 0.123000E+00, 1.221000E-12, 3.100000E-03, 9.558000E-04, 3.211000E-03, 3.421000E-03, 3.421000E-01, 6.542000E-02, 4.567000E-02, 9.952000E+03, 3.091000E-05, false, 3.215234E-04, 2.098987E-02, 3.450000E-01, 3.490000E-02, 0.932000E-02},
@@ -66,50 +64,50 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack rho,temp, pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,
-        qv,qc_incld,qitot_incld,nitot_incld,qr_incld;
+      Spack rho,temp, pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,kap,mu,sc,
+        qv,qc_incld,qi_incld,ni_incld,qr_incld;
 
       Smask log_wetgrowth;
 
-      Spack qrcol,qccol,qwgrth,nrshdr,qcshd;
+      Spack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        temp[s]        = self_device(vs).temp;
-        pres[s]        = self_device(vs).pres;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        f1pr05[s]      = self_device(vs).f1pr05;
-        f1pr14[s]      = self_device(vs).f1pr14;
-        xxlv[s]        = self_device(vs).xxlv;
-        xlf[s]         = self_device(vs).xlf;
-        dv[s]          = self_device(vs).dv;
-        kap[s]         = self_device(vs).kap;
-        mu[s]          = self_device(vs).mu;
-        sc[s]          = self_device(vs).sc;
-        qv[s]          = self_device(vs).qv;
-        qc_incld[s]    = self_device(vs).qc_incld;
-        qitot_incld[s] = self_device(vs).qitot_incld;
-        nitot_incld[s] = self_device(vs).nitot_incld;
-        qr_incld[s]    = self_device(vs).qr_incld;
-        qrcol[s]       = self_device(vs).qrcol;
-        qccol[s]       = self_device(vs).qccol;
-        qwgrth[s]      = self_device(vs).qwgrth;
-        nrshdr[s]      = self_device(vs).nrshdr;
-        qcshd[s]       = self_device(vs).qcshd;
+        rho[s]                        = self_device(vs).rho;
+        temp[s]                       = self_device(vs).temp;
+        pres[s]                       = self_device(vs).pres;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_qi2qr_melting[s]    = self_device(vs).table_val_qi2qr_melting;
+        table_val_qi2qr_vent_melt[s]  = self_device(vs).table_val_qi2qr_vent_melt;
+        latent_heat_vapor[s]          = self_device(vs).latent_heat_vapor;
+        latent_heat_fusion[s]         = self_device(vs).latent_heat_fusion;
+        dv[s]                         = self_device(vs).dv;
+        kap[s]                        = self_device(vs).kap;
+        mu[s]                         = self_device(vs).mu;
+        sc[s]                         = self_device(vs).sc;
+        qv[s]                         = self_device(vs).qv;
+        qc_incld[s]                   = self_device(vs).qc_incld;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
+        qr_incld[s]                   = self_device(vs).qr_incld;
+        qr2qi_collect_tend[s]         = self_device(vs).qr2qi_collect_tend;
+        qc2qi_collect_tend[s]         = self_device(vs).qc2qi_collect_tend;
+        qc_growth_rate[s]             = self_device(vs).qc_growth_rate;
+        nr_ice_shed_tend[s]           = self_device(vs).nr_ice_shed_tend;
+        qc2qr_ice_shed_tend[s]        = self_device(vs).qc2qr_ice_shed_tend;
         log_wetgrowth.set(s, self_device(vs).log_wetgrowth);
       }
 
-      Functions::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc,
-                                       qv, qc_incld, qitot_incld, nitot_incld, qr_incld,
-                                       log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd);
+      Functions::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor, latent_heat_fusion, dv, kap, mu, sc,
+                                       qv, qc_incld, qi_incld, ni_incld, qr_incld,
+                                       log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend);
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        self_device(vs).log_wetgrowth = log_wetgrowth[s];
-        self_device(vs).qrcol         = qrcol[s];
-        self_device(vs).qccol         = qccol[s];
-        self_device(vs).qwgrth        = qwgrth[s];
-        self_device(vs).nrshdr        = nrshdr[s];
-        self_device(vs).qcshd         = qcshd[s];
+        self_device(vs).log_wetgrowth       = log_wetgrowth[s];
+        self_device(vs).qr2qi_collect_tend  = qr2qi_collect_tend[s];
+        self_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
+        self_device(vs).qc_growth_rate      = qc_growth_rate[s];
+        self_device(vs).nr_ice_shed_tend    = nr_ice_shed_tend[s];
+        self_device(vs).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[s];
       }
     });
 
@@ -118,11 +116,11 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
 
-      REQUIRE(self[s].qrcol         == self_host(s).qrcol);
-      REQUIRE(self[s].qccol         == self_host(s).qccol);
-      REQUIRE(self[s].qwgrth        == self_host(s).qwgrth);
-      REQUIRE(self[s].nrshdr        == self_host(s).nrshdr);
-      REQUIRE(self[s].qcshd         == self_host(s).qcshd);
+      REQUIRE(self[s].qr2qi_collect_tend    == self_host(s).qr2qi_collect_tend);
+      REQUIRE(self[s].qc2qi_collect_tend    == self_host(s).qc2qi_collect_tend);
+      REQUIRE(self[s].qc_growth_rate        == self_host(s).qc_growth_rate);
+      REQUIRE(self[s].nr_ice_shed_tend      == self_host(s).nr_ice_shed_tend);
+      REQUIRE(self[s].qc2qr_ice_shed_tend   == self_host(s).qc2qr_ice_shed_tend);
     }
   }
 

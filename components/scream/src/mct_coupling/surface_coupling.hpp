@@ -2,7 +2,7 @@
 #define SCREAM_SURFACE_COUPLING_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 #include "share/field/field_repository.hpp"
 
 namespace scream {
@@ -16,7 +16,7 @@ public:
   template<typename MS>
   using field_repo_type = FieldRepository<Real,MS>;
 
-  explicit SurfaceCoupling (const Comm& comm, const ParameterList& params);
+  explicit SurfaceCoupling (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Coupling; }
@@ -32,7 +32,7 @@ public:
   std::string name () const { return "surface_coupling"; }
 
   // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   // Get the grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -67,7 +67,7 @@ protected:
   field_repo_type<host_device_type> m_host_field_repo;
   field_repo_type<device_type>      m_device_field_repo;
 
-  Comm    m_comm;
+  ekat::Comm    m_comm;
 };
 
 } // namespace scream

@@ -1,10 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
@@ -27,11 +25,11 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
   static void run_latent_heat_bfb()
   {
     LatentHeatData latent_fortran[] = {
-     // its, ite, kts, kte, ranges
-      LatentHeatData(1,  7,   1,  10),
-      LatentHeatData(1,  7,   1,  10),
-      LatentHeatData(1,  7,   1,  10),
-      LatentHeatData(1,  7,   1,  10),
+      //           its, ite, kts, kte
+      LatentHeatData(1,   7,   1,  10),
+      LatentHeatData(1,   7,   1,  10),
+      LatentHeatData(1,   7,   1,  10),
+      LatentHeatData(1,   7,   1,  10),
     };
 
     static constexpr Int num_runs = sizeof(latent_fortran) / sizeof(LatentHeatData);
@@ -50,9 +48,9 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
       LatentHeatData& d = latent_cxx[i];
       get_latent_heat_f(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
 
-      REQUIRE(h.m_total == d.m_total);
+      REQUIRE(h.total1x2() == d.total1x2());
 
-      for (Int j = 0; j < h.m_total; ++j) {
+      for (Int j = 0; j < h.total1x2(); ++j) {
         REQUIRE(d.v[j] == h.v[j]);
         REQUIRE(d.s[j] == h.s[j]);
         REQUIRE(d.f[j] == h.f[j]);

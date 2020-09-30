@@ -1,14 +1,16 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "p3_unit_tests_common.hpp"
+
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
-#include "p3_unit_tests_common.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -36,6 +38,9 @@ struct UnitWrap::UnitTest<D>::TestUpwind {
 
 static void run_phys()
 {
+  using ekat::repack;
+  constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
+
   static const Int nfield = 2;
 
   const auto eps = std::numeric_limits<Scalar>::epsilon();
@@ -47,14 +52,14 @@ static void run_phys()
     const Real dt = min_dz/max_speed;
 
     view_1d<Pack> rho("rho", npack), inv_rho("inv_rho", npack), inv_dz("inv_dz", npack);
-    const auto lrho = smallize(rho), linv_rho = smallize(inv_rho), linv_dz = smallize(inv_dz);
+    const auto lrho = repack<SPS>(rho), linv_rho = repack<SPS>(inv_rho), linv_dz = repack<SPS>(inv_dz);
 
     Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
     Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
-    const auto init_array = [&] (const std::string& name, const Int& i, decltype(flux)& f,
+    const auto init_array = [&] (const std::string& /* name */, const Int& i, decltype(flux)& f,
                                  decltype(lflux)& lf) {
       f[i] = view_1d<Pack>("f", npack);
-      lf[i] = smallize(f[i]);
+      lf[i] = repack<SPS>(f[i]);
     };
     for (int i = 0; i < nfield; ++i) {
       init_array("flux", i, flux, lflux);
@@ -70,7 +75,7 @@ static void run_phys()
       const auto init_fields = KOKKOS_LAMBDA (const MemberType& team) {
         const auto set_fields = [&] (const Int& k) {
           for (Int i = 0; i < nfield; ++i) {
-            const auto range = scream::pack::range<Pack>(k*Pack::n);
+            const auto range = ekat::range<Pack>(k*Pack::n);
             rho(k) = 1 + range/nk;
             inv_rho(k) = 1 / rho(k);
             inv_dz(k) = 1 / (min_dz + range*range / (nk*nk));
@@ -82,15 +87,15 @@ static void run_phys()
             } else {
               r[i](k) = 1; // Evolve the background density field.
             }
-            scream_kassert((V[i](k) >= 0).all());
-            scream_kassert((V[i](k) <= max_speed || (range >= nk)).all());
+            EKAT_KERNEL_ASSERT((V[i](k) >= 0).all());
+            EKAT_KERNEL_ASSERT((V[i](k) <= max_speed || (range >= nk)).all());
           }
-          scream_kassert((V[0](k) == V[1](k)).all());
+          EKAT_KERNEL_ASSERT((V[0](k) == V[1](k)).all());
         };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npack), set_fields);
         team.team_barrier();
       };
-      Kokkos::parallel_for(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+      Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                            init_fields);
 
       const auto sflux = scalarize(flux[1]);
@@ -126,14 +131,14 @@ static void run_phys()
               // but it works, so we might as well use it.
               if (eps*sr0(k) < eps) return;
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_max = util::max(mixing_ratio_true, r_max);
+              r_max = ekat::impl::max(mixing_ratio_true, r_max);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_max_r,
                                     Kokkos::Max<Scalar>(r_max));
 
             const auto find_min_r = [&] (const Int& k, Scalar& r_min) {
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_min = util::min(mixing_ratio_true, r_min);
+              r_min = ekat::impl::min(mixing_ratio_true, r_min);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_min_r,
                                     Kokkos::Min<Scalar>(r_min));
@@ -178,13 +183,13 @@ static void run_phys()
 
           // Check diagnostics.
           //   1. Check for conservation of mass.
-          if (util::reldif(mass0, mass1) > 1e1*eps) ++nerr;
+          if (ekat::impl::rel_diff(mass0, mass1) > 1e1*eps) ++nerr;
           //   2. Check for non-violation of global extrema.
           if (r_min1 < r_min0 - 10*eps) ++nerr;
           if (r_max1 > r_max0 + 10*eps) ++nerr;
         };
         Int lnerr;
-        Kokkos::parallel_reduce(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+        Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();
@@ -197,52 +202,22 @@ static void run_phys()
 static void run_bfb()
 {
   CalcUpwindData cuds_fortran[] = {
-                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dzq range, vs range, qnx range
-    CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,   -1,   72,      36,  4,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,   -1,   72,      72,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,   -1,   24,      8,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,    1,    7,      21,  1,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,   -1,   21,      7,  1,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
+                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
+    CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03),
+    CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03),
+    CalcUpwindData(  1,  72,   -1,   72,      36,  4,  1.833E+03),
+    CalcUpwindData(  1,  72,   -1,   72,      72,  2,  1.833E+03),
+    CalcUpwindData(  1,  32,   -1,   24,      8,  2,  1.833E+03),
+    CalcUpwindData(  1,  32,    1,    7,      21,  1,  1.833E+03),
+    CalcUpwindData(  1,  32,   -1,   21,      7,  1,  1.833E+03),
   };
 
   static constexpr Int num_runs = sizeof(cuds_fortran) / sizeof(CalcUpwindData);
+
+  // Set up random input data
+  for (auto& d : cuds_fortran) {
+    d.randomize();
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -257,26 +232,34 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    calc_first_order_upwind_step(cuds_fortran[i]);
+  for (auto& d : cuds_fortran) {
+    calc_first_order_upwind_step(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
+  std::vector<Real*> tmp1, tmp2;
+  for (auto& d : cuds_cxx) {
+    Real** fluxes, **vs, **qnx;
+    d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
     calc_first_order_upwind_step_f(
-      cuds_cxx[i].kts, cuds_cxx[i].kte, cuds_cxx[i].kdir, cuds_cxx[i].kbot, cuds_cxx[i].k_qxtop, cuds_cxx[i].dt_sub,
-      cuds_cxx[i].rho, cuds_cxx[i].inv_rho, cuds_cxx[i].inv_dzq,
-      cuds_cxx[i].num_arrays, cuds_cxx[i].fluxes, cuds_cxx[i].vs, cuds_cxx[i].qnx);
+      d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub,
+      d.rho, d.inv_rho, d.inv_dz,
+      d.num_arrays, fluxes, vs, qnx);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
+    Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
+
+    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+    cuds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+    cuds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+
     for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
-      // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(cuds_fortran[i].fluxes[n][k] == cuds_cxx[i].fluxes[n][k]);
-        REQUIRE(cuds_fortran[i].qnx[n][k]    == cuds_cxx[i].qnx[n][k]);
+        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
       }
     }
   }
@@ -294,44 +277,20 @@ static void run_phys()
 
 static void run_bfb()
 {
-//   Co_max = 9.196837456784E-02 - 9.827330928362E+01
-//     dt_left =1.818181818182E+01 - 1.800000000000E+03
-// prt_accum = 4.959754212038E-05 - 6.211745579368E-07
-
-  // GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-  //            Real prt_accum_, Int num_arrays_,
-  //            std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
-  //            std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
-
   GenSedData gsds_fortran[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
-    GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,    -1,     36,      57,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,     1,     57,      37,   36,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
+    GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2),
+    GenSedData(1,  72,    -1,     36,      57,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
+    GenSedData(1,  72,     1,     57,      37,   36,  4.196E-01, 1.418E+02, 4.959E-06, 1),
+    GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
   };
 
   static constexpr Int num_runs = sizeof(gsds_fortran) / sizeof(GenSedData);
+
+  // Set up random input data
+  for (auto& d : gsds_fortran) {
+    d.randomize();
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -343,31 +302,39 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    generalized_sedimentation(gsds_fortran[i]);
+  for (auto& d : gsds_fortran) {
+    generalized_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    generalized_sedimentation_f(gsds_cxx[i].kts, gsds_cxx[i].kte, gsds_cxx[i].kdir, gsds_cxx[i].k_qxtop,
-                                &gsds_cxx[i].k_qxbot, gsds_cxx[i].kbot, gsds_cxx[i].Co_max,
-                                &gsds_cxx[i].dt_left, &gsds_cxx[i].prt_accum, gsds_cxx[i].inv_dzq, gsds_cxx[i].inv_rho, gsds_cxx[i].rho,
-                                gsds_cxx[i].num_arrays, gsds_cxx[i].vs, gsds_cxx[i].fluxes, gsds_cxx[i].qnx);
+  std::vector<Real*> tmp1, tmp2;
+  for (auto& d : gsds_cxx) {
+    Real** fluxes, **vs, **qnx;
+    d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
+    generalized_sedimentation_f(d.kts, d.kte, d.kdir, d.k_qxtop,
+                                &d.k_qxbot, d.kbot, d.Co_max,
+                                &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
+                                d.num_arrays, fluxes, vs, qnx);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
+    Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
+
+    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+    gsds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+    gsds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+
     for (int n = 0; n < gsds_fortran[i].num_arrays; ++n) {
-      // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(gsds_fortran[i].fluxes[n][k] == gsds_cxx[i].fluxes[n][k]);
-        REQUIRE(gsds_fortran[i].qnx[n][k]    == gsds_cxx[i].qnx[n][k]);
+        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
       }
-      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
-      REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
-      REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
     }
+    REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
+    REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
+    REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
   }
 }
 

@@ -92,6 +92,16 @@ interface
     real(kind=c_real)            :: cxx_exp
   end function cxx_exp
 
+  function cxx_expm1(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_expm1
+  end function cxx_expm1
+  
   function cxx_tanh(input) bind(C)
     use iso_c_binding
 
