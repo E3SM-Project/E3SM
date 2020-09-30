@@ -318,7 +318,7 @@
 
 <!-- eos -->
 <config_eos_type>'jm'</config_eos_type>
-<config_open_ocean_freezing_temperature_coeff_0>-1.8</config_open_ocean_freezing_temperature_coeff_0>
+<config_open_ocean_freezing_temperature_coeff_0>0.0</config_open_ocean_freezing_temperature_coeff_0>
 <config_open_ocean_freezing_temperature_coeff_S>0.0</config_open_ocean_freezing_temperature_coeff_S>
 <config_open_ocean_freezing_temperature_coeff_p>0.0</config_open_ocean_freezing_temperature_coeff_p>
 <config_open_ocean_freezing_temperature_coeff_pS>0.0</config_open_ocean_freezing_temperature_coeff_pS>
