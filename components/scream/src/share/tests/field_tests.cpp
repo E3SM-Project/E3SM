@@ -141,6 +141,8 @@ TEST_CASE("field_repo", "") {
   FieldIdentifier fid2("field_2", tags1, m/s);
   FieldIdentifier fid3("field_2", tags2, m/s);
   FieldIdentifier fid4("field_2", tags2, km/s);
+  FieldIdentifier fid5("field_3", tags2, km/s);
+  FieldIdentifier fid6("field_4", tags2, km/s);
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
@@ -150,6 +152,8 @@ TEST_CASE("field_repo", "") {
   fid2.set_dimensions(dims2);
   fid3.set_dimensions(dims3);
   fid4.set_dimensions(dims3);
+  fid5.set_dimensions(dims3);
+  fid6.set_dimensions(dims3);
 
   FieldRepository<Real,DefaultDevice>  repo;
 
@@ -160,6 +164,9 @@ TEST_CASE("field_repo", "") {
   repo.register_field(fid1,"group_1");
   repo.register_field(fid2,"group_2");
   repo.register_field(fid3,"group_2");
+  // Test that you can assign more than one group to a field
+  repo.register_field(fid5,{"group_3","group_5"});
+  repo.register_field(fid6,{"group_4","group_5","group_6"});
   // Should not be able to register fields to the 'state' group (it's reserved)
   REQUIRE_THROWS(repo.register_field(fid2,"state"));
   // Should not be able to register the same field name with two different units
@@ -171,11 +178,13 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==2);
-  REQUIRE (repo.internal_size()==3);
+  REQUIRE (repo.size()==4);
+  REQUIRE (repo.internal_size()==5);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);
+  auto f5 = repo.get_field(fid5);
+  auto f6 = repo.get_field(fid6);
 
   // Check the two fields identifiers are indeed different
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
@@ -183,12 +192,27 @@ TEST_CASE("field_repo", "") {
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
   REQUIRE (ekat::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
   REQUIRE (ekat::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
+  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_3"));
+  REQUIRE (ekat::contains(f5.get_header().get_tracking().get_groups_names(),"Group_5"));
+  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_4"));
+  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_5"));
+  REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_6"));
 
   // Check that the groups in the repo contain the correct fields
   REQUIRE (repo.get_field_groups().count("GROUP_1")==1);
   REQUIRE (repo.get_field_groups().count("GRoup_2")==1);
+  REQUIRE (repo.get_field_groups().count("group_3")==1);
+  REQUIRE (repo.get_field_groups().count("groUP_4")==1);
+  REQUIRE (repo.get_field_groups().count("group_5")==1);
+  REQUIRE (repo.get_field_groups().at("group_5").size()==2);
+  REQUIRE (repo.get_field_groups().count("group_6")==1);
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_1"),"Field_1"));
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_2"),"Field_2"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_3"),"Field_3"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_4"),"Field_4"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_3"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_4"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_6"),"Field_4"));
 }
 
 } // anonymous namespace
