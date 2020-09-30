@@ -10,11 +10,9 @@ set(P3_SRCS
   p3_f90.cpp
   p3_functions_f90.cpp
   p3_ic_cases.cpp
-  micro_p3_iso_c.f90
-  micro_p3_iso_f.f90
+  p3_iso_c.f90
+  p3_iso_f.f90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3.F90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/debug_info.F90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3_utils.F90
   atmosphere_microphysics.cpp
   p3_inputs_initializer.cpp
   scream_p3_interface.F90
@@ -47,8 +45,8 @@ if (NOT CUDA_BUILD)
     p3_rain_imm_freezing.cpp
     p3_droplet_self_coll.cpp
     p3_update_prognostics.cpp
-    p3_evaporate_sublimate_precip.cpp
-    p3_impose_max_total_Ni.cpp
+    p3_evaporate_rain.cpp
+    p3_impose_max_total_ni.cpp
     p3_calc_liq_relaxation_timescale.cpp
     p3_ice_relaxation_timescale.cpp
     p3_ice_nucleation.cpp

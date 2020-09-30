@@ -5,8 +5,14 @@ set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
     shoc_diag_obklen_tests.cpp
+    shoc_impli_comp_tmpi_tests.cpp
+    shoc_impli_dp_inverse_tests.cpp
+    shoc_impli_sfc_fluxes_tests.cpp
+    shoc_impli_srf_stress_tests.cpp
+    shoc_impli_srf_tke_tests.cpp
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
+    shoc_energy_fixer_tests.cpp
     shoc_energy_update_dse_tests.cpp
     shoc_energy_integral_tests.cpp
     shoc_energy_total_fixer_tests.cpp
@@ -34,9 +40,10 @@ set(SHOC_TESTS_SRCS
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
+    shoc_linear_interp_tests.cpp
     shoc_diag_third_tests.cpp
     shoc_compute_diag_third_tests.cpp
-    shoc_linearinterp_tests.cpp
+    shoc_assumed_pdf_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
     shoc_pdf_thl_parameters_tests.cpp
@@ -50,7 +57,9 @@ set(SHOC_TESTS_SRCS
     shoc_pdf_compute_cloudvar_tests.cpp
     shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
-    shoc_unit_tests.cpp)
+    shoc_pblintd_init_pot_test.cpp
+    shoc_unit_tests.cpp
+    ) # SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
@@ -64,4 +73,3 @@ add_custom_target(shoc_baseline
   COMMAND $<TARGET_FILE:shoc_run_and_cmp> -f -g ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
 
 add_dependencies(baseline shoc_baseline)
-

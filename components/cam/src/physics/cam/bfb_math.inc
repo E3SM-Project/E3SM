@@ -13,7 +13,8 @@
 #define SCREAM_BFB_MATH_INC
 
 #define bfb_square(val) ((val)*(val))
-#define bfb_cube(val) ((val)*(val)*(val))
+#define bfb_cube(val)   ((val)*(val)*(val))
+#define bfb_quad(val)   (bfb_square(bfb_square(val)))
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
@@ -23,6 +24,7 @@
 #  define bfb_log(val) cxx_log(val)
 #  define bfb_log10(val) cxx_log10(val)
 #  define bfb_exp(val) cxx_exp(val)
+#  define bfb_expm1(val) cxx_expm1(val)
 #  define bfb_tanh(val) cxx_tanh(val)
 #else
 #  define bfb_pow(base, exp) (base)**(exp)
@@ -31,6 +33,7 @@
 #  define bfb_log(val) log(val)
 #  define bfb_log10(val) log10(val)
 #  define bfb_exp(val) exp(val)
+#  define bfb_expm1(val) (exp(val) - 1)
 #  define bfb_tanh(val) tanh(val)
 #  define bfb_sqrt(val) sqrt(val)
 #  define bfb_tanh(val) tanh(val)

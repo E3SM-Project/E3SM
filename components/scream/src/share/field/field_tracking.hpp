@@ -23,7 +23,7 @@ class FieldTracking {
 public:
 
   using TimeStamp         = util::TimeStamp;
-  using ci_string         = ekat::util::CaseInsensitiveString;
+  using ci_string         = ekat::CaseInsensitiveString;
   using atm_proc_ptr_type = std::weak_ptr<AtmosphereProcess>;
   using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 

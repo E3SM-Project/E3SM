@@ -15,7 +15,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_liq_relaxation_timescale(
-  const view_2d_table& revap_table,
+  const view_2d_table& revap_table_vals,
   const Spack& rho, const Scalar& f1r, const Scalar& f2r,
   const Spack& dv, const Spack& mu, const Spack& sc,
   const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
@@ -34,7 +34,7 @@ void Functions<S,D>
     epsr.set(qr_not_small, 2 * pi * cdistr * rho * dv *
              (f1r * tgamma(mu_r + 2)/lamr +
               f2r * sqrt(rho/mu) * cbrt(sc) *
-              apply_table(revap_table, table)));
+              apply_table(revap_table_vals, table)));
   }
 
   const auto qc_not_small = (qc_incld >= qsmall) && context;

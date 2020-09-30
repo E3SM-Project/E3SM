@@ -41,8 +41,8 @@ enum class LayoutType {
 };
 
 inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
-  using ekat::util::erase;
-  using ekat::util::count;
+  using ekat::erase;
+  using ekat::count;
 
   auto tags = field_tags;
 

@@ -85,6 +85,8 @@ module micro_p3_interface
       qr_evap_tend_idx,      &
       cmeliq_idx,         &
       relvar_idx,         &
+      qv_prev_idx,        &
+      t_prev_idx,         &
       accre_enhan_idx     
 
 ! Physics buffer indices for fields registered by other modules
@@ -280,6 +282,9 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('RELVAR',     'global',dtype_r8,(/pcols,pver/),   relvar_idx)
    call pbuf_add_field('ACCRE_ENHAN','global',dtype_r8,(/pcols,pver/), accre_enhan_idx)
 
+   call pbuf_add_field('QV_PREV',     'global',dtype_r8,(/pcols,pver/), qv_prev_idx)
+   call pbuf_add_field('T_PREV',      'global',dtype_r8,(/pcols,pver/), t_prev_idx)
+
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
 
@@ -362,6 +367,8 @@ end subroutine micro_p3_readnl
        call pbuf_set_field(pbuf2d, relvar_idx, 2._rtype)
        call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
        call pbuf_set_field(pbuf2d, qr_evap_tend_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, qv_prev_idx,  0._rtype)
+       call pbuf_set_field(pbuf2d, t_prev_idx,  0._rtype)
  
     end if
 
@@ -412,7 +419,7 @@ end subroutine micro_p3_readnl
     call addfld ('ICIMRST', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-stratus ice mixing ratio'                  )
 
    ! MG microphysics diagnostics
-    call addfld ('CMEIOUT', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of deposition/sublimation of cloud ice'             )
+    call addfld ('QV2QI_DEPOS', (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of deposition/sublimation of cloud ice'             )
     call addfld ('QCSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud water mixing ratio tendency from sedimentation'    )
     call addfld ('QISEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud ice mixing ratio tendency from sedimentation'      )
     call addfld ('QRSEDTEN', (/ 'lev' /), 'A', 'kg/kg/s', 'Rain mixing ratio tendency from sedimentation'           )
@@ -739,7 +746,7 @@ end subroutine micro_p3_readnl
 
     real(rtype) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
     real(rtype) :: pres(pcols,pver)       !pressure at midlevel                   hPa
-    real(rtype) :: cmeiout(pcols,pver)
+    real(rtype) :: qv2qi_depos_tend(pcols,pver)
     real(rtype) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(rtype) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
     real(rtype) :: exner(pcols,pver)      !exner formula for converting between potential and normal temp
@@ -766,7 +773,9 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: snow_sed(:)    ! Surface flux of cloud ice from sedimentation
     real(rtype), pointer :: relvar(:,:)    ! cloud liquid relative variance [-]
     real(rtype), pointer :: cldo(:,:)      ! Old cloud fraction
-    real(rtype), pointer :: qr_evap_tend(:,:) ! precipitation evaporation rate 
+    real(rtype), pointer :: qr_evap_tend(:,:) ! precipitation evaporation rate
+    real(rtype), pointer :: qv_prev(:,:)   ! qv from previous p3_main call
+    real(rtype), pointer :: t_prev(:,:)    ! t from previous p3_main call
     !! wetdep 
     real(rtype), pointer :: qme(:,:)
     real(rtype), pointer :: precip_total_tend(:,:)        ! Total precipitation (rain + snow)
@@ -856,6 +865,8 @@ end subroutine micro_p3_readnl
     ! All internal PBUF variables
     ! INPUTS
     call pbuf_get_field(pbuf,      relvar_idx,    relvar                                                   )
+    call pbuf_get_field(pbuf,      t_prev_idx,    t_prev                                                   )
+    call pbuf_get_field(pbuf,     qv_prev_idx,    qv_prev                                                  )
     ! OUTPUTS
     call pbuf_get_field(pbuf,        cldo_idx,      cldo, start=(/1,1,itim_old/), kount=(/psetcols,pver,1/))
     call pbuf_get_field(pbuf,         qme_idx,       qme                                                   )
@@ -1039,7 +1050,7 @@ end subroutine micro_p3_readnl
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
-         cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
+         qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
          qr_evap_tend(its:ite,kts:kte),  & ! OUT rain evaporation
@@ -1054,6 +1065,8 @@ end subroutine micro_p3_readnl
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
+         qv_prev(its:ite,kts:kte),         & ! IN  qv at end of prev p3_main call   kg kg-1
+         t_prev(its:ite,kts:kte),          & ! IN  t at end of prev p3_main call    K
          col_location(its:ite,:3)          & ! IN column locations
          )
 
@@ -1072,7 +1085,7 @@ end subroutine micro_p3_readnl
       p3_main_outputs(1,k,14) = rel(1,k)
       p3_main_outputs(1,k,15) = rei(1,k)
       p3_main_outputs(1,k,18) = rho_qi(1,k)
-      p3_main_outputs(1,k,19) = cmeiout(1,k)
+      p3_main_outputs(1,k,19) = qv2qi_depos_tend(1,k)
       p3_main_outputs(1,k,20) = precip_total_tend(1,k)
       p3_main_outputs(1,k,21) = nevapr(1,k)
       p3_main_outputs(1,k,22) = qr_evap_tend(1,k)
@@ -1115,12 +1128,16 @@ end subroutine micro_p3_readnl
     ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,qm(:ncol,:pver)  ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
     ptend%q(:ncol,:pver,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:pver) ) - state%q(:ncol,:pver,ixrimvol)  )/dtime
 
+    ! Update t_prev and qv_prev to be used by evap_precip
+    t_prev(:ncol,:pver) = temp(:ncol,:pver)
+    qv_prev(:ncol,:pver) = qv(:ncol,:pver)
+
     call t_stopf('micro_p3_tend_loop')
     call t_startf('micro_p3_tend_finish')
    ! Following MG interface as a template:
 
     ! Net micro_p3 condensation rate
-    qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
+    qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + qv2qi_depos_tend(:ncol,top_lev:pver)  ! qv2qi_depos_tend is output from p3 micro
     ! Add cmeliq to  vap_liq_exchange
     vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver) 
 

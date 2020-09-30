@@ -12,7 +12,7 @@ namespace p3 {
   stops and prints values if they are out of specified allowable ranges.
 
   'check_consistency' means include trap for inconsistency in moments;
-  otherwise, only trap for Q, T, and negative Qx, etc.  This option is here
+  otherwise, only trap for Q, T_atm, and negative Qx, etc.  This option is here
   to allow for Q<qsmall.and.N>nsmall or Q>qsmall.and.N<small which can be produced
   at the leading edges due to sedimentation and whose values are accpetable
   since lambda limiters are later imposed after SEDI (so one does not necessarily
@@ -35,7 +35,7 @@ void Functions<S,D>
   constexpr Scalar Q_low  = 0.;
 
   Int kmin, kmax;
-  ekat::util::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
+  ekat::impl::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {

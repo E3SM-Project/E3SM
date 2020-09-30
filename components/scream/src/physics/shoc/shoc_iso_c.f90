@@ -165,7 +165,87 @@ contains
            varorcovar)
 
   end subroutine calc_shoc_varorcovar_c
-  
+
+  subroutine compute_tmpi_c(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi) bind(C)
+    use shoc, only: compute_tmpi
+
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: rho_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: tmpi(shcol,nlevi)
+
+    call compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
+
+  end subroutine compute_tmpi_c
+
+  subroutine dp_inverse_c(nlev, shcol, rho_zt, dz_zt, rdp_zt) bind(C)
+    use shoc, only: dp_inverse
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(out) :: rdp_zt(shcol,nlev)
+
+    call dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+
+  end subroutine dp_inverse_c
+
+  subroutine sfc_fluxes_c(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,&
+                          wqw_sfc, wtke_sfc, thetal, qw, tke) bind(C)
+    use shoc, only: sfc_fluxes
+
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
+    real(kind=c_real), intent(in) :: rdp_zt_sfc(shcol)
+    real(kind=c_real), intent(in) :: wthl_sfc(shcol)
+    real(kind=c_real), intent(in) :: wqw_sfc(shcol)
+    real(kind=c_real), intent(in) :: wtke_sfc(shcol)
+
+    real(kind=c_real), intent(inout) :: thetal(shcol)
+    real(kind=c_real), intent(inout) :: qw(shcol)
+    real(kind=c_real), intent(inout) :: tke(shcol)
+
+    call sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                    wthl_sfc, wqw_sfc, wtke_sfc, thetal, qw, tke)
+
+  end subroutine sfc_fluxes_c
+
+  subroutine impli_srf_stress_term_c(shcol, rho_zi_sfc, uw_sfc, vw_sfc, &
+                                     u_wind_sfc, v_wind_sfc, ksrf) bind(C)
+    use shoc, only: impli_srf_stress_term
+
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
+    real(kind=c_real), intent(in) :: uw_sfc(shcol)
+    real(kind=c_real), intent(in) :: vw_sfc(shcol)
+    real(kind=c_real), intent(in) :: u_wind_sfc(shcol)
+    real(kind=c_real), intent(in) :: v_wind_sfc(shcol)
+
+    real(kind=c_real), intent(out) :: ksrf(shcol)
+
+    ksrf(1:shcol) = impli_srf_stress_term(shcol, rho_zi_sfc, &
+                      uw_sfc, vw_sfc, u_wind_sfc, v_wind_sfc)
+
+  end subroutine impli_srf_stress_term_c
+
+  subroutine tke_srf_flux_term_c(shcol, uw_sfc, vw_sfc, wtke_sfc) bind(C)
+    use shoc, only: tke_srf_flux_term
+
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: uw_sfc(shcol)
+    real(kind=c_real), intent(in) :: vw_sfc(shcol)
+
+    real(kind=c_real), intent(out) :: wtke_sfc(shcol)
+
+    wtke_sfc(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
+
+  end subroutine tke_srf_flux_term_c
+
   subroutine check_tke_c(shcol, nlev, tke) bind(C)
     use shoc, only: check_tke
     
@@ -319,6 +399,45 @@ contains
                            phis, host_dse)
 
   end subroutine update_host_dse_c
+  
+  subroutine shoc_energy_fixer_c(shcol, nlev, nlevi, dtime, nadv, &
+                                 zt_grid, zi_grid, se_b, ke_b, wv_b, &
+                                 wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
+                                 wqw_sfc, pdel, rho_zt, tke, pint, &
+                                 host_dse) bind (C)
+    use shoc, only: shoc_energy_fixer
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in), value :: dtime
+    integer(kind=c_int), intent(in), value :: nadv
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+    real(kind=c_real), intent(in) :: se_b(shcol)
+    real(kind=c_real), intent(in) :: ke_b(shcol)
+    real(kind=c_real), intent(in) :: wv_b(shcol)
+    real(kind=c_real), intent(in) :: wl_b(shcol)
+    real(kind=c_real), intent(in) :: se_a(shcol)
+    real(kind=c_real), intent(in) :: ke_a(shcol)
+    real(kind=c_real), intent(in) :: wv_a(shcol)
+    real(kind=c_real), intent(in) :: wl_a(shcol)
+    real(kind=c_real), intent(in) :: wthl_sfc(shcol)
+    real(kind=c_real), intent(in) :: wqw_sfc(shcol)
+    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
+    real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
+    
+    real(kind=c_real), intent(inout) :: host_dse(shcol,nlev)
+    
+    call shoc_energy_fixer(shcol, nlev, nlevi, dtime, nadv, &
+                           zt_grid, zi_grid, se_b, ke_b, wv_b, &
+                           wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
+                           wqw_sfc, pdel, rho_zt, tke, pint, &
+                           host_dse)
+
+  end subroutine shoc_energy_fixer_c
 
   subroutine shoc_energy_integrals_c(shcol, nlev, host_dse, pdel,&
                                      rtm, rcm, u_wind, v_wind,&
@@ -811,24 +930,57 @@ contains
                              w3)
 
   end subroutine compute_diag_third_shoc_moment_c			     
- 
-  subroutine linear_interp_c(x1,x2,y1,y2,km1,km2,ncol,minthresh) bind (C)
-    use shoc, only: linear_interp
 
-    integer(kind=c_int), intent(in), value :: ncol
-    integer(kind=c_int), intent(in), value :: km1
-    integer(kind=c_int), intent(in), value :: km2
-    real(kind=c_real), intent(in), value :: minthresh
-    real(kind=c_real), intent(in) :: x1(ncol,km1)
-    real(kind=c_real), intent(in) :: y1(ncol,km1)
-    real(kind=c_real), intent(in) :: x2(ncol,km2)
-    
-    real(kind=c_real), intent(out) :: y2(ncol,km2)
+  subroutine linear_interp_c(x1, x2, y1, y2, km1, km2, ncol, minthresh) bind(C)
+    use shoc, only : linear_interp
 
-    call linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
+    real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
+    real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
+    real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
+    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
+    real(kind=c_real) , value, intent(in) :: minthresh
 
-  end subroutine linear_interp_c  
-  
+    call linear_interp(x1, x2, y1, y2, km1, km2, ncol, minthresh)
+  end subroutine linear_interp_c
+
+  subroutine shoc_assumed_pdf_c(shcol, nlev, nlevi, thetal, qw, &
+                                w_field, thl_sec, qw_sec, wthl_sec, &
+                                w_sec, wqw_sec, qwthl_sec, w3, pres, &
+                                zt_grid, zi_grid, shoc_cldfrac, &
+                                shoc_ql, wqls, wthv_sec, shoc_ql2) bind(C)
+    use shoc, only: shoc_assumed_pdf
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+    real(kind=c_real), intent(in) :: qw(shcol,nlev)
+    real(kind=c_real), intent(in) :: w_field(shcol,nlev)
+    real(kind=c_real), intent(in) :: thl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: qw_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: wthl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: w_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: wqw_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: qwthl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: w3(shcol,nlevi)
+    real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: shoc_cldfrac(shcol,nlev)
+    real(kind=c_real), intent(out) :: shoc_ql(shcol,nlev)
+    real(kind=c_real), intent(out) :: wqls(shcol,nlev)
+    real(kind=c_real), intent(out) :: wthv_sec(shcol,nlev)
+    real(kind=c_real), intent(out) :: shoc_ql2(shcol,nlev)
+
+    call shoc_assumed_pdf(shcol, nlev, nlevi, thetal, qw, &
+                          w_field, thl_sec, qw_sec, wthl_sec, &
+                          w_sec, wqw_sec, qwthl_sec, w3, pres, &
+                          zt_grid, zi_grid, shoc_cldfrac, &
+                          shoc_ql, wqls, wthv_sec, shoc_ql2)
+
+  end subroutine shoc_assumed_pdf_c
+
   subroutine shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1) bind (C)
     use shoc, only: shoc_assumed_pdf_tilda_to_real
 
@@ -1105,5 +1257,16 @@ contains
 
    call diag_second_moments_ubycond(shcol, thl, qw, wthl, wqw, qwthl, uw, vw, wtke)
  end subroutine shoc_diag_second_moments_ubycond_c
+
+ subroutine shoc_pblintd_init_pot_c(shcol, nlev, thl, ql, q, thv) bind(C)
+   use shoc, only: pblintd_init_pot
+
+   integer(kind=c_int), value, intent(in) :: shcol, nlev
+   real(kind=c_real), intent(in)  :: thl(shcol, nlev), ql(shcol, nlev), q(shcol, nlev)
+   real(kind=c_real), intent(out) :: thv(shcol, nlev)
+
+   call pblintd_init_pot(shcol, nlev, thl, ql, q, thv)
+
+ end subroutine shoc_pblintd_init_pot_c
 
 end module shoc_iso_c

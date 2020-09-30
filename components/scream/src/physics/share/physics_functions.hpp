@@ -34,19 +34,19 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = ekat::pack::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using BigPack = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = ekat::pack::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
   using IntSmallPack = SmallPack<Int>;
   using Pack         = BigPack<Scalar>;
   using Spack        = SmallPack<Scalar>;
 
   template <typename S>
-  using Mask = ekat::pack::Mask<Pack::n>;
+  using Mask = ekat::Mask<Pack::n>;
 
   template <typename S>
-  using SmallMask = ekat::pack::Mask<SmallPack<S>::n>;
+  using SmallMask = ekat::Mask<SmallPack<S>::n>;
 
   using Smask = SmallMask<Scalar>;
 
@@ -63,9 +63,9 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S>
-  using uview_2d = typename ekat::util::template Unmanaged<view_2d<S> >;
+  using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
@@ -80,14 +80,14 @@ struct Functions
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack polysvp1(const Spack& t, const bool ice);
+  static Spack polysvp1(const Spack& t, const bool ice, const Smask& range_mask);
 
   //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
   //  MurphyKoop_svp returned in units of pa.
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack MurphyKoop_svp(const Spack& t, const bool ice);
+  static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,

@@ -39,8 +39,8 @@ static void run_bfb()
 
   // We need to test the calculation under freezing and not-freezing
   // conditions.
-  constexpr Scalar t_freezing = 0.9 * C::RainFrze,
-                   t_not_freezing = 2.0 * C::RainFrze;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
+                   t_not_freezing = 2.0 * C::T_rainfrz;
 
   // Ideally, we'd also test the calculation based on the mass-weighted mean
   // size Ri--whether it's above or below 8, specifically. Unfortunately,
@@ -54,7 +54,7 @@ static void run_bfb()
   constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.7;
 
   CalcRimeDensityData calc_rime_density_data[max_pack_size] = {
-    // t, rhofaci, table_val_qi_fallspd1, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
+    // T_atm, rhofaci, table_val_qi_fallspd1, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
     {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_small},
     {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_small},
 
@@ -97,9 +97,9 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
+    Spack T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]                    = device_data(vs).t;
+      T_atm[s]                = device_data(vs).T_atm;
       rhofaci[s]              = device_data(vs).rhofaci;
       table_val_qi_fallspd[s] = device_data(vs).table_val_qi_fallspd;
       acn[s]                  = device_data(vs).acn;
@@ -112,7 +112,7 @@ static void run_bfb()
     Spack vtrmi1{0.0};
     Spack rho_qm_cloud{0.0};
 
-    Functions::calc_rime_density(t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
+    Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
                                  qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
 
     // Copy results back into views

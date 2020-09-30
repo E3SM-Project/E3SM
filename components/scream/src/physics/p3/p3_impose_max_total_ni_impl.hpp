@@ -9,8 +9,8 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::impose_max_total_Ni(
-  Spack& ni_local, const Scalar& max_total_Ni, const Spack& inv_rho_local,
+::impose_max_total_ni(
+  Spack& ni_local, const Scalar& max_total_ni, const Spack& inv_rho_local,
   const Smask& context)
 {
   //--------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ void Functions<S,D>
 
   const auto ni_not_small = ni_local >= 1e-20 && context;
   if (ni_not_small.any()){
-    ni_local.set(ni_not_small, ni_local*min(max_total_Ni * inv_rho_local/ni_local, 1));
+    ni_local.set(ni_not_small, ni_local*min(max_total_ni * inv_rho_local/ni_local, 1));
   }
 }
 

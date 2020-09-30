@@ -55,10 +55,12 @@ TEST_CASE("field_tracking", "") {
 
   REQUIRE_THROWS  (track.update_time_stamp(time1));
 }
+  template<typename ST, int N>
+  using Pack = ekat::Pack<ST,N>;
 
 TEST_CASE("field", "") {
+
   using namespace scream;
-  using namespace ekat::pack;
   using namespace ekat::units;
 
   using Device = DefaultDevice;
@@ -179,14 +181,14 @@ TEST_CASE("field_repo", "") {
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  REQUIRE (ekat::util::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
-  REQUIRE (ekat::util::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
+  REQUIRE (ekat::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
+  REQUIRE (ekat::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
 
   // Check that the groups in the repo contain the correct fields
   REQUIRE (repo.get_field_groups().count("GROUP_1")==1);
   REQUIRE (repo.get_field_groups().count("GRoup_2")==1);
-  REQUIRE (ekat::util::contains(repo.get_field_groups().at("group_1"),"Field_1"));
-  REQUIRE (ekat::util::contains(repo.get_field_groups().at("group_2"),"Field_2"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_1"),"Field_1"));
+  REQUIRE (ekat::contains(repo.get_field_groups().at("group_2"),"Field_2"));
 }
 
 } // anonymous namespace
