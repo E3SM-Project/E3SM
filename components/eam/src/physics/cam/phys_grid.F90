@@ -2539,6 +2539,10 @@ logical function phys_grid_initialized ()
                                       !  load balance, but not traditional
                                       !  speed-up (relative to serial cost)
 
+   logical :: wide_format             ! flag indicating that should use wide
+                                      !  format, supporting larger cid, 
+                                      !  lcid, and procid
+
    character(len=*), parameter :: fname = 'atm_chunk_costs.txt'
 
 !-----------------------------------------------------------------------
@@ -2704,6 +2708,11 @@ logical function phys_grid_initialized ()
          write(unitn,'(a)') " This is a measure of load balance, not traditional speed-up, which is"
          write(unitn,'(a)') " relative to the serial cost.)"
 
+         if ((npes >= 1000000) .or. (max_endchunk_p >= 1000000)) then
+            wide_format = .true.
+         else
+            wide_format = .false.
+         endif
          owner_save = -1
          do lcid = min_begchunk_p, max_endchunk_p
             cid          = chnk_stats_i4(1,lcid)
@@ -2715,9 +2724,14 @@ logical function phys_grid_initialized ()
             pcols_p      = proc_stats_i4(5,owner)
 
             if (owner /= owner_save) then
-         
-               write(unitn,'(/,a)') &
-                  "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
+
+               if (wide_format) then
+                  write(unitn,'(/,a)') &
+                     "PROC        id     nthrds    nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
+               else
+                  write(unitn,'(/,a)') &
+                     "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
+               endif
 
                nlthreads_p      = proc_stats_i4(1,owner)      
                nlchunks_p       = proc_stats_i4(2,owner)
@@ -2746,11 +2760,19 @@ logical function phys_grid_initialized ()
                else
                   pspeedup = chnk_cost_lsum_p/phys_proc_cost_p
                endif
-               write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
-                  "PROC", owner, nlthreads_p, nlchunks_p, norm_proc_estcost, norm_proc_cost, &
-                  phys_proc_cost_p, pspeedup
-               write(unitn,'(a)') &
-                  "CHNK  owner   lcid    cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
+               if (wide_format) then
+                  write(unitn,'(a4,1x,i9,1x,i10,1x,i9,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
+                     "PROC", owner, nlthreads_p, nlchunks_p, norm_proc_estcost, norm_proc_cost, &
+                     phys_proc_cost_p, pspeedup
+                  write(unitn,'(a)') &
+                     "CHNK     owner       lcid       cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
+               else
+                  write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
+                     "PROC", owner, nlthreads_p, nlchunks_p, norm_proc_estcost, norm_proc_cost, &
+                     phys_proc_cost_p, pspeedup
+                  write(unitn,'(a)') &
+                     "CHNK  owner   lcid    cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
+               endif
 
                owner_save = owner
             endif
@@ -2769,8 +2791,13 @@ logical function phys_grid_initialized ()
             else
                norm_chnk_cost = chnk_cost/avg_chnk_cost
             endif
-            write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
-              "CHNK", owner, lcid, cid, pcols_p, ncols, dcols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
+            if (wide_format) then
+               write(unitn,'(a4,1x,i9,1x,i10,1x,i9,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+                  "CHNK", owner, lcid, cid, pcols_p, ncols, dcols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
+            else
+               write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+                  "CHNK", owner, lcid, cid, pcols_p, ncols, dcols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
+            endif
 
          enddo
 
