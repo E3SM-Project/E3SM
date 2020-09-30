@@ -2660,13 +2660,11 @@ end if
          ! transport in order to determine interstitial fraction.
          !======================================================================
 
+         call t_startf('tphysbc_aerosols')
+
          if (do_clubb_sgs .or. do_shoc_sgs) then
             sh_e_ed_ratio = 0.0_r8
          endif
-
-         call t_startf('tphysbc_aerosols')
-
-         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
          ! Aerosol wet removal (including aerosol water uptake)
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
