@@ -26,16 +26,16 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
   static void run_property()
   {
     static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 1;  
-  
+    static constexpr Int nlev     = 1;
+
     // Tests for the SHOC function:
     //   pblintd_init_pot
-    
+
     // FIRST TEST
     //  Dry atmosphere test.  Verify that in a dry atmosphere
     //  with no water vapor or liquid water loading that the output
     //  thv (virtual potential temperature) is equal to the input
-    //  thl (liquid water potential temperature).  
+    //  thl (liquid water potential temperature).
 
     // Define the liquid water potential temperature [K]
     Real thl_dry[shcol] = {300, 295};
@@ -52,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
     REQUIRE(SDS.nlev() == nlev);
     // for this test require two columns
     REQUIRE(shcol == 2);
-    
+
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
@@ -62,8 +62,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
         SDS.ql[offset] = ql;
         SDS.q[offset] = qv;
       }
-    }   
-    
+    }
+
      // Check that the inputs are expected
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
@@ -74,12 +74,12 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
         REQUIRE(SDS.ql[offset] == 0);
       }
     }
-    
+
     // call the fortran implementation
     shoc_pblintd_init_pot(SDS);
-    
-    // Check the result.  
-    // Verify that virtual potential temperature is idential 
+
+    // Check the result.
+    // Verify that virtual potential temperature is idential
     //  to potential temperatuer
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
@@ -87,7 +87,65 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
         REQUIRE(SDS.thl[offset] == SDS.thv[offset]);
       }
     }
-        
+
+    // SECOND TEST
+    // For two parcels with identical inputs, but one with condensate
+    //  loading, verify that the two parcels return different answers
+    //  and fall within reasonable bounds
+
+    // Define the liquid water potential temperature [K]
+    Real thl_parcel[shcol] = {290, 290};
+    // Define the water vapor [kg/kg]
+    Real qv_parcel = 0.01;
+    // Define the liquid water mixing ratio [kg/kg]
+    Real ql_parcel[shcol] = {0, 4e-4};
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.thl[offset] = thl_parcel[s];
+        // convert the following to kg/kg
+        SDS.ql[offset] = ql_parcel[s];
+        SDS.q[offset] = qv_parcel;
+      }
+    }
+
+    // Check that the inputs are expected
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        // Make sure top level dz_zi value is zero
+        REQUIRE(SDS.thl[offset] > 0.0);
+        // Make sure input is within reasonable bounds
+        REQUIRE(SDS.q[offset] < 0.1);
+        REQUIRE(SDS.ql[offset] < 0.1);
+      }
+    }
+
+    // Call the fortran implementation
+    shoc_pblintd_init_pot(SDS);
+
+    // Check test
+    // Verify that column with condensate loading
+    //   results in a lower virtual potential temperature
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Verify output falls within reasonable bounds
+        // Parcels should be of greater magnitude than
+        //  the input potential temperature, but within reason
+        REQUIRE(SDS.thv[offset] > SDS.thl[offset]);
+        REQUIRE(SDS.thv[offset] < SDS.thl[offset]+10);
+        // Get value corresponding to next column
+        if (s < shcol-1) {
+          const auto offsets = n + (s+1) * nlev;
+          REQUIRE(SDS.thv[offsets] != SDS.thv[offset]);
+        }
+      }
+    }
+
   }
 
   static void run_bfb()
