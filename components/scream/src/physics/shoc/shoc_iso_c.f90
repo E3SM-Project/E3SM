@@ -823,15 +823,16 @@ contains
 
   end subroutine aa_terms_diag_third_shoc_moment_c        
 
-  subroutine shoc_diag_second_moments_srf_c(shcol, wthl, uw, vw, ustar2, wstar) bind(C)
+  subroutine shoc_diag_second_moments_srf_c(shcol, wthl_sfc, uw_sfc, vw_sfc, ustar2, wstar) bind(C)
    use shoc, only: diag_second_moments_srf
 
    ! argmens
    integer(kind=c_int), value, intent(in) :: shcol
-   real(kind=c_real), intent(in)  :: wthl(shcol), uw(shcol), vw(shcol)
+   real(kind=c_real), intent(in)  :: wthl_sfc(shcol), uw_sfc(shcol), vw_sfc(shcol)
    real(kind=c_real), intent(out) :: ustar2(shcol), wstar(shcol)
 
-   call diag_second_moments_srf(shcol, wthl, uw, vw, ustar2, wstar)
+   call diag_second_moments_srf(shcol, wthl_sfc, uw_sfc, vw_sfc, ustar2, wstar)
+
  end subroutine shoc_diag_second_moments_srf_c
 
   subroutine diag_third_shoc_moments_c(&

@@ -537,13 +537,13 @@ struct SHOCFterminputthirdmomsData
 
 struct SHOCSecondMomentSrfData : public PhysicsTestData {
   // Inputs
-  Real *wthl, *uw, *vw;
+  Real *wthl_sfc, *uw_sfc, *vw_sfc;
 
   // out
   Real *ustar2, *wstar;
 
   SHOCSecondMomentSrfData(Int shcol_) :
-    PhysicsTestData(shcol_, {&wthl, &uw, &vw, &ustar2, &wstar}) {}
+    PhysicsTestData(shcol_, {&wthl_sfc, &uw_sfc, &vw_sfc, &ustar2, &wstar}) {}
 
   SHOC_NO_SCALAR(SHOCSecondMomentSrfData, 1);
 };
