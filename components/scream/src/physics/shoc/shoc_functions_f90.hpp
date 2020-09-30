@@ -735,10 +735,11 @@ struct SHOCPDFcompbuoyfluxData
 
 struct SHOCSecondMomentUbycondData : public PhysicsTestData {
   // Outputs
-  Real *thl, *qw, *wthl, *wqw, *qwthl, *uw, *vw, *wtke;
+  Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec;
+  Real *uw_sec, *vw_sec, *wtke_sec;
 
   SHOCSecondMomentUbycondData(Int shcol_) :
-    PhysicsTestData(shcol_, {&thl, &qw, &wthl, &wqw, &qwthl, &uw, &vw, &wtke}) {}
+    PhysicsTestData(shcol_, {&thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec}) {}
 
   SHOC_NO_SCALAR(SHOCSecondMomentUbycondData, 1);
 };

@@ -226,9 +226,9 @@ void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_firs
 void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
                                Real pval, Real wqls, Real *wthv_sec);
 
-void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
-                                       Real* wqw, Real* qwthl, Real* uw, Real* vw,
-                                       Real* wtke);
+void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl_sec, Real* qw_sec, 
+                                       Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, 
+                                       Real* uw_sec, Real* vw_sec, Real* wtke_sec);
 
 void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 
@@ -667,7 +667,7 @@ void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
 {
   shoc_init(42, true); // Fake nlev
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_diag_second_moments_ubycond_c(d.shcol(), d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
+  shoc_diag_second_moments_ubycond_c(d.shcol(), d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
