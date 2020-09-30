@@ -12,8 +12,6 @@ namespace {
 
 using namespace scream;
 using namespace scream::ShortFieldTagsNames;
-using device_type = DefaultDevice;
-using kokkos_types = KokkosTypes<device_type>;
 
 TEST_CASE("simple_grid", "") {
 
@@ -27,9 +25,11 @@ TEST_CASE("simple_grid", "") {
   REQUIRE(grid.get_num_local_dofs() == num_cols / num_procs);
 
   auto lid_to_idx = grid.get_lid_to_idx_map();
+  auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
+  Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);
   for (int i = 0; i < grid.get_num_local_dofs(); ++i) {
-    REQUIRE(lid_to_idx.extent_int(1) == 1);
-    REQUIRE(i == lid_to_idx(i, 0));
+    REQUIRE(host_lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == host_lid_to_idx(i, 0));
   }
 
   auto layout = grid.get_native_dof_layout();
@@ -51,17 +51,24 @@ TEST_CASE("se_cell_based_grid", "") {
 
   // Set up the degrees of freedom.
   SEGrid::dofs_list_type dofs("", num_elems*num_gp*num_gp);
+  auto host_dofs = Kokkos::create_mirror_view(dofs);
   SEGrid::lid_to_idx_map_type dofs_map("", num_elems*num_gp*num_gp, 3);
+  auto host_dofs_map = Kokkos::create_mirror_view(dofs_map);
   for (int ie = 0; ie < num_elems; ++ie) {
     for (int igp = 0; igp < num_gp; ++igp) {
       for (int jgp = 0; jgp < num_gp; ++jgp) {
         int idof = ie*num_gp*num_gp + igp*num_gp + jgp;
-        dofs_map(idof, 0) = ie;
-        dofs_map(idof, 1) = igp;
-        dofs_map(idof, 2) = jgp;
+        host_dofs(idof) = idof;
+        host_dofs_map(idof, 0) = ie;
+        host_dofs_map(idof, 1) = igp;
+        host_dofs_map(idof, 2) = jgp;
       }
     }
   }
+
+  // Move the data to the device and set the DOFs.
+  Kokkos::deep_copy(dofs, host_dofs);
+  Kokkos::deep_copy(dofs_map, host_dofs_map);
   grid.set_dofs(dofs, dofs_map);
 
   REQUIRE(grid.get_num_local_dofs() == num_elems*num_gp*num_gp);
@@ -77,12 +84,22 @@ TEST_CASE("se_cell_based_grid", "") {
   auto dofs_gids = grid.get_dofs_gids();
   auto lid_to_idx = grid.get_lid_to_idx_map();
   auto idx_to_lid = grid.get_idx_to_lid_map();
-  for (int i = 0; i < dofs_gids.extent_int(0); ++i) {
-    REQUIRE(lid_to_idx.extent_int(1) == 3);
-    int ie  = lid_to_idx(i,0);
-    int igp = lid_to_idx(i,1);
-    int jgp = lid_to_idx(i,2);
-    REQUIRE(i == idx_to_lid(ie, igp, jgp));
+
+  // Move everything to the host where it can be tested.
+  auto host_dofs_gids = Kokkos::create_mirror_view(dofs_gids);
+  auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
+  auto host_idx_to_lid = Kokkos::create_mirror_view(idx_to_lid);
+  Kokkos::deep_copy(host_dofs_gids, dofs_gids);
+  Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);
+  Kokkos::deep_copy(host_idx_to_lid, idx_to_lid);
+
+  // Test the data.
+  for (int i = 0; i < host_dofs_gids.extent_int(0); ++i) {
+    REQUIRE(host_lid_to_idx.extent_int(1) == 3);
+    int ie  = host_lid_to_idx(i,0);
+    int igp = host_lid_to_idx(i,1);
+    int jgp = host_lid_to_idx(i,2);
+    REQUIRE(i == host_idx_to_lid(ie, igp, jgp));
   }
 }
 
@@ -100,19 +117,32 @@ TEST_CASE("se_node_based_grid", "") {
 
   // Set the degrees of freedom.
   SEGrid::dofs_list_type dofs("", num_cols);
+  auto host_dofs = Kokkos::create_mirror_view(dofs);
   SEGrid::lid_to_idx_map_type dofs_map("", num_cols, 1);
+  auto host_dofs_map = Kokkos::create_mirror_view(dofs_map);
   for (int i = 0; i < num_cols; ++i) {
-    dofs(i) = i + 10;
-    dofs_map(i, 0) = i;
+    host_dofs(i) = i + 10;
+    host_dofs_map(i, 0) = i;
   }
+
+  // Move the data to the device and set the DOFs.
+  Kokkos::deep_copy(dofs, host_dofs);
+  Kokkos::deep_copy(dofs_map, host_dofs_map);
   grid.set_dofs(dofs, dofs_map);
   REQUIRE(grid.get_num_local_dofs() == num_cols);
 
   auto dofs_gids = grid.get_dofs_gids();
   auto lid_to_idx = grid.get_lid_to_idx_map();
-  for (int i = 0; i < dofs_gids.extent_int(0); ++i) {
-    REQUIRE(lid_to_idx.extent_int(1) == 1);
-    REQUIRE(i == lid_to_idx(i, 0));
+
+  // Move everything to the host where it can be tested.
+  auto host_dofs_gids = Kokkos::create_mirror_view(dofs_gids);
+  auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
+  Kokkos::deep_copy(host_dofs_gids, dofs_gids);
+  Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);
+
+  for (int i = 0; i < host_dofs_gids.extent_int(0); ++i) {
+    REQUIRE(host_lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == host_lid_to_idx(i, 0));
   }
 
   auto layout = grid.get_native_dof_layout();
