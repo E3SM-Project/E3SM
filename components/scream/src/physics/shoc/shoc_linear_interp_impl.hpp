@@ -41,24 +41,12 @@ void Functions<S,D>::linear_interp(
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n);
-      indx_pack.set(indx_pack < 1, 1); // don't want the shift to go below zero. we overwrite that result anyway
+      indx_pack.set(indx_pack < 1, 1); // special shift for 0 boundary case
+      indx_pack.set(indx_pack == km2-1, km1-1); // special shift for 0 boundary case
       ekat::index_and_shift<-1>(sx1, indx_pack, x1, x1s);
       ekat::index_and_shift<-1>(sy1, indx_pack, y1, y1s);
 
       y2(k2) = y1s + (y1-y1s)*(x2(k2)-x1s)/(x1-x1s);
-    });
-    team.team_barrier();
-
-    // Handle boundary cases.
-    // TODO: we may need to optimize this approach
-    Kokkos::single(Kokkos::PerTeam(team), [&] () {
-      const auto sx2 = scalarize(x2);
-      const auto sy2 = scalarize(y2);
-
-      sy2(0) = sy1(0) + (sy1(1)-sy1(0))*(sx2(0)-sx1(0))/(sx1(1)-sx1(0));
-      const Int k2 = km2-1; // km1
-      const Int k1 = km1-1; // km2-2
-      sy2(k2) = sy1(k1) + (sy1(k1)-sy1(k1-1))*(sx2(k2)-sx1(k1))/(sx1(k1)-sx1(k1-1));
     });
   }
   else {

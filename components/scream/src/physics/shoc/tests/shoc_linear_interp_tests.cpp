@@ -218,7 +218,6 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
   }
 
-
   static void run_bfb()
   {
     SHOCLinearInterpData f90_data[] = {
@@ -271,7 +270,6 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       for (Int k = 0; k < d_f90.total1x3(); ++k) {
         REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
       }
-
     }
   } // run_bfb
 

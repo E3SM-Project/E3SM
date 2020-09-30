@@ -4245,7 +4245,7 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
        end do
        k2 = km2
        do i = 1,ncol
-          y2(i,k2) = y1(i,km1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1))/(x1(i,km1)-x1(i,km1-1))
+          y2(i,k2) = y1(i,km1-1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1-1))/(x1(i,km1)-x1(i,km1-1))
        end do
     else
        print *,km1,km2
