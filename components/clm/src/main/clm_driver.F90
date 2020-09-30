@@ -1276,8 +1276,8 @@ contains
         if (mod(step_count,tape(t)%nhtfrq) == 0) transfer_hist = .true.
     end do 
 
-    call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
-    
+    !call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
+    call hist_update_hbuf(bounds_proc)
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
