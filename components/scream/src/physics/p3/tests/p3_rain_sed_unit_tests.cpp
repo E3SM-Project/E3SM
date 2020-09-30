@@ -46,26 +46,26 @@ static void run_bfb_rain_vel()
 
   // Load some lookup inputs, need at least one per pack value
   ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
-    // qr_incld,       cld_frac_r,    rhofacr,   nr_incld
-    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
-    {5.6298E-05, 3.0000E+00, 1.1129E+00, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
+    // qr_incld,   rhofacr,   nr_incld
+    {1.1030E-04, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 1.0918E+00, 6.5337E+07},
+    {5.6298E-05, 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 1.0774E+00, 1.9436E+02},
 
-    {0.0       , 1.0000E+00, 1.3221E+00, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
-    {0.0       , 3.0000E+00, 1.1129E+00, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
+    {0.0       , 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 1.0918E+00, 6.5337E+07},
+    {0.0       , 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 1.0774E+00, 1.9436E+02},
 
-    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
-    {0.0       , 3.0000E+00, 1.1129E+00, 1.6576E+02},
-    {0.0       , 4.0000E+00, 1.0774E+00, 1.9436E+02},
+    {1.1030E-04, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 1.0918E+00, 6.5337E+07},
+    {0.0       , 1.1129E+00, 1.6576E+02},
+    {0.0       , 1.0774E+00, 1.9436E+02},
 
-    {0.0       , 1.0000E+00, 1.3221E+00, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
-    {5.6298E-05, 3.0000E+00, 1.1129E+00, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
+    {0.0       , 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 1.0918E+00, 6.5337E+07},
+    {5.6298E-05, 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 1.0774E+00, 1.9436E+02},
   };
 
   // Sync to device, needs to happen before fortran calls so that
@@ -88,14 +88,13 @@ static void run_bfb_rain_vel()
     Spack qr_incld, cld_frac_r, rhofacr, nr_incld;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       qr_incld[s] = crfv_device(vs).qr_incld;
-      cld_frac_r[s]    = crfv_device(vs).cld_frac_r;
       rhofacr[s]  = crfv_device(vs).rhofacr;
       nr_incld[s] = crfv_device(vs).nr_incld;
     }
 
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      vn_table_vals, vm_table_vals, qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table_vals, vm_table_vals, qr_incld, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

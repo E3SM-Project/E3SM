@@ -51,7 +51,7 @@ static void run_phys()
 static void run_bfb_p3_main_part1()
 {
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar t_zerodegc   = C::t_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
@@ -68,7 +68,7 @@ static void run_bfb_p3_main_part1()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2); //PMC this range seems inappropriately small
     d.randomize({
-        {d.T_atm, {T_zerodegc - 10, T_zerodegc + 10}},
+        {d.T_atm, {t_zerodegc - 10, t_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -138,7 +138,7 @@ static void run_bfb_p3_main_part1()
 static void run_bfb_p3_main_part2()
 {
   constexpr Scalar qsmall     = C::QSMALL;
-  constexpr Scalar T_zerodegc   = C::T_zerodegc;
+  constexpr Scalar t_zerodegc   = C::t_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
@@ -155,8 +155,8 @@ static void run_bfb_p3_main_part2()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize({
-        {d.T_atm,  {T_zerodegc - 10, T_zerodegc + 10}},
-        {d.t_prev, {T_zerodegc - 10, T_zerodegc + 10}},
+        {d.T_atm,  {t_zerodegc - 10, t_zerodegc + 10}},
+        {d.t_prev, {t_zerodegc - 10, t_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -285,7 +285,7 @@ static void run_bfb_p3_main_part3()
       d.exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i, 
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
       d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
-      d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_rad_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_rad_qc);
+      d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -316,11 +316,11 @@ static void run_bfb_p3_main_part3()
       REQUIRE(isds_fortran[i].ze_rain[k]                 == isds_cxx[i].ze_rain[k]);
       REQUIRE(isds_fortran[i].ze_ice[k]                  == isds_cxx[i].ze_ice[k]);
       REQUIRE(isds_fortran[i].diag_vm_qi[k]              == isds_cxx[i].diag_vm_qi[k]);
-      REQUIRE(isds_fortran[i].diag_eff_rad_qi[k]         == isds_cxx[i].diag_eff_rad_qi[k]);
+      REQUIRE(isds_fortran[i].diag_eff_radius_qi[k]         == isds_cxx[i].diag_eff_radius_qi[k]);
       REQUIRE(isds_fortran[i].diag_diam_qi[k]            == isds_cxx[i].diag_diam_qi[k]);
       REQUIRE(isds_fortran[i].rho_qi[k]                  == isds_cxx[i].rho_qi[k]);
       REQUIRE(isds_fortran[i].diag_equiv_reflectivity[k] == isds_cxx[i].diag_equiv_reflectivity[k]);
-      REQUIRE(isds_fortran[i].diag_eff_rad_qc[k]         == isds_cxx[i].diag_eff_rad_qc[k]);
+      REQUIRE(isds_fortran[i].diag_eff_radius_qc[k]         == isds_cxx[i].diag_eff_radius_qc[k]);
     }
   }
 }
@@ -380,7 +380,7 @@ static void run_bfb_p3_main()
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
-      d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_rad_qc, d.diag_eff_rad_qi,
+      d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
       d.rho_qi, d.do_predict_nc, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c,
       d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
@@ -402,8 +402,8 @@ static void run_bfb_p3_main()
       REQUIRE(df90.bm[t]                == dcxx.bm[t]);
       REQUIRE(df90.qv[t]                == dcxx.qv[t]);
       REQUIRE(df90.th_atm[t]            == dcxx.th_atm[t]);
-      REQUIRE(df90.diag_eff_rad_qc[t]         == dcxx.diag_eff_rad_qc[t]);
-      REQUIRE(df90.diag_eff_rad_qi[t]         == dcxx.diag_eff_rad_qi[t]);
+      REQUIRE(df90.diag_eff_radius_qc[t]         == dcxx.diag_eff_radius_qc[t]);
+      REQUIRE(df90.diag_eff_radius_qi[t]         == dcxx.diag_eff_radius_qi[t]);
       REQUIRE(df90.rho_qi[t]            == dcxx.rho_qi[t]);
       REQUIRE(df90.mu_c[t]              == dcxx.mu_c[t]);
       REQUIRE(df90.lamc[t]              == dcxx.lamc[t]);

@@ -138,8 +138,8 @@ contains
     real(kind=c_real) :: precip_liq_surf(pcols)         !precipitation rate, liquid             m s-1
     real(kind=c_real) :: precip_ice_surf(pcols)         !precipitation rate, solid              m s-1
     real(kind=c_real) :: diag_equiv_reflectivity(pcols,pver)    !equivalent reflectivity                dBZ
-    ! real(kind=c_real) :: diag_eff_rad_qc(pcols,pver)  !effective radius, cloud                m
-    ! real(kind=c_real) :: diag_eff_rad_qi(pcols,pver)  !effective radius, ice                  m
+    ! real(kind=c_real) :: diag_eff_radius_qc(pcols,pver)  !effective radius, cloud                m
+    ! real(kind=c_real) :: diag_eff_radius_qi(pcols,pver)  !effective radius, ice                  m
     real(kind=c_real) :: diag_vm_qi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
     real(kind=c_real) :: diag_diam_qi(pcols,pver)    !mean diameter of ice                   m
     real(kind=c_real) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
