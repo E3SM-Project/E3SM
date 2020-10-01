@@ -172,7 +172,8 @@
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc          </ncdata>
 <ncdata hgrid="ne512np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
 <ncdata hgrid="ne512np4"  nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
-<ncdata hgrid="ne256np4" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc            </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
 <ncdata hgrid="ne30np4"   nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
 <ncdata hgrid="ne30np4"   nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
 <ncdata hgrid="ne4np4"    nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
