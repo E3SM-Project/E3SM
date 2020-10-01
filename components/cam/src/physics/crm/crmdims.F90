@@ -1,6 +1,6 @@
 module crmdims
 
-    use params, only: crm_rknd
+    use params_kind, only: crm_rknd
 
     implicit none
 

@@ -220,7 +220,6 @@ contains
    use chem_surfvals,    only: chem_surfvals_readnl
    use check_energy,     only: check_energy_defaultopts, check_energy_setopts
    use cam_restart,      only: restart_defaultopts, restart_setopts, restart_printopts
-   use carma_flags_mod,  only: carma_readnl
    use co2_cycle,        only: co2_cycle_readnl
    use shr_string_mod,   only: shr_string_toUpper
    use scamMod,          only: scam_setopts,scam_default_opts
@@ -513,7 +512,6 @@ contains
    call linoz_readnl(nlfilename)
    call prescribed_volcaero_readnl(nlfilename)
    call solar_data_readnl(nlfilename)
-   call carma_readnl(nlfilename)
    call tropopause_readnl(nlfilename)
    call aoa_tracers_readnl(nlfilename)
    call aerodep_flx_readnl(nlfilename)

@@ -16,10 +16,11 @@ module RtmMod
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
-                               frivinp_rtm, finidat_rtm, nrevsn_rtm, &
+                               frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers, heatflag, sediflag
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
+                               isgrid2d
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -228,6 +229,7 @@ contains
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
     character(len=*),parameter :: subname = '(Rtmini) '
+    integer           :: rtmn                 ! total number of cells
 
     real(r8) :: wd_chnl                       ! Channel water depth (m).
     real(r8) :: hydrR                         ! Hydraulic radius (= wet A / wet P) (m).
@@ -243,7 +245,7 @@ contains
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option, wrmflag, &
+         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
 
@@ -258,6 +260,10 @@ contains
     do_rtmflood = .false.
     ice_runoff  = .true.
     wrmflag     = .false.
+    rstraflag   = .false.
+    rinittemp   = 283.15_r8
+    ngeom       = 50  
+    nlayers     = 30				  
     inundflag   = .false.
     sediflag    = .false.
     heatflag    = .false.
@@ -340,6 +346,10 @@ contains
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
+    call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -532,24 +542,34 @@ contains
     endif
 
     call ncd_pio_openfile (ncid, trim(locfn), 0)
-    call ncd_inqdid(ncid,'lon',dimid)
-    call ncd_inqdlen(ncid,dimid,rtmlon)
-    call ncd_inqdid(ncid,'lat',dimid)
-    call ncd_inqdlen(ncid,dimid,rtmlat)
+
+    call ncd_inqfdims(ncid, isgrid2d, rtmlon, rtmlat, rtmn)
 
     if (masterproc) then
        write(iulog,*) 'Values for rtmlon/rtmlat: ',rtmlon,rtmlat
        write(iulog,*) 'Successfully read MOSART dimensions'
+       if (isgrid2d) then
+        write(iulog,*) 'MOSART input is 2d'
+       else
+        write(iulog,*) 'MOSART input is 1d'
+       endif
        call shr_sys_flush(iulog)
     endif
 
     ! Allocate variables
-    allocate(rlonc(rtmlon), rlatc(rtmlat), &
-             rlonw(rtmlon), rlone(rtmlon), &
-             rlats(rtmlat), rlatn(rtmlat), &
-             rtmCTL%rlon(rtmlon),          &
-             rtmCTL%rlat(rtmlat),          &
-             stat=ier)
+    if (isgrid2d) then
+      allocate(rlonc(rtmlon), rlatc(rtmlat), &
+               rlonw(rtmlon), rlone(rtmlon), &
+               rlats(rtmlat), rlatn(rtmlat), &
+               rtmCTL%rlon(rtmlon),          &
+               rtmCTL%rlat(rtmlat),          &
+               stat=ier)
+    else
+      allocate(rlonc(rtmlon), rlatc(rtmlon), &
+               rtmCTL%rlon(rtmlon),          &
+               rtmCTL%rlat(rtmlon),          &
+               stat=ier)
+    endif
     if (ier /= 0) then
        write(iulog,*) subname,' : Allocation ERROR for rlon'
        call shr_sys_abort(subname//' ERROR alloc for rlon')
@@ -580,10 +600,17 @@ contains
     call ncd_io(ncid=ncid, varname='latixy', flag='read', data=tempr, readvar=found)
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART latitudes')
     if (masterproc) write(iulog,*) 'Read latixy ',minval(tempr),maxval(tempr)
-    do j=1,rtmlat
-       rtmCTL%rlat(j) = tempr(1,j)
-       rlatc(j) = tempr(1,j)
-    end do
+    if (isgrid2d) then
+      do j=1,rtmlat
+         rtmCTL%rlat(j) = tempr(1,j)
+         rlatc(j) = tempr(1,j)
+      end do
+    else
+      do j=1,rtmlon
+         rtmCTL%rlat(j) = tempr(j,1)
+         rlatc(j) = tempr(j,1)
+      end do
+    endif
     if (masterproc) write(iulog,*) 'rlatc ',minval(rlatc),maxval(rlatc)
 
     call ncd_io(ncid=ncid, varname='area', flag='read', data=tempr, readvar=found)
@@ -668,47 +695,51 @@ contains
     ! Derive gridbox edges
     !-------------------------------------------------------
 
-    ! assuming equispaced grid, calculate edges from rtmlat/rtmlon
-    ! w/o assuming a global grid
-    edgen = maxval(rlatc) + 0.5*abs(rlatc(1) - rlatc(2))
-    edges = minval(rlatc) - 0.5*abs(rlatc(1) - rlatc(2))
-    edgee = maxval(rlonc) + 0.5*abs(rlonc(1) - rlonc(2))
-    edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
+    if (isgrid2d) then
 
-    if ( edgen .ne.  90._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
-    end if
-    if ( edges .ne. -90._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
-    end if
-    if ( edgee .ne. 180._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
-    end if
-    if ( edgew .ne.-180._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
-    end if
+      ! assuming equispaced grid, calculate edges from rtmlat/rtmlon
+      ! w/o assuming a global grid
+      edgen = maxval(rlatc) + 0.5*abs(rlatc(1) - rlatc(2))
+      edges = minval(rlatc) - 0.5*abs(rlatc(1) - rlatc(2))
+      edgee = maxval(rlonc) + 0.5*abs(rlonc(1) - rlonc(2))
+      edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
 
-    ! Set edge latitudes (assumes latitudes are constant for a given longitude)
-    rlats(:) = edges
-    rlatn(:) = edgen
-    do j = 2, rtmlat
-       if (rlatc(2) > rlatc(1)) then ! South to North grid
-          rlats(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
-          rlatn(j-1) = rlats(j)
-       else  ! North to South grid
-          rlatn(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
-          rlats(j-1) = rlatn(j)
-       end if
-    end do
+      if ( edgen .ne.  90._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
+      end if
+      if ( edges .ne. -90._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
+      end if
+      if ( edgee .ne. 180._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
+      end if
+      if ( edgew .ne.-180._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
+      end if
 
-    ! Set edge longitudes
-    rlonw(:) = edgew
-    rlone(:) = edgee
-    dx = (edgee - edgew) / rtmlon
-    do i = 2, rtmlon
-       rlonw(i)   = rlonw(i) + (i-1)*dx
-       rlone(i-1) = rlonw(i)
-    end do
+      ! Set edge latitudes (assumes latitudes are constant for a given longitude)
+      rlats(:) = edges
+      rlatn(:) = edgen
+      do j = 2, rtmlat
+         if (rlatc(2) > rlatc(1)) then ! South to North grid
+            rlats(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
+            rlatn(j-1) = rlats(j)
+         else  ! North to South grid
+            rlatn(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
+            rlats(j-1) = rlatn(j)
+         end if
+      end do
+
+      ! Set edge longitudes
+      rlonw(:) = edgew
+      rlone(:) = edgee
+      dx = (edgee - edgew) / rtmlon
+      do i = 2, rtmlon
+         rlonw(i)   = rlonw(i) + (i-1)*dx
+         rlone(i-1) = rlonw(i)
+      end do
+
+    endif
 
     call t_stopf ('mosarti_grid')
 
@@ -1542,6 +1573,9 @@ contains
        endif
        call t_startf('mosarti_wrm_init')
     end if
+    if (wrmflag .and. heatflag .and. rstraflag) then
+       call regeom					
+    end if  
 
     !-------------------------------------------------------
     ! Read restart/initial info
@@ -3139,13 +3173,14 @@ contains
   type(io_desc_t)    :: iodesc_dbl ! pio io desc
   type(io_desc_t)    :: iodesc_int ! pio io desc
   integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
+  integer :: ndims                 ! number of dimensions in the input
   integer :: dids(2)               ! variable dimension ids 
   integer :: dsizes(2)             ! variable dimension lengths
-  integer :: ier                  ! error code
+  integer :: ier                   ! error code
   integer :: begr, endr, iunit, nn, n, cnt, nr, nt
   integer :: numDT_r, numDT_t
   integer :: lsize, gsize
-  integer :: igrow, igcol, iwgt
+  integer :: igrow, igcol, iwgt, idim
   type(mct_aVect) :: avtmp, avtmpG ! temporary avects
   type(mct_aVect) :: avsrc, avdst  ! temporary
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
@@ -3157,6 +3192,7 @@ contains
   character(len=*),parameter :: subname = '(MOSART_init)'
   character(len=*),parameter :: FORMI = '(2A,2i10)'
   character(len=*),parameter :: FORMR = '(2A,2g15.7)'
+  !real(r8), pointer          :: e_eprof_in2(:,:)
  
   begr = rtmCTL%begr
   endr = rtmCTL%endr
@@ -3174,11 +3210,18 @@ contains
 
      ! setup iodesc based on frac dids
      ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
-     ier = pio_inq_vardimid(ncid, vardesc, dids)
-     ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
-     ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
+     if (isgrid2d) then
+        ndims = 2
+     else
+        ndims = 1
+     endif
+     ier = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
+     do idim = 1, ndims
+        ier = pio_inq_dimlen(ncid, dids(idim),dsizes(idim))
+     enddo
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc_dbl)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), compDOF, iodesc_int)
+
      deallocate(compdof)
      call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
 
@@ -3514,64 +3557,12 @@ contains
           allocate (TUnit%wr_bf(begr:endr))
           TUnit%wr_bf = 0.0_r8   
 
-          allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
+          allocate( TUnit%e_eprof_in2( Tctl%npt_elevProf, begr:endr ) )    
+
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
-           
-          ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele0 ',minval(TUnit%e_eprof_in2(1,:)),maxval(TUnit%e_eprof_in2(1,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele1', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(2,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele1 ',minval(TUnit%e_eprof_in2(2,:)),maxval(TUnit%e_eprof_in2(2,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele2', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(3,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele2 ',minval(TUnit%e_eprof_in2(3,:)),maxval(TUnit%e_eprof_in2(3,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele3', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(4,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele3 ',minval(TUnit%e_eprof_in2(4,:)),maxval(TUnit%e_eprof_in2(4,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele4', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(5,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele4 ',minval(TUnit%e_eprof_in2(5,:)),maxval(TUnit%e_eprof_in2(5,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele5', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(6,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele5 ',minval(TUnit%e_eprof_in2(6,:)),maxval(TUnit%e_eprof_in2(6,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele6', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(7,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele6 ',minval(TUnit%e_eprof_in2(7,:)),maxval(TUnit%e_eprof_in2(7,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele7', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(8,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele7 ',minval(TUnit%e_eprof_in2(8,:)),maxval(TUnit%e_eprof_in2(8,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele8', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(9,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele8 ',minval(TUnit%e_eprof_in2(9,:)),maxval(TUnit%e_eprof_in2(9,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele9', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(10,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele9 ',minval(TUnit%e_eprof_in2(10,:)),maxval(TUnit%e_eprof_in2(10,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele10', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(11,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele10 ',minval(TUnit%e_eprof_in2(11,:)),maxval(TUnit%e_eprof_in2(11,:))
-          call shr_sys_flush(iulog)
+
+          call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
      
           ! --------------------------------- 
 
@@ -3895,6 +3886,10 @@ contains
              allocate(TPara%t_mu(begr:endr))
            TPara%t_mu = 0.5278_r8
         end if
+		
+        allocate (THeat%coszen(begr:endr))
+        THeat%coszen = 0._r8
+		
      end if
     
      call pio_freedecomp(ncid, iodesc_dbl)
@@ -4049,6 +4044,345 @@ contains
   end subroutine MOSART_init
 
 !----------------------------------------------------------------------------
+
+  subroutine read_elevation_profile(ncid, varname, e_eprof_in2)
+
+    implicit none
+    type(file_desc_t)      :: ncid       ! pio file desc
+    character(len=*)       :: varname    ! variable name
+    real(r8)               :: e_eprof_in2(:,:)
+
+    character(len=*),parameter :: subname = '(read_elevation_profile)'
+
+    type(var_desc_t)   :: vardesc    ! pio variable desc 
+    logical            :: readvar    ! If variable exists or not
+    type(io_desc_t)    :: iodesc     ! pio io desc
+    integer            :: ndims      ! ndims for var      
+    integer            :: dsizes(3)  ! dim sizes
+    integer            :: dimids(3)  ! dim ids
+    integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
+    integer            :: begr, endr, cnt, m, n
+    integer            :: ier
+    integer            :: elesize    ! number of points for elevation profile
+    real(r8), pointer  :: ele(:,:)
+    character(len=2)   :: str
+
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+
+    call check_var(ncid, varname, vardesc, readvar)
+
+    if (readvar) then
+      ier = pio_inq_varid(ncid, name=varname, vardesc=vardesc)
+      ier = pio_inq_varndims(ncid, vardesc, ndims)
+      ier = pio_inq_vardimid(ncid, vardesc, dimids)
+
+      do n = 1,ndims
+        ier = pio_inq_dimlen(ncid,dimids(n),dsizes(n))
+      enddo
+
+      elesize = dsizes(ndims)
+      if (elesize /= Tctl%npt_elevProf) then
+        write(iulog,*) trim(subname),' MOSART ERROR: number of points in elevation profile is ', elesize
+        call shr_sys_abort(trim(subname)//' ERROR number of points in elevation profile is not euqal to 11')
+      endif
+
+      allocate(compdof(rtmCTL%lnumr*elesize)) ! dims(ndims): 
+      cnt = 0
+
+      do n = 1, elesize
+        do m = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          compDOF(cnt) = (n-1)* rtmCTL%numr + rtmCTL%gindex(m)
+        enddo
+      enddo
+
+      call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
+      deallocate(compdof)
+
+      allocate(ele(begr:endr,1:elesize))
+      call pio_read_darray(ncid, vardesc, iodesc, ele, ier)
+
+      do n = 1, elesize
+        e_eprof_in2(n,:) = ele(:,n)
+      enddo
+
+      deallocate(ele)
+      call pio_freedecomp(ncid, iodesc)
+
+    else
+
+      do n = 1, Tctl%npt_elevProf
+
+        if (Tctl%npt_elevProf-1<10) then 
+          write(str,'(I1)') Tctl%npt_elevProf-1
+        elseif (Tctl%npt_elevProf<100) then
+          write(str,'(I2)') Tctl%npt_elevProf-1
+        endif
+
+        call check_var(ncid, 'ele'//str, vardesc, readvar)
+
+        if (readvar) then
+          ier = pio_inq_varid(ncid, name='ele'//str, vardesc=vardesc)
+        else
+          call shr_sys_abort(trim(subname)//' ERROR missing elevation profile data')
+        endif
+
+        if (n==1) then
+
+          allocate(compdof(rtmCTL%lnumr))
+          cnt = 0
+          do m = rtmCTL%begr,rtmCTL%endr
+            cnt = cnt + 1
+            compDOF(cnt) = rtmCTL%gindex(m)
+          enddo
+
+          ier = pio_inq_varndims(ncid, vardesc, ndims)
+          ier = pio_inq_vardimid(ncid, vardesc, dimids)
+
+          do m = 1,ndims
+            ier = pio_inq_dimlen(ncid,dimids(m),dsizes(m))
+          enddo
+
+          call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
+
+        endif
+
+        call pio_read_darray(ncid, vardesc, iodesc, e_eprof_in2(n,:), ier)
+
+      enddo
+
+      if (masterproc) then
+         write(iulog,*) subname,'read elevattion profile successfully'
+      endif 
+
+    endif
+
+  end subroutine read_elevation_profile
+
+!----------------------------------------------------------------------------
+
+  subroutine regeom
+	
+! Calculate reservoir layer average area (km2) 
+ use shr_sys_mod   , only : shr_sys_flush
+ use WRM_type_mod  , only : WRMUnit
+ use RunoffMod     , only : rtmCTL
+ use RtmVar         , only : iulog, ngeom, nlayers
+	
+ implicit none
+ real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
+ real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
+ real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6             	! Factor to convert area to m^2
+ real(r8) :: pi      = 3.141593_r8  	! pi
+ real(r8) :: d_s	= 1.0_r8		!0.60_r8		           								! Surface layer depth (m)
+ real(r8) :: dv,da,dz
+ real(r8) :: d_v(nlayers)			   			! Reservoir volume change at layer (m^3)
+ real(r8) :: rho_z(nlayers)			   			! Reservoir layer density (kg/m^3), taken constant for furture revision 
+ real(r8) :: delta_z                        		! depth change to calculate corresponding area/volume(m)
+ integer :: i,j,k,iunit,damID							! indices
+ real(r8) :: s_tin,s_lum,a_sur,fac                 ! Initial total storage (10*6m^3), Lumped storage for grids with multiple reservoirs (m^3)
+ real(r8) :: A_cf,V_cf						!Area and volume correcting factor for error from geometry estimation
+ character(len=*),parameter :: subname = '(regeom)'        
+						    
+!**************************************************************************************************************************************************
+	
+ do iunit = rtmCTL%begr,rtmCTL%endr	
+		
+     damID = WRMUnit%INVicell(iunit)
+     if (damID>0.0_r8 .and. WRMUnit%d_ns(damID) >= 1) then ! .and. WRMUnit%Depth(damID) > 0.0_r8 .and. WRMUnit%Height(damID) > 0.0_r8
+          if (WRMUnit%Depth(damID) <= 2.0_r8)WRMUnit%Depth(damID) = 2._r8
+          if (WRMUnit%Height(damID) <= 2.0_r8)WRMUnit%Height(damID) = WRMUnit%Depth(damID)
+          WRMUnit%d_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
+          WRMUnit%h_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
+	  
+          s_lum = WRMUnit%StorCap(damID)
+          s_tin = WRMUnit%V_str(damID)
+          a_sur = WRMUnit%SurfArea(damID)
+				
+          if (s_lum <= 0.0_r8 .or. s_tin <= 0.0_r8 .or. ((s_lum/1.0e6) - s_tin)<0_r8) then
+               fac = 0.0_r8
+          elseif  (((s_lum/1.0e6) - s_tin)>=0_r8) then
+               fac = ((s_lum/1.0e6) - s_tin)/s_tin
+          endif
+				
+          !	Calculate layer depth	
+          if (WRMUnit%Width_r(damID) <= 0.0_r8)WRMUnit%Width_r(damID) = 1._r8
+          if (WRMUnit%Length_r(damID) <= 0.0_r8)WRMUnit%Length_r(damID) = 1._r8
+						
+          ! Area and volume correcting factors for relative error as compared to GRanD
+          if (WRMUnit%A_dfs(damID)>=0_r8) then
+               A_cf = 1._r8 + (abs(WRMUnit%A_errs(damID))/100._r8)
+          elseif(WRMUnit%A_dfs(damID)<0_r8) then
+               A_cf = 1._r8 - (abs(WRMUnit%A_errs(damID))/100._r8)
+          end if
+          if (WRMUnit%V_dfs(damID)>=0_r8) then
+               V_cf = 1._r8 + (abs(WRMUnit%V_errs(damID))/100._r8) + fac
+          elseif(WRMUnit%V_dfs(damID)<0_r8) then
+               V_cf = 1._r8 - (abs(WRMUnit%V_errs(damID))/100._r8) + fac
+          end if
+          if (A_cf<=0._r8)A_cf = 0.1_r8
+          if (V_cf<=0._r8)V_cf = 0.1_r8
+				
+          M_W   = WRMUnit%Width_r(damID)
+          M_L   = WRMUnit%Length_r(damID)
+          if (M_W<1._r8)M_W = 1.0_r8
+          if (M_L<1._r8)M_L = 1.0_r8
+          gm_j  = WRMUnit%geometry(damID)
+          d_res = WRMUnit%d_resrv(damID)		
+          C_a   = WRMUnit%C_as(damID)
+          C_v   = WRMUnit%C_vs(damID)
+				
+          if (WRMUnit%A_str(damID)<= 0._r8) WRMUnit%A_str(damID)= 1._r8
+				
+          if (WRMUnit%A_str(damID)<= 2._r8) then
+               C_a  = 2.0_r8*WRMUnit%C_as(damID)
+          end if
+							
+          ! Uniform subsurface layer depth for initialization	and limit maximum layer thickness 
+          dd_in = d_res/ngeom !bottom layers evenly descritized
+							
+          ! Calculate reservoir geometry to establish depth-area-volume relationship			
+					
+          ! Calculate depth area	
+          !********** Curved Lake Bottom 
+				
+          do j = 1, ngeom!	
+               if (gm_j == 1.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
+               else if (gm_j == 2.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
+               else if (gm_j == 3.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               else if (gm_j == 4.0_r8) then	
+                     a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
+               else if (gm_j == 5.0_r8) then	
+                     a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               end if					
+          end do
+					
+          a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8			!Bottom area given non-zero value
+					
+          ! Reverse indexing so that bottom is 1 and top is d_n+1 and convert to m2
+          do j = 1,ngeom+1
+               k =ngeom+2-j  
+               a_di0(k) = ((a_dd(j)))
+               if (a_di0(k)==0._r8) a_di0(k)=1._r8
+               WRMUnit%a_di(damID,k)  = (A_cf*a_di0(k)) 	!Area corrected for error for optimal geometry
+               if (WRMUnit%a_di(damID,k)==0._r8) WRMUnit%a_di(damID,k)=1._r8
+          end do	
+				
+          ! Calculate layer depth,area,and volume from bottom 
+          d_zi0(1) = 0._r8
+          WRMUnit%d_zi(damID,1)  = d_zi0(1)
+          do j = 2, ngeom+1	
+               d_zi0(j) = d_zi0(j-1) + dd_in
+               WRMUnit%d_zi(damID,j)  = d_zi0(j) 
+          end do
+						
+          ! Calculate layer average area,and total volume from bottom
+          v_zti0(1) = (0.001_r8*0.5_r8*(WRMUnit%a_di(damID,1)+WRMUnit%a_di(damID,2))*dd_in)!	
+          WRMUnit%v_zti(damID,1) = (V_cf*v_zti0(1)) 	!lower Volume corrected for error
+          if (WRMUnit%v_zti(damID,1)==0._r8) WRMUnit%v_zti(damID,1)=1._r8
+          do j = 2, ngeom+1	 
+               a_zi(j) = 0.5_r8*(WRMUnit%a_di(damID,j)+WRMUnit%a_di(damID,j-1)) !Area converted to m^2
+               v_zti0(j) = v_zti0(j-1) + ((C_v*a_zi(j)*dd_in))
+               WRMUnit%v_zti(damID,j) = (V_cf*v_zti0(j)) 	!Volume corrected for error
+               if (WRMUnit%v_zti(damID,j)==0._r8) WRMUnit%v_zti(damID,j)=1._r8
+               if (WRMUnit%a_di(damID,j)<0._r8 .or. WRMUnit%v_zti(damID,j)<0._r8) write(iulog,*) 'geom negative',iunit,WRMUnit%grandid(damID)
+          end do
+				
+          !Initial reservoir storage 
+          do j = WRMUnit%d_ns(damID),1,-1
+               if (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) == 1) then
+                     WRMUnit%dd_z(damID,j) = WRMUnit%d_resrv(damID)
+               elseif (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) > 1) then !top layer depth kept constant
+                     WRMUnit%dd_z(damID,j) = d_s		!0.6_r8
+               elseif ((WRMUnit%d_ns(damID)>1 .and.j < WRMUnit%d_ns(damID)).and.(WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))>0._r8) then
+                     WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))) / (WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
+               endif
+          end do	
+			
+          if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<d_s)then !layer thickness too small
+               WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/d_s)+1) 
+               do j=1,nlayers!WRMUnit%d_ns(damID)
+                     WRMUnit%dd_z(damID,j) = 0._r8
+               end do
+					
+               ! Reinitialize layer thickness
+               do j = WRMUnit%d_ns(damID),1,-1
+                     if (j == WRMUnit%d_ns(damID)) then
+                         WRMUnit%dd_z(damID,j) = d_s      !top layer depth
+                     else
+                         WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))/(WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
+                     end if
+               end do	
+          end if
+		
+          if (WRMUnit%d_ns(damID)>1) then
+               WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)
+          else
+               WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))
+          end if
+				
+          ! Calculate layer depth (minimum at bottom)	
+          WRMUnit%d_z(damID,1)=0._r8
+          do j = 2, nlayers	
+               if (j<=WRMUnit%d_ns(damID)+1) then
+                     WRMUnit%d_z(damID,j) = WRMUnit%d_z(damID,j-1) + WRMUnit%dd_z(damID,j-1)
+               else 
+                     WRMUnit%d_z(damID,j) = 0._r8
+               end if
+          end do	
+          ! Assign layer area and volume based on depth-area-volume relationship
+          WRMUnit%a_d(damID,1)=(WRMUnit%a_di(damID,1))
+          WRMUnit%v_zt(damID,1)=(WRMUnit%v_zti(damID,1))
+          do i=2,nlayers
+               if (i<=WRMUnit%d_ns(damID)+1) then
+                     do j=2,ngeom+1
+                          if (WRMUnit%d_z(damID,i)>WRMUnit%d_zi(damID,j-1).and.WRMUnit%d_z(damID,i)<=WRMUnit%d_zi(damID,j))then
+                               delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,j-1))/(WRMUnit%d_zi(damID,j)-WRMUnit%d_zi(damID,j-1))
+                               WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,j)-WRMUnit%a_di(damID,j-1))+WRMUnit%a_di(damID,j-1))
+                               WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,j)-WRMUnit%v_zti(damID,j-1))+WRMUnit%v_zti(damID,j-1))
+                          else if (WRMUnit%d_z(damID,i) > WRMUnit%d_zi(damID,ngeom+1) .and. i<= WRMUnit%d_ns(damID)+1)then
+                               delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,ngeom))/(WRMUnit%d_zi(damID,ngeom+1)-WRMUnit%d_zi(damID,ngeom))
+                               WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,ngeom+1)-WRMUnit%a_di(damID,ngeom))+WRMUnit%a_di(damID,ngeom))
+                               WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,ngeom+1)-WRMUnit%v_zti(damID,ngeom))+WRMUnit%v_zti(damID,ngeom))
+                          end if
+                     end do
+                     if (WRMUnit%v_zt(damID,i)<WRMUnit%v_zt(damID,i-1))write(iulog,*) 'check reservoir geometry for',WRMUnit%grandid(damID)
+               else
+                     WRMUnit%a_d(damID,i) = 0._r8
+                     WRMUnit%v_zt(damID,i) = 0._r8
+               end if
+          end do
+								
+          ! Calculate layer volume(m^3)
+          do j = 1, nlayers	
+               if (j<=WRMUnit%d_ns(damID)) then
+                     WRMUnit%d_v(damID,j) = ((WRMUnit%v_zt(damID,j+1) - WRMUnit%v_zt(damID,j)))	
+                     if (WRMUnit%d_v(damID,j)==0._r8) WRMUnit%d_v(damID,j)=1._r8	
+                     WRMUnit%dd_z(damID,j) = WRMUnit%d_z(damID,j+1) - WRMUnit%d_z(damID,j)
+                     if (WRMUnit%d_v(damID,j)<0.0_r8) then 
+                         write(iulog,*) subname,'Layer volume negative:Check geometry data for dam',WRMUnit%grandid(damID)
+                     end if
+               else
+                     WRMUnit%d_v(damID,j) = 0._r8
+                     WRMUnit%dd_z(damID,j) = 0._r8
+               end if
+          end do		
+				
+          ! 	Intitialize layer temperature and total storage					
+          do j=1,WRMUnit%d_ns(damID)					
+               rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(WRMUnit%temp_resrv(damID,j)-277._r8))**1.68_r8) 
+               WRMUnit%v_zn(damID,j) = (WRMUnit%d_v(damID,j))
+               WRMUnit%m_zo(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j)) 
+               WRMUnit%m_zn(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j))
+          end do
+     end if
+ end do	
+ end subroutine regeom 				   
+!---------------------------------------------------------------------------- 
 
   subroutine SubTimestep
   ! !DESCRIPTION: predescribe the sub-time-steps for channel routing

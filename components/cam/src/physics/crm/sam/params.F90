@@ -5,15 +5,9 @@ module params
   shr_const_mwwv, shr_const_stebol, shr_const_tkfrz, &
   shr_const_mwdair, shr_const_g, shr_const_karman, &
   shr_const_rhofw
+  use params_kind
 
   implicit none
-
-#ifdef CRM_SINGLE_PRECISION
-  integer, parameter :: crm_rknd = selected_real_kind( 6) ! 4 byte real
-#else
-  ! default precision of real - kind(1.d0)
-  integer, parameter :: crm_rknd = selected_real_kind(12) ! 8 byte real
-#endif
 
   !----------------------------------------------
   ! Constants
@@ -48,8 +42,6 @@ module params
 
   real(crm_rknd), allocatable :: fcor(:)          ! Coriolis parameter
   real(crm_rknd), allocatable :: fcorz(:)         ! Vertical Coriolis parameter
-  real(crm_rknd), allocatable :: longitude0(:)    ! latitude of the domain's center
-  real(crm_rknd), allocatable :: latitude0 (:)    ! longitude of the domain's center
   real(crm_rknd), allocatable :: z0(:)            ! roughness length
 
   logical, allocatable :: ocean(:)           ! flag indicating that surface is water
@@ -59,7 +51,7 @@ module params
   logical:: doprecip      = .true.    ! allow precipitation
   logical:: dodamping     = .true.    ! Newtonian damping for upper levels
   logical:: dosgs         = .true.    ! sub-grid turbulence scheme
-  logical:: dosurface     = .false.   ! surface scheme to calculate friction within CRM
+  logical:: dosurface     = .true.    ! surface scheme to calculate friction within CRM
 
   logical:: docoriolis    = .false.   ! not normally used for MMF
   logical:: dowallx       = .false.   ! not normally used for MMF
@@ -83,8 +75,6 @@ contains
     integer, intent(in) :: ncrms
     allocate(fcor (ncrms))
     allocate(fcorz(ncrms))
-    allocate(longitude0(ncrms))
-    allocate(latitude0 (ncrms))
     allocate(z0        (ncrms))
     allocate(ocean     (ncrms))
     allocate(land      (ncrms))
@@ -95,8 +85,6 @@ contains
 
     call prefetch(fcor )
     call prefetch(fcorz)
-    call prefetch(longitude0)
-    call prefetch(latitude0 )
     call prefetch(z0)
     call prefetch(ocean)
     call prefetch(land)
@@ -107,8 +95,6 @@ contains
 
     fcor  = 0
     fcorz = 0
-    longitude0 = 0
-    latitude0  = 0
     z0 = 0.035
     ocean = .false.
     land = .false.
@@ -123,8 +109,6 @@ contains
     implicit none
     deallocate(fcor )
     deallocate(fcorz)
-    deallocate(longitude0)
-    deallocate(latitude0 )
     deallocate(z0)
     deallocate(ocean)
     deallocate(land)

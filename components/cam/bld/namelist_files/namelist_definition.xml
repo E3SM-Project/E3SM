@@ -2098,6 +2098,12 @@ Ice crystal concentration (in #/cc) when micro_do_nicons=.true.
 Default: set by build-namelist
 </entry> 
 
+<entry id="micro_mincdnc" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0. 
+Default: -999.
+</entry>
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
@@ -2470,6 +2476,19 @@ Default: FALSE
 <entry id="zmconv_trigdcape_ull" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_trig_dcape_only" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+DCAPE only trigger for ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_trig_ull_only" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Use unrestricted launching level (ULL) only trigger  for ZM deep convection scheme. This is on top of standard CAPE-based ZM trigger
+This is in contrast with zmconv_trigdcape_ull which uses both DCAPE and ULL for trigger
 Default: FALSE
 </entry>
 
@@ -2921,6 +2940,19 @@ Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED la
 Default: FALSE
 </entry>
 
+<!--Clubb config flags  -->
+<entry id="clubb_vert_avg_closure" type="logical" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+CLUBB flag to determine 1) if the trapezoidal rule is called for the thermodynamic-level variables output from pdf_closure; 2) if the trapezoidal rule is called for three momentum-level variables output from pdf_closure; and 3) if call subroutine pdf_closure twice. True means all three options are True, while FALSE means all three options are false.
+Default: TRUE
+</entry>
+
+<entry id="clubb_ipdf_call_placement" type="integer" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="1,2,3" >
+Select the placement of the call to CLUBB's PDF: 1) ipdf_pre_advance_fields --> Call before advancing predictive fields ; 2) ipdf_post_advance_fields --> Call after advancing predictive fields ; 3) ipdf_pre_post_advance_fields --> Call both before and after advancing predictive fields 
+Default: 1
+</entry>
+
 
 <!-- Clubb tunable parameters -->
 
@@ -3173,414 +3205,11 @@ Lscale threshold: damp C6 & C7  [m]
 Default: 60.0D0
 </entry>
 
-<!-- CARMA Sectional Microphysics -->
-
-<entry id="carma_model" type="char*32" category="carma"
-       group="carma_nl" valid_values="" >
-The name of the active CARMA microphysics model or none when CARMA
-is not active.
-Default: none
+<entry id="clubb_altitude_thresh"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Lscale threshold: prevent large damping at low altitudes where Lscale is small
+Default: 100.0D0
 </entry>
-
-<entry id="carma_conmax" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-A fraction that scales how tight the convergence criteria are to
-determine that the substepping has resulted in a valid solution.
-Smaller values will force more substepping.
-CARMA particles.
-Default: 0.1
-</entry>
-
-<entry id="carma_dt_threshold" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-When non-zero, the largest change in temperature (K)
-allowed per substep.
-Default: 0.
-</entry>
-
-<entry id="carma_do_aerosol" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the CARMA model is an aerosol model, and
-should be called in tphysac.
-Default: TRUE
-</entry>
-
-<entry id="carma_do_cldice" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA is a cloud ice model and should
-be called in tphysbc.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_cldliq" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA is a cloud liquid model and should
-be called in tphysbc.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_clearsky" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA should do clear sky calculations for
-particles that are not part of a cloud in addition to doing a
-separate calculation for incloud particles. Only valid when
-carma_do_incloud is true.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_coag" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating whether the coagulation process is enabled for
-CARMA particles.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_detrain" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA is responsible for detrain condensate
-from convection into the model.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_drydep" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the dry deposition process is enabled for
-CARMA particles.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_emission" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the emission of particles is enabled for
-CARMA.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_explised" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that sedimentation should be calculated using an
-explicit technique where the substepping is used to keep the CFL
-condition from being violated rather than the default PPM scheme.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_fixedinit" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating CARMA coefficients should only be initialized once from
-a fixed temperature profile rather than recomputed for each column. This
-improves performance, but reduces accuracy. By default the temperature
-profile used is calculated as the average of the initial condition file,
-but a predefined profile can be provided.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_grow" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the condensational growth process is enabled for
-CARMA particles.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_hetchem" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA sulfate surface area density will be used
-in heterogeneous chemistry rate calculation.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_incloud" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that CARMA should treat cloud particles as incloud
-rather than gridbox average calculations.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_optics" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that carma should generate optical properties files
-for the CAM radiation code.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_pheat" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that particle heating will be used for the condensational
-growth process.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_pheatatm" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that particle heating will affect the atmospheric
-temperature.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_substep" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that substepping will be used for the condensational
-growth process.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_thermo" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that changes in heating will be calculated as a result
-CARMA processes and will affect the CAM heating tendency.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_wetdep" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the wet deposition process is enabled for
-CARMA particles.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_vdiff" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the effect of Brownian diffusion will be calculated for
-CARMA particles. NOTE: This needs to be used in conjunction with CARMA
-sedimentation.
-Default: FALSE
-</entry>
-
-<entry id="carma_do_vtran" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating that the sedimentation process is enabled for
-CARMA particles.
-Default: FALSE
-</entry>
-
-<entry id="carma_flag" type="logical" category="carma"
-       group="carma_nl" valid_values="" >
-Flag indicating whether CARMA is enabled. If CARMA has been included
-in the build (configure -carma with something other than none), then
-this will cause all of the CARMA constituents and field names to be
-registered, but no other CARMA process will be preformed. This overrides
-the individual CARMA process flags.
-Default: FALSE
-</entry>
-
-<entry id="carma_maxretries" type="integer" category="carma"
-       group="carma_nl" valid_values="" >
-Specifies the maximum number of retry attempts to be used when 
-condensational growth requires substepping, but the original estimate
-for the amount of substepping was insufficient.
-Default: 8
-</entry>
-
-<entry id="carma_maxsubsteps" type="integer" category="carma"
-       group="carma_nl" valid_values="" >
-Specifies the maximum number of substeps that could be used for the
-first guess when condensational growth requires substepping.
-Default: 1
-</entry>
-
-<entry id="carma_reftfile" type="char*256" category="carma"
-       group="carma_nl" valid_values="" >
-Specifies the name of the reference temperature file that will be
-used (and created if necessary)  for initialization of CARMA to a
-fixed temperature profile.
-Default: carma_reft.nc
-</entry>
-
-<entry id="carma_cstick" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-Accommodation coefficient for coagulation.
-Default: 1.0
-</entry>
-
-<entry id="carma_gsticki" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-Accommodation coefficient for growth with ice.
-Default: 0.93
-</entry>
-
-<entry id="carma_gstickl" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-Accommodation coefficient for growth with liquid.
-Default: 1.0
-</entry>
-
-<entry id="carma_tstick" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-Accommodation coefficient for temperature.
-Default: 1.0
-</entry>
-
-<entry id="carma_rhcrit" type="real" category="carma"
-       group="carma_nl" valid_values="" >
-Critical relative humidity for liquid cloud formation, used
-for sub-grid scale in-cloud saturation.
-Default: 1.0
-</entry>
-
-<!-- CARMA model - meteor impact -->
-
-<entry id="carma_emis_dust" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Global mass of dust emission for the event.
-Default: 0. (kg)
-</entry>
-
-<entry id="carma_emis_soot" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Global mass of dust emission for the event.
-Default: 0. (kg)
-</entry>
-
-<entry id="carma_emis_startdate" type="integer" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Starting date for emissions in the form of (yyyyddd) where yyyy is a year and
-ddd is a day of year.
-Default: 1 (yyyyddd)
-</entry>
-
-<entry id="carma_emis_starttime" type="integer" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Starting time for the emission event in GMT.
-Default: 0. (s Z)
-</entry>
-
-<entry id="carma_emis_stopdate" type="integer" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Stopping date for emissions in the form of (yyyyddd) where yyyy is a year and
-ddd is a day of year.
-Default: 1 (yyyyddd)
-</entry>
-
-<entry id="carma_emis_stoptime" type="integer" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Stoping time for the emission event in GMT.
-Default: 0. (s)
-</entry>
-
-<entry id="carma_emis_minlat" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Minimum latitude of the area for emssions from the event.
-Default: -90. (degrees north)
-</entry>
-
-<entry id="carma_emis_maxlat" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Maximum latitude of the area for emssions from the event.
-Default: 90. (degrees north)
-</entry>
-
-<entry id="carma_emis_minlon" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Minimum longitude of the area for emssions from the event.
-Default: 0. (degrees east)
-</entry>
-
-<entry id="carma_emis_maxlon" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Maximum longitude of the area for emssions from the event.
-Default: 360. (degrees east)
-</entry>
-
-<entry id="carma_fractal_soot" type="logical" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Are the soot particles treated as fractals?
-Default: FALSE
-</entry>
-
-<!-- CARMA model - meteor smoke & pmc -->
-
-<entry id="carma_do_escale" type="logical" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Flag indicating that meteor smoke emission will be scaled by a
-global relative flux based upon the carma_escale_file.
-Default: FALSE
-</entry>
-
-<entry id="carma_emis_total" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-The total meteor smoke emission rate in kt/year. The flux will be
-scaled to total that value.
-Default: 16.0
-</entry>
-
-<entry id="carma_emis_file" type="char*256" input_pathname="abs" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the name of the file containing the meteor smoke emission
-(ablation) profile.
-Default: set by build-namelist.
-</entry>
-
-<entry id="carma_escale_file" type="char*256" input_pathname="abs" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the name of the file containing the global realtive flux
-specification.
-Default: set by build-namelist.
-</entry>
-
-<entry id="carma_launch_doy" type="integer" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the day of year when tracers will start being emitted for the tracer test.
-Default: 1
-</entry>
-
-<entry id="carma_emission_rate" type="real" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-The emission rate of inert tracers used in the test. A positive value indicates that
-the rate is a column mass (kg/m2/s) and a negative value indicate that it is a mass
-mixing ratio (kg/kg/s).
-Default: 1e-9
-</entry>
-
-<entry id="carma_neutral_h2so4" type="logical" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Flag indicating that h2so4 vapor pressures should be calculated as if they were
-over sulfates that have been totally neutralized. 
-Default: FALSE
-</entry>
-
-
-<!-- CARMA model - cirrus -->
-
-<entry id="carma_sulfate_method" type="char*32" category="carma_model"
-       group="carma_model_nl" valid_values="bulk,carma,fixed,modal" >
-Specifies the method to use to get the prescribed sulfate aerosols for use with nucleation
-of cirrus clouds. This can be different than the sulfate aerosols that are used with the
-climate.
-Default: fixed
-</entry>
-
-<!-- CARMA model - cirrus & pmc -->
-
-<entry id="carma_mice_file" type="char*256" input_pathname="abs" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the name of the file containing ice refrative indicies as a function of wavelength
-used for the particle heating calculation.
-Default: set by build-namelist.
-</entry>
-
-<!-- CARMA model - dust -->
-
-<entry id="carma_soilerosion_file" type="char*256" input_pathname="abs" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the name of the file containing soil erosion factors. This is used by
-the dust model.
-Default: set by build-namelist.
-</entry>
-
-
-<!-- CARMA model - sea salt -->
-
-<entry id="carma_do_WeibullK" type="logical" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Flag indicating that a calculated Weibull K should be used.
-Default: FALSE
-</entry>
-
-<entry id="carma_seasalt_emis" type="char*32" category="carma_model"
-       group="carma_model_nl" valid_values="" >
-Specifies the name of the sea salt emission parameterization.
-Default: Gong
-</entry>
-
 
 =======
 <!-- Ozone: Data (original CAM version) -->
@@ -4232,6 +3861,13 @@ File path for RRTMGP longwave gaseous absorption coefficients file.
 <entry id="rrtmgp_coefficients_file_sw" type="char*256" input_pathname="abs"
        category="radiation" group="radiation_nl" valid_values="">
 File path for RRTMGP shortwave gaseous absorption coefficients file.
+</entry>
+
+<entry id="rrtmgp_enable_temperature_warnings" type="logical"
+       category="radiation" group="radiation_nl" valid_values="">
+Enables low temperature warnings in RRTMGP.
+Disabling this is useful to avoid filling up logs for aqua planet cases.
+Default: TRUE
 </entry>
 
 <!-- Rayleigh Friction Parameterization -->
@@ -5714,12 +5350,6 @@ Default: set by build-namelist.
 MEGAN mapped isoprene emissions facters switch
 If true then use mapped MEGAN emissions facters for isoprene.
 Default: .false.
-</entry>
-
-<entry id="carma_fields" type="char*256" category="carma"
-       group="carma_inparm" valid_values="" >
-List of fluxes needed by the CARMA model, from CLM to CAM.
-Default: set by build-namelist.
 </entry>
 
 <!-- WACCM_GHG Chemistry -->

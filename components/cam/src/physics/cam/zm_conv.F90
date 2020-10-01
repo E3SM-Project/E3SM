@@ -37,6 +37,8 @@ module zm_conv
   public momtran                  ! convective momentum transport
   public trigmem                  ! true if convective memory
   public trigdcape_ull            ! true if to use dcape-ULL trigger
+  public trig_dcape_only          ! true if to use dcape only trigger
+  public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
 
 !
 ! Private data
@@ -52,6 +54,8 @@ module zm_conv
    real(r8) :: zmconv_tiedke_add     = unset_r8   
    logical  :: zmconv_trigmem        = .false.    
    logical  :: zmconv_trigdcape_ull  = .false.    
+   logical  :: zmconv_trig_dcape_only  = .false.    
+   logical  :: zmconv_trig_ull_only  = .false.    
    integer  :: zmconv_cape_cin       = unset_int
    integer  :: zmconv_mx_bot_lyr_adj = unset_int
    real(r8) :: zmconv_tp_fac         = unset_r8
@@ -63,9 +67,11 @@ module zm_conv
     real(r8), parameter :: dcapelmt = 1.81e-2_r8  ! threshold value of dcape for deep convection. 65J/kg/hr
 !>songxl 2014-05-20------------------
 
-!DCAPE-ULL
+!DCAPE-ULL, including options for DCAPE_only and ull_only
    real(r8), parameter :: trigdcapelmt = 0._r8  ! threshold value of dcape for deep convection
-   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and -ULL 
+   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and ULL 
+   logical :: trig_dcape_only  = .false. !true to use DCAPE trigger, ULL not used
+   logical :: trig_ull_only    = .false. !true to use ULL along with default CAPE-based trigger
    integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
 !  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
 !$omp threadprivate (dcapemx)
@@ -117,7 +123,8 @@ subroutine zmconv_readnl(nlfile)
 
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
            zmconv_dmpdz, zmconv_alfa, zmconv_trigmem, zmconv_tiedke_add,     &
-           zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac, zmconv_trigdcape_ull
+           zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac, zmconv_trigdcape_ull, &
+           zmconv_trig_dcape_only, zmconv_trig_ull_only
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -141,6 +148,8 @@ subroutine zmconv_readnl(nlfile)
       tau            = zmconv_tau
       trigmem        = zmconv_trigmem
       trigdcape_ull  = zmconv_trigdcape_ull
+      trig_dcape_only  = zmconv_trig_dcape_only
+      trig_ull_only  = zmconv_trig_ull_only
       tiedke_add     = zmconv_tiedke_add
       num_cin        = zmconv_cape_cin
       mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
@@ -157,6 +166,14 @@ subroutine zmconv_readnl(nlfile)
          write(iulog,*)'**** ZMCONV-DCAPE trigger with unrestricted launch level:', trigdcape_ull
       endif
 
+      if (trig_dcape_only) then 
+         write(iulog,*)'**** ZM scheme uses DCAPE-only trigger:', trig_dcape_only
+      endif
+
+      if (trig_ull_only) then 
+         write(iulog,*)'**** ZM scheme uses unrestricted launch level along with default CAPE-based trigger:', trig_ull_only
+      endif
+
    end if
 
 #ifdef SPMD
@@ -169,6 +186,8 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(alfa_scalar,       1, mpir8,  0, mpicom)
    call mpibcast(trigmem,           1, mpilog, 0, mpicom)
    call mpibcast(trigdcape_ull,     1, mpilog, 0, mpicom)
+   call mpibcast(trig_dcape_only,   1, mpilog, 0, mpicom)
+   call mpibcast(trig_ull_only,     1, mpilog, 0, mpicom)
    call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
    call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
@@ -660,7 +679,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                   rgas    ,grav    ,cpres   ,msg     , &
                   tpert   ,iclosure)
          
-      if (trigdcape_ull) then
+      if (trigdcape_ull .or. trig_dcape_only) then
          if (.not. allocated(dcapemx)) then
             allocate (dcapemx(pcols), stat=ierror)
             if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
@@ -682,7 +701,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       endif
 
       !DCAPE-ULL
-      if (.not. is_first_step() .and. trigdcape_ull) then
+      if (.not. is_first_step() .and. (trigdcape_ull .or. trig_dcape_only)) then
          iclosure = .false.
          call buoyan_dilute(lchnk   ,ncol    , &
                  q_star  ,t_star     ,p       ,z       ,pf       , &
@@ -702,7 +721,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !
    capelmt_wk = capelmt   ! capelmt_wk default to capelmt for default trigger
 
-   if (trigdcape_ull .and. (.not. is_first_step()) )  &
+   if ((trigdcape_ull .or. trig_dcape_only) .and. (.not. is_first_step()) )  &
       capelmt_wk = 0.0_r8
 
    lengath = 0
@@ -720,7 +739,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
             index(lengath) = i
          end if
       end if
-     else if (trigdcape_ull) then
+     else if (trigdcape_ull .or. trig_dcape_only) then
      ! DCAPE-ULL
       if (is_first_step()) then
          !Will this cause restart to be non-BFB
@@ -3386,7 +3405,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    qstp(:ncol,:) = q(:ncol,:)
 
 !DCAPE-ULL
-   if (trigdcape_ull) then
+   if (trigdcape_ull .or. trig_ull_only) then
       do k = pver - 1,msg + 1,-1
       do i = 1,ncol
          if ((p(i,k).le.600._r8) .and. (p(i,k+1).gt.600._r8)) pblt600(i) = dble(k)
@@ -3407,7 +3426,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    bot_layer = pver - mx_bot_lyr_adj
 
 ! DCAPE-ULL
-  if (trigdcape_ull .and. (.not. iclosure)) then
+  if ((trigdcape_ull .or. trig_dcape_only ).and. (.not. iclosure)) then
      mx(:ncol) = dcapemx(:ncol)
   else
 #ifdef PERGRO
@@ -3420,7 +3439,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
          rhd = (hmn(i) - hmax(i))/(hmn(i) + hmax(i))
 
          !DCAPE-ULL
-         if (trigdcape_ull) then
+         if (trigdcape_ull .or. trig_ull_only) then
            if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
               hmax(i) = hmn(i)
               mx(i) = k
@@ -3439,7 +3458,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
 
          !DCAPE-ULL
-         if (trigdcape_ull) then
+         if (trigdcape_ull .or. trig_ull_only) then
             if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k

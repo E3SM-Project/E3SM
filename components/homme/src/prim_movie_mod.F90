@@ -33,7 +33,8 @@ module prim_movie_mod
        nf_handle,           &
        get_current_varnames, &
        nfsizekind,             &
-       nf_selectedvar
+       nf_selectedvar,       &
+       PIOFS
        
   use surfaces_mod, only : cvlist, InitControlVolumesData, InitControlVolumes
 
@@ -98,7 +99,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem, iodesc3dp1 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
@@ -129,7 +130,6 @@ contains
     integer :: ierr
 #endif
 
-    num_agg = 1
     call PIO_setDebugLevel(0)
 
 
@@ -149,21 +149,21 @@ contains
     allocate(compdof(nxyp*nlevp), latp(nxyp),lonp(nxyp))
     
     ! Create the DOF arrays for GLL points
-    iorank=pio_iotask_rank(pio_subsystem)
+    iorank=pio_iotask_rank(PIOFS)
 
     if (par%masterproc) print *,'compDOF for 2d'
     call getDOF(elem, GlobalUniqueCols, 1, compdof)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
+    call PIO_initDecomp(PIOFS, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
     if (par%masterproc) print *,'compDOF for 3d nlev'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
-    call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
+    call PIO_initDecomp(PIOFS, pio_double,(/GlobalUniqueCols,nlev/),&
          compDOF(1:nxyp*nlev),IOdesc3D)
 
     if (par%masterproc) print *,'compDOF for 3d nlevp'
     call getDOF(elem, GlobalUniqueCols, nlevp, compdof)
-    call PIO_initDecomp(pio_subsystem,pio_double,(/GlobalUniqueCols,nlevp/),&
+    call PIO_initDecomp(PIOFS,pio_double,(/GlobalUniqueCols,nlevp/),&
          compDOF,iodesc3dp1)
 
 ! trivial case for vertical variables
@@ -174,8 +174,8 @@ contains
     else
        compdof=0
     end if
-    call pio_initdecomp(pio_subsystem, pio_double, (/nlev/), compdof(1:nlev), iodescv)
-    call pio_initdecomp(pio_subsystem, pio_double, (/nlevp/), compdof(1:nlevp), iodescvp1)
+    call pio_initdecomp(PIOFS, pio_double, (/nlev/), compdof(1:nlev), iodescv)
+    call pio_initdecomp(PIOFS, pio_double, (/nlevp/), compdof(1:nlevp), iodescvp1)
     
 ! this is a trivial case for the time variable
     if(iorank==0) then
@@ -186,7 +186,7 @@ contains
     start=-1
     count=-1
 
-    call PIO_initDecomp(pio_subsystem,pio_double,(/1/),&
+    call PIO_initDecomp(PIOFS,pio_double,(/1/),&
          compDOF(1:1),IOdescT)
 
     deallocate(compdof)
@@ -210,7 +210,7 @@ contains
           end do
        end do
     end do
-    call pio_initdecomp(pio_subsystem, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
+    call pio_initdecomp(PIOFS, pio_int, (/global_nsub,nlev/), compdof, iodesc3d_subelem)
     deallocate(compdof)
 
 
@@ -232,6 +232,7 @@ contains
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'PHIS', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
@@ -380,6 +381,18 @@ contains
                 st=en+1
              enddo
              call nf_put_var(ncdf(ios),var2d,start,count,name='geos')
+             deallocate(var2d)
+          endif
+          if(nf_selectedvar('PHIS', output_varnames)) then
+             allocate(var2d(nxyp))
+             if (par%masterproc) print *,'writing geos as PHIS...'
+             st=1
+             do ie=1,nelemd
+                en=st+elem(ie)%idxp%NumUniquePts-1
+                call UniquePoints(elem(ie)%idxP,elem(ie)%state%phis,var2d(st:en))
+                st=en+1
+             enddo
+             call nf_put_var(ncdf(ios),var2d,start,count,name='PHIS')
              deallocate(var2d)
           endif
 

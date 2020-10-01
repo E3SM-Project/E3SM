@@ -52,6 +52,7 @@ Module dyn_comp
   !  JPE  06.05.31:  created
   !  Aaron Donahue 17.04.11: Fixed bug in write_grid_mapping which caused 
   !       a segmentation fault when dyn_npes<npes
+  !  MT 2020.06.30: remove write_grid_mapping - moved to homme/src/tool
   !
   !----------------------------------------------------------------------
 
@@ -309,9 +310,6 @@ CONTAINS
 #endif
     end if
 
-    if (inst_index == 1) then
-       call write_grid_mapping(par, elem)
-    end if
 
   end subroutine dyn_init2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -406,66 +404,6 @@ CONTAINS
   !-----------------------------------------------------------------------
 
 
-
-  subroutine write_grid_mapping(par, elem)
-    use parallel_mod,     only: parallel_t
-    use element_mod, only : element_t
-    use cam_pio_utils, only : cam_pio_createfile, pio_subsystem
-    use pio, only : file_desc_t, pio_def_dim, var_desc_t, pio_int, pio_def_var, &
-         pio_enddef, pio_closefile, pio_initdecomp, io_desc_t, pio_write_darray, &
-         pio_freedecomp, pio_setdebuglevel
-    use dimensions_mod, only : np, nelem, nelemd
-    use dof_mod, only : createmetadata
-
-    type(parallel_t) :: par
-    type(element_t) :: elem(:)
-    type(file_desc_t) :: nc
-    type(var_desc_t) :: vid
-    type(io_desc_t) :: iodesc
-    integer :: dim1, dim2, ierr, i, j, ie, cc, base, ii, jj
-    integer, parameter :: npm12 = (np-1)*(np-1)
-    integer :: subelement_corners(npm12*nelemd,4)
-    integer :: dof(npm12*nelemd*4)
-
-
-    ! Create a CS grid mapping file for postprocessing tools
-
-    ! write meta data for physics on GLL nodes
-    call cam_pio_createfile(nc, 'SEMapping.nc')
-
-    ierr = pio_def_dim(nc, 'ncenters', npm12*nelem, dim1)
-    ierr = pio_def_dim(nc, 'ncorners', 4, dim2)
-    ierr = pio_def_var(nc, 'element_corners', PIO_INT, (/dim1,dim2/),vid)
-
-    ierr = pio_enddef(nc)
-    if (par%dynproc) then
-       call createmetadata(par, elem, subelement_corners)
-    end if
-
-    jj=0
-    do cc=0,3
-       do ie=1,nelemd
-          base = ((elem(ie)%globalid-1)+cc*nelem)*npm12
-          ii=0
-          do j=1,np-1
-             do i=1,np-1
-                ii=ii+1
-                jj=jj+1
-                dof(jj) = base+ii
-             end do
-          end do
-       end do
-    end do
-
-    call pio_initdecomp(pio_subsystem, pio_int, (/nelem*npm12,4/), dof, iodesc)
-
-    call pio_write_darray(nc, vid, iodesc, reshape(subelement_corners,(/nelemd*npm12*4/)), ierr)
-
-    call pio_freedecomp(nc, iodesc)
-
-    call pio_closefile(nc)
-
-  end subroutine write_grid_mapping
 
 end module dyn_comp
 

@@ -9,5 +9,5 @@ fincl2 = 'CRM_T:A','CRM_QRAD:I'
 fincl2lonlat = '120w:100w_20n:40n'
 
 ! Global grid variables on a subset of the globe
-fincl3 = 'PS:I','PRECT:I','LHFLX:I','FSNT:I','UBOT:I','SPDT:I','SPTLS:I','SPMC:I','SPTKE:I'
+fincl3 = 'PS:I','PRECT:I','LHFLX:I','FSNT:I','UBOT:I','MMF_DT:I','MMF_TLS:I','MMF_MC:I','MMF_TKE:I','MMF_SUBCYCLE_FAC'
 fincl3lonlat = '60e:120e_00n:60n'

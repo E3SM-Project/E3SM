@@ -42,6 +42,26 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p4-ISMF</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%ISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p4-DIB</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBDATMFORCED_DROF%JRA-1p4-2018-AIS0ICE_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p4-DIB-ISMF</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0ROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-IAF-ISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%ISMFDATMFORCED_DROF%IAFAIS45_SGLC_SWAV</lname>
   </compset>

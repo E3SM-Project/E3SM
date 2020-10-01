@@ -14,7 +14,7 @@ module restart_dynamics
 
   type(var_desc_t) :: FQpsdesc, omegadesc
 
-  type(var_desc_t), pointer :: qdesc(:), qdesc_dp(:)
+  type(var_desc_t), pointer :: qdesc_dp(:)
 
   integer :: ncol_dimid,  nlev_dimid, nlevp_dimid
   public :: init_restart_dynamics
@@ -75,10 +75,9 @@ CONTAINS
     ierr = PIO_Def_Var(File, 'PS', pio_double, (/ncol_dimid, timelevels_dimid/), PSdesc)
     ierr = PIO_Def_Var(File, 'PHIS', pio_double, (/ncol_dimid/), phisdesc)
 
-    allocate(Qdesc(qsize_d), qdesc_dp(qsize_d))
+    allocate(qdesc_dp(qsize_d))
 
     do i=1,qsize_d
-       ierr = PIO_Def_Var(File,cnst_name(i), pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Qdesc(i))
        ierr = PIO_Def_Var(File,"dp"//cnst_name(i), pio_double, (/ncol_dimid, nlev_dimid, timelevels_dimid/), Qdesc_dp(i))
     end do
 
@@ -293,20 +292,6 @@ CONTAINS
           do k=1,nlev
              do j=1,np
                 do i=1,np
-                   var3d(i,j,ie,k) = elem(ie)%state%Q(i,j,k,q)
-                end do
-             end do
-          end do
-       end do
-       call PIO_Setframe(File,Qdesc(q), t)
-       call PIO_Write_Darray(File,Qdesc(q),iodesc3d,var3d,ierr)
-
-       ! Write Q
-!$omp parallel do private(ie, k, j, i)
-       do ie=1,nelemd
-          do k=1,nlev
-             do j=1,np
-                do i=1,np
                    var3d(i,j,ie,k) = elem(ie)%state%Qdp(i,j,k,q,tlQdp)
                 end do
              end do
@@ -320,7 +305,7 @@ CONTAINS
 
     deallocate(var3d)
     deallocate(var2d)
-    deallocate(qdesc, qdesc_dp)
+    deallocate(qdesc_dp)
     call pio_freedecomp(File, iodesc2d)
     call pio_freedecomp(File, iodesc3d)
 #ifdef MODEL_THETA_L
@@ -517,10 +502,9 @@ CONTAINS
     endif
 #endif
 
-    allocate(qdesc(qsize_d), qdesc_dp(qsize_d))
+    allocate(qdesc_dp(qsize_d))
 
     do q=1,qsize_d
-       ierr = PIO_Inq_varid(File, cnst_name(q) ,Qdesc(q))
        ierr = PIO_Inq_varid(File, "dp"//cnst_name(q) ,Qdesc_dp(q))
     end do
 
@@ -665,21 +649,7 @@ CONTAINS
     do ie = 1,nelemd
        elem(ie)%state%Qdp = 0
     end do
-    do q=1,qsize_d
-       call pio_setframe(File,qdesc(q), t)
-       call pio_read_darray(File, qdesc(q), iodesc3d, var3d, ierr)
-       cnt=0
-       do k=1,nlev
-          do ie=1,nelemd
-             do j=1,np
-                do i=1,np
-                   cnt=cnt+1
-                   elem(ie)%state%Q(i,j,k,q) = var3d(cnt)
-                end do
-             end do
-          end do
-       end do
-
+    do q=1,qsize_d  
        call pio_setframe(File,qdesc_dp(q), t)
        call pio_read_darray(File, qdesc_dp(q), iodesc3d, var3d, ierr)
        cnt=0
@@ -704,7 +674,7 @@ CONTAINS
     endif
 #endif
 
-    deallocate(qdesc, qdesc_dp)
+    deallocate(qdesc_dp)
 
     call dyn_init2(dyn_in)
 
