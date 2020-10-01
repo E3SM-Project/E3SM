@@ -276,6 +276,11 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
     linear_interp(d);
 
+    // The combination of single-precision and randomness generating points
+    // close together can result in larger error margins.
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     for (Int s = 0; s < shcol; ++s) {
       if (km1_bigger) {
         for (Int k2 = 0; k2 < km2; ++k2) {
@@ -287,7 +292,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
           const auto x2_delta = d.x2[offset] - d.x1[offset1];
           const auto y2_delta = d.y2[offset] - d.y1[offset1];
           const auto slope2   = y2_delta / x2_delta;
-          REQUIRE(slope1 == Approx(slope2));
+          REQUIRE(slope1 == Approx(slope2).margin(margin));
         }
       }
       else {
@@ -301,7 +306,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
             const auto x1_delta = d.x1[offset] - d.x2[offset2];
             const auto y1_delta = d.y1[offset] - d.y2[offset2];
             const auto slope1   = y1_delta / x1_delta;
-            REQUIRE(slope1 == Approx(slope2));
+            REQUIRE(slope1 == Approx(slope2).margin(margin));
           }
           else {
             const auto offset  = k1 + s*km1;
@@ -312,7 +317,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
             const auto x2_delta = d.x2[offset2] - d.x1[offset-1];
             const auto y2_delta = d.y2[offset2] - d.y1[offset-1];
             const auto slope2   = y2_delta / x2_delta;
-            REQUIRE(slope1 == Approx(slope2));
+            REQUIRE(slope1 == Approx(slope2).margin(margin));
           }
         }
       }
