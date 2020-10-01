@@ -6,7 +6,7 @@
 
 <sim_year>2010</sim_year>
 
-<finidat hgrid="r0125">lnd/clm2/initdata_map/20200909.DYAMOND-2.spinup-nTQUV.ne30-r0125.clm2.r.2020-01-20-00000.nc</finidat>
+<finidat hgrid="r0125">lnd/clm2/initdata/20200909.DYAMOND-2.spinup-nTQUV.ne30-r0125.clm2.r.2020-01-20-00000.nc</finidat>
 
 <sim_year_range>constant</sim_year_range>
 
