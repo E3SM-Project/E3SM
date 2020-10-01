@@ -216,8 +216,13 @@ def buildnml(case, caseroot, compname):
         decomp_date += '200714'
         decomp_prefix += 'mpas-seaice.graph.info.'
     elif ice_grid == 'WC14to60E2r3_ICG':
-        grid_date += '200910'
+        grid_date += '201001'
         grid_prefix += 'mpassi.WC14to60E2r3.rstFromG-anvil'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-seaice.graph.info.'
+    elif ice_grid == 'WC14to60E2r3-1900_ICG':
+        grid_date += '201001'
+        grid_prefix += 'mpassi.WC14to60E2r3-1900.rstFromG-anvil'
         decomp_date += '200714'
         decomp_prefix += 'mpas-seaice.graph.info.'
 
