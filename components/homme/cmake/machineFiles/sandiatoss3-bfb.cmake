@@ -51,12 +51,13 @@ SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")
 #SET (USE_MPI_OPTIONS "-loadbalance" CACHE FILEPATH "")
 
 #turn on preqxx target and thus strict fpmodel for F vs CXX comparison
-SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O1" CACHE STRING "")
-SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
-SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
+SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
+SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
+SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
 SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET (ENABLE_PREQX_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
 SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
+SET (AVX_VERSION "0" CACHE STRING "")
 
 # redsky upgrade 8/2017, need to load sems-netcdf module:
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
