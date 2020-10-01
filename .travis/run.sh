@@ -4,7 +4,7 @@ case="master.A_WCYCL1850.ne4_oQU240.baseline"
 compset="A_WCYCL1850"
 res="ne4_oQU240"
 
-bldlog_dir="${HOME}/projects/e3sm/scratch/$case/bld"
+log_dir="${HOME}/projects/e3sm/scratch/$case"
 
 shopt -s extglob
 shopt -s nullglob
@@ -28,9 +28,21 @@ function command_yellow_rc
 function print_bldlog
 {
     bldlog=$1
-    bldlog_path=(${bldlog_dir}/$bldlog.bldlog.+([[:digit:]])-+([[:digit:]]))
+    bldlog_path=(${log_dir}/bld/$bldlog.bldlog.+([[:digit:]])-+([[:digit:]]))
     if [ -n "${bldlog_path}" ]; then
         command_yellow "cat ${bldlog_path}"
+    fi
+}
+
+function print_runlog
+{
+    runlog=$1
+    runlog_path=(${log_dir}/run/$runlog.log.+([[:digit:]])-+([[:digit:]]))
+    if [ -n "${runlog_path}" ]; then
+        command_yellow "cat ${runlog_path}"
+        return 1
+    else
+        return 0
     fi
 }
 
@@ -42,9 +54,16 @@ command_yellow_rc "./case.setup"
 command_yellow "./case.build"
 rc=$?
 if [ $rc -ne 0 ]; then
+    print_bldlog "e3sm"
     print_bldlog "csm_share"
     print_bldlog "pio"
     print_bldlog "mct"
     print_bldlog "gptl"
     exit $rc
 fi
+
+# Unfortunately, case.submit always return 0, even if it fails.
+# To find out if it succeeded, we check if the run log has been gzipped.
+command_yellow "./case.submit"
+print_runlog "e3sm"
+exit $?

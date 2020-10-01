@@ -47,4 +47,4 @@ before_install:
 
 script:
     # Build a case
-    - travis_wait 30 singularity exec --hostname singularity e3sm.sif .travis/run.sh
+    - travis_wait 60 singularity exec --hostname singularity e3sm.sif .travis/run.sh
