@@ -38,6 +38,11 @@ void Functions<S,D>::linear_interp(
   }
   else if (km2 == km1+1) {
 
+    // TODO: This implementation may need to be tweaked for better CPU performance.
+    // Specifically, CPU perf may improve if the top and bottom pack are handled in
+    // a Kokkos::single block so that all conditionals can be removed from the ||4.
+    // Keep thread0 unoccupied so it can process the Kokkos::single while other threads
+    // are doing the ||4.
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n);
