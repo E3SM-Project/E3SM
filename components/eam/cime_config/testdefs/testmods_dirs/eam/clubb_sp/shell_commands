@@ -1,0 +1,5 @@
+#!/bin/bash
+
+#Invoke campp (using v1 mechanism file)
+./xmlchange --append CAM_CONFIG_OPTS='-clubb_opts clubb_single_prec'
+

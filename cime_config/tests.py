@@ -62,6 +62,7 @@ _TESTS = {
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_ne4.FC5AV1C-L.eam-chem_pp",
+            "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.eam-clubb_sp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
