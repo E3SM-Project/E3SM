@@ -1094,6 +1094,16 @@
       <mask>oRRS15to5</mask>
     </model_grid>
 
+    <model_grid alias="antarcticax4v1pg2_r0125_antarcticax4v1pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_antarcticax4v1.pg2</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">ne0np4_antarcticax4v1.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS15to5</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg2_ne30pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">ne30np4.pg2</grid>
@@ -2771,6 +2781,14 @@
       <desc>1-deg with 1/4-deg over Antarctica (version 1):</desc>
     </domain>
 
+    <domain name="ne0np4_antarcticax4v1.pg2">
+      <nx>48836</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.antarcticax4v1pg2_oRRS15to5.200926.nc</file>
+      <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.antarcticax4v1pg2_oRRS15to5.200926.nc</file>
+      <desc>1-deg with 1/4-deg over Antarctica (version 1) pg2:</desc>
+    </domain>
+
     <domain name="tx0.1v2">
       <nx>3600</nx>
       <ny>2400</ny>
@@ -3520,6 +3538,18 @@
     <gridmap atm_grid="ne0np4_antarcticax4v1" rof_grid="r0125">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1_to_r0125_mono.20191127.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1_to_r0125_mono.20191127.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_antarcticax4v1.pg2" lnd_grid="r0125">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_antarcticax4v1pg2_mono.20200925.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_antarcticax4v1pg2_mono.20200925.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_antarcticax4v1.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
