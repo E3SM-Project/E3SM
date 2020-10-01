@@ -42,7 +42,7 @@ void Functions<S,D>::linear_interp(
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n);
       indx_pack.set(indx_pack < 1, 1); // special shift for 0 boundary case
-      indx_pack.set(indx_pack == km2-1, km1-1); // special shift for 0 boundary case
+      indx_pack.set(indx_pack == km2-1, km1-1); // special shift for top boundary case
       ekat::index_and_shift<-1>(sx1, indx_pack, x1, x1s);
       ekat::index_and_shift<-1>(sy1, indx_pack, y1, y1s);
 
