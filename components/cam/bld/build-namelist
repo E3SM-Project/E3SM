@@ -705,7 +705,6 @@ if ($print>=2) { print "Running model with rain_evap_to_coarse_aero (1-YES, 0-NO
 my $chem = $cfg->get('chem');
 my $waccm_chem = ($chem =~ "waccm_");
 my $waccm_phys = $cfg->get('waccm_phys');
-my $carma = $cfg->get('carma');
 
 my $prog_species = $cfg->get('prog_species');
 my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ "ghg" or $prog_species =~ "GHG");
@@ -1564,62 +1563,6 @@ if ($rad_volcaero_mmr) {
     $radval .= "," . quote_string("N:VOLC_MMR:" . $abs_filepath);
 }
 
-# CARMA RRTMG and CAMRT
-#
-# Stratospheric black carbon
-if ($carma eq 'bc_strat') {
-    my $rel_filepath;
-    if ($aer_model eq 'bam') {
-        $rel_filepath = get_default_value("${aer_model}_bcar1");
-    } else {
-        $rel_filepath = get_default_value("${aer_model}_bc_a1");
-    }
-    my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
-    my @val = ('SOOT01');
-    foreach my $val (@val) {
-        $radval .= "," . quote_string("A:" . $val . ":" . $abs_filepath);
-    }
-}
-
-# TODO: recreate files for RRTMGP with different band ordering from RRTMG. 
-# For now, we swap bands at runtime, based on how we know the bands have
-# changed, but we should do this in a more intelligent way (i.e., encode
-# band information into files, and check when we read them in).
-if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
-
-  # CARMA Microphysics - RRTMG Only
-  #
-  # New CARMA models that have radiatively active tracers need to define the name of
-  # each of the radiatively active constituents.
-  
-  if ($carma eq 'meteor_impact') {
-    my @val = ('CRDUST01', 'CRDUST02', 'CRDUST03', 'CRDUST04', 'CRDUST05', 'CRDUST06', 'CRDUST07', 
-               'CRDUST08', 'CRDUST09', 'CRDUST10', 'CRDUST11', 'CRDUST12', 'CRDUST13', 'CRDUST14',
-               'CRDUST15', 'CRDUST16', 'CRDUST17', 'CRDUST18', 'CRDUST19', 'CRDUST20', 'CRDUST21');
-  
-    foreach my $val (@val) {
-      $radval .= "," . quote_string("A:" . $val . ":" . $carma . "_" . $val . "_rrtmg.nc");
-    }
-
-    my @val = ('CRSOOT01', 'CRSOOT02', 'CRSOOT03', 'CRSOOT04', 'CRSOOT05', 'CRSOOT06', 'CRSOOT07', 
-               'CRSOOT08', 'CRSOOT09', 'CRSOOT10', 'CRSOOT11', 'CRSOOT12', 'CRSOOT13', 'CRSOOT14',
-               'CRSOOT15', 'CRSOOT16', 'CRSOOT17', 'CRSOOT18', 'CRSOOT19', 'CRSOOT20', 'CRSOOT21');
-  
-    foreach my $val (@val) {
-      $radval .= "," . quote_string("A:" . $val . ":" . $carma . "_" . $val . "_rrtmg.nc");
-    }
-  }
-
-  if ($carma eq 'test_radiative') {
-    my @val = ('DUST01', 'DUST02', 'DUST03', 'DUST04', 'DUST05', 'DUST06', 'DUST07', 'DUST08', 
-               'DUST09', 'DUST10', 'DUST11', 'DUST12', 'DUST13', 'DUST14', 'DUST15', 'DUST16');
-  
-    foreach my $val (@val) {
-      $radval .= "," . quote_string("A:" . $val . ":" . $carma . "_" . $val . "_rrtmg.nc");
-    }
-  }
-}
-
 # Stratospheric sulfur aerosols 
 if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
     my $rel_filepath = get_default_value("VOLC_MMR");
@@ -1657,6 +1600,16 @@ if ($cfg->get('use_MMF')) {
 if ($rad_pkg eq 'rrtmgp') {
     add_default($nl, 'rrtmgp_coefficients_file_sw');
     add_default($nl, 'rrtmgp_coefficients_file_lw');
+}
+
+# RRTMGP limiter warnings
+if ($rad_pkg eq 'rrtmgp') {
+  if ($aqua_mode) {
+    # disable warnings for aqua planet to avoid filling up the logs
+    add_default($nl, 'rrtmgp_enable_temperature_warnings', 'val'=>".false.");
+  } else {
+    add_default($nl, 'rrtmgp_enable_temperature_warnings');
+  }
 }
 
 # Volcanic Aerosol Mass climatology dataset
@@ -3802,284 +3755,6 @@ add_default($nl, 'diff_cnsrv_mass_check');
 add_default($nl, 'do_molec_press');
 add_default($nl, 'molec_diff_bot_press');
 
-# CARMA microphysics
-#
-# Each CARMA model may require a different set of default
-# namelist values to enable the processes that correspond
-# to the desired microphysics.
-add_default($nl, 'carma_model',    'val'=>$carma);
-
-if ($carma ne 'none') {
-  add_default($nl, 'carma_flag',        'val'=>'.true.');
-}
-
-if ($carma eq 'bc_strat') {
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.false.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-}
-if ($carma eq 'cirrus') {
-  add_default($nl, 'carma_do_cldice',   'val'=>'.true.');
-  add_default($nl, 'carma_do_aerosol',  'val'=>'.false.');
-  add_default($nl, 'carma_do_cldliq',   'val'=>'.false.');
-  add_default($nl, 'carma_do_clearsky', 'val'=>'.false.');
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_detrain',  'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_incloud',  'val'=>'.true.');
-  add_default($nl, 'carma_do_pheat',    'val'=>'.false.');
-  add_default($nl, 'carma_do_optics',   'val'=>'.false.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_conmax',      'val'=>'0.25');
-  add_default($nl, 'carma_maxretries',  'val'=>'20');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'1');
-  add_default($nl, 'carma_dt_threshold','val'=>'2.');
-  add_default($nl, 'carma_gsticki',     'val'=>'0.5');
-  add_default($nl, 'carma_rhcrit',      'val'=>'0.7');
-  add_default($nl, 'wv_sat_scheme',     'val'=>'MurphyKoop');
-  add_default($nl, 'macro_park_do_cldice',  'val'=>'.false.');
-  add_default($nl, 'macro_park_do_cldliq',  'val'=>'.true.');
-  add_default($nl, 'macro_park_do_detrain', 'val'=>'.false.');
-  add_default($nl, 'micro_mg_do_cldice','val'=>'.false.');
-  add_default($nl, 'micro_mg_do_cldliq','val'=>'.true.');
-  add_default($nl, 'spectralflux',      'val'=>'.false.');
-}
-if ($carma eq 'cirrus_dust') {
-  add_default($nl, 'carma_do_cldice',   'val'=>'.true.');
-  add_default($nl, 'carma_do_aerosol',  'val'=>'.false.');
-  add_default($nl, 'carma_do_cldliq',   'val'=>'.false.');
-  add_default($nl, 'carma_do_clearsky', 'val'=>'.false.');
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_detrain',  'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.false.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_incloud',  'val'=>'.true.');
-  add_default($nl, 'carma_do_pheat',    'val'=>'.false.');
-  add_default($nl, 'carma_do_optics',   'val'=>'.false.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_conmax',      'val'=>'0.25');
-  add_default($nl, 'carma_maxretries',  'val'=>'20');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'1');
-  add_default($nl, 'carma_dt_threshold','val'=>'2.');
-  add_default($nl, 'carma_gsticki',     'val'=>'0.5');
-  add_default($nl, 'carma_rhcrit',      'val'=>'0.7');
-  add_default($nl, 'wv_sat_scheme',     'val'=>'MurphyKoop');
-  add_default($nl, 'macro_park_do_cldice',  'val'=>'.false.');
-  add_default($nl, 'macro_park_do_cldliq',  'val'=>'.true.');
-  add_default($nl, 'macro_park_do_detrain', 'val'=>'.false.');
-  add_default($nl, 'micro_mg_do_cldice','val'=>'.false.');
-  add_default($nl, 'micro_mg_do_cldliq','val'=>'.true.');
-  add_default($nl, 'spectralflux',      'val'=>'.false.');
-  add_default($nl, 'carma_soilerosion_file');
-  add_default($nl, 'carma_fields',      'val'=>'Sl_soilw');
-}
-elsif ($carma eq 'dust') {
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_optics',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_soilerosion_file');
-  add_default($nl, 'carma_fields',      'val'=>'Sl_soilw');
-}
-elsif ($carma eq 'meteor_impact') {
-  add_default($nl, 'carma_do_coag',        'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',      'val'=>'.true.');
-  add_default($nl, 'carma_do_emission',    'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit',   'val'=>'.true.');
-  add_default($nl, 'carma_do_optics',      'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',       'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',       'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',      'val'=>'.true.');
-  add_default($nl, 'carma_emis_dust',      'val'=>'0.0');
-  add_default($nl, 'carma_emis_soot',      'val'=>'2.8e10');
-  add_default($nl, 'carma_emis_startdate', 'val'=>'1');
-  add_default($nl, 'carma_emis_starttime', 'val'=>'43200');
-  add_default($nl, 'carma_emis_stopdate',  'val'=>'2');
-  add_default($nl, 'carma_emis_stoptime',  'val'=>'43200');
-  add_default($nl, 'carma_emis_minlat',    'val'=>'-5.85');
-  add_default($nl, 'carma_emis_maxlat',    'val'=>'-0.15');
-  add_default($nl, 'carma_emis_minlon',    'val'=>'-58.75');
-  add_default($nl, 'carma_emis_maxlon',    'val'=>'-51.25');
-  add_default($nl, 'carma_fractal_soot',   'val'=>'.false.');
-  add_default($nl, 'irad_always',          'val'=>'-48');
-}
-elsif ($carma eq 'meteor_smoke') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_emis_total',  'val'=>'16.0');
-  add_default($nl, 'carma_emis_file');
-  add_default($nl, 'carma_do_escale',   'val'=>'.false.');
-  add_default($nl, 'carma_escale_file');
-}
-elsif ($carma eq 'mixed_sulfate') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_pheat',    'val'=>'.false.');
-  add_default($nl, 'carma_do_pheatatm', 'val'=>'.false.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_maxretries',  'val'=>'20');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'1');
-  add_default($nl, 'carma_neutral_h2so4','val'=>'.true.');
-  add_default($nl, 'carma_emis_total',  'val'=>'16.0');
-  add_default($nl, 'carma_emis_file');
-  add_default($nl, 'carma_do_escale',   'val'=>'.false.');
-  add_default($nl, 'carma_escale_file');
-  add_default($nl, 'spectralflux',      'val'=>'.false.');
-  add_default($nl, 'carma_dt_threshold','val'=>'5.');
-}
-elsif ($carma eq 'pmc') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_pheat',    'val'=>'.false.');
-  add_default($nl, 'carma_do_pheatatm', 'val'=>'.false.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_maxretries',  'val'=>'12');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'1');
-  add_default($nl, 'carma_emis_total',  'val'=>'16.0');
-  add_default($nl, 'carma_emis_file');
-  add_default($nl, 'carma_do_escale',   'val'=>'.false.');
-  add_default($nl, 'carma_escale_file');
-  add_default($nl, 'carma_mice_file');
-  add_default($nl, 'spectralflux',      'val'=>'.false.');
-  add_default($nl, 'carma_dt_threshold','val'=>'5.');
-}
-elsif ($carma eq 'pmc_sulfate') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_pheat',    'val'=>'.false.');
-  add_default($nl, 'carma_do_pheatatm', 'val'=>'.false.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_maxretries',  'val'=>'20');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'1');
-  add_default($nl, 'carma_neutral_h2so4','val'=>'.true.');
-  add_default($nl, 'carma_emis_total',  'val'=>'16.0');
-  add_default($nl, 'carma_emis_file');
-  add_default($nl, 'carma_do_escale',   'val'=>'.false.');
-  add_default($nl, 'carma_escale_file');
-  add_default($nl, 'carma_mice_file');
-  add_default($nl, 'spectralflux',      'val'=>'.false.');
-  add_default($nl, 'carma_dt_threshold','val'=>'5.');
-}
-elsif ($carma eq 'sea_salt') {
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_WeibullK', 'val'=>'.false.');
-  add_default($nl, 'carma_seasalt_emis', 'val'=>'Gong');
-}
-elsif ($carma eq 'sulfate') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_hetchem',  'val'=>'.true.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_maxretries',  'val'=>'20');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'2');
-  add_default($nl, 'carma_dt_threshold','val'=>'2.');
-}
-elsif ($carma eq 'test_detrain') {
-  add_default($nl, 'carma_do_detrain',  'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-}
-elsif ($carma eq 'test_growth') {
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_grow',     'val'=>'.true.');
-  add_default($nl, 'carma_do_substep',  'val'=>'.true.');
-  add_default($nl, 'carma_do_thermo',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_maxretries',  'val'=>'12');
-  add_default($nl, 'carma_maxsubsteps', 'val'=>'4');
-}
-elsif ($carma eq 'test_passive') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-}
-elsif ($carma eq 'test_radiative') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_optics',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-}
-elsif ($carma eq 'test_swelling') {
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-}
-elsif ($carma eq 'test_tracers') {
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_launch_doy',  'val'=>'1');
-  add_default($nl, 'carma_emission_rate','val'=>'-1e-12');
-}
-elsif ($carma eq 'test_tracers2') {
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_launch_doy',  'val'=>'1');
-  add_default($nl, 'carma_emission_rate','val'=>'-1e-12');
-}
-elsif ($carma eq 'tholin') {
-  add_default($nl, 'carma_do_coag',     'val'=>'.true.');
-  add_default($nl, 'carma_do_drydep',   'val'=>'.true.');
-  add_default($nl, 'carma_do_emission', 'val'=>'.true.');
-  add_default($nl, 'carma_do_fixedinit','val'=>'.true.');
-  add_default($nl, 'carma_do_vdiff',    'val'=>'.true.');
-  add_default($nl, 'carma_do_vtran',    'val'=>'.true.');
-  add_default($nl, 'carma_do_wetdep',   'val'=>'.true.');
-  add_default($nl, 'carma_emis_total',  'val'=>'1e5');
-  add_default($nl, 'carma_emis_file');
-}
 
 # Cloud sedimentation
 add_default($nl, 'cldsed_ice_stokes_fac');
@@ -4730,7 +4405,7 @@ if ($cam_build) {
 delete @nl_group{@comp_groups};
 
 # Dry deposition and MEGAN VOC emis namelists
-@comp_groups = qw(drydep_inparm megan_emis_nl carma_inparm);
+@comp_groups = qw(drydep_inparm megan_emis_nl );
 $outfile = "$opts{'dir'}/drv_flds_in";
 $nl->write($outfile, 'groups'=>\@comp_groups);
 if ($print>=1) { print "CAM writing dry deposition namelist to drv_flds_in $eol"; }

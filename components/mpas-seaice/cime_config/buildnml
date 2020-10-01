@@ -83,8 +83,8 @@ def buildnml(case, caseroot, compname):
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
 
     elif ice_grid == 'oEC60to30v3_ICG':
-        grid_date += '171101'
-        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvil0926'
+        grid_date += '200927'
+        grid_prefix += 'seaice.EC60to30v3.restartFrom_anvilG'
         decomp_date += '161222'
         decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'oEC60to30wLI':
@@ -103,6 +103,12 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
         decomp_date += '170905'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'ECwISC30to60E1r2':
+        grid_date += '200408'
+        grid_prefix += 'seaice.ECwISC30to60E1r2'
+        decomp_date += '200408'
+        decomp_prefix += 'mpas-o.graph.info.'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
     elif ice_grid == 'mpas120':
         grid_date += '121116'
         grid_prefix += 'cice120km'
@@ -189,6 +195,21 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.ARRM60to6'
         decomp_date += '180820'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2':
+        grid_date += '200908'
+        grid_prefix += 'seaice.EC30to60E2r2'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2_ICG':
+        grid_date += '200910'
+        grid_prefix += 'mpassi.EC30to60E2r2.rstFromG-anvil'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2-1900_ICG':
+        grid_date += '200910'
+        grid_prefix += 'mpassi.EC30to60E2r2-1900.rstFromG-anvil'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
 
 
     #--------------------------------------------------------------------
@@ -240,10 +261,14 @@ def buildnml(case, caseroot, compname):
         # create mpassiconf/cesm_namelist
         # -----------------------------------------------------
 
-        if ncpl_base_period == 'day': 
+        if ncpl_base_period == 'year':
+            config_dt = ( 3600 * 24 * 365 ) // atm_ncpl
+        elif ncpl_base_period == 'day':
             config_dt = ( 3600 * 24 ) // atm_ncpl
-        if ncpl_base_period == 'hour': 
-            config_dt =  3600  // atm_ncpl
+        elif ncpl_base_period == 'hour':
+            config_dt = ( 3600 ) // atm_ncpl
+        else:
+            logger.warning("WARNING: {} is being used".format(ncpl_base_period))
 
         config_dt = float(config_dt)
         infile_text = ""
@@ -589,6 +614,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
         lines.append('        filename_template="mpassi.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
@@ -596,6 +622,43 @@ def buildnml(case, caseroot, compname):
         lines.append('        output_interval="00-00-01_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="timeSeriesStatsDailyAMPKG">')
+        lines.append('')
+        lines.append('    <var name="icePresent"/>')
+        lines.append('    <var name="iceAreaCell"/>')
+        lines.append('    <var name="iceVolumeCell"/>')
+        lines.append('    <var name="snowVolumeCell"/>')
+        lines.append('    <var name="iceAreaCategory"/>')
+        lines.append('    <var name="iceVolumeCategory"/>')
+        lines.append('    <var name="snowVolumeCategory"/>')
+        lines.append('    <var name="uVelocityGeo"/>')
+        lines.append('    <var name="vVelocityGeo"/>')
+        lines.append('    <var name="divergence"/>')
+        lines.append('    <var name="shear"/>')
+        lines.append('    <var name="shortwaveDown"/>')
+        lines.append('    <var name="longwaveDown"/>')
+        lines.append('    <var name="icePressure"/>')
+        lines.append('    <var name="principalStress1Var"/>')
+        lines.append('    <var name="principalStress2Var"/>')
+        lines.append('    <var name="broadbandAlbedo"/>')
+        lines.append('    <var name="absorbedShortwaveFluxInitialArea"/>')
+        lines.append('    <var name="latentHeatFluxInitialArea"/>')
+        lines.append('    <var name="sensibleHeatFluxInitialArea"/>')
+        lines.append('    <var name="longwaveUpInitialArea"/>')
+        lines.append('    <var name="evaporativeWaterFluxInitialArea"/>')
+        lines.append('    <var name="oceanHeatFlux"/>')
+        lines.append('    <var name="oceanShortwaveFlux"/>')
+        lines.append('    <var name="meltPondAreaFinalArea"/>')
+        lines.append('    <var name="meltPondDepthFinalArea"/>')
+        lines.append('    <var name="oceanFreshWaterFlux"/>')
+        lines.append('    <var name="oceanSaltFlux"/>')
+        lines.append('    <var name="freezingMeltingPotential"/>')
+        lines.append('    <var name="congelation"/>')
+        lines.append('    <var name="frazilFormation"/>')
+        lines.append('    <var name="snowiceFormation"/>')
+        lines.append('    <var name="snowMelt"/>')
+        lines.append('    <var name="surfaceIceMelt"/>')
+        lines.append('    <var name="basalIceMelt"/>')
+        lines.append('    <var name="lateralIceMelt"/>')
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyRestart"')
@@ -612,6 +675,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
         lines.append('        type="output"')
+        lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
         lines.append('        filename_template="mpassi.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')

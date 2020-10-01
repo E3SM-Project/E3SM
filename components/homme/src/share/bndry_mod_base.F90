@@ -71,9 +71,11 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
-    logical(kind=log_kind) :: singlethread_copy = .false.
+    logical(kind=log_kind) :: singlethread_copy
 
     integer        :: i,j
+
+    singlethread_copy = .false.
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr       
@@ -187,9 +189,10 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
-    logical :: singlethread_copy=.false.
+    logical :: singlethread_copy
     integer        :: i,j
 
+    singlethread_copy = .false.
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr       
 
@@ -370,9 +373,10 @@ contains
     character*(80) errorstring
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
-    logical :: singlethread_copy=.false.
+    logical :: singlethread_copy
     integer        :: i,j
 
+    singlethread_copy = .false.
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr       
 

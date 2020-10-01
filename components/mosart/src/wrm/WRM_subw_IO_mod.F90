@@ -10,7 +10,7 @@ MODULE WRM_subw_IO_mod
   use RunoffMod     , only : Tctl, TUnit, rtmCTL
   use RtmSpmd       , only : masterproc, mpicom_rof, iam, ROFID, &
                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
-  use RtmVar        , only : iulog, inst_suffix, smat_option
+  use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp
   use RtmFileUtils  , only : getfil, getavu, relavu
   use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
   use RtmTimeManager, only : get_curr_date
@@ -76,12 +76,12 @@ MODULE WRM_subw_IO_mod
 
      character(len=350) :: paraFile, demandPath, DemandVariableName
      integer :: ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
 
      namelist /wrm_inparm/  &
         paraFile, demandPath, DemandVariableName, &
         ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
 
      character(len=*),parameter :: subname='(WRM_init)'
 
@@ -122,6 +122,7 @@ MODULE WRM_subw_IO_mod
      call mpi_bcast(TotalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(GroundWaterFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(ExternalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+     call mpi_bcast(DamConstructionFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
 
      ctlSubwWRM%paraFile = paraFile
      ctlSubwWRM%demandPath = demandPath
@@ -133,6 +134,7 @@ MODULE WRM_subw_IO_mod
      ctlSubwWRM%GroundWaterFlag = GroundWaterFlag
      ctlSubwWRM%ExternalDemandFlag = ExternalDemandFlag
      ctlSubwWRM%DemandVariableName = DemandVariableName
+     ctlSubwWRM%DamConstructionFlag = DamConstructionFlag
 
      if (masterproc) then
         write(iulog,*) subname," paraFile        = ",trim(ctlSubwWRM%paraFile)
@@ -145,6 +147,7 @@ MODULE WRM_subw_IO_mod
         write(iulog,*) subname," TotalDemandFlag = ",ctlSubwWRM%TotalDemandFlag
         write(iulog,*) subname," GroundWaterFlag = ",ctlSubwWRM%GroundWaterFlag
         write(iulog,*) subname," ExternalDemandFlag = ",ctlSubwWRM%ExternalDemandFlag
+        write(iulog,*) subname," DamConstructionFlag = ",ctlSubwWRM%DamConstructionFlag
      endif
 
      !-------------------
@@ -483,7 +486,8 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%YEAR(ctlSubwWRM%localNumDam))
      WRMUnit%YEAR = 1900
-
+     allocate (WRMUnit%active_stage(ctlSubwWRM%localNumDam))
+     WRMUnit%active_stage = 0
      allocate (WRMUnit%SurfArea(ctlSubwWRM%localNumDam))
      WRMUnit%SurfArea = 0._r8
      allocate (WRMUnit%InstCap(ctlSubwWRM%localNumDam))
@@ -588,8 +592,84 @@ MODULE WRM_subw_IO_mod
      StorWater%FCrelease = 0._r8
      allocate (StorWater%pot_evap(begr:endr))
      StorWater%pot_evap=0._r8
-
-     !call WRM_readDemand()  ! initialize demand0
+     !! Used in reservoir stratification
+	 if (rstraflag) then
+		 allocate (WRMUnit%grandid(ctlSubwWRM%localNumDam))
+		 WRMUnit%grandid = 0
+		 allocate (WRMUnit%geometry(ctlSubwWRM%localNumDam))
+		 WRMUnit%geometry = 0._r8
+		 allocate (WRMUnit%Length_r(ctlSubwWRM%localNumDam))
+		 WRMUnit%Length_r = 0._r8
+		 allocate (WRMUnit%Width_r(ctlSubwWRM%localNumDam))
+		 WRMUnit%Width_r = 0._r8
+		 allocate (WRMUnit%V_errs(ctlSubwWRM%localNumDam))
+		 WRMUnit%V_errs = 0._r8
+		 allocate (WRMUnit%A_errs(ctlSubwWRM%localNumDam))
+		 WRMUnit%A_errs = 0._r8
+		 allocate (WRMUnit%V_str(ctlSubwWRM%localNumDam))
+		 WRMUnit%V_str = 0._r8
+		 allocate (WRMUnit%A_str(ctlSubwWRM%localNumDam))
+		 WRMUnit%A_str = 0._r8
+		 allocate (WRMUnit%C_as(ctlSubwWRM%localNumDam))
+		 WRMUnit%C_as = 0._r8
+		 allocate (WRMUnit%C_vs(ctlSubwWRM%localNumDam))
+		 WRMUnit%C_vs = 0._r8
+		 allocate (WRMUnit%V_dfs(ctlSubwWRM%localNumDam))
+		 WRMUnit%V_dfs = 0._r8
+		 allocate (WRMUnit%A_dfs(ctlSubwWRM%localNumDam))
+		 WRMUnit%A_dfs = 0._r8
+		 allocate (WRMUnit%d_ns(ctlSubwWRM%localNumDam))
+		 WRMUnit%d_ns = 0
+		 allocate (WRMUnit%t_cnt(ctlSubwWRM%localNumDam))
+		 WRMUnit%t_cnt = 0
+		 allocate (WRMUnit%d_zi(ctlSubwWRM%localNumDam,ngeom+1))
+		 WRMUnit%d_zi = 0._r8
+		 allocate (WRMUnit%a_di(ctlSubwWRM%localNumDam,ngeom+1))
+		 WRMUnit%a_di = 0._r8
+		 allocate (WRMUnit%v_zti(ctlSubwWRM%localNumDam,ngeom+1))
+		 WRMUnit%v_zti = 0._r8
+		 allocate (WRMUnit%d_z(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%d_z = 0._r8
+		 allocate (WRMUnit%d_z0(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%d_z0 = 0._r8
+		 allocate (WRMUnit%a_d(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%a_d = 0._r8
+		 allocate (WRMUnit%a_d0(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%a_d0 = 0._r8
+		 allocate (WRMUnit%v_zt(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%v_zt = 0._r8
+		 allocate (WRMUnit%v_zt0(ctlSubwWRM%localNumDam,nlayers+1))
+		 WRMUnit%v_zt0 = 0._r8
+		 allocate (WRMUnit%d_v(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%d_v = 0._r8
+		 allocate (WRMUnit%dd_z(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%dd_z = 0._r8
+		 allocate (WRMUnit%m_zo(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%m_zo = 0._r8
+		 allocate (WRMUnit%m_zn(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%m_zn = 0._r8
+		 allocate (WRMUnit%v_zo(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%v_zo = 0._r8
+		 allocate (WRMUnit%v_zn(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%v_zn = 0._r8
+		 allocate (WRMUnit%out_lc(ctlSubwWRM%localNumDam))
+		 WRMUnit%out_lc = 0._r8
+		 allocate (WRMUnit%purpose(ctlSubwWRM%localNumDam))
+		 WRMUnit%purpose = 1
+		 allocate (WRMUnit%temp_resrv(ctlSubwWRM%localNumDam,nlayers))
+		 WRMUnit%temp_resrv = rinittemp
+		 allocate (WRMUnit%resrv_surf(begr:endr))
+		 WRMUnit%resrv_surf = rinittemp
+		 allocate (WRMUnit%resrv_out(begr:endr))
+		 WRMUnit%resrv_out = rinittemp
+		 allocate (WRMUnit%d_resrv(ctlSubwWRM%localNumDam))
+		 WRMUnit%d_resrv = 0._r8
+		 allocate (WRMUnit%h_resrv(ctlSubwWRM%localNumDam))
+		 WRMUnit%h_resrv = 0._r8
+		 allocate (WRMUnit%ddz_local(ctlSubwWRM%localNumDam))
+		 WRMUnit%ddz_local = 0._r8
+     end if 
+	 !call WRM_readDemand()  ! initialize demand0
 
      ier = pio_inq_varid (ncid, name='RUNOFF_CAP'   , vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%INVc, ier)
@@ -620,6 +700,83 @@ MODULE WRM_subw_IO_mod
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%StorCap, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read cap_mcm',minval(WRMUnit%StorCap),maxval(WRMUnit%StorCap)
      call shr_sys_flush(iulog)
+     !! Used in reservoir stratification
+	 if (rstraflag) then
+		 ier = pio_inq_varid (ncid, name='DamID_Spatial'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%grandid, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read DamID_Spatial',minval(WRMUnit%grandid),maxval(WRMUnit%grandid)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='regeom'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%geometry, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read regeom',minval(WRMUnit%geometry),maxval(WRMUnit%geometry)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Mean_len'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Length_r, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len',minval(WRMUnit%Length_r),maxval(WRMUnit%Length_r)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Mean_wid'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Width_r, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid',minval(WRMUnit%Width_r),maxval(WRMUnit%Width_r)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='V_err'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_errs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_err',minval(WRMUnit%V_errs),maxval(WRMUnit%V_errs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='A_err'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_errs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_err',minval(WRMUnit%A_errs),maxval(WRMUnit%A_errs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='V_str'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_str, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_str',minval(WRMUnit%V_str),maxval(WRMUnit%V_str)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='A_str'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_str, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_str',minval(WRMUnit%A_str),maxval(WRMUnit%A_str)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Coeff_v'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%C_vs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_v',minval(WRMUnit%C_vs),maxval(WRMUnit%C_vs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Coeff_a'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%C_as, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_a',minval(WRMUnit%C_as),maxval(WRMUnit%C_as)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Diff_v'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_dfs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_v',minval(WRMUnit%V_dfs),maxval(WRMUnit%V_dfs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Diff_a'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_dfs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_a',minval(WRMUnit%A_dfs),maxval(WRMUnit%A_dfs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='outlet'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%out_lc, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read outlet',minval(WRMUnit%out_lc),maxval(WRMUnit%out_lc)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='d_n'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%d_ns, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read d_n',minval(WRMUnit%d_ns),maxval(WRMUnit%d_ns)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='purpose'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%purpose, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read purpose',minval(WRMUnit%purpose),maxval(WRMUnit%purpose)
+		 call shr_sys_flush(iulog)
+	 end if 
 
      WRMUnit%SurfArea = WRMUnit%SurfArea * 1e6
      WRMUnit%StorCap=WRMUnit%StorCap*1e6
@@ -743,6 +900,11 @@ MODULE WRM_subw_IO_mod
            if (WRMUnit%StorageCalibFlag(idam).eq.1) then
               StorWater%storage(idam)  = WRMUnit%StorTarget(idam,13)
            endif
+
+           if (ctlSubwWRM%DamConstructionFlag .eq. 1) then
+             StorWater%storage(idam) = 0._r8 * WRMUnit%StorCap(idam)
+           endif
+
            if ( WRMUnit%StorCap(idam) <= 0 ) then
               write(iulog,*) subname, "Error negative max cap for reservoir ", idam, WRMUnit%StorCap(idam)
               call shr_sys_abort(subname//' ERROR: negative max cap for reservoir')
@@ -825,6 +987,26 @@ MODULE WRM_subw_IO_mod
      character(len=*),parameter :: subname = '(WRM_computeRelease)'
 
      call get_curr_date(yr, mon, day, tod)
+
+   do idam = 1, ctlSubwWRM%localNumDam
+    if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
+      if (WRMUnit%active_stage(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
+       if (WRMUnit%YEAR(idam) <= yr .and. WRMUnit%YEAR(idam) > yr-10) then
+           WRMUnit%active_stage(idam) = 1
+           if (StorWater%storage(idam) > 0.8_r8 * WRMUnit%StorCap(idam)) then
+             WRMUnit%active_stage(idam) = 2
+           endif
+       endif
+       
+       if (WRMUnit%YEAR(idam) <= yr-10) then
+         WRMUnit%active_stage(idam) = 2
+       endif
+      endif     
+    else
+      WRMUnit%active_stage(idam) = 2
+    endif
+   enddo    
+
      do idam=1,ctlSubwWRM%localNumDam
         if ( mon .eq. WRMUnit%MthStOp(idam)) then
            WRMUnit%StorMthStOp(idam) = StorWater%storage(idam)

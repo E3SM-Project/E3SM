@@ -994,9 +994,6 @@ end function radiation_nextsw_cday
     real(r8),pointer :: cld_rad(:,:,:,:) ! 3D cloud fraction averaged over CRM integration
     real(r8),pointer :: crm_qrad(:,:,:,:) ! rad heating
 
-    real(r8),pointer :: qaerwat_crm(:,:,:,:,:) ! aerosol water
-    real(r8),pointer :: dgnumwet_crm(:,:,:,:,:) ! wet mode dimaeter
-
     integer nmxrgn(pcols)                      ! Number of maximally overlapped regions
     real(r8) pmxrgn(pcols,pverp)               ! Maximum values of pressure for each
                                                !    maximally overlapped region.
@@ -1213,8 +1210,6 @@ end function radiation_nextsw_cday
 #ifdef MODAL_AERO
     real(r8), pointer, dimension(:,:,:) :: dgnumwet ! number mode diameter
     real(r8), pointer, dimension(:,:,:) :: qaerwat ! aerosol water 
-    real(r8)  dgnumwet_save(pcols, pver, ntot_amode) 
-    real(r8)  qaerwat_save(pcols, pver, ntot_amode)
 #endif
  
     real(r8) pbr(pcols,pver)      ! Model mid-level pressures (dynes/cm2)
@@ -1258,7 +1253,6 @@ end function radiation_nextsw_cday
     integer :: icall                     ! index through climate/diagnostic radiation calls
     integer :: crm_nc_rad_idx, crm_ni_rad_idx, crm_qs_rad_idx, crm_ns_rad_idx
     integer :: crm_t_rad_idx, crm_qi_rad_idx, crm_qc_rad_idx, crm_qv_rad_idx, crm_qrad_idx
-    integer :: dgnumwet_crm_idx, qaerwat_crm_idx
 
     logical :: active_calls(0:N_DIAG)
     logical :: use_MMF
@@ -1329,13 +1323,6 @@ end function radiation_nextsw_cday
     end if
     
     if (use_MMF) then 
-#ifdef MODAL_AERO
-       dgnumwet_crm_idx = pbuf_get_index('CRM_DGNUMWET')
-       qaerwat_crm_idx  = pbuf_get_index('CRM_QAERWAT')
-       call pbuf_get_field(pbuf, dgnumwet_crm_idx, dgnumwet_crm)
-       call pbuf_get_field(pbuf, qaerwat_crm_idx,  qaerwat_crm)
-#endif
-
        if (MMF_microphysics_scheme .eq. 'm2005') then
           ! ifld = pbuf_get_index('DEI')
           ! call pbuf_get_field(pbuf, ifld, dei)
@@ -1539,14 +1526,6 @@ end function radiation_nextsw_cday
            des     = 0.0_r8
          endif
 
-#ifdef MODAL_AERO
-         ifld = pbuf_get_index('DGNUMWET')
-         call pbuf_get_field(pbuf, ifld, dgnumwet, start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
-         ifld  = pbuf_get_index( 'QAERWAT' )
-         call pbuf_get_field(pbuf, ifld, qaerwat, start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
-         dgnumwet_save = dgnumwet
-         qaerwat_save = qaerwat
-#endif /*MODAL_AERO*/
       end if ! dosw .or. dolw
     endif ! MMF
 
@@ -1623,19 +1602,7 @@ end function radiation_nextsw_cday
                 state%q(i,k,ixcldliq) =  qc_rad(i,ii,jj,m)
                 state%q(i,k,1)        =  max(1.e-9_r8,qv_rad(i,ii,jj,m))
                 state%t(i,k)          =  t_rad(i, ii, jj, m)
-#ifdef MODAL_AERO
-                ! Use CRM scale aerosol water to calculate aerosol optical depth. Here we assume no
-                ! aerosol water uptake for cloudy sky on CRM grids. This is not really physically
-                ! correct, but if we assume 100% of relative humidity for aerosol water uptake, this
-                ! will bias 'AODVIS' to be large, since 'AODVIS' is used to compare with observed
-                ! clear sky AOD. In the future, AODVIS should be calculated from clear sky CRM AOD
-                ! only. But before this is done, we will assume no water uptake on CRM grids for 
-                ! cloudy conditions (The radiative effects of this assumption will be small, since 
-                ! aerosol effects are small relative to cloud effects for cloudy sky anyway. 
-                ! -Minghuai Wang (minghuai.wang@pnl.gov)
-                qaerwat (i, k, 1:ntot_amode) =  qaerwat_crm(i, ii, jj, m, 1:ntot_amode)
-                dgnumwet(i, k, 1:ntot_amode) = dgnumwet_crm(i, ii, jj, m, 1:ntot_amode)
-#endif 
+
               end do ! i
             end do ! m
 
@@ -2376,10 +2343,6 @@ end function radiation_nextsw_cday
            des     = des_save
            deallocate (mu_save, lambdac_save, des_save)
         endif
-#ifdef MODAL_AERO
-        qaerwat  = qaerwat_save
-        dgnumwet = dgnumwet_save
-#endif
       endif ! use_MMF
 
       ! Calculate net CRM heating rate from shortwave and longwave heating rates

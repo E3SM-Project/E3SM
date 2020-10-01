@@ -76,7 +76,9 @@ module parameters_tunable
     clubb_nu1,                     &
     clubb_c_K10,                   &
     clubb_c_K10h,                   &
-    clubb_wpxp_L_thresh
+    clubb_wpxp_L_thresh,             &
+    clubb_altitude_thresh
+
     
 
   ! Model constant parameters
@@ -341,6 +343,9 @@ module parameters_tunable
 
 !$omp threadprivate(l_prescribed_avg_deltaz)
 
+  real( kind = core_rknd ), public :: &
+   altitude_threshold = 100.0_core_rknd               !Added to prevent large damping at low altitudes where Lscale is small
+
   ! Since we lack a devious way to do this just once, this namelist
   ! must be changed as well when a new parameter is added.
   namelist /clubb_params_nl/  & 
@@ -360,7 +365,8 @@ module parameters_tunable
     lambda0_stability_coef, mult_coef, taumin, taumax, mu, Lscale_mu_coef, &
     Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, c_K10h, &
     thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
-    C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2
+    C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
+    altitude_threshold
 
   ! These are referenced together often enough that it made sense to
   ! make a list of them.  Note that lmin_coef is the input parameter,
@@ -415,7 +421,7 @@ module parameters_tunable
        "thlp2_rad_cloud_frac_thresh ", "up2_vp2_factor              ", &
        "Skw_max_mag                 ", "C_invrs_tau_bkgnd           ", &
        "C_invrs_tau_sfc             ", "C_invrs_tau_shear           ", &
-       "C_invrs_tau_N2              "/)
+       "C_invrs_tau_N2              ", "altitude_threshold          "/)
 
   real( kind = core_rknd ), parameter, private :: &
     init_value = -999._core_rknd ! Initial value for the parameters, used to detect missing values
@@ -470,7 +476,9 @@ module parameters_tunable
     clubb_nu1,                     &
     clubb_c_K10,                   &
     clubb_c_K10h,                   &
-    clubb_wpxp_L_thresh
+    clubb_wpxp_L_thresh,            &
+    clubb_altitude_thresh
+
 
     integer :: read_status
     integer :: iunit
@@ -507,6 +515,7 @@ module parameters_tunable
     clubb_c_K10 = init_value
     clubb_c_K10h = init_value
     clubb_wpxp_L_thresh = init_value
+    clubb_altitude_thresh = init_value
 
     if (masterproc) then
       iunit = getunit()
@@ -550,6 +559,7 @@ module parameters_tunable
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10h,     1, mpir8,  0, mpicom)
    call mpibcast(clubb_wpxp_L_thresh, 1, mpir8,  0, mpicom)
+   call mpibcast(clubb_altitude_thresh, 1, mpir8,  0, mpicom)
 #endif
 
 
@@ -667,7 +677,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
-               C_invrs_tau_shear, C_invrs_tau_N2)
+               C_invrs_tau_shear, C_invrs_tau_N2,altitude_threshold)
 
 
     ! It was decided after some experimentation, that the best
@@ -851,6 +861,12 @@ module parameters_tunable
     if ( C_wp2_splat < zero ) then
         write(fstderr,*) "C_wp2_splat = ", C_wp2_splat
         write(fstderr,*) "C_wp2_splat must satisfy C_wp2_splat >= 0"
+        err_code = clubb_fatal_error
+    end if
+
+    if ( altitude_threshold < 100. ) then
+        write(fstderr,*) "altitude_threshold = ", altitude_threshold
+        write(fstderr,*) "altitude_threshold >= 100"
         err_code = clubb_fatal_error
     end if
 
@@ -1167,6 +1183,8 @@ module parameters_tunable
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
     if (clubb_c_K10h /= init_value) c_K10h = clubb_c_K10h
     if (clubb_wpxp_L_thresh /= init_value)wpxp_L_thresh = clubb_wpxp_L_thresh
+    if (clubb_altitude_thresh /= init_value) altitude_threshold = clubb_altitude_thresh
+
 
     ! Put the variables in the output array
     call pack_parameters &
@@ -1186,7 +1204,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
-               C_invrs_tau_shear, C_invrs_tau_N2, params )
+               C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold, params )
 
     l_error = .false.
 
@@ -1265,7 +1283,8 @@ module parameters_tunable
       Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, c_K10h, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
       C_invrs_tau_bkgnd, C_invrs_tau_sfc,&
-      C_invrs_tau_shear, C_invrs_tau_N2
+      C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold
+
 
     ! Initialize values to -999.
     call init_parameters_999( )
@@ -1295,7 +1314,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
                C_invrs_tau_bkgnd, C_invrs_tau_sfc,&
-               C_invrs_tau_shear, C_invrs_tau_N2, param_max )
+               C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold, param_max )
 
     l_error = .false.
 
@@ -1345,7 +1364,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag,&
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
-               C_invrs_tau_shear, C_invrs_tau_N2, params )
+               C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold, params )
 
     ! Description:
     ! Takes the list of scalar variables and puts them into a 1D vector.
@@ -1443,6 +1462,7 @@ module parameters_tunable
       iC_invrs_tau_sfc, &
       iC_invrs_tau_shear, &
       iC_invrs_tau_N2, &
+      ialtitude_thresh, &
       nparams
 
     implicit none
@@ -1463,7 +1483,9 @@ module parameters_tunable
       lambda0_stability_coef, mult_coef, taumin, taumax, Lscale_mu_coef, &
       Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, c_K10h, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
-      C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2
+      C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
+      altitude_threshold
+
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
@@ -1562,6 +1584,7 @@ module parameters_tunable
     params(iC_invrs_tau_sfc)   = C_invrs_tau_sfc
     params(iC_invrs_tau_shear) = C_invrs_tau_shear
     params(iC_invrs_tau_N2)    = C_invrs_tau_N2
+    params(ialtitude_thresh)    = altitude_threshold
 
     return
   end subroutine pack_parameters
@@ -1585,7 +1608,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
-               C_invrs_tau_shear, C_invrs_tau_N2 )
+               C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold  )
 
     ! Description:
     ! Takes the 1D vector and returns the list of scalar variables.
@@ -1683,6 +1706,7 @@ module parameters_tunable
       iC_invrs_tau_sfc,&
       iC_invrs_tau_shear,&
       iC_invrs_tau_N2,&
+      ialtitude_thresh,&
       nparams
 
     implicit none
@@ -1706,7 +1730,8 @@ module parameters_tunable
       lambda0_stability_coef, mult_coef, taumin, taumax, Lscale_mu_coef, &
       Lscale_pert_coef, alpha_corr, Skw_denom_coef, c_K10, c_K10h, &
       thlp2_rad_coef, thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
-      C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2
+      C_invrs_tau_bkgnd, C_invrs_tau_sfc, C_invrs_tau_shear, C_invrs_tau_N2, &
+      altitude_threshold
 
     C1      = params(iC1)
     C1b     = params(iC1b)
@@ -1802,6 +1827,7 @@ module parameters_tunable
     C_invrs_tau_sfc   = params(iC_invrs_tau_sfc )
     C_invrs_tau_shear = params(iC_invrs_tau_shear)
     C_invrs_tau_N2    = params(iC_invrs_tau_N2)
+    altitude_threshold = params(ialtitude_thresh)
 
     return
   end subroutine unpack_parameters
@@ -1838,7 +1864,7 @@ module parameters_tunable
                Skw_denom_coef, c_K10, c_K10h, thlp2_rad_coef, &
                thlp2_rad_cloud_frac_thresh, up2_vp2_factor, Skw_max_mag, &
                C_invrs_tau_bkgnd, C_invrs_tau_sfc, &
-               C_invrs_tau_shear, C_invrs_tau_N2, params )
+               C_invrs_tau_shear, C_invrs_tau_N2, altitude_threshold, params )
 
     return
 
@@ -1940,6 +1966,7 @@ module parameters_tunable
     C_invrs_tau_sfc              = init_value 
     C_invrs_tau_shear            = init_value 
     C_invrs_tau_N2               = init_value 
+    altitude_threshold           = init_value 
 
     return
 

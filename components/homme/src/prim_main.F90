@@ -129,13 +129,6 @@ program prim_main
 
 
 
-#ifdef PIO_INTERP
-  if(runtype<0) then
-     ! Interpolate a netcdf file from one grid to another
-     call interpolate_driver(elem, hybrid)
-     call haltmp('interpolation complete')
-  end if
-#endif
   ! this should really be called from test_mod.F90, but it has be be called outside
   ! the threaded region
   if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)

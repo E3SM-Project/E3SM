@@ -2007,7 +2007,6 @@ contains
     
     if (aqua_planet) then
       fraction_landuse = 0.
-      soilw_3d = 0.
     else
 
       call getfil (drydep_srf_file, locfn, 1, lexist)

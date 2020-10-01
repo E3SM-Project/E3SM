@@ -355,7 +355,9 @@ MODULE WRM_modules
      call get_curr_date(yr, month, day, tod)
 
      do idam=1,ctlSubwWRM%LocalNumDam
-
+      if (WRMUnit%active_stage(idam) < 2) then
+         StorWater%release(idam) = 0._r8
+       else
         !if ( WRMUnit%use_FCon(idam) > 0 .or. WRMUnit%use_Supp(idam) > 0) then
            StorWater%release(idam) = WRMUnit%MeanMthFlow(idam,13)
         !endif
@@ -406,6 +408,7 @@ MODULE WRM_modules
  !      write(iulog,*) 'flows', WRMUnit%MeanMthFlow(idam,month),WRMUnit%MeanMthFlow(idam,13)
  !      write(iulog,*) 'storages',StorWater%storage(idam)
  !      endif
+       endif
      end do
 
   end subroutine RegulationRelease
@@ -425,7 +428,7 @@ MODULE WRM_modules
      character(len=*),parameter :: subname='(WRM_storage_targets)'
 
      call get_curr_date(yr, month, day, tod)
-
+   if (WRMUnit%active_stage(idam) == 2) then !only do this when dam is fully functional
      do idam=1,ctlSubwWRM%LocalNumDam
 
         drop = 0
@@ -571,7 +574,7 @@ MODULE WRM_modules
            !print*,WRMUnit%MeanMthFlow(idam,month),WRMUnit%MeanMthFlow(idam,13),StorWater%storage(idam),WRMUnit%StorTarget(idam,month)
         endif
      end do
-
+   endif
   end subroutine WRM_storage_targets
 
 !-----------------------------------------------------------------------
@@ -624,7 +627,7 @@ MODULE WRM_modules
      endif
 
      !print*, "preregulation", damID, StorWater%storage(damID), flow_vol, flow_res, min_flow, month
-
+    if (WRMUnit%active_stage(damID) == 2) then
      if ( ( flow_vol + StorWater%storage(damID) - flow_res- evap) >= max_stor ) then
         flow_res =  flow_vol + StorWater%storage(damID) - max_stor - evap
         StorWater%storage(damID) = max_stor
@@ -648,7 +651,20 @@ MODULE WRM_modules
      else
         StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap 
      end if
-
+   elseif (WRMUnit%active_stage(damID) == 1) then
+     if (flow_vol < min_flow * 2._r8) then
+         flow_res = flow_vol
+      else
+         flow_res = min_flow * 2._r8 ! outflow during filling period is twice of minimum flow
+      endif     
+      evap = 0._r8
+      StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
+   else
+      flow_res = flow_vol
+      evap = 0._r8
+      StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
+   endif
+   
      Trunoff%erout(iunit,nt_nliq) = -flow_res / (theDeltaT)
 
      if (check_local_budget) then

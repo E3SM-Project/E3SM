@@ -21,7 +21,7 @@ module physpkg
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
-  use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p
+  use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p, phys_proc_cost
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -29,7 +29,8 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
-  use zm_conv,          only: trigmem, do_zmconv_dcape_ull => trigdcape_ull
+  use zm_conv,          only: trigmem, do_zmconv_dcape_ull => trigdcape_ull, &
+                              do_zmconv_dcape_only => trig_dcape_only
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
 #ifdef SPMD
@@ -39,8 +40,10 @@ module physpkg
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
 
-  use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_diag, modal_aero_calcsize_reg
-  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, modal_aero_wateruptake_reg
+  use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
+                                    modal_aero_calcsize_reg
+  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
+                                    modal_aero_wateruptake_reg
 
   implicit none
   private
@@ -127,7 +130,6 @@ subroutine phys_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
     use check_energy,       only: check_energy_register
-    use carma_intr,         only: carma_register
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_register
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_register
     use ghg_data,           only: ghg_data_register
@@ -283,10 +285,6 @@ subroutine phys_register
 
        ! register various data model gasses with pbuf
        call ghg_data_register()
-
-       ! carma microphysics
-       ! 
-       call carma_register()
 
        ! Register iondrag variables with pbuf
        call iondrag_register()
@@ -679,8 +677,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
     use ref_pres,           only: pref_edge, pref_mid
-
-    use carma_intr,         only: carma_init
     use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
     use check_energy,       only: check_energy_init
@@ -804,9 +800,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call aer_rad_props_init()
     call cloud_rad_props_init()
 
-    ! initialize carma
-    call carma_init()
-
     ! solar irradiance data modules
     call solar_data_init()
 
@@ -819,8 +812,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_aero_init()
     call aerodep_flx_init()
     call aircraft_emit_init()
-	!when is_cmip6_volc is true ,cmip6 style volcanic file is read
-	!Initialized to .false. here but it gets its values from prescribed_volcaero_init
+    !when is_cmip6_volc is true ,cmip6 style volcanic file is read
+    !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
     call prescribed_volcaero_init(is_cmip6_volc)
 
@@ -979,8 +972,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    integer(i8) :: beg_count                     ! start time for a chunk
-    integer(i8) :: end_count                     ! stop time for a chunk
+    integer(i8) :: beg_proc_cnt                  ! start time for the process
+    integer(i8) :: end_proc_cnt                  ! stop time for the process
+    integer(i8) :: beg_chnk_cnt                  ! start time for a chunk
+    integer(i8) :: end_chnk_cnt                  ! stop time for a chunk
     integer(i8) :: sysclock_rate                 ! system clock rate
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
@@ -1040,10 +1035,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
+       call system_clock(count=beg_proc_cnt)
+       
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_chnk_cnt, phys_buffer_chunk, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
        do c=begchunk, endchunk
 
-          call system_clock(count=beg_count)
+          call system_clock(count=beg_chnk_cnt)
 
           !
           ! Output physics terms to IC file
@@ -1058,12 +1056,16 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
-          call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-          if ( end_count < beg_count ) end_count = end_count + sysclock_max
-          chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+          call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+          if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
+          chunk_cost = real( (end_chnk_cnt-beg_chnk_cnt), r8)/real(sysclock_rate, r8)
           call update_cost_p(c, chunk_cost)
 
        end do
+
+       call system_clock(count=end_proc_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_proc_cnt < beg_proc_cnt ) end_proc_cnt = end_proc_cnt + sysclock_max
+       phys_proc_cost = phys_proc_cost + real( (end_proc_cnt-beg_proc_cnt), r8)/real(sysclock_rate, r8)
 
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
@@ -1115,8 +1117,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     real(r8)            :: flx_heat(pcols) ! effective sensible heat flux
     real(r8)            :: zero(pcols)     ! array of zeros
 
-    integer(i8)         :: beg_count       ! start time for a chunk
-    integer(i8)         :: end_count       ! stop time for a chunk
+    integer(i8)         :: beg_proc_cnt    ! start time for the process
+    integer(i8)         :: end_proc_cnt    ! stop time for the process
+    integer(i8)         :: beg_chnk_cnt    ! start time for a chunk
+    integer(i8)         :: end_chnk_cnt    ! stop time for a chunk
     integer(i8)         :: sysclock_rate   ! system clock rate
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
@@ -1134,10 +1138,13 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        first_exec_of_phys_run1_adiabatic_or_ideal  = .FALSE.
     endif
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, FLX_HEAT, end_count, sysclock_rate, sysclock_max, chunk_cost)
+    call system_clock(count=beg_proc_cnt)
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_chnk_cnt, flx_heat, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk, endchunk
 
-       call system_clock(count=beg_count)
+       call system_clock(count=beg_chnk_cnt)
 
        ! Initialize the physics tendencies to zero.
        call physics_tend_init(phys_tend(c))
@@ -1162,12 +1169,16 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Save total enery after physics for energy conservation checks
        call pbuf_set_field(pbuf_get_chunk(pbuf2d, c), teout_idx, phys_state(c)%te_cur)
 
-       call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-       if ( end_count < beg_count ) end_count = end_count + sysclock_max
-       chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+       call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
+       chunk_cost = real( (end_chnk_cnt-beg_chnk_cnt), r8)/real(sysclock_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do
+
+    call system_clock(count=end_proc_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+    if ( end_proc_cnt < beg_proc_cnt ) end_proc_cnt = end_proc_cnt + sysclock_max
+    phys_proc_cost = phys_proc_cost + real( (end_proc_cnt-beg_proc_cnt), r8)/real(sysclock_rate, r8)
 
 end subroutine phys_run1_adiabatic_or_ideal
 
@@ -1191,7 +1202,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use cam_diagnostics,only: diag_deallocate, diag_surf
     use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
-    use carma_intr,     only: carma_accumulate_stats
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
@@ -1221,8 +1231,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    integer(i8) :: beg_count                     ! start time for a chunk
-    integer(i8) :: end_count                     ! stop time for a chunk
+    integer(i8) :: beg_proc_cnt                  ! start time for the process
+    integer(i8) :: end_proc_cnt                  ! stop time for the process
+    integer(i8) :: beg_chnk_cnt                  ! start time for a chunk
+    integer(i8) :: end_chnk_cnt                  ! stop time for a chunk
     integer(i8) :: sysclock_rate                 ! system clock rate
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
@@ -1263,10 +1275,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
+    call system_clock(count=beg_proc_cnt)
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_chnk_cnt, ncol, phys_buffer_chunk, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk,endchunk
 
-       call system_clock(count=beg_count)
+       call system_clock(count=beg_chnk_cnt)
 
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
@@ -1291,12 +1306,16 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
             fsds(1,c))
 
-       call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-       if ( end_count < beg_count ) end_count = end_count + sysclock_max
-       chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+       call system_clock(count=end_chnk_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_chnk_cnt < beg_chnk_cnt ) end_chnk_cnt = end_chnk_cnt + sysclock_max
+       chunk_cost = real( (end_chnk_cnt-beg_chnk_cnt), r8)/real(sysclock_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do                    ! Chunk loop
+
+    call system_clock(count=end_proc_cnt, count_rate=sysclock_rate, count_max=sysclock_max)
+    if ( end_proc_cnt < beg_proc_cnt ) end_proc_cnt = end_proc_cnt + sysclock_max
+    phys_proc_cost = phys_proc_cost + real( (end_proc_cnt-beg_proc_cnt), r8)/real(sysclock_rate, r8)
 
     !call t_adj_detailf(-1)
     call t_stopf('ac_physics')
@@ -1304,10 +1323,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
-
-    call t_startf ('carma_accumulate_stats')
-    call carma_accumulate_stats()
-    call t_stopf ('carma_accumulate_stats')
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
@@ -1325,7 +1340,6 @@ end subroutine phys_run2
 subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
     use chemistry, only : chem_final
-    use carma_intr, only : carma_final
     use wv_saturation, only : wv_sat_final
     !----------------------------------------------------------------------- 
     ! 
@@ -1344,10 +1358,18 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     end if
     deallocate(phys_state)
     deallocate(phys_tend)
+
+    call t_startf ('chem_final')
     call chem_final
-    call carma_final
+    call t_stopf ('chem_final')
+
+    call t_startf ('wv_sat_final')
     call wv_sat_final
+    call t_stopf ('wv_sat_final')
+
+    call t_startf ('print_cost_p')
     call print_cost_p
+    call t_stopf ('print_cost_p')
 
 end subroutine phys_final
 
@@ -1388,8 +1410,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use aoa_tracers,        only: aoa_tracers_timestep_tend
     use physconst,          only: rhoh2o, latvap,latice, rga
     use aero_model,         only: aero_model_drydep
-    use carma_intr,         only: carma_emission_tend, carma_timestep_tend
-    use carma_flags_mod,    only: carma_do_aerosol, carma_do_emission
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
@@ -1472,8 +1492,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
     real(r8), pointer, dimension(:,:) :: q_star   ! moisture
-    logical :: do_zmconv_trigdcape_ull            ! switch if using dcape-ull as trigger for ZM convection
-                                                  ! default to false, to bbe made controllable by nml
+
     ! Debug physics_state.
     logical :: state_debug_checks
 
@@ -1543,12 +1562,6 @@ if (l_tracer_aero) then
 
     ! emissions of aerosols and gas-phase chemistry constituents at surface
     call chem_emissions( state, cam_in )
-
-    if (carma_do_emission) then
-       ! carma emissions
-       call carma_emission_tend (state, ptend, cam_in, ztodt)
-       call physics_update(state, ptend, ztodt, tend)
-    end if
 
 end if ! l_tracer_aero
 
@@ -1675,22 +1688,6 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
 
-   ! CARMA microphysics
-   !
-   ! NOTE: This does both the timestep_tend for CARMA aerosols as well as doing the dry
-   ! deposition for CARMA aerosols. It needs to follow vertical_diffusion_tend, so that
-   ! obklen and surfric have been calculated. It needs to follow aero_model_drydep, so
-   ! that cam_out%xxxdryxxx fields have already been set for CAM aerosols and cam_out
-   ! can be added to for CARMA aerosols.
-   if (carma_do_aerosol) then
-     call t_startf('carma_timestep_tend')
-     call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, obklen=obklen, ustar=surfric)
-     call physics_update(state, ptend, ztodt, tend)
-   
-     call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, zero, zero, zero)
-     call t_stopf('carma_timestep_tend')
-   end if
-
     !---------------------------------------------------------------------------------
     !	... enforce charge neutrality
     !---------------------------------------------------------------------------------
@@ -1813,7 +1810,7 @@ end if ! l_ac_energy_chk
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
-    if (do_zmconv_dcape_ull) then
+    if (do_zmconv_dcape_ull .or. do_zmconv_dcape_only) then
       ifld = pbuf_get_index('T_STAR')
       call pbuf_get_field(pbuf, ifld, t_star, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('Q_STAR')
@@ -1904,8 +1901,6 @@ subroutine tphysbc (ztodt,               &
                                check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
-    use carma_intr,      only: carma_wetdep_tend, carma_timestep_tend
-    use carma_flags_mod, only: carma_do_detrain, carma_do_cldice, carma_do_cldliq,  carma_do_wetdep
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
@@ -2009,10 +2004,6 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
 
     real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
-
-    ! carma precipitation variables
-    real(r8) :: prec_sed_carma(pcols)          ! total precip from cloud sedimentation (CARMA)
-    real(r8) :: snow_sed_carma(pcols)          ! snow from cloud ice sedimentation (CARMA)
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2415,34 +2406,6 @@ if (l_tracer_aero) then
     ! code.
     call sslt_rebin_adv(pbuf,  state)
     
-    !===================================================
-    ! Calculate tendencies from CARMA bin microphysics.
-    !===================================================
-    !
-    ! If CARMA is doing detrainment, then on output, rliq no longer represents water reserved
-    ! for detrainment, but instead represents potential snow fall. The mass and number of the
-    ! snow are stored in the physics buffer and will be incorporated by the MG microphysics.
-    !
-    ! Currently CARMA cloud microphysics is only supported with the MG microphysics.
-    call t_startf('carma_timestep_tend')
-
-    if (carma_do_cldice .or. carma_do_cldliq) then
-       call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, dlf=dlf, rliq=rliq, &
-            prec_str=prec_str, snow_str=snow_str, prec_sed=prec_sed_carma, snow_sed=snow_sed_carma)
-       call physics_update(state, ptend, ztodt, tend)
-
-       ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
-       ! detrainment, then the reserved condensate is snow.
-       if (carma_do_detrain) then
-          call check_energy_chng(state, tend, "carma_tend", &
-               nstep, ztodt, zero, prec_str(:ncol)+rliq(:ncol), snow_str(:ncol)+rliq(:ncol), zero)
-       else
-          call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
-       end if
-    end if
-
-    call t_stopf('carma_timestep_tend')
-
 end if
 
 
@@ -2687,70 +2650,42 @@ end if
 
      end if !microp_scheme
 
-if (l_tracer_aero) then
+   if (l_tracer_aero) then
+      if ( .not. deep_scheme_does_scav_trans() ) then
 
-    ! Add the precipitation from CARMA to the precipitation from stratiform.
-    if (carma_do_cldice .or. carma_do_cldliq) then
-       prec_sed(:ncol) = prec_sed(:ncol) + prec_sed_carma(:ncol)
-       snow_sed(:ncol) = snow_sed(:ncol) + snow_sed_carma(:ncol)
-    end if
+         !======================================================================
+         ! Aerosol wet chemistry determines scavenging and transformations.
+         ! This is followed by convective transport of all trace species except
+         ! water vapor and condensate. Scavenging needs to occur prior to
+         ! transport in order to determine interstitial fraction.
+         !======================================================================
 
-    if ( .not. deep_scheme_does_scav_trans() ) then
+         call t_startf('tphysbc_aerosols')
 
-       !===================================================
-       !  Aerosol wet chemistry determines scavenging fractions, and transformations
-       !
-       !
-       !  Then do convective transport of all trace species except water vapor and
-       !     cloud liquid and ice (we needed to do the scavenging first
-       !     to determine the interstitial fraction) 
-       !===================================================
+         if (do_clubb_sgs .or. do_shoc_sgs) then
+            sh_e_ed_ratio = 0.0_r8
+         endif
 
-       call t_startf('bc_aerosols')
-       if (clim_modal_aero .and. .not. prog_modal_aero) then
-          call modal_aero_calcsize_diag(state, pbuf)
-          call modal_aero_wateruptake_dr(state, pbuf)
-       endif
+         ! Aerosol wet removal (including aerosol water uptake)
+         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                jt, maxg, ideep, lengath, species_class,           &
+                cam_out, pbuf, ptend )                               ! outputs
+         call physics_update(state, ptend, ztodt, tend)
 
-       if (do_clubb_sgs .or. do_shoc_sgs) then
-          sh_e_ed_ratio = 0.0_r8
-       endif
+         ! deep convective aerosol transport
+         call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
+                mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
+                ideep, lengath, species_class )
+         call physics_update(state, ptend, ztodt, tend)
 
-       call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-            cam_out,                                                                 & !Intent-inout
-            pbuf,                                                                    & !Pointer
-            ptend                                                                    ) !Intent-out
-       
-       call physics_update(state, ptend, ztodt, tend)
+         ! check tracer integrals
+         call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
+         call t_stopf('tphysbc_aerosols')
 
-       if (carma_do_wetdep) then
-          ! CARMA wet deposition
-          !
-          ! NOTE: It needs to follow aero_model_wetdep, so that cam_out%xxxwetxxx
-          ! fields have already been set for CAM aerosols and cam_out can be added
-          ! to for CARMA aerosols.
-          call t_startf ('carma_wetdep_tend')
-          call carma_wetdep_tend(state, ptend, ztodt, pbuf, dlf, cam_out)
-          call physics_update(state, ptend, ztodt, tend)
-          call t_stopf ('carma_wetdep_tend')
-       end if
-
-       call t_startf ('convect_deep_tend2')
-       call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
-       call t_stopf ('convect_deep_tend2')
-
-       call physics_update(state, ptend, ztodt, tend)
-
-       ! check tracer integrals
-       call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
-
-       call t_stopf('bc_aerosols')
-
-   endif
-end if ! l_tracer_aero
+      end if
+   end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
    if(deep_scheme.eq.'ZM' .and. trigmem)then
@@ -2849,7 +2784,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use chem_surfvals,       only: chem_surfvals_set
   use physics_types,       only: physics_state
   use physics_buffer,      only: physics_buffer_desc
-  use carma_intr,          only: carma_timestep_init
   use ghg_data,            only: ghg_data_timestep_init
   use cam3_aero_data,      only: cam3_aero_data_on, cam3_aero_data_timestep_init
   use cam3_ozone_data,     only: cam3_ozone_data_on, cam3_ozone_data_timestep_init
@@ -2932,8 +2866,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
      call get_efield
      call t_stopf ('efield')
   endif
-
-  call carma_timestep_init()
 
   ! Time interpolate for tracers, if appropriate
   call tracers_timestep_init(phys_state)

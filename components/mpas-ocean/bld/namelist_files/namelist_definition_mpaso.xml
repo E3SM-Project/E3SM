@@ -474,14 +474,6 @@ Valid values: small positive numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_min_depth" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum depth for calculation of vertical average
-
-Valid values: values between zero and bottom depth
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_GM_visbeck_max_depth" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 minimum depth for calculation of vertical average
@@ -598,6 +590,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_cvmix" type="logical"
 	category="cvmix" group="cvmix">
 If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical"
+	category="cvmix" group="cvmix">
+If true CVMix KPP buoyancy forcing fix for sea ice is enabled
 
 Valid values: True or False
 Default: Defined in namelist_defaults.xml
@@ -910,6 +910,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- forcing -->
 
+<entry id="config_use_variable_drag" type="logical"
+	category="forcing" group="forcing">
+Controls if variable drag is enabled.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_bulk_wind_stress" type="logical"
 	category="forcing" group="forcing">
 Controls if zonal and meridional components of windstress are used to build surface wind stress.
@@ -985,6 +993,105 @@ Default: Defined in namelist_defaults.xml
 Depth over which to apply penetrating SW to sfcBuoyancyFlux
 
 Valid values: Real Values greater than zero less than bottomDepth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tidal_potential_forcing -->
+
+<entry id="config_use_tidal_potential_forcing" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_tidal_potential_reference_time" type="char*1024"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Timestamp describing the time used to initialize nodal factors.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_M2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the M2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_S2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the S2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_N2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the N2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_K2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the K2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_K1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the K1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_O1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the O1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_Q1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the Q1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_P1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the P1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_tidal_potential_ramp" type="real"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Number of days over which the tidal potential forcing is ramped
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_and_loading_beta" type="real"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Coefficient for SAL scalar approximation
+
+Valid values: 0.0 to turn off, 0.09 is typical value to use for scalar approximation
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1253,6 +1360,22 @@ Default: Defined in namelist_defaults.xml
 Dimensionless bottom drag coefficient, $c_{drag}$.
 
 Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_implicit_bottom_drag_variable" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, spatially-variable implicit bottom drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_implicit_bottom_drag_variable_mannings" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5082,6 +5205,391 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_AM_mixedLayerHeatBudget_write_on_startup" type="logical"
 	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
 Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_sedimentFluxIndex -->
+
+<entry id="config_AM_sedimentFluxIndex_enable" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+If true, ocean analysis member sedimentFluxIndex is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_compute_on_startup" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_write_on_startup" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_compute_interval" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Time stamp for frequency of computation of the sedimentFluxIndex analysis member.
+
+Valid values: Any time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_output_stream" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Name of stream the sedimentFluxIndex analysis member should be tied to
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_directory" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+subdirectory to write text files (might useful)
+
+Valid values: any valid directory name
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_use_lat_lon_coords" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_sedimentTransport -->
+
+<entry id="config_AM_sedimentTransport_enable" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+If true, ocean analysis member sedimentTransport is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_compute_on_startup" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_write_on_startup" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_compute_interval" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Time stamp for frequency of computation of the sedimentTransport analysis member.
+
+Valid values: Any time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_output_stream" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Name of stream the sedimentTransport analysis member should be tied to
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_directory" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+subdirectory to write text files (might useful)
+
+Valid values: any valid directory name
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_size" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+dimaeter of a spherical sediment particle
+
+Valid values: 1e-4 ~1e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_ws_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of different settling velocity formulae
+
+Valid values: VanRijn1993, Soulsby1997, Cheng1997, Goldstein-Coco2013
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_bedld_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of diffrent sediment bedload transport formulae
+
+Valid values: Soulsby-Damgaard, Meyer-Peter-Mueller, Engelund-Hansen
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_SSC_ref_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of diffrent near-bottom suspended sediment concentration formulae
+
+Valid values: Lee2004, Goldstein2014,Zyserman-Fredsoe1994
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_drag_coefficient" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+drag coefficient used for bottom shear stress computation
+
+Valid values: any values between 1~2.5e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_erate" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+bed surface erosion rate
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_tau_ce" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+critical shear for erosion
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_tau_cd" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+critical shear for deposition
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_Manning_coef" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Manning roughness coefficient
+
+Valid values: any positive values,typical values are between 0.012 and 0.025, Kerr et al., 2013
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_porosity" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+sediment porosity
+
+Valid values: any positive value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_water_density" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+water density
+
+Valid values: any positive value between 1000 and 1030
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_density" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+sediment density
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_alpha" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+A parameter related to the sediment property, with typical values of O(1e-4~1e-3)
+
+Valid values: 1e-4 ~1e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_kinematic_viscosity" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+kinematic viscosity of the fluild
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_vertical_diffusion_coefficient" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+vertical diffsuion coefficient
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_bedload" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if bedload transport is to be computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_suspended" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if suspended transport is to be computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_use_lat_lon_coords" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_harmonicAnalysis -->
+
+<entry id="config_AM_harmonicAnalysis_enable" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+If true, ocean analysis member harmonicAnalysis is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_compute_interval" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining how often harmonic analysis computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_start" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining when harmonic analysis begins
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_end" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining when harmonic analysis ends
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_output_stream" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Name of the stream that the harmonicAnalysis analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_restart_stream" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Name of the stream that the harmonicAnalysis analysis member restart informaion should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_compute_on_startup" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_write_on_startup" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_M2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if M2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_S2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if S2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_N2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if N2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_K2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if K2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_K1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if K1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_O1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if O1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_Q1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if Q1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_P1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if P1 constituent is used in harmonic analysis
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

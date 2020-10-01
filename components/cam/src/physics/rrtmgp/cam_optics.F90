@@ -18,11 +18,6 @@ module cam_optics
           set_aerosol_optics_sw, &
           set_aerosol_optics_lw
 
-   ! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-   integer, dimension(14) :: map_rrtmg_to_rrtmgp_swbands = (/ &
-      14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
-   /)
-
 contains
 
    !-------------------------------------------------------------------------------
@@ -98,17 +93,6 @@ contains
             ice_tau, ice_tau_ssa, &
             ice_tau_ssa_g, ice_tau_ssa_f &
          )
-         ! We need to fix band ordering because the old input files assume RRTMG band
-         ! ordering, but this has changed in RRTMGP.
-         ! TODO: fix the input files themselves!
-         do ilev = 1,nlev
-            do icol = 1,ncol
-               ice_tau      (:,icol,ilev) = reordered(ice_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               ice_tau_ssa  (:,icol,ilev) = reordered(ice_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               ice_tau_ssa_g(:,icol,ilev) = reordered(ice_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               ice_tau_ssa_f(:,icol,ilev) = reordered(ice_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-            end do
-         end do
       else if (trim(icecldoptics) == 'ebertcurry') then
          call ec_ice_optics_sw(ncol, nlev, cld, iciwp, rei, ice_tau, ice_tau_ssa, ice_tau_ssa_g, ice_tau_ssa_f)
       else
@@ -124,14 +108,6 @@ contains
             liq_tau, liq_tau_ssa, &
             liq_tau_ssa_g, liq_tau_ssa_f &
          )
-         do ilev = 1,nlev
-            do icol = 1,ncol
-               liq_tau      (:,icol,ilev) = reordered(liq_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               liq_tau_ssa  (:,icol,ilev) = reordered(liq_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               liq_tau_ssa_g(:,icol,ilev) = reordered(liq_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               liq_tau_ssa_f(:,icol,ilev) = reordered(liq_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-            end do
-         end do
       else if (trim(liqcldoptics) == 'slingo') then
          call slingo_liq_optics_sw( &
             ncol, nlev, cld, iclwp, rel, &
@@ -152,14 +128,6 @@ contains
             snow_tau, snow_tau_ssa, &
             snow_tau_ssa_g, snow_tau_ssa_f &
          )
-         do ilev = 1,nlev
-            do icol = 1,ncol
-               snow_tau      (:,icol,ilev) = reordered(snow_tau      (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               snow_tau_ssa  (:,icol,ilev) = reordered(snow_tau_ssa  (:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               snow_tau_ssa_g(:,icol,ilev) = reordered(snow_tau_ssa_g(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-               snow_tau_ssa_f(:,icol,ilev) = reordered(snow_tau_ssa_f(:,icol,ilev), map_rrtmg_to_rrtmgp_swbands)
-            end do
-         end do
       else
          ! We are not doing snow optics, so set these to zero so we can still use 
          ! the arrays without additional logic
@@ -559,17 +527,6 @@ contains
          endwhere
       end do
 
-      ! We need to fix band ordering because the old input files assume RRTMG band
-      ! ordering, but this has changed in RRTMGP.
-      ! TODO: fix the input files themselves!
-      do icol = 1,size(tau_out,1)
-         do ilay = 1,size(tau_out,2)
-            tau_out(icol,ilay,:) = reordered(tau_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-            ssa_out(icol,ilay,:) = reordered(ssa_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-            asm_out(icol,ilay,:) = reordered(asm_out(icol,ilay,:), map_rrtmg_to_rrtmgp_swbands)
-         end do
-      end do
-
    end subroutine set_aerosol_optics_sw
 
    !----------------------------------------------------------------------------
@@ -599,30 +556,6 @@ contains
    end subroutine set_aerosol_optics_lw
 
    !----------------------------------------------------------------------------
-
-   ! Utility function to reorder an array given a new indexing
-   function reordered(array_in, new_indexing) result(array_out)
-
-      ! Inputs
-      real(r8), intent(in) :: array_in(:)
-      integer, intent(in) :: new_indexing(:)
-
-      ! Output, reordered array
-      real(r8), dimension(size(array_in)) :: array_out
-
-      ! Loop index
-      integer :: ii
-
-      ! Check inputs
-      call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
-
-      ! Reorder array based on input index mapping, which maps old indices to new
-      do ii = 1,size(new_indexing)
-         array_out(ii) = array_in(new_indexing(ii))
-      end do
-
-   end function reordered
-
    !----------------------------------------------------------------------------
 
 end module cam_optics

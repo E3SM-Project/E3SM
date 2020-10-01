@@ -36,7 +36,9 @@ if (NOT CUDA_BUILD)
     shoc_calc_shoc_vertflux.cpp
     shoc_linear_interp.cpp
     shoc_compute_shoc_mix_shoc_length.cpp
+    shoc_compute_diag_third_shoc_moment.cpp
     shoc_clipping_diag_third_shoc_moments.cpp
+    shoc_energy_integrals.cpp
   ) # SHOC ETI SRCS
 endif()
 

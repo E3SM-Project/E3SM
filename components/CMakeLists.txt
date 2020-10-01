@@ -50,6 +50,12 @@ function(set_compilers_e3sm)
   else()
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
+
+  if (USE_CUDA)
+    set(USE_CUDA TRUE PARENT_SCOPE)
+  else()
+    set(USE_CUDA FALSE PARENT_SCOPE)
+  endif()
 endfunction()
 set_compilers_e3sm()
 
@@ -89,6 +95,10 @@ set (CMAKE_Fortran_FLAGS_RELEASE "")
 set (CMAKE_C_FLAGS_DEBUG "")
 set (CMAKE_CXX_FLAGS_DEBUG "")
 set (CMAKE_Fortran_FLAGS_DEBUG "")
+
+if(USE_CUDA)
+  enable_language(CUDA)
+endif()
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)

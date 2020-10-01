@@ -1019,9 +1019,7 @@ contains
 
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
-         !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
          call ocn_timestep(domain, dt, timeStamp)
-         !$omp end parallel
          call mpas_timer_stop("time integration")
          if (debugOn) call mpas_log_write('   Finished performing forward update')
 

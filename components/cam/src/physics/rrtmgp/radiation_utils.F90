@@ -312,11 +312,13 @@ contains
       end if
    end function clip_values_3d
    !-------------------------------------------------------------------------------
-   subroutine handle_error(error_message, fatal)
+   subroutine handle_error(error_message, fatal, warn)
       use cam_abortutils, only: endrun
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: fatal
-      logical :: fatal_local = .true.
+      logical, intent(in), optional :: warn
+      logical :: fatal_local
+      logical :: warn_local
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
@@ -327,12 +329,20 @@ contains
          fatal_local = .true.
       end if
 
+      ! Allow optional flag to disable warning messages.
+      ! Useful for avoiding low temperature messages in aquaplanet cases.
+      if (present(warn)) then
+         warn_local = warn
+      else
+         warn_local = .true.
+      end if
+
       ! If we encounter an error, fail if we require success. Otherwise do
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
          if (fatal_local) then
             call endrun(trim(error_message))
-         else
+         else if (warn_local) then
             print *, trim(error_message)
          end if
       end if
