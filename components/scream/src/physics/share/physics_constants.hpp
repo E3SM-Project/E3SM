@@ -33,7 +33,7 @@ struct Constants
   static constexpr Scalar LatIce        = 333700.0;
   static constexpr Scalar CpLiq         = 4188.0;
   static constexpr Scalar Tmelt         = 273.15;
-  static constexpr Scalar T_zerodegc    = Tmelt;
+  static constexpr Scalar t_zerodegc    = Tmelt;
   static constexpr Scalar T_homogfrz    = Tmelt - 40;
   static constexpr Scalar T_rainfrz     = Tmelt - 4;
   static constexpr Scalar Pi            = 3.14159265;

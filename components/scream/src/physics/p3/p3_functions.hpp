@@ -154,9 +154,9 @@ struct Functions
     // Precipitation rate, solid [m s-1]
     view_1d<Scalar> precip_ice_surf;
     // Effective cloud radius [m]
-    view_2d<Spack> diag_eff_rad_qc;
+    view_2d<Spack> diag_eff_radius_qc;
     // Effective ice radius [m]
-    view_2d<Spack> diag_eff_rad_qi;
+    view_2d<Spack> diag_eff_radius_qi;
     // Bulk density of ice [kg m-3]
     view_2d<Spack> rho_qi;
     // Total precipitation (rain + snow)
@@ -507,14 +507,14 @@ struct Functions
   KOKKOS_FUNCTION
   static void get_cloud_dsd2(
     const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& cld_frac_l,
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, 
     const Smask& context = Smask(true) );
 
   // Computes and returns rain size distribution parameters
   KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& cld_frac_rm,
+    Spack& lamr, Spack& cdistr, Spack& logn0r, 
     const Smask& context = Smask(true) );
 
   // Calculates rime density
@@ -583,7 +583,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
-    const Spack& qr_incld, const Spack& cld_frac_r, const Spack& rhofacr, 
+    const Spack& qr_incld, const Spack& rhofacr, 
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
 
@@ -768,8 +768,8 @@ struct Functions
     const uview_1d<Spack>& diag_equiv_reflectivity,
     const uview_1d<Spack>& ze_ice,
     const uview_1d<Spack>& ze_rain,
-    const uview_1d<Spack>& diag_eff_rad_qc,
-    const uview_1d<Spack>& diag_eff_rad_qi,
+    const uview_1d<Spack>& diag_eff_radius_qc,
+    const uview_1d<Spack>& diag_eff_radius_qi,
     const uview_1d<Spack>& inv_cld_frac_i,
     const uview_1d<Spack>& inv_cld_frac_l,
     const uview_1d<Spack>& inv_cld_frac_r,
@@ -941,11 +941,11 @@ struct Functions
     const uview_1d<Spack>& ze_rain,
     const uview_1d<Spack>& ze_ice,
     const uview_1d<Spack>& diag_vm_qi,
-    const uview_1d<Spack>& diag_eff_rad_qi,
+    const uview_1d<Spack>& diag_eff_radius_qi,
     const uview_1d<Spack>& diag_diam_qi,
     const uview_1d<Spack>& rho_qi,
     const uview_1d<Spack>& diag_equiv_reflectivity,
-    const uview_1d<Spack>& diag_eff_rad_qc);
+    const uview_1d<Spack>& diag_eff_radius_qc);
 
   static void p3_main(
     const P3PrognosticState& prognostic_state,

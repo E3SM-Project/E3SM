@@ -17,7 +17,7 @@ extern "C" {
                  Real* ni, Real* bm, Real* pres,
                  Real* dz, Real* nc_nuceat_tend, Real* ni_activated, Real* inv_qc_relvar,
                  Int it, Real* precip_liq_surf, Real* precip_ice_surf, Int its,
-                 Int ite, Int kts, Int kte, Real* diag_eff_rad_qc, Real* diag_eff_rad_qi,
+                 Int ite, Int kts, Int kte, Real* diag_eff_radius_qc, Real* diag_eff_radius_qi,
                  Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
                  Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend,
                  Real* precip_liq_flux, Real* precip_ice_flux, // 1 extra column size
@@ -58,8 +58,8 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   // Out
   precip_liq_surf   = Array1("precipitation rate, liquid  m/s", ncol);
   precip_ice_surf   = Array1("precipitation rate, solid   m/s", ncol);
-  diag_eff_rad_qc         = Array2("effective radius, cloud, m", ncol, nlev);
-  diag_eff_rad_qi         = Array2("effective radius, ice, m", ncol, nlev);
+  diag_eff_radius_qc         = Array2("effective radius, cloud, m", ncol, nlev);
+  diag_eff_radius_qi         = Array2("effective radius, ice, m", ncol, nlev);
   rho_qi            = Array2("bulk density of ice, kg/m", ncol, nlev);
   qv2qi_depos_tend           = Array2("qitend due to deposition/sublimation ", ncol, nlev);
   precip_total_tend = Array2("Total precipitation (rain + snow)", ncol, nlev);
@@ -93,7 +93,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(dz); fdipb(nc_nuceat_tend); fdipb(ni_activated); fdipb(inv_qc_relvar); fdipb(qc);
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qi); fdipb(ni);
   fdipb(qm); fdipb(bm); fdipb(precip_liq_surf); fdipb(precip_ice_surf);
-  fdipb(diag_eff_rad_qc); fdipb(diag_eff_rad_qi); fdipb(rho_qi);
+  fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(rho_qi);
   fdipb(dpres); fdipb(exner); fdipb(qv2qi_depos_tend); fdipb(precip_total_tend);
   fdipb(nevapr); fdipb(qr_evap_tend); fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
@@ -135,7 +135,7 @@ void p3_main (const FortranData& d, bool use_fortran) {
               d.qm.data(), d.ni.data(), d.bm.data(),
               d.pres.data(), d.dz.data(), d.nc_nuceat_tend.data(), d.ni_activated.data(), d.inv_qc_relvar.data(),
               d.it, d.precip_liq_surf.data(), d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev,
-              d.diag_eff_rad_qc.data(), d.diag_eff_rad_qi.data(), d.rho_qi.data(),
+              d.diag_eff_radius_qc.data(), d.diag_eff_radius_qi.data(), d.rho_qi.data(),
               d.do_predict_nc, d.dpres.data(), d.exner.data(), d.qv2qi_depos_tend.data(),
               d.precip_total_tend.data(), d.nevapr.data(), d.qr_evap_tend.data(),
               d.precip_liq_flux.data(), d.precip_ice_flux.data(), d.cld_frac_r.data(), d.cld_frac_l.data(),
@@ -149,8 +149,8 @@ void p3_main (const FortranData& d, bool use_fortran) {
               d.qv.data(), d.dt, d.qi.data(), d.qm.data(), d.ni.data(),
               d.bm.data(), d.pres.data(), d.dz.data(), d.nc_nuceat_tend.data(),
               d.ni_activated.data(), d.inv_qc_relvar.data(), d.it, d.precip_liq_surf.data(),
-              d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev, d.diag_eff_rad_qc.data(),
-              d.diag_eff_rad_qi.data(), d.rho_qi.data(), d.do_predict_nc,
+              d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev, d.diag_eff_radius_qc.data(),
+              d.diag_eff_radius_qi.data(), d.rho_qi.data(), d.do_predict_nc,
               d.dpres.data(), d.exner.data(), d.qv2qi_depos_tend.data(), d.precip_total_tend.data(),
               d.nevapr.data(), d.qr_evap_tend.data(), d.precip_liq_flux.data(), d.precip_ice_flux.data(),
               d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(), d.mu_c.data(),

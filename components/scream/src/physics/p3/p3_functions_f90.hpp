@@ -446,7 +446,7 @@ extern "C"{
 struct GetCloudDsd2Data
 {
   // Inputs
-  Real qc, rho, cld_frac_l, nc_in;
+  Real qc, rho, nc_in;
 
   // Outputs
   Real nc_out, mu_c, nu, lamc, cdist, cdist1;
@@ -456,7 +456,7 @@ void get_cloud_dsd2(GetCloudDsd2Data& d);
 extern "C" {
 
 void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
-                      Real* cdist, Real* cdist1, Real cld_frac_l);
+                      Real* cdist, Real* cdist1);
 
 }
 
@@ -465,7 +465,7 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 struct GetRainDsd2Data
 {
   // Inputs
-  Real qr, cld_frac_r, nr_in;
+  Real qr, nr_in;
 
   // Outputs
   Real nr_out, lamr, mu_r, cdistr, logn0r;
@@ -474,7 +474,7 @@ void get_rain_dsd2(GetRainDsd2Data& d);
 
 extern "C" {
 
-void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real cld_frac_r);
+void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r);
 
 }
 
@@ -706,7 +706,7 @@ void homogeneous_freezing_f(
 struct ComputeRainFallVelocityData
 {
   // Inputs
-  Real qr_incld, cld_frac_r, rhofacr;
+  Real qr_incld, rhofacr;
 
   // In/out
   Real nr_incld;
@@ -718,7 +718,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d);
 
 extern "C" {
 
-void compute_rain_fall_velocity_f(Real qr_incld, Real cld_frac_r, Real rhofacr,
+void compute_rain_fall_velocity_f(Real qr_incld, Real rhofacr,
                                   Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
@@ -1138,7 +1138,7 @@ struct P3MainPart3Data : public PhysicsTestData
     *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
     *mu_c, *nu, *lamc, *mu_r,
     *lamr, *vap_liq_exchange,
-    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_rad_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_rad_qc;
+    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_radius_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_radius_qc;
 
   P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
@@ -1157,7 +1157,7 @@ void p3_main_part3_f(
   Real* exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i, 
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
-  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_rad_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_rad_qc);
+  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1177,7 +1177,7 @@ struct P3MainData : public PhysicsTestData
   Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
 
   // Out
-  Real *diag_eff_rad_qc, *diag_eff_rad_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
+  Real *diag_eff_radius_qc, *diag_eff_radius_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
@@ -1195,8 +1195,8 @@ void p3_main_f(
   Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm, Real* qv, Real dt,
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
-  Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_rad_qc,
-  Real* diag_eff_rad_qi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
+  Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
+  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
   Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);

@@ -23,11 +23,11 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar qsmall   = C::QSMALL;
-  constexpr Scalar T_zerodegc = C::T_zerodegc;
+  constexpr Scalar t_zerodegc = C::t_zerodegc;
   constexpr Scalar bcn      = C::bcn;
 
   const auto qc2qi_collect_tend_not_small_and_t_freezing = (qc2qi_collect_tend >= qsmall) &&
-                                              (T_atm < T_zerodegc) && context;
+                                              (T_atm < t_zerodegc) && context;
 
   // NOTE: applicable for cloud only; modify when rain is added back
   if (qc2qi_collect_tend_not_small_and_t_freezing.any()) {
@@ -46,7 +46,7 @@ void Functions<S,D>
       // Use mass-weighted mean size
       Spack D_c = (4 + mu_c) / lamc;
       Spack V_impact = abs(vtrmi1-Vt_qc);
-      Spack inv_Tc = 1/min(sp(-0.001), T_atm-T_zerodegc);
+      Spack inv_Tc = 1/min(sp(-0.001), T_atm-t_zerodegc);
       Spack Ri = max(1, min(sp(-0.5e+6) * D_c * V_impact * inv_Tc, 12));
 
       const auto Ri_le_8 = (Ri <= sp(8.0));
