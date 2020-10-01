@@ -3749,6 +3749,8 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution', 'E3SM-Project')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
+                      'E3SM-DATA-SUPPORT@LISTSERV.LLNL.GOV')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 
