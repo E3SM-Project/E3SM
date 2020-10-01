@@ -53,6 +53,8 @@ class TestAllScream(object):
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
 
+        self._custom_cmake_opts.append("EKAT_DEFAULT_BFB=ON")
+
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
                                            ("SCREAM_DOUBLE_PRECISION", "False")],
