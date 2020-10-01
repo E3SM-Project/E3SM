@@ -3,6 +3,10 @@
 Output Manager:
   PIO Stride: 1
   Output YAML Files: ["scorpio_output1.yaml", "scorpio_output2.yaml"]
+  Restart Control:
+    FREQUENCY:
+      OUT_N: 1
+      OUT_OPTION: Steps
 Input Parameters:
   FILENAME: scorpio_output_test_yaml_2_1.nc
   GRID: Physics

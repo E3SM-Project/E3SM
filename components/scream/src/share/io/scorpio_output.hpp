@@ -37,6 +37,8 @@
  * 15) SCORPIO in stand-alone build.
  * 16) When dynamics is ready, write output from a dynamics run.
  * 17) Remove the F90 layer and call PIO C routines directly.
+ * 18) Add option to restart to write a restart at finalization, maybe if OUT_N = -1
+ * 19) take advantage of shared pointers field_repo and gridsmanager to streamline init, run and finalize interface.
  */
 
 namespace scream
@@ -63,8 +65,10 @@ public:
 
   // Main Functions
   void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
+  void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const std::string filename);
+  void init_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
   void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
-  void finalize();
+  void finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
 
   // Helper Functions
   void check_status();
@@ -108,14 +112,28 @@ private:
 }; // Class AtmosphereOutput
 
 // ====================== IMPLEMENTATION ===================== //
-inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm) 
+inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
 {
-  using namespace scream;
-  using namespace scream::scorpio;
 
   m_status["Init"] += 1;
   m_filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";  //TODO: The filename should be treated as a prefix to enable multiple files for the same control.  Like in the case of monthly output with 1 snap/file.
   EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
+  init_impl(field_repo, gm);
+} 
+/* ---------------------------------------------------------- */
+inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const std::string filename)
+{
+
+  m_status["Init"] += 1;
+  m_filename = filename;
+  EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
+  init_impl(field_repo, gm);
+} 
+/* ---------------------------------------------------------- */
+inline void AtmosphereOutput::init_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
+{
+  using namespace scream;
+  using namespace scream::scorpio;
 
   // Parse the parameters that controls this output instance.
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
@@ -233,11 +251,30 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
 
 } // run
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const Real time) 
+inline void AtmosphereOutput::finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time) 
 {
   using namespace scream;
   using namespace scream::scorpio;
+
   if (m_is_init) {eam_pio_closefile(m_filename);} // if m_is_init is true then the file was not closed during run step, close it now.
+
+  // Check if a restart history needs to be written before finishing output.
+  bool is_restart_hist = (m_avg_type != "Instant" and m_status["Avg Count"]>0);
+  if (is_restart_hist)
+  {
+    std::string filename = m_params.get<std::string>("FILENAME") + ".r.nc";
+    printf("ASD - Restart History needed - %s\n",filename.c_str());
+    init(field_repo, gm, filename);
+    pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
+    for (auto const& f_map : m_fields)
+    {
+      auto name   = f_map.first;
+      auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.
+      grid_write_data_array(m_filename,name,m_dofs.at(name),l_view.data());
+    }
+    eam_pio_closefile(m_filename);
+  }
+
   m_status["Finalize"] += 1;
 } // finalize
 /* ---------------------------------------------------------- */

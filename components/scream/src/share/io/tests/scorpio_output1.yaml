@@ -4,7 +4,7 @@ FILENAME: scorpio_output_test_yaml_1
 AVERAGING TYPE: Instant
 GRID: Physics
 FREQUENCY:
-  OUT_N: 1
+  OUT_N: 4
   OUT_OPTION: Steps
   OUT_MAX_STEPS: 10
 FIELDS:

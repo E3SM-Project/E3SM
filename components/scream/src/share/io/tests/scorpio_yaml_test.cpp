@@ -129,10 +129,10 @@ TEST_CASE("scorpio_yaml", "") {
   repo->register_field(fid_y,"group_1");
   repo->register_field(fid_z,"group_1");
   // All fields in the field manager are consider REAL, so index still used but converted to REAL
-  repo->register_field(fid_index_1d,"group_2");
+  repo->register_field(fid_index_1d,{"group_2","restart"});
   repo->register_field(fid_index_2d,"group_2");
   repo->register_field(fid_index_3d,"group_2");
-  repo->register_field(fid_data_1d,"group_3");
+  repo->register_field(fid_data_1d,{"group_3","restart"});
   repo->register_field(fid_data_2d,"group_3");
   repo->register_field(fid_data_3d,"group_3");
   repo->registration_ends();
@@ -174,9 +174,10 @@ TEST_CASE("scorpio_yaml", "") {
   bool index_init = true;
   Real dt = 1.0;
   Int max_tstep = 10;
+  Real l_time;
   for (int tstep = 0;tstep<max_tstep;++tstep)
   {
-    Real l_time = tstep*dt;
+    l_time = tstep*dt;
     // Update index variables
     auto index_1d_dev = repo->get_field(fid_index_1d).get_view(); 
     auto index_2d_dev = repo->get_field(fid_index_2d).get_reshaped_view<Real**>();
@@ -220,7 +221,7 @@ TEST_CASE("scorpio_yaml", "") {
   
   
   //Finished with PIO, finalize the system
-  m_output_manager.finalize();
+  m_output_manager.finalize(l_time);
 
   // Finalize the grids manager.
   (*upgm).clean_up();

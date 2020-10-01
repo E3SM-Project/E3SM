@@ -24,13 +24,15 @@ public:
   void init();
   void run(util::TimeStamp& current_ts);
   void run(Real current_ts);
-  void finalize();
+  void finalize(util::TimeStamp& current_ts);
+  void finalize(Real current_ts);
 
   void new_output(const ekat::ParameterList& params);
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
   void set_repo(const std::shared_ptr<const FieldRepository<Real,device_type>>& repo) { m_device_field_repo = repo; repo_set=true;}
+  void make_restart_param_list(ekat::ParameterList& params);
 
 protected:
   std::vector<output_type>             m_output_streams;
@@ -83,6 +85,13 @@ inline void OutputManager::init()
     parse_yaml_file(it,out_params);
     new_output(out_params);
   }
+  // Check for restart output
+  if (m_params.isSublist("Restart Control"))
+  {
+    auto& out_params = m_params.sublist("Restart Control");
+    make_restart_param_list(out_params);
+    new_output(out_params);
+  }
 }
 /*===============================================================================================*/
 // Overload run to allow for passing a TimeStamp or just directly a Real
@@ -104,16 +113,52 @@ inline void OutputManager::run(Real current_ts)
   }
 }
 /*===============================================================================================*/
-inline void OutputManager::finalize()
+inline void OutputManager::finalize(Real current_ts)
 {
   if (no_output) { return; }
   using namespace scorpio;
   for (auto& it : m_output_streams)
   {
-    it.finalize();
+    it.finalize(*m_device_field_repo, *m_grids_manager, current_ts);
   }
   // Finalize PIO overall
   eam_pio_finalize();
+}
+/*===============================================================================================*/
+inline void OutputManager::finalize(util::TimeStamp& current_ts)
+{
+  if (no_output) { return; }
+  using namespace scorpio;
+  for (auto& it : m_output_streams)
+  {
+    it.finalize(*m_device_field_repo, *m_grids_manager, current_ts.get_seconds());
+  }
+  // Finalize PIO overall
+  eam_pio_finalize();
+}
+/*===============================================================================================*/
+inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
+{
+  params.set<std::string>("FILENAME", "scorpio_restart_test");
+  // Parse the parameters that controls this output instance.
+  params.set<std::string>("AVERAGING TYPE","Instant");
+  params.set<std::string>("GRID","Physics");
+  auto& freq_params = params.sublist("FREQUENCY");
+  freq_params.get<Int>("OUT_MAX_STEPS",1);
+  
+  // set fields for restart
+  auto& restart_fields = m_device_field_repo->get_field_groups().at("restart");
+  auto& field_params = params.sublist("FIELDS");
+  field_params.set<Int>("Number of Fields",restart_fields.size());
+  Int it_cnt = 0;
+  for (auto it : restart_fields)
+  {
+    ++it_cnt;
+    std::string f_it = "field ";
+    f_it+=std::to_string(it_cnt);
+    field_params.set<std::string>(f_it,it);
+  }
+  params.print(); 
 }
 /*===============================================================================================*/
 } // namespace scream
