@@ -4,6 +4,7 @@ from acme_diags.run import Run
 from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+from acme_diags.parameter.streamflow_parameter import StreamflowParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 
 
@@ -45,8 +46,13 @@ class TestRun(unittest.TestCase):
         enso_param = EnsoDiagsParameter()
         enso_param.start_yr = '2000'
         enso_param.end_yr = '2004'
-        
-        parameters = self.runner.get_final_parameters([self.core_param, ts_param, enso_param])
+
+        streamflow_param = StreamflowParameter()
+        # TODO: Replace these paths with paths that automated testing tools can access (in future pull request).
+        #streamflow_param.gauges_path =
+        #streamflow_param.ref_mat_file =
+
+        parameters = self.runner.get_final_parameters([self.core_param, ts_param, enso_param, streamflow_param])
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = collections.Counter(), collections.Counter()
         for param in parameters:
@@ -62,9 +68,10 @@ class TestRun(unittest.TestCase):
                 self.fail(msg.format(set_name, count))
         
         all_season_counts = list(season_counter.values())
-        # enso_diags only runs ANN, no seasons
-        # So, reduce the ANN count by the number of times enso_diags appears
+        # enso_diags and streamflow only run ANN, no seasons
+        # So, reduce the ANN count by the number of times these appear
         all_season_counts[0] -= set_counter['enso_diags']
+        all_season_counts[0] -= set_counter['streamflow']
         if not all(all_season_counts[0] == count for count in all_season_counts):
             self.fail('Counts for the seasons don\'t match: {}'.format(all_season_counts))
 
@@ -99,6 +106,7 @@ class TestRun(unittest.TestCase):
         if len1 == 0 or not(len1 == len2 == len3):
             msg = 'The lengths are either 0 or not equal: {} {} {}'
             self.fail(msg.format(len1, len2, len3))
+
 
 if __name__ == '__main__':
     unittest.main()
