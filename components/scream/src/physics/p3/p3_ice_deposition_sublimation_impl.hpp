@@ -17,7 +17,7 @@ void Functions<S,D>
   const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
-  constexpr Scalar t_zerodegc = C::t_zerodegc;
+  constexpr Scalar T_zerodegc = C::T_zerodegc;
   const auto oabi           = 1 / abi;
 
   const auto qi_incld_not_small = qi_incld >= QSMALL && context;
@@ -28,20 +28,20 @@ void Functions<S,D>
 
   //Split into deposition or sublimation.
   //if "t" is greater than 0 degree celcius and qv2qi_vapdep_tend is positive
-  const auto t_gt_t_zerodegc_pos_qv2qi_vapdep_tend = (T_atm < t_zerodegc && qv2qi_vapdep_tend > 0);
+  const auto t_gt_T_zerodegc_pos_qv2qi_vapdep_tend = (T_atm < T_zerodegc && qv2qi_vapdep_tend > 0);
 
-  qi2qv_sublim_tend.set(qi_incld_not_small && t_gt_t_zerodegc_pos_qv2qi_vapdep_tend, 0);
+  qi2qv_sublim_tend.set(qi_incld_not_small && t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
   //make qi2qv_sublim_tend positive for consistency with other evap/sub processes
-  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_t_zerodegc_pos_qv2qi_vapdep_tend, -min(qv2qi_vapdep_tend,0));
-  qv2qi_vapdep_tend.set(qi_incld_not_small && !t_gt_t_zerodegc_pos_qv2qi_vapdep_tend, 0);
+  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, -min(qv2qi_vapdep_tend,0));
+  qv2qi_vapdep_tend.set(qi_incld_not_small && !t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
   //sublimation occurs @ any T. Not so for berg.
-  const auto t_lt_t_zerodegc = T_atm < t_zerodegc;
+  const auto t_lt_T_zerodegc = T_atm < T_zerodegc;
 
   //Compute bergeron rate assuming cloud for whole step.
-  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_t_zerodegc, max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
-  qc2qi_berg_tend.set(qi_incld_not_small && !t_lt_t_zerodegc, 0);
+  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_T_zerodegc, max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
+  qc2qi_berg_tend.set(qi_incld_not_small && !t_lt_T_zerodegc, 0);
 
   if (qi_incld_not_small.any()) {
     ni_sublim_tend.set(qi_incld_not_small, qi2qv_sublim_tend*(ni_incld/qi_incld));
