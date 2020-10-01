@@ -45,7 +45,7 @@ module RtmVar
   character(len=256), public :: username = ' '         ! username of user running program
   character(len=256), public :: version  = " "         ! version of program
   character(len=256), public :: conventions = "CF-1.0" ! dataset conventions
-  character(len=256), public :: source   = "Community Land Model CLM4.0" ! description of this source
+  character(len=256), public :: source   = "MOSART in E3SM" ! description of this source
 
   ! Unit Numbers
   integer, public :: iulog = 6        ! "stdout" log file unit number, default is 6
