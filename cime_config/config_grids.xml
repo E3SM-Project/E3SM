@@ -3542,7 +3542,7 @@
 
     <gridmap atm_grid="ne0np4_antarcticax4v1.pg2" lnd_grid="r0125">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_bilin.20200925.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_antarcticax4v1pg2_mono.20200925.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_antarcticax4v1pg2_mono.20200925.nc</map>
     </gridmap>
