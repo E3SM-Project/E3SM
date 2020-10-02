@@ -52,19 +52,11 @@ if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
     if ($recompile eq 'TRUE') {
         my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
-    }   
+    }
+    my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
+    system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 }
-my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
-system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
-
-chdir $CASEROOT;
-my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;
-chomp($cppdefs);
-$cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXBLCKS";
-
-# CIME_cppdefs
-my $recompile = 'FALSE';
-if (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
+elsif (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
     if (compare("$OBJROOT/ice/obj/CIME_cppdefs.new", "$OBJROOT/ice/obj/CIME_cppdefs") != 0) {
         $recompile = 'TRUE';
     }
@@ -75,9 +67,10 @@ if (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
         my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
     }
+    my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/CIME_cppdefs";
+    system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 }
-my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/CIME_cppdefs";
-system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
+
 
 chdir $CASEROOT;
 my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;

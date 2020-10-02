@@ -575,6 +575,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
 my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for clm's cppdefs in cesm
+my $cpp_filenameB     = 'CIME_cppdefs';         # name of output file for eam's cppdefs in CIME
 
 # Write the filepath file for cesm.
 write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>0 );
@@ -583,6 +584,10 @@ if ($print>=2) { print "creating $clm_bld/$fp_filename\n"; }
 # Write the file for clm's cppdefs needed in cesm.
 write_cppdefs("$clm_bld/$cpp_filename", $make_cppdefs);
 if ($print>=2) { print "creating $clm_bld/$cpp_filename\n"; }
+
+# Write the file for clm's cppdefs needed in cime.
+write_cppdefs("$clm_bld/$cpp_filenameB", $make_cppdefs);
+if ($print>=2) { print "creating $clm_bld/$cpp_filenameB\n"; }
 
 # Write the configuration file.
 $cfg_ref->write_file($config_cache_file, $commandline);
