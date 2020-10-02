@@ -246,7 +246,7 @@ int main (int argc, char** argv) {
       "  -t <tol>    Tolerance for relative error. Default 0.\n";
       "  -s <steps>  Number of timesteps. Default=6.\n";
       "  -i <cols>   Number of columns. Default=6.\n";
-      "  -r <repeat> Number of repititions, implies timing run (generate + no I/O). Default=0.\n";
+      "  -r <repeat> Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
     return 1;
   }
 
