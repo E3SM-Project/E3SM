@@ -15,7 +15,8 @@ OBJS =  mpas_li_core.o \
     mpas_li_sia.o \
     mpas_li_velocity_simple.o \
     mpas_li_velocity_external.o \
-    mpas_li_subglacial_hydro.o
+    mpas_li_subglacial_hydro.o \
+    mpas_li_bedtopo.o
 
 ifneq (, $(findstring MPAS_LI_BUILD_INTERFACE,$(CPPFLAGS)))
     OBJS += Interface_velocity_solver.o
@@ -39,7 +40,8 @@ mpas_li_time_integration_fe.o: mpas_li_advection.o \
 			       mpas_li_iceshelf_melt.o \
                                mpas_li_diagnostic_vars.o \
 			       mpas_li_velocity.o \
-			       mpas_li_subglacial_hydro.o
+			       mpas_li_subglacial_hydro.o \
+			       mpas_li_bedtopo.o
 
 mpas_li_advection.o: mpas_li_thermal.o \
 	             mpas_li_diagnostic_vars.o
@@ -68,6 +70,8 @@ mpas_li_velocity_simple.o:
 mpas_li_statistics.o: mpas_li_diagnostic_vars.o
 
 mpas_li_velocity_external.o: Interface_velocity_solver.o
+
+mpas_li_bedtopo.o: mpas_li_advection.o
 
 Interface_velocity_solver.o:
 
