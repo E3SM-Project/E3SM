@@ -43,14 +43,17 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     // Define height thickness on nlevi grid [m]
     //   NOTE: First indicee is zero because it is never used
     //   Do a stretched grid
-    static constexpr Real dz_zi[nlevi] = {0.0, 500., 200., 100., 50., 10.};
+    static constexpr Real dz_zi[nlevi] = {0, 500, 200, 100, 50, 10};
     // Define zonal wind on nlev grid [m/s]
-    static constexpr Real u_wind_shr[nlev] = {2.0, 1.0, 0.0, -1.0, -2.0};
+    static constexpr Real u_wind_shr[nlev] = {2, 1, 0, -1, -2};
     // Define meridional wind on nlev grid [m/s]
-    static constexpr Real v_wind_shr[nlev] = {1.0, 2.0, 3.0, 4.0, 5.0};
+    static constexpr Real v_wind_shr[nlev] = {1, 2, 3, 4, 5};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCTkeshearData SDS(shcol, nlev, nlevi);
+
+    // Define upper limit for reasonable bounds checking
+    static constexpr Real sterm_upper_bound = 1e-2;
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
@@ -80,11 +83,11 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
 	const auto offset = n + s * nlevi;
 	// Make sure top level dz_zi value is zero
 	if (n == 0){
-          REQUIRE(SDS.dz_zi[offset] == 0.0);
+          REQUIRE(SDS.dz_zi[offset] == 0);
 	}
 	// Otherwise, should be greater than zero
 	else{
-          REQUIRE(SDS.dz_zi[offset] > 0.0);
+          REQUIRE(SDS.dz_zi[offset] > 0);
 	}
       }
     }
@@ -99,12 +102,14 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       //  for boundary points.
       for(Int n = 0; n < nlevi; ++n) {
 	const auto offset = n + s * nlevi;
+	// Make sure output falls within reasonable bound
+	REQUIRE(SDS.sterm[offset] < sterm_upper_bound);
 	if (n == 0 || n == nlevi-1){
           // Boundary point check
-          REQUIRE(SDS.sterm[offset] == 0.0);
+          REQUIRE(SDS.sterm[offset] == 0);
 	}
 	else{
-          REQUIRE(SDS.sterm[offset] > 0.0);
+          REQUIRE(SDS.sterm[offset] > 0);
 	}
       }
       // Now validate that shear term is ALWAYS
@@ -112,7 +117,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       //  in mind to exclude boundary points, which should be zero
       for(Int n = 1; n < nlevi-2; ++n){
 	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.sterm[offset]-SDS.sterm[offset+1] < 0.0);
+	REQUIRE(SDS.sterm[offset]-SDS.sterm[offset+1] < 0);
       }
     }
 
@@ -122,17 +127,17 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     // term is zero everywhere.
 
     // Define zonal wind on nlev grid [m/s]
-    static constexpr Real u_wind_cons[nlev] = {10.0, 10.0, 10.0, 10.0, 10.0};
+    static constexpr Real u_wind_cons = 10;
     // Define meridional wind on nlev grid [m/s]
-    static constexpr Real v_wind_cons[nlev] = {-5.0, -5.0, -5.0, -5.0, -5.0};
+    static constexpr Real v_wind_cons = -5;
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 
-	SDS.u_wind[offset] = u_wind_cons[n];
-	SDS.v_wind[offset] = v_wind_cons[n];
+	SDS.u_wind[offset] = u_wind_cons;
+	SDS.v_wind[offset] = v_wind_cons;
       }
     }
 
@@ -144,7 +149,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
 	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.sterm[offset] == 0.0);
+	REQUIRE(SDS.sterm[offset] == 0);
       }
     }
   }

@@ -24,6 +24,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
   static void run_property()
   {
+    static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 1;
 
@@ -47,7 +48,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     // Dissipation rate [m2/s3]
     static constexpr Real diss_st = 0.1;
     // Brunt Vaisalla frequency [/s]
-    static constexpr Real brunt_st[shcol] = {-0.004, 0.004};
+    static constexpr Real brunt_st[shcol] = {-4e-3, 4e-3};
 
     // Initialzie data structure for bridgeing to F90
     SHOCIsotropicData SDS(shcol, nlev);
@@ -74,13 +75,22 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// Should be greater than zero
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.a_diss[offset] > 0.0);
+	REQUIRE(SDS.tke[offset] > 0);
+	REQUIRE(SDS.a_diss[offset] > 0);
       }
     }
 
     // Call the fortran implementation
     isotropic_ts(SDS);
+
+    // Check that output falls within reasonable bounds
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
+	REQUIRE(SDS.isotropy[offset] >= 0);
+      }
+    }
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller
@@ -89,7 +99,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 	const auto offset = n + s * nlev;
 	// Get value corresponding to next column
 	const auto offsets = n + (s+1) * nlev;
-	if(SDS.brunt[offset] < 0.0 & SDS.brunt[offsets] > 0.0){
+	if(SDS.brunt[offset] < 0 & SDS.brunt[offsets] > 0){
           REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
 	}
 	else{
@@ -110,7 +120,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     // Dissipation rate [m2/s3]
     static constexpr Real diss_diss[shcol] = {0.1, 0.2};
     // Brunt Vaisalla frequency [/s]
-    static constexpr Real brunt_diss = 0.004;
+    static constexpr Real brunt_diss = 4e-3;
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -129,13 +139,22 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// Should be greater than zero
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.a_diss[offset] > 0.0);
+	REQUIRE(SDS.tke[offset] > 0);
+	REQUIRE(SDS.a_diss[offset] > 0);
       }
     }
 
     // Call the fortran implementation
     isotropic_ts(SDS);
+
+    // Check that output falls within reasonable bounds
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
+	REQUIRE(SDS.isotropy[offset] >= 0);
+      }
+    }
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller

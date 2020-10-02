@@ -53,6 +53,11 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     // Define logical
     static constexpr bool dothetal_skew = false;
 
+    // Define reasonable bounds checking for output
+    static constexpr Real thl_bound_low = 200; // [K]
+    static constexpr Real thl_bound_high = 400; // [K]
+    static constexpr Real thl2_bound_high = 50; // [K^2]
+
     // Be sure this value is actually larger
     REQUIRE(thlsec_large > thlsec_small);
 
@@ -115,6 +120,14 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     // Now check the result
     REQUIRE(thl2_1_result2 > thl2_1_result1);
     REQUIRE(thl2_2_result2 > thl2_2_result1);
+
+    // Make sure output is within reasonable bounds
+    REQUIRE( (SDS.thl1_1 > thl_bound_low && SDS.thl1_2 > thl_bound_low) );
+    REQUIRE( (SDS.thl1_1 < thl_bound_high && SDS.thl1_2 < thl_bound_high) );
+    REQUIRE( (SDS.thl2_1 > 0 && SDS.thl2_2 > 0) );
+    REQUIRE( (SDS.thl2_2 < thl2_bound_high && SDS.thl2_2 < thl2_bound_high) );
+    REQUIRE( (SDS.sqrtthl2_1 > 0 && SDS.sqrtthl2_2 > 0) );
+    REQUIRE( (SDS.sqrtthl2_1 < std::sqrt(thl2_bound_high) && SDS.sqrtthl2_2 < std::sqrt(thl2_bound_high)) );
 
     // TEST TWO
     // For a case with identical input except wthlsec, verify that

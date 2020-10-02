@@ -24,6 +24,9 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 
   static void run_property()
   {
+    static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
+    static constexpr Real maxtke = scream::shoc::Constants<Real>::maxtke;
+    static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
@@ -31,13 +34,13 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Tests for the subroutine shoc_tke.  This is the top
     //  level function for the TKE module in SHOC.  Thus since
     //  all associated functions here contain property tests, the
-    //  purpose here is mostly to expose whether errors have been 
-    //  made in the input/output fields in these routines  
+    //  purpose here is mostly to expose whether errors have been
+    //  made in the input/output fields in these routines
 
     // TEST ONE
-    // For this test we will perform a TKE growth test.  
+    // For this test we will perform a TKE growth test.
     //  Will provide inputs that should always encourage TKE to
-    //  grow at each level.  
+    //  grow at each level.
 
     // Define height thickness on nlevi grid [m]
     //   NOTE: First indicee is zero because it is never used
@@ -53,8 +56,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real u_wind[nlev] = {2, 1, 0, -1, -2};
     // Define meridional wind on nlev grid [m/s]
     Real v_wind[nlev] = {1, 2, 3, 4, 5};
-    // Define Obukov length [m] 
-    Real obklen = -1; 
+    // Define Obukov length [m]
+    Real obklen = -1;
     // Define thickness on the interface grid [m]
     Real dz_zi[nlevi] = {0, 100, 100, 100, 100, 50};
     // Define thickness on the thermo grid [m]
@@ -64,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Define the interface height grid [m]
     Real zi_grid[nlevi] = {500, 400, 300, 200, 100, 0};
     // Define PBL height [m]
-    Real pblh = 1000; 
+    Real pblh = 1000;
     // Define pressure [Pa]
     Real pres[nlev] = {85000, 87500, 90000, 95000, 100000};
     // Define brunt Vaisalla frequency
@@ -81,7 +84,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       tk[n] = tkh[n];
     }
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCTkeData SDS(shcol, nlev, nlevi, dtime);
 
     // Test that the inputs are reasonable.
@@ -124,30 +127,30 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 	const auto offset = n + s * nlevi;
 	// Make sure top level dz_zi value is zero
 	if (n == 0){
-          REQUIRE(SDS.dz_zi[offset] == 0.0);
-	} 
+          REQUIRE(SDS.dz_zi[offset] == 0);
+	}
 	// Otherwise, should be greater than zero
 	else{
-          REQUIRE(SDS.dz_zi[offset] > 0.0);
+          REQUIRE(SDS.dz_zi[offset] > 0);
 	}
 	// Check that zi increases updward
 	if (n < nlevi-1){
-	  REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
+	  REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
 	}
       }
-      // nlev loop 
+      // nlev loop
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// Check that zt increases upward
 	if (n < nlev-1){
-	  REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+	  REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
 	}
-	REQUIRE(SDS.dz_zt[offset] > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.tkh[offset] > 0.0);
-	REQUIRE(SDS.tk[offset] > 0.0);
-	REQUIRE(SDS.pres[offset] > 0.0);
+	REQUIRE(SDS.dz_zt[offset] > 0);
+	REQUIRE(SDS.shoc_mix[offset] > 0);
+	REQUIRE(SDS.tke[offset] >= mintke);
+	REQUIRE(SDS.tkh[offset] > 0);
+	REQUIRE(SDS.tk[offset] > 0);
+	REQUIRE(SDS.pres[offset] > 0);
       }
     }
 
@@ -155,10 +158,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     shoc_tke(SDS);
 
     // Check test
-    // Make sure that TKE has increased everwhere relative 
-    //   to initial value.  Also make sure that outputs fall 
+    // Make sure that TKE has increased everwhere relative
+    //   to initial value.  Also make sure that outputs fall
     //   within some reasonable bounds.
-    
+
     // Make array to save the result of TKE
     Real tke_test1[nlev*shcol];
 
@@ -166,25 +169,26 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 	REQUIRE(SDS.tke[offset] > tke_init[n]);
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] <= 50.0);
-	REQUIRE(SDS.tkh[offset] > 0.0);
-	REQUIRE(SDS.tk[offset] > 0.0);
-	REQUIRE(SDS.isotropy[offset] > 0.0); 
+	REQUIRE(SDS.tke[offset] >= mintke);
+	REQUIRE(SDS.tke[offset] <= maxtke);
+	REQUIRE(SDS.tkh[offset] > 0);
+	REQUIRE(SDS.tk[offset] > 0);
+	REQUIRE(SDS.isotropy[offset] >= 0);
+	REQUIRE(SDS.isotropy[offset] <= maxiso);
 	tke_test1[offset] = SDS.tke[offset];
       }
     }
-    
+
     // TEST TWO
-    // Decay test.  Now starting with the TKE from TEST ONE in 
-    // its spun up state, feed inputs that should always make 
-    // TKE decay.  
-    
+    // Decay test.  Now starting with the TKE from TEST ONE in
+    // its spun up state, feed inputs that should always make
+    // TKE decay.
+
     // New inputs below, all others are recycled
-    
+
     // characteristics of new input are negative buoyancy flux,
     //  small length scale, and a uniform wind profile.
-    
+
     // Buoyancy flux [K m/s]
     Real wthv_sec_decay[nlev] = {-0.05, -0.04, -0.03, -0.02, -0.03};
     // Length Scale [m]
@@ -193,28 +197,28 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real u_wind_decay[nlev] = {1, 1, 1, 1, 1};
     // Define meridional wind on nlev grid [m/s]
     Real v_wind_decay[nlev] = {-2, -2, -2, -2, -2};
-    
+
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
-	
+
 	SDS.wthv_sec[offset] = wthv_sec_decay[n];
 	SDS.shoc_mix[offset] = shoc_mix_decay[n];
 	SDS.u_wind[offset] = u_wind_decay[n];
 	SDS.v_wind[offset] = v_wind_decay[n];
-	
+
       }
-    }    
+    }
 
     for(Int s = 0; s < shcol; ++s) {
-      // nlev loop 
+      // nlev loop
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// be sure wind has no gradient
 	if (n < nlev-1){
-	  REQUIRE(SDS.u_wind[offset + 1] - SDS.u_wind[offset] == 0.0);
-	  REQUIRE(SDS.v_wind[offset + 1] - SDS.v_wind[offset] == 0.0);
+	  REQUIRE(SDS.u_wind[offset + 1] - SDS.u_wind[offset] == 0);
+	  REQUIRE(SDS.v_wind[offset + 1] - SDS.v_wind[offset] == 0);
 	}
 	// Be sure that buoyancy flux is less than zero
 	REQUIRE(SDS.wthv_sec[offset] < 0);
@@ -222,31 +226,32 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 	REQUIRE(SDS.shoc_mix[offset] <= 100);
       }
     }
-    
+
     // Call the fortran implementation
-    shoc_tke(SDS);  
-    
+    shoc_tke(SDS);
+
     // Check the result
-    
+
     // Verify ALL outputs are reasonable and that TKE has decayed
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 	REQUIRE(SDS.tke[offset] < tke_test1[offset]);
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] <= 50.0);
-	REQUIRE(SDS.tkh[offset] > 0.0);
-	REQUIRE(SDS.tk[offset] > 0.0);
-	REQUIRE(SDS.isotropy[offset] > 0.0); 
+	REQUIRE(SDS.tke[offset] >= mintke);
+	REQUIRE(SDS.tke[offset] <= maxtke);
+	REQUIRE(SDS.tkh[offset] > 0);
+	REQUIRE(SDS.tk[offset] > 0);
+	REQUIRE(SDS.isotropy[offset] >= 0);
+	REQUIRE(SDS.isotropy[offset] <= maxiso);
       }
-    }    
+    }
 
   }
-  
+
   static void run_bfb()
   {
     // TODO
-  }   
+  }
 
 };
 

@@ -38,18 +38,13 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
 
     // Define height thickness on nlev grid [m]
     //   Do a uniform grid for symetric test
-    static constexpr Real dz_zt[nlev] = {30., 30., 30., 30., 30.};
-    // Define Pressure [hPa] (later convereted to Pa)
-    Real pres[nlev] = {850., 900., 925.0, 950.0, 1000.0};
+    static constexpr Real dz_zt[nlev] = {30, 30, 30, 30, 30};
+    // Define Pressure [Pa]
+    Real pres[nlev] = {850e2, 900e2, 925e2, 950e2, 1000e2};
     // Brunt Vaisalla frequency [/s]
     static constexpr Real brunt_sym[nlev] = {-0.5, -0.25, 0.0, 0.25, 0.5};
 
-    // Convert pres to Pa
-    for (Int n = 0; n < nlev; ++n){
-      pres[n] = pres[n]*100.0;
-    }
-
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCColstabData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -72,10 +67,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// Should be greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0.0);
+	REQUIRE(SDS.dz_zt[offset] > 0);
 	// Make sure all pressure levels are in the
 	//  lower troposphere for this test
-	REQUIRE(SDS.pres[offset] > 80000.0);
+	REQUIRE(SDS.pres[offset] > 80000);
       }
     }
 
@@ -85,7 +80,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     // Check test
     //  Verify that output is zero
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.brunt_int[s] == 0.0);
+      REQUIRE(SDS.brunt_int[s] == 0);
     }
 
     // SECOND TEST
@@ -107,7 +102,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
       for (Int n = 0; n < nlev; ++n){
 	const auto offset = n + s * nlev;
 	// All points should be less than zero
-	REQUIRE(SDS.brunt[offset] < 0.0);
+	REQUIRE(SDS.brunt[offset] < 0);
       }
     }
 
@@ -117,7 +112,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     // Check test
     //  Verify that output is negative
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.brunt_int[s] < 0.0);
+      REQUIRE(SDS.brunt_int[s] < 0);
     }
   }
 

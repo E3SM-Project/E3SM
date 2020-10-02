@@ -25,6 +25,8 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
 
   static void run_property()
   {
+    static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
+    static constexpr Real maxtke = scream::shoc::Constants<Real>::maxtke;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 1;
 
@@ -46,15 +48,18 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Values in the SECOND column represents the decay test
 
     // Define timestep [s]
-    static constexpr Real dtime = 20.0;
+    static constexpr Real dtime = 20;
     // SHOC mixing length [m]
-    static constexpr Real shoc_mix_gr[shcol] = {20000.0, 20.};
+    static constexpr Real shoc_mix_gr[shcol] = {20000, 20};
     // Buoyancy flux [K m/s]
     static constexpr Real wthv_sec_gr[shcol] = {0.5, -0.5};
     // Shear production term [s-2]
     static constexpr Real sterm_gr[shcol] = {0.5, 0.0};
     // TKE initial value
-    Real tke_init_gr[shcol] = {0.004, 0.4};
+    Real tke_init_gr[shcol] = {mintke, 0.4};
+
+    // Define upper bounds check for reasonable output
+    Real adiss_upper_bound = 1;
 
     // Initialize data structure for bridgeing to F90
     SHOCAdvsgstkeData SDS(shcol, nlev, dtime);
@@ -81,10 +86,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
 	const auto offset = n + s * nlev;
 	// time step, mixing length, TKE values,
 	// shear terms should all be greater than zero
-	REQUIRE(SDS.dtime > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.sterm_zt[offset] >= 0.0);
+	REQUIRE(SDS.dtime > 0);
+	REQUIRE(SDS.shoc_mix[offset] > 0);
+	REQUIRE(SDS.tke[offset] > 0);
+	REQUIRE(SDS.sterm_zt[offset] >= 0);
       }
     }
 
@@ -96,6 +101,12 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
+
+	// Require output to fall within reasonable bounds
+	REQUIRE(SDS.tke[offset] >= mintke);
+	REQUIRE(SDS.tke[offset] <= maxtke);
+	REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
+	REQUIRE(SDS.a_diss[offset] >= 0);
 
 	if (s == 0){
           // Growth check
@@ -114,7 +125,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     //  when the length scale is lower.
 
     // SHOC mixing length [m]
-    static constexpr Real shoc_mix_diss[shcol] = {1000.0, 500.};
+    static constexpr Real shoc_mix_diss[shcol] = {1000, 50};
     // Buoyancy flux [K m/s]
     static constexpr Real wthv_sec_diss = 0.1;
     // Shear production term [s-2]
@@ -140,10 +151,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
 	const auto offset = n + s * nlev;
 	// time step, mixing length, TKE values,
 	// shear terms should all be greater than zero
-	REQUIRE(SDS.dtime > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.sterm_zt[offset] >= 0.0);
+	REQUIRE(SDS.dtime > 0);
+	REQUIRE(SDS.shoc_mix[offset] > 0);
+	REQUIRE(SDS.tke[offset] > 0);
+	REQUIRE(SDS.sterm_zt[offset] >= 0);
       }
     }
 
@@ -153,6 +164,16 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Check to make sure that the column with
     //  the smallest length scale has larger
     //  dissipation rate
+
+    // Require output to fall within reasonable bounds
+    for (Int s = 0; s < shcol; ++s){
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
+        REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
+        REQUIRE(SDS.a_diss[offset] >= 0);
+      }
+    }
+
     for(Int s = 0; s < shcol-1; ++s) {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
