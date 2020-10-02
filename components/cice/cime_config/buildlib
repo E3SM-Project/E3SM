@@ -42,6 +42,7 @@ if (-f "Filepath") {
 #  force gmake to recompile if any of the cppdefs are different 
 #-------------------------------------------------------------- 
 my $recompile = 'FALSE';
+my $recompile = 1;
 if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
     if (compare("$OBJROOT/ice/obj/CCSM_cppdefs.new", "$OBJROOT/ice/obj/CCSM_cppdefs") != 0) {
         $recompile = 'TRUE'; 
@@ -54,7 +55,6 @@ if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
     }
     my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
-    system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 }
 elsif (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
     if (compare("$OBJROOT/ice/obj/CIME_cppdefs.new", "$OBJROOT/ice/obj/CIME_cppdefs") != 0) {
@@ -68,9 +68,8 @@ elsif (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
     }
     my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/CIME_cppdefs";
-    system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 }
-
+system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 
 chdir $CASEROOT;
 my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;
