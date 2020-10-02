@@ -377,8 +377,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    if (present(clear_rh_in)) then
 
-   itim_old    =  pbuf_old_tim_idx()
-   call pbuf_get_field(pbuf, cld_idx, cldn, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+      ! use input relative humidity
+      rh(1:ncol,1:pver) = clear_rh_in(1:ncol,1:pver)
 
       ! check that values are reasonable and apply upper limit
       do k = top_lev, pver
