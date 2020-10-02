@@ -37,27 +37,33 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     //   of conv_vel.
 
     // FIRST TEST
-    // Verify that given negatively buoyant conditions that the
-    //   result is also negative.
+    // Buoyancy test.  Verify that given positively buoyant conditions
+    //   in one column and negatively buoyant conditions in another
+    //   that the result is as expected (positive and negative,
+    //   respectively).
 
     // PBL height [m]
     // for this test set to be higher than highest zt_grid value
-    static constexpr Real pblh = 1000.0;
+    static constexpr Real pblh = 1000;
     // Grid difference centered on thermo grid [m]
-    static constexpr Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
+    static constexpr Real dz_zt[nlev] = {100, 100, 100, 100, 100};
     // Grid height centered on thermo grid [m]
-    static constexpr Real zt_grid[nlev] = {500.0, 400.0, 300.0, 200.0, 100.0};
+    static constexpr Real zt_grid[nlev] = {500, 400, 300, 200, 100};
     // Virtual potential temperature on interface grid [K]
-    static constexpr Real thv[nlev] = {310.0, 305.0, 300.0, 300.0, 295.0};
+    static constexpr Real thv[nlev] = {310, 305, 300, 300, 295};
     // Buoyancy flux [K m/s]
-    static constexpr Real wthv_sec[nlev] = {-0.02, -0.01, -0.04, -0.02, -0.05};
+    static constexpr Real wthv_sec[nlev] = {0.02, 0.01, 0.04, 0.02, 0.05};
 
-    // Initialzie data structure for bridgeing to F90
+    // Bounds to check result [m/s]
+    static constexpr Real conv_vel_bound = 10;
+
+    // Initialize data structure for bridging to F90
     SHOCConvvelData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
-    REQUIRE(shcol > 0);
+    // For this test we want exactly two columns
+    REQUIRE(shcol == 2);
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -69,6 +75,10 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 	SDS.zt_grid[offset] = zt_grid[n];
 	SDS.thv[offset] = thv[n];
 	SDS.wthv_sec[offset] = wthv_sec[n];
+        // for the second column, give negative values
+	if (s == 1){
+	  SDS.wthv_sec[offset] = -1*SDS.wthv_sec[offset];
+	}
       }
     }
 
@@ -78,14 +88,18 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 	// Be sure that relevant variables are greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0.0);
-	REQUIRE(SDS.thv[offset] > 0.0);
-	// For this negative buoyancy test, verify that all parcels
-	//  have negative buoyancy flux.
-	REQUIRE(SDS.wthv_sec[offset] < 0.0);
+	REQUIRE(SDS.dz_zt[offset] > 0);
+	REQUIRE(SDS.thv[offset] > 0);
+	// Make sure sign of buoyancy flux is as expected
+	if (s == 0){
+	  REQUIRE(SDS.wthv_sec[offset] > 0);
+	}
+	else{
+          REQUIRE(SDS.wthv_sec[offset] < 0);
+	}
 	if (n < nlev-1){
           // check that zt increases upward
-          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
 	}
       }
     }
@@ -94,9 +108,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     compute_conv_vel_shoc_length(SDS);
 
     // Check the results
-    // Make sure that conv_vel is negative
-    for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.conv_vel[s] < 0.0);
+    // Make sure that conv_vel is positive in first
+    //  column and negative in the second
+    REQUIRE(SDS.conv_vel[0] > 0);
+    REQUIRE(SDS.conv_vel[1] < 0);
+
+    // Make sure result falls within reasonable bounds
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.conv_vel[s] < std::abs(conv_vel_bound));
     }
 
     // SECOND TEST
@@ -105,9 +124,9 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     //  result of conv_vel is also zero.  Here we need to assume
     //  a well mixed layer and constant profile of dz_zt
 
-    static constexpr Real dz_zt_sym[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
+    static constexpr Real dz_zt_sym[nlev] = {100, 100, 100, 100, 100};
     // Virtual potential temperature on interface grid [K]
-    static constexpr Real thv_sym[nlev] = {300.0, 300.0, 300.0, 300.0, 300.0};
+    static constexpr Real thv_sym[nlev] = {300, 300, 300, 300, 300};
     // Buoyancy flux [K m/s]
     static constexpr Real wthv_sec_sym[nlev] = {0.04, 0.02, 0.00, -0.02, -0.04};
 
@@ -125,12 +144,12 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     // Check that the inputs make sense
 
     for(Int s = 0; s < shcol; ++s) {
-      Real wthv_sum = 0.0;
+      Real wthv_sum = 0;
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 	// Be sure that relevant variables are greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0.0);
-	REQUIRE(SDS.thv[offset] > 0.0);
+	REQUIRE(SDS.dz_zt[offset] > 0);
+	REQUIRE(SDS.thv[offset] > 0);
 	wthv_sum += SDS.wthv_sec[offset];
       }
       // Make sure inputs of buoyancy flux sum to zero

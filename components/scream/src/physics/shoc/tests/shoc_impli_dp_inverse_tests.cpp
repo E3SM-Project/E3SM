@@ -39,7 +39,7 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
     // Define density on zt grid [kg/m3]
     static constexpr Real rho_zt[nlev] = {0.6, 0.8, 0.9, 1.0, 1.2};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCDpinverseData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.

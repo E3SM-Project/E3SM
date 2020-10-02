@@ -32,13 +32,13 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     static constexpr auto nlevi   = nlev + 1;
 
     // Define the midpoint height grid [m]
-    static constexpr Real zt_pts[nlev] = {10000., 5000., 1000., 500., 100.};
+    static constexpr Real zt_pts[nlev] = {10000, 5000, 1000, 500, 100};
     // Define the interface height grid [m]
-    static constexpr Real zi_pts[nlevi] = {12500., 7500., 3000., 750., 250.0, 0.};
+    static constexpr Real zi_pts[nlevi] = {12500, 7500, 3000, 750, 250, 0};
     // Define the air density [kg/m3]
     static constexpr Real density_zt[nlev] = {0.4, 0.6, 0.8, 1.0, 1.2};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCGridData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
@@ -68,13 +68,13 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev - 1; ++n) {
 	const auto offset = n + s * nlev;
-	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
       }
 
       // Check that zi decreases upward
       for(Int n = 0; n < nlevi - 1; ++n) {
 	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
+	REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
     }
 
@@ -120,8 +120,8 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
 	REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
 
 	// check that the density has physically realistic values
-	REQUIRE(SDS.rho_zt[offset] <= 2.0);
-	REQUIRE(SDS.rho_zt[offset] > 0.0);
+	REQUIRE(SDS.rho_zt[offset] <= 2);
+	REQUIRE(SDS.rho_zt[offset] > 0);
       }
     }
   }

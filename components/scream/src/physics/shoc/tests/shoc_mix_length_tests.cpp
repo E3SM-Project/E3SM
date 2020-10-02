@@ -40,13 +40,13 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     // Define the brunt vasailla frequency [s-1]
     static constexpr Real brunt_cons = 0.001;
     // Define the assymptoic length [m]
-    static constexpr Real l_inf = 100.0;
+    static constexpr Real l_inf = 100;
     // Define the overturning timescale [s]
-    static constexpr Real tscale = 300.0;
+    static constexpr Real tscale = 300;
     // Define the heights on the zt grid [m]
-    static constexpr Real zt_grid[nlev] = {5000.0, 3000.0, 2000.0, 1000.0, 500.0};
+    static constexpr Real zt_grid[nlev] = {5000, 3000, 2000, 1000, 500};
 
-    // Initialize data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCMixlengthData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -73,12 +73,12 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
     // Be sure that relevant variables are greater than zero
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.l_inf[s] > 0.0);
-      REQUIRE(SDS.tscale[s] > 0.0);
+      REQUIRE(SDS.l_inf[s] > 0);
+      REQUIRE(SDS.tscale[s] > 0);
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.zt_grid[offset] > 0.0);
+	REQUIRE(SDS.tke[offset] > 0);
+	REQUIRE(SDS.zt_grid[offset] > 0);
 	if (s < shcol-1){
           // Verify that tke is larger column by column
           const auto offsets = n + (s+1) * nlev;
@@ -89,7 +89,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
       // Check that zt increases upward
       for(Int n = 0; n < nlev - 1; ++n) {
 	const auto offset = n + s * nlev;
-	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
       }
     }
 
@@ -101,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
       for(Int n = 0; n < nlev; ++n) {
 	const auto offset = n + s * nlev;
 	// Validate shoc_mix greater than zero everywhere
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
+	REQUIRE(SDS.shoc_mix[offset] > 0);
 	if (s < shcol-1){
           // Verify that mixing length increases column by column
           const auto offsets = n + (s+1) * nlev;
@@ -112,7 +112,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
       // Check that mixing length increases upward
       for(Int n = 0; n < nlev - 1; ++n) {
 	const auto offset = n + s * nlev;
-	REQUIRE(SDS.shoc_mix[offset + 1] - SDS.shoc_mix[offset] < 0.0);
+	REQUIRE(SDS.shoc_mix[offset + 1] - SDS.shoc_mix[offset] < 0);
       }
     }
   }

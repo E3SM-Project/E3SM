@@ -39,11 +39,13 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  For this function we test several one layer columns
 
     // PBL height [m]
-    static constexpr Real pblh[shcol] = {1000.0, 400.0, 10.0, 500.0, 300.0};
+    static constexpr Real pblh[shcol] = {1000, 400, 10, 500, 300};
     // Integrated convective velocity [m3/s3]
-    static constexpr Real conv_vel[shcol] = {10.0, -3.5, 0.1, -100.0, -0.4};
+    static constexpr Real conv_vel[shcol] = {10, -3.5, 0.1, -100, -0.4};
+    // Upper bound of expected result [s]
+    static constexpr Real tscale_upper = 10000;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCConvtimeData SDS(shcol);
 
     // Test that the inputs are reasonable.
@@ -69,6 +71,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     // Make sure that timescale is positive always
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.tscale[s] > 0.0);
+      REQUIRE(SDS.tscale[s] < tscale_upper);
     }
 
     // SECOND TEST
@@ -110,6 +113,12 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
       }
     }
 
+    // Make sure bounds fall in reasonable range
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.tscale[s] < tscale_upper);
+      REQUIRE(SDS.tscale[s] > 0);
+    }
+
     // THIRD TEST
     // Constant conv_vel test
     // Given a set of inputs where conv_vel is constant but
@@ -148,6 +157,13 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
 	REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
       }
     }
+
+    // Make sure bounds fall in reasonable range
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.tscale[s] < tscale_upper);
+      REQUIRE(SDS.tscale[s] > 0);
+    }
+
   }
 
   static void run_bfb()

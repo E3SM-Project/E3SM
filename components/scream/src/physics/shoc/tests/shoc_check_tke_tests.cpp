@@ -24,6 +24,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
 
   static void run_property()
   {
+    static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
 
@@ -60,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
 
 	// if input TKE was less than zero, verify it was adjusted
 	if (tke_input[n] < 0){
-	  REQUIRE(SDS.tke[offset] > 0);
+	  REQUIRE(SDS.tke[offset] >= mintke);
 	}
 	// Else make sure TKE remains untouched
 	else{

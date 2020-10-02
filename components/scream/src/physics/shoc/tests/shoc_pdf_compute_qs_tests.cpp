@@ -32,11 +32,11 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     //  the two gaussians are the same, verify that outputs are the same
 
     // Define temperature of Gaussian 1 [K]
-    static constexpr Real Tl1_1_eq = 290.0;
+    static constexpr Real Tl1_1_eq = 290;
     // Define temperature of Gaussian 2 [K]
     static constexpr Real Tl1_2_eq = Tl1_1_eq;
     // Define pressure value [Pa]
-    static constexpr Real pval_eq = 85000.0;
+    static constexpr Real pval_eq = 85000;
 
     // Initialize data structure for bridging to F90
     SHOCPDFcompqsData SDS;
@@ -61,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     // Pressure test.  Use the data from the last test and modify
     //  the pressure level to be lower and verify that qs1 is lower.
 
-    static constexpr Real pval_high = 100000.0;
+    static constexpr Real pval_high = 100000;
 
     // Save the result from last test
     Real qs1_test1 = SDS.qs1;
