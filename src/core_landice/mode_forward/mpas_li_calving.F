@@ -1285,7 +1285,7 @@ module li_calving
 !> perpendicular to the calving flux.
 !>
 !> The output of this routine is calvingThickness, which then needs to be applied to thickness
-!> by the calling routine.  A halo update on calvingThickness is required before applying it!
+!> by the calling routine.
 !-----------------------------------------------------------------------
 
    subroutine apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
@@ -1336,7 +1336,9 @@ module li_calving
       real(kind=RKIND) :: thkSum
       integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
-      real(kind=RKIND) :: volumeAvailableToPass
+      real(kind=RKIND) :: volumeAvailableToPass !< a temp. var. for accounting purposes that indicates how much volume
+                          !< to be calved is 'leftover' after trying to calve non-dynamic cells and can be transferred to
+                          !< neighboring dynamic cells
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
       real(kind=RKIND) :: edgeLengthScaling
@@ -1378,7 +1380,7 @@ module li_calving
 
       groundedMarineMarginMask(:) = 0
       do iCell = 1, nCells
-         ! Define marine m      arginal cells as those that are (1) at the ice
+         ! Define grounded marine marginal cells as those that are (1) at the ice
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
@@ -1461,7 +1463,7 @@ module li_calving
                           requiredCalvingVolumeNonDynEdge(iEdge) ! Keep running total
                endif
             enddo
-            ! c. Apply calving here
+            ! c. Calculate calvingThickness here
             removeVolumeHere = min(cellVolume(iCell), requiredCalvingVolumeNonDynCell(iCell))  ! Don't use more than available
             calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
             calvedVolumeNonDynCell(iCell) = removeVolumeHere
@@ -1509,7 +1511,7 @@ module li_calving
 
             volumeAvailableToPass = uncalvedVolumeNonDynCell(iCell)
 
-            ! Find total length of interface with dynamic cells at this cell
+            ! Find total length of interface with dynamic cells at this cell (i.e. calculate calvLengthCell)
             calvLengthCell = 0.0_RKIND
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
@@ -1520,7 +1522,7 @@ module li_calving
                endif
             enddo
 
-            ! Now pass along the required calving volume relative to the interface length
+            ! Now that we know calvLengthCell, pass along the required calving volume relative to the interface length
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
@@ -1545,7 +1547,7 @@ module li_calving
       call mpas_dmpar_field_halo_exch(domain, 'requiredCalvingVolumeDynEdge')
       call mpas_timer_stop("halo updates")
 
-      ! c. Now apply calving to each cell
+      ! c. Now calculate calvingThickness for each cell
       do iCell = 1, nCellsSolve
          if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level)) then
             ! Can loop over all dyn cells - only ones with calving on their edges will have calving applied.
