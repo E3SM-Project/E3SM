@@ -963,6 +963,15 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
+                                        description="If true, topographic wave drag is used on the momentum equation."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
+                                        description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
+                                        possible_values="any positive real, typically 1.0e-3"
+                />
+
 	</nml_record>
 	<nml_record name="wetting_drying" mode="init;forward">
 		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false." units="unitless"
@@ -1287,6 +1296,10 @@
 					description="Disables tendencies on the velocity field from horizontal surface stresses (e.g. wind stress and top drag)."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_vel_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
+                                        description="Disables tendencies on the velocity field from topographic wave drag"
+                                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_disable_vel_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from explicit bottom drag"
 					possible_values=".true. or .false."
@@ -1962,6 +1975,15 @@
 			<var name="pointCellGlobalID"/>
 		</stream>
 
+		<stream name="wave_drag"
+				type="input"
+				input_interval="initial_only"
+				filename_template="rinv_interpolated.nc"
+				runtime_format="single_file"
+				mode="forward;analysis">
+			<var name="rinv"/>
+		</stream>
+
 	</streams>
 
 	<var_struct name="state" time_levs="2">
@@ -2441,6 +2463,11 @@
 				description="salinity extrapolated to ocean surface"
 			/>
 		</var_array>
+                <var name="rinv" type="real" dimensions="nCells Time" units="unitless"
+                         description="wave drag coefficient or e-folding time"
+                         packages="forwardMode"
+                />
+
 		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
 				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
