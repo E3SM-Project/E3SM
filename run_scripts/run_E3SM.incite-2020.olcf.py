@@ -3,12 +3,10 @@
 # Branch for this campaign: https://github.com/E3SM-Project/E3SM/tree/whannah/incite-2020
 #---------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------
-import os
-import subprocess as sp
-import datetime
+import os, numpy as np, subprocess as sp, datetime
 newcase,config,build,clean,submit,continue_run = False,False,False,False,False,False
 
-# directory info
+acct = 'cli115'
 case_dir = os.getenv('HOME')+'/E3SM/Cases/'
 src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC1/'
 
@@ -28,19 +26,26 @@ ne,npg  = 45,2
 grid    = f'ne{ne}pg{npg}_r05_oECv3'
 crm_dx  = 3200 
 crm_dt  = 10
-rad_nx  = 4
+rad_nx  = 2
 
-timestamp = '20200930'
+# timestamp = '20200930' # rad_nx=4
+timestamp = '20201002' # rad_nx=2
 
-case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32','MOMFB',timestamp]); num_nodes=1000
-case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','MOMFB',timestamp]); num_nodes=30
-# case = '.'.join(['E3SM',arch,grid,compset,'CRMNX_32','CRMNY_32','CRMDX_3200','CRMDT_10','NLEV_50','RADNX_4','MOMFB',init_date,'00'])
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_72','CRMNX_32','CRMNY_32','MOMFB',timestamp]); num_nodes=1000
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32','MOMFB',timestamp]); num_nodes=1000
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp]); num_nodes=1000
+
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_72','CRMNX_32',timestamp]); num_nodes=30
+# num_nodes=200 ; task_per_node=48
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32',timestamp,f'NN_{num_nodes}',f'TPN_{task_per_node}']); 
 
 # Impose wall limits for Summits
 if num_nodes>=  1: walltime =  '2:00'
 if num_nodes>= 46: walltime =  '6:00'
 if num_nodes>= 92: walltime = '12:00'
 if num_nodes>=922: walltime = '24:00'
+# walltime =  '0:30'
+
 
 ### add these modifiers to enable debug mode or state variable checks
 # case = case+'.debug-on'
@@ -48,14 +53,14 @@ if num_nodes>=922: walltime = '24:00'
 
 # init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
 init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/HICCUP/data/'
-init_file_sst = f'HICCUP.sst_noaa.{init_date}.nc'
 params = [p.split('_') for p in case.split('.')]
 for p in params:
-   if p[0]=='NLEV': init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}_alt.nc'
+   if p[0]=='NLEV': 
+      if p[1]!='72': init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}.nc'
 
 ### land IC
-# land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
-# land_init_file = 'CLM_spinup.ICRUCLM45.ne45pg2_r05_oECv3.20-yr.2010-10-01.clm2.r.2005-10-01-00000.nc'
+land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
+land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
 #---------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------
 print('\n  case : '+case+'\n')
@@ -64,8 +69,11 @@ dtime = 20*60   # GCM physics time step
 
 if 'dtime' in locals(): ncpl  = 86400 / dtime
 
-if arch=='GNUCPU': task_per_node = 84
-if arch=='GNUGPU': task_per_node = 12
+num_dyn = ne*ne*6
+
+if 'task_per_node' not in locals():
+   if arch=='GNUCPU': task_per_node = 84
+   if arch=='GNUGPU': task_per_node = 12
 #-------------------------------------------------------------------------------
 # Define run command
 #-------------------------------------------------------------------------------
@@ -84,14 +92,15 @@ def run_cmd(cmd,suppress_output=False,execute=True):
 if newcase :
    cmd = src_dir+'cime/scripts/create_newcase --case '+case_dir+case
    cmd = cmd + ' --compset '+compset+' --res '+grid
-   cmd = cmd + ' --pecount '+str(num_nodes*tasks_per_node)+'x1 '
-   if arch=='GNUCPU': cmd = cmd + ' -compiler gnu    -pecount '+str(num_nodes*task_per_node)+'x1 '
-   if arch=='GNUGPU': cmd = cmd + ' -compiler gnugpu -pecount '+str(num_nodes*task_per_node)+'x1 '
+   cmd = cmd + ' --pecount '+str(num_nodes*task_per_node)+'x1 '
+   if arch=='GNUCPU': cmd = cmd + ' -compiler gnu    '
+   if arch=='GNUGPU': cmd = cmd + ' -compiler gnugpu '
    run_cmd(cmd)
 
    # Change run directory to be next to bld directory
    os.chdir(case_dir+case+'/')
-   run_cmd('./xmlchange -file env_run.xml RUNDIR=\'$MEMBERWORK/cli115/e3sm_scratch/$CASE/run\' ' )
+   memberwork = os.getenv('MEMBERWORK')
+   run_cmd(f'./xmlchange -file env_run.xml RUNDIR=\'{memberwork}/{acct}/e3sm_scratch/{case}/run\' ' )
    
    run_cmd(f'./xmlchange -file env_mach_pes.xml -id MAX_TASKS_PER_NODE    -val {task_per_node} ')
    run_cmd(f'./xmlchange -file env_mach_pes.xml -id MAX_MPITASKS_PER_NODE -val {task_per_node} ')
@@ -104,28 +113,30 @@ if config :
    #-------------------------------------------------------
    if arch=='GNUGPU': 
       pcols = np.ceil( (ne**2*6*npg**2) / (num_nodes*task_per_node) )
-      run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -pcols {int(pcols)} \" ' )
+      run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -pcols {int(pcols)} \" ' )
    #-------------------------------------------------------
-   file = open('user_nl_eam','w')
-   file.write(f' ncdata = \'{init_file_dir}/{init_file_atm}\'\n')
-   file.close()
+   if 'init_file_atm' in locals():
+      file = open('user_nl_eam','w')
+      file.write(f' ncdata = \'{init_file_dir}/{init_file_atm}\'\n')
+      file.close()
    #-------------------------------------------------------
    # Specify CRM and RAD columns
    params = [p.split('_') for p in case.split('.')]
    for p in params:
-      if p[0]=='CRMNX': run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -crm_nx {p[1]} \" ')
-      if p[0]=='CRMNY': run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -crm_ny {p[1]} \" ')
+      if p[0]=='CRMNX': run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_nx {p[1]} \" ')
+      if p[0]=='CRMNY': run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_ny {p[1]} \" ')
       if p[0]=='NLEV' and p[1] != '72' : 
          nlev = p[1]; crm_nz = None
          if nlev== '50': crm_nz =  '46'
          if nlev=='100': crm_nz =  '95'
          if nlev=='120': crm_nz = '115'
          if crm_nz is None: raise ValueError('No value of crm_nz specified')
-         run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -nlev {p[1]} -crm_nz {crm_nz} \" ')
-   # add in the values that are always specified above
+         run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -nlev {p[1]} -crm_nz {crm_nz} \" ')
+   #-------------------------------------------------------
+   # add in the settings that are specified above
    rad_ny = rad_nx if 'CRMNY' in case else 1
-   run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -crm_dx {crm_dx} -crm_dt {cmr_dt}  \" ')
-   run_cmd(f'./xmlchange --append -id EAM_CONFIG_OPTS -val \" -crm_nx_rad {rad_nx} -crm_ny_rad {rad_ny} \" ')
+   run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_dx {crm_dx} -crm_dt {crm_dt}  \" ')
+   run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_nx_rad {rad_nx} -crm_ny_rad {rad_ny} \" ')
    #-------------------------------------------------------
    # Add special MMF options based on case name
    cpp_opt = ''
@@ -133,7 +144,7 @@ if config :
    if 'debug-on' in case: cpp_opt += ' -DYAKL_DEBUG'
 
    if cpp_opt != '' :
-      cmd  = f'./xmlchange --append -file env_build.xml -id EAM_CONFIG_OPTS'
+      cmd  = f'./xmlchange --append -file env_build.xml -id CAM_CONFIG_OPTS'
       cmd += f' -val \" -cppdefs \'-DMMF_DIR_NS {cpp_opt} \'  \" '
       run_cmd(cmd)
    #-------------------------------------------------------
@@ -158,13 +169,11 @@ if config :
    # Run case setup
    if clean : run_cmd('./case.setup --clean')
    run_cmd('./case.setup --reset')
-
 #---------------------------------------------------------------------------------------------------
 # Build
 #---------------------------------------------------------------------------------------------------
 if build : 
-   # run_cmd('./xmlchange PIO_VERSION=2')
-
+   # run_cmd('./xmlchange PIO_VERSION=1')
    if 'debug-on' in case : run_cmd('./xmlchange -file env_build.xml -id DEBUG -val TRUE ')
    if clean : run_cmd('./case.build --clean')
    run_cmd('./case.build')
@@ -178,11 +187,11 @@ if submit :
    #-------------------------------------------------------
    # First query some stuff about the case
    #-------------------------------------------------------
-   (din_loc_root   , err) = sp.Popen('./xmlquery DIN_LOC_ROOT    -value', \
-                                     stdout=sp.PIPE, shell=True).communicate()
-   # (EAM_CONFIG_OPTS, err) = sp.Popen('./xmlquery EAM_CONFIG_OPTS -value', \
-   #                                   stdout=sp.PIPE, shell=True).communicate()
-   # EAM_CONFIG_OPTS = ' '.join(EAM_CONFIG_OPTS.split())   # remove extra spaces to simplify string query
+   (din_loc_root, err) = sp.Popen('./xmlquery DIN_LOC_ROOT    -value', \
+                                     stdout=sp.PIPE, shell=True, universal_newlines=True).communicate()
+   (config_opts, err) = sp.Popen('./xmlquery CAM_CONFIG_OPTS -value', \
+                                     stdout=sp.PIPE, shell=True, universal_newlines=True).communicate()
+   config_opts = ' '.join(config_opts.split())   # remove extra spaces to simplify string query
    ntasks_atm = None
    (ntasks_atm     , err) = sp.Popen('./xmlquery NTASKS_ATM    -value', \
                                      stdout=sp.PIPE, shell=True, universal_newlines=True).communicate()
@@ -195,9 +204,12 @@ if submit :
    #------------------------------
    # Specify history output frequency and variables
    #------------------------------   
-   file.write(' nhtfrq    = 0,-1,-6 \n') 
-   file.write(' mfilt     = 1,24, 4 \n')     
-   # if npg>0 : file.write(" fincl1    = 'DYN_T','DYN_Q','DYN_U' \n")
+   file.write(' nhtfrq    = 0,-1,-3 \n') 
+   file.write(' mfilt     = 1, 24, 8 \n') # 1-day files
+   # file.write(' mfilt     = 1,120,40 \n') # 5-day files
+   if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
+      file.write(" fincl1    = 'MMF_DU','MMF_DV' \n")
+   # hourly 2D fields
    file.write(" fincl2    = 'PS','PSL','TS'")
    file.write(             ",'PRECT','TMQ'")
    file.write(             ",'LHFLX','SHFLX'")             # surface fluxes
@@ -213,38 +225,24 @@ if submit :
    file.write(             ",'Z300:I','Z500:I'")
    file.write(             ",'OMEGA850:I','OMEGA500:I'")
    file.write('\n')
+   # 3-hourly 3D fields
    file.write(" fincl3    = 'PS','T','Q','Z3'")            # 3D thermodynamic budget components
    file.write(             ",'U','V','OMEGA'")             # 3D velocity components
    file.write(             ",'CLOUD','CLDLIQ','CLDICE'")   # 3D cloud fields
    file.write(             ",'QRL','QRS'")                 # 3D radiative heating profiles
-   file.write(             ",'MMF_TKE','MMF_TKEW','MMF_TKES' ")
-   # if 'SP' in cld :
-   #    file.write(         ",'SPDT','SPDQ','SPDQC','SPDQI'")               # CRM heating/moistening tendencies
-   #    file.write(         ",'SPTLS','SPQTLS'")           # CRM large-scale forcing
-   #    file.write(         ",'SPQPEVP'")                   # CRM rain evap 
-   #    # file.write(         ",'SPMC'")                      # total mass flux
-   #    # file.write(         ",'SPMCUP','SPMCDN'")           # CRM saturated mass fluxes
-   #    # file.write(         ",'SPMCUUP','SPMCUDN'")         # CRM unsaturated mass fluxes
-   #    file.write(         ",'SPTKE','SPTKES'")
-   #    # file.write(         ",'CRM_WSX:I','CRM_WSY:I' ")
-   
-   #    file.write(         ",'CRM_QC:I','CRM_QI:I'")
-   #    file.write(         ",'CRM_U:I','CRM_V:I','CRM_W:I' ")
-   #    # if any(x in EAM_CONFIG_OPTS for x in ["SP_ESMT","SP_USE_ESMT","SPMOMTRANS"]) : 
-   #    #    file.write(",'ZMMTU','ZMMTV','uten_Cu','vten_Cu' ")
-   #    # if "SP_USE_ESMT" in EAM_CONFIG_OPTS : file.write(",'U_ESMT','V_ESMT'")
-   #    # if "SPMOMTRANS"  in EAM_CONFIG_OPTS : file.write(",'UCONVMOM','VCONVMOM'")
+   if 'use_MMF' in config_opts :
+      if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
+         file.write(       ",'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' ")
    file.write('\n')
    #------------------------------
    # Other namelist stuff
    #------------------------------
    # file.write(' srf_flux_avg = 1 \n')              # sfc flux smoothing (for MMF stability)
-   # file.write(f' crm_accel_factor = 4 \n')         # CRM acceleration factor (default is 2)
+   # file.write(f' crm_accel_factor = 3 \n')         # CRM acceleration factor (default is 2)
 
-   if num_dyn<ntasks_atm:
-      file.write(' dyn_npes = '+str(num_dyn)+' \n')   # limit dynamics tasks
+   if num_dyn<ntasks_atm: file.write(' dyn_npes = '+str(num_dyn)+' \n')   # limit dynamics tasks
 
-   if 'checks-on' in case : file.write(' state_debug_checks = .true. \n')
+   if 'checks-on' in case: file.write(' state_debug_checks = .true. \n')
 
    file.write(" inithist = \'ENDOFRUN\' \n") # ENDOFRUN / NONE
 
@@ -252,7 +250,6 @@ if submit :
       file.write(f' ncdata = \'{init_file_dir}/{init_file_atm}\'\n')
 
    file.close()
-
    #-------------------------------------------------------
    # CLM namelist
    #-------------------------------------------------------
@@ -261,7 +258,6 @@ if submit :
       file = open(nfile,'w')
       file.write(f' finidat = \'{land_init_path}/{land_init_file}\' \n')
       file.close()
-   
    #-------------------------------------------------------
    # Set some run-time stuff
    #-------------------------------------------------------
@@ -281,7 +277,6 @@ if submit :
    # Submit the run
    #-------------------------------------------------------
    run_cmd('./case.submit')
-
 #---------------------------------------------------------------------------------------------------
 # Print the case name again
 #---------------------------------------------------------------------------------------------------
