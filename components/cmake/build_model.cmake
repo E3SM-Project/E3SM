@@ -12,11 +12,17 @@ function(build_model COMP_CLASS COMP_NAME)
   list(APPEND CPP_DIRS ".")
 
   # Load cppdefs
+  # Tries CCSM_cppdefs first, and if the file does not exist then tries CIME_cppdefs
   set(CCSM_CPPDEFS_FILE "${MODELCONF_DIR}/CCSM_cppdefs")
+  set(CIME_CPPDEFS_FILE "${MODELCONF_DIR}/CIME_cppdefs")
   if (EXISTS ${CCSM_CPPDEFS_FILE})
     file(READ ${CCSM_CPPDEFS_FILE} CCSM_CPPDEFS)
     string(STRIP "${CCSM_CPPDEFS}" CCSM_CPPDEFS)
     set(CPPDEFS "${CPPDEFS} ${CCSM_CPPDEFS}")
+  elseif (EXISTS ${CIME_CPPDEFS_FILE})
+    file(READ ${CIME_CPPDEFS_FILE} CIME_CPPDEFS)
+    string(STRIP "${CIME_CPPDEFS}" CIME_CPPDEFS)
+    set(CPPDEFS "${CPPDEFS} ${CIME_CPPDEFS}")
   endif()
 
   if (COMP_NAME STREQUAL "cpl")
