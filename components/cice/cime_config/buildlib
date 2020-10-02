@@ -42,7 +42,7 @@ if (-f "Filepath") {
 #  force gmake to recompile if any of the cppdefs are different 
 #-------------------------------------------------------------- 
 my $recompile = 'FALSE';
-my $sysmod = 1;
+my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
 if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
     if (compare("$OBJROOT/ice/obj/CCSM_cppdefs.new", "$OBJROOT/ice/obj/CCSM_cppdefs") != 0) {
         $recompile = 'TRUE'; 
