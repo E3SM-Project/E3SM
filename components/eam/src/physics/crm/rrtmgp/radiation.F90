@@ -29,19 +29,22 @@ module radiation
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
    use rrtmgp_interface, only: &
-      k_dist_sw, k_dist_lw, rrtmgp_initialize, &
+      k_dist_sw, k_dist_lw, &
+      rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      nswgpts, nlwgpts
+      nswgpts, nlwgpts, &
+      initialize_rrtmgp_fluxes, free_fluxes, &
+      free_optics_sw, free_optics_lw, reset_fluxes, &
+      set_gas_concentrations
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
 
    use radiation_state, only: ktop, kbot, nlev_rad
-   use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              handle_error, clip_values
+   use radiation_utils, only: handle_error, clip_values
 
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
@@ -1293,7 +1296,6 @@ contains
 
       ! Cloud and aerosol optics
       type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
-      type(ty_optical_props_1scl) :: cld_optics_lw, aer_optics_lw
 
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
 
@@ -1303,11 +1305,18 @@ contains
       ! Working variables for optics
       real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwgpts) :: cld_tau_gpt_lw_all
       real(r8), dimension(pcols,pver,nswbands) :: &
          cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols,pver,nswgpts) :: &
          cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswgpts) :: &
+         cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
+         aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwbands) :: &
+         aer_tau_bnd_lw_all
       ! NOTE: these are diagnostic only
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
@@ -1447,10 +1456,6 @@ contains
                call handle_error(cld_optics_sw%alloc_2str( &
                   ncol_tot, nlev_rad, k_dist_sw, name='cld_optics_sw' &
                ))
-               call handle_error(cld_optics_lw%alloc_1scl( &
-                  ncol_tot, nlev_rad, k_dist_lw, name='cld_optics_lw' &
-               ))
-               cld_optics_lw%tau = 0
                cld_optics_sw%tau = 0
                cld_optics_sw%ssa = 0
                cld_optics_sw%g   = 0
@@ -1466,11 +1471,6 @@ contains
                   ncol_tot, nlev_rad, k_dist_sw%get_band_lims_wavenumber(), &
                   name='aer_optics_sw'                                  &
                ))
-               call handle_error(aer_optics_lw%alloc_1scl(          &
-                  ncol_tot, nlev_rad, k_dist_lw%get_band_lims_wavenumber(), &
-                  name='aer_optics_lw'                              &
-               ))
-               aer_optics_lw%tau = 0
                aer_optics_sw%tau = 0
                aer_optics_sw%ssa = 0
                aer_optics_sw%g   = 0
@@ -1509,6 +1509,14 @@ contains
                      call t_stopf('rad_aerosol_optics_lw')
                   end if ! radiation_do('lw')
                end if ! do_aerosol_rad
+               cld_tau_gpt_lw_all = 0._r8
+               cld_tau_gpt_sw_all = 0._r8
+               cld_ssa_gpt_sw_all = 0._r8
+               cld_asm_gpt_sw_all = 0._r8
+               aer_tau_bnd_lw_all = 0._r8
+               aer_tau_bnd_sw_all = 0._r8
+               aer_ssa_bnd_sw_all = 0._r8
+               aer_asm_bnd_sw_all = 0._r8
 
                ! make sure water path variables are zeroed out
                do ilay = 1, pver
@@ -1630,10 +1638,36 @@ contains
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
                         call t_stopf('rad_cloud_optics_sw')
+
+                        ! Do aerosol optics
+                        aer_tau_bnd_sw = 0._r8
+                        aer_ssa_bnd_sw = 0._r8
+                        aer_asm_bnd_sw = 0._r8
+                        if (do_aerosol_rad) then
+                           call t_startf('rad_aerosol_optics_sw')
+                           call set_aerosol_optics_sw( &
+                              icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                              aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
+                           )
+                           ! Now reorder bands to be consistent with RRTMGP
+                           ! TODO: fix the input files themselves!
+                           do icol = 1,size(aer_tau_bnd_sw,1)
+                              do ilay = 1,size(aer_tau_bnd_sw,2)
+                                 aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                                 aer_ssa_bnd_sw(icol,ilay,:) = reordered(aer_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                                 aer_asm_bnd_sw(icol,ilay,:) = reordered(aer_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              end do
+                           end do
+                           call t_stopf('rad_aerosol_optics_sw')
+
+                        end if
                         ! Check (and possibly clip) values before passing to RRTMGP driver
                         call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
                      end if
 
                      ! Longwave cloud and aerosol optics
@@ -1653,8 +1687,17 @@ contains
                         )
                         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
+
+                        ! Do aerosol optics
+                        aer_tau_bnd_lw = 0._r8
+                        if (do_aerosol_rad) then
+                           call t_startf('rad_aerosol_optics_lw')
+                           call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
+                           call t_stopf('rad_aerosol_optics_lw')
+                        end if
                         ! Check (and possibly clip) values before passing to RRTMGP driver
                         call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
                      end if
 
                      ! Pack data
@@ -1667,14 +1710,26 @@ contains
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
                         tint(j,:) = tint_col(ic,:)
-                        cld_optics_lw%tau(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
                         cld_optics_sw%tau(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
                         cld_optics_sw%ssa(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
                         cld_optics_sw%g  (j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
-                        aer_optics_lw%tau(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
-                        aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
-                        aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
-                        aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
+                        cld_tau_gpt_lw_all(j,ktop:kbot,:) = cld_tau_gpt_lw(ic,:,:)
+                        cld_tau_gpt_sw_all(j,ktop:kbot,:) = cld_tau_gpt_sw(ic,:,:)
+                        cld_ssa_gpt_sw_all(j,ktop:kbot,:) = cld_ssa_gpt_sw(ic,:,:)
+                        cld_asm_gpt_sw_all(j,ktop:kbot,:) = cld_asm_gpt_sw(ic,:,:)
+                        if (do_aerosol_rad) then
+                           aer_optics_sw%tau(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                           aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                           aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
+                        else
+                           aer_optics_sw%tau(j,ktop:kbot,:) = 0
+                           aer_optics_sw%ssa(j,ktop:kbot,:) = 0
+                           aer_optics_sw%g  (j,ktop:kbot,:) = 0
+                        end if
+                        aer_tau_bnd_lw_all(j,ktop:kbot,:) = aer_tau_bnd_lw(ic,:,:)
+                        aer_tau_bnd_sw_all(j,ktop:kbot,:) = aer_tau_bnd_sw(ic,:,:)
+                        aer_ssa_bnd_sw_all(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
+                        aer_asm_bnd_sw_all(j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
                         j = j + 1
                      end do  ! ic = 1,ncol
@@ -1708,6 +1763,12 @@ contains
 
                ! Do shortwave radiative transfer calculations
                call t_startf('rad_calculate_fluxes_sw')
+!              call radiation_driver_sw(ncol_tot, &
+!                                 active_gases, vmr_all, &
+!                                 pmid, pint, tmid, albedo_dir_all, albedo_dif_all, coszrs_all, &
+!                                 cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all, &
+!                                 aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all, &
+!                                 fluxes_allsky_all, fluxes_clrsky_all, qrs_all, qrsc_all)
                call calculate_fluxes_sw( &
                   active_gases(:), vmr_all(:,1:ncol_tot,1:nlev_rad), &
                   pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
@@ -1715,23 +1776,25 @@ contains
                   coszrs_all(1:ncol_tot), &
                   albedo_dir_all(1:nswbands,1:ncol_tot), &
                   albedo_dif_all(1:nswbands,1:ncol_tot), &
-                  cld_optics_sw, aer_optics_sw, &
+                  cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all, &
+                  aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all, &
+                  !cld_optics_sw, aer_optics_sw, &
                   fluxes_allsky_all, fluxes_clrsky_all, tsi_scaling &
                )
                call t_stopf('rad_calculate_fluxes_sw')
-
                ! Calculate heating rates
                call t_startf('rad_heating_rate_sw')
                call calculate_heating_rate(fluxes_allsky_all%flux_up(1:ncol_tot,ktop:kbot+1), &
-                                           fluxes_allsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
-                                           pint(1:ncol_tot,ktop:kbot+1), &
-                                           qrs_all(1:ncol_tot,1:pver))
+                  fluxes_allsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
+                  pint(1:ncol_tot,ktop:kbot+1), &
+                  qrs_all(1:ncol_tot,1:pver) &
+               )
                call calculate_heating_rate(fluxes_clrsky_all%flux_up(1:ncol_tot,ktop:kbot+1), &
-                                           fluxes_clrsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
-                                           pint(1:ncol_tot,ktop:kbot+1), &
-                                           qrsc_all(1:ncol_tot,1:pver))
+                  fluxes_clrsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
+                  pint(1:ncol_tot,ktop:kbot+1), &
+                  qrsc_all(1:ncol_tot,1:pver) &
+               )
                call t_stopf('rad_heating_rate_sw')
-
                ! Calculate CRM domain averages
                call t_startf('rad_average_fluxes_sw')
                call average_packed_array(qrs_all (1:ncol_tot,:)                     , qrs (1:ncol,:)                     )
@@ -1818,12 +1881,12 @@ contains
 
                ! Calculate longwave fluxes
                call t_startf('rad_fluxes_lw')
-               call calculate_fluxes_lw(                                          &
+               call calculate_fluxes_lw(                                        &
                   active_gases, vmr_all(:,1:ncol_tot,1:nlev_rad),               &
                   surface_emissivity(1:nlwbands,1:ncol_tot),                    &
                   pmid(1:ncol_tot,1:nlev_rad  ), tmid(1:ncol_tot,1:nlev_rad  ), &
                   pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,1:nlev_rad+1), &
-                  cld_optics_lw            , aer_optics_lw,             &
+                  cld_tau_gpt_lw_all           , aer_tau_bnd_lw_all,            &
                   fluxes_allsky_all            , fluxes_clrsky_all              &
                )
                call t_stopf('rad_fluxes_lw')
@@ -1885,8 +1948,6 @@ contains
                call free_fluxes(fluxes_clrsky)
                call free_fluxes(fluxes_allsky_all)
                call free_fluxes(fluxes_clrsky_all)
-               call free_optics_lw(cld_optics_lw)
-               call free_optics_lw(aer_optics_lw)
 
             else
 
@@ -1959,12 +2020,123 @@ contains
 
    end subroutine radiation_tend
 
+   subroutine radiation_driver_sw(ncol, &
+                                  gas_names, gas_vmr, &
+                                  pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
+                                  cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+                                  aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
+                                  fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+     
+      use perf_mod, only: t_startf, t_stopf
+      use mo_rrtmgp_clr_all_sky, only: rte_sw
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      use mo_optical_props, only: ty_optical_props_2str
+      use mo_gas_concentrations, only: ty_gas_concs
+      use radiation_utils, only: calculate_heating_rate
+      use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
+                            set_aerosol_optics_sw
+
+      ! Inputs
+      integer, intent(in) :: ncol
+      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
+      real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
+      character(len=*), intent(in), dimension(:) :: gas_names
+      real(r8), intent(in), dimension(:,:,:) :: gas_vmr
+      real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid
+      real(r8), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
+      real(r8), intent(in), dimension(:) :: coszrs
+      real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
+      real(r8), intent(in), dimension(:,:,:) :: aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd
+
+      ! Incoming solar radiation, scaled for solar zenith angle 
+      ! and earth-sun distance
+      real(r8) :: solar_irradiance_by_gpt(ncol,nswgpts)
+
+      ! Gathered indicies of day and night columns 
+      ! chunk_column_index = day_indices(daylight_column_index)
+      integer :: nday, nnight     ! Number of daylight columns
+      integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
+
+      ! Scaling factor for total sky irradiance; used to account for orbital
+      ! eccentricity, and could be used to scale total sky irradiance for different
+      ! climates as well (i.e., paleoclimate simulations)
+      real(r8) :: tsi_scaling
+
+      ! Everybody needs a name
+      character(*), parameter :: subroutine_name = 'radiation_driver_sw'
+
+
+      if (fixed_total_solar_irradiance<0) then
+         ! Get orbital eccentricity factor to scale total sky irradiance
+         tsi_scaling = get_eccentricity_factor()
+      else
+         ! For fixed TSI we divide by the default solar constant of 1360.9
+         ! At some point we will want to replace this with a method that 
+         ! retrieves the solar constant
+         tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
+      end if
+
+      ! Gather night/day column indices for subsetting SW inputs; we only want to
+      ! do the shortwave radiative transfer during the daytime to save
+      ! computational cost (and because RRTMGP will fail for cosine solar zenith
+      ! angles less than or equal to zero)
+      call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
+      nday = count(day_indices(1:ncol) > 0)
+      nnight = count(night_indices(1:ncol) > 0)
+
+      ! If no daytime columns in this chunk, then we return zeros
+      if (nday == 0) then
+         call reset_fluxes(fluxes_allsky)
+         call reset_fluxes(fluxes_clrsky)
+         qrs(1:ncol,1:pver) = 0
+         qrsc(1:ncol,1:pver) = 0
+         return
+      end if
+
+      ! Do shortwave radiative transfer calculations
+      call t_startf('rad_calculations_sw')
+      call rrtmgp_run_sw( &
+         size(active_gases), ncol, nday, nlev_rad, &
+         day_indices, gas_names, gas_vmr, &
+         pmid(1:ncol,1:nlev_rad), &
+         tmid(1:ncol,1:nlev_rad), &
+         pint(1:ncol,1:nlev_rad+1), &
+         coszrs(1:ncol), &
+         albedo_dir(1:nswbands,1:ncol), &
+         albedo_dif(1:nswbands,1:ncol), &
+         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+         aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
+         fluxes_allsky, fluxes_clrsky, &
+         tsi_scaling &
+      )
+      call t_stopf('rad_calculations_sw')
+
+      ! Calculate heating rates
+      call t_startf('rad_heating_rate_sw')
+      call calculate_heating_rate(      &
+         fluxes_allsky%flux_up(1:ncol,ktop:kbot+1),     &
+         fluxes_allsky%flux_dn(1:ncol,ktop:kbot+1),     &
+         pint(1:ncol,ktop:kbot+1), &
+         qrs(1:ncol,1:pver)     &
+      )
+      call calculate_heating_rate(      &
+         fluxes_clrsky%flux_up(1:ncol,ktop:kbot+1),     &
+         fluxes_clrsky%flux_dn(1:ncol,ktop:kbot+1),     &
+         pint(1:ncol,ktop:kbot+1), &
+         qrsc(1:ncol,1:pver)     &
+      )
+      call t_stopf('rad_heating_rate_sw')
+
+   end subroutine radiation_driver_sw
+
    !----------------------------------------------------------------------------
 
    subroutine calculate_fluxes_sw(gas_names, gas_vmr, &
                                   pmid, tmid, pint, &
                                   coszrs, alb_dir, alb_dif, &
-                                  cld_optics, aer_optics, &
+                                  cld_tau, cld_ssa, cld_asm, &
+                                  aer_tau, aer_ssa, aer_asm, &
+                                  !cld_optics, aer_optics, &
                                   fluxes_allsky, fluxes_clrsky, &
                                   tsi_scaling)
 
@@ -1980,7 +2152,10 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, tmid, pint
       real(r8), intent(in), dimension(:) :: coszrs
       real(r8), intent(in), dimension(:,:) :: alb_dir, alb_dif
-      type(ty_optical_props_2str), intent(in) :: cld_optics, aer_optics
+      !type(ty_optical_props_2str), intent(in) :: cld_optics, aer_optics
+      real(r8), intent(in), dimension(:,:,:) :: &
+         cld_tau, cld_ssa, cld_asm, &
+         aer_tau, aer_ssa, aer_asm
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(in) :: tsi_scaling
 
@@ -2025,10 +2200,6 @@ contains
       call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
-      ! Check incoming optical properties
-      call handle_error(cld_optics%validate())
-      call handle_error(aer_optics%validate())
-
       ! Compress to day-time only
       do iday = 1,nday
          icol = day_indices(iday)
@@ -2047,12 +2218,12 @@ contains
          gas_vmr_day(:,iday,:) = gas_vmr(:,icol,:)
 
          ! Compress optics
-         cld_optics_day%tau(iday,:,:) = cld_optics%tau(icol,:,:)
-         cld_optics_day%ssa(iday,:,:) = cld_optics%ssa(icol,:,:)
-         cld_optics_day%g  (iday,:,:) = cld_optics%g  (icol,:,:)
-         aer_optics_day%tau(iday,:,:) = aer_optics%tau(icol,:,:)
-         aer_optics_day%ssa(iday,:,:) = aer_optics%ssa(icol,:,:)
-         aer_optics_day%g  (iday,:,:) = aer_optics%g  (icol,:,:)
+         cld_optics_day%tau(iday,:,:) = cld_tau(icol,:,:)
+         cld_optics_day%ssa(iday,:,:) = cld_ssa(icol,:,:)
+         cld_optics_day%g  (iday,:,:) = cld_asm(icol,:,:)
+         aer_optics_day%tau(iday,:,:) = aer_tau(icol,:,:)
+         aer_optics_day%ssa(iday,:,:) = aer_ssa(icol,:,:)
+         aer_optics_day%g  (iday,:,:) = aer_asm(icol,:,:)
       end do
 
       ! Apply delta scaling to account for forward-scattering
@@ -2126,7 +2297,7 @@ contains
 
    subroutine calculate_fluxes_lw(gas_names, gas_vmr, emis_sfc, &
                                 pmid, tmid, pint, tint, &
-                                cld_optics, aer_optics, &
+                                cld_tau_gpt, aer_tau_bnd, &
                                 fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
@@ -2140,7 +2311,7 @@ contains
       real(r8), intent(in) :: gas_vmr(:,:,:)
       real(r8), intent(in) :: emis_sfc(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
-      type(ty_optical_props_1scl), intent(inout) :: cld_optics, aer_optics
+      real(r8), intent(in) :: cld_tau_gpt(:,:,:), aer_tau_bnd(:,:,:)
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
 
       type(ty_gas_concs) :: gas_concs
@@ -2148,6 +2319,10 @@ contains
 
       ! Character array to hold lowercase gas names
       character(len=32), allocatable :: gas_names_lower(:)
+
+      real(r8), dimension(size(cld_tau_gpt,1),size(cld_tau_gpt,2)+1,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
+      real(r8), dimension(size(aer_tau_bnd,1),size(aer_tau_bnd,2)+1,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
+      type(ty_optical_props_1scl) :: cld_optics_lw, aer_optics_lw
 
       ncol = size(pmid,1)
       nlev = size(pmid,2)
@@ -2167,23 +2342,50 @@ contains
       end do
       deallocate(gas_names_lower)
 
-      ! Apply delta-scaling to account for forward scattering
-      call handle_error(cld_optics%delta_scale())
-      call handle_error(aer_optics%delta_scale())
+      ! Setup optical properties
+      call handle_error(cld_optics_lw%alloc_1scl( &
+         ncol, nlev, k_dist_lw, name='cld_optics_lw' &
+      ))
+      cld_optics_lw%tau = 0
+      !cld_optics_lw%tau(:,2:nlev,:) = cld_tau_gpt(:,1:pver,:)
+      cld_optics_lw%tau(:,:,:) = cld_tau_gpt(:,:,:)
+      call handle_error(aer_optics_lw%alloc_1scl(          &
+         ncol, nlev, k_dist_lw%get_band_lims_wavenumber(), &
+         name='aer_optics_lw'                              &
+      ))
+      aer_optics_lw%tau = 0
+      !aer_optics_lw%tau(:,2:nlev,:) = aer_tau_bnd(:,1:pver,:)
+      aer_optics_lw%tau(:,:,:) = aer_tau_bnd(:,:,:)
+
+      ! Add a level
+      cld_tau_gpt_rad = 0
+      aer_tau_bnd_rad = 0
+      cld_tau_gpt_rad(:,2:nlev,:) = cld_tau_gpt(:,1:pver,:)
+      aer_tau_bnd_rad(:,2:nlev,:) = aer_tau_bnd(:,1:pver,:)
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_rte_lw')
+!     call rrtmgp_run_lw( &
+!           size(active_gases), ncol, nlev, &
+!           gas_names, gas_vmr, &
+!           emis_sfc, &
+!           pmid, tmid, pint, tint, &
+!           cld_tau_gpt_rad, aer_tau_bnd_rad, &
+!           fluxes_allsky, fluxes_clrsky &
+!           )
       call handle_error(rte_lw(k_dist_lw, gas_concs, &
                                pmid(1:ncol,1:nlev), tmid(1:ncol,1:nlev), &
                                pint(1:ncol,1:nlev+1), tint(1:ncol,nlev+1), &
                                emis_sfc(1:nlwbands,1:ncol), &
-                               cld_optics, &
+                               cld_optics_lw, &
                                fluxes_allsky, fluxes_clrsky, &
-                               aer_props=aer_optics, &
+                               aer_props=aer_optics_lw, &
                                t_lev=tint(1:ncol,1:nlev+1), &
                                n_gauss_angles=1))  ! Set to 3 for consistency with RRTMG
       call t_stopf('rad_rte_lw')
 
+      call free_optics_lw(cld_optics_lw)
+      call free_optics_lw(aer_optics_lw)
    end subroutine calculate_fluxes_lw
 
    !----------------------------------------------------------------------------
@@ -2343,27 +2545,6 @@ contains
    end subroutine set_net_fluxes_lw
 
    !----------------------------------------------------------------------------
-
-   subroutine reset_fluxes(fluxes)
-
-      use mo_rte_kind, only: wp
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-
-      ! Reset broadband fluxes
-      fluxes%flux_up(:,:) = 0._wp
-      fluxes%flux_dn(:,:) = 0._wp
-      fluxes%flux_net(:,:) = 0._wp
-      if (associated(fluxes%flux_dn_dir)) fluxes%flux_dn_dir(:,:) = 0._wp
-
-      ! Reset band-by-band fluxes
-      fluxes%bnd_flux_up(:,:,:) = 0._wp
-      fluxes%bnd_flux_dn(:,:,:) = 0._wp
-      fluxes%bnd_flux_net(:,:,:) = 0._wp
-      if (associated(fluxes%bnd_flux_dn_dir)) fluxes%bnd_flux_dn_dir(:,:,:) = 0._wp
-
-   end subroutine reset_fluxes
-
 
    subroutine set_daynight_indices(coszrs, day_indices, night_indices)
       ! Input: cosine of solar zenith angle
@@ -2803,84 +2984,6 @@ contains
                   state%ncol, state%lchnk)
 
    end subroutine output_cloud_optics_lw
-
-   !----------------------------------------------------------------------------
-
-
-   ! For some reason the RRTMGP flux objects do not include initialization
-   ! routines, but rather expect the user to associate the individual fluxes (which
-   ! are pointers) with appropriate targets. Instead, this routine treats those
-   ! pointers as allocatable members and allocates space for them. TODO: is this
-   ! appropriate use?
-   subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
-
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      integer, intent(in) :: ncol, nlevels, nbands
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      logical, intent(in), optional :: do_direct
-
-      logical :: do_direct_local
-
-      if (present(do_direct)) then
-         do_direct_local = .true.
-      else
-         do_direct_local = .false.
-      end if
-
-      ! Allocate flux arrays
-      ! NOTE: fluxes defined at interfaces, so need to either pass nlevels as
-      ! number of model levels plus one, or allocate as nlevels+1 if nlevels
-      ! represents number of model levels rather than number of interface levels.
-
-      ! Broadband fluxes
-      allocate(fluxes%flux_up(ncol, nlevels))
-      allocate(fluxes%flux_dn(ncol, nlevels))
-      allocate(fluxes%flux_net(ncol, nlevels))
-      if (do_direct_local) allocate(fluxes%flux_dn_dir(ncol, nlevels))
-
-      ! Fluxes by band
-      allocate(fluxes%bnd_flux_up(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_dn(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_net(ncol, nlevels, nbands))
-      if (do_direct_local) allocate(fluxes%bnd_flux_dn_dir(ncol, nlevels, nbands))
-
-      ! Initialize
-      call reset_fluxes(fluxes)
-
-   end subroutine initialize_rrtmgp_fluxes
-
-   subroutine free_fluxes(fluxes)
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
-      if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
-      if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
-      if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
-      if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
-      if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
-      if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
-      if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
-   end subroutine free_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_sw(optics)
-      use mo_optical_props, only: ty_optical_props_2str
-      type(ty_optical_props_2str), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      if (allocated(optics%ssa)) deallocate(optics%ssa)
-      if (allocated(optics%g)) deallocate(optics%g)
-      call optics%finalize()
-   end subroutine free_optics_sw
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_lw(optics)
-      use mo_optical_props, only: ty_optical_props_1scl
-      type(ty_optical_props_1scl), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      call optics%finalize()
-   end subroutine free_optics_lw
 
    !----------------------------------------------------------------------------
 

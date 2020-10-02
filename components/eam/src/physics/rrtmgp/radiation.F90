@@ -1721,6 +1721,9 @@ contains
       real(r8), intent(in), dimension(:,:) :: pmid, pint, tmid, tint
       real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, aer_tau_bnd
 
+      real(r8), dimension(size(cld_tau_gpt,1),size(cld_tau_gpt,2)+1,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
+      real(r8), dimension(size(aer_tau_bnd,1),size(aer_tau_bnd,2)+1,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
+
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_lw'
 
@@ -1732,8 +1735,6 @@ contains
 
       ! RRTMGP types
       type(ty_gas_concs) :: gas_concentrations
-      type(ty_optical_props_1scl) :: aer_optics_lw
-      type(ty_optical_props_1scl) :: cld_optics_lw
 
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
@@ -1743,24 +1744,6 @@ contains
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
-      ! Populate RRTMGP optics
-      call t_startf('longwave cloud optics')
-      call handle_error(cld_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
-      cld_optics_lw%tau = 0.0
-      cld_optics_lw%tau(1:ncol,2:nlev_rad,:) = cld_tau_gpt(1:ncol,1:pver,:)
-      call handle_error(cld_optics_lw%delta_scale())
-      call t_stopf('longwave cloud optics')
-
-      ! Initialize aerosol optics; passing only the wavenumber bounds for each
-      ! "band" rather than passing the full spectral discretization object, and
-      ! omitting the "g-point" mapping forces the optics to be indexed and
-      ! stored by band rather than by g-point. This is most consistent with our
-      ! treatment of aerosol optics in the model, and prevents us from having to
-      ! map bands to g-points ourselves since that will all be handled by the
-      ! private routines internal to the optics class.
-      call handle_error(aer_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw%get_band_lims_wavenumber()))
-      call aer_optics_lw%set_name('longwave aerosol optics')
-
       ! Set gas concentrations (I believe the active gases may change
       ! for different values of icall, which is why we do this within
       ! the loop).
@@ -1768,17 +1751,11 @@ contains
       call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
       call t_stopf('rad_gas_concentrations_lw')
 
-      if (do_aerosol_rad) then
-         ! Get longwave aerosol optics
-         call t_startf('rad_aer_optics_lw')
-         aer_optics_lw%tau(:,:,:) = 0
-         aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
-         ! Apply delta scaling to account for forward-scattering
-         call handle_error(aer_optics_lw%delta_scale())
-         call t_stopf('rad_aer_optics_lw')
-      else
-         aer_optics_lw%tau(:,:,:) = 0
-      end if
+      ! Add an empty level above model top
+      cld_tau_gpt_rad = 0
+      cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt(:,:,:)
+      aer_tau_bnd_rad = 0
+      aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd(:,:,:)
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_calculations_lw')
@@ -1787,20 +1764,9 @@ contains
             gas_names, gas_vmr, &
             surface_emissivity, &
             pmid, tmid, pint, tint, &
-            cld_tau_gpt, aer_tau_bnd, &
+            cld_tau_gpt_rad, aer_tau_bnd_rad, &
             fluxes_allsky, fluxes_clrsky &
             )
-!     call handle_error(rte_lw( &
-!        k_dist_lw, gas_concentrations, &
-!        pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), &
-!        pint(1:ncol,1:nlev_rad+1), tint(1:ncol,nlev_rad+1), &
-!        surface_emissivity(1:nlwbands,1:ncol), &
-!        cld_optics_lw, &
-!        fluxes_allsky, fluxes_clrsky, &
-!        aer_props=aer_optics_lw, &
-!        t_lev=tint(1:ncol,1:nlev_rad+1), &
-!        n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
-!     ))
       call t_stopf('rad_calculations_lw')
 
       ! Calculate heating rates
@@ -1821,10 +1787,6 @@ contains
       qrl(1:ncol,1:pver) = qrl_rad(1:ncol,ktop:kbot)
       qrlc(1:ncol,1:pver) = qrlc_rad(1:ncol,ktop:kbot)
                   
-      ! Free fluxes and optical properties
-      call free_optics_lw(cld_optics_lw)
-      call free_optics_lw(aer_optics_lw)
-
    end subroutine radiation_driver_lw
 
    !----------------------------------------------------------------------------

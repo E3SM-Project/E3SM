@@ -263,7 +263,8 @@ contains
       call t_startf('longwave cloud optics')
       call handle_error(cld_optics%alloc_1scl(ncol, nlev, k_dist_lw, name='longwave cloud optics'))
       cld_optics%tau = 0.0
-      cld_optics%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,1:pver,:)
+      !cld_optics%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,1:pver,:)
+      cld_optics%tau(1:ncol,1:nlev,:) = cld_tau_gpt(1:ncol,1:nlev,:)
       call handle_error(cld_optics%delta_scale())
       call t_stopf('longwave cloud optics')
 
@@ -277,7 +278,8 @@ contains
       call handle_error(aer_optics%alloc_1scl(ncol, nlev, k_dist_lw%get_band_lims_wavenumber()))
       call aer_optics%set_name('longwave aerosol optics')
       aer_optics%tau = 0
-      aer_optics%tau(1:ncol,2:nlev,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
+      !aer_optics%tau(1:ncol,2:nlev,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
+      aer_optics%tau(1:ncol,1:nlev,1:nlwbands) = aer_tau_bnd(1:ncol,1:nlev,1:nlwbands)
 
       ! Do longwave radiative transfer calculations
       call handle_error(rte_lw( &
