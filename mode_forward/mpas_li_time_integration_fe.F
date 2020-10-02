@@ -80,6 +80,7 @@ module li_time_integration_fe
 
       use li_subglacial_hydro
       use li_velocity
+      use li_bedtopo
 
       !-----------------------------------------------------------------
       ! input variables
@@ -168,6 +169,13 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
       call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
+
+! === Update bed topo =====================
+! It's not clear when the best time to do this is.
+! Seems cleaner to do it either before or after all of the time evolution of the ice
+! is complete.  Putting it after.
+      call li_bedtopo_solve(domain, err=err_tmp)
+      err = ior(err, err_tmp)
 
 ! === Solve Velocity =====================
       ! During time-stepping, we always solveVelo
