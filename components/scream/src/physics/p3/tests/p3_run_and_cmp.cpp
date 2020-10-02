@@ -133,8 +133,8 @@ struct Baseline {
 
           if (r != -1 && m_repeat > 0) { // do not count the "cold" run
             finish = std::chrono::steady_clock::now();
+            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
           }
-          duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
 
           if (m_repeat == 0) {
             write(fid, d); // Save the fields to the baseline file.
