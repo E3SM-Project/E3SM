@@ -69,7 +69,7 @@ class PerfAnalysis(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, argmap, force_threads, num_runs, tests, cmake_options, use_existing, scaling_exp, plot_friendly, machine):
+    def __init__(self, argmap, force_threads, num_runs, tests, cmake_options, use_existing, scaling_exp, plot_friendly, machine, scream_docs):
     ###########################################################################
         self._argmap        = argmap
         self._force_threads = force_threads
@@ -80,6 +80,7 @@ class PerfAnalysis(object):
         self._scaling_exp   = scaling_exp
         self._plot_friendly = plot_friendly
         self._machine       = machine
+        self._scream_docs   = scream_docs
 
     ###############################################################################
     def build(self):
@@ -167,7 +168,8 @@ class PerfAnalysis(object):
                    "{} doesn't look like a build directory".format(os.getcwd()))
 
         else:
-            expect(os.path.basename(os.getcwd()) == "micro-apps", "Please run from micro-apps directory")
+            if self._scream_docs:
+                expect(os.path.basename(os.getcwd()) == "micro-apps", "Please run from micro-apps directory")
 
             tmpdir = tempfile.mkdtemp(prefix="build", dir=os.getcwd())
             os.chdir(tmpdir)

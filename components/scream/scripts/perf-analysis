@@ -62,11 +62,15 @@ OR
 
     parser.add_argument("-m", "--machine", default=socket.gethostname().rstrip("0123456789"), help="Manually set machine. Defaults to hostname.")
 
+    parser.add_argument("-d", "--scream-docs", action="store_true",
+                        help="Measure something in the scream-docs repo instead of main repo")
+
     args = parser.parse_args(args[1:])
 
-    expect(args.kokkos, "--kokkos is currently required")
+    args.cmake_options += " -DCMAKE_BUILD_TYPE=Release"
+    if args.kokkos:
+        args.cmake_options += " -DKokkos_DIR={}".format(args.kokkos)
 
-    args.cmake_options += " -DCMAKE_BUILD_TYPE=Release -DKokkos_DIR={}".format(args.kokkos)
     if args.cxx:
         args.cmake_options += " -DCMAKE_CXX_COMPILER={}".format(args.cxx)
 
