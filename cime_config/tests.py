@@ -210,7 +210,7 @@ _TESTS = {
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
-        "tests"   : "SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6"
+        "tests"   : "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6"
         },
 
     #e3sm tests to mimic BGC production runs
