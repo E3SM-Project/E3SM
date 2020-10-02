@@ -3986,7 +3986,7 @@ subroutine pblintd_init_pot(&
     do k=1,nlev
       do i=1,shcol
         th=thl(i,k)+(lcond/cp)*ql(i,k)
-        thv(i,k)=th+(1._rtype+eps*q(i,k)-ql(i,k))
+        thv(i,k)=th*(1._rtype+eps*q(i,k)-ql(i,k))
       enddo
     enddo
 
