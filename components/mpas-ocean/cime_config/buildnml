@@ -220,13 +220,13 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2-1900_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
