@@ -77,7 +77,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Load input data
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
         SDS.thetal[offset] = thetal[n];
         SDS.qw[offset] = qw[n];
@@ -88,7 +88,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       }
 
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         SDS.thl_sec[offset] = 0;
         SDS.qw_sec[offset] = 0;
@@ -124,14 +124,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev - 1; ++n) {
         const auto offset = n + s * nlev;
-        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
-        REQUIRE(SDS.pres[offset + 1] - SDS.pres[offset] > 0.0);
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        REQUIRE(SDS.pres[offset + 1] - SDS.pres[offset] > 0);
       }
 
       // Check that zi increase upward
       for(Int n = 0; n < nlevi - 1; ++n) {
         const auto offset = n + s * nlevi;
-        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
+        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
 
     }
@@ -195,10 +195,10 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE( (SDS.shoc_cldfrac[offset] == 0  || SDS.shoc_cldfrac[offset] == 1) );
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] != 0);
-	REQUIRE(std::abs(SDS.wthv_sec[offset] < wthv_sec_bound));
+        REQUIRE(std::abs(SDS.wthv_sec[offset] < wthv_sec_bound));
         REQUIRE(SDS.shoc_ql2[offset] == 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
-	REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
+        REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
       }
     }
 
@@ -317,7 +317,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Load input data
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         SDS.w3[offset] = s*-1.0;
       }

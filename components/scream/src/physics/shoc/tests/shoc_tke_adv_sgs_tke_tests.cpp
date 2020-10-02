@@ -71,25 +71,25 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.shoc_mix[offset] = shoc_mix_gr[s];
-	SDS.wthv_sec[offset] = wthv_sec_gr[s];
-	SDS.sterm_zt[offset] = sterm_gr[s];
-	SDS.tke[offset] = tke_init_gr[s];
+        SDS.shoc_mix[offset] = shoc_mix_gr[s];
+        SDS.wthv_sec[offset] = wthv_sec_gr[s];
+        SDS.sterm_zt[offset] = sterm_gr[s];
+        SDS.tke[offset] = tke_init_gr[s];
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// time step, mixing length, TKE values,
-	// shear terms should all be greater than zero
-	REQUIRE(SDS.dtime > 0);
-	REQUIRE(SDS.shoc_mix[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);
-	REQUIRE(SDS.sterm_zt[offset] >= 0);
+        const auto offset = n + s * nlev;
+        // time step, mixing length, TKE values,
+        // shear terms should all be greater than zero
+        REQUIRE(SDS.dtime > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.sterm_zt[offset] >= 0);
       }
     }
 
@@ -100,22 +100,22 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     //  TKE growth
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// Require output to fall within reasonable bounds
-	REQUIRE(SDS.tke[offset] >= mintke);
-	REQUIRE(SDS.tke[offset] <= maxtke);
-	REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
-	REQUIRE(SDS.a_diss[offset] >= 0);
+        // Require output to fall within reasonable bounds
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
+        REQUIRE(SDS.a_diss[offset] >= 0);
 
-	if (s == 0){
+        if (s == 0){
           // Growth check
           REQUIRE(SDS.tke[offset] > tke_init_gr[s]);
-	}
-	else{
+        }
+        else{
           // Decay check
           REQUIRE(SDS.tke[offset] < tke_init_gr[s]);
-	}
+        }
       }
     }
 
@@ -136,25 +136,25 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.shoc_mix[offset] = shoc_mix_diss[s];
-	SDS.wthv_sec[offset] = wthv_sec_diss;
-	SDS.sterm_zt[offset] = sterm_diss;
-	SDS.tke[offset] = tke_init_diss;
+        SDS.shoc_mix[offset] = shoc_mix_diss[s];
+        SDS.wthv_sec[offset] = wthv_sec_diss;
+        SDS.sterm_zt[offset] = sterm_diss;
+        SDS.tke[offset] = tke_init_diss;
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// time step, mixing length, TKE values,
-	// shear terms should all be greater than zero
-	REQUIRE(SDS.dtime > 0);
-	REQUIRE(SDS.shoc_mix[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);
-	REQUIRE(SDS.sterm_zt[offset] >= 0);
+        const auto offset = n + s * nlev;
+        // time step, mixing length, TKE values,
+        // shear terms should all be greater than zero
+        REQUIRE(SDS.dtime > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.sterm_zt[offset] >= 0);
       }
     }
 
@@ -168,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Require output to fall within reasonable bounds
     for (Int s = 0; s < shcol; ++s){
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
         REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
         REQUIRE(SDS.a_diss[offset] >= 0);
       }
@@ -176,15 +176,15 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
 
     for(Int s = 0; s < shcol-1; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * nlev;
-	if(SDS.shoc_mix[offset] > SDS.shoc_mix[offsets]){
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if(SDS.shoc_mix[offset] > SDS.shoc_mix[offsets]){
           REQUIRE(SDS.a_diss[offset] < SDS.a_diss[offsets]);
-	}
-	else {
+        }
+        else {
           REQUIRE(SDS.a_diss[offset] > SDS.a_diss[offsets]);
-	}
+        }
       }
     }
   }

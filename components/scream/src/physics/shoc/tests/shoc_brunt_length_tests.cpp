@@ -115,7 +115,7 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
 
         // Validate that values fall within some
         //  reasonable bounds for this variable.
-	REQUIRE(std::abs(SDS.brunt[offset]) < brunt_bound);
+        REQUIRE(std::abs(SDS.brunt[offset]) < brunt_bound);
       }
     }
   }

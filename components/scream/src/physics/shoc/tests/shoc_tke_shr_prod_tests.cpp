@@ -63,16 +63,16 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.u_wind[offset] = u_wind_shr[n];
-	SDS.v_wind[offset] = v_wind_shr[n];
+        SDS.u_wind[offset] = u_wind_shr[n];
+        SDS.v_wind[offset] = v_wind_shr[n];
       }
 
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset   = n + s * nlevi;
-	SDS.dz_zi[offset] = dz_zi[n];
+        const auto offset   = n + s * nlevi;
+        SDS.dz_zi[offset] = dz_zi[n];
       }
     }
 
@@ -80,15 +80,15 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
-	// Make sure top level dz_zi value is zero
-	if (n == 0){
+        const auto offset = n + s * nlevi;
+        // Make sure top level dz_zi value is zero
+        if (n == 0){
           REQUIRE(SDS.dz_zi[offset] == 0);
-	}
-	// Otherwise, should be greater than zero
-	else{
+        }
+        // Otherwise, should be greater than zero
+        else{
           REQUIRE(SDS.dz_zi[offset] > 0);
-	}
+        }
       }
     }
 
@@ -101,23 +101,23 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
       //  zero for non boundary points, but exactly zero
       //  for boundary points.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
-	// Make sure output falls within reasonable bound
-	REQUIRE(SDS.sterm[offset] < sterm_upper_bound);
-	if (n == 0 || n == nlevi-1){
+        const auto offset = n + s * nlevi;
+        // Make sure output falls within reasonable bound
+        REQUIRE(SDS.sterm[offset] < sterm_upper_bound);
+        if (n == 0 || n == nlevi-1){
           // Boundary point check
           REQUIRE(SDS.sterm[offset] == 0);
-	}
-	else{
+        }
+        else{
           REQUIRE(SDS.sterm[offset] > 0);
-	}
+        }
       }
       // Now validate that shear term is ALWAYS
       //  decreasing with height for these inputs, keeping
       //  in mind to exclude boundary points, which should be zero
       for(Int n = 1; n < nlevi-2; ++n){
-	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.sterm[offset]-SDS.sterm[offset+1] < 0);
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.sterm[offset]-SDS.sterm[offset+1] < 0);
       }
     }
 
@@ -134,10 +134,10 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.u_wind[offset] = u_wind_cons;
-	SDS.v_wind[offset] = v_wind_cons;
+        SDS.u_wind[offset] = u_wind_cons;
+        SDS.v_wind[offset] = v_wind_cons;
       }
     }
 
@@ -148,8 +148,8 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     // Verify that shear term is zero everywhere
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.sterm[offset] == 0);
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.sterm[offset] == 0);
       }
     }
   }

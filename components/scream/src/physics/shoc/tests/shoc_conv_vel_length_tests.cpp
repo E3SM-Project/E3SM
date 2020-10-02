@@ -69,16 +69,16 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.dz_zt[offset] = dz_zt[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.thv[offset] = thv[n];
-	SDS.wthv_sec[offset] = wthv_sec[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.thv[offset] = thv[n];
+        SDS.wthv_sec[offset] = wthv_sec[n];
         // for the second column, give negative values
-	if (s == 1){
-	  SDS.wthv_sec[offset] = -1*SDS.wthv_sec[offset];
-	}
+        if (s == 1){
+          SDS.wthv_sec[offset] = -1*SDS.wthv_sec[offset];
+        }
       }
     }
 
@@ -86,21 +86,21 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Be sure that relevant variables are greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.thv[offset] > 0);
-	// Make sure sign of buoyancy flux is as expected
-	if (s == 0){
-	  REQUIRE(SDS.wthv_sec[offset] > 0);
-	}
-	else{
+        const auto offset = n + s * nlev;
+        // Be sure that relevant variables are greater than zero
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.thv[offset] > 0);
+        // Make sure sign of buoyancy flux is as expected
+        if (s == 0){
+          REQUIRE(SDS.wthv_sec[offset] > 0);
+        }
+        else{
           REQUIRE(SDS.wthv_sec[offset] < 0);
-	}
-	if (n < nlev-1){
+        }
+        if (n < nlev-1){
           // check that zt increases upward
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
-	}
+        }
       }
     }
 
@@ -133,11 +133,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     // Fill in new test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.dz_zt[offset] = dz_zt_sym[n];
-	SDS.thv[offset] = thv_sym[n];
-	SDS.wthv_sec[offset] = wthv_sec_sym[n];
+        SDS.dz_zt[offset] = dz_zt_sym[n];
+        SDS.thv[offset] = thv_sym[n];
+        SDS.wthv_sec[offset] = wthv_sec_sym[n];
       }
     }
 
@@ -146,11 +146,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     for(Int s = 0; s < shcol; ++s) {
       Real wthv_sum = 0;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Be sure that relevant variables are greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.thv[offset] > 0);
-	wthv_sum += SDS.wthv_sec[offset];
+        const auto offset = n + s * nlev;
+        // Be sure that relevant variables are greater than zero
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.thv[offset] > 0);
+        wthv_sum += SDS.wthv_sec[offset];
       }
       // Make sure inputs of buoyancy flux sum to zero
       REQUIRE(wthv_sum == approx_zero);

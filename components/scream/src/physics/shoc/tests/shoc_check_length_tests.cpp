@@ -84,7 +84,7 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] >= minlen);
-	REQUIRE(SDS.shoc_mix[offset] <= maxlen);
+        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
       }
     }

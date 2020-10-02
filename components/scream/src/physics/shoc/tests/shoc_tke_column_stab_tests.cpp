@@ -54,23 +54,23 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.dz_zt[offset] = dz_zt[n];
-	SDS.pres[offset] = pres[n];
-	SDS.brunt[offset] = brunt_sym[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.pres[offset] = pres[n];
+        SDS.brunt[offset] = brunt_sym[n];
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// Should be greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	// Make sure all pressure levels are in the
-	//  lower troposphere for this test
-	REQUIRE(SDS.pres[offset] > 80000);
+        const auto offset = n + s * nlev;
+        // Should be greater than zero
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        // Make sure all pressure levels are in the
+        //  lower troposphere for this test
+        REQUIRE(SDS.pres[offset] > 80000);
       }
     }
 
@@ -93,16 +93,16 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	SDS.brunt[offset] = brunt_neg[n];
+        const auto offset = n + s * nlev;
+        SDS.brunt[offset] = brunt_neg[n];
       }
     }
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// All points should be less than zero
-	REQUIRE(SDS.brunt[offset] < 0);
+        const auto offset = n + s * nlev;
+        // All points should be less than zero
+        REQUIRE(SDS.brunt[offset] < 0);
       }
     }
 

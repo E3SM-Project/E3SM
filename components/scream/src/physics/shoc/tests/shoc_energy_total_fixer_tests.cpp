@@ -82,17 +82,17 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
 
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// For zt grid, set as midpoint of zi grid
-	SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-	SDS.rho_zt[offset] = rho_zt[n];
+        // For zt grid, set as midpoint of zi grid
+        SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+        SDS.rho_zt[offset] = rho_zt[n];
       }
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	SDS.zi_grid[offset] = zi_grid[n];
+        SDS.zi_grid[offset] = zi_grid[n];
       }
     }
 
@@ -100,25 +100,25 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zt_grid[offset] >= 0);
-	REQUIRE(SDS.rho_zt[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] >= 0);
+        REQUIRE(SDS.rho_zt[offset] > 0);
 
-	// Check that heights increase upward
-	if (n > nlev-1){
+        // Check that heights increase upward
+        if (n > nlev-1){
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
-	}
+        }
       }
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	REQUIRE(SDS.zi_grid[offset] >= 0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
 
-	// Check that heights increase upward
-	if (n > nlevi-1){
+        // Check that heights increase upward
+        if (n > nlevi-1){
           REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
-	}
+        }
       }
     }
 

@@ -30,18 +30,18 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 
     // Tests for the SHOC function:
     //   compute_diag_third_shoc_moment
-    
+
     // Mid-level function for w3
-    
+
     // convective boundary layer test
     //  Feed in profiles that are representative of a convective boundary
     //  layer and verify that results are as expected i.e. boundary points
     //  are good and there is at least one point that has a positive w3 value.
     //  In addition, the profiles being fed in below are completely reasonable
     //  so will also verify that w3 falls within some reasonable bounds.
-    
+
     // IN ADDITION will feed subsequent columns values with increasing
-    //  scalar fluxes.  The w3 term is proportional to these, thus we need to 
+    //  scalar fluxes.  The w3 term is proportional to these, thus we need to
     //  verify that as the scalar fluxes increase that the absolute value of
     //  w3 increases, given all other inputs are the same.
 
@@ -59,7 +59,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     static constexpr Real brunt_zi[nlevi] = {4e-5, 3e-5, 3e-5, 2e-5, 2e-5, -1e-5};
     // Define the potential temperature on zi grid [K]
     static constexpr Real thetal_zi[nlevi] = {330, 325, 320, 310, 300, 301};
-    
+
     // Define TKE [m2/s2], compute from w_sec
     Real tke[nlev];
 
@@ -92,99 +92,96 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
     REQUIRE(SDS.nlevi() == SDS.nlev()+1);
     REQUIRE(shcol > 1);
-    
+
     // Load up the new data
-    for(Int s = 0; s < shcol; ++s) { 
-      // Fill in test data on zt_grid.     
+    for(Int s = 0; s < shcol; ++s) {
+      // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-	
+
         SDS.w_sec[offset] = w_sec[n];
         SDS.dz_zt[offset] = dz_zt[n];
         SDS.tke[offset] = tke[n];
-	
+
       }
 
-      // Fill in test data on zi_grid.     
+      // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         SDS.dz_zi[offset] = dz_zi[n];
         SDS.thl_sec[offset] = (s+1)*thl_sec[n];
         SDS.wthl_sec[offset] = wthl_sec[n];
-	
+
         SDS.w_sec_zi[offset] = w_sec_zi[n];
         SDS.isotropy_zi[offset] = isotropy_zi[n];
         SDS.brunt_zi[offset] = brunt_zi[n];
         SDS.thetal_zi[offset] = thetal_zi[n];
-	
+
       }
-    }      
+    }
 
     // Check that the inputs make sense
     // Load up the new data
-    for(Int s = 0; s < shcol; ++s) { 
-      // Fill in test data on zt_grid.    
+    for(Int s = 0; s < shcol; ++s) {
+      // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-	
+
         REQUIRE(SDS.w_sec[offset] >= 0);
         REQUIRE(SDS.dz_zt[offset] > 0);
-        REQUIRE(SDS.tke[offset] > 0);  
+        REQUIRE(SDS.tke[offset] > 0);
       }
-      
+
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         REQUIRE(SDS.dz_zi[offset] >= 0);
         REQUIRE(SDS.thl_sec[offset] >= 0);
         REQUIRE(SDS.w_sec_zi[offset] >= 0);
         REQUIRE(SDS.isotropy_zi[offset] >= 0);
         REQUIRE(SDS.thetal_zi[offset] >= 0);
-	
-      }    
-      
+      }
     }
 
     // Call the fortran implementation
     compute_diag_third_shoc_moment(SDS);
-    
+
     // Check the result
-    
+
     // Check to make sure there is at least one
     //  positive w3 value for convective boundary layer
     bool is_skew;
     // Verify that boundary points are zero
-    for(Int s = 0; s < shcol; ++s) { 
+    for(Int s = 0; s < shcol; ++s) {
       is_skew = false; // Initialize
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         //offset for "neighboring" column
         const auto offsets = n + (s+1) * nlevi;
-	
+
         // Given this profile, values should fall within
         //  reasonable bounds
         REQUIRE(abs(SDS.w3[offset]) < 10);
-	
+
         if (n == 0 || n == nlevi-1){
           REQUIRE(SDS.w3[n] == 0);
         }
-	
+
         if (SDS.w3[offset] > 0){
           is_skew = true;
         }
-	
-        // Verify points increase in magnitude as 
+
+        // Verify points increase in magnitude as
         //  scalar variances increase
-        if (s < shcol-1 && n != 0 && n != nlevi-1){ 
+        if (s < shcol-1 && n != 0 && n != nlevi-1){
           REQUIRE(std::abs(SDS.w3[offsets]) > std::abs(SDS.w3[offset]));
         }
-	    
       }
       // Verify each column has at least one positive vertical
       //   velocity skewness value
       REQUIRE(is_skew == true);
-    }    
+    }
 
   }
 

@@ -59,15 +59,15 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for(Int s = 0; s < shcol; ++s) {
       SDS.phis[s] = phis;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.thlm[offset] = thlm[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.exner[offset] = exner[n];
+        SDS.thlm[offset] = thlm[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.exner[offset] = exner[n];
 
-	// Force the first column of cloud liquid
-	//   to be zero!
-	SDS.shoc_ql[offset] = s*shoc_ql[n];
+        // Force the first column of cloud liquid
+        //   to be zero!
+        SDS.shoc_ql[offset] = s*shoc_ql[n];
 
       }
     }
@@ -77,27 +77,27 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.phis[s] >= 0.0);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.thlm[offset] > 0);
-	REQUIRE(SDS.shoc_ql[offset] >= 0);
-	REQUIRE(SDS.exner[offset] > 0);
-	REQUIRE(SDS.zt_grid[offset] >= 0);
+        REQUIRE(SDS.thlm[offset] > 0);
+        REQUIRE(SDS.shoc_ql[offset] >= 0);
+        REQUIRE(SDS.exner[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] >= 0);
 
-	// make sure the two columns are different and
-	//  as expected for the relevant variables
-	if (s == 0){
+        // make sure the two columns are different and
+        //  as expected for the relevant variables
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
           REQUIRE(SDS.shoc_ql[offset] == 0);
           REQUIRE(SDS.shoc_ql[offsets] > SDS.shoc_ql[offset]);
-	}
+        }
 
-	// Check that heights and thlm increase upward
-	if (n < nlev-1){
+        // Check that heights and thlm increase upward
+        if (n < nlev-1){
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
-	  REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0);
-	}
+          REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0);
+        }
 
       }
     }
@@ -108,20 +108,20 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     // Check test
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Verify dse is reasonable
-	REQUIRE(SDS.host_dse[offset] > 0);
+        const auto offset = n + s * nlev;
+        // Verify dse is reasonable
+        REQUIRE(SDS.host_dse[offset] > 0);
 
-	// Verify that dse increases with height upward
-	if (n < nlev-1){
+        // Verify that dse increases with height upward
+        if (n < nlev-1){
           REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
-	}
+        }
 
-	// Verify that dse is greater in points with condensate loading
-	if (s == 0){
+        // Verify that dse is greater in points with condensate loading
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
-	  REQUIRE(SDS.host_dse[offsets] > SDS.host_dse[offset]);
-	}
+          REQUIRE(SDS.host_dse[offsets] > SDS.host_dse[offset]);
+        }
       }
     }
   }

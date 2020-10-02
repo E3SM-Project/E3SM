@@ -64,22 +64,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// Add one degree K in the second column
-	SDS.host_dse[offset] = s+host_dse[n];
+        // Add one degree K in the second column
+        SDS.host_dse[offset] = s+host_dse[n];
 
-	// Force the first column of cloud liquid
-	//   to be zero!
-	SDS.rcm[offset] = s*rcm[n];
-	SDS.rtm[offset] = rtm[n];
+        // Force the first column of cloud liquid
+        //   to be zero!
+        SDS.rcm[offset] = s*rcm[n];
+        SDS.rtm[offset] = rtm[n];
 
-	// convert to Pa
-	SDS.pdel[offset] = pdel[n];
+        // convert to Pa
+        SDS.pdel[offset] = pdel[n];
 
-	// Increase winds with increasing columns
-	SDS.u_wind[offset] = (1.0+s)*u_wind[n];
-	SDS.v_wind[offset] = (1.0+s)*v_wind[n];
+        // Increase winds with increasing columns
+        SDS.u_wind[offset] = (1.0+s)*u_wind[n];
+        SDS.v_wind[offset] = (1.0+s)*v_wind[n];
       }
     }
 
@@ -87,22 +87,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.host_dse[offset] > 0);
-	REQUIRE(SDS.rcm[offset] >= 0);
-	REQUIRE(SDS.rtm[offset] > 0);
+        REQUIRE(SDS.host_dse[offset] > 0);
+        REQUIRE(SDS.rcm[offset] >= 0);
+        REQUIRE(SDS.rtm[offset] > 0);
 
-	// make sure the two columns are different and
-	//  as expected for the relevant variables
-	if (s == 0){
+        // make sure the two columns are different and
+        //  as expected for the relevant variables
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
           REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
           REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
           REQUIRE(SDS.rcm[offset] == 0);
           REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
-	}
+        }
       }
     }
 
@@ -118,10 +118,10 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
       REQUIRE(SDS.wl_int[s] >= 0);
       // Do column comparison tests
       if (s == 0){
-	REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
-	REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
-	REQUIRE(SDS.wl_int[s] == 0);
-	REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
+        REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
+        REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
+        REQUIRE(SDS.wl_int[s] == 0);
+        REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
       }
     }
   }

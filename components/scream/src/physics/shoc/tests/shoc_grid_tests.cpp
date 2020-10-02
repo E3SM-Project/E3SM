@@ -49,16 +49,16 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.zt_grid[offset] = zt_pts[n];
-	SDS.pdel[offset]    = density_zt[n] * gravit * (zi_pts[n]-zi_pts[n+1]);
+        SDS.zt_grid[offset] = zt_pts[n];
+        SDS.pdel[offset]    = density_zt[n] * gravit * (zi_pts[n]-zi_pts[n+1]);
       }
 
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset   = n + s * nlevi;
-	SDS.zi_grid[offset] = zi_pts[n];
+        const auto offset   = n + s * nlevi;
+        SDS.zi_grid[offset] = zi_pts[n];
       }
     }
 
@@ -67,14 +67,14 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     // Check that zt decreases upward
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev - 1; ++n) {
-	const auto offset = n + s * nlev;
-	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
       }
 
       // Check that zi decreases upward
       for(Int n = 0; n < nlevi - 1; ++n) {
-	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
     }
 
@@ -85,10 +85,10 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     for(Int s = 0; s < shcol; ++s) {
       Real zt_sum = 0;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.dz_zt[offset] == zi_pts[n] - zi_pts[n+1]);
-	zt_sum += SDS.dz_zt[offset];
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.dz_zt[offset] == zi_pts[n] - zi_pts[n+1]);
+        zt_sum += SDS.dz_zt[offset];
       }
       // Check that the sum of dz_zt is equal to the largest zi
       REQUIRE(zt_sum == SDS.zi_grid[0]);
@@ -101,10 +101,10 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
 
       Real zi_sum = 0;
       for(Int n = 1; n < nlevi - 1; ++n) {
-	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.dz_zi[offset] > 0.0);
-	REQUIRE(SDS.dz_zi[offset] == zt_pts[n-1] - zt_pts[n]);
-	zi_sum += SDS.dz_zi[offset];
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.dz_zi[offset] > 0.0);
+        REQUIRE(SDS.dz_zi[offset] == zt_pts[n-1] - zt_pts[n]);
+        zi_sum += SDS.dz_zi[offset];
       }
       // Check that the sum of dz_zi is equal to the largest zt
       zi_sum += SDS.dz_zi[nlevi - 1];
@@ -114,14 +114,14 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     // Now check density
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// check that the density is consistent with the hydrostatic approximation
-	REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
+        // check that the density is consistent with the hydrostatic approximation
+        REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
 
-	// check that the density has physically realistic values
-	REQUIRE(SDS.rho_zt[offset] <= 2);
-	REQUIRE(SDS.rho_zt[offset] > 0);
+        // check that the density has physically realistic values
+        REQUIRE(SDS.rho_zt[offset] <= 2);
+        REQUIRE(SDS.rho_zt[offset] > 0);
       }
     }
   }

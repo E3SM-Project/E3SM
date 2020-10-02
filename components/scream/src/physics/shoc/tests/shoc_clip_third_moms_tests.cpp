@@ -55,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
         const auto offset = n + s * nlevi;
 
         SDS.w_sec_zi[offset] = w_sec_zi[n];
-	SDS.w3[offset] = w3_in[n];
+        SDS.w3[offset] = w3_in[n];
       }
     }
 
@@ -72,11 +72,11 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
         const auto offset = n + s * nlevi;
 
         REQUIRE(SDS.w_sec_zi[offset] <= 1);
-	if (abs(SDS.w3[offset]) > 1000){
-	  w3_large = true;
-	}
+        if (abs(SDS.w3[offset]) > 1000){
+          w3_large = true;
+        }
         SDS.w_sec_zi[offset] = w_sec_zi[n];
-	SDS.w3[offset] = w3_in[n];
+        SDS.w3[offset] = w3_in[n];
       }
       REQUIRE(w3_large == true);
     }
@@ -91,12 +91,12 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-	if (abs(w3_in[n]) > 1000){
-	  REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
-	  if (w3_in[n] < 0){
-	    REQUIRE(SDS.w3[offset] < 0);
-	  }
-	}
+        if (abs(w3_in[n]) > 1000){
+          REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
+          if (w3_in[n] < 0){
+            REQUIRE(SDS.w3[offset] < 0);
+          }
+        }
 
       }
     }

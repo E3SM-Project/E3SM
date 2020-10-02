@@ -89,23 +89,23 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
       SDS.pblh[s] = pblh;
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// for subsequent columns, increase TKE
-	SDS.tke[offset] = (s+1)*tke[n];
+        // for subsequent columns, increase TKE
+        SDS.tke[offset] = (s+1)*tke[n];
 
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.thv[offset] = thv[n];
-	SDS.wthv_sec[offset] = wthv_sec[n];
-	SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.thv[offset] = thv[n];
+        SDS.wthv_sec[offset] = wthv_sec[n];
+        SDS.dz_zt[offset] = dz_zt[n];
       }
 
       // Fill in test data on zi_grid
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	SDS.zi_grid[offset] = zi_grid[n];
-	SDS.dz_zi[offset] = dz_zi[n];
+        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.dz_zi[offset] = dz_zi[n];
       }
     }
 
@@ -116,26 +116,26 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zt_grid[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);
-	REQUIRE(SDS.thv[offset] > 0);
-	REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.thv[offset] > 0);
+        REQUIRE(SDS.dz_zt[offset] > 0);
 
-	// Make sure TKE is larger in next column over
-	if (s < shcol-1){
-	  // get offset for "neighboring" column
-	  const auto offsets = n + (s+1) * nlev;
-	  REQUIRE(SDS.tke[offsets] > SDS.tke[offset]);
-	}
+        // Make sure TKE is larger in next column over
+        if (s < shcol-1){
+          // get offset for "neighboring" column
+          const auto offsets = n + (s+1) * nlev;
+          REQUIRE(SDS.tke[offsets] > SDS.tke[offset]);
+        }
       }
 
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zi_grid[offset] >= 0);
-	REQUIRE(SDS.dz_zi[offset] >= 0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
+        REQUIRE(SDS.dz_zi[offset] >= 0);
       }
     }
 
@@ -149,23 +149,23 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] >= minlen);
-	REQUIRE(SDS.shoc_mix[offset] <= maxlen);
+        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
 
-	// Be sure brunt vaisalla frequency is reasonable
-	REQUIRE(std::abs(SDS.brunt[offset]) < 1);
+        // Be sure brunt vaisalla frequency is reasonable
+        REQUIRE(std::abs(SDS.brunt[offset]) < 1);
 
-	// Make sure length scale is larger when TKE is larger
-	if (s < shcol-1){
-	  // get offset for "neighboring" column
-	  const auto offsets = n + (s+1) * nlev;
-	  if (SDS.tke[offsets] > SDS.tke[offset]){
-	    REQUIRE(SDS.shoc_mix[offsets] > SDS.shoc_mix[offset]);
-	  }
-	  else{
-	    REQUIRE(SDS.shoc_mix[offsets] < SDS.shoc_mix[offset]);
-	  }
-	}
+        // Make sure length scale is larger when TKE is larger
+        if (s < shcol-1){
+          // get offset for "neighboring" column
+          const auto offsets = n + (s+1) * nlev;
+          if (SDS.tke[offsets] > SDS.tke[offset]){
+            REQUIRE(SDS.shoc_mix[offsets] > SDS.shoc_mix[offset]);
+          }
+          else{
+            REQUIRE(SDS.shoc_mix[offsets] < SDS.shoc_mix[offset]);
+          }
+        }
       }
     }
 
@@ -198,7 +198,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] > 0);
-	REQUIRE(SDS.shoc_mix[offset] <= maxlen);
+        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh_small);
       }
     }

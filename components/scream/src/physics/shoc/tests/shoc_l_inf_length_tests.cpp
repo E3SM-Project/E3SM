@@ -55,14 +55,14 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.dz_zt[offset] = dz_zt[n];
-	// Testing identical columns but one with larger zt heights.
-	//  first column set as "base" column, and the others
-	//  to a larger value of TKE uniformly.
-	SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];
-	SDS.tke[offset] = tke[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        // Testing identical columns but one with larger zt heights.
+        //  first column set as "base" column, and the others
+        //  to a larger value of TKE uniformly.
+        SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];
+        SDS.tke[offset] = tke[n];
       }
     }
 
@@ -70,20 +70,20 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Be sure that relevant variables are greater than zero
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);
-	REQUIRE(SDS.zt_grid[offset] > 0);
-	if (n < nlev-1){
+        const auto offset = n + s * nlev;
+        // Be sure that relevant variables are greater than zero
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        if (n < nlev-1){
           // check that zt increases upward
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
-	}
-	if (s < shcol-1){
+        }
+        if (s < shcol-1){
           // Verify that zt_grid is offset larger column by column
           const auto offsets = n + (s+1) * nlev;
-	  REQUIRE(SDS.zt_grid[offset] < SDS.zt_grid[offsets]);
-	}
+          REQUIRE(SDS.zt_grid[offset] < SDS.zt_grid[offsets]);
+        }
       }
     }
 

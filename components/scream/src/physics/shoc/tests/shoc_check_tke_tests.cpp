@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_input[n];
+        SDS.tke[offset] = tke_input[n];
       }
     }
 
@@ -59,14 +59,14 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-	// if input TKE was less than zero, verify it was adjusted
-	if (tke_input[n] < 0){
-	  REQUIRE(SDS.tke[offset] >= mintke);
-	}
-	// Else make sure TKE remains untouched
-	else{
-	  REQUIRE(SDS.tke[offset] == tke_input[n]);
-	}
+        // if input TKE was less than zero, verify it was adjusted
+        if (tke_input[n] < 0){
+          REQUIRE(SDS.tke[offset] >= mintke);
+        }
+        // Else make sure TKE remains untouched
+        else{
+          REQUIRE(SDS.tke[offset] == tke_input[n]);
+        }
       }
     }
 

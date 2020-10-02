@@ -97,25 +97,25 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       SDS.pblh[s] = pblh;
       SDS.obklen[s] = obklen;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.wthv_sec[offset] = wthv_sec[n];
-	SDS.shoc_mix[offset] = shoc_mix[n];
-	SDS.u_wind[offset] = u_wind[n];
-	SDS.v_wind[offset] = v_wind[n];
-	SDS.dz_zt[offset] = dz_zt[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.pres[offset] = pres[n];
-	SDS.tke[offset] = tke_init[n];
-	SDS.tkh[offset] = tkh[n];
-	SDS.tk[offset] = tk[n];
+        SDS.wthv_sec[offset] = wthv_sec[n];
+        SDS.shoc_mix[offset] = shoc_mix[n];
+        SDS.u_wind[offset] = u_wind[n];
+        SDS.v_wind[offset] = v_wind[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.pres[offset] = pres[n];
+        SDS.tke[offset] = tke_init[n];
+        SDS.tkh[offset] = tkh[n];
+        SDS.tk[offset] = tk[n];
       }
 
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset   = n + s * nlevi;
-	SDS.dz_zi[offset] = dz_zi[n];
-	SDS.zi_grid[offset] = zi_grid[n];
+        const auto offset   = n + s * nlevi;
+        SDS.dz_zi[offset] = dz_zi[n];
+        SDS.zi_grid[offset] = zi_grid[n];
       }
     }
 
@@ -124,33 +124,33 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     for(Int s = 0; s < shcol; ++s) {
       // nlevi loop
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
-	// Make sure top level dz_zi value is zero
-	if (n == 0){
+        const auto offset = n + s * nlevi;
+        // Make sure top level dz_zi value is zero
+        if (n == 0){
           REQUIRE(SDS.dz_zi[offset] == 0);
-	}
-	// Otherwise, should be greater than zero
-	else{
+        }
+        // Otherwise, should be greater than zero
+        else{
           REQUIRE(SDS.dz_zi[offset] > 0);
-	}
-	// Check that zi increases updward
-	if (n < nlevi-1){
-	  REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
-	}
+        }
+        // Check that zi increases updward
+        if (n < nlevi-1){
+          REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+        }
       }
       // nlev loop
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// Check that zt increases upward
-	if (n < nlev-1){
-	  REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
-	}
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.shoc_mix[offset] > 0);
-	REQUIRE(SDS.tke[offset] >= mintke);
-	REQUIRE(SDS.tkh[offset] > 0);
-	REQUIRE(SDS.tk[offset] > 0);
-	REQUIRE(SDS.pres[offset] > 0);
+        const auto offset = n + s * nlev;
+        // Check that zt increases upward
+        if (n < nlev-1){
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        }
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tkh[offset] > 0);
+        REQUIRE(SDS.tk[offset] > 0);
+        REQUIRE(SDS.pres[offset] > 0);
       }
     }
 
@@ -167,15 +167,15 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	REQUIRE(SDS.tke[offset] > tke_init[n]);
-	REQUIRE(SDS.tke[offset] >= mintke);
-	REQUIRE(SDS.tke[offset] <= maxtke);
-	REQUIRE(SDS.tkh[offset] > 0);
-	REQUIRE(SDS.tk[offset] > 0);
-	REQUIRE(SDS.isotropy[offset] >= 0);
-	REQUIRE(SDS.isotropy[offset] <= maxiso);
-	tke_test1[offset] = SDS.tke[offset];
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.tke[offset] > tke_init[n]);
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.tkh[offset] > 0);
+        REQUIRE(SDS.tk[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] >= 0);
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
+        tke_test1[offset] = SDS.tke[offset];
       }
     }
 
@@ -201,12 +201,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.wthv_sec[offset] = wthv_sec_decay[n];
-	SDS.shoc_mix[offset] = shoc_mix_decay[n];
-	SDS.u_wind[offset] = u_wind_decay[n];
-	SDS.v_wind[offset] = v_wind_decay[n];
+        SDS.wthv_sec[offset] = wthv_sec_decay[n];
+        SDS.shoc_mix[offset] = shoc_mix_decay[n];
+        SDS.u_wind[offset] = u_wind_decay[n];
+        SDS.v_wind[offset] = v_wind_decay[n];
 
       }
     }
@@ -214,16 +214,16 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     for(Int s = 0; s < shcol; ++s) {
       // nlev loop
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// be sure wind has no gradient
-	if (n < nlev-1){
-	  REQUIRE(SDS.u_wind[offset + 1] - SDS.u_wind[offset] == 0);
-	  REQUIRE(SDS.v_wind[offset + 1] - SDS.v_wind[offset] == 0);
-	}
-	// Be sure that buoyancy flux is less than zero
-	REQUIRE(SDS.wthv_sec[offset] < 0);
-	// Be sure length scale is reasonably small
-	REQUIRE(SDS.shoc_mix[offset] <= 100);
+        const auto offset = n + s * nlev;
+        // be sure wind has no gradient
+        if (n < nlev-1){
+          REQUIRE(SDS.u_wind[offset + 1] - SDS.u_wind[offset] == 0);
+          REQUIRE(SDS.v_wind[offset + 1] - SDS.v_wind[offset] == 0);
+        }
+        // Be sure that buoyancy flux is less than zero
+        REQUIRE(SDS.wthv_sec[offset] < 0);
+        // Be sure length scale is reasonably small
+        REQUIRE(SDS.shoc_mix[offset] <= 100);
       }
     }
 
@@ -235,14 +235,14 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Verify ALL outputs are reasonable and that TKE has decayed
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	REQUIRE(SDS.tke[offset] < tke_test1[offset]);
-	REQUIRE(SDS.tke[offset] >= mintke);
-	REQUIRE(SDS.tke[offset] <= maxtke);
-	REQUIRE(SDS.tkh[offset] > 0);
-	REQUIRE(SDS.tk[offset] > 0);
-	REQUIRE(SDS.isotropy[offset] >= 0);
-	REQUIRE(SDS.isotropy[offset] <= maxiso);
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.tke[offset] < tke_test1[offset]);
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.tkh[offset] > 0);
+        REQUIRE(SDS.tk[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] >= 0);
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
       }
     }
 

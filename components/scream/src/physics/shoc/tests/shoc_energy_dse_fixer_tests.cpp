@@ -60,9 +60,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
       SDS.shoctop[s] = shoctop[s];
       SDS.se_dis[s] = se_dis;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.host_dse[offset] = host_dse_input[n];
+        SDS.host_dse[offset] = host_dse_input[n];
       }
     }
 
@@ -74,9 +74,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
       REQUIRE(SDS.shoctop[s] >= 1);
       REQUIRE(SDS.shoctop[s] <= nlev);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.host_dse[offset] > 0.0);
+        REQUIRE(SDS.host_dse[offset] > 0.0);
       }
     }
 

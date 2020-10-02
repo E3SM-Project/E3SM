@@ -64,15 +64,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
       SDS.te_a[s] = te_a;
       SDS.te_b[s] = te_b;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_input[n];
+        SDS.tke[offset] = tke_input[n];
       }
 
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	SDS.pint[offset] = pint[n];
+        SDS.pint[offset] = pint[n];
       }
     }
 
@@ -80,9 +80,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] >= mintke);
       }
     }
 

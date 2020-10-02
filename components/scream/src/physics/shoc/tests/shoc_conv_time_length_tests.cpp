@@ -109,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  column, that the tscale is larger
     for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
-	REQUIRE(SDS.conv_vel[s] < SDS.conv_vel[s+1]);
+        REQUIRE(SDS.conv_vel[s] < SDS.conv_vel[s+1]);
       }
     }
 
@@ -154,7 +154,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  neighboring column, that the PBL depth is larger
     for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
-	REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
+        REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
       }
     }
 
