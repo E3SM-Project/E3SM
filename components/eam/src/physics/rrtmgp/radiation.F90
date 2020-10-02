@@ -36,8 +36,7 @@ module radiation
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts, &
       initialize_rrtmgp_fluxes, free_fluxes, &
-      free_optics_sw, free_optics_lw, reset_fluxes, &
-      set_gas_concentrations
+      free_optics_sw, free_optics_lw, reset_fluxes
    use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
@@ -442,7 +441,6 @@ contains
 
       ! RRTMGP modules
       use mo_load_coefficients, only: rrtmgp_load_coefficients=>load_and_init
-      use mo_gas_concentrations, only: ty_gas_concs
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -1514,10 +1512,8 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use mo_rrtmgp_clr_all_sky, only: rte_sw
       use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_gas_concentrations, only: ty_gas_concs
       use radiation_utils, only: calculate_heating_rate
-      use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
-                            set_aerosol_optics_sw
+                           
 
       ! Inputs
       integer, intent(in) :: ncol
@@ -1709,7 +1705,6 @@ contains
       use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
-      use mo_gas_concentrations, only: ty_gas_concs
       use radiation_utils, only: calculate_heating_rate
 
       ! Inputs
@@ -1733,9 +1728,6 @@ contains
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(ncol,nlev_rad) :: qrl_rad, qrlc_rad
 
-      ! RRTMGP types
-      type(ty_gas_concs) :: gas_concentrations
-
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -1743,13 +1735,6 @@ contains
       ! exists or is assumed in the model we should use it here as well.
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
-
-      ! Set gas concentrations (I believe the active gases may change
-      ! for different values of icall, which is why we do this within
-      ! the loop).
-      call t_startf('rad_gas_concentrations_lw')
-      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      call t_stopf('rad_gas_concentrations_lw')
 
       ! Add an empty level above model top
       cld_tau_gpt_rad = 0
