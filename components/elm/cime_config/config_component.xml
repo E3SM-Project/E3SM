@@ -83,8 +83,8 @@
       <value compset="SSP585_CAM5%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
       <value compset="2010_CAM5%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
       <value compset="2010_CAM5%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
-      <value compset="2010_CAM5.*SCREAM-LR" >2010_CMIP6_control</value>
-      <value compset="2010_CAM5.*SCREAM-HR" >2010_CMIP6_control</value>
+      <value compset="2010_CAM5.*SCREAM-LR" >2010_defscream_control</value>
+      <value compset="2010_CAM5.*SCREAM-HR" >2010_defscream_control</value>
       <value compset="2010_CAM5.*SCREAM-LR-DYAMOND2" >2010_dy2scream_control</value>
       <value compset="2010_CAM5.*SCREAM-HR-DYAMOND2" >2010_dy2scream_control</value>
       <value compset="2000_CAM5.*SCREAM-LR" >2000_control</value>
