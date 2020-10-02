@@ -168,7 +168,7 @@
 
 <!-- Settings related to the SCREAM NH dycore -->
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
-
+<tstep_type> 9 </tstep_type>
 <!-- Settings specific for ne256 configuration -->
 <se_tstep hgrid="ne256np4"> 37.5 </se_tstep>
 <dt_tracer_factor hgrid="ne256np4"> 8 </dt_tracer_factor>
