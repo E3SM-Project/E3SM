@@ -78,7 +78,7 @@ libgotm:
 		if [ -e gotm/build ]; then \
 			(cd gotm/build; make) \
 		else \
-			(mkdir gotm/build; cd gotm/build; cmake ../src -DGOTM_BUILD_LIBRARIES_ONLY=true -DGOTM_USE_FABM=false -DGOTM_USE_NetCDF=false -DCMAKE_Fortran_COMPILER="$(FC)" -DCMAKE_Fortran_FLAGS="$(FCFLAGS)"; make) \
+			(sed -i.bk "s/\#define STDERR write(stderr,\*)/\#define STDERR if (.false.) write(stderr,\*)/" gotm/include/cppdefs.h; mkdir gotm/build; cd gotm/build; cmake ../src -DGOTM_BUILD_LIBRARIES_ONLY=true -DGOTM_USE_FABM=false -DGOTM_USE_NetCDF=false -DCMAKE_Fortran_COMPILER="$(FC)" -DCMAKE_Fortran_FLAGS="$(FCFLAGS)"; make) \
 		fi \
 	else \
 		(pwd ; echo "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
