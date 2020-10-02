@@ -9,30 +9,32 @@
 #include "ekat/util/ekat_test_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
+#include <chrono>
 #include <vector>
 
 namespace {
 using namespace scream;
 using namespace scream::p3;
 
-  /* p3_run_and_cmp can be run in 2 modes. First, generate_baseline 
-   * runs the baseline (aka reference, probably git master) version of 
-   * the code and saves its output as a raw binary file. Then run_and_cmp
-   * runs the new/experimental version of the code and compares it against
-   * the baseline data you've saved to file. Both baseline and cmp modes
-   * start from an initial condition in ../p3_ic_cases.cpp. By default, 
-   * tests are run with log_PredictNc=true and false and also for 1 step or
-   * 6 steps. This creates a total of 4 different cases. When 6 steps are run,
-   * output for each step is considered separately. 
-   */
+/*
+ * p3_run_and_cmp can be run in 2 modes. First, generate_baseline
+ * runs the baseline (aka reference, probably git master) version of
+ * the code and saves its output as a raw binary file. Then run_and_cmp
+ * runs the new/experimental version of the code and compares it against
+ * the baseline data you've saved to file. Both baseline and cmp modes
+ * start from an initial condition in ../p3_ic_cases.cpp. By default,
+ * tests are run with log_PredictNc=true and false and also for 1 step or
+ * 6 steps. This creates a total of 4 different cases. When 6 steps are run,
+ * output for each step is considered separately.
+ */
 
 
-/* Given a column of data for variable "label" from the reference run 
- * (probably master) and from your new exploratory run, loop over all 
- * heights and confirm whether or not the relative difference between  
+/* Given a column of data for variable "label" from the reference run
+ * (probably master) and from your new exploratory run, loop over all
+ * heights and confirm whether or not the relative difference between
  * runs is within tolerance "tol". If not, print debug info. Here, "a"
  * is the value from the reference run and "b" is from the new run.
- */  
+ */
 template <typename Scalar>
 static Int compare (const std::string& label, const Scalar* a,
                     const Scalar* b, const Int& n, const Real& tol) {
@@ -49,7 +51,7 @@ static Int compare (const std::string& label, const Scalar* a,
       ++nerr1;
       continue;
     }
-    
+
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr2;
@@ -61,23 +63,23 @@ static Int compare (const std::string& label, const Scalar* a,
     std::cout << label << " has " << nerr1 << " infs + nans.\n";
 
   }
-  
+
   if (nerr2) {
     std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
 	      << " normalized by ref impl val=" << den << ".\n";
 
   }
-  
+
   return nerr1 + nerr2;
 }
 
- /* When called with the below 3 args, compare loops over all variables 
-  * and calls the above version of "compare" to check for and report 
+ /* When called with the below 3 args, compare loops over all variables
+  * and calls the above version of "compare" to check for and report
   * large discrepancies.
   */
  Int compare (const double& tol,
              const FortranData::Ptr& ref, const FortranData::Ptr& d) {
- 
+
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
   EKAT_ASSERT(refi.nfield() == di.nfield());
@@ -91,26 +93,60 @@ static Int compare (const std::string& label, const Scalar* a,
 }
 
 struct Baseline {
-  Baseline () {
+  Baseline (const Int nsteps=6, const Int ncol=3, const Int repeat=0) : m_ic_ncol(ncol), m_repeat(repeat) {
     for (const bool do_predict_nc : {true, false})
       //                 initial condit,     dt,  nsteps, prescribe or predict nc
-      params_.push_back({ic::Factory::mixed, 300, 6, do_predict_nc});
+      params_.push_back({ic::Factory::mixed, 300, nsteps, do_predict_nc});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
+
+    // These times are thrown out, I just wanted to be able to use auto
+    auto start = std::chrono::steady_clock::now(), finish = start;
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
-      const auto d = ic::Factory::create(ps.ic, ic_ncol);
-      set_params(ps, *d);
-      p3_init();
-      for (int it=0; it<ps.it; it++) {
-        p3_main(*d, use_fortran);
-        write(fid, d);
+      for (Int r = -1; r < m_repeat; ++r) {
+        const auto d = ic::Factory::create(ps.ic, m_ic_ncol);
+        set_params(ps, *d);
+        p3_init();
+
+        if (m_repeat > 0 && r == -1) {
+          std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
+                    << ", dt=" << d->dt << ", ts=" << d->it << " predict_nc=" << d->do_predict_nc;
+          if (!use_fortran) {
+            std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
+          }
+          std::cout << std::endl;
+        }
+
+        for (int it=0; it<ps.it; it++) {
+          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
+            start  = std::chrono::steady_clock::now();
+          }
+
+          p3_main(*d, use_fortran);
+
+          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
+            finish = std::chrono::steady_clock::now();
+            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+          }
+
+          if (m_repeat == 0) {
+            write(fid, d); // Save the fields to the baseline file.
+          }
+        }
       }
-      // Save the fields to the baseline file.
+
+      if (m_repeat > 0) {
+        const double report_time = (1e-6*duration.count()) / m_repeat;
+
+        printf("Time = %1.3e seconds\n", report_time);
+      }
     }
     return nerr;
   }
@@ -123,12 +159,12 @@ struct Baseline {
     for (auto ps : params_) {
       case_num++;
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, ic_ncol);
+      const auto d_ref = ic::Factory::create(ps.ic, m_ic_ncol);
       set_params(ps, *d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic, ic_ncol);
+        const auto d = ic::Factory::create(ps.ic, m_ic_ncol);
         set_params(ps, *d);
         p3_init();
         for (int it=0; it<ps.it; it++) {
@@ -145,7 +181,7 @@ struct Baseline {
   }
 
 private:
-  static Int ic_ncol;
+  Int m_ic_ncol, m_repeat;
 
   struct ParamSet {
     ic::Factory::IC ic;
@@ -192,8 +228,6 @@ private:
   }
 };
 
-Int Baseline::ic_ncol = 3;
-
 void expect_another_arg (int i, int argc) {
   EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
 }
@@ -207,14 +241,20 @@ int main (int argc, char** argv) {
     std::cout <<
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
-      "  -g        Generate baseline file.\n"
-      "  -f        Use fortran impls instead of c++.\n"
-      "  -t <tol>  Tolerance for relative error.\n";
+      "  -g          Generate baseline file. Default False.\n"
+      "  -f          Use fortran impls instead of c++. Default False.\n"
+      "  -t <tol>    Tolerance for relative error. Default 0.\n";
+      "  -s <steps>  Number of timesteps. Default=6.\n";
+      "  -i <cols>   Number of columns. Default=6.\n";
+      "  -r <repeat> Number of repititions, implies timing run (generate + no I/O). Default=0.\n";
     return 1;
   }
 
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
+  Int timesteps = 6;
+  Int ncol = 3;
+  Int repeat = 0;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
     if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
@@ -223,6 +263,24 @@ int main (int argc, char** argv) {
       ++i;
       tol = std::atof(argv[i]);
     }
+    if (ekat::argv_matches(argv[i], "-s", "--steps")) {
+      expect_another_arg(i, argc);
+      ++i;
+      timesteps = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-i", "--ncol")) {
+      expect_another_arg(i, argc);
+      ++i;
+      ncol = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
+      expect_another_arg(i, argc);
+      ++i;
+      repeat = std::atoi(argv[i]);
+      if (repeat > 0) {
+        generate = true;
+      }
+    }
   }
 
   // Decorate baseline name with precision.
@@ -230,7 +288,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln;
+    Baseline bln(timesteps, ncol, repeat);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);
