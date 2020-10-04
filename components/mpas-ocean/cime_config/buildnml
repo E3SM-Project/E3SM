@@ -239,13 +239,13 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
         analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
     elif ocn_grid == 'WC14to60E2r3_ICG':
-        ic_date += '201001'
+        ic_date += '201002'
         ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
         decomp_date += '200714'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
     elif ocn_grid == 'WC14to60E2r3-1900_ICG':
-        ic_date += '201001'
+        ic_date += '201002'
         ic_prefix += 'mpaso.WC14to60E2r3-1900.rstFromG-anvil'
         decomp_date += '200714'
         decomp_prefix += 'mpas-o.graph.info.'
