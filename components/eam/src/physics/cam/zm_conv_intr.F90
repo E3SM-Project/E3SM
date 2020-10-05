@@ -15,7 +15,7 @@ module zm_conv_intr
    use physconst,    only: cpair                              
    use physconst,    only: latvap, gravit   !songxl 2014-05-20
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
-   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigmem, trigdcape_ull, trig_dcape_only
+   use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog
@@ -40,13 +40,6 @@ module zm_conv_intr
       dp_cldice_idx, &
       prec_dp_idx,   &
       snow_dp_idx
-
-!<songxl 2014-05-20------------------
-   integer :: hu_nm1_idx    !hu_nm1 index in physics buffer
-   integer :: cnv_nm1_idx   !cnv_nm1 index in physics buffer
-   integer :: tm1_idx,     &!tm1 index in physics buffer
-              qm1_idx       !qm1 index in physics buffer
-!>songxl 2014-05-20------------------
 
 ! DCAPE-ULL
    integer :: t_star_idx       !t_star index in physics buffer
@@ -90,18 +83,6 @@ subroutine zm_conv_register
 ! deep gbm cloud liquid water (kg/kg)    
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
 
-!<songxl 2014-05-20-------------
-!  if(trigmem)then
-! moist static energy at n-1 time step (J/kg)
-    call pbuf_add_field('HU_NM1','global',dtype_r8,(/pcols,pver/), hu_nm1_idx)
-! moist convection index at n-1 time step(1=yes, 0=no)
-    call pbuf_add_field('CNV_NM1','global',dtype_r8,(/pcols,pver/), cnv_nm1_idx)
-! temperature at n-1 time step
-    call pbuf_add_field('TM1', 'global', dtype_r8,(/pcols,pver/), tm1_idx)
-! specific humidity at n-1 time step
-    call pbuf_add_field('QM1', 'global', dtype_r8,(/pcols,pver/), qm1_idx) 
-!  endif
-!>songxl 2014-05-20-------------
 
 ! DCAPE-UPL
 
@@ -270,7 +251,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    use phys_grid,     only: get_lat_p, get_lon_p
    use time_manager,  only: get_nstep, is_first_step
-   use time_manager,  only: is_first_restart_step             !songxl 2011-09-20
    use physics_buffer, only : pbuf_get_field, physics_buffer_desc, pbuf_old_tim_idx
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use physconst,     only: gravit
@@ -419,23 +399,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call pbuf_get_field(pbuf, prec_dp_idx,     prec )
    call pbuf_get_field(pbuf, snow_dp_idx,     snow )
 
-!<songxl 2014-05-20-----------------
-!   if(trigmem)then
-     call pbuf_get_field(pbuf, cnv_nm1_idx,     cnv_nm1)
-     call pbuf_get_field(pbuf, hu_nm1_idx,      hu_nm1 )
-     call pbuf_get_field(pbuf, tm1_idx,         tm1 )
-     call pbuf_get_field(pbuf, qm1_idx,         qm1 )
-   if(trigmem)then
-     if ( is_first_step() .or. is_first_restart_step() ) then
-       hu_nm1(:ncol,:pver) = cpair*state%t(:ncol,:pver) + gravit*state%zm(:ncol,:pver)   &
-                               + latvap*state%q(:ncol,:pver,1)
-       cnv_nm1(:ncol,:pver) = 0._r8
-       qm1(:ncol,:pver) =  state%q(:ncol,:pver,1)
-       tm1(:ncol,:pver) =  state%t(:ncol,:pver)
-     end if
-   end if
-!<songxl 2014-05-20-----------------
-
 ! DCAPE-ULL
    if(trigdcape_ull .or. trig_dcape_only)then
      call pbuf_get_field(pbuf, t_star_idx,     t_star)
@@ -458,7 +421,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     tpert   ,dlf     ,pflx    ,zdu     ,rprd    , &
                     mu,md,du,eu,ed      , &
                     dp ,dsubcld ,jt,maxg,ideep   , &
-                    lengath ,ql      ,rliq  ,landfrac, hu_nm1, cnv_nm1, tm1, qm1, &
+                    lengath ,ql      ,rliq  ,landfrac,  &
                     t_star, q_star, dcape)  
    call t_stopf ('zm_convr')
 

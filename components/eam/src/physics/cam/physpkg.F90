@@ -29,7 +29,7 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
-  use zm_conv,          only: trigmem, do_zmconv_dcape_ull => trigdcape_ull, &
+  use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
                               do_zmconv_dcape_only => trig_dcape_only
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
@@ -1944,11 +1944,6 @@ subroutine tphysbc (ztodt,               &
     integer itim_old, ifld
     real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
 
-!<songxl 2011-09-20----------------------------
-! physics buffer fields to compute tendencies for deep convection scheme
-    real(r8), pointer, dimension(:,:) :: tm1   ! intermediate T between n and n-1 time step
-    real(r8), pointer, dimension(:,:) :: qm1   ! intermediate q between n and n-1 time step
-!>songxl 2011-09-20----------------------------
     character(len=16)  :: deep_scheme      ! Default set in phys_control.F90
 
     ! physics buffer fields for total energy and mass adjustment
@@ -2112,17 +2107,6 @@ subroutine tphysbc (ztodt,               &
     itim_old = pbuf_old_tim_idx()
     ifld = pbuf_get_index('CLD')
     call pbuf_get_field(pbuf, ifld, cld, (/1,1,itim_old/),(/pcols,pver,1/))
-
-!<songxl 2011-09-20---------------------------
-!   if(trigmem)then
-    if (deep_scheme.eq.'ZM') then
-      ifld = pbuf_get_index('TM1')
-      call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
-      ifld = pbuf_get_index('QM1')
-      call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
-    end if
-!   endif
-!>songxl 2011-09-20---------------------------
 
     call pbuf_get_field(pbuf, teout_idx, teout, (/1,itim_old/), (/pcols,1/))
 
@@ -2630,15 +2614,6 @@ end if
 
       end if
    end if ! l_tracer_aero
-
-!<songxl 2011-9-20---------------------------------
-   if(deep_scheme.eq.'ZM' .and. trigmem)then
-      do k=1,pver
-        qm1(:ncol,k) = state%q(:ncol,k,1)
-        tm1(:ncol,k) = state%t(:ncol,k)
-      enddo
-   endif
-!>songxl 2011-09-20---------------------------------
 
     !===================================================
     ! Moist physical parameteriztions complete: 
