@@ -4476,7 +4476,7 @@ subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
     do i=1,shcol
       shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
       shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
-      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+      shoc_mix(i,k)=min(bfb_sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
     enddo
   enddo
 
