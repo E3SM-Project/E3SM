@@ -109,6 +109,7 @@ struct UnitWrap {
     struct TestSecondMomUbycond;
     struct TestPblintdInitPot;
     struct TestDiagSecondMomentsLbycond;
+    struct TestDiagSecondMoments;
   };
 
 };

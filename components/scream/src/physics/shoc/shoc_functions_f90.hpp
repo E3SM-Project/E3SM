@@ -784,6 +784,21 @@ struct DiagSecondMomentsLbycondData : public PhysicsTestData {
   
   SHOC_NO_SCALAR(DiagSecondMomentsLbycondData, 1)
 };
+struct DiagSecondMomentsData : public PhysicsTestData {
+  // Inputs
+  Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *zt_grid, *zi_grid, *shoc_mix;
+  
+  // Inputs/Outputs
+  Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec, *uw_sec, *vw_sec, *wtke_sec;
+  
+  // Outputs
+  Real *w_sec;
+  
+  DiagSecondMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec}, {&dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec}) {}
+  
+  SHOC_NO_SCALAR(DiagSecondMomentsData, 3)
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void shoc_grid                                      (SHOCGridData &d);
 void shoc_diag_obklen                               (SHOCObklenData &d);
@@ -842,6 +857,7 @@ void shoc_diag_second_moments_ubycond               (SHOCSecondMomentUbycondData
 void shoc_pblintd_init_pot                          (SHOCPblintdInitPotData &d);
 
 void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d);
+void diag_second_moments(DiagSecondMomentsData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -872,6 +888,7 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
                              Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
 
 void diag_second_moments_lbycond_f(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar, Real* wthl_sec, Real* wqw_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec);
+void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke, Real* isotropy, Real* tkh, Real* tk, Real* dz_zi, Real* zt_grid, Real* zi_grid, Real* shoc_mix, Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* w_sec);
 } // end _f function decls
 
 }  // namespace shoc

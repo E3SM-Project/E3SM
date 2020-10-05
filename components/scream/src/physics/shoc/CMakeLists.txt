@@ -40,6 +40,7 @@ if (NOT CUDA_BUILD)
     shoc_clipping_diag_third_shoc_moments.cpp
     shoc_energy_integrals.cpp
     shoc_diag_second_moments_lbycond.cpp
+    shoc_diag_second_moments.cpp
   ) # SHOC ETI SRCS
 endif()
 
