@@ -110,8 +110,7 @@ struct Baseline {
     Int nerr = 0;
 
     // These times are thrown out, I just wanted to be able to use auto
-    auto start = std::chrono::steady_clock::now(), finish = start;
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+    Int total_duration_microsec = 0;
 
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
@@ -131,15 +130,10 @@ struct Baseline {
         }
 
         for (int it=0; it<ps.it; it++) {
-          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
-            start  = std::chrono::steady_clock::now();
-          }
-
-          p3_main(*d, use_fortran);
+          Int current_microsec = p3_main(*d, use_fortran);
 
           if (r != -1 && m_repeat > 0) { // do not count the "cold" run
-            finish = std::chrono::steady_clock::now();
-            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+            total_duration_microsec += current_microsec;
           }
 
           if (m_repeat == 0) {
@@ -149,7 +143,7 @@ struct Baseline {
       }
 
       if (m_repeat > 0) {
-        const double report_time = (1e-6*duration.count()) / m_repeat;
+        const double report_time = (1e-6*total_duration_microsec) / m_repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
