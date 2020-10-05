@@ -53,15 +53,12 @@ class TestAllScream(object):
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
 
-        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("EKAT_DEFAULT_BFB", "ON")],
+        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_DOUBLE_PRECISION", "False"),
-                                           ("EKAT_DEFAULT_BFB", "ON")],
+                                           ("SCREAM_DOUBLE_PRECISION", "False")],
                                   "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
                                            ("SCREAM_PACK_SIZE", "1"),
-                                           ("SCREAM_SMALL_PACK_SIZE", "1"),
-                                           ("EKAT_DEFAULT_BFB", "ON")]}
+                                           ("SCREAM_SMALL_PACK_SIZE", "1")]}
 
         self._test_full_names = { "dbg" : "full_debug",
                                   "sp"  : "full_sp_debug",
