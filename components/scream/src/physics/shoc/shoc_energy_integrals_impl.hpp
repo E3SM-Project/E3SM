@@ -26,34 +26,27 @@ void Functions<S,D>
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
   const auto ggr = C::gravit;
 
-  // Use serialized version of view_reduction below if doing BFB testing
-#ifdef EKAT_DEFAULT_BFB
-  constexpr bool Serialize = true;
-#else
-  constexpr bool Serialize = false;
-#endif
-
   // Compute se_int
-  ExeSpaceUtils::template view_reduction<Serialize>(team,0,nlev,
-                                                    [&] (const int k) -> Spack {
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
     return host_dse(k)*pdel(k)/ggr;
   }, se_int);
 
   // Compute ke_int
-  ExeSpaceUtils::template view_reduction<Serialize>(team,0,nlev,
-                                                    [&] (const int k) -> Spack {
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
     return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
   }, ke_int);
 
   // Compute wv_int
-  ExeSpaceUtils::template view_reduction<Serialize>(team,0,nlev,
-                                                    [&] (const int k) -> Spack {
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
     return (rtm(k)-rcm(k))*pdel(k)/ggr;
   }, wv_int);
 
   // Compute wl_int
-  ExeSpaceUtils::template view_reduction<Serialize>(team,0,nlev,
-                                                    [&] (const int k) -> Spack {
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
     return rcm(k)*pdel(k)/ggr;
   }, wl_int);
 }

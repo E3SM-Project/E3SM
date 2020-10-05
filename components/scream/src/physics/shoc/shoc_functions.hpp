@@ -152,14 +152,22 @@ struct Functions
     const uview_1d<Spack>& tke);
 
   KOKKOS_FUNCTION
-  static void linear_interp(const uview_1d<const Spack>& x1, const uview_1d<const Spack>& x2, const uview_1d<const Spack>& y1, const uview_1d<Spack>& y2, const Int& km1, const Int& km2, const Int& ncol, const Spack& minthresh);
+  static void clipping_diag_third_shoc_moments(
+    const MemberType& team,
+    const Int& nlevi,
+    const uview_1d<const Spack>& w_sec_zi,
+    const uview_1d<Spack>& w3);
 
   KOKKOS_FUNCTION
-   static void clipping_diag_third_shoc_moments(
-     const MemberType& team,
-     const Int& nlevi,
-     const uview_1d<const Spack>& w_sec_zi,
-     const uview_1d<Spack>& w3);
+  static void linear_interp(
+    const MemberType& team,
+    const uview_1d<const Spack>& x1,
+    const uview_1d<const Spack>& x2,
+    const uview_1d<const Spack>& y1,
+    const uview_1d<Spack>& y2,
+    const Int& km1,
+    const Int& km2,
+    const Scalar& minthresh);
 
   KOKKOS_FUNCTION
   static void shoc_energy_integrals(

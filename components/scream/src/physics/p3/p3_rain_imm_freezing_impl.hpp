@@ -21,7 +21,7 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar T_rainfrz = C::T_rainfrz;
-  constexpr Scalar t_zerodegc = C::t_zerodegc;
+  constexpr Scalar T_zerodegc = C::T_zerodegc;
   constexpr Scalar AIMM = C::AIMM;
   constexpr Scalar CONS5 = C::CONS5;
   constexpr Scalar CONS6 = C::CONS6;
@@ -32,11 +32,11 @@ void Functions<S,D>
     qr2qi_immers_freeze_tend.set(qr_not_small_and_t_freezing,
                CONS6 *
                exp(log(cdistr) + log(tgamma(sp(7.)+mu_r)) - sp(6.)*log(lamr)) *
-               exp(AIMM*(t_zerodegc-T_atm)));
+               exp(AIMM*(T_zerodegc-T_atm)));
     nr2ni_immers_freeze_tend.set(qr_not_small_and_t_freezing,
                CONS5 *
                exp(log(cdistr) + log(tgamma(sp(4.)+mu_r)) - sp(3.)*log(lamr)) *
-               exp(AIMM*(t_zerodegc-T_atm)));
+               exp(AIMM*(T_zerodegc-T_atm)));
   }
 }
 

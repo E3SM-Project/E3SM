@@ -51,7 +51,7 @@ static void run_phys()
 static void run_bfb_p3_main_part1()
 {
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
-  constexpr Scalar t_zerodegc   = C::t_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
@@ -68,7 +68,7 @@ static void run_bfb_p3_main_part1()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2); //PMC this range seems inappropriately small
     d.randomize({
-        {d.T_atm, {t_zerodegc - 10, t_zerodegc + 10}},
+        {d.T_atm, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -138,7 +138,7 @@ static void run_bfb_p3_main_part1()
 static void run_bfb_p3_main_part2()
 {
   constexpr Scalar qsmall     = C::QSMALL;
-  constexpr Scalar t_zerodegc   = C::t_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
@@ -155,8 +155,8 @@ static void run_bfb_p3_main_part2()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize({
-        {d.T_atm,  {t_zerodegc - 10, t_zerodegc + 10}},
-        {d.t_prev, {t_zerodegc - 10, t_zerodegc + 10}},
+        {d.T_atm,  {T_zerodegc - 10, T_zerodegc + 10}},
+        {d.t_prev, {T_zerodegc - 10, T_zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
