@@ -23,7 +23,7 @@ extern "C" {
                  Real* precip_liq_flux, Real* precip_ice_flux, // 1 extra column size
                  Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
                  Real* liq_ice_exchange, Real* vap_liq_exchange,
-                 Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
+                 Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 }
 
 namespace scream {
@@ -131,7 +131,7 @@ Int p3_main (const FortranData& d, bool use_fortran) {
   if (use_fortran) {
     // There should be very little overhead on the fortran side, so we can do timings
     // here.
-    auto start = std::chrono::steady_clock::now();
+    Real elapsed_s;
     p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
               d.th_atm.data(), d.qv.data(), d.dt, d.qi.data(),
               d.qm.data(), d.ni.data(), d.bm.data(),
@@ -143,10 +143,8 @@ Int p3_main (const FortranData& d, bool use_fortran) {
               d.precip_liq_flux.data(), d.precip_ice_flux.data(), d.cld_frac_r.data(), d.cld_frac_l.data(),
               d.cld_frac_i.data(), d.mu_c.data(), d.lamc.data(),
               d.liq_ice_exchange.data(),
-              d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data());
-    auto finish = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
-    return duration.count();
+              d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data(), &elapsed_s);
+    return static_cast<Int>(elapsed_s * 1000000);
   }
   else {
     return p3_main_f(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_atm.data(),
