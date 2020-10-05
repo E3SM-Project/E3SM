@@ -3216,12 +3216,8 @@ Int p3_main_f(
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
 
-  // In situations where we care about timings, we only want to time the p3_main call
-  auto start = std::chrono::steady_clock::now();
-  P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-               history_only, nj, nk);
-  auto finish = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+  auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
+                                       history_only, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
@@ -3252,7 +3248,7 @@ Int p3_main_f(
     },
     dim1_sizes_out, dim2_sizes_out, inout_views, true);
 
-  return duration.count();
+  return elapsed_microsec;
 }
 
 } // namespace p3

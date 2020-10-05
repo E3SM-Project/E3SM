@@ -947,7 +947,8 @@ struct Functions
     const uview_1d<Spack>& diag_equiv_reflectivity,
     const uview_1d<Spack>& diag_eff_radius_qc);
 
-  static void p3_main(
+  // Return microseconds elapsed
+  static Int p3_main(
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,
