@@ -26,37 +26,37 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 
   static void run_property()
   {
-      // Property test for SHOC subroutine:
-      //   diag_second_moments_ubycond
+    // Property test for SHOC subroutine:
+    //   diag_second_moments_ubycond
 
-      static constexpr Int shcol    = 2;
+    static constexpr Int shcol    = 2;
 
-      // Note that this subroutine does not have any inputs,
-      //  only outputs.  All outputs should be zero.
+    // Note that this subroutine does not have any inputs,
+    //  only outputs.  All outputs should be zero.
 
-      // Initialize data structure for bridging to F90
-      SHOCSecondMomentUbycondData SDS(shcol);
+    // Initialize data structure for bridging to F90
+    SHOCSecondMomentUbycondData SDS(shcol);
 
-      // Test that the inputs are reasonable
-      REQUIRE(SDS.shcol() == shcol);
-      REQUIRE(shcol > 0);
+    // Test that the inputs are reasonable
+    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(shcol > 0);
 
-      // Call the fortran implementation
-      shoc_diag_second_moments_ubycond(SDS);
+    // Call the fortran implementation
+    shoc_diag_second_moments_ubycond(SDS);
 
-      // Verify the result
-      //  all output should be zero.
+    // Verify the result
+    //  all output should be zero.
 
-      for (Int s = 0; s < shcol; ++s){
-        REQUIRE(SDS.thl_sec[s] == 0);
-        REQUIRE(SDS.qw_sec[s] == 0);
-        REQUIRE(SDS.qwthl_sec[s] == 0);
-        REQUIRE(SDS.wthl_sec[s] == 0);
-        REQUIRE(SDS.wqw_sec[s] == 0);
-        REQUIRE(SDS.uw_sec[s] == 0);
-        REQUIRE(SDS.vw_sec[s] == 0);
-        REQUIRE(SDS.wtke_sec[s] == 0);
-      }
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.thl_sec[s] == 0);
+      REQUIRE(SDS.qw_sec[s] == 0);
+      REQUIRE(SDS.qwthl_sec[s] == 0);
+      REQUIRE(SDS.wthl_sec[s] == 0);
+      REQUIRE(SDS.wqw_sec[s] == 0);
+      REQUIRE(SDS.uw_sec[s] == 0);
+      REQUIRE(SDS.vw_sec[s] == 0);
+      REQUIRE(SDS.wtke_sec[s] == 0);
+    }
   }
 
   static void run_bfb()

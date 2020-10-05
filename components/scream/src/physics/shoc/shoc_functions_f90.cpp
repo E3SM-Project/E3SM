@@ -234,6 +234,11 @@ void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl_sec, Real* qw_sec,
 
 void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 
+void diag_second_moments_lbycond_c(Int shcol, Real *wthl_sfc, Real *wqw_sfc, Real *uw_sfc,
+                                   Real *vw_sfc, Real *ustar2, Real *wstar, Real *wthl_sec,
+                                   Real *wqw_sec, Real *uw_sec, Real *vw_sec, Real *wtke_sec, 
+                                   Real *thl_sec, Real *qw_sec, Real *qwthl_sec);
+
 } // end _c function decls
 
 namespace scream {
@@ -688,6 +693,11 @@ void shoc_pblintd_init_pot(SHOCPblintdInitPotData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d)
+{
+  shoc_init(1, true);  // Single level routine
+  diag_second_moments_lbycond_c(d.shcol(), d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
+}
 // end _c impls
 
 //
@@ -1285,5 +1295,9 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   ekat::device_to_host<int,4>({se_int,ke_int,wv_int,wl_int},shcol,inout_views);
 }
 
+void diag_second_moments_lbycond_f(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar, Real* wthl_sec, Real* wqw_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec)
+{
+  // TODO
+}
 } // namespace shoc
 } // namespace scream
