@@ -407,12 +407,10 @@ subroutine shoc_main ( &
     ! Diagnose the second order moments
     call diag_second_shoc_moments(&
        shcol,nlev,nlevi, &                    ! Input
-       num_qtracers,thetal,qw, &              ! Input
-       u_wind,v_wind,qtracers,tke, &          ! Input
+       thetal,qw,u_wind,v_wind,tke, &         ! Input
        isotropy,tkh,tk,&                      ! Input
        dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
        wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
-       wtracer_sfc, &                         ! Input
        thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Output
        qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
        w_sec)                                 ! Output
@@ -869,12 +867,10 @@ end subroutine sfc_fluxes
 
 subroutine diag_second_shoc_moments(&
          shcol,nlev,nlevi, &                    ! Input
-         num_tracer,thetal,qw, &                ! Input
-         u_wind,v_wind,tracer,tke, &            ! Input
+         thetal,qw,u_wind,v_wind,tke, &         ! Input
          isotropy,tkh,tk,&                      ! Input
          dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
          wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
-         wtracer_sfc, &                         ! Input
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
          w_sec)                                 ! Output
@@ -891,8 +887,6 @@ subroutine diag_second_shoc_moments(&
   integer, intent(in) :: nlev
   ! number of interface levels
   integer, intent(in) :: nlevi
-  ! number of tracers
-  integer, intent(in) :: num_tracer
 
   ! liquid water potential temperature [K]
   real(rtype), intent(in) :: thetal(shcol,nlev)
@@ -910,8 +904,6 @@ subroutine diag_second_shoc_moments(&
   real(rtype), intent(in) :: tkh(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
   real(rtype), intent(in) :: tk(shcol,nlev)
-  ! tracers [varies]
-  real(rtype), intent(in) :: tracer(shcol,nlev,num_tracer) ! tracers
   ! heights of mid-point grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights of interface grid [m]
@@ -928,8 +920,6 @@ subroutine diag_second_shoc_moments(&
   real(rtype), intent(in) :: uw_sfc(shcol)
   ! Surface momentum flux (v-direction) [m2/s2]
   real(rtype), intent(in) :: vw_sfc(shcol)
-  ! Tracer flux [varies m/s]
-  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
 ! OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
@@ -965,9 +955,9 @@ subroutine diag_second_shoc_moments(&
   ! Diagnose the second order moments flux,
   !  for the lower boundary
   call diag_second_moments_lbycond(&
-     shcol, num_tracer,&                             ! Input
+     shcol,&                                         ! Input
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc,&             ! Input
-     wtracer_sfc,ustar2,wstar,&                      ! Input
+     ustar2,wstar,&                                  ! Input
      wthl_sec(:shcol,nlevi),wqw_sec(:shcol,nlevi),&  ! Output
      uw_sec(:shcol,nlevi), vw_sec(:shcol,nlevi),&    ! Output
      wtke_sec(:shcol,nlevi), thl_sec(:shcol,nlevi),& ! Output
@@ -977,11 +967,10 @@ subroutine diag_second_shoc_moments(&
   !  for points away from boundaries.  this is
   !  the main computation for the second moments
   call diag_second_moments(&
-     shcol,nlev,nlevi, &                    ! Input
-     num_tracer,thetal,qw, &                ! Input
-     u_wind,v_wind,tracer,tke, &            ! Input
-     isotropy,tkh,tk,&                      ! Input
-     dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+     shcol, nlev, nlevi, &                  ! Input
+     thetal, qw, u_wind, v_wind, tke, &     ! Input
+     isotropy, tkh, tk,&                    ! Input
+     dz_zi, zt_grid, zi_grid, shoc_mix, &   ! Input
      thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Input/Output
      qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
      w_sec)                                 ! Output
@@ -1069,12 +1058,11 @@ end subroutine diag_second_moments_srf
 !  lower boundary conditions
 
 subroutine diag_second_moments_lbycond(&
-         shcol,num_tracer,&                           ! Input
+         shcol, &                                     ! Input
          wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &         ! Input
-         wtracer_sfc,ustar2,wstar,&                   ! Input
-         wthl_sec,wqw_sec,&                           ! Output
+         ustar2,wstar, wthl_sec, wqw_sec,&            ! Output
          uw_sec, vw_sec, wtke_sec,&                   ! Output
-         thl_sec,qw_sec,qwthl_sec)                    ! Output
+         thl_sec, qw_sec, qwthl_sec)                  ! Output
 
   ! Purpose of this subroutine is to diagnose the lower
   !  boundary condition for the second order moments needed
@@ -1089,8 +1077,6 @@ subroutine diag_second_moments_lbycond(&
 ! INPUT VARIABLES
   ! number of SHOC columns
   integer, intent(in) :: shcol
-  ! number of tracers
-  integer, intent(in) :: num_tracer
 
   ! Surface sensible heat flux [K m/s]
   real(rtype), intent(in) :: wthl_sfc(shcol)
@@ -1100,8 +1086,6 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), intent(in) :: uw_sfc(shcol)
   ! Surface momentum flux (v-direction) [m2/s2]
   real(rtype), intent(in) :: vw_sfc(shcol)
-  ! Tracer flux [varies m/s]
-  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
   ! Surface friction velocity squared [m4/s4]
   real(rtype), intent(in) :: ustar2(shcol)
   ! Surface convective velocity scale [m/s]
@@ -1160,12 +1144,11 @@ end subroutine diag_second_moments_lbycond
 
 subroutine diag_second_moments(&
          shcol,nlev,nlevi, &                    ! Input
-         num_tracer,thetal,qw, &                ! Input
-         u_wind,v_wind,tracer,tke, &            ! Input
+         thetal,qw,u_wind,v_wind,tke, &         ! Input
          isotropy,tkh,tk,&                      ! Input
          dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Input/Output
-         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
+         qwthl_sec,uw_sec,vw_sec,wtke_sec, &    ! Input/Output
          w_sec)                                 ! Output
 
   ! Purpose of this subroutine is to diagnose the second
@@ -1184,8 +1167,6 @@ subroutine diag_second_moments(&
   integer, intent(in) :: nlev
   ! number of interface levels
   integer, intent(in) :: nlevi
-  ! number of tracers
-  integer, intent(in) :: num_tracer
 
   ! liquid water potential temperature [K]
   real(rtype), intent(in) :: thetal(shcol,nlev)
@@ -1203,8 +1184,6 @@ subroutine diag_second_moments(&
   real(rtype), intent(in) :: tkh(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
   real(rtype), intent(in) :: tk(shcol,nlev)
-  ! tracers [varies]
-  real(rtype), intent(in) :: tracer(shcol,nlev,num_tracer) ! tracers
   ! heights of mid-point grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights of interface grid [m]
