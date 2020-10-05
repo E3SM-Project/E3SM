@@ -155,7 +155,6 @@ OPTIONS
      -psubcols <n>      Maximum number of sub-columns in a run - set to 1 if not using sub-columns (default)
      -rad <name>        Specify the radiation package [rrtmg | rrtmgp | camrt]
      -res <name>        Specify horizontal grid.  ***DEPRECATED***  Use the -hgrid option.
-     -unicon            Switch to turn on the UNICON scheme. Default: off.
      -usr_mech_infile   Path and file name of the user supplied chemistry mechanism file.
      -waccm_phys        Switch enables the use of WACCM physics in any chemistry configuration.
                         The user does not need to set this if one of the waccm chemistry options
@@ -408,7 +407,6 @@ GetOptions(
     "spmd!"                     => \$opts{'spmd'},
     "target_os=s"               => \$opts{'target_os'},
     "test"                      => \$opts{'test'},
-    "unicon"                    => \$opts{'unicon'},
     "usr_mech_infile=s"         => \$opts{'usr_mech_infile'},
     "usr_src=s"                 => \$opts{'usr_src'},
     "v|verbose"                 => \$opts{'verbose'},
@@ -1058,27 +1056,6 @@ $cfg_ref->set('pbl', $pbl_pkg);
 if ($print>=2) { print "Using $pbl_pkg PBL scheme.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# UNICON
-
-if (defined $opts{'unicon'}) {
-    $cfg_ref->set('unicon', $opts{'unicon'});
-}
-my $unicon = $cfg_ref->get('unicon');
-
-# consistency checks...
-
-# UNICON assumes park macrophysics, uw pbl, and mg microphysics
-if ($unicon and
-    ($macrophys_pkg ne 'park' or $pbl_pkg ne 'uw' or $microphys_pkg !~ m/^mg/) ) {
-    die <<"EOF";
-**    ERROR: UNICON assumes macrophys='park', pbl='uw', microphys='mg*'.  Current values are:
-**    macrophys: $macrophys_pkg, pbl: $pbl_pkg, microphys: $microphys_pkg.
-EOF
-}
-
-if ($unicon and $print>=2) { print "Using UNICON scheme.$eol"; }
-
-#-----------------------------------------------------------------------------------------------
 # Radiation package
 
 # Set default
@@ -1528,13 +1505,6 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
-
-        # UNICON tracers
-        if ($unicon) {
-            $nadv += 5;
-            if ($print>=2) { print "Advected constituents added by UNICON: 5$eol"; }
-        }
-
     }
 
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
@@ -1924,9 +1894,6 @@ if ($clubb_sgs == 1) {
     $cfg_cppdefs .= ' -DNO_LAPACK_ISNAN';
     $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
 }
-
-# UNICON
-if ($unicon) { $cfg_cppdefs .= ' -DUSE_UNICON'; }
 
 # GPTL Timing library
 # The GPTL configure script in timing/gptl/suggestions may help
