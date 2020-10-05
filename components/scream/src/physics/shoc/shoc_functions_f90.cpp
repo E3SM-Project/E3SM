@@ -245,6 +245,15 @@ void diag_second_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *q
                            Real *shoc_mix, Real *thl_sec, Real *qw_sec, Real *wthl_sec, 
                            Real *wqw_sec, Real *qwthl_sec, Real *uw_sec, Real *vw_sec, 
                            Real *wtke_sec, Real *w_sec);
+                           
+void diag_second_shoc_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal, 
+                                Real *qw, Real *u_wind, Real *v_wind, Real *tke, 
+                                Real *isotropy, Real *tkh, Real *tk, Real *dz_zi, 
+                                Real *zt_grid, Real *zi_grid, Real *shoc_mix, 
+                                Real *wthl_sfc, Real *wqw_sfc, Real *uw_sfc, 
+                                Real *vw_sfc, Real *thl_sec, Real *qw_sec, 
+                                Real *wthl_sec, Real *wqw_sec, Real *qwthl_sec, 
+                                Real *uw_sec, Real *vw_sec, Real *wtke_sec, Real *w_sec);                         
 
 } // end _c function decls
 
@@ -711,6 +720,14 @@ void diag_second_moments(DiagSecondMomentsData& d)
   shoc_init(d.nlev(), true);
   d.transpose<ekat::TransposeDirection::c2f>();
   diag_second_moments_c(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void diag_second_shoc_moments(DiagSecondShocMomentsData& d)
+{
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  diag_second_shoc_moments_c(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 // end _c impls
@@ -1315,6 +1332,10 @@ void diag_second_moments_lbycond_f(Int shcol, Real* wthl_sfc, Real* wqw_sfc, Rea
   // TODO
 }
 void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke, Real* isotropy, Real* tkh, Real* tk, Real* dz_zi, Real* zt_grid, Real* zi_grid, Real* shoc_mix, Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* w_sec)
+{
+  // TODO
+}
+void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke, Real* isotropy, Real* tkh, Real* tk, Real* dz_zi, Real* zt_grid, Real* zi_grid, Real* shoc_mix, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* w_sec)
 {
   // TODO
 }

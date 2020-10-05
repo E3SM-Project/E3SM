@@ -38,6 +38,9 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
     static constexpr Real wstar[shcol] = {1, 0.5, 0, 0, 0};
     // Surface friction velocity [m4/s4]
     Real ustar2[shcol];
+    
+    // establish reasonable bound for output checking
+    static constexpr Real wtke_srf_ubound = 0.1; // [m3/s3]
 
     // Compute other inputs and check some inputs
     for (Int s = 0; s < shcol; ++s){
@@ -84,7 +87,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
 
       // Verify bounds of wtke_sec make sense
       REQUIRE(SDS.wtke_sec[s] >= 0);
-      REQUIRE(SDS.wtke_sec[s] < 0.1);
+      REQUIRE(SDS.wtke_sec[s] < wtke_srf_ubound);
 
       // Verify second moments make sense
       if (SDS.wthl_sfc[s] == 0){

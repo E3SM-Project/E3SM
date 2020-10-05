@@ -110,6 +110,7 @@ struct UnitWrap {
     struct TestPblintdInitPot;
     struct TestDiagSecondMomentsLbycond;
     struct TestDiagSecondMoments;
+    struct TestDiagSecondShocMoments;
   };
 
 };

@@ -61,6 +61,7 @@ set(SHOC_TESTS_SRCS
     shoc_unit_tests.cpp
     shoc_diag_second_moments_lbycond_tests.cpp
     shoc_diag_second_moments_tests.cpp
+    shoc_diag_second_shoc_moments_tests.cpp
     ) # SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

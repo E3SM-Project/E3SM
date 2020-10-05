@@ -205,6 +205,16 @@ end subroutine shoc_energy_integrals_f
     real(kind=c_real) , intent(inout), dimension(shcol, nlevi) :: thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: w_sec
   end subroutine diag_second_moments_f
+  subroutine diag_second_shoc_moments_f(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, zt_grid, shoc_mix
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc
+    real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: w_sec
+  end subroutine diag_second_shoc_moments_f
 end interface
 
 end module shoc_iso_f
