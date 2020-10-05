@@ -62,8 +62,11 @@ inline void OutputManager::new_output(const ekat::ParameterList& params)
 inline void OutputManager::init()
 {
   using namespace scorpio;
+  if (!param_set and !gm_set and !repo_set) { return; }
   // Make sure params, repo and grids manager are already set
-  EKAT_REQUIRE_MSG(param_set and gm_set and repo_set,"Error! Output manager requires a parameter list, grids manager and field repo to be set before initialization");
+  EKAT_REQUIRE_MSG(param_set,"Error! Output manager requires a parameter list to be set before initialization");
+  EKAT_REQUIRE_MSG(gm_set,   "Error! Output manager requires a grids manager to be set before initialization");
+  EKAT_REQUIRE_MSG(repo_set, "Error! Output manager requires a field repo to be set before initialization");
   // First parse the param list for output.
   // Starting with the stride.  NOTE: Only a stride of 1 is supported right now.  TODO: Allow for stride of any value.
   Int stride = m_params.get<Int>("PIO Stride");

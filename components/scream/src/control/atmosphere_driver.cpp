@@ -163,9 +163,9 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     m_output_manager.set_comm(atm_comm);
     m_output_manager.set_grids(m_grids_manager);
     m_output_manager.set_repo(m_device_field_repo);
-    m_output_manager.init();
-    // If not true then m_output_manager.init() won't be called, leaving no_output flag as true and skipping output throughout simulation.
+    // If not true then m_output_manager.init() won't do anything, leaving no_output flag as true and skipping output throughout simulation.
   }
+  m_output_manager.init();
 
 #ifdef SCREAM_DEBUG
   create_bkp_field_repo();
