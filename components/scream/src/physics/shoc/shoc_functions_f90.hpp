@@ -860,6 +860,10 @@ void compute_brunt_shoc_length_f(Int nlev, Int nlevi, Int shcol, Real* dz_zt, Re
                                  Real* thv_zi, Real* brunt);
 void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* host_dy,
                                       Real* shoc_mix);
+void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
+                                    Real *dz_zt, Real *thv, Real *wthv_sec,
+                                    Real *conv_vel);
+
 } // end _f function decls
 
 }  // namespace shoc

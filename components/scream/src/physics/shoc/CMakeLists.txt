@@ -41,6 +41,7 @@ if (NOT CUDA_BUILD)
     shoc_energy_integrals.cpp
     shoc_compute_brunt_shoc_length.cpp
     shoc_check_length_scale_shoc_length.cpp
+    shoc_compute_conv_vel_shoc_length.cpp
   ) # SHOC ETI SRCS
 endif()
 

@@ -208,6 +208,22 @@ subroutine check_length_scale_shoc_length_f(nlev, shcol, host_dx, host_dy, shoc_
 
 end subroutine check_length_scale_shoc_length_f
 
+subroutine compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,&
+                                          thv,wthv_sec,conv_vel) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: nlev
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in) :: pblh(shcol)
+  real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+  real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+  real(kind=c_real), intent(in) :: thv(shcol,nlev)
+  real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
+
+  real(kind=c_real), intent(out) :: conv_vel(shcol)
+
+end subroutine compute_conv_vel_shoc_length_f
+
 end interface
 
 end module shoc_iso_f
