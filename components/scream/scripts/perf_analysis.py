@@ -145,7 +145,7 @@ class PerfAnalysis(object):
         replaced = []
         for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):
             if name.upper() in test_exe:
-                test_exe.replace(name.upper(), val)
+                test_exe.replace(name.upper(), str(val))
                 replaced.append(name)
 
         for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):
