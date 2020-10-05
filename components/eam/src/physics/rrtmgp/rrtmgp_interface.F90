@@ -39,7 +39,7 @@ module rrtmgp_interface
       get_min_temperature, get_max_temperature, &
       initialize_rrtmgp_fluxes, free_fluxes, &
       free_optics_sw, free_optics_lw, reset_fluxes, &
-      set_gas_concentrations
+      set_gas_concentrations, expand_day_fluxes
 
 contains
 
@@ -95,7 +95,7 @@ contains
    end subroutine rrtmgp_initialize
 
    subroutine rrtmgp_run_sw( &
-         ngas, ncol, nday, nlev, day_indices, &
+         ngas, ncol, nlev, &
          gas_names, gas_vmr, &
          pmid, tmid, pint, coszrs, &
          albedo_dir, albedo_dif, &
@@ -104,8 +104,7 @@ contains
          fluxes_allsky, fluxes_clrsky, &
          tsi_scaling &
          )
-      integer, intent(in) :: ngas, ncol, nday, nlev
-      integer, intent(in), dimension(:) :: day_indices
+      integer, intent(in) :: ngas, ncol, nlev
       character(len=*), dimension(:) :: gas_names
       real(wp), intent(in), dimension(:,:,:) :: gas_vmr
       real(wp), intent(in), dimension(:,:) :: &
@@ -118,54 +117,25 @@ contains
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(wp), intent(in) :: tsi_scaling
 
-      real(wp), dimension(nday) :: coszrs_day
-      real(wp), dimension(nswbands,nday) :: albedo_dir_day, albedo_dif_day
-      real(wp), dimension(nday,nlev) :: pmid_day, tmid_day
-      real(wp), dimension(nday,nlev+1) :: pint_day
-      real(wp), dimension(ngas,nday,pver) :: gas_vmr_day
       type(ty_gas_concs) :: gas_concentrations
       type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
-      type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
 
       ! Loop indices
       integer :: iband, igas, iday, icol
 
-      ! Compress state to daytime-only
-      do iday = 1,nday
-         icol = day_indices(iday)
-         tmid_day(iday,:) = tmid(icol,:)
-         pmid_day(iday,:) = pmid(icol,:)
-         pint_day(iday,:) = pint(icol,:)
-      end do
-
-      ! Compress to daytime-only arrays
-      do iband = 1,nswbands
-         call compress_day_columns(albedo_dir(iband,1:ncol), albedo_dir_day(iband,1:nday), day_indices(1:nday))
-         call compress_day_columns(albedo_dif(iband,1:ncol), albedo_dif_day(iband,1:nday), day_indices(1:nday))
-      end do
-      call compress_day_columns(coszrs(1:ncol), coszrs_day(1:nday), day_indices(1:nday))
-
       ! Allocate shortwave fluxes (allsky and clearsky)
       ! TODO: why do I need to provide my own routines to do this? Why is 
       ! this not part of the ty_fluxes_byband object?
-      !
-      ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-      ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
-      ! have vertical dimension nlev_rad (defined at midpoints).
-      call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_allsky_day, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(nday, nlev+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
       ! Populate RRTMGP optics
-      call handle_error(cld_optics_sw%alloc_2str(nday, nlev, k_dist_sw, name='shortwave cloud optics'))
+      call handle_error(cld_optics_sw%alloc_2str(ncol, nlev, k_dist_sw, name='shortwave cloud optics'))
       cld_optics_sw%tau = 0
       cld_optics_sw%ssa = 1
       cld_optics_sw%g   = 0
-      call compress_optics_sw( &
-         day_indices, cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
-         cld_optics_sw%tau(1:nday,2:nlev,:), &
-         cld_optics_sw%ssa(1:nday,2:nlev,:), &
-         cld_optics_sw%g  (1:nday,2:nlev,:)  &
-      )
+      cld_optics_sw%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,:,:)
+      cld_optics_sw%ssa(1:ncol,2:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
+      cld_optics_sw%g  (1:ncol,2:nlev,:) = cld_asm_gpt(1:ncol,:,:)
+
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_sw%delta_scale())
 
@@ -177,59 +147,38 @@ contains
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
       call handle_error(aer_optics_sw%alloc_2str( &
-         nday, nlev, k_dist_sw%get_band_lims_wavenumber(), &
+         ncol, nlev, k_dist_sw%get_band_lims_wavenumber(), &
          name='shortwave aerosol optics' &
       ))
       aer_optics_sw%tau = 0
       aer_optics_sw%ssa = 1
       aer_optics_sw%g   = 0
-      call compress_optics_sw( &
-         day_indices, &
-         aer_tau_bnd(1:ncol,1:pver,:), &
-         aer_ssa_bnd(1:ncol,1:pver,:), &
-         aer_asm_bnd(1:ncol,1:pver,:), &
-         aer_optics_sw%tau(1:nday,2:nlev,:), &
-         aer_optics_sw%ssa(1:nday,2:nlev,:), &
-         aer_optics_sw%g  (1:nday,2:nlev,:)  &
-      )
-      ! Apply delta scaling to account for forward-scattering
-      call handle_error(aer_optics_sw%delta_scale())
+      aer_optics_sw%tau(1:ncol,2:nlev,:) = aer_tau_bnd(1:ncol,1:pver,:)
+      aer_optics_sw%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
+      aer_optics_sw%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
 
-      ! Compress gases to daytime-only
+      ! Set gas concentrations
       call t_startf('rad_set_gases_sw')
-      do igas = 1,ngas
-         call compress_day_columns(gas_vmr(igas,1:ncol,1:pver), &
-                                   gas_vmr_day(igas,1:nday,1:pver), &
-                                   day_indices(1:nday))
-      end do
-      call set_gas_concentrations(nday, gas_names, gas_vmr_day, gas_concentrations)
+      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
       call t_stopf('rad_set_gases_sw')
 
       call handle_error(rte_sw( &
          k_dist_sw, gas_concentrations, &
-         pmid_day(1:nday,1:nlev), &
-         tmid_day(1:nday,1:nlev), &
-         pint_day(1:nday,1:nlev+1), &
-         coszrs_day(1:nday), &
-         albedo_dir_day(1:nswbands,1:nday), &
-         albedo_dif_day(1:nswbands,1:nday), &
+         pmid(1:ncol,1:nlev), &
+         tmid(1:ncol,1:nlev), &
+         pint(1:ncol,1:nlev+1), &
+         coszrs(1:ncol), &
+         albedo_dir(1:nswbands,1:ncol), &
+         albedo_dif(1:nswbands,1:ncol), &
          cld_optics_sw, &
-         fluxes_allsky_day, fluxes_clrsky_day, &
+         fluxes_allsky, fluxes_clrsky, &
          aer_props=aer_optics_sw, &
          tsi_scaling=tsi_scaling &
       ))
 
-      ! Expand fluxes from daytime-only arrays to full chunk arrays
-      call t_startf('rad_expand_fluxes_sw')
-      call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky, day_indices(1:nday))
-      call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky, day_indices(1:nday))
-      call t_stopf('rad_expand_fluxes_sw')
-
       ! Clean up after ourselves
       call free_optics_sw(cld_optics_sw)
       call free_optics_sw(aer_optics_sw)
-      call free_fluxes(fluxes_allsky_day)
-      call free_fluxes(fluxes_clrsky_day)
 
    end subroutine rrtmgp_run_sw
 

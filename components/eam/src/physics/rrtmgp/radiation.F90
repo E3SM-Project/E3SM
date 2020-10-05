@@ -36,7 +36,8 @@ module radiation
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts, &
       initialize_rrtmgp_fluxes, free_fluxes, &
-      free_optics_sw, free_optics_lw, reset_fluxes
+      free_optics_sw, free_optics_lw, reset_fluxes, &
+      expand_day_fluxes
    use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
@@ -1338,6 +1339,7 @@ contains
                   aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw, &
                   fluxes_allsky, fluxes_clrsky, qrs, qrsc &
                )
+
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
             end if
@@ -1533,8 +1535,18 @@ contains
 
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
+      integer :: icol, iday
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
+
+      real(wp), dimension(ncol) :: coszrs_day
+      real(wp), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
+      real(wp), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
+      real(wp), dimension(ncol,nlev_rad+1) :: pint_day
+      real(wp), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
+      real(wp), dimension(ncol,nlev_rad-1,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
+      real(wp), dimension(ncol,nlev_rad-1,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
+      type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
 
       ! Scaling factor for total sky irradiance; used to account for orbital
       ! eccentricity, and could be used to scale total sky irradiance for different
@@ -1572,25 +1584,63 @@ contains
          return
       end if
 
+      ! Compress to daytime-only arrays
+      do iday = 1,nday
+         icol = day_indices(iday)
+         tmid_day(iday,:) = tmid(icol,:)
+         pmid_day(iday,:) = pmid(icol,:)
+         pint_day(iday,:) = pint(icol,:)
+         albedo_dir_day(:,iday) = albedo_dir(:,icol)
+         albedo_dif_day(:,iday) = albedo_dif(:,icol)
+         coszrs_day(iday) = coszrs(icol)
+         gas_vmr_day(:,iday,:) = gas_vmr(:,icol,:)
+         cld_tau_gpt_day(iday,:,:) = cld_tau_gpt(icol,:,:)
+         cld_ssa_gpt_day(iday,:,:) = cld_ssa_gpt(icol,:,:)
+         cld_asm_gpt_day(iday,:,:) = cld_asm_gpt(icol,:,:)
+         aer_tau_bnd_day(iday,:,:) = aer_tau_bnd(icol,:,:)
+         aer_ssa_bnd_day(iday,:,:) = aer_ssa_bnd(icol,:,:)
+         aer_asm_bnd_day(iday,:,:) = aer_asm_bnd(icol,:,:)
+      end do
+
+      ! Allocate shortwave fluxes (allsky and clearsky)
+      ! TODO: why do I need to provide my own routines to do this? Why is 
+      ! this not part of the ty_fluxes_byband object?
+      !
+      ! NOTE: fluxes defined at interfaces, so initialize to have vertical
+      ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
+      ! have vertical dimension nlev_rad (defined at midpoints).
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
+      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
+
       ! Add a level above model top to optical properties!
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_calculations_sw')
       call rrtmgp_run_sw( &
-         size(active_gases), ncol, nday, nlev_rad, &
-         day_indices, gas_names, gas_vmr, &
-         pmid(1:ncol,1:nlev_rad), &
-         tmid(1:ncol,1:nlev_rad), &
-         pint(1:ncol,1:nlev_rad+1), &
-         coszrs(1:ncol), &
-         albedo_dir(1:nswbands,1:ncol), &
-         albedo_dif(1:nswbands,1:ncol), &
-         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
-         aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
-         fluxes_allsky, fluxes_clrsky, &
+         size(active_gases), nday, nlev_rad, &
+         gas_names, gas_vmr_day, &
+         pmid_day(1:nday,1:nlev_rad), &
+         tmid_day(1:nday,1:nlev_rad), &
+         pint_day(1:nday,1:nlev_rad+1), &
+         coszrs_day(1:nday), &
+         albedo_dir_day(1:nswbands,1:nday), &
+         albedo_dif_day(1:nswbands,1:nday), &
+         cld_tau_gpt_day(1:nday,1:pver,1:nswgpts), cld_ssa_gpt_day(1:nday,1:pver,1:nswgpts), cld_asm_gpt_day(1:nday,1:pver,1:nswgpts), &
+         aer_tau_bnd_day(1:nday,1:pver,1:nswbands), aer_ssa_bnd_day(1:nday,1:pver,1:nswbands), aer_asm_bnd_day(1:nday,1:pver,1:nswbands), &
+         fluxes_allsky_day, fluxes_clrsky_day, &
          tsi_scaling &
       )
       call t_stopf('rad_calculations_sw')
+
+      ! Expand fluxes from daytime-only arrays to full chunk arrays
+      call t_startf('rad_expand_fluxes_sw')
+      call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky, day_indices(1:nday))
+      call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky, day_indices(1:nday))
+      call t_stopf('rad_expand_fluxes_sw')
+
+      ! Clean up after ourselves
+      call free_fluxes(fluxes_allsky_day)
+      call free_fluxes(fluxes_clrsky_day)
 
       ! Calculate heating rates
       call t_startf('rad_heating_rate_sw')
@@ -1704,7 +1754,6 @@ contains
       use perf_mod, only: t_startf, t_stopf
       use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
-      use mo_optical_props, only: ty_optical_props_1scl
       use radiation_utils, only: calculate_heating_rate
 
       ! Inputs
