@@ -40,25 +40,6 @@
    ! ------------------------------------------------------------------------------- !
    ! Parameter used for selecting generalized critical RH for liquid and ice stratus !
    ! ------------------------------------------------------------------------------- !
-
-   integer :: i_rhminl ! This is for liquid stratus fraction.
-                       ! If 0 : Original fixed critical RH from the namelist.
-                       ! If 1 : Add convective detrainment effect on the above '0' option. 
-                       !        In this case, 'tau_detw' [s] should be specified below.
-                       ! If 2 : Use fully scale-adaptive method.
-                       !        In this case, 'tau_detw' [s] and 'c_aniso' [no unit] should
-                       !        be specified below. 
-
-   integer :: i_rhmini ! This is for ice stratus fraction.
-                       ! If 0 : Original fixed critical RH from the namelist.
-                       ! If 1 : Add convective detrainment effect on the above '0' option. 
-                       !        In this case, 'tau_deti' [s] should be specified below.
-                       ! If 2 : Use fully scale-adaptive method.
-                       !        In this case, 'tau_deti' [s] and 'c_aniso' [no unit] should
-                       !        be specified below. 
-                       ! Note that 'micro_mg_cam' is using below 'rhmini_const', regardless
-                       ! of 'i_rhmini'.  This connection should be built in future.
-
    real(r8), parameter :: tau_detw =100._r8   ! Dissipation time scale of convective liquid condensate detrained
                                               !  into the clear portion. [hr]. 0.5-3 hr is possible.
    real(r8), parameter :: tau_deti =  1._r8   ! Dissipation time scale of convective ice    condensate detrained
@@ -93,7 +74,7 @@
    ! Initialization !
    ! -------------- !
 
-   subroutine ini_macro(rhminl_opt_in, rhmini_opt_in)
+   subroutine ini_macro()
 
    !--------------------------------------------------------------------- !
    !                                                                      ! 
@@ -106,12 +87,6 @@
    use cloud_fraction, only: cldfrc_getparams
    use cam_history,    only: addfld
 
-   integer,  intent(in) :: rhminl_opt_in
-   integer,  intent(in) :: rhmini_opt_in
-
-   i_rhminl   = rhminl_opt_in
-   i_rhmini   = rhmini_opt_in
-
    call cldfrc_getparams(rhminl_out=rhminl_const, rhminl_adj_land_out=rhminl_adj_land_const,  &
                          rhminh_out=rhminh_const, premit_out=premit, premib_out=premib)
 
@@ -122,8 +97,6 @@
        write(iulog,*) '  rhminh          = ', rhminh_const
        write(iulog,*) '  premit          = ', premit
        write(iulog,*) '  premib          = ', premib
-       write(iulog,*) '  i_rhminl        = ', i_rhminl
-       write(iulog,*) '  i_rhmini        = ', i_rhmini
    end if
 
 
@@ -151,8 +124,7 @@
                             A_T        , A_qv       , A_ql       , A_qi         , A_nl       , A_ni       , &
                             C_T        , C_qv       , C_ql       , C_qi         , C_nl       , C_ni       , C_qlst, &
                             D_T        , D_qv       , D_ql       , D_qi         , D_nl       , D_ni       , &
-                            a_cud      , a_cu0      , clrw_old   , clri_old     , landfrac   , snowh      , & 
-                            tke        , qtl_flx    , qti_flx    , cmfr_det     , qlr_det    , qir_det    , &
+                            a_cud      , a_cu0      , landfrac   , snowh        , & 
                             s_tendout  , qv_tendout , ql_tendout , qi_tendout   , nl_tendout , ni_tendout , &
                             qme        , qvadj      , qladj      , qiadj        , qllim      , qilim      , &
                             cld        , al_st_star , ai_st_star , ql_st_star   , qi_st_star , a_det_star , &
@@ -205,15 +177,6 @@
 
    real(r8), intent(in)    :: a_cud(pcols,pver)            ! Old cumulus fraction before update
    real(r8), intent(in)    :: a_cu0(pcols,pver)            ! New cumulus fraction after update
-
-   real(r8), intent(in)    :: clrw_old(pcols,pver)         ! Clear sky fraction at the previous time step for liquid stratus process
-   real(r8), intent(in)    :: clri_old(pcols,pver)         ! Clear sky fraction at the previous time step for    ice stratus process
-   real(r8), pointer       :: tke(:,:)                     ! (pcols,pverp) TKE from the PBL scheme
-   real(r8), pointer       :: qtl_flx(:,:)                 ! (pcols,pverp) overbar(w'qtl') from PBL scheme where qtl = qv + ql
-   real(r8), pointer       :: qti_flx(:,:)                 ! (pcols,pverp) overbar(w'qti') from PBL scheme where qti = qv + qi
-   real(r8), pointer       :: cmfr_det(:,:)                ! (pcols,pver)  Detrained mass flux from the convection scheme
-   real(r8), pointer       :: qlr_det(:,:)                 ! (pcols,pver)  Detrained        ql from the convection scheme
-   real(r8), pointer       :: qir_det(:,:)                 ! (pcols,pver)  Detrained        qi from the convection scheme
 
    real(r8), intent(in)    :: landfrac(pcols)              ! Land fraction
    real(r8), intent(in)    :: snowh(pcols)                 ! Snow depth (liquid water equivalent)
@@ -448,10 +411,6 @@
    logical  land
    real(r8) tmp, tmp1, tmp2
 
-   real(r8) d_rhmin_liq_PBL(pcols,pver)
-   real(r8) d_rhmin_ice_PBL(pcols,pver)
-   real(r8) d_rhmin_liq_det(pcols,pver)
-   real(r8) d_rhmin_ice_det(pcols,pver)
    real(r8) rhmini_arr(pcols,pver)
    real(r8) rhminl_arr(pcols,pver)
    real(r8) rhminl_adj_land_arr(pcols,pver)
@@ -657,10 +616,7 @@
    ! Compute critical RH for stratus
    call rhcrit_calc( &
       ncol, dp, T0, p, &
-      clrw_old, clri_old, tke, qtl_flx, &
-      qti_flx, cmfr_det, qlr_det, qir_det, &
-      rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr, &
-      d_rhmin_liq_PBL, d_rhmin_ice_PBL, d_rhmin_liq_det, d_rhmin_ice_det)
+      rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr )
 
    ! ---------------------------------- !
    ! Compute cumulus-related properties ! 
@@ -1053,10 +1009,6 @@
    ! -------------------------------------------------------------- !
 
    ! Mar.03.2015. Below is performed for default CAM5.
-   !              In case of UNICON with 'cu_det_st = .true.', below is not performed but
-   !              separate treatment will be done further below.
-
-   if (shallow_scheme .ne. 'UNICON') then
 
    T_dprime(:ncol,top_lev:)   =  T_dprime(:ncol,top_lev:)  + D_T(:ncol,top_lev:) * dt
    qv_dprime(:ncol,top_lev:)  = qv_dprime(:ncol,top_lev:) + D_qv(:ncol,top_lev:) * dt
@@ -1064,8 +1016,6 @@
    qi_dprime(:ncol,top_lev:)  = qi_dprime(:ncol,top_lev:) + D_qi(:ncol,top_lev:) * dt
    nl_dprime(:ncol,top_lev:)  = nl_dprime(:ncol,top_lev:) + D_nl(:ncol,top_lev:) * dt
    ni_dprime(:ncol,top_lev:)  = ni_dprime(:ncol,top_lev:) + D_ni(:ncol,top_lev:) * dt
-
-   endif
 
    ! ---------------------------------------------------------- !
    ! Impose diagnostic upper and lower limits on the in-stratus !
@@ -1147,59 +1097,6 @@
 
    enddo ! End of 'iter' prognostic iterative computation
 
-   ! ---------------------------------------------------------------------------------------- !
-   ! Mar.02.2015. In case of UNICON with 'cu_det_st = .true.', I need to perform below block. !
-   !              Note that 'D_qv = 0._r8' and 'D_ql(qi,nl,ni) > 0', so that I don't need to  !
-   !              worry about negative tracer.
-    !
-   !              As also shown below, I need to update 'al_st, ai_st, a_st, ql_st, qi_st' by !
-   !              adding 'al_det' and 'ai_det'.
-    !
-   ! ---------------------------------------------------------------------------------------- !
-
-   if (shallow_scheme .eq. 'UNICON') then
-
-       T_star(:ncol,top_lev:)   =  T_star(:ncol,top_lev:)  + D_T(:ncol,top_lev:) * dt
-       qv_star(:ncol,top_lev:)  = qv_star(:ncol,top_lev:) + D_qv(:ncol,top_lev:) * dt
-       ql_star(:ncol,top_lev:)  = ql_star(:ncol,top_lev:) + D_ql(:ncol,top_lev:) * dt
-       qi_star(:ncol,top_lev:)  = qi_star(:ncol,top_lev:) + D_qi(:ncol,top_lev:) * dt
-       nl_star(:ncol,top_lev:)  = nl_star(:ncol,top_lev:) + D_nl(:ncol,top_lev:) * dt
-       ni_star(:ncol,top_lev:)  = ni_star(:ncol,top_lev:) + D_ni(:ncol,top_lev:) * dt
-
-       if( i_adet .eq. 0 ) then ! Maximally overlapped.
-       do k = top_lev, pver
-       do i = 1, ncol
-          call qsat( T_star(i,k), p(i,k), tmp1, tmp2 )
-          a_det_star(i,k) = ( D_ql(i,k) + D_qi(i,k) ) / max( qsmall, &
-                ( D_ql(i,k) + D_qi(i,k) + coef_ero * max( 0._r8, tmp2 - qv_star(i,k) ) ) ) 
-          a_det_star(i,k) =  max( 0._r8, min( 1._r8, a_det_star(i,k) ) )
-        ! Below is a maximum overlap.
-          a_det_star(i,k) = ( 1._r8 - a_cu0(i,k) ) * a_det_star(i,k)
-          a_st_star(i,k) = max( a_st_star(i,k), a_det_star(i,k) )
-       enddo
-       enddo
-
-       else ! Added separately.
-
-       do k = top_lev, pver
-       do i = 1, ncol
-          call qsat( T_star(i,k), p(i,k), tmp1, tmp2 )
-          a_det_star(i,k) = ( D_ql(i,k) + D_qi(i,k) ) / max( qsmall, &
-                ( D_ql(i,k) + D_qi(i,k) + coef_ero * max( 0._r8, tmp2 - qv_star(i,k) ) ) ) 
-          a_det_star(i,k) =  max( 0._r8, min( 1._r8, a_det_star(i,k) ) )
-        ! Below is added separately. After adding in a separate way, add to the 'stratus' fraction
-        ! for treating cloud microphysics and radiation processes. This is designed to increase
-        ! trade cumulus.
-          a_det_star(i,k) = ( 1._r8 - a_cu0(i,k) - a_st_star(i,k) ) * a_det_star(i,k)
-          a_st_star(i,k) = a_st_star(i,k) + a_det_star(i,k)
-          a_st_star(i,k) = max( 0._r8, min( a_st_star(i,k), 1._r8 - a_cu0(i,k) ) )
-       enddo
-       enddo
-
-       endif
-
-   endif
-
    ! ------------------------------------------------------------------------ !
    ! Compute final tendencies of main output variables and diagnostic outputs !
    ! Note that the very input state [T0,qv0,ql0,qi0] are                      !
@@ -1252,12 +1149,11 @@
    ni_tendout(:ncol,top_lev:) =    ( ni_star(:ncol,top_lev:) - ni0(:ncol,top_lev:) )/dt - &
         (A_ni(:ncol,top_lev:)+C_ni(:ncol,top_lev:))
 
-   ! Mar.02.2015. Below block should be performed only for non-UNICON case.
-   !              Strictly, below block also should not be performed for the default CAM5 case, due to
+   ! Mar.02.2015. Strictly, below block also should not be performed for the default CAM5 case, due to
    !              the adding of detrained convective condensate.
    !              But, for the time being, let's keep as it is for the default CAM5 case.
 
-   if ( shallow_scheme .ne. 'UNICON' .and. (.not. do_cldice) ) then
+   if ( .not. do_cldice ) then
       do k = top_lev, pver
          do i = 1, ncol
 
@@ -1312,111 +1208,37 @@
    rhmin_ice_diag(:,:) = rhminh_const
    call outfld( 'RHMIN_ICE',      rhmin_ice_diag,  pcols, lchnk )
 
-   call outfld( 'DRHMINPBL_LIQ', d_rhmin_liq_PBL,  pcols, lchnk )
-   call outfld( 'DRHMINPBL_ICE', d_rhmin_ice_PBL,  pcols, lchnk )
-   call outfld( 'DRHMINDET_LIQ', d_rhmin_liq_det,  pcols, lchnk )
-   call outfld( 'DRHMINDET_ICE', d_rhmin_ice_det,  pcols, lchnk )
-
    end subroutine mmacro_pcond
 
 
 !=======================================================================================================
 
-subroutine rhcrit_calc( &
-   ncol, dp, T0, p, &
-   clrw_old, clri_old, tke, qtl_flx, &
-   qti_flx, cmfr_det, qlr_det, qir_det, &
-   rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr, &
-   d_rhmin_liq_PBL, d_rhmin_ice_PBL, d_rhmin_liq_det, d_rhmin_ice_det)
+subroutine rhcrit_calc( rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr )
 
    ! ------------------------------------------------- !
-   ! Compute a drop of critical RH for stratus by      !
-   ! (1) PBL turbulence, and                           !
-   ! (2) convective detrainment.                       !
-   ! Note that all of 'd_rhmin...' terms are positive. !
+   ! This routine used to compute a drop of critical
+   ! RH for stratus by:
+   ! (1) PBL turbulence, and
+   ! (2) convective detrainment
+   ! This functionality was implemented as part of 
+   ! UNICON, which has been removed from E3SM
    ! ------------------------------------------------- !
-
-   integer,  intent(in) :: ncol                         ! Number of active columns
-   real(r8), intent(in) :: dp(pcols,pver)               ! Pressure thickness [Pa] > 0
-   real(r8), intent(in) :: T0(pcols,pver)               ! Temperature [K]
-   real(r8), intent(in) :: p(pcols,pver)                ! Pressure at the layer mid-point [Pa]
-   real(r8), intent(in) :: clrw_old(pcols,pver)         ! Clear sky fraction at the previous time step for liquid stratus process
-   real(r8), intent(in) :: clri_old(pcols,pver)         ! Clear sky fraction at the previous time step for    ice stratus process
-   real(r8), pointer    :: tke(:,:)                     ! (pcols,pverp) TKE from the PBL scheme
-   real(r8), pointer    :: qtl_flx(:,:)                 ! (pcols,pverp) overbar(w'qtl') from PBL scheme where qtl = qv + ql
-   real(r8), pointer    :: qti_flx(:,:)                 ! (pcols,pverp) overbar(w'qti') from PBL scheme where qti = qv + qi
-   real(r8), pointer    :: cmfr_det(:,:)                ! (pcols,pver)  Detrained mass flux from the convection scheme
-   real(r8), pointer    :: qlr_det(:,:)                 ! (pcols,pver)  Detrained        ql from the convection scheme
-   real(r8), pointer    :: qir_det(:,:)                 ! (pcols,pver)  Detrained        qi from the convection scheme
 
    real(r8), intent(out) :: rhmini_arr(pcols,pver)
    real(r8), intent(out) :: rhminl_arr(pcols,pver)
    real(r8), intent(out) :: rhminl_adj_land_arr(pcols,pver)
    real(r8), intent(out) :: rhminh_arr(pcols,pver) 
-   real(r8), intent(out) :: d_rhmin_liq_PBL(pcols,pver)
-   real(r8), intent(out) :: d_rhmin_ice_PBL(pcols,pver)
-   real(r8), intent(out) :: d_rhmin_liq_det(pcols,pver)
-   real(r8), intent(out) :: d_rhmin_ice_det(pcols,pver)
 
    ! local variables
-
    integer :: i, k
 
-   real(r8) :: esat_tmp(pcols)          ! Dummy for saturation vapor pressure calc.
-   real(r8) :: qsat_tmp(pcols)          ! Saturation water vapor specific humidity [kg/kg]
-   real(r8) :: sig_tmp
    !---------------------------------------------------------------------------------------------------
-
-
 
    ! ---------------------------------- !
    ! Calc critical RH for ice stratus   !
    ! ---------------------------------- !
 
    rhmini_arr(:,:) = rhmini_const
-
-   if (i_rhmini > 0) then
-
-      ! Compute the drop of critical RH by convective detrainment of cloud condensate
-
-      do k = top_lev, pver
-         do i = 1, ncol
-            d_rhmin_ice_det(i,k) = tau_deti*(gravit/dp(i,k))*cmfr_det(i,k)*clri_old(i,k)*qir_det(i,k)*3.6e6_r8 
-            d_rhmin_ice_det(i,k) = max(0._r8,min(0.5_r8,d_rhmin_ice_det(i,k)))
-         end do
-      end do
-
-      if (i_rhmini == 1) then
-         rhmini_arr(:ncol,:) = rhmini_const - d_rhmin_ice_det(:ncol,:)
-      end if
-
-   end if
-
-   if (i_rhmini == 2) then
-
-      ! Compute the drop of critical RH by the variability induced by PBL turbulence
-
-      do k = top_lev, pver
-         call qsat_ice(T0(1:ncol,k), p(1:ncol,k), esat_tmp(1:ncol), qsat_tmp(1:ncol))
-
-         do i = 1, ncol
-            sig_tmp = 0.5_r8 * ( qti_flx(i,k)   / sqrt(max(qsmall,tke(i,k))) + & 
-                                 qti_flx(i,k+1) / sqrt(max(qsmall,tke(i,k+1))) )
-            d_rhmin_ice_PBL(i,k) = c_aniso*sig_tmp/max(qsmall,qsat_tmp(i)) 
-            d_rhmin_ice_PBL(i,k) = max(0._r8,min(0.5_r8,d_rhmin_ice_PBL(i,k)))
-
-            rhmini_arr(i,k) = 1._r8 - d_rhmin_ice_PBL(i,k) - d_rhmin_ice_det(i,k)
-         end do
-      end do
-   end if
-
-   if (i_rhmini > 0) then
-      do k = top_lev, pver
-         do i = 1, ncol
-            rhmini_arr(i,k) = max(0._r8,min(rhmaxi,rhmini_arr(i,k))) 
-         end do
-      end do
-   end if
 
    ! ------------------------------------- !
    ! Choose critical RH for liquid stratus !
@@ -1425,53 +1247,6 @@ subroutine rhcrit_calc( &
    rhminl_arr(:,:)          = rhminl_const
    rhminl_adj_land_arr(:,:) = rhminl_adj_land_const
    rhminh_arr(:,:)          = rhminh_const
-
-   if (i_rhminl > 0) then
-
-      ! Compute the drop of critical RH by convective detrainment of cloud condensate
-
-      do k = top_lev, pver
-         do i = 1, ncol
-            d_rhmin_liq_det(i,k) = tau_detw*(gravit/dp(i,k))*cmfr_det(i,k)*clrw_old(i,k)*qlr_det(i,k)*3.6e6_r8 
-            d_rhmin_liq_det(i,k) = max(0._r8,min(0.5_r8,d_rhmin_liq_det(i,k)))
-         end do
-      end do
-
-      if (i_rhminl == 1) then
-         rhminl_arr(:ncol,top_lev:) = rhminl_const - d_rhmin_liq_det(:ncol,top_lev:)
-         rhminh_arr(:ncol,top_lev:) = rhminh_const - d_rhmin_liq_det(:ncol,top_lev:)
-      end if
-
-   end if
-
-   if (i_rhminl == 2) then
-
-      ! Compute the drop of critical RH by the variability induced by PBL turbulence
-
-      do k = top_lev, pver
-         call qsat_water(T0(1:ncol,k), p(1:ncol,k), esat_tmp(1:ncol), qsat_tmp(1:ncol))
-
-         do i = 1, ncol
-            sig_tmp = 0.5_r8 * ( qtl_flx(i,k)   / sqrt(max(qsmall,tke(i,k))) + & 
-                                 qtl_flx(i,k+1) / sqrt(max(qsmall,tke(i,k+1))) )
-            d_rhmin_liq_PBL(i,k) = c_aniso*sig_tmp/max(qsmall,qsat_tmp(i)) 
-            d_rhmin_liq_PBL(i,k) = max(0._r8,min(0.5_r8,d_rhmin_liq_PBL(i,k)))
-
-            rhminl_arr(i,k) = 1._r8 - d_rhmin_liq_PBL(i,k) - d_rhmin_liq_det(i,k)
-            rhminl_adj_land_arr(i,k) = 0._r8
-            rhminh_arr(i,k) = rhminl_arr(i,k)
-         end do
-      end do
-   end if
-
-   if (i_rhminl > 0) then
-      do k = top_lev, pver
-         do i = 1, ncol
-            rhminl_arr(i,k) = max(rhminl_adj_land_arr(i,k),min(1._r8,rhminl_arr(i,k))) 
-            rhminh_arr(i,k) = max(0._r8,min(1._r8,rhminh_arr(i,k))) 
-         end do
-      end do
-   end if
 
 end subroutine rhcrit_calc
 
