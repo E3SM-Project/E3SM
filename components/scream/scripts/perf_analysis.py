@@ -159,7 +159,7 @@ class PerfAnalysis(object):
     def run_test(self, test_cmd):
     ###############################################################################
         if self._cd:
-            test_path, test_exe = os.path.split()
+            test_path, test_exe = os.path.split(test_cmd)
             test_path = None if not test_path else test_path
         else:
             test_exe = test_cmd
