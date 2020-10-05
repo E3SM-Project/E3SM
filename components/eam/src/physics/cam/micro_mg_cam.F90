@@ -177,9 +177,6 @@ integer :: &
    cmeliq_idx,         &
    accre_enhan_idx
 
-integer :: &
-     am_evp_st_idx,      &! Evaporation area of stratiform precipitation
-
 ! Fields needed as inputs to COSP
 integer :: &
      ls_mrprc_idx,    ls_mrsnw_idx,    &
@@ -1042,7 +1039,6 @@ subroutine micro_mg_cam_init(pbuf2d)
       call pbuf_set_field(pbuf2d, acnum_idx,  0)
       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
       call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
-      call pbuf_set_field(pbuf2d, am_evp_st_idx,  0._r8)
       call pbuf_set_field(pbuf2d, prer_evap_idx,  0._r8)
 
       if (qrain_idx > 0)   call pbuf_set_field(pbuf2d, qrain_idx, 0._r8)
@@ -1104,7 +1100,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: npccn(:,:)     ! liquid activation number tendency
    real(r8), pointer :: rndst(:,:,:)
    real(r8), pointer :: nacon(:,:,:)
-   real(r8), pointer :: am_evp_st_grid(:,:)    ! Evaporation area of stratiform precipitation. 0<= am_evp_st <=1.
 
    real(r8), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
    real(r8), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
@@ -1146,7 +1141,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 
    real(r8), target :: prect(state%psetcols)
    real(r8), target :: preci(state%psetcols)
-   real(r8), target :: am_evp_st(state%psetcols,pver)  ! Area over which precip evaporates
    real(r8), target :: evapsnow(state%psetcols,pver)   ! Local evaporation of snow
    real(r8), target :: prodsnow(state%psetcols,pver)   ! Local production of snow
    real(r8), target :: cmeice(state%psetcols,pver)     ! Rate of cond-evap of ice within the cloud
@@ -1273,7 +1267,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), allocatable, target :: packed_prect(:)
    real(r8), allocatable, target :: packed_preci(:)
    real(r8), allocatable, target :: packed_nevapr(:,:)
-   real(r8), allocatable, target :: packed_am_evp_st(:,:)
    real(r8), allocatable, target :: packed_evapsnow(:,:)
    real(r8), allocatable, target :: packed_prain(:,:)
    real(r8), allocatable, target :: packed_prodsnow(:,:)
@@ -1732,11 +1725,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, acnum_idx,       acnum_grid)
    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq_grid)
    call pbuf_get_field(pbuf, ast_idx,         ast_grid, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-
-   ! Only MG 1 defines this field
-   if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-      call pbuf_get_field(pbuf, am_evp_st_idx,   am_evp_st_grid)
-   end if
    
    !-------------------------------------------------------------------------------------
    ! Microphysics assumes 'liquid stratus frac = ice stratus frac
@@ -1844,9 +1832,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call post_proc%add_field(p(umr), p(packed_umr))
       allocate(packed_ums(mgncol,nlev))
       call post_proc%add_field(p(ums), p(packed_ums))
-   else if (micro_mg_sub_version == 0) then
-      allocate(packed_am_evp_st(mgncol,nlev))
-      call post_proc%add_field(p(am_evp_st), p(packed_am_evp_st))
    end if
 
    allocate(packed_prect(mgncol))
@@ -2116,7 +2101,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  packed_icecldf, packed_rate1ord_cw2pr_st, packed_naai, packed_npccn,                 &
                  packed_rndst, packed_nacon, packed_tlat, packed_qvlat, packed_qctend,                &
                  packed_qitend, packed_nctend, packed_nitend, packed_rel, rel_fn_dum,      &
-                 packed_rei, packed_prect, packed_preci, packed_nevapr, packed_evapsnow, packed_am_evp_st, &
+                 packed_rei, packed_prect, packed_preci, packed_nevapr, packed_evapsnow, &
                  packed_prain, packed_prodsnow, packed_cmeout, packed_dei, packed_mu,                &
                  packed_lambdac, packed_qsout, packed_des, packed_rflx, packed_sflx,                 &
                  packed_qrout, reff_rain_dum, reff_snow_dum, packed_qcsevap, packed_qisevap,   &
@@ -2477,10 +2462,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call subcol_field_avg(nevapr,    ngrdcol, lchnk, nevapr_grid)
       call subcol_field_avg(prain,     ngrdcol, lchnk, prain_grid)
 
-      if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-         call subcol_field_avg(am_evp_st, ngrdcol, lchnk, am_evp_st_grid)
-      end if
-
       ! Average fields which are not in pbuf
       call subcol_field_avg(qrout,     ngrdcol, lchnk, qrout_grid)
       call subcol_field_avg(qsout,     ngrdcol, lchnk, qsout_grid)
@@ -2542,10 +2523,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       qme_grid        => qme
       nevapr_grid     => nevapr
       prain_grid      => prain
-
-      if (micro_mg_version == 1 .and. micro_mg_sub_version == 0) then
-         am_evp_st_grid  = am_evp_st
-      end if
 
       qrout_grid      = qrout
       qsout_grid      = qsout

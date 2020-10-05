@@ -375,7 +375,7 @@ subroutine micro_mg_tend ( &
      icecldf, rate1ord_cw2pr_st, naai, npccnin,       &
      rndst, nacon, tlat, qvlat, qctend,               &
      qitend, nctend, nitend, effc, effc_fn,           &
-     effi, prect, preci, nevapr, evapsnow, am_evp_st, &
+     effi, prect, preci, nevapr, evapsnow,            &
      prain, prodsnow, cmeout, deffi, pgamrad,         &
      lamcrad, qsout, dsout, rflx, sflx,               &
      qrout, reff_rain, reff_snow, qcsevap, qisevap,   &
@@ -442,7 +442,6 @@ real(r8), intent(out) :: prect(pcols)        ! surface precip rate (m/s)
 real(r8), intent(out) :: preci(pcols)        ! cloud ice/snow precip rate (m/s)
 real(r8), intent(out) :: nevapr(pcols,pver)  ! evaporation rate of rain + snow
 real(r8), intent(out) :: evapsnow(pcols,pver)! sublimation rate of snow
-real(r8), intent(out) :: am_evp_st(pcols,pver)! stratiform evaporation area
 real(r8), intent(out) :: prain(pcols,pver)   ! production of rain + snow
 real(r8), intent(out) :: prodsnow(pcols,pver)! production of snow
 real(r8), intent(out) :: cmeout(pcols,pver)  ! evap/sub of cloud
@@ -1045,8 +1044,6 @@ evapsnow(1:ncol,1:pver) = 0._r8
 prain(1:ncol,1:pver) = 0._r8
 prodsnow(1:ncol,1:pver) = 0._r8
 cmeout(1:ncol,1:pver) = 0._r8
-
-am_evp_st(1:ncol,1:pver) = 0._r8
 
 ! for refl calc
 rainrt1(1:ncol,1:pver) = 0._r8
@@ -2347,7 +2344,6 @@ do i=1,ncol
                ! and distribute across cldmax
                pre(k)=min(pre(k)*(cldmax(i,k)-dum),0._r8)
                pre(k)=pre(k)/cldmax(i,k)
-               am_evp_st(i,k) = max(cldmax(i,k)-dum, 0._r8)
             end if
 
             ! sublimation of snow
@@ -2365,7 +2361,6 @@ do i=1,ncol
                ! only sublimate in out-of-cloud region and distribute over cldmax
                prds(k)=min(prds(k)*(cldmax(i,k)-dum),0._r8)
                prds(k)=prds(k)/cldmax(i,k)
-               am_evp_st(i,k) = max(cldmax(i,k)-dum, 0._r8)
             end if
 
             ! make sure RH not pushed above 100% due to rain evaporation/snow sublimation

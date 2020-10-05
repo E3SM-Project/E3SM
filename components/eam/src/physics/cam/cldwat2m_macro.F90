@@ -614,9 +614,7 @@
    ! ---------------- !
 
    ! Compute critical RH for stratus
-   call rhcrit_calc( &
-      ncol, dp, T0, p, &
-      rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr )
+   call rhcrit_calc( rhmini_arr, rhminl_arr, rhminl_adj_land_arr, rhminh_arr )
 
    ! ---------------------------------- !
    ! Compute cumulus-related properties ! 
