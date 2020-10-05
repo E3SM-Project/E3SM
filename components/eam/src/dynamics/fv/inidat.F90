@@ -325,7 +325,6 @@ contains
     use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control,  only: phys_getopts
     use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
-    use unicon_cam,   only: unicon_implements_cnst, unicon_init_cnst
 #if ( defined SPMD )
     use mod_comm,           only: mp_sendirr, mp_recvirr
     use spmd_dyn, only: npes_xy, mpicom_xy
@@ -533,9 +532,6 @@ contains
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
              call co2_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "co2_init_cnst"'
-          else if (unicon_implements_cnst(cnst_name(m_cnst))) then
-             call unicon_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
-             if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "unicon_init_cnst"'
           else
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' set to 0.'
           end if

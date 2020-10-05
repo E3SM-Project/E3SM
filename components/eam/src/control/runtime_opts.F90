@@ -237,7 +237,6 @@ contains
    use subcol,              only: subcol_readnl
    use cloud_fraction,      only: cldfrc_readnl
    use cldfrc2m,            only: cldfrc2m_readnl
-   use unicon_cam,          only: unicon_cam_readnl
    use cldwat,              only: cldwat_readnl
    use zm_conv,             only: zmconv_readnl
    use hk_conv,             only: hkconv_readnl
@@ -488,7 +487,6 @@ contains
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
    call cldfrc2m_readnl(nlfilename)
-   call unicon_cam_readnl(nlfilename)
    call zmconv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
    call hkconv_readnl(nlfilename)
