@@ -4353,7 +4353,7 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
   do k=1,nlev
     do i=1,shcol
-        tkes=sqrt(tke(i,k))
+        tkes=bfb_sqrt(tke(i,k))
         numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
         denom(i)=denom(i)+tkes*dz_zt(i,k)
     enddo
