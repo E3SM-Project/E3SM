@@ -28,29 +28,22 @@ void Functions<S,D>
   const int inv_end   = nlev + inv_begin;
   ekat::ExeSpaceUtils<typename KT::ExeSpace>::view_reduction(team,inv_begin,inv_end,
                                                              [&] (const int k) -> Spack {
-      Spack
-        return_pack(0),
-        inv_zt_grid,
-        inv_dz_zt,
-        inv_thv,
-        inv_wthv_sec;
+    Spack
+      return_pack(0),
+      inv_return_pack;
 
-     // Consider k-index in reverse order. For each k-index,
-     // flip the pack.
-     const int inv_k_indx = ekat::npack<Spack>(nlev) - (k+1);
-     for (int p=0; p<Spack::n; ++p) {
-       const int inv_p_indx = Spack::n-(p+1);
+    // Consider k-index in reverse order.
+    const int inv_k_indx = ekat::npack<Spack>(nlev) - (k+1);
+    return_pack.set(zt_grid(inv_k_indx) < pblh,
+                    sp(2.5)*dz_zt(inv_k_indx)*(ggr/thv(inv_k_indx))*wthv_sec(inv_k_indx));
 
-       inv_zt_grid[p] = zt_grid(inv_k_indx)[inv_p_indx];
-       inv_dz_zt[p] = dz_zt(inv_k_indx)[inv_p_indx];
-       inv_thv[p] = thv(inv_k_indx)[inv_p_indx];
-       inv_wthv_sec[p] = wthv_sec(inv_k_indx)[inv_p_indx];
-     }
+    // Flip the computed pack
+    for (int p=0; p<Spack::n; ++p) {
+      const int inv_p_indx = Spack::n-(p+1);
+      inv_return_pack[inv_p_indx] = return_pack[p];
+    }
 
-    return_pack.set(inv_zt_grid < pblh,
-                    sp(2.5)*inv_dz_zt*(ggr/inv_thv)*inv_wthv_sec);
-
-    return return_pack;
+    return inv_return_pack;
   }, conv_vel);
 }
 
