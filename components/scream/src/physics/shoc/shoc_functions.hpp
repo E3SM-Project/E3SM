@@ -183,6 +183,18 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
+
+  KOKKOS_FUNCTION
+  static void compute_conv_vel_shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& thv,
+    const uview_1d<const Spack>& wthv_sec,
+    Scalar&                      conv_vel);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -203,6 +215,7 @@ struct Functions
 # include "shoc_linear_interp_impl.hpp"
 # include "shoc_clipping_diag_third_shoc_moments_impl.hpp"
 # include "shoc_energy_integrals_impl.hpp"
+# include "shoc_compute_conv_vel_shoc_length_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
