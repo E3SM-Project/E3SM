@@ -95,7 +95,7 @@ class PerfAnalysis(object):
 
         with open("build.perf.log", "w") as fd:
 
-            make_cmd  = "make -j8 VERBOSE=1"
+            make_cmd  = "make -j16 VERBOSE=1"
             fd.write(cmake_cmd + "\n")
             fd.write(run_cmd_no_fail(cmake_cmd, combine_output=True) + "\n\n")
             fd.write(make_cmd + "\n")
@@ -145,7 +145,7 @@ class PerfAnalysis(object):
         replaced = []
         for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):
             if name.upper() in test_exe:
-                test_exe.replace(name.upper(), str(val))
+                test_exe = test_exe.replace(name.upper(), str(val))
                 replaced.append(name)
 
         for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):

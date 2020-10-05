@@ -80,6 +80,8 @@ OR
     if args.cxx:
         args.cmake_options += " -DCMAKE_CXX_COMPILER={}".format(args.cxx)
 
+    args.cmake_options += " -C ../cmake/machine-files/{}.cmake".format(args.machine)
+
     expect(not args.plot_friendly or args.scaling, "Doesn't make sense to have plot friendly output without a scaling experiment")
     expect(args.tests, "Need at least one test/exe")
 
