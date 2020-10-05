@@ -1,13 +1,13 @@
 [submodule "components/clm/src/external_models/fates"]
-	path = components/clm/src/external_models/fates
+	path = components/elm/src/external_models/fates
 	url = git@github.com:NGEET/fates.git
 [submodule "alm-mpp"]
-	path = components/clm/src/external_models/mpp
-	url = git@github.com:MPP-LSM/MPP.git
-	branch = alm/develop
+        path = components/elm/src/external_models/mpp
+        url = git@github.com:MPP-LSM/MPP.git
+        branch = alm/develop
 [submodule "sbetr"]
-	path = components/clm/src/external_models/sbetr
-	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+        path = components/elm/src/external_models/sbetr
+        url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "components/mpas-source"]
 	path = components/mpas-source
 	url = git@github.com:MPAS-Dev/MPAS-Model.git
@@ -38,3 +38,11 @@
 [submodule "externals/ekat"]
 	path = externals/ekat
 	url = git@github.com:E3SM-Project/EKAT.git
+[submodule "externals/YAKL"]
+	path = externals/YAKL
+	url = git@github.com:mrnorman/YAKL.git
+[submodule "externals/cub"]
+	path = externals/cub
+	url = git@github.com:NVlabs/cub.git
+[submodule "Submod"]
+	branch = rljacob/e3smconfig/elm-name

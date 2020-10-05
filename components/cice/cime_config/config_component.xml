@@ -30,12 +30,12 @@
     <type>char</type>
     <default_value></default_value>
     <values>
-      <value compset="_CLM45%[^_]*BC">-bc_dep_to_snow_updates</value>
+      <value compset="_ELM%[^_]*BC">-bc_dep_to_snow_updates</value>
     </values>
     <group>build_component_cice</group>
     <file>env_build.xml</file>
     <desc>CICE configure options, see CICE configure utility for details.
-      Provides option(s) for the CLM configure utility.
+      Provides option(s) for the ELM configure utility.
       CICE_CONFIG_OPTS are normally set as compset variables (e.g., -ntr_aero 3)
       and in general should not be modified for supported compsets.
       It is recommended that if you want to modify this value for your experiment,

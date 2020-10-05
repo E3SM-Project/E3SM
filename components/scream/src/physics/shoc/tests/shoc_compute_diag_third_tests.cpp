@@ -49,10 +49,6 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     static constexpr Real w_sec_zi[nlevi] = {0.2, 0.3, 0.5, 0.4, 0.3, 0.1};
     // Define potential temperature second moment [K2]
     static constexpr Real thl_sec[nlevi] = {0.5, 0.9, 1.2, 0.8, 0.4, 0.3};
-    // Define second moment total water second moment [kg^2/kg^2]
-    static constexpr Real qw_sec[nlevi] = {1e-7, 3e-7, 2e-7, 1.4e-6, 5e-7, 4e-7};
-    // Define covarance of thetal and qw [K kg/kg]
-    static constexpr Real qwthl_sec[nlevi] = {1e-3, 3e-3, 2e-3, 1.4e-3, 5e-3, 4e-3};
     // Define vertical flux of temperature [K m/s]
     static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04, -0.01, 0.01, 0.03};
     // Define the heights on the zi grid [m]
@@ -63,8 +59,6 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     static constexpr Real brunt_zi[nlevi] = {4e-5, 3e-5, 3e-5, 2e-5, 2e-5, -1e-5};
     // Define the potential temperature on zi grid [K]
     static constexpr Real thetal_zi[nlevi] = {330, 325, 320, 310, 300, 301};
-    // Define the buoyancy flux on zi grid [K m/s]
-    static constexpr Real wthv_sec_zi[nlevi] = {0.002, 0.03, 0.04, 0.01, 0.02, 0.04};
     
     // Define TKE [m2/s2], compute from w_sec
     Real tke[nlev];
@@ -107,7 +101,6 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 	
         SDS.w_sec[offset] = w_sec[n];
         SDS.dz_zt[offset] = dz_zt[n];
-        SDS.zt_grid[offset] = zt_grid[n];
         SDS.tke[offset] = tke[n];
 	
       }
@@ -117,17 +110,13 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
         const auto offset = n + s * nlevi;
 	
         SDS.dz_zi[offset] = dz_zi[n];
-        SDS.zi_grid[offset] = zi_grid[n];
         SDS.thl_sec[offset] = (s+1)*thl_sec[n];
-        SDS.qw_sec[offset] = (s+1)*qw_sec[n];
-        SDS.qwthl_sec[offset] = qwthl_sec[n];
         SDS.wthl_sec[offset] = wthl_sec[n];
 	
         SDS.w_sec_zi[offset] = w_sec_zi[n];
         SDS.isotropy_zi[offset] = isotropy_zi[n];
         SDS.brunt_zi[offset] = brunt_zi[n];
         SDS.thetal_zi[offset] = thetal_zi[n];
-        SDS.wthv_sec_zi[offset] = wthv_sec_zi[n];
 	
       }
     }      
@@ -141,7 +130,6 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
         REQUIRE(SDS.dz_zt[offset] > 0);
-        REQUIRE(SDS.zt_grid[offset] > 0);
         REQUIRE(SDS.tke[offset] > 0);  
       }
       
@@ -149,9 +137,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
         const auto offset = n + s * nlevi;
 	
         REQUIRE(SDS.dz_zi[offset] >= 0);
-        REQUIRE(SDS.zi_grid[offset] >= 0);
         REQUIRE(SDS.thl_sec[offset] >= 0);
-        REQUIRE(SDS.qw_sec[offset] >= 0);
         REQUIRE(SDS.w_sec_zi[offset] >= 0);
         REQUIRE(SDS.isotropy_zi[offset] >= 0);
         REQUIRE(SDS.thetal_zi[offset] >= 0);
@@ -204,7 +190,58 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCCompThirdMomData SDS_f90[] = {
+      //               shcol, nlev, nlevi
+      SHOCCompThirdMomData(10, 71, 72),
+      SHOCCompThirdMomData(10, 12, 13),
+      SHOCCompThirdMomData(7,  16, 17),
+      SHOCCompThirdMomData(2, 7, 8)
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCCompThirdMomData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCCompThirdMomData SDS_cxx[] = {
+      SHOCCompThirdMomData(SDS_f90[0]),
+      SHOCCompThirdMomData(SDS_f90[1]),
+      SHOCCompThirdMomData(SDS_f90[2]),
+      SHOCCompThirdMomData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      compute_diag_third_shoc_moment(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      compute_diag_third_shoc_moment_f(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,
+                                       d.wthl_sec,d.tke,d.dz_zt,
+                                       d.dz_zi,d.isotropy_zi,
+                                       d.brunt_zi,d.w_sec_zi,d.thetal_zi,
+                                       d.w3);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCCompThirdMomData& d_f90 = SDS_f90[i];
+      SHOCCompThirdMomData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+      }
+    }
   }
 };
 

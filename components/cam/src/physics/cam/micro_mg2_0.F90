@@ -15,7 +15,7 @@ module micro_mg2_0
 ! e-mail: morrison@ucar.edu, andrew@ucar.edu
 !---------------------------------------------------------------------------------
 !
-! NOTE: Modified to allow other microphysics packages (e.g. CARMA) to do ice
+! NOTE: Modified to allow other microphysics packages to do ice
 ! microphysics in cooperation with the MG liquid microphysics. This is
 ! controlled by the do_cldice variable.
 !
@@ -135,9 +135,7 @@ real(r8), parameter :: minrefl = 1.26e-10_r8    ! minrefl = 10._r8**(mindbz/10._
 ! autoconversion size threshold for cloud ice to snow (m)
 real(r8) :: dcs
 
-!!== KZ_DCS 
 logical :: dcs_tdep
-!!== KZ_DCS 
 
 ! minimum mass of new crystal due to freezing of cloud droplets done
 ! externally (kg)
@@ -175,6 +173,8 @@ logical :: use_hetfrz_classnuc
 
 real(r8) :: ncnst ! constant droplet concentration
 real(r8) :: ninst ! constant ice concentration
+
+real(r8) :: mincdnc     ! if mincdnc > 0, then impose a minimum droplet number conc.  
 
 real(r8) :: rhosu       ! typical 850mn air density
 
@@ -223,11 +223,9 @@ contains
 subroutine micro_mg_init( &
      kind, gravit, rair, rh2o, cpair,    &
      tmelt_in, latvap, latice,           &
-!!== KZ_DCS 
      rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
-!!== KZ_DCS 
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
-     do_nccons_in, do_nicons_in, ncnst_in, ninst_in, &
+     do_nccons_in, do_nicons_in, ncnst_in, ninst_in, mincdnc_in, &
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
      prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
@@ -255,9 +253,7 @@ subroutine micro_mg_init( &
   real(r8), intent(in)  :: rhmini_in    ! Minimum rh for ice cloud fraction > 0.
   real(r8), intent(in)  :: micro_mg_dcs
   real(r8), intent(in)  :: ice_sed_ai   !Fall speed parameter for cloud ice
-!!== KZ_DCS 
   logical,  intent(in)  :: micro_mg_dcs_tdep
-!!== KZ_DCS 
 
   logical,  intent(in)  :: microp_uniform_in    ! .true. = configure uniform for sub-columns
                                             ! .false. = use w/o sub-columns (standard)
@@ -281,6 +277,7 @@ subroutine micro_mg_init( &
 
   real(r8), intent(in)  :: ncnst_in
   real(r8), intent(in)  :: ninst_in        
+  real(r8), intent(in)  :: mincdnc_in
 
   character(128), intent(out) :: errstring    ! Output status (non-blank for error return)
 
@@ -288,9 +285,7 @@ subroutine micro_mg_init( &
 
   dcs = micro_mg_dcs
 
-!!== KZ_DCS 
   dcs_tdep = micro_mg_dcs_tdep 
-!!== KZ_DCS 
 
  prc_coef1 = prc_coef1_in
  prc_exp   = prc_exp_in
@@ -332,6 +327,7 @@ subroutine micro_mg_init( &
   nicons = do_nicons_in
   ncnst = ncnst_in
   ninst = ninst_in
+  mincdnc = mincdnc_in
   use_hetfrz_classnuc = use_hetfrz_classnuc_in
 
   ! typical air density at 850 mb
@@ -427,9 +423,7 @@ subroutine micro_mg_tend ( &
   ! Size calculation functions.
   use micro_mg_utils, only: &
        size_dist_param_liq, &
-!!== KZ_DCS 
        size_dist_param_ice, &
-!!== KZ_DCS 
        size_dist_param_basic, &
        avg_diameter
 
@@ -595,8 +589,7 @@ subroutine micro_mg_tend ( &
   ! Tendencies calculated by external schemes that can replace MG's native
   ! process tendencies.
 
-  ! Used with CARMA cirrus microphysics
-  ! (or similar external microphysics model)
+  ! Used with external microphysics scheme for cirrus microphysics
   real(r8), intent(in), pointer :: tnd_qsnow(:,:) ! snow mass tendency (kg/kg/s)
   real(r8), intent(in), pointer :: tnd_nsnow(:,:) ! snow number tendency (#/kg/s)
   real(r8), intent(in), pointer :: re_ice(:,:)    ! ice effective radius (m)
@@ -761,9 +754,7 @@ subroutine micro_mg_tend ( &
   ! relative humidity
   real(r8) :: relhum(mgncol,nlev)
 
-!!== KZ_DCS 
   real(r8) :: dcst(mgncol,nlev)        ! t-dependent dcs
-!!== KZ_DCS 
 
   ! parameters for cloud water and cloud ice sedimentation calculations
   real(r8) :: fc(nlev)
@@ -866,9 +857,7 @@ subroutine micro_mg_tend ( &
   qs = qsn
   ns = nsn
 
-!!== KZ_DCS
   call get_dcst(mgncol,nlev,t,dcst)
-!!== KZ_DCS
 
 
   ! cldn: used to set cldm, unused for subcolumns
@@ -1103,6 +1092,14 @@ subroutine micro_mg_tend ( &
      ncal = 0._r8
   end where
 
+  !! impose minimum droplet number (in-cloud) 
+
+  if (mincdnc.gt.0._r8) then
+     where(nc < mincdnc/rho*lcldm .and. qc >= qsmall)
+        nc = mincdnc/rho*lcldm
+     end where 
+  end if
+
   where (t < icenuct)
      ncai = naai*rho
   elsewhere
@@ -1217,6 +1214,11 @@ subroutine micro_mg_tend ( &
            ! limit in-cloud values to 0.005 kg/kg
            qcic(i,k)=min(qc(i,k)/lcldm(i,k),5.e-3_r8)
            ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
+
+           ! impose minimum droplet number conc (in-cloud) 
+           if (mincdnc.gt.0._r8) then
+              ncic(i,k)=max(ncic(i,k),mincdnc/rho(i,k))
+           end if
 
            ! specify droplet concentration
            if (nccons) then
@@ -1347,7 +1349,6 @@ subroutine micro_mg_tend ( &
 
      nric(:,k)=max(nric(:,k),0._r8)
 
-!!== KZ_DCS
      if(dcs_tdep) then
         ! Get size distribution parameters for cloud ice
         call size_dist_param_ice(mg_ice_props, dcst(:,k), qiic(:,k), niic(:,k), &
@@ -1357,7 +1358,6 @@ subroutine micro_mg_tend ( &
         call size_dist_param_basic(mg_ice_props, qiic(:,k), niic(:,k), &
              lami(:,k), n0i(:,k))
      end if
-!!== KZ_DCS 
 
      !.......................................................................
      ! Autoconversion of cloud ice to snow
@@ -1365,9 +1365,7 @@ subroutine micro_mg_tend ( &
 
      if (do_cldice) then
         call ice_autoconversion(t(:,k), qiic(:,k), lami(:,k), n0i(:,k), &
-!!== KZ_DCS 
              dcs, dcst(:,k), dcs_tdep, prci(:,k), nprci(:,k))
-!!== KZ_DCS 
      else
         ! Add in the particles that we have already converted to snow, and
         ! don't do any further autoconversion of ice.
@@ -1555,9 +1553,7 @@ subroutine micro_mg_tend ( &
      if (do_cldice) then
 
         call ice_deposition_sublimation(t(:,k), q(:,k), qi(:,k), ni(:,k), &
-!!== KZ_DCS 
              icldm(:,k), rho(:,k), dv(:,k), qvl(:,k), qvi(:,k), dcst(:,k), dcs_tdep, &
-!!== KZ_DCS 
              berg(:,k), vap_dep(:,k), ice_sublim(:,k))
 
         berg(:,k)=berg(:,k)*micro_mg_berg_eff_factor
@@ -1670,11 +1666,13 @@ subroutine micro_mg_tend ( &
         if (do_cldice) then
 
            ! freezing of rain to produce ice if mean rain size is smaller than Dcs
-           if (lamr(i,k) > qsmall .and. 1._r8/lamr(i,k) < Dcs) then
+           if (lamr(i,k) > qsmall) then
+              if (1._r8/lamr(i,k) < Dcs) then
               mnuccri(i,k)=mnuccr(i,k)
               nnuccri(i,k)=nnuccr(i,k)
               mnuccr(i,k)=0._r8
               nnuccr(i,k)=0._r8
+              end if
            end if
         end if
 
@@ -2043,6 +2041,13 @@ subroutine micro_mg_tend ( &
   nc = ncn
   nctend = nctend + npccn
 
+  ! impose minimum droplet number conc (in-cloud) 
+  if (mincdnc.gt.0._r8) then
+     where((nc+nctend*deltat) < mincdnc/rho*lcldm .and. (qc+qctend*deltat) > qsmall) 
+        nctend = ( mincdnc/rho*lcldm - nc)/deltat
+     end where
+  end if
+
   ! Re-apply rain freezing and snow melting.
   dum_2D = qs
   qs = qsn
@@ -2091,6 +2096,10 @@ subroutine micro_mg_tend ( &
         dums(i,k) = (qs(i,k)+qstend(i,k)*deltat)/precip_frac(i,k)
         dumns(i,k) = max((ns(i,k)+nstend(i,k)*deltat)/precip_frac(i,k),0._r8)
 
+        ! impose minimum droplet number conc (in-cloud) 
+        if (mincdnc.gt.0._r8) then
+           dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k))
+        end if
 
         ! switch for specification of droplet and crystal number
         if (nccons) then
@@ -2199,6 +2208,11 @@ subroutine micro_mg_tend ( &
         if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
         if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
         if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
+
+        ! impose minimum droplet number conc (in-cloud); dumnc here is grid-box mean  
+        if (mincdnc.gt.0._r8) then
+           dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
+        end if
 
      end do       !!! vertical loop
 
@@ -2490,6 +2504,11 @@ subroutine micro_mg_tend ( &
         dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)
         dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)
 
+        ! impose minimum droplet number conc (in-cloud) 
+        if (mincdnc.gt.0._r8) then
+           dumnc(i,k) = max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
+        end if
+
         ! switch for specification of droplet and crystal number
         if (nccons) then
            dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
@@ -2701,6 +2720,11 @@ subroutine micro_mg_tend ( &
         dums(i,k) = max(qs(i,k)+qstend(i,k)*deltat,0._r8)/precip_frac(i,k)
         dumns(i,k) = max(ns(i,k)+nstend(i,k)*deltat,0._r8)/precip_frac(i,k)
 
+        ! impose minimum droplet number conc (in-cloud) 
+        if (mincdnc.gt.0._r8) then
+           dumnc(i,k) = max(dumnc(i,k),mincdnc/rho(i,k))
+        end if
+
         ! switch for specification of droplet and crystal number
         if (nccons) then
            dumnc(i,k)=ncnst/rho(i,k)
@@ -2742,7 +2766,7 @@ subroutine micro_mg_tend ( &
            ! ice effective diameter for david mitchell's optics
            deffi(i,k)=effi(i,k)*rhoi/rhows*2._r8
         else
-           ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
+           ! NOTE: If external scheme is doing the ice microphysics, then the ice effective
            ! radius has already been determined from the size distribution.
            effi(i,k) = re_ice(i,k) * 1.e6_r8      ! m -> um
            deffi(i,k)=effi(i,k) * 2._r8
@@ -2753,6 +2777,21 @@ subroutine micro_mg_tend ( &
         if (dumc(i,k).ge.qsmall) then
 
 
+           dum = dumnc(i,k)
+
+           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+                pgam(i,k), lamc(i,k))
+
+           if (dum /= dumnc(i,k)) then
+              ! adjust number conc if needed to keep mean size in reasonable range
+              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
+           end if
+
+           ! impose minimum droplet number conc (in-cloud) 
+           if (mincdnc.gt.0._r8) then
+              nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, mincdnc/rho(i,k)*lcldm(i,k)) - nc(i,k))/deltat
+           end if
+
            ! switch for specification of droplet and crystal number
            if (nccons) then
               ! make sure nc is consistence with the constant N by adjusting tendency, need
@@ -2762,16 +2801,6 @@ subroutine micro_mg_tend ( &
 
               nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
 
-           end if
-
-           dum = dumnc(i,k)
-
-           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                pgam(i,k), lamc(i,k))
-
-           if (dum /= dumnc(i,k)) then
-              ! adjust number conc if needed to keep mean size in reasonable range
-              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
            end if
 
            effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
@@ -3094,7 +3123,6 @@ pure subroutine micro_mg_get_cols(ncol, nlev, top_lev, qcn, qin, &
 end subroutine micro_mg_get_cols
 
 
-!!== KZ_DCS
 subroutine get_dcst(ncol,pver,temp,dcst)
 
 implicit none
@@ -3126,7 +3154,6 @@ end do
 return
 
 end subroutine get_dcst
-!!== KZ_DCS
 
 
 

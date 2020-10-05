@@ -94,8 +94,8 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
     elif ocn_grid == 'oEC60to30v3_ICG':
-        ic_date += '171101'
-        ic_prefix += 'oEC60to30v3_60layer.restartFrom_anvil0926'
+        ic_date += '200927'
+        ic_prefix += 'oEC60to30v3.restartFrom_anvilG'
         decomp_date += '161222'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
@@ -111,6 +111,13 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+    elif ocn_grid == 'ECwISC30to60E1r2':
+        ic_date += '200408'
+        ic_prefix += 'ocean.ECwISC30to60E1r2'
+        decomp_date += '200408'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.PHC2_monthlyClimatology.ECwISC30to60E1r02.200408.nc'
+        analysis_mask_file += 'ECwISC30to60E1r02_transportTransects.nc'
     elif ocn_grid == 'oEC60to30v3wLI_ICG':
         ic_date += '171116'
         ic_prefix += 'oEC60to30v3wLI60lev.restart_theta_year26'
@@ -205,6 +212,25 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
         analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'EC30to60E2r2':
+        ic_date += '200908'
+        ic_prefix += 'ocean.EC30to60E2r2'
+        decomp_date += '200904'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
+        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'EC30to60E2r2_ICG':
+        ic_date += '200910'
+        ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
+        decomp_date += '200904'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'EC30to60E2r2-1900_ICG':
+        ic_date += '200910'
+        ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
+        decomp_date += '200904'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -780,6 +806,98 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="activeTracersTendML"/>')
         lines.append('</stream>')
         lines.append('')
+        lines.append('<stream name="sedimentFluxIndexOutput"')
+        lines.append('        type="output"')
+        lines.append('        precision="single"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.sedimentFluxIndex.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="sedimentFluxIndexAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="sedimentFluxIndexVAX"/>')
+        lines.append('    <var name="sedimentFluxIndexVAY"/>')
+        lines.append('    <var name="sedimentFluxIndexBX"/>')
+        lines.append('    <var name="sedimentFluxIndexBY"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="sedimentTransportOutput"')
+        lines.append('        type="output"')
+        lines.append('        precision="single"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.sedimentTransport.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="sedimentTransportAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="velocityZonal"/>')
+        lines.append('    <var name="velocityMeridional"/>')
+        lines.append('    <var name="sedimentErosionFlux"/>')
+        lines.append('    <var name="sedimentFallVelocity"/>')
+        lines.append('    <var name="sedimentDepositionFlux"/>')
+        lines.append('    <var name="sedimentFluxVAX"/>')
+        lines.append('    <var name="sedimentFluxVAY"/>')
+        lines.append('    <var name="sedimentFluxBX"/>')
+        lines.append('    <var name="sedimentFluxBY"/>')
+        lines.append('    <var name="sedimentBedloadX"/>')
+        lines.append('    <var name="sedimentBedloadY"/>')
+        lines.append('    <var name="sedimentBottomReferenceConcentration"/>')
+        lines.append('    <var name="sedimentConcentration"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="harmonicAnalysisOutput"')
+        lines.append('        type="output"')
+        lines.append('        precision="single"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.harmonicAnalysis.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="harmonicAnalysisAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="M2Amplitude"/>')
+        lines.append('    <var name="M2Phase"/>')
+        lines.append('    <var name="S2Amplitude"/>')
+        lines.append('    <var name="S2Phase"/>')
+        lines.append('    <var name="N2Amplitude"/>')
+        lines.append('    <var name="N2Phase"/>')
+        lines.append('    <var name="K2Amplitude"/>')
+        lines.append('    <var name="K2Phase"/>')
+        lines.append('    <var name="K1Amplitude"/>')
+        lines.append('    <var name="K1Phase"/>')
+        lines.append('    <var name="O1Amplitude"/>')
+        lines.append('    <var name="O1Phase"/>')
+        lines.append('    <var name="Q1Amplitude"/>')
+        lines.append('    <var name="Q1Phase"/>')
+        lines.append('    <var name="P1Amplitude"/>')
+        lines.append('    <var name="P1Phase"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="harmonicAnalysisRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.rst.am.harmonicAnalysis.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="none"')
+        lines.append('        packages="harmonicAnalysisAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="leastSquaresLHSMatrix"/>')
+        lines.append('    <var name="leastSquaresRHSVector"/>')
+        lines.append('</stream>')
+        lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
         lines.append('        precision="single"')
@@ -906,6 +1024,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTendency"/>')
         lines.append('    <var_array name="activeTracerVertMixTendency"/>')
+        lines.append('    <var_array name="activeTracerHorMixTendency"/>')
         lines.append('    <var_array name="activeTracerSurfaceFluxTendency"/>')
         lines.append('    <var_array name="temperatureShortWaveTendency"/>')
         lines.append('    <var_array name="activeTracerNonLocalTendency"/>')
@@ -1347,8 +1466,6 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="snowFlux"/>')
         lines.append('    <var name="iceFraction"/>')
         lines.append('    <var name="nAccumulatedCoupled"/>')
-        lines.append('    <var name="thermalExpansionCoeff"/>')
-        lines.append('    <var name="salineContractionCoeff"/>')
         lines.append('</stream>')
         lines.append('')
         lines.append('</streams>')

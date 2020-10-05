@@ -12,7 +12,7 @@ module micro_mg1_0
 ! for questions contact Hugh Morrison, Andrew Gettelman
 ! e-mail: morrison@ucar.edu, andrew@ucar.edu
 !
-! NOTE: Modified to allow other microphysics packages (e.g. CARMA) to do ice
+! NOTE: Modified to allow other microphysics packages to do ice
 ! microphysics in cooperation with the MG liquid microphysics. This is
 ! controlled by the do_cldice variable.
 !
@@ -423,7 +423,7 @@ real(r8), intent(in) :: npccnin(pcols,pver)   ! ccn activated number tendency (f
 real(r8), intent(in) :: rndst(pcols,pver,4)   ! radius of 4 dust bins for contact freezing (from microp_aero_ts)
 real(r8), intent(in) :: nacon(pcols,pver,4)   ! number in 4 dust bins for contact freezing  (from microp_aero_ts)
 
-! Used with CARMA cirrus microphysics
+! Used with external microphysics scheme for cirrus microphysics
 ! (or similar external microphysics model)
 logical,  intent(in) :: do_cldice             ! Prognosing cldice
 
@@ -518,7 +518,7 @@ character(128),   intent(out) :: errstring       ! Output status (non-blank for 
 ! Tendencies calculated by external schemes that can replace MG's native
 ! process tendencies.
 
-! Used with CARMA cirrus microphysics
+! Used with external microphysics scheme for cirrus microphysics
 ! (or similar external microphysics model)
 real(r8), intent(in), pointer :: tnd_qsnow(:,:) ! snow mass tendency (kg/kg/s)
 real(r8), intent(in), pointer :: tnd_nsnow(:,:) ! snow number tendency (#/kg/s)
@@ -3504,7 +3504,7 @@ do i=1,ncol
          effi(i,k) = 25._r8
       end if
 
-      ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
+      ! NOTE: If external scheme is doing the ice microphysics, then the ice effective
       ! radius has already been determined from the size distribution.
       if (.not. do_cldice) then
          effi(i,k) = re_ice(i,k) * 1e6_r8      ! m -> um

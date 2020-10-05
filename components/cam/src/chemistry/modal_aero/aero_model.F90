@@ -1186,8 +1186,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              call outfld( trim(cnst_name(mm))//'DDF', sflx, pcols, lchnk)
@@ -1217,8 +1219,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              qaerwat(1:ncol,:,mm) = qaerwat(1:ncol,:,mm) + dqdt_tmp(1:ncol,:) * dt
@@ -1245,8 +1249,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
@@ -1374,7 +1380,8 @@ contains
        species_class,                                                           &
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
-       ptend                                                                    ) !Intent-out
+       ptend,                                                                   & !Intent-out
+       clear_rh                                                                 ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
@@ -1415,6 +1422,9 @@ contains
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
+
+    real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
+                                                               ! that gets passed to modal_aero_wateruptake_dr
 
 
     ! local vars
@@ -1517,19 +1527,27 @@ contains
     ncol  = state%ncol
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
-    
+
     ! Do calculations of mode radius and water uptake if:
     ! 1) modal aerosols are affecting the climate, or
     ! 2) prognostic modal aerosols are enabled
-    
+    ! If not using prognostic aerosol call the diagnostic version
+
+    ! Calculate aerosol size distribution parameters
+    ! for prognostic modal aerosols the transfer of mass between aitken and 
+    ! accumulation modes is done in conjunction with the dry radius calculation
     call t_startf('calcsize')
-    ! for prognostic modal aerosols the transfer of mass between aitken and accumulation
-    ! modes is done in conjunction with the dry radius calculation
     call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
     call t_stopf('calcsize')
-
+    
+    ! Aerosol water uptake
     call t_startf('wateruptake')
-    call modal_aero_wateruptake_dr(state, pbuf)
+    if (present(clear_rh)) then
+      ! clear_rh allows us to provide alternate calculation of clear air RH
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
+    else
+      call modal_aero_wateruptake_dr(state, pbuf)
+    endif
     call t_stopf('wateruptake')
 
     if (nwetdep<1) return
@@ -2966,7 +2984,7 @@ do_lphase2_conditional: &
           ! in the MMF NaN's were occurring here but the root cause was not
           ! identified, so this check was added to work around the issue
           if (use_MMF) then
-            if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
+             if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
           end if
 
           vlc_dry(i,k)=vlc_grv(i,k)

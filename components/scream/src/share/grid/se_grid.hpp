@@ -17,8 +17,8 @@ public:
   SEGrid (const std::string& grid_name,
           const GridType type,
           const int num_local_elements,
-          const int num_gp,
-          const int num_vl);
+          const int num_gauss_pts,
+          const int num_vertical_levels);
 
   virtual ~SEGrid () = default;
 

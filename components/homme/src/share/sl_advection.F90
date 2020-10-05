@@ -339,7 +339,7 @@ contains
     !  x(t-ts) = x(t)) -ts * [ 1/2( U(x(t),t-ts)+U(x(t),t)) - ts 1/2 U(x(t),t) gradU(x(t),t-ts) ]
 
     nlyr = 2*nlev
-    if (independent_time_steps) nlyr = nlyr + nlevp
+    if (independent_time_steps) nlyr = nlyr + nlev
 
     do ie = nets,nete
        ! vstarn0 = U(x,t)
@@ -361,7 +361,7 @@ contains
           end if
        enddo
        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,nlyr)
-       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlevp,2*nlev,nlyr)
+       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlev,2*nlev,nlyr)
     enddo
 
     call t_startf('ALE_RKdss_bexchV')
@@ -829,15 +829,6 @@ contains
     real(real_kind) :: dp_neg_min
     integer :: i, j, k, k1, k2, d, t
 
-#ifndef NDEBUG
-    if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
-       if (hybrid%masterthread) &
-            print *, 'calc_vertically_lagrangian_levels: bi(1)', hvcoord%hybi(1), 'ai(nlevp)', &
-            hvcoord%hyai(nlevp)
-       call abortmp('hvcoord has unexpected non-0 entries at the bottom and/or top')
-    end if
-#endif
-
     ! Reconstruct an approximation to endpoint eta_dot_dpdn on
     ! Eulerian levels.
     do t = 1,2
@@ -902,13 +893,6 @@ contains
 
     dp_neg_min = reconstruct_and_limit_dp(elem%state%dp3d(:,:,:,tl%np1), &
          dt, dp_tol, eta_dot_dpdn(:,:,:,1), dprecon)
-#ifndef NDEBUG
-    if (dp_neg_min < dp_tol) then
-       write(iulog, '(a,i7,i7,es11.4)') &
-            'sl_advection: reconstruct_and_limit_dp (rank,ie) returned', &
-            hybrid%par%rank, ie, dp_neg_min
-    end if
-#endif
   end subroutine calc_vertically_lagrangian_levels
 
   subroutine eval_lagrange_poly_derivative(n, xs, ys, xi, yp)

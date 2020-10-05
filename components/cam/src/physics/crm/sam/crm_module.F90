@@ -3,6 +3,7 @@ module crm_module
   use openacc_utils, only: prefetch
   use perf_mod
   use task_init_mod, only: task_init
+  use params_kind, only: crm_rknd, r8
   use abcoefs_mod, only: abcoefs
   use kurant_mod, only: kurant
   use setperturb_mod, only: setperturb
@@ -30,7 +31,6 @@ module crm_module
   use crm_input_module,       only: crm_input_type
   use crm_output_module,      only: crm_output_type
   use crm_ecpp_output_module, only: crm_ecpp_output_type
-  use phys_grid             , only: get_rlon_p, get_rlat_p, get_gcol_p  
 #ifdef ECPP  
   use module_ecpp_crm_driver, only: ecpp_crm_stat, ecpp_crm_init, ecpp_crm_cleanup
 #endif
@@ -44,11 +44,12 @@ contains
 
 subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+                crm_ecpp_output, crm_output, crm_clear_rh, &
+                latitude0, longitude0, gcolp, igstep, &
+                use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
-    use shr_kind_mod          , only: r8 => shr_kind_r8
-    use ppgrid                , only: pcols
+    use shr_const_mod         , only: SHR_CONST_TKFRZ
     use vars
     use params
     use microphysics
@@ -68,9 +69,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                                       qlsink_bf_cen_sum, qlsink_avg_cen_sum, prain_cen_sum, qlsink_bf, prain
     use ecppvars              , only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
 #endif /* ECPP */
-    use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm
+    use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm, crm_accel_uv
+#ifndef MMF_STANDALONE
     use cam_abortutils        , only: endrun
-    use time_manager          , only: get_nstep
+#endif
 
     implicit none
 
@@ -86,7 +88,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     type(crm_state_type),      intent(inout) :: crm_state
     type(crm_rad_type), target,intent(inout) :: crm_rad
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
-    type(crm_output_type), target,     intent(inout) :: crm_output
+    type(crm_output_type), target, intent(inout) :: crm_output
+    real(r8), dimension(ncrms,nz), intent(  out) :: crm_clear_rh
+    real(crm_rknd), intent(in) :: latitude0(:)
+    real(crm_rknd), intent(in) :: longitude0(:)
+    integer       , intent(in) :: igstep
+    integer       , intent(in) :: gcolp(:)
+    logical       , intent(in) :: use_crm_accel_in
+    real(crm_rknd), intent(in) :: crm_accel_factor_in
+    logical       , intent(in) :: crm_accel_uv_in
 
     !-----------------------------------------------------------------------------------------------
     ! Local variable declarations
@@ -103,13 +113,12 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd)  :: u2z,v2z,w2z
     integer         :: i,j,k,l,ptop,nn,icyc,icrm
     integer         :: kx
-    real(crm_rknd)  :: qsat, omg
+    real(crm_rknd)  :: qsat, omg, rh_tmp
     real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
     real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
 
     ! These should all be inputs
-    integer         :: igstep            ! GCM time steps
     integer         :: iseed             ! seed for random perturbation
     ! variables for radiation grouping method
     real(crm_rknd) :: crm_nx_rad_fac
@@ -144,6 +153,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8), allocatable :: mui_crm(:,:)     ! mass flux up at the interface
     real(r8), allocatable :: mdi_crm(:,:)     ! mass flux down at the interface
 
+    real(r8), allocatable :: crm_clear_rh_cnt(:,:) ! counter for clear air relative humidity
+
     real(crm_rknd), pointer :: crm_rad_temperature  (:,:,:,:)
     real(crm_rknd), pointer :: crm_rad_qv           (:,:,:,:)
     real(crm_rknd), pointer :: crm_rad_qc           (:,:,:,:)
@@ -157,6 +168,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), pointer :: crm_state_qt         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qp         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qn         (:,:,:,:)
+
+    use_crm_accel    = use_crm_accel_in   
+    crm_accel_factor = crm_accel_factor_in
+    crm_accel_uv = crm_accel_uv_in
 
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
@@ -190,6 +205,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
   allocate( colprecs(ncrms) )
+  allocate( crm_clear_rh_cnt(ncrms,nz) )
 
   call prefetch( t00      )
   call prefetch( tln      )
@@ -216,6 +232,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call prefetch( qtot     ) 
   call prefetch( colprec  ) 
   call prefetch( colprecs ) 
+  call prefetch( crm_clear_rh_cnt )
 
   call allocate_params(ncrms)
   call allocate_vars(ncrms)
@@ -246,14 +263,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_state_qn          => crm_state%qn         (1:ncrms,:,:,:)
   
   crm_accel_ceaseflag = .false.
-
-  !Loop over "vector columns"
-  do icrm = 1 , ncrms
-    latitude0 (icrm) = get_rlat_p(lchnk, icrm) * 57.296_r8
-    longitude0(icrm) = get_rlon_p(lchnk, icrm) * 57.296_r8
-  enddo
-
-  igstep = get_nstep()
 
 !-----------------------------------------------
 
@@ -340,6 +349,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   call t_startf('crm_gpu_region')
+
+  ! Initialize clear air relative humidity for aerosol water uptake
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k = 1, nzm
+    do icrm = 1, ncrms
+      crm_clear_rh(icrm,k) = 0
+      crm_clear_rh_cnt(icrm,k) = 0
+    end do
+  end do
 
   !  Initialize CRM fields:
   !$acc parallel loop collapse(4) async(asyncid)
@@ -550,7 +568,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ustar(icrm) = sqrt(crm_input%tau00(icrm)/rho(icrm,1))
     z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
     z0(icrm) = max(real(0.00001,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
-    crm_output%timing_factor(icrm) = 0.
+    crm_output%subcycle_factor(icrm) = 0.
     crm_output%prectend (icrm)=colprec (icrm)
     crm_output%precstend(icrm)=colprecs(icrm)
   enddo
@@ -638,7 +656,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   do icrm = 1, ncrms
     if ( igstep <= 1 ) then
-        iseed = get_gcol_p(lchnk,icrm) * perturb_seed_scale
+        iseed = gcolp(icrm) * perturb_seed_scale
         call setperturb(ncrms,icrm,iseed)
     end if
 
@@ -650,7 +668,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_ny_rad_fac = real(crm_ny_rad,crm_rknd)/real(ny,crm_rknd)
     else
       write(0,*) "crm_nx_rad and crm_ny_rad need to be divisible by nx and ny"
+#ifdef MMF_STANDALONE
+      stop
+#else
       call endrun('crm main')
+#endif
     end if
   enddo
 
@@ -690,11 +712,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   do while (nstep < nstop)
     nstep = nstep + 1
 
-    !$acc parallel loop async(asyncid)
-    do icrm = 1 , ncrms
-      crm_output%timing_factor(icrm) = crm_output%timing_factor(icrm)+1
-    enddo
-
     !------------------------------------------------------------------
     !  Check if the dynamical time step should be decreased
     !  to handle the cases when the flow being locally linearly unstable
@@ -707,6 +724,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       dtn = dt/ncycle
       dt3(na) = dtn
       dtfactor = dtn/dt
+
+      !$acc parallel loop async(asyncid)
+      do icrm = 1 , ncrms
+        crm_output%subcycle_factor(icrm) = crm_output%subcycle_factor(icrm)+1
+      enddo
 
       !---------------------------------------------
       !  	the Adams-Bashforth scheme in time
@@ -950,6 +972,12 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             if (qcl(icrm,i,j,k) + qci(icrm,i,j,k) > 0) then
                !$acc atomic update
                crm_rad_cld     (icrm,i_rad,j_rad,k) = crm_rad_cld        (icrm,i_rad,j_rad,k) + cf3d(icrm,i,j,k)
+            else
+               rh_tmp = qv(icrm,i,j,k)/qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))
+               !$acc atomic update
+               crm_clear_rh(icrm,k) = crm_clear_rh(icrm,k) + rh_tmp
+               !$acc atomic update
+               crm_clear_rh_cnt(icrm,k) = crm_clear_rh_cnt(icrm,k) + 1
             endif
 #ifdef m2005
             !$acc atomic update
@@ -1055,6 +1083,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* m2005 */
         enddo
       enddo
+    enddo
+  enddo
+
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k=1,nzm
+    do icrm = 1 , ncrms
+      if (crm_clear_rh_cnt(icrm,k)>0) then
+        crm_clear_rh(icrm,k) = crm_clear_rh(icrm,k) / crm_clear_rh_cnt(icrm,k)
+      endif
     enddo
   enddo
 
@@ -1621,7 +1658,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 #endif /* ECPP */
 
-  crm_output%timing_factor(:) = crm_output%timing_factor(:) / nstop
+  crm_output%subcycle_factor(:) = crm_output%subcycle_factor(:) / nstop
 
 #ifdef ECPP
   ! Deallocate ECPP variables
@@ -1657,6 +1694,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   deallocate( qtot )
   deallocate( colprec  )
   deallocate( colprecs )
+  deallocate( crm_clear_rh_cnt )
 
   call deallocate_params()
   call deallocate_grid()

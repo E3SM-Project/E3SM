@@ -5,13 +5,12 @@
 !   superparameterization.
 !
 ! PUBLIC SUBROUTINES:
-!   crm_accel_init: initialize quantities needed to apply MSA
 !   crm_accel_nstop: adjusts 'nstop' in crm_module based on crm_accel_factor
 !   accelerate_crm: calculates and applies MSA tendency to CRM
 !
 ! PUBLIC MODULE VARIABLES:
 !   logical  :: use_crm_accel - apply MSA if true (cam namelist variable)
-!   real(r8) :: crm_accel_factor - MSA factor to use (cam namelist variable)
+!   real(crm_rknd) :: crm_accel_factor - MSA factor to use (cam namelist variable)
 !
 ! REVISION HISTORY:
 !   2018-Nov-01: Initial implementation
@@ -21,58 +20,24 @@
 ! -----------------------------------------------------------------------------
 module accelerate_crm_mod
     use grid, only: nx, ny
-    use shr_kind_mod, only: r8=>shr_kind_r8
-    use params, only: asyncid, rc=>crm_rknd
-
+    use params, only: asyncid
+    use params_kind, only: crm_rknd
     implicit none
+    public
 
-    ! private module variables
-    real(r8), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
+    real(crm_rknd), parameter :: coef = 1._crm_rknd / dble(nx * ny)  ! coefficient for horizontal averaging
     logical :: crm_accel_uv  ! (false) apply MSA only to scalar fields (T and QT)
                              ! (true) apply MSA to winds (U/V) and scalar fields
 
     ! public module variables
     logical :: use_crm_accel  ! use MSA if true
-    real(r8) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
+    real(crm_rknd) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
 
-    private :: coef, crm_accel_uv
     public :: use_crm_accel, crm_accel_factor
     public :: accelerate_crm
     public :: crm_accel_nstop
-    public :: crm_accel_init
 
   contains
-    subroutine crm_accel_init()
-      ! initialize namelist options for CRM mean-state acceleration
-      use phys_control, only: phys_getopts
-      use cam_logfile, only: iulog
-      use spmd_utils,  only: masterproc
-      use cam_abortutils, only: endrun
-  
-      implicit none
-  
-      ! initialize defaults
-      use_crm_accel = .false.
-      crm_accel_factor = 0.
-      crm_accel_uv = .false.
-  
-      call phys_getopts(use_crm_accel_out = use_crm_accel, &
-                        crm_accel_factor_out = crm_accel_factor, &
-                        crm_accel_uv_out = crm_accel_uv)
-  
-      if (masterproc) then
-        if (use_crm_accel) then
-#if !defined(sam1mom)
-          write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
-          call endrun('crm main')
-#endif
-          write(iulog, *) 'USING CRM MEAN STATE ACCELERATION'
-          write(iulog, *) 'crm_accel: use_crm_accel = ', use_crm_accel
-          write(iulog, *) 'crm_accel: crm_accel_factor = ', crm_accel_factor
-          write(iulog, *) 'crm_accel: crm_accel_uv = ', crm_accel_uv
-        endif
-      endif
-    end subroutine crm_accel_init
 
 
     subroutine crm_accel_nstop(nstop)
@@ -87,19 +52,17 @@ module accelerate_crm_mod
       ! Argument(s):
       !  nstop (inout) - number of crm iterations to apply MSA
       ! -----------------------------------------------------------------------
-      use cam_abortutils, only: endrun
-      use cam_logfile,  only: iulog
-  
       implicit none
   
       integer, intent(inout) :: nstop
   
       if (mod(nstop, int(1 + crm_accel_factor)) .ne. 0) then
-        write(iulog,*) "CRM acceleration unexpected exception:"
-        write(iulog,*) "(1+crm_accel_factor) does not divide equally into nstop"
-        write(iulog,*) "nstop = ", nstop
-        write(iulog,*) "crm_accel_factor = ", crm_accel_factor
-        call endrun('crm main: bad crm_accel_factor and nstop pair')
+        write(*,*) "CRM acceleration unexpected exception:"
+        write(*,*) "(1+crm_accel_factor) does not divide equally into nstop"
+        write(*,*) "nstop = ", nstop
+        write(*,*) "crm_accel_factor = ", crm_accel_factor
+        write(*,*) 'crm main: bad crm_accel_factor and nstop pair'
+        stop
       else
         nstop = nstop / (1 + crm_accel_factor)
       endif
@@ -131,28 +94,27 @@ module accelerate_crm_mod
       use grid, only: nzm
       use vars, only: u, v, u0, v0, t0,q0, t,qcl,qci,qv
       use microphysics, only: micro_field, idx_qt=>index_water_vapor
-      use cam_logfile,  only: iulog
       use openacc_utils
       implicit none
       integer, intent(in   ) :: ncrms
       integer, intent(in   ) :: nstep
       integer, intent(inout) :: nstop
       logical, intent(inout) :: ceaseflag
-      real(rc), allocatable :: ubaccel  (:,:)   ! u before applying MSA tendency
-      real(rc), allocatable :: vbaccel  (:,:)   ! v before applying MSA tendency
-      real(rc), allocatable :: tbaccel  (:,:)   ! t before applying MSA tendency
-      real(rc), allocatable :: qtbaccel (:,:)  ! Non-precipitating qt before applying MSA tendency
-      real(rc), allocatable :: ttend_acc(:,:) ! MSA adjustment of t
-      real(rc), allocatable :: qtend_acc(:,:) ! MSA adjustment of qt
-      real(rc), allocatable :: utend_acc(:,:) ! MSA adjustment of u
-      real(rc), allocatable :: vtend_acc(:,:) ! MSA adjustment of v
-      real(r8), allocatable :: qpoz     (:,:) ! total positive micro_field(:,:,k,idx_qt,:) in level k
-      real(r8), allocatable :: qneg     (:,:) ! total negative micro_field(:,:,k,idx_qt,:) in level k
-      real(rc) :: tmp  ! temporary variable for atomic updates
+      real(crm_rknd), allocatable :: ubaccel  (:,:)   ! u before applying MSA tendency
+      real(crm_rknd), allocatable :: vbaccel  (:,:)   ! v before applying MSA tendency
+      real(crm_rknd), allocatable :: tbaccel  (:,:)   ! t before applying MSA tendency
+      real(crm_rknd), allocatable :: qtbaccel (:,:)  ! Non-precipitating qt before applying MSA tendency
+      real(crm_rknd), allocatable :: ttend_acc(:,:) ! MSA adjustment of t
+      real(crm_rknd), allocatable :: qtend_acc(:,:) ! MSA adjustment of qt
+      real(crm_rknd), allocatable :: utend_acc(:,:) ! MSA adjustment of u
+      real(crm_rknd), allocatable :: vtend_acc(:,:) ! MSA adjustment of v
+      real(crm_rknd), allocatable :: qpoz     (:,:) ! total positive micro_field(:,:,k,idx_qt,:) in level k
+      real(crm_rknd), allocatable :: qneg     (:,:) ! total negative micro_field(:,:,k,idx_qt,:) in level k
+      real(crm_rknd) :: tmp  ! temporary variable for atomic updates
       integer i, j, k, icrm  ! iteration variables
-      real(r8) :: factor, qt_res ! local variables for redistributing moisture
-      real(rc) :: ttend_threshold ! threshold for ttend_acc at which MSA aborts
-      real(rc) :: tmin  ! mininum value of t allowed (sanity factor)
+      real(crm_rknd) :: factor, qt_res ! local variables for redistributing moisture
+      real(crm_rknd) :: ttend_threshold ! threshold for ttend_acc at which MSA aborts
+      real(crm_rknd) :: tmin  ! mininum value of t allowed (sanity factor)
 
       ttend_threshold = 5.  ! 5K, following UP-CAM implementation
       tmin = 50.  ! should never get below 50K in crm, following UP-CAM implementation
@@ -257,8 +219,8 @@ module accelerate_crm_mod
         ! Because we set nstop = crm_run_time / dt_a in crm_accel_nstop, subbing
         ! crm_run_time = nstop * dt_a and working through algebra yields 
         !     updated nstop = nstop + (nstop - nstep + 1) * crm_accel_factor.
-        write (iulog, *) 'accelerate_crm: mean-state acceleration not applied this step'
-        write (iulog,*) 'crm: nstop increased from ', nstop, ' to ', int(nstop+(nstop-nstep+1)*crm_accel_factor)
+        write (*,*) 'accelerate_crm: mean-state acceleration not applied this step'
+        write (*,*) 'crm: nstop increased from ', nstop, ' to ', int(nstop+(nstop-nstep+1)*crm_accel_factor)
         nstop = nstop + (nstop - nstep + 1)*crm_accel_factor ! only can happen once
         return
       endif
@@ -326,22 +288,22 @@ module accelerate_crm_mod
               else
                 ! Clip qt values at 0 and remove the negative excess in each layer
                 ! proportionally from the positive qt fields in the layer
-                factor = 1._r8 + qneg(icrm,k) / qpoz(icrm,k)
-                micro_field(icrm,i,j,k,idx_qt) = max(0._rc, micro_field(icrm,i,j,k,idx_qt) * factor)
+                factor = 1._crm_rknd + qneg(icrm,k) / qpoz(icrm,k)
+                micro_field(icrm,i,j,k,idx_qt) = max(0._crm_rknd, micro_field(icrm,i,j,k,idx_qt) * factor)
                 ! Partition micro_field == qv + qcl + qci following these rules:
                 !    (1) attempt to satisfy purely by adjusting qv
                 !    (2) adjust qcl and qci only if needed to ensure positivity
-                if (micro_field(icrm,i,j,k,idx_qt) <= 0._rc) then
+                if (micro_field(icrm,i,j,k,idx_qt) <= 0._crm_rknd) then
                   qv(icrm,i,j,k) = 0.
                   qcl(icrm,i,j,k) = 0.
                   qci(icrm,i,j,k) = 0.
                 else
                   ! deduce qv as residual between qt - qcl - qci
                   qt_res = micro_field(icrm,i,j,k,idx_qt) - qcl(icrm,i,j,k) - qci(icrm,i,j,k)
-                  qv(icrm,i,j,k) = max(0._rc, qt_res)
-                  if (qt_res < 0._r8) then
+                  qv(icrm,i,j,k) = max(0._crm_rknd, qt_res)
+                  if (qt_res < 0._crm_rknd) then
                     ! qv was clipped; need to reduce qcl and qci accordingly
-                    factor = 1._r8 + qt_res / (qcl(icrm,i,j,k) + qci(icrm,i,j,k))
+                    factor = 1._crm_rknd + qt_res / (qcl(icrm,i,j,k) + qci(icrm,i,j,k))
                     qcl(icrm,i,j,k) = qcl(icrm,i,j,k) * factor
                     qci(icrm,i,j,k) = qci(icrm,i,j,k) * factor
                   endif

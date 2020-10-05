@@ -566,7 +566,6 @@ add_default($nl, 'config_GM_kappa');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_baroclinic_mode');
 add_default($nl, 'config_GM_visbeck_alpha');
-add_default($nl, 'config_GM_visbeck_min_depth');
 add_default($nl, 'config_GM_visbeck_max_depth');
 add_default($nl, 'config_GM_visbeck_min_kappa');
 add_default($nl, 'config_GM_visbeck_max_kappa');
@@ -596,6 +595,7 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 #########################
 
 add_default($nl, 'config_use_cvmix');
+add_default($nl, 'config_cvmix_use_kpp_buoyancyForcing_fix');
 add_default($nl, 'config_cvmix_prandtl_number');
 add_default($nl, 'config_use_cvmix_background');
 add_default($nl, 'config_cvmix_background_diffusion');
@@ -639,6 +639,7 @@ add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 # Namelist group: forcing #
 ###########################
 
+add_default($nl, 'config_use_variable_drag');
 add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
@@ -662,6 +663,23 @@ if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
+
+###########################################
+# Namelist group: tidal_potential_forcing #
+###########################################
+
+add_default($nl, 'config_use_tidal_potential_forcing');
+add_default($nl, 'config_tidal_potential_reference_time');
+add_default($nl, 'config_use_tidal_potential_forcing_M2');
+add_default($nl, 'config_use_tidal_potential_forcing_S2');
+add_default($nl, 'config_use_tidal_potential_forcing_N2');
+add_default($nl, 'config_use_tidal_potential_forcing_K2');
+add_default($nl, 'config_use_tidal_potential_forcing_K1');
+add_default($nl, 'config_use_tidal_potential_forcing_O1');
+add_default($nl, 'config_use_tidal_potential_forcing_Q1');
+add_default($nl, 'config_use_tidal_potential_forcing_P1');
+add_default($nl, 'config_tidal_potential_ramp');
+add_default($nl, 'config_self_attraction_and_loading_beta');
 
 ##############################
 # Namelist group: frazil_ice #
@@ -720,6 +738,8 @@ add_default($nl, 'config_monotonic');
 
 add_default($nl, 'config_use_implicit_bottom_drag');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_bottom_drag_variable');
+add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
 add_default($nl, 'config_use_explicit_bottom_drag');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 
@@ -1464,6 +1484,68 @@ add_default($nl, 'config_AM_mixedLayerHeatBudget_output_stream');
 add_default($nl, 'config_AM_mixedLayerHeatBudget_compute_on_startup');
 add_default($nl, 'config_AM_mixedLayerHeatBudget_write_on_startup');
 
+########################################
+# Namelist group: AM_sedimentFluxIndex #
+########################################
+
+add_default($nl, 'config_AM_sedimentFluxIndex_enable');
+add_default($nl, 'config_AM_sedimentFluxIndex_compute_on_startup');
+add_default($nl, 'config_AM_sedimentFluxIndex_write_on_startup');
+add_default($nl, 'config_AM_sedimentFluxIndex_compute_interval');
+add_default($nl, 'config_AM_sedimentFluxIndex_output_stream');
+add_default($nl, 'config_AM_sedimentFluxIndex_directory');
+add_default($nl, 'config_AM_sedimentFluxIndex_use_lat_lon_coords');
+
+########################################
+# Namelist group: AM_sedimentTransport #
+########################################
+
+add_default($nl, 'config_AM_sedimentTransport_enable');
+add_default($nl, 'config_AM_sedimentTransport_compute_on_startup');
+add_default($nl, 'config_AM_sedimentTransport_write_on_startup');
+add_default($nl, 'config_AM_sedimentTransport_compute_interval');
+add_default($nl, 'config_AM_sedimentTransport_output_stream');
+add_default($nl, 'config_AM_sedimentTransport_directory');
+add_default($nl, 'config_AM_sedimentTransport_grain_size');
+add_default($nl, 'config_AM_sedimentTransport_ws_formula');
+add_default($nl, 'config_AM_sedimentTransport_bedld_formula');
+add_default($nl, 'config_AM_sedimentTransport_SSC_ref_formula');
+add_default($nl, 'config_AM_sedimentTransport_drag_coefficient');
+add_default($nl, 'config_AM_sedimentTransport_erate');
+add_default($nl, 'config_AM_sedimentTransport_tau_ce');
+add_default($nl, 'config_AM_sedimentTransport_tau_cd');
+add_default($nl, 'config_AM_sedimentTransport_Manning_coef');
+add_default($nl, 'config_AM_sedimentTransport_grain_porosity');
+add_default($nl, 'config_AM_sedimentTransport_water_density');
+add_default($nl, 'config_AM_sedimentTransport_grain_density');
+add_default($nl, 'config_AM_sedimentTransport_alpha');
+add_default($nl, 'config_AM_sedimentTransport_kinematic_viscosity');
+add_default($nl, 'config_AM_sedimentTransport_vertical_diffusion_coefficient');
+add_default($nl, 'config_AM_sedimentTransport_bedload');
+add_default($nl, 'config_AM_sedimentTransport_suspended');
+add_default($nl, 'config_AM_sedimentTransport_use_lat_lon_coords');
+
+#######################################
+# Namelist group: AM_harmonicAnalysis #
+#######################################
+
+add_default($nl, 'config_AM_harmonicAnalysis_enable');
+add_default($nl, 'config_AM_harmonicAnalysis_compute_interval');
+add_default($nl, 'config_AM_harmonicAnalysis_start');
+add_default($nl, 'config_AM_harmonicAnalysis_end');
+add_default($nl, 'config_AM_harmonicAnalysis_output_stream');
+add_default($nl, 'config_AM_harmonicAnalysis_restart_stream');
+add_default($nl, 'config_AM_harmonicAnalysis_compute_on_startup');
+add_default($nl, 'config_AM_harmonicAnalysis_write_on_startup');
+add_default($nl, 'config_AM_harmonicAnalysis_use_M2');
+add_default($nl, 'config_AM_harmonicAnalysis_use_S2');
+add_default($nl, 'config_AM_harmonicAnalysis_use_N2');
+add_default($nl, 'config_AM_harmonicAnalysis_use_K2');
+add_default($nl, 'config_AM_harmonicAnalysis_use_K1');
+add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
+add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
+add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1487,6 +1569,7 @@ my @groups = qw(run_modes
                 forcing
                 coupling
                 shortwaveradiation
+                tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes
                 advection
@@ -1536,6 +1619,9 @@ my @groups = qw(run_modes
                 am_mocstreamfunction
                 am_oceanheatcontent
                 am_mixedlayerheatbudget
+                am_sedimentfluxindex
+                am_sedimenttransport
+                am_harmonicanalysis
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

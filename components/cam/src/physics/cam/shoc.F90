@@ -1141,8 +1141,8 @@ subroutine diag_second_moments_lbycond(&
     uf = max(ufmin,uf)
 
     ! Diagnose thermodynamics variances and covariances
-    thl_sec(i) = 0.4_rtype * a_const * (wthl_sfc(i)/uf)**2
-    qw_sec(i) = 0.4_rtype * a_const * (wqw_sfc(i)/uf)**2
+    thl_sec(i) = 0.4_rtype * a_const * bfb_square(wthl_sfc(i)/uf)
+    qw_sec(i) = 0.4_rtype * a_const * bfb_square(wqw_sfc(i)/uf)
     qwthl_sec(i) = 0.2_rtype * a_const * (wthl_sfc(i)/uf) * &
                          (wqw_sfc(i)/uf)
 
@@ -1152,7 +1152,7 @@ subroutine diag_second_moments_lbycond(&
     wqw_sec(i) = wqw_sfc(i)
     uw_sec(i) = uw_sfc(i)
     vw_sec(i) = vw_sfc(i)
-    wtke_sec(i) = max(sqrt(ustar2(i)),0.01_rtype)**3
+    wtke_sec(i) = bfb_cube(max(sqrt(ustar2(i)),0.01_rtype))
 
   enddo ! end i loop (column loop)
   return
@@ -1568,13 +1568,11 @@ subroutine diag_third_shoc_moments(&
 
   !Diagnose the third moment of the vertical-velocity
   call compute_diag_third_shoc_moment(&
-          shcol,nlev,nlevi, &                 ! Input
-          w_sec,thl_sec, qw_sec, qwthl_sec,&  ! Input
-          wthl_sec, tke, dz_zt, dz_zi,&       ! Input
-          zt_grid,zi_grid, isotropy_zi,&      ! Input
-          brunt_zi,w_sec_zi,thetal_zi,&       ! Input
-          wthv_sec_zi,&                       ! Input
-          w3)                                 ! Output
+          shcol,nlev,nlevi, w_sec,thl_sec, & ! Input
+          wthl_sec, tke, dz_zt, dz_zi,&      ! Input
+          isotropy_zi, brunt_zi,w_sec_zi,&   ! Input
+          thetal_zi,&                        ! Input
+          w3)                                ! Output
 
   ! perform clipping to prevent unrealistically large values from occuring
   call clipping_diag_third_shoc_moments(&
@@ -1586,13 +1584,15 @@ subroutine diag_third_shoc_moments(&
 end subroutine diag_third_shoc_moments
 
 subroutine compute_diag_third_shoc_moment(&
-          shcol,nlev,nlevi, &                 ! Input
-          w_sec,thl_sec, qw_sec, qwthl_sec,&  ! Input
-          wthl_sec, tke, dz_zt, dz_zi,&       ! Input
-          zt_grid,zi_grid, isotropy_zi,&      ! Input
-          brunt_zi,w_sec_zi,thetal_zi,&       ! Input
-          wthv_sec_zi,&                       ! Input
-          w3)                                 ! Output
+          shcol,nlev,nlevi, w_sec, thl_sec,& ! Input
+          wthl_sec, tke, dz_zt, dz_zi,&      ! Input
+          isotropy_zi, brunt_zi,w_sec_zi,&   ! Input
+          thetal_zi,&                        ! Input
+          w3)                                ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_diag_third_shoc_moment_f
+#endif
 
   implicit none
 ! INPUT VARIABLES
@@ -1606,10 +1606,6 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype), intent(in) :: w_sec(shcol,nlev)
   ! second order liquid wat. potential temperature [K^2]
   real(rtype), intent(in) :: thl_sec(shcol,nlevi)
-  ! second order total water mixing ratio [kg2/kg2]
-  real(rtype), intent(in) :: qw_sec(shcol,nlevi)
-  ! covariance of temp and moisture [K kg/kg]
-  real(rtype), intent(in) :: qwthl_sec(shcol,nlevi)
   ! vertical flux of heat [K m/s]
   real(rtype), intent(in) :: wthl_sec(shcol,nlevi)
   ! turbulent kinetic energy [m2/s2]
@@ -1618,17 +1614,12 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! thickness centered on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
-  ! heights of thermodynamics points [m]
-  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-  ! heights of interface points [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
 
   !Interpolated varaibles
   real(rtype), intent(in) :: isotropy_zi(shcol,nlevi)
   real(rtype), intent(in) :: brunt_zi(shcol,nlevi)
   real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
   real(rtype), intent(in) :: thetal_zi(shcol,nlevi)
-  real(rtype), intent(in) :: wthv_sec_zi(shcol,nlevi)
   ! third moment of vertical velocity
   real(rtype), intent(out) :: w3(shcol,nlevi)
 ! LOCAL VARIABLES
@@ -1640,6 +1631,17 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: isosqrd
   real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_diag_third_shoc_moment_f(shcol,nlev,nlevi,w_sec,thl_sec, &   ! Input
+                                          wthl_sec, tke, dz_zt, dz_zi, &      ! Input
+                                          isotropy_zi,brunt_zi,w_sec_zi, &    ! Input
+                                          thetal_zi, &                        ! Input
+                                          w3)                                 ! Output
+    return
+  endif
+#endif
 
   ! set lower condition
   w3(:,nlevi) = 0._rtype
@@ -3385,6 +3387,10 @@ subroutine shoc_energy_integrals(&
          rtm,rcm,u_wind,v_wind,&        ! Input
          se_int,ke_int,wv_int,wl_int)   ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_energy_integrals_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -3418,6 +3424,15 @@ subroutine shoc_energy_integrals(&
 ! LOCAL VARIABLES
   integer :: i, k
   real(rtype) :: rvm
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_energy_integrals_f(shcol,nlev,host_dse,pdel,&   ! Input
+                                   rtm,rcm,u_wind,v_wind,&      ! Input
+                                   se_int,ke_int,wv_int,wl_int) ! Output
+      return
+   endif
+#endif
 
   se_int(:) = 0._rtype
   ke_int(:) = 0._rtype
@@ -3971,7 +3986,7 @@ subroutine pblintd_init_pot(&
     do k=1,nlev
       do i=1,shcol
         th=thl(i,k)+(lcond/cp)*ql(i,k)
-        thv(i,k)=th+(1._rtype+eps*q(i,k)-ql(i,k))
+        thv(i,k)=th*(1._rtype+eps*q(i,k)-ql(i,k))
       enddo
     enddo
 
@@ -4200,6 +4215,11 @@ end subroutine pblintd_cldcheck
   ! Linear interpolation to get values on various grids
 
 subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: linear_interp_f
+#endif
+
     implicit none
 
     integer, intent(in) :: km1, km2
@@ -4210,6 +4230,13 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
     real(rtype), intent(out) :: y2(ncol,km2)
 
     integer :: k1, k2, i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call linear_interp_f(x1,x2,y1,y2,km1,km2,ncol,minthresh)
+      return
+   endif
+#endif
 
 #if 1
     !i = check_grid(x1,x2,km1,km2,ncol)
@@ -4233,7 +4260,7 @@ subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
        end do
        k2 = km2
        do i = 1,ncol
-          y2(i,k2) = y1(i,km1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1))/(x1(i,km1)-x1(i,km1-1))
+          y2(i,k2) = y1(i,km1-1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1-1))/(x1(i,km1)-x1(i,km1-1))
        end do
     else
        print *,km1,km2

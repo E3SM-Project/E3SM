@@ -31,6 +31,10 @@ module RtmVar
   logical, public :: inundflag = .false.               ! inundation model flag
   logical, public :: sediflag = .false.                ! sediment model flag
   logical, public :: heatflag = .false.                ! heat model flag
+  logical, public :: rstraflag = .false.               ! reservoir stratification module flag
+  real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
+  integer, public :: ngeom   = 50        			   ! Reservoir depth layers to calculate depth-area-storage relationship
+  integer, public :: nlayers = 30        			   ! Maximum number of reservoir layers for stratification
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   character(len=32) , public :: decomp_option          ! decomp option
   character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)
@@ -60,6 +64,7 @@ module RtmVar
   ! Rtm grid size
   integer :: rtmlon = 1 ! number of rtm longitudes (initialize)
   integer :: rtmlat = 1 ! number of rtm latitudes  (initialize)
+  logical :: isgrid2d = .true. ! Determine if the inputs are 1d or 2d
 
   character(len=256), public :: rpntfil = 'rpointer.rof' ! file name for local restart pointer file
 

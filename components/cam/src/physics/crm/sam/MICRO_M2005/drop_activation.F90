@@ -13,9 +13,8 @@ module drop_activation
 ! July, 2009:  adopted from the module of ndrop used in CAM. 
 !
 !---------------------------------------------------------------------------------------------------- 
-   use shr_kind_mod, only: r8 => shr_kind_r8
    use modal_aero_data, only: ntot_amode
-   use params, only: crm_rknd
+   use params_kind,     only: crm_rknd, r8
 
    implicit none
    private

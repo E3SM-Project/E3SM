@@ -28,8 +28,8 @@ void Functions<S,D>
   const uview_1d<Spack>& diag_equiv_reflectivity,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& ze_rain,
-  const uview_1d<Spack>& diag_eff_rad_qc,
-  const uview_1d<Spack>& diag_eff_rad_qi,
+  const uview_1d<Spack>& diag_eff_radius_qc,
+  const uview_1d<Spack>& diag_eff_radius_qi,
   const uview_1d<Spack>& inv_cld_frac_i,
   const uview_1d<Spack>& inv_cld_frac_l,
   const uview_1d<Spack>& inv_cld_frac_r,
@@ -50,8 +50,8 @@ void Functions<S,D>
     diag_equiv_reflectivity(k)           = -99;
     ze_ice(k)            = 1.e-22;
     ze_rain(k)           = 1.e-22;
-    diag_eff_rad_qc(k)         = 10.e-6;
-    diag_eff_rad_qi(k)         = 25.e-6;
+    diag_eff_radius_qc(k)         = 10.e-6;
+    diag_eff_radius_qi(k)         = 25.e-6;
     inv_cld_frac_i(k)    = 1 / cld_frac_i(k);
     inv_cld_frac_l(k)    = 1 / cld_frac_l(k);
     inv_cld_frac_r(k)    = 1 / cld_frac_r(k);
@@ -389,7 +389,7 @@ void Functions<S,D>
       table_val_ni_self_collect(0), // ice collection within a category     See lines  809 -  928  nagg
       table_val_qc2qi_collect(0), // collection of cloud water by ice     See lines  929 - 1009  nrwat
       table_val_qi2qr_melting(0), // melting                              See lines 1212 - 1279  vdep
-      table_val_ice_eff_rad(0), // effective radius                     See lines 1281 - 1356  eff
+      table_val_ice_eff_radius(0), // effective radius                     See lines 1281 - 1356  eff
       table_val_nr_collect(0), // collection of rain number by ice     See lines 1010 - 1209  nrrain
       table_val_qr2qi_collect(0), // collection of rain mass by ice       See lines 1010 - 1209  qrrain
       table_val_ni_lammax(0), // minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
@@ -420,10 +420,10 @@ void Functions<S,D>
         mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii, not_skip_micro);
 
       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
-                     lamc(k), cdist(k), cdist1(k), cld_frac_l(k), not_skip_micro);
+                     lamc(k), cdist(k), cdist1(k), not_skip_micro);
       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
 
-      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), cld_frac_r(k), not_skip_micro);
+      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), not_skip_micro);
       nr(k).set(not_skip_micro, nr_incld(k) * cld_frac_r(k));
 
       impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_micro);
@@ -743,11 +743,11 @@ void Functions<S,D>
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& diag_vm_qi,
-  const uview_1d<Spack>& diag_eff_rad_qi,
+  const uview_1d<Spack>& diag_eff_radius_qi,
   const uview_1d<Spack>& diag_diam_qi,
   const uview_1d<Spack>& rho_qi,
   const uview_1d<Spack>& diag_equiv_reflectivity,
-  const uview_1d<Spack>& diag_eff_rad_qc)
+  const uview_1d<Spack>& diag_eff_radius_qc)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
@@ -761,7 +761,7 @@ void Functions<S,D>
       ignore1  (0),
       ignore2  (0),
       table_val_qi_fallspd   (0),
-      table_val_ice_eff_rad   (0),
+      table_val_ice_eff_radius   (0),
       table_val_ni_lammax   (0),
       table_val_ni_lammin   (0),
       table_val_ice_reflectivity   (0),
@@ -775,10 +775,10 @@ void Functions<S,D>
       const auto qc_incld = qc(k)/cld_frac_l(k);
       auto nc_incld = nc(k)/cld_frac_l(k);
 
-      get_cloud_dsd2(qc_incld, nc_incld, mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, cld_frac_l(k), qc_gt_small);
+      get_cloud_dsd2(qc_incld, nc_incld, mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, qc_gt_small);
 
       nc(k).set(qc_gt_small,nc_incld*cld_frac_l(k)); //cld_dsd2 might have changed incld nc... need consistency.
-      diag_eff_rad_qc(k)       .set(qc_gt_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
+      diag_eff_radius_qc(k)       .set(qc_gt_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
       qv(k)              .set(qc_small, qv(k)+qc(k));
       th_atm(k)              .set(qc_small, th_atm(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp);
       vap_liq_exchange(k).set(qc_small, vap_liq_exchange(k) - qc(k));
@@ -794,7 +794,7 @@ void Functions<S,D>
       auto nr_incld = nr(k)/cld_frac_r(k); //nr_incld is updated in get_rain_dsd2 but isn't used again
 
       get_rain_dsd2(
-        qr_incld, nr_incld, mu_r(k), lamr(k), ignore1, ignore2, cld_frac_r(k), qr_gt_small);
+        qr_incld, nr_incld, mu_r(k), lamr(k), ignore1, ignore2, qr_gt_small);
 
       nr(k).set(qr_gt_small,nr_incld*cld_frac_r(k)); //rain_dsd2 might have changed incld nr... need consistency.
 
@@ -837,7 +837,7 @@ void Functions<S,D>
       lookup_ice(qi_incld, ni_incld, qm_incld, rhop, table_ice, qi_gt_small);
 
       table_val_qi_fallspd.set(qi_gt_small, apply_table_ice(1,  ice_table_vals, table_ice, qi_gt_small));
-      table_val_ice_eff_rad.set(qi_gt_small, apply_table_ice(5,  ice_table_vals, table_ice, qi_gt_small));
+      table_val_ice_eff_radius.set(qi_gt_small, apply_table_ice(5,  ice_table_vals, table_ice, qi_gt_small));
       table_val_ni_lammax.set(qi_gt_small, apply_table_ice(6,  ice_table_vals, table_ice, qi_gt_small));
       table_val_ni_lammin.set(qi_gt_small, apply_table_ice(7,  ice_table_vals, table_ice, qi_gt_small));
       table_val_ice_reflectivity.set(qi_gt_small, apply_table_ice(8,  ice_table_vals, table_ice, qi_gt_small));
@@ -856,7 +856,7 @@ void Functions<S,D>
 
       // note that reflectivity from lookup table is normalized, so we need to multiply by N
       diag_vm_qi(k) .set(qi_gt_small, table_val_qi_fallspd * rhofaci(k));
-      diag_eff_rad_qi(k).set(qi_gt_small, table_val_ice_eff_rad); // units are in m
+      diag_eff_radius_qi(k).set(qi_gt_small, table_val_ice_eff_radius); // units are in m
       diag_diam_qi(k)  .set(qi_gt_small, table_val_ice_mean_diam);
       rho_qi(k).set(qi_gt_small, table_val_ice_bulk_dens);
 
@@ -1003,8 +1003,8 @@ void Functions<S,D>
     const auto obm                 = ekat::subview(prognostic_state.bm, i);
     const auto oqv                 = ekat::subview(prognostic_state.qv, i);
     const auto oth                 = ekat::subview(prognostic_state.th, i);
-    const auto odiag_eff_rad_qc    = ekat::subview(diagnostic_outputs.diag_eff_rad_qc, i);
-    const auto odiag_eff_rad_qi    = ekat::subview(diagnostic_outputs.diag_eff_rad_qi, i);
+    const auto odiag_eff_radius_qc    = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
+    const auto odiag_eff_radius_qi    = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
     const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
@@ -1040,7 +1040,7 @@ void Functions<S,D>
     p3_main_init(
       team, nk_pack,
       ocld_frac_i, ocld_frac_l, ocld_frac_r, oexner, oth, odz, diag_equiv_reflectivity,
-      ze_ice, ze_rain, odiag_eff_rad_qc, odiag_eff_rad_qi, inv_cld_frac_i, inv_cld_frac_l,
+      ze_ice, ze_rain, odiag_eff_radius_qc, odiag_eff_radius_qi, inv_cld_frac_i, inv_cld_frac_l,
       inv_cld_frac_r, inv_exner, T_atm, oqv, inv_dz,
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
 
@@ -1120,8 +1120,8 @@ void Functions<S,D>
       team, nk_pack, dnu, ice_table_vals, oexner, ocld_frac_l, ocld_frac_r, ocld_frac_i, 
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, omu_c, nu, olamc, mu_r, lamr,
-      ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_rad_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_rad_qc);
+      ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
+      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc);
 
     //
     // merge ice categories with similar properties

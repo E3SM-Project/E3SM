@@ -245,6 +245,8 @@ contains
     call gfr_init_Dmap(elem, gfr)
 
     if (nphys == 1 .and. gfr%boost_pg1) call gfr_pg1_init(gfr)
+
+    if (gfr%check > 0) call check_areas(par, gfr, elem, 1, nelemd)
   end subroutine gfr_init
 
   subroutine gfr_finish()
@@ -253,7 +255,6 @@ contains
     if (.not. allocated(gfr%fv_metdet)) return
     deallocate(gfr%fv_metdet, gfr%D_f, gfr%Dinv_f, gfr%qmin, gfr%qmax, gfr%phis, &
          gfr%center_f, gfr%corners_f)
-    if (gfr%check > 0) deallocate(gfr%check_areas)
   end subroutine gfr_finish
 
   subroutine gfr_dyn_to_fv_phys_hybrid(hybrid, nt, hvcoord, elem, nets, nete, &
@@ -2469,6 +2470,54 @@ contains
     end do
   end subroutine check_nonnegative
 
+  subroutine check_areas(par, gfr, elem, nets, nete)
+    ! Check global area
+
+    use kinds, only: iulog
+    use parallel_mod, only: parallel_t, global_shared_buf, global_shared_sum
+    use physical_constants, only: dd_pi
+    ! Can't use wrap_repro_sum because this routine needs to support
+    ! unit testing in an already threaded region.
+#ifdef CAM
+    use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
+#else
+    use repro_sum_mod, only: repro_sum
+#endif
+
+    type (parallel_t), intent(in) :: par
+    type (GllFvRemap_t), intent(inout) :: gfr
+    type (element_t), intent(in) :: elem(:)
+    integer, intent(in) :: nets, nete
+
+    integer :: ie, i, j, nf
+    real(kind=real_kind) :: area, sphere_area
+
+    nf = gfr%nphys
+    do ie = nets,nete
+       global_shared_buf(ie,1) = gfr%check_areas(1,ie)
+       area = zero
+       do j = 1,nf
+          do i = 1,nf
+             area = area + gfr_f_get_area(ie, i, j)
+          end do
+       end do
+       global_shared_buf(ie,2) = area
+       global_shared_buf(ie,3) = sum(elem(ie)%spheremp)
+    end do
+    call repro_sum(global_shared_buf, global_shared_sum, nelemd, nelemd, 3, commid=par%comm)
+    sphere_area = 4*dd_pi
+    if (par%masterproc) then
+       write(iulog,*) 'gfr> area fv raw', global_shared_sum(1), &
+            abs(global_shared_sum(1) - sphere_area)/sphere_area
+       write(iulog,*) 'gfr> area fv adj', &
+            abs(global_shared_sum(2) - sphere_area)/sphere_area, &
+            abs(global_shared_sum(2) - global_shared_sum(3))/global_shared_sum(3)
+       write(iulog,*) 'gfr> area gll   ', &
+            abs(global_shared_sum(3) - sphere_area)/sphere_area
+    end if
+    deallocate(gfr%check_areas)
+  end subroutine check_areas
+
   subroutine check(par, dom_mt, gfr, elem, verbose)
     ! Run a bunch of unit tests.
 
@@ -2483,7 +2532,6 @@ contains
     use global_norms_mod, only: wrap_repro_sum
     use reduction_mod, only: ParallelMin, ParallelMax
     use prim_advection_base, only: edgeAdvQminmax
-    use physical_constants, only: dd_pi
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -2492,7 +2540,7 @@ contains
     logical, intent(in) :: verbose
 
     real(kind=real_kind) :: a, b, rd, x, y, f0(np*np), f1(np*np), g(np,np), &
-         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1, sphere_area, area
+         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1
     integer :: nf, nf2, ie, i, j, k, iremap, info, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:), ps_v_fv(:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
@@ -2520,32 +2568,6 @@ contains
           write(iulog,*) 'gfr> M_sgf', gfr%npi, nf, gfr%M_sgf(:gfr%npi, :gfr%npi, :nf, :nf)
           write(iulog,*) 'gfr> interp', gfr%npi, np, gfr%interp(:gfr%npi, :gfr%npi, :np, :np)
           write(iulog,*) 'gfr> f2g_remapd', np, nf, gfr%f2g_remapd(:nf*nf,:,:)
-       end if
-    end if
-
-    ! Check global area
-    if (gfr%check > 0) then
-       do ie = nets,nete
-          global_shared_buf(ie,1) = gfr%check_areas(1,ie)
-          area = zero
-          do j = 1,nf
-             do i = 1,nf
-                area = area + gfr_f_get_area(ie, i, j)
-             end do
-          end do
-          global_shared_buf(ie,2) = area
-          global_shared_buf(ie,3) = sum(elem(ie)%spheremp)
-       end do
-       call wrap_repro_sum(nvars=3, comm=par%comm)
-       sphere_area = 4*dd_pi
-       if (hybrid%masterthread) then
-          write(iulog,*) 'gfr> area fv raw', global_shared_sum(1), &
-               abs(global_shared_sum(1) - sphere_area)/sphere_area
-          write(iulog,*) 'gfr> area fv adj', &
-               abs(global_shared_sum(2) - sphere_area)/sphere_area, &
-               abs(global_shared_sum(2) - global_shared_sum(3))/global_shared_sum(3)
-          write(iulog,*) 'gfr> area gll   ', &
-               abs(global_shared_sum(3) - sphere_area)/sphere_area
        end if
     end if
 

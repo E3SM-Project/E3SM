@@ -53,6 +53,7 @@
 <horiz_grid dyn="se"    hgrid="ne30np4.pg2"  ncol="21600"   csne="30"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg3"  ncol="48600"   csne="30"  csnp="4" npg="3" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg4"  ncol="86400"   csne="30"  csnp="4" npg="4" />
+<horiz_grid dyn="se"    hgrid="ne45np4.pg2"  ncol="48600"   csne="45"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne60np4"      ncol="194402"  csne="60"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne60np4.pg2"  ncol="86400"   csne="60"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />

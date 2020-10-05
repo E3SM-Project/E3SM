@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
     mali_dynamic      = case.get_value("MALI_DYNAMIC")
     stream_name       = 'streams.landice'
-    albany_input_name = 'albany_input.xml'
+    albany_input_name = 'albany_input.yaml'
 
     maliconf_dir = os.path.join(casebuild, "maliconf")
 
@@ -52,19 +52,28 @@ def buildnml(case, caseroot, compname):
 
     grid_date = ''
     grid_prefix = ''
+    decomp_date = ''
     decomp_prefix = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
         grid_prefix += 'aisgis20km'
+        decomp_date += '20190326'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.gis20km':
         grid_date += '150922'
         grid_prefix += 'gis20km'
+        decomp_date += '150922'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais20km':
         grid_date += '150910'
         grid_prefix += 'ais20km'
+        decomp_date += '150910'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis1to10km':
+        grid_date += '063020'
+        grid_prefix += 'gis_1to10km_betaOpt'
+        decomp_date += '051920'
         decomp_prefix += 'mpasli.graph.info.'
     else:
         expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
@@ -127,7 +136,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -cimeroot {}".format(cimeroot)
         sysmod += " -inst_string '{}'".format(inst_string)
         sysmod += " -decomp_prefix '{}'".format(decomp_prefix)
-        sysmod += " -date_stamp '{}'".format(grid_date)
+        sysmod += " -decomp_date_stamp '{}'".format(decomp_date)
         sysmod += " -glc_grid '{}'".format(glc_grid)
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
@@ -266,8 +275,8 @@ def buildnml(case, caseroot, compname):
             stream_file.write("\n".join(lines))
 
     if mali_use_albany:
-        logger.info("Setting up albany_input.xml file for use with MALI.")
-        # Write albany_input.xml file if there isn't one in SourceMods
+        logger.info("Setting up albany_input.yaml file for use with MALI.")
+        # Write albany_input.yaml file if there isn't one in SourceMods
         if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
             safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
         else:

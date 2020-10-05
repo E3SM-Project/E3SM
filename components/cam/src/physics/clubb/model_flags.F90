@@ -133,6 +133,13 @@ module model_flags
     saturation_gfdl   = 2, & ! Constant for the GFDL approximation of saturation
     saturation_flatau = 3    ! Constant for Flatau approximations of saturation
 
+  integer, public :: &
+    ipdf_call_placement = 1 !Options for the placement of the call to CLUBB's PDF. 
+                            !1 ipdf_pre_advance_fields, 
+                            !2 ipdf_post_advance_fields, 
+                            !3 ipdf_pre_post_advance_fields
+ 
+
   !-----------------------------------------------------------------------------
   ! Options that can be changed at runtime 
   ! The default values are chosen below and overwritten if desired by the user
@@ -171,7 +178,7 @@ module model_flags
 
   ! Use 2 calls to pdf_closure and the trapezoidal rule to  compute the 
   ! varibles that are output from high order closure
-  logical, private :: &
+  logical, public :: &
     l_vert_avg_closure  = .true.
 !$omp threadprivate(l_vert_avg_closure)
 

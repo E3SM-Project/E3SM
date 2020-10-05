@@ -408,24 +408,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    if (hist_fld_active('VOR')) then
       call compute_zeta_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
-         !do j=1,np
-         !   do i=1,np
-         !      ftmp(i+(j-1)*np,:,1) = tmp_dyn(i,j,:,ie)
-         !   end do
-         !end do
-         !call outfld('VOR',ftmp(:,:,1),npsq,ie)
          call outfld('VOR',tmp_dyn(1,1,1,ie),npsq,ie)
       enddo
    endif
    if (hist_fld_active('DIV')) then
       call compute_div_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
-         do j=1,np
-            do i=1,np
-               ftmp(i+(j-1)*np,:,1) = tmp_dyn(i,j,:,ie)
-            end do
-         end do
-         call outfld('DIV',ftmp(:,:,1),npsq,ie)
+         call outfld('DIV',tmp_dyn(1,1,1,ie),npsq,ie)
       enddo
    endif
    if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
@@ -448,7 +437,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
-      call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+
+      ! at this point in the code we are on floating lagrangian levels
+      ! need to compute ps for output
+      p_i(:,:,nlevp) = hvcoord%hyai(1)*hvcoord%ps0 + &
+           sum(dyn_in%elem(ie)%state%dp3d(:,:,:,tl_f),3)
+      call outfld('DYN_PS'    ,p_i(:,:,nlevp),npsq,ie)
 #ifdef MODEL_THETA_L
       ! omega_p is just omega when using the theta dycore
       call outfld('DYN_OMEGA',dyn_in%elem(ie)%derived%omega_p(:,:,:)  ,npsq,ie)

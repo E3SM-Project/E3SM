@@ -100,8 +100,6 @@
       <value compset="_CAM4%WC"       >-chem waccm_mozart</value>
       <value compset="_CAM5%WC"       >-chem waccm_mozart_mam3</value>
       <value compset="_CAM4%WCSC"     >-chem waccm_ghg</value>
-      <value compset="_CAM[45]%WCBC"  >-carma bc_strat</value>
-      <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
       <value compset="_CAM[45]%WCMX"  >-waccmx</value>
       <!-- old MMF / super-parameterization compsets -->
       <!-- These are needed to test against the ECP fork  -->
@@ -117,20 +115,22 @@
       <value compset="_CAM5%SP1V1-MAML"      >-use_MAML -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%SP1V1-MAML_"     >-crm_nx 64 -crm_nx_rad 64 </value>
       <!-- New MMF / super-parameterization compsets -->
-      <value compset="_CAM5%MMF[12]"           >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 </value>
-      <value compset="_CAM5%MMF[12]"           >-crm_dx 1000 -crm_dt 5 </value>
-      <value compset="_CAM5%MMF[12]"           >-microphys mg2  </value>
-      <value compset="_CAM5%MMF[12]"           >-cppdefs ' -DMMF_DIR_NS ' </value>
-      <value compset="_CAM5%MMF[12]"           >-rad rrtmgp </value>
-      <value compset="_CAM5%MMF1"              >-MMF_microphysics_scheme sam1mom</value>
-      <value compset="_CAM5%MMF1"              >-chem none </value>
+      <value compset="_CAM5%MMF"               >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 </value>
+      <value compset="_CAM5%MMF"               >-crm_dx 1000 -crm_dt 5 </value>
+      <value compset="_CAM5%MMF[12]"           >-crm sam</value>
+      <value compset="_CAM5%MMFXX"             >-crm samxx</value>
+      <value compset="_CAM5%MMF"               >-microphys mg2  </value>
+      <value compset="_CAM5%MMF"               >-cppdefs ' -DMMF_DIR_NS ' </value>
+      <value compset="_CAM5%MMF"               >-rad rrtmgp </value>
+      <value compset="_CAM5%MMF[1X]"           >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_CAM5%MMF2"              >-MMF_microphysics_scheme m2005 </value>
       <value compset="_CAM5%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_CAM5%MMF2-ECPP"         >-use_ECPP </value>
       <value compset="_CAM5%MMF[12]-MAML"      >-use_MAML </value>
-      <value compset="_CAM5%MMF[12]"           >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%MMF[12X]"          >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%MMF[12]-MAML"      >-crm_nx 64 -crm_nx_rad 64 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_CAM5%MMF[12]-RCE"       >-aquaplanet -rce </value>
+      <value compset="_CAM5%MMF[12X]-AQUA"     >-aquaplanet </value>
+      <value compset="_CAM5%MMF[12X]-RCE"      >-aquaplanet -rce </value>
       <!--  -->
       <value compset="GEOS_CAM"       >-offline_dyn</value>
       <value compset="GEOS_CAM4"      >-nlev 56</value>
@@ -142,7 +142,7 @@
       <value compset="CAM[45]%SCAM"   >-scam</value>
       <value compset="AR97_CAM[45]"   >-phys cam5 -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_CAM.%L60"      >-nlev 60</value>
-      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
       <!-- Simple/idealized configurations -->
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
@@ -155,7 +155,7 @@
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
-      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <value compset="_ELM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_CAM5%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
@@ -280,11 +280,9 @@
       <value compset="RCP8_CAM4%WCCM"   >waccm_2005-2100_cam4_rcp85</value>
       <value compset="1850_CAM5%WCCM"   >waccm_1850_cam5</value>
       <value compset="2000_CAM5%WCCM"   >waccm_2000_cam5</value>
-      <value compset="2013_CAM4%WCBC"   >waccm_carma_bc_2013_cam4</value>
       <value compset="GEOS_CAM4%TMOZ"   >cam4_chem_radpsv_geos5</value>
       <value compset="GEOS_CAM4%TBAM"   >cam4_bam_radpsv_geos5</value>
       <value compset="GEOS_CAM4%WCCM"   >sd_waccm_geos5</value>
-      <value compset="GEOS_CAM4%WCSF"   >sd_waccm_sulfur</value>
       <value compset="_CAM4%MOZS"       >soa_chem_megan_emis</value>         
       <value compset="_CAM5%SMA3"       >2000_cam5_trop_strat_mam3</value>
       <value compset="_CAM5%SMA7"       >2000_cam5_trop_strat_mam7</value>
@@ -306,9 +304,10 @@
       <!-- MMF / Super-Parameterization -->
       <value compset="2000_CAM5%SP1"     >2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000_CAM5%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="2000_CAM5%MMF1"    >2000_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="2000_CAM5%MMF[1X]" >2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000_CAM5%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_CAM5%MMF[12]-RCE" >RCEMIP_EAMv1</value>
+      <value compset="_CAM5%MMF[12X]-RCE" >RCEMIP_EAMv1</value>
+      <value compset="_CAM5%MMF[1X]-AQUA" >aquaplanet_MMF-1mom</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -391,8 +390,6 @@
     <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
     <desc compset="_CAM[45]%WCMX">CAM WACCM-X:</desc>
     <desc compset="_CAM[45]%WCSC">CAM WACCM specified chemistry:</desc>
-    <desc compset="_CAM[45]%WCBC">CAM WACCM with the stratospheric black carbon CARMA model:</desc>
-    <desc compset="_CAM[45]%WCSF">CAM WACCM with sulfur chemistry and the sulfate CARMA model:</desc>
     <desc compset="_CAM[45]%FCHM">CAM super_fast_llnl chemistry:</desc> 
     <desc compset="_CAM[45]%TMOZ">CAM trop_mozart chemistry:</desc>
     <desc compset="_CAM[45]%TBAM">CAM trop_bam chemistry: </desc>
@@ -439,7 +436,7 @@
     <value compset="DOCN%AQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="CAM5%RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="CAM5%MMF[12]-RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
+    <value compset="CAM5%MMF[12X]-RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
     <!-- MAML uses this for setting NINST, NINST_LAYOUT -->
     <value compset="CAM5%MMF[12]-MAML">$SRCROOT/components/cam/cime_config/usermods_dirs/maml</value>
     </values>

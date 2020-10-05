@@ -86,6 +86,31 @@ interface
 
   end subroutine update_host_dse_f
 
+  subroutine compute_diag_third_shoc_moment_f(shcol, nlev, nlevi, w_sec, thl_sec, &
+                                              wthl_sec, tke, dz_zt, &
+                                              dz_zi, isotropy_zi, &
+                                              brunt_zi, w_sec_zi, thetal_zi, &
+                                              w3) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in) :: w_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: thl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: wthl_sec(shcol,nlevi)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: isotropy_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: brunt_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: w_sec_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: thetal_zi(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: w3(shcol,nlevi)
+
+  end subroutine compute_diag_third_shoc_moment_f
+
   subroutine check_tke_f(shcol, nlev, tke) bind(C)
 
     use iso_c_binding
@@ -142,6 +167,27 @@ subroutine clipping_diag_third_shoc_moments_f(nlevi,shcol,w_sec_zi,w3) bind (C)
   real(kind=c_real), intent(inout) :: w3(shcol,nlevi)
 
 end subroutine clipping_diag_third_shoc_moments_f
+
+subroutine shoc_energy_integrals_f(shcol, nlev, host_dse, pdel,&
+                                   rtm, rcm, u_wind, v_wind,&
+                                   se_int, ke_int, wv_int, wl_int) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: shcol
+  integer(kind=c_int), intent(in), value :: nlev
+  real(kind=c_real), intent(in) :: host_dse(shcol,nlev)
+  real(kind=c_real), intent(in) :: pdel(shcol,nlev)
+  real(kind=c_real), intent(in) :: rtm(shcol,nlev)
+  real(kind=c_real), intent(in) :: rcm(shcol,nlev)
+  real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
+  real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
+
+  real(kind=c_real), intent(out) :: se_int(shcol)
+  real(kind=c_real), intent(out) :: ke_int(shcol)
+  real(kind=c_real), intent(out) :: wv_int(shcol)
+  real(kind=c_real), intent(out) :: wl_int(shcol)
+
+end subroutine shoc_energy_integrals_f
 
 end interface
 

@@ -91,7 +91,7 @@ void Functions<S,D>
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
-            get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, cld_frac_l(pk), qc_gt_small);
+            get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, qc_gt_small);
 
 	    //get_cloud_dsd2 keeps the drop-size distribution within reasonable
 	    //bounds by modifying nc_incld. The next line maintains consistency

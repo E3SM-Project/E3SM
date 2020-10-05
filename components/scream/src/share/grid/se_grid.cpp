@@ -6,13 +6,13 @@ SEGrid::
 SEGrid (const std::string& grid_name,
         const GridType type,
         const int num_local_elements,
-        const int num_gp,
-        const int num_vl)
+        const int num_gauss_pts,
+        const int num_vertical_levels)
  : m_grid_name      (grid_name)
  , m_type           (type)
  , m_num_local_elem (num_local_elements)
- , m_num_gp         (num_gp)
- , m_num_vl         (num_vl)
+ , m_num_gp         (num_gauss_pts)
+ , m_num_vl         (num_vertical_levels)
  , m_num_local_dofs (0)
 {
   // Sanity check

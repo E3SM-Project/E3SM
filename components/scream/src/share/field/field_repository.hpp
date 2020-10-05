@@ -62,6 +62,9 @@ public:
 
   // Deduce the pack size from the scalar type (which must be of type Pack<ScalarType,N>, for some int N>0, or ScalarType)
   template<typename RequestedValueType = scalar_type>
+  void register_field (const identifier_type& identifier, const std::initializer_list<std::string>& groups_names);
+
+  template<typename RequestedValueType = scalar_type>
   void register_field (const identifier_type& identifier, const std::set<std::string>& groups_names);
 
   template<typename RequestedValueType = scalar_type>
@@ -131,6 +134,13 @@ register_field (const identifier_type& id, const std::string& group_name) {
   std::set<std::string> group_name_set;
   group_name_set.insert(group_name);
   register_field<RequestedValueType>(id,group_name_set);
+}
+
+template<typename ScalarType, typename Device>
+template<typename RequestedValueType>
+void FieldRepository<ScalarType,Device>::
+register_field (const identifier_type& id, const std::initializer_list<std::string>& groups_names) {
+  register_field<RequestedValueType>(id,std::set<std::string>(groups_names));
 }
 
 template<typename ScalarType, typename Device>

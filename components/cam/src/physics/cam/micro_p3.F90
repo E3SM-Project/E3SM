@@ -599,11 +599,11 @@ contains
            mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
       call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu(k),dnu,lamc(k),     &
-           cdist(k),cdist1(k),cld_frac_l(k))
+           cdist(k),cdist1(k))
       nc(k) = nc_incld(k)*cld_frac_l(k)
 
       call get_rain_dsd2(qr_incld(k),nr_incld(k),mu_r(k),lamr(k),   &
-           cdistr(k),logn0r(k),cld_frac_r(k))
+           cdistr(k),logn0r(k))
       nr(k) = nr_incld(k)*cld_frac_r(k)
 
       ! initialize inverse supersaturation relaxation timescale for combined ice categories
@@ -941,7 +941,7 @@ contains
       exner, cld_frac_l, cld_frac_r, cld_frac_i, &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
-      ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc)
+      ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc)
 
    implicit none
 
@@ -955,13 +955,13 @@ contains
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, &
         lamr, vap_liq_exchange, &
-        ze_rain, ze_ice, diag_vm_qi, diag_eff_rad_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_rad_qc
+        ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc
 
    ! locals
    integer :: k, dumi, dumii, dumjj, dumzz
    real(rtype) :: tmp1, tmp2, dum1, dum4, dum5, dum6, rhop
    real(rtype)    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
-   real(rtype)    :: table_val_ice_eff_rad   ! effective radius                     See lines 1281 - 1356  eff
+   real(rtype)    :: table_val_ice_eff_radius   ! effective radius                     See lines 1281 - 1356  eff
    real(rtype)    :: table_val_ni_lammax   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
    real(rtype)    :: table_val_ni_lammin   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
    real(rtype)    :: table_val_ice_reflectivity   ! reflectivity                         See lines  731 -  808  refl
@@ -984,9 +984,9 @@ contains
          qc_incld = qc(k)/cld_frac_l(k)
          nc_incld = nc(k)/cld_frac_l(k)
          call get_cloud_dsd2(qc_incld,nc_incld,mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
-              tmp1,tmp2,cld_frac_l(k))
+              tmp1,tmp2)
 
-         diag_eff_rad_qc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
+         diag_eff_radius_qc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
          nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
          qv(k) = qv(k)+qc(k)
@@ -1000,7 +1000,7 @@ contains
       if (qr(k).ge.qsmall) then
          qr_incld = qr(k)/cld_frac_r(k)
          nr_incld = nr(k)/cld_frac_r(k)
-         call get_rain_dsd2(qr_incld,nr_incld,mu_r(k),lamr(k),tmp1,tmp2,cld_frac_r(k))
+         call get_rain_dsd2(qr_incld,nr_incld,mu_r(k),lamr(k),tmp1,tmp2)
          nr(k) = nr_incld*cld_frac_r(k) !limiters might change nc_incld... enforcing consistency
 
          !Note that integrating over the drop-size PDF as done here should only be done to in-cloud
@@ -1045,7 +1045,7 @@ contains
          !qm(k),zitot(k),rhop)
 
          call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,table_val_qi_fallspd)
-         call access_lookup_table(dumjj,dumii,dumi, 6,dum1,dum4,dum5,table_val_ice_eff_rad)
+         call access_lookup_table(dumjj,dumii,dumi, 6,dum1,dum4,dum5,table_val_ice_eff_radius)
          call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,table_val_ni_lammax)
          call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,table_val_ni_lammin)
          call access_lookup_table(dumjj,dumii,dumi, 9,dum1,dum4,dum5,table_val_ice_reflectivity)
@@ -1066,7 +1066,7 @@ contains
 
          ! note that reflectivity from lookup table is normalized, so we need to multiply by N
          diag_vm_qi(k)   = table_val_qi_fallspd*rhofaci(k)
-         diag_eff_rad_qi(k)  = table_val_ice_eff_rad ! units are in m
+         diag_eff_radius_qi(k)  = table_val_ice_eff_radius ! units are in m
          diag_diam_qi(k)    = table_val_ice_mean_diam
          rho_qi(k)  = table_val_ice_bulk_dens
          ! note factor of air density below is to convert from m^6/kg to m^6/m^3
@@ -1104,8 +1104,8 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,   &
-       pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_rad_qc,     &
-       diag_eff_rad_qi,rho_qi,do_predict_nc, &
+       pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
+       diag_eff_radius_qi,rho_qi,do_predict_nc, &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,qv_prev,t_prev,col_location)
@@ -1149,8 +1149,8 @@ contains
 
     real(rtype), intent(out),   dimension(its:ite)              :: precip_liq_surf    ! precipitation rate, liquid       m s-1
     real(rtype), intent(out),   dimension(its:ite)              :: precip_ice_surf    ! precipitation rate, solid        m s-1
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_eff_rad_qc  ! effective radius, cloud          m
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_eff_rad_qi  ! effective radius, ice            m
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_eff_radius_qc  ! effective radius, cloud          m
+    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_eff_radius_qi  ! effective radius, ice            m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: rho_qi  ! bulk density of ice              kg m-3
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
@@ -1261,8 +1261,8 @@ contains
 
     ze_ice    = 1.e-22_rtype
     ze_rain   = 1.e-22_rtype
-    diag_eff_rad_qc = 10.e-6_rtype ! default value
-    diag_eff_rad_qi = 25.e-6_rtype ! default value
+    diag_eff_radius_qc = 10.e-6_rtype ! default value
+    diag_eff_radius_qi = 25.e-6_rtype ! default value
     diag_vm_qi  = 0._rtype
     diag_diam_qi   = 0._rtype
     rho_qi = 0._rtype
@@ -1414,7 +1414,7 @@ contains
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
-            ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_rad_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_rad_qc(i,:))
+            ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_radius_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_radius_qc(i,:))
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
        !..............................................
@@ -1717,13 +1717,13 @@ contains
 
 
   !===========================================================================================
-  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,cld_frac_l)
+  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1)
 
     implicit none
 
     !arguments:
     real(rtype), dimension(:), intent(in)  :: dnu
-    real(rtype),     intent(in)            :: qc,rho,cld_frac_l
+    real(rtype),     intent(in)            :: qc,rho
     real(rtype),     intent(inout)         :: nc
     real(rtype),     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
 
@@ -1782,14 +1782,14 @@ contains
 
 
   !===========================================================================================
-  subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,cld_frac_r)
+  subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r)
 
     ! Computes and returns rain size distribution parameters
 
     implicit none
 
     !arguments:
-    real(rtype),     intent(in)            :: qr,cld_frac_r
+    real(rtype),     intent(in)            :: qr
     real(rtype),     intent(inout)         :: nr
     real(rtype),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
@@ -3201,7 +3201,6 @@ qr2qv_evap_tend,nr_evap_tend)
    !Initialize variables
    qr2qv_evap_tend = 0.0_rtype
    nr_evap_tend = 0.0_rtype
-   tau_r = 1._rtype/epsr
    inv_dt=1._rtype/dt
    
    !Compute absolute supersaturation.
@@ -3267,6 +3266,10 @@ qr2qv_evap_tend,nr_evap_tend)
          !gets big.
          call rain_evap_tscale_weight(dt/tau_eff,tscale_weight)
 
+         !tau_r is only used in this "else" branch so only define it here.
+         !outside this branch qr_incld could be < qsmall, in which case epsr=0.
+         tau_r = 1._rtype/epsr
+         
          !in limit of very long timescales, evap must balance A_c.
          !(1/tau_r)/(1/tau_eff) is the fraction of this total tendency assigned to rain
          !Will be >0 if A_c>0: increased supersat from other procs must be balanced by
@@ -3447,7 +3450,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
                   !-- compute Vq, Vn
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                       lamc(k),tmp1,tmp2,cld_frac_l(k))
+                       lamc(k),tmp1,tmp2)
 
                   !get_cloud_dsd2 keeps the drop-size distribution within reasonable
                   !bounds by modifying nc_incld. The next line maintains consistency
@@ -3482,7 +3485,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                       lamc(k),tmp1,tmp2,cld_frac_l(k))
+                       lamc(k),tmp1,tmp2)
 
                   !get_cloud_dsd2 keeps the drop-size distribution within reasonable
                   !bounds by modifying nc_incld. The next line maintains consistency
@@ -3602,7 +3605,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), cld_frac_r(k), rhofacr(k), nr_incld(k), &
+               call compute_rain_fall_velocity(qr_incld(k), rhofacr(k), nr_incld(k), &
                     mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
                !in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
@@ -3642,10 +3645,9 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
 
    real(rtype), intent(in) :: qr_incld
-   real(rtype), intent(in) :: cld_frac_r
    real(rtype), intent(in) :: rhofacr
    real(rtype), intent(inout) :: nr_incld
    real(rtype), intent(out) :: mu_r
@@ -3658,7 +3660,7 @@ subroutine compute_rain_fall_velocity(qr_incld, cld_frac_r, rhofacr, nr_incld, m
 
    !Compute Vq, Vn:
 
-   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2,cld_frac_r)
+   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2)
 
    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
 
