@@ -53,7 +53,6 @@ void initialize_hommexx_session ()
 #ifdef HOMMEXX_SHA1
     std::cout << "HOMMEXX SHA1: " << HOMMEXX_SHA1 << "\n";
 #endif
-    std::cout << "HOMMEXX AVX_VERSION: " << HOMMEXX_AVX_VERSION << "\n";
     std::cout << "HOMMEXX VECTOR_SIZE: " << VECTOR_SIZE << "\n";
     std::cout << "HOMMEXX vector tag: " << Scalar::label() << "\n";
     std::cout << "HOMMEXX active AVX set:" << active_avx_string() << "\n";

@@ -28,10 +28,7 @@
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
 #cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
 
-// The version of AVX available on the host
-#define HOMMEXX_AVX_VERSION ${AVX_VERSION}
-
-// User-defined VECTOR_SIZE; used if AVX_VERSION is 0 and Cuda is not active
+// User-defined VECTOR_SIZE
 #define HOMMEXX_VECTOR_SIZE ${HOMMEXX_VECTOR_SIZE}
 
 #define HOMMEXX_SHA1 "${LAST_GIT_COMMIT_SHA}"

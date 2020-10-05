@@ -60,16 +60,6 @@ struct SIMD {
   using exec_space = SpT;
 };
 
-// Intel AVX instruction device (explicit vectorization)
-template <typename T, typename SpT = Kokkos::DefaultHostExecutionSpace>
-struct AVX {
-  static_assert(std::is_same<T, double>::value || std::is_same<T, float>::value,
-                "KokkosKernels:: Invalid AVX<> type.");
-
-  using value_type = T;
-  using exec_space = SpT;
-};
-
 template <class T, int l> struct VectorTag {
   using value_type = typename T::value_type;
   using exec_space = typename T::exec_space;
@@ -77,10 +67,7 @@ template <class T, int l> struct VectorTag {
       typename Kokkos::Impl::TeamPolicyInternal<exec_space>::member_type;
 
   static_assert(
-      std::is_same<T, SIMD<value_type, exec_space>>::value ||  // host compiler
-                                                               // vectorization
-          std::is_same<T, AVX<value_type, exec_space>>::value, // || // host AVX
-                                                               // vectorization
+      std::is_same<T, SIMD<value_type, exec_space>>::value, // host compiler vectorization
       "KokkosKernels:: Invalid VectorUnitTag<> type.");
 
   using type = VectorTag;

@@ -36,16 +36,10 @@ namespace Homme {
     static constexpr const int QSIZE_D = PCNST;
   #endif
 
-  #if   (HOMMEXX_AVX_VERSION == 0)
-    // Vector<VectorTag<SIMD<T, SpT>, l> > can use this for good results
-    // on, e.g., Power9, where AVX doesn't exist.
-    static constexpr const int VECTOR_SIZE = HOMMEXX_VECTOR_SIZE;
-  #elif (HOMMEXX_AVX_VERSION == 1 || HOMMEXX_AVX_VERSION == 2)
-    static constexpr const int VECTOR_SIZE = 4;
-  #elif (HOMMEXX_AVX_VERSION == 512)
-    static constexpr const int VECTOR_SIZE = 8;
-  #endif
-  static constexpr int VECTOR_END = VECTOR_SIZE-1;
+  // Vector<VectorTag<SIMD<T, SpT>, l> > can use this for good results
+  // on, e.g., Power9, where AVX doesn't exist.
+  static constexpr int VECTOR_SIZE = HOMMEXX_VECTOR_SIZE;
+  static constexpr int VECTOR_END  = VECTOR_SIZE-1;
 
   static_assert(VECTOR_SIZE>0, "Error: VECTOR_SIZE=0!");
 

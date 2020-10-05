@@ -15,42 +15,6 @@ namespace KokkosKernels {
 namespace Batched {
 namespace Experimental {
 
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 4> >
-max (const Vector<VectorTag<AVX<double, SpT>, 4> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 4> >& b)
-{
-  return _mm256_max_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 4> >
-min (const Vector<VectorTag<AVX<double, SpT>, 4> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 4> >& b)
-{
-  return _mm256_min_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 8> >
-max (const Vector<VectorTag<AVX<double, SpT>, 8> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 8> >& b)
-{
-  return _mm512_max_pd (a, b);
-}
-
-template <typename SpT>
-inline
-Vector<VectorTag<AVX<double, SpT>, 8> >
-min (const Vector<VectorTag<AVX<double, SpT>, 8> >& a,
-     const Vector<VectorTag<AVX<double, SpT>, 8> >& b)
-{
-  return _mm512_min_pd (a, b);
-}
-
 template <typename SpT, int l>
 KOKKOS_INLINE_FUNCTION
 Vector<VectorTag<SIMD<double, SpT>, l> >
@@ -81,14 +45,12 @@ VECTOR_SIMD_LOOP
   return r_val;
 }
 
-// For pow, we use a standard SIMD loop, regardless of what Scalar is.
-// This is because pow implementation may be available only in _some_
-// avx 512 instruction sets (or have a slightly different name)
-template<typename VectorType, typename ExpType>
+template <typename SpT, int l, typename ExpType>
 KOKKOS_INLINE_FUNCTION
-VectorType
-pow (const VectorType& v, const ExpType p)
+Vector<VectorTag<SIMD<double, SpT>, l> >
+pow (const Vector<VectorTag<SIMD<double,SpT>,l>>& v, const ExpType p)
 {
+  using VectorType = Vector<VectorTag<SIMD<double,SpT>,l>>;
   VectorType vp;
 VECTOR_SIMD_LOOP
   for (int i = 0; i < VectorType::vector_length; ++i) {
