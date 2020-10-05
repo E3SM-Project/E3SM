@@ -189,6 +189,25 @@ subroutine shoc_energy_integrals_f(shcol, nlev, host_dse, pdel,&
 
 end subroutine shoc_energy_integrals_f
 
+subroutine compute_brunt_shoc_length_f(nlev, nlevi, shcol, dz_zt, thv, thv_zi, brunt) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: nlev, nlevi, shcol
+  real(kind=c_real) , intent(in), dimension(shcol, nlev) :: dz_zt, thv
+  real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: thv_zi
+  real(kind=c_real) , intent(out), dimension(shcol, nlev) :: brunt
+
+end subroutine compute_brunt_shoc_length_f
+
+subroutine check_length_scale_shoc_length_f(nlev, shcol, host_dx, host_dy, shoc_mix) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: nlev, shcol
+  real(kind=c_real) , intent(in), dimension(shcol) :: host_dx, host_dy
+  real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: shoc_mix
+
+end subroutine check_length_scale_shoc_length_f
+
 subroutine compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,&
                                           thv,wthv_sec,conv_vel) bind (C)
   use iso_c_binding
