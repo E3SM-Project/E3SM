@@ -136,7 +136,10 @@ class PerfAnalysis(object):
                 threads = int(items[items.index("nthread") + 1])
                 return threads
 
-        expect(False, "Failed to find threads in:\n\n{}".format(output))
+        if "OMP_NUM_THREADS" in os.environ:
+            return int(os.environ["OMP_NUM_THREADS"])
+        else:
+            return 1
 
     ###############################################################################
     def formulate_cmd(self, test_exe):

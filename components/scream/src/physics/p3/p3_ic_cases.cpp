@@ -59,7 +59,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
     // and used by P3. It can range between 0.1 and 10.0. Setting to a typical value of 1.0
     // here.
     for (k = 0; k < nk; ++k) d.inv_qc_relvar(i,k) = 1.0;
-    
+
     // To get potential temperature, start by making absolute temperature vary
     // between 150K at top of atmos and 300k at surface, then convert to potential
     // temp.
@@ -99,7 +99,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
       d.qv_prev(i,k) = d.qv(i,k);
       d.t_prev(i,k) = T_atm(k);
     }
-    
+
     // compute vertical grid spacing dz (in m) from pres and theta.
     static constexpr double
       g = 9.8; // gravity, m/s^2
