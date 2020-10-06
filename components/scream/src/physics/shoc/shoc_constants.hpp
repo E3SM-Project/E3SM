@@ -19,6 +19,7 @@ struct Constants
       static constexpr Scalar length_fac     = 0.5;     // Mixing length scaling parameter
       static constexpr Scalar c_diag_3rd_mom = 7.0;     // Coefficient for diag third moment parameters
       static constexpr Scalar w3clip         = 1.2;     // Third moment of vertical velocity
+      static constexpr Scalar ustar_min      = 0.01;    // Minimum surface friction velocity
     };
 
   } // namespace shoc

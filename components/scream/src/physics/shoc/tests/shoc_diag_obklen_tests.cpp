@@ -163,7 +163,58 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCObklenData SDS_f90[] = {
+      //             shcol
+      SHOCObklenData(12),
+      SHOCObklenData(10),
+      SHOCObklenData(7),
+      SHOCObklenData(2)
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCObklenData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCObklenData SDS_cxx[] = {
+      SHOCObklenData(SDS_f90[0]),
+      SHOCObklenData(SDS_f90[1]),
+      SHOCObklenData(SDS_f90[2]),
+      SHOCObklenData(SDS_f90[3])
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      shoc_diag_obklen(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      shoc_diag_obklen_f(d.shcol(), d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+                         d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs,
+                         d.obklen);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCObklenData& d_f90 = SDS_f90[i];
+      SHOCObklenData& d_cxx = SDS_cxx[i];
+      for (Int i = 0; i < d_f90.dim1; ++i) {
+        REQUIRE(d_f90.ustar[i] == d_cxx.ustar[i]);
+        REQUIRE(d_f90.kbfs[i] == d_cxx.kbfs[i]);
+        REQUIRE(d_f90.obklen[i] == d_cxx.obklen[i]);
+      }
+    }
   }
 };
 
@@ -180,7 +231,7 @@ TEST_CASE("shoc_diag_obklen_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_diagobklen_length_bfb", "shoc")
+TEST_CASE("shoc_diag_obklen_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
 

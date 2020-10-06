@@ -238,6 +238,15 @@ subroutine compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,&
 
 end subroutine compute_conv_vel_shoc_length_f
 
+subroutine shoc_diag_obklen_f(shcol, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, thl_sfc, cldliq_sfc, qv_sfc, ustar, kbfs, obklen) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: shcol
+  real(kind=c_real) , intent(in), dimension(shcol) :: uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, thl_sfc, cldliq_sfc, qv_sfc
+  real(kind=c_real) , intent(out), dimension(shcol) :: ustar, kbfs, obklen
+
+end subroutine shoc_diag_obklen_f
+
 end interface
 
 end module shoc_iso_f
