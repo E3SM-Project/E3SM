@@ -1285,59 +1285,6 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   ekat::device_to_host<int,4>({se_int,ke_int,wv_int,wl_int},shcol,inout_views);
 }
 
-void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
-                                 Real *tke, Real *l_inf)
-{
-  using SHF = Functions<Real, DefaultDevice>;
-
-  using Scalar     = typename SHF::Scalar;
-  using Spack      = typename SHF::Spack;
-  using Pack1d     = typename ekat::Pack<Real,1>;
-  using view_1d    = typename SHF::view_1d<Pack1d>;
-  using view_2d    = typename SHF::view_2d<Spack>;
-  using KT         = typename SHF::KT;
-  using ExeSpace   = typename KT::ExeSpace;
-  using MemberType = typename SHF::MemberType;
-  
-  Kokkos::Array<view_2d, 3> temp_d;
-  Kokkos::Array<int, 3> dim1_sizes        = {shcol,   shcol, shcol};
-  Kokkos::Array<int, 3> dim2_sizes        = {nlev,     nlev, nlev};
-  Kokkos::Array<const Real*, 3> ptr_array = {zt_grid, dz_zt, tke};
-
-  // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
-
-  // inputs
-  view_2d
-    zt_grid_d(temp_d[0]),
-    dz_zt_d  (temp_d[1]),
-    tke_d    (temp_d[2]);
-
-  // outputs
-  view_1d
-    l_inf_d("l_inf", shcol);
-  
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const Int i = team.league_rank();
-    
-    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
-    const auto dz_zt_s   = ekat::subview(dz_zt_d, i);
-    const auto tke_s     = ekat::subview(tke_d, i);
-
-    Scalar l_inf_s{0};
-
-    SHF::compute_l_inf_shoc_length(team, nlev, zt_grid_s, dz_zt_s, tke_s, l_inf_s);
-
-    l_inf_d(i)[0] = l_inf_s;
-  });
-
-  // Sync back to host
-  Kokkos::Array<view_1d, 1> inout_views = {l_inf_d};
-  ekat::device_to_host<int,1>({l_inf},shcol,inout_views);
-}
-
 void compute_brunt_shoc_length_f(Int nlev, Int nlevi, Int shcol, Real* dz_zt, Real* thv, Real* thv_zi, Real* brunt)
 {
   using SHF = Functions<Real, DefaultDevice>;
@@ -1378,6 +1325,59 @@ void compute_brunt_shoc_length_f(Int nlev, Int nlevi, Int shcol, Real* dz_zt, Re
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {brunt_d};
   ekat::device_to_host<int,1>({brunt}, {shcol}, {nlev}, inout_views, true);
+}
+
+void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
+                                 Real *tke, Real *l_inf)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using Pack1d     = typename ekat::Pack<Real,1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_2d, 3> temp_d;
+  Kokkos::Array<int, 3> dim1_sizes        = {shcol,   shcol, shcol};
+  Kokkos::Array<int, 3> dim2_sizes        = {nlev,     nlev, nlev};
+  Kokkos::Array<const Real*, 3> ptr_array = {zt_grid, dz_zt, tke};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // inputs
+  view_2d
+    zt_grid_d(temp_d[0]),
+    dz_zt_d  (temp_d[1]),
+    tke_d    (temp_d[2]);
+
+  // outputs
+  view_1d
+    l_inf_d("l_inf", shcol);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
+    const auto dz_zt_s   = ekat::subview(dz_zt_d, i);
+    const auto tke_s     = ekat::subview(tke_d, i);
+
+    Scalar l_inf_s{0};
+
+    SHF::compute_l_inf_shoc_length(team, nlev, zt_grid_s, dz_zt_s, tke_s, l_inf_s);
+
+    l_inf_d(i)[0] = l_inf_s;
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 1> inout_views = {l_inf_d};
+  ekat::device_to_host<int,1>({l_inf},shcol,inout_views);
 }
 
 void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* host_dy, Real* shoc_mix)
@@ -1490,61 +1490,6 @@ void compute_conv_vel_shoc_length_f(Int nlev, Int shcol, Real *pblh, Real *zt_gr
   // Sync back to host
   Kokkos::Array<view_1d, 1> inout_views = {conv_vel_d};
   ekat::device_to_host<int,1>({conv_vel},shcol,inout_views);
-}
-
-void compute_l_inf_shoc_length_f(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
-                                 Real *tke, Real *l_inf)
-{
-  using SHF = Functions<Real, DefaultDevice>;
-
-  using Scalar     = typename SHF::Scalar;
-  using Spack      = typename SHF::Spack;
-  using Pack1d     = typename ekat::Pack<Real,1>;
-  using view_1d    = typename SHF::view_1d<Pack1d>;
-  using view_2d    = typename SHF::view_2d<Spack>;
-  using KT         = typename SHF::KT;
-  using ExeSpace   = typename KT::ExeSpace;
-  using MemberType = typename SHF::MemberType;
-
-  Kokkos::Array<view_2d, 3> temp_d;
-  Kokkos::Array<int, 3> dim1_sizes        = {shcol,   shcol, shcol};
-  Kokkos::Array<int, 3> dim2_sizes        = {nlev,     nlev, nlev};
-  Kokkos::Array<const Real*, 3> ptr_array = {zt_grid, dz_zt, tke};
-
-  // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
-
-  // inputs
-  view_2d
-    zt_grid_d(temp_d[0]),
-    dz_zt_d  (temp_d[1]),
-    tke_d    (temp_d[2]);
-
-  // outputs
-  view_1d
-    l_inf_d("l_inf", shcol);
-
-  const Int nk_pack = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const Int i = team.league_rank();
-
-    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
-    const auto dz_zt_s   = ekat::subview(dz_zt_d, i);
-    const auto tke_s     = ekat::subview(tke_d, i);
-
-    // Local variables
-    Scalar numer{0};
-    Scalar denom{0};
-
-    SHF::compute_l_inf_shoc_length(team, nlev, zt_grid_s, dz_zt_s, tke_s, numer, denom);
-
-    l_inf_d(i)[0] = sp(0.1)*(numer/denom);
-  });
-
-  // Sync back to host
-  Kokkos::Array<view_1d, 1> inout_views = {l_inf_d};
-  ekat::device_to_host<int,1>({l_inf},shcol,inout_views);
 }
 
 } // namespace shoc
