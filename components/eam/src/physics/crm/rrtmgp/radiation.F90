@@ -35,16 +35,15 @@ module radiation
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      nswgpts, nlwgpts, &
-      initialize_rrtmgp_fluxes, free_fluxes, &
-      free_optics_sw, free_optics_lw, reset_fluxes, &
-      expand_day_fluxes
+      nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
 
    use radiation_state, only: ktop, kbot, nlev_rad
-   use radiation_utils, only: handle_error, clip_values
+   use radiation_utils, only: handle_error, clip_values, &
+      fluxes_t, initialize_fluxes, free_fluxes, reset_fluxes, &
+      expand_day_fluxes
 
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
@@ -1093,7 +1092,6 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-      use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
 
       ! CAM history module provides subroutine to send output data to the history
@@ -1195,7 +1193,7 @@ contains
       character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
-      type(ty_fluxes_byband) :: fluxes_allsky    , fluxes_clrsky, &
+      type(fluxes_t) :: fluxes_allsky    , fluxes_clrsky, &
                                 fluxes_allsky_all, fluxes_clrsky_all
 
       ! Copy of state
@@ -1712,10 +1710,10 @@ contains
                ! NOTE: fluxes defined at interfaces, so initialize to have vertical
                ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
                ! have vertical dimension nlev_rad (defined at midpoints).
-               call initialize_rrtmgp_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_allsky    , do_direct=.true.)
-               call initialize_rrtmgp_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_clrsky    , do_direct=.true.)
-               call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_allsky_all, do_direct=.true.)
-               call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_clrsky_all, do_direct=.true.)
+               call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_allsky    , do_direct=.true.)
+               call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_clrsky    , do_direct=.true.)
+               call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_allsky_all, do_direct=.true.)
+               call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_clrsky_all, do_direct=.true.)
 
                ! Calculate shortwave fluxes
                call t_startf('rad_radiation_driver_sw')
@@ -1812,13 +1810,13 @@ contains
             if (radiation_do('lw')) then
 
                ! Allocate longwave outputs; why is this not part of the
-               ! ty_fluxes_byband object?
+               ! fluxes_t object?
                ! NOTE: fluxes defined at interfaces, so initialize to have vertical
                ! dimension nlev_rad+1
-               call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
-               call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
-               call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_all)
-               call initialize_rrtmgp_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_all)
+               call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
+               call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
+               call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_all)
+               call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_all)
 
                ! Calculate longwave fluxes
                call t_startf('rad_fluxes_lw')
@@ -1970,14 +1968,13 @@ contains
      
       use perf_mod, only: t_startf, t_stopf
       use mo_rrtmgp_clr_all_sky, only: rte_sw
-      use mo_fluxes_byband, only: ty_fluxes_byband
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             set_aerosol_optics_sw
 
       ! Inputs
       integer, intent(in) :: ncol
-      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
+      type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
       real(r8), intent(inout) :: qrs(:,:), qrsc(:,:)
       character(len=*), intent(in), dimension(:) :: gas_names
       real(r8), intent(in), dimension(:,:,:) :: gas_vmr
@@ -1995,7 +1992,7 @@ contains
       real(r8), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
       real(r8), dimension(ncol,pver,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(ncol,pver,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
-      type(ty_fluxes_byband) :: fluxes_allsky_day, fluxes_clrsky_day
+      type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
 
       ! Incoming solar radiation, scaled for solar zenith angle 
       ! and earth-sun distance
@@ -2063,13 +2060,13 @@ contains
 
       ! Allocate shortwave fluxes (allsky and clearsky)
       ! TODO: why do I need to provide my own routines to do this? Why is 
-      ! this not part of the ty_fluxes_byband object?
+      ! this not part of the fluxes_t object?
       !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
       ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
       ! have vertical dimension nlev_rad (defined at midpoints).
-      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
-      call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
+      call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
+      call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
       ! Add a level above model top to optical properties!
 
@@ -2086,7 +2083,14 @@ contains
          albedo_dif_day(1:nswbands,1:nday), &
          cld_tau_gpt_day(1:nday,1:pver,1:nswgpts), cld_ssa_gpt_day(1:nday,1:pver,1:nswgpts), cld_asm_gpt_day(1:nday,1:pver,1:nswgpts), &
          aer_tau_bnd_day(1:nday,1:pver,1:nswbands), aer_ssa_bnd_day(1:nday,1:pver,1:nswbands), aer_asm_bnd_day(1:nday,1:pver,1:nswbands), &
-         fluxes_allsky_day, fluxes_clrsky_day, &
+         fluxes_allsky_day%flux_up, fluxes_allsky_day%flux_dn, fluxes_allsky_day%flux_net, &
+         fluxes_allsky_day%flux_dn_dir, &
+         fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, &
+         fluxes_allsky_day%bnd_flux_dn_dir, &
+         fluxes_clrsky_day%flux_up, fluxes_clrsky_day%flux_dn, fluxes_clrsky_day%flux_net, &
+         fluxes_clrsky_day%flux_dn_dir, &
+         fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, &
+         fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling &
       )
       call t_stopf('rad_calculations_sw')
@@ -2128,7 +2132,6 @@ contains
                                 fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
-      use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_rrtmgp_util_string, only: lower_case
 
       character(len=*), intent(in) :: gas_names(:)
@@ -2136,7 +2139,7 @@ contains
       real(r8), intent(in) :: emis_sfc(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
       real(r8), intent(in) :: cld_tau_gpt(:,:,:), aer_tau_bnd(:,:,:)
-      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
+      type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
 
       integer :: ncol, nlev, igas
 
@@ -2164,7 +2167,10 @@ contains
             emis_sfc, &
             pmid, tmid, pint, tint, &
             cld_tau_gpt_rad, aer_tau_bnd_rad, &
-            fluxes_allsky, fluxes_clrsky &
+            fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
+            fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
+            fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
+            fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net &
             )
       call t_stopf('rad_rrtmgp_run_lw')
 
@@ -2212,10 +2218,9 @@ contains
    !----------------------------------------------------------------------------
 
    subroutine export_surface_fluxes(fluxes, cam_out, band)
-      use mo_fluxes_byband, only: ty_fluxes_byband
       use camsrfexch, only: cam_out_t
 
-      type(ty_fluxes_byband), intent(in) :: fluxes
+      type(fluxes_t), intent(in) :: fluxes
       type(cam_out_t), intent(inout) :: cam_out
       character(len=*), intent(in) :: band
       integer :: icol
@@ -2293,8 +2298,7 @@ contains
 
    subroutine set_net_fluxes_sw(fluxes, fsds, fsns, fsnt)
 
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(in) :: fluxes
+      type(fluxes_t), intent(in) :: fluxes
       real(r8), intent(inout) :: fsds(:)
       real(r8), intent(inout) :: fsns(:)
       real(r8), intent(inout) :: fsnt(:)
@@ -2313,8 +2317,7 @@ contains
 
    subroutine set_net_fluxes_lw(fluxes, flns, flnt)
 
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(in) :: fluxes
+      type(fluxes_t), intent(in) :: fluxes
       real(r8), intent(inout) :: flns(:)
       real(r8), intent(inout) :: flnt(:)
       integer :: ncol
@@ -2555,12 +2558,11 @@ contains
       use physconst, only: cpair
       use physics_types, only: physics_state
       use cam_history, only: outfld
-      use mo_fluxes_byband, only: ty_fluxes_byband
       
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
-      type(ty_fluxes_byband), intent(in) :: flux_all
-      type(ty_fluxes_byband), intent(in) :: flux_clr
+      type(fluxes_t), intent(in) :: flux_all
+      type(fluxes_t), intent(in) :: flux_clr
       real(r8), intent(in) :: qrs(:,:), qrsc(:,:)
 
       ! SW cloud radiative effect
@@ -2621,12 +2623,11 @@ contains
       use physconst, only: cpair
       use physics_types, only: physics_state
       use cam_history, only: outfld
-      use mo_fluxes_byband, only: ty_fluxes_byband
       
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state
-      type(ty_fluxes_byband), intent(in) :: flux_all
-      type(ty_fluxes_byband), intent(in) :: flux_clr
+      type(fluxes_t), intent(in) :: flux_all
+      type(fluxes_t), intent(in) :: flux_clr
 
       ! Heating rates
       real(r8), intent(in) :: qrl(:,:), qrlc(:,:)
