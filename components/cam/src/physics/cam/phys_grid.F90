@@ -472,7 +472,6 @@ contains
     logical                             :: unstructured
     real(r8)                            :: lonmin, latmin
 
-    integer :: nlthreads                  ! number of local OpenMP threads
 #if ( defined _OPENMP )
     integer omp_get_max_threads
     external omp_get_max_threads
@@ -1309,13 +1308,6 @@ contains
     physgrid_set = .true.   ! Set flag indicating physics grid is now set
     !
     if (masterproc) then
-!
-! Determine number of threads per process
-!
-      nlthreads = 1
-#if ( defined _OPENMP )
-      nlthreads = OMP_GET_MAX_THREADS()
-#endif
       allocate( process_ncols(0:npes-1) )
       process_ncols(:) = 0
 
@@ -1353,7 +1345,6 @@ contains
       write(iulog,*) '  phys_twin_algorithm=           ',twin_alg
       write(iulog,*) '  phys_alltoall=                 ',phys_alltoall
       write(iulog,*) '  chunks_per_thread=             ',chunks_per_thread
-      write(iulog,*) '  num threads=                   ',nlthreads
       write(iulog,*) 'PHYS_GRID_INIT:  Decomposition Statistics:'
       write(iulog,*) '  total number of physics columns=   ',ngcols_p
       write(iulog,*) '  total number of chunks=            ',nchunks

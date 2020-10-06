@@ -149,9 +149,56 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    SHOCConvvelData SDS_f90[] = {
+      //           shcol, nlev
+      SHOCConvvelData(10, 71),
+      SHOCConvvelData(10, 12),
+      SHOCConvvelData(7,  16),
+      SHOCConvvelData(2, 7)
+    };
 
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCConvvelData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCConvvelData SDS_cxx[] = {
+      SHOCConvvelData(SDS_f90[0]),
+      SHOCConvvelData(SDS_f90[1]),
+      SHOCConvvelData(SDS_f90[2]),
+      SHOCConvvelData(SDS_f90[3])
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      compute_conv_vel_shoc_length(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      compute_conv_vel_shoc_length_f(d.nlev(),d.shcol(),d.pblh,d.zt_grid,
+                                     d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCConvvelData& d_f90 = SDS_f90[i];
+      SHOCConvvelData& d_cxx = SDS_cxx[i];
+      for (Int c = 0; c < d_f90.dim1; ++c) {
+        REQUIRE(d_f90.conv_vel[c] == d_cxx.conv_vel[c]);
+      }
+    }
+  }
 };
 
 }  // namespace unit_test

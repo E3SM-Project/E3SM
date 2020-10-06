@@ -4305,6 +4305,10 @@ subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
   !
   ! Computes the brunt_visala frequency
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_brunt_shoc_length_f
+#endif
+  
   implicit none
   integer, intent(in) :: nlev, nlevi, shcol
   ! Grid difference centereted on thermo grid [m]
@@ -4317,6 +4321,13 @@ subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
   real(rtype), intent(out) :: brunt(shcol, nlev)
   integer k, i
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_brunt_shoc_length_f(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
+    return
+  endif
+#endif
+  
   do k=1,nlev
     do i=1,shcol
       brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k)
@@ -4360,6 +4371,10 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
   ! determine the convective velocity scale of
   !   the planetary boundary layer
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_conv_vel_shoc_length_f
+#endif
+
   implicit none
   integer, intent(in) :: nlev, shcol
 ! Planetary boundary layer (PBL) height [m]
@@ -4370,6 +4385,15 @@ subroutine compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_s
   real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   real(rtype), intent(inout) :: conv_vel(shcol)
   integer k, i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_conv_vel_shoc_length_f(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,&  ! Input
+                                         conv_vel)                                     ! Output)
+     return
+  endif
+#endif
+
   conv_vel(:) = 0._rtype
 
   do k=nlev,1,-1
@@ -4465,6 +4489,10 @@ subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: check_length_scale_shoc_length_f
+#endif
+
   implicit none
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)
@@ -4472,11 +4500,18 @@ subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
   real(rtype), intent(inout) :: shoc_mix(shcol, nlev)
   integer k, i
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call check_length_scale_shoc_length_f(nlev,shcol,host_dx,host_dy,shoc_mix)
+    return
+  endif
+#endif
+  
   do k=1,nlev
     do i=1,shcol
       shoc_mix(i,k)=min(maxlen,shoc_mix(i,k))
       shoc_mix(i,k)=max(minlen,shoc_mix(i,k))
-      shoc_mix(i,k)=min(sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
+      shoc_mix(i,k)=min(bfb_sqrt(host_dx(i)*host_dy(i)),shoc_mix(i,k))
     enddo
   enddo
 

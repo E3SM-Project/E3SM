@@ -120,7 +120,54 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCBruntlengthData SDS_f90[] = {
+      //               shcol, nlev, nlevi
+      SHOCBruntlengthData(10, 71, 72),
+      SHOCBruntlengthData(10, 12, 13),
+      SHOCBruntlengthData(7,  16, 17),
+      SHOCBruntlengthData(2, 7, 8),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCBruntlengthData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCBruntlengthData SDS_cxx[] = {
+      SHOCBruntlengthData(SDS_f90[0]),
+      SHOCBruntlengthData(SDS_f90[1]),
+      SHOCBruntlengthData(SDS_f90[2]),
+      SHOCBruntlengthData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      compute_brunt_shoc_length(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      compute_brunt_shoc_length_f(d.nlev(),d.nlevi(),d.shcol(),d.dz_zt,d.thv,d.thv_zi,d.brunt);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCBruntlengthData& d_f90 = SDS_f90[i];
+      SHOCBruntlengthData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
+      }
+    }
   }
 };
 
