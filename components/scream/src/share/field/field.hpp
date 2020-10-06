@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
+#include "share/field/field_property_check.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_type_traits.hpp"
@@ -41,6 +42,10 @@ public:
   // Statically check that RealType is not an array.
   static_assert(view_type::Rank==1, "Error! RealType should not be an array type.\n");
 
+  using prop_check_type           = FieldPropertyCheck<ScalarType, DeviceType>;
+  using prop_check_iterator       = std::vector<std::shared_ptr<prop_check_type> >::iterator;
+  using prop_check_const_iterator = std::vector<std::shared_ptr<prop_check_type> >::const_iterator;
+
   // Constructor(s)
   Field () = default;
   explicit Field (const identifier_type& id);
@@ -62,6 +67,17 @@ public:
 
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
+
+  // Adds a propery check to this field.
+  void add_prop_check(std::shared_ptr<prop_check_type> prop_check) {
+    m_prop_checks.push_back(prop_check);
+  }
+
+  // Allows access to the set of property checks on the field.
+  field_prop_check_iterator field_prop_check_begin() { return m_prop_checks.begin(); }
+  field_prop_check_const_iterator field_prop_check_begin() const { return m_prop_checks.begin(); }
+  field_prop_check_iterator field_prop_check_end() { return m_prop_checks.end(); }
+  field_prop_check_const_iterator field_prop_check_end() const { return m_prop_checks.end(); }
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -89,6 +105,9 @@ protected:
 
   // Keep track of whether the field has been allocated
   bool                            m_allocated;
+
+  // List of property checks for this field.
+  std::vector<FieldPropertyCheck<ScalarType, DeviceType> > m_prop_checks;
 };
 
 template<typename RealType>
