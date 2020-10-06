@@ -3,6 +3,7 @@
 
         <!-- Set up needed files and executables -->
         <add_link source_path="script_configuration_dir" source="setup_hydro-radial_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="near_exact_solution_r_P_W.txt" dest="."/>
 
 
         <run_script name="setup_mesh.py">
@@ -40,6 +41,7 @@
                 <!-- Set up initial condition on to landice mesh -->
                 <step executable="./setup_hydro-radial_initial_conditions.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
                         <argument flag="-f">landice_grid.nc</argument>
+                        <argument flag="-i">exact</argument>
                 </step>
 
         </run_script>

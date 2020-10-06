@@ -68,16 +68,32 @@ x = xCell[ind]/1000.0
 print("start plotting.")
 
 fig = plt.figure(1, facecolor='w')
+
+# import exact solution
+try:
+   fnameSoln = 'near_exact_solution_r_P_W.txt'
+   soln = np.loadtxt(fnameSoln, delimiter=',')
+   rsoln = soln[:,0]/1000.0
+   Psoln = soln[:,1]/1.0e5
+   Wsoln = soln[:,2]
+except:
+   print("Unable to load exact solution.  Continuing without it.")
+   rsoln = 0.0
+   Psoln = 0.0
+   Wsoln = 0.0
+
 # water thickness
 ax1 = fig.add_subplot(121)
+plt.plot(rsoln, Wsoln, 'k-')
 #plt.plot(x, H[ind]*917.0*9.81/1.0e5, '.-')
-plt.plot(x, h[ind], '.-')
+plt.plot(x, h[ind], '.--')
 plt.xlabel('X-position (km)')
 plt.ylabel('water depth (m)')
 plt.grid(True)
 
 # water pressure
 ax = fig.add_subplot(122, sharex=ax1)
+plt.plot(rsoln, Psoln, 'k-')
 plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, '.-')
 plt.plot(x, P[ind] / 1.0e5, '.--')
 plt.xlabel('X-position (km)')

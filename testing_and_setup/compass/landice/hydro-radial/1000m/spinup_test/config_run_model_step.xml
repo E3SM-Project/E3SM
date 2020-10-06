@@ -7,6 +7,7 @@
         <!-- link in scripts that a user might want -->
         <add_link source_path="script_configuration_dir" source="setup_hydro-radial_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="plot_hydro-radial_profile.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="near_exact_solution_r_P_W.txt" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="radial_template.xml" path_base="script_configuration_dir"/>
