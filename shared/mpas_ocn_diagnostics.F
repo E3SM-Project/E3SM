@@ -269,58 +269,12 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficientRunoff', surfaceFluxAttenuationCoefficientRunoff)
-      !
-      ! Compute height on cell edges at velocity locations
-      !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
-      !
 
       nEdges = nEdgesArray( size(nEdgesArray) )
       nCells = nCellsArray( size(nCellsArray) )
       nVertices = nVerticesArray( size(nVerticesArray) )
 
-      if (.not. config_use_wetting_drying .or. (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .eq. 'centered'))) then
-        !$omp parallel
-        !$omp do schedule(runtime) private(cell1, cell2, k)
-        do iEdge = 1, nEdges
-          ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
-          layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
-          cell1 = cellsOnEdge(1,iEdge)
-          cell2 = cellsOnEdge(2,iEdge)
-          do k = 1, maxLevelEdgeTop(iEdge)
-            ! central differenced
-            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-          end do
-        end do
-        !$omp end do
-        !$omp end parallel
-      else
-        if (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .ne. 'centered')) then
-          if ( trim(config_thickness_flux_type) .eq. 'upwind') then
-            !$omp parallel
-            !$omp do schedule(runtime) private(cell1, cell2, k)
-            do iEdge = 1, nEdges
-              ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
-              layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
-              cell1 = cellsOnEdge(1,iEdge)
-              cell2 = cellsOnEdge(2,iEdge)
-              do k = 1, maxLevelEdgeTop(iEdge)
-                ! upwind
-                if (normalVelocity(k, iEdge) > 0.0_RKIND) then
-                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell1)
-                elseif (normalVelocity(k, iEdge) < 0.0_RKIND) then
-                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell2)
-                else
-                  layerThicknessEdge(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
-                end if
-              end do
-            end do
-            !$omp end do
-            !$omp end parallel
-          end if
-        else
-          call mpas_log_write('Thickness flux option of ' // trim(config_thickness_flux_type) // 'is not known', MPAS_LOG_CRIT)
-        end if
-      end if
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThicknessEdge)
 
       coef_3rd_order = config_coef_3rd_order
 
@@ -912,6 +866,105 @@ contains
       call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_layerThicknessEdge
+!
+!> \brief   Computes diagnostic variable layerThicknessEdge
+!> \author  Matt Turner
+!> \date    October 2020
+!> \details
+!>  This routine computes the diagnostic variable layerThicknessEdge
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, &
+                layerThicknessEdge)!{{{
+
+      use ocn_mesh   ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity     !< Input: transport
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        layerThickness      !< Input: layer thickness
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         layerThicknessEdge     !< Output: layer thickness on edge
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, k, cell1, cell2, nEdges
+
+      !
+      ! Compute height on cell edges at velocity locations
+      !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
+      !
+
+      nEdges = nEdgesAll
+
+      if (.not. config_use_wetting_drying .or. (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .eq. 'centered'))) then
+        !$omp parallel
+        !$omp do schedule(runtime) private(cell1, cell2, k)
+        do iEdge = 1, nEdges
+          ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+          layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+          cell1 = cellsOnEdge(1,iEdge)
+          cell2 = cellsOnEdge(2,iEdge)
+          do k = 1, maxLevelEdgeTop(iEdge)
+            ! central differenced
+            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
+          end do
+        end do
+        !$omp end do
+        !$omp end parallel
+      else
+        if (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .ne. 'centered')) then
+          if ( trim(config_thickness_flux_type) .eq. 'upwind') then
+            !$omp parallel
+            !$omp do schedule(runtime) private(cell1, cell2, k)
+            do iEdge = 1, nEdges
+              ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+              layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+              cell1 = cellsOnEdge(1,iEdge)
+              cell2 = cellsOnEdge(2,iEdge)
+              do k = 1, maxLevelEdgeTop(iEdge)
+                ! upwind
+                if (normalVelocity(k, iEdge) > 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell1)
+                elseif (normalVelocity(k, iEdge) < 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell2)
+                else
+                  layerThicknessEdge(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
+                end if
+              end do
+            end do
+            !$omp end do
+            !$omp end parallel
+          end if
+        else
+          call mpas_log_write('Thickness flux option of ' // trim(config_thickness_flux_type) // 'is not known', MPAS_LOG_CRIT)
+        end if
+      end if
+
+   end subroutine ocn_diagnostic_solve_layerThicknessEdge
 
 !***********************************************************************
 !
