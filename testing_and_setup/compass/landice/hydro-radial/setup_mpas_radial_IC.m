@@ -2,8 +2,10 @@
 % calculate the stuff from Ed's code
 [r,W,P,h,vb] = radialsteady(true)
 
+%save('near_exact_solution.mat','r','P','W');
+dlmwrite('near_exact_solution_r_P_W.txt',[flipud(r), flipud(P), flipud(W)]);
 
-fname = '/Users/mhoffman/documents/mpas-git/TESTS/landice/hydro-radial/1000m/steady_state_drift_test/run_model/landice_grid.nc';
+fname = '/Users/mhoffman/documents/mpas-git/TESTS/BASELINE/landice/hydro-radial/1000m/steady_state_drift_test/run_model/landice_grid.nc';
 xCell = ncread(fname, 'xCell');
 yCell = ncread(fname, 'yCell');
 

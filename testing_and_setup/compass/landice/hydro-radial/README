@@ -25,19 +25,15 @@ is integrated forward in time for one month, and error in the final state of wat
 assessed.  Because the model was initialized to the near-exact steady-state solution, any drift away from that
 initial condition should be due to numerical error.
 
-This test case is set up to follow that approach.  However, right now many of the steps have to be done manually.
-The procedure is:
-1. Run ./setup_hydro-radial_initial_conditions.py from the run_model directory.  This sets up the geometry and
-   melt and sliding forcing.
-2. Manually run setup_mpas_radial_IC.m using Matlab.  This sets up the near-exact SS solution for waterThickness
-   and waterPressure into the MPAS input file.  The path to the MPAS input file needs to be manually specified
-   in the script code.  Note that steps 1 and 2 could be combined.
-3. Run ./landice_model.  This will run for 1 month using the IC created in steps 1 and 2.
-4. Run ./plot_hydro-radial_profile.py to check the output.  This generates a lot of figures that were useful
-   for understanding and debugging the test case.  Figure 6 is the important results that can be compared to
-   Figure 5 in the GMD paper for the resolution at which the test case is run.
+Optionally, you can also manually run setup_mpas_radial_IC.m using Matlab.  This sets up the near-exact SS solution for
+waterThickness and waterPressure into the MPAS input file, as well as update a
+text file that contains the exact solution.  The path to the MPAS input file needs to be manually specified
+in the script code.  This is only necessary if you want to regenerate the txt
+file with the near-exact solution.  Otherwise, the comitted txt file includes
+the solution fields necessary to set up the MPAS initial condition and to
+compare the MPAS solution against.
 
-Ideally, this would be repeated for multiple resolutions to generate a convergence plot like GMD Fig. 5.
+Ideally, the error plot would be repeated for multiple resolutions to generate a convergence plot like GMD Fig. 5.
 
 As of this commit, MPAS demonstrates similar error to PISM (GMD Fig. 5) for the 1km resolution I have run with.
 However, inpsection of the MPAS results shows that there is an issue at the margin of water being unable to

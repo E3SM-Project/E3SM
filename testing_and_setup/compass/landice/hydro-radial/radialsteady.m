@@ -21,10 +21,10 @@ L = 0.9 * R0;            % m     actual margin location
 
 
 % WcL is key constant in construction; is initial condition on W(r)
-hL  = h0 * (1 - (L/R0).^2)
-PoL = p.rhoi * p.g * hL
-sbL = ( (p.c1 * v0 / (p.c2 * p.A)) )^(1/3)
-WcL = (sbL^3 * p.Wr - PoL^3 * p.Y0) / (sbL^3 + PoL^3)
+hL  = h0 * (1 - (L/R0).^2);
+PoL = p.rhoi * p.g * hL;
+sbL = ( (p.c1 * v0 / (p.c2 * p.A)) )^(1/3);
+WcL = (sbL^3 * p.Wr - PoL^3 * p.Y0) / (sbL^3 + PoL^3);
 fprintf('  W(L) should satisfy  %.6f = W_c(L) <= W(L) <= %.6f = W_r\n',WcL,p.Wr)
 
 if dofigs
@@ -57,7 +57,7 @@ end
 % in octave this requires "odepkg", but then fails because of negative step direction
 
 % solve the ODE
-wopt = odeset('RelTol', 1e-12,'AbsTol', 1e-9);
+wopt = odeset('RelTol', 1e-12,'AbsTol', 1e-9, 'Refine', 4);
 % others: 'InitialStep', 'MaxStep', 'NormControl', 'OutputFcn'
 %[r,W] = ode45(@WODE,[L 0.0],WcL,wopt);
 [r,W] = ode15s(@WODE,[L 0.0],WcL,wopt);  % stiff solver gives same result but more efficiently
