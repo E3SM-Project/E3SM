@@ -155,6 +155,9 @@ TEST_CASE("field_repo", "") {
   fid5.set_dimensions(dims3);
   fid6.set_dimensions(dims3);
 
+  fid2.set_grid_name("grid_1");
+  fid3.set_grid_name("grid_2");
+
   FieldRepository<Real,DefaultDevice>  repo;
 
   // Should not be able to register fields yet
@@ -185,6 +188,16 @@ TEST_CASE("field_repo", "") {
   auto f2 = repo.get_field(fid2);
   auto f5 = repo.get_field(fid5);
   auto f6 = repo.get_field(fid6);
+
+  // Check that get_field with a field name and grid name as arguments returns the appropriate field
+  // Using grid_1 should return fid2 field, using grid_2 should return fid3 field, using grid_3 should throw an error.
+  auto& f7 = repo.get_field("field_2","grid_1");
+  auto& f8 = repo.get_field("field_2","grid_2");
+  REQUIRE_THROWS( repo.get_field("field_2","grid_3") );
+  REQUIRE(f7.get_header().get_identifier()==fid2);
+  REQUIRE(f7.get_header().get_identifier()!=fid3);
+  REQUIRE(f8.get_header().get_identifier()!=fid2);
+  REQUIRE(f8.get_header().get_identifier()==fid3);
 
   // Check the two fields identifiers are indeed different
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
