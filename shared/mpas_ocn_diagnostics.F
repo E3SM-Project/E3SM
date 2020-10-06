@@ -145,13 +145,6 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
 
-      ! Scratch Arrays
-      ! kineticEnergyVertex: kinetic energy of horizontal velocity defined at vertices
-      !               units: m^2 s^{-2}
-      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex
-      ! kineticEnergyVertexOnCells: kinetic energy of horizontal velocity defined at vertices
-      !                      units: m^2 s^{-2}
-      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertexOnCells
       ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
       !                                     divided by layer thickness, defined at vertices
       !                              units: s^{-1}
@@ -388,54 +381,7 @@ contains
       ! Compute kinetic energy
       !
       if ( ke_vertex_flag == 1 ) then
-
-         allocate(kineticEnergyVertex(nVertLevels, nVertices), &
-                  kineticEnergyVertexOnCells(nVertLevels, nCells))
-
-         !$omp parallel
-         !$omp do schedule(runtime) private(i, iEdge, r_tmp, k)
-         do iVertex = 1, nVertices
-           kineticEnergyVertex(:, iVertex) = 0.0_RKIND
-           do i = 1, vertexDegree
-             iEdge = edgesOnVertex(i, iVertex)
-             r_tmp = dcEdge(iEdge) * dvEdge(iEdge) * 0.25_RKIND / areaTriangle(iVertex)
-             do k = 1, nVertLevels
-               kineticEnergyVertex(k, iVertex) = kineticEnergyVertex(k, iVertex) + r_tmp * normalVelocity(k, iEdge)**2
-             end do
-           end do
-         end do
-         !$omp end do
-
-         !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
-         do iCell = 1, nCells
-           kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
-           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
-           do i = 1, nEdgesOnCell(iCell)
-             j = kiteIndexOnCell(i, iCell)
-             iVertex = verticesOnCell(i, iCell)
-             do k = 1, nVertLevels
-               kineticEnergyVertexOnCells(k, iCell) = kineticEnergyVertexOnCells(k, iCell) + kiteAreasOnVertex(j, iVertex) &
-                                                    * kineticEnergyVertex(k, iVertex) * invAreaCell1
-             end do
-           end do
-         end do
-         !$omp end do
-
-         !
-         ! Compute kinetic energy in each cell by blending kineticEnergyCell and kineticEnergyVertexOnCells
-         !
-         !$omp do schedule(runtime) private(k)
-         do iCell = 1, nCells
-            do k = 1, nVertLevels
-               kineticEnergyCell(k,iCell) = 5.0_RKIND / 8.0_RKIND * kineticEnergyCell(k,iCell) + 3.0_RKIND / 8.0_RKIND &
-                                          * kineticEnergyVertexOnCells(k,iCell)
-            end do
-         end do
-         !$omp end do
-         !$omp end parallel
-
-         deallocate(kineticEnergyVertex, &
-                    kineticEnergyVertexOnCells)
+         call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
       end if
 
       !
@@ -965,6 +911,112 @@ contains
       end if
 
    end subroutine ocn_diagnostic_solve_layerThicknessEdge
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_kineticEnergy
+!
+!> \brief   Computes diagnostic variable kineticEnergyCell
+!> \author  Matt Turner
+!> \date    October 2020
+!> \details
+!>  This routine computes the diagnostic variable kineticEnergyCell
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_kineticEnergy(normalVelocity, &
+                kineticEnergyCell)!{{{
+
+      use ocn_mesh   ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity     !< Input: transport
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         kineticEnergyCell
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iVertex, i, iEdge, k, j, nCells, nVertices, iCell
+      real (kind=RKIND) :: r_tmp, invAreaCell1
+
+      ! Scratch Arrays
+      ! kineticEnergyVertex: kinetic energy of horizontal velocity defined at vertices
+      !               units: m^2 s^{-2}
+      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex
+      ! kineticEnergyVertexOnCells: kinetic energy of horizontal velocity defined at vertices
+      !                      units: m^2 s^{-2}
+      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertexOnCells
+
+      nCells = nCellsHalo( 2 )
+      nVertices = nVerticesAll
+
+      allocate(kineticEnergyVertex(nVertLevels, nVertices), &
+               kineticEnergyVertexOnCells(nVertLevels, nCells))
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(i, iEdge, r_tmp, k)
+      do iVertex = 1, nVertices
+        kineticEnergyVertex(:, iVertex) = 0.0_RKIND
+        do i = 1, vertexDegree
+          iEdge = edgesOnVertex(i, iVertex)
+          r_tmp = dcEdge(iEdge) * dvEdge(iEdge) * 0.25_RKIND / areaTriangle(iVertex)
+          do k = 1, nVertLevels
+            kineticEnergyVertex(k, iVertex) = kineticEnergyVertex(k, iVertex) + r_tmp * normalVelocity(k, iEdge)**2
+          end do
+        end do
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
+      do iCell = 1, nCells
+        kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+        do i = 1, nEdgesOnCell(iCell)
+          j = kiteIndexOnCell(i, iCell)
+          iVertex = verticesOnCell(i, iCell)
+          do k = 1, nVertLevels
+            kineticEnergyVertexOnCells(k, iCell) = kineticEnergyVertexOnCells(k, iCell) + kiteAreasOnVertex(j, iVertex) &
+                                                 * kineticEnergyVertex(k, iVertex) * invAreaCell1
+          end do
+        end do
+      end do
+      !$omp end do
+
+      !
+      ! Compute kinetic energy in each cell by blending kineticEnergyCell and kineticEnergyVertexOnCells
+      !
+      !$omp do schedule(runtime) private(k)
+      do iCell = 1, nCells
+         do k = 1, nVertLevels
+            kineticEnergyCell(k,iCell) = 5.0_RKIND / 8.0_RKIND * kineticEnergyCell(k,iCell) + 3.0_RKIND / 8.0_RKIND &
+                                       * kineticEnergyVertexOnCells(k,iCell)
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      deallocate(kineticEnergyVertex, &
+                 kineticEnergyVertexOnCells)
+
+   end subroutine ocn_diagnostic_solve_kineticEnergy
 
 !***********************************************************************
 !
