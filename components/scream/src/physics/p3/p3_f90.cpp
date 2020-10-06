@@ -129,8 +129,6 @@ void p3_init () {
 
 Int p3_main (const FortranData& d, bool use_fortran) {
   if (use_fortran) {
-    // There should be very little overhead on the fortran side, so we can do timings
-    // here.
     Real elapsed_s;
     p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
               d.th_atm.data(), d.qv.data(), d.dt, d.qi.data(),
