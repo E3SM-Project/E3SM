@@ -8,6 +8,10 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_ocean_connection_N" type="logical" default_value=".false." units="unitless"
+		            description="Calculate effective pressure assuming perfect connection with the ocean.  This is an alternative to the subglacial hydrology model and requires that config_SGH=.false."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
 		            description="fraction of adaptive CFL timestep to use"
 		            possible_values="positive real number"
@@ -98,7 +102,7 @@
                             description="width of sheet beneath/around channel that contributes to melt within the channel"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".true." units="none"
+		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".false." units="none"
                             description="whether to include the pressure melt term in the rate of channel opening"
 		            possible_values=".true. or .false."
 		/>
@@ -188,6 +192,8 @@
                      description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotentialBase" />
+                <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="normal component of gradient of hydropotential" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="tangent component of gradient of hydropotentialBase" />
              <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
