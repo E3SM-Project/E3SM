@@ -84,20 +84,24 @@ except:
 
 # water thickness
 ax1 = fig.add_subplot(121)
-plt.plot(rsoln, Wsoln, 'k-')
+plt.plot(rsoln, Wsoln, 'k-', label='W exact')
 #plt.plot(x, H[ind]*917.0*9.81/1.0e5, '.-')
-plt.plot(x, h[ind], '.--')
+plt.plot(x, h[ind], 'r.--', label='W model')
 plt.xlabel('X-position (km)')
 plt.ylabel('water depth (m)')
+plt.legend()
+plt.plot([5.0, 5.0], [0.0, 1.0], ':k')
 plt.grid(True)
 
 # water pressure
 ax = fig.add_subplot(122, sharex=ax1)
-plt.plot(rsoln, Psoln, 'k-')
-plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, '.-')
-plt.plot(x, P[ind] / 1.0e5, '.--')
+plt.plot(x, H[ind]*910.0*9.80616 / 1.0e5, 'g:', label='P_o')
+plt.plot(rsoln, Psoln, 'k-', label='P_w exact')
+plt.plot(x, P[ind] / 1.0e5, 'r.--', label='P_w model')
 plt.xlabel('X-position (km)')
 plt.ylabel('water pressure (bar)')
+plt.legend()
+plt.plot([5.0, 5.0], [0.0, 45.0], ':k')
 plt.grid(True)
 
 
