@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
+<start_ymd>20200120</start_ymd>
+
 <!-- TODO: enable COSP once we do an E3SM->SCREAM merge -->
 
 <!-- Solar constant from CMIP6 input4MIPS -->
@@ -30,6 +32,9 @@
 
 <!-- For Polar mods-->
 <sscav_tuning            >.true.</sscav_tuning>
+<convproc_do_aer         >.true.</convproc_do_aer>
+<convproc_do_gas         >.false.</convproc_do_gas>
+<convproc_method_activate>2</convproc_method_activate>
 <demott_ice_nuc          >.true.</demott_ice_nuc>
 <liqcf_fix               >.true.</liqcf_fix>
 <regen_fix               >.true.</regen_fix>
@@ -41,7 +46,7 @@
 
 <!-- For comprehensive history -->
 <history_amwg>.true.</history_amwg>
-<history_aerosol>.false.</history_aerosol>
+<history_aerosol>.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- File for BC dep in snow feature -->
@@ -54,7 +59,6 @@
 <cldfrc_dp1>         0.045D0</cldfrc_dp1>
 <seasalt_emis_scale> 0.85   </seasalt_emis_scale>
 <dust_emis_fact      > 2.05D0    </dust_emis_fact>
-<seasalt_emis_scale  > 0.85      </seasalt_emis_scale>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <effgw_oro>          0.25    </effgw_oro>
 <effgw_beres>        0.4    </effgw_beres>
@@ -63,11 +67,19 @@
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
 <taubgnd                 >2.5D-3 </taubgnd>
 <raytau0                 >5.0D0</raytau0>
+<prc_exp                 >3.19D0</prc_exp>
+<prc_exp1                >-1.2D0</prc_exp1>
 <nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
-<n_so4_monolayers_pcage  > 8.0D0     </n_so4_monolayers_pcage>
 
 <!-- Parameters specific to deep convection (default off for HR compset) -->
-<deep_scheme             > 'off'  </deep_scheme>
+<deep_scheme             > 'ZM'   </deep_scheme>
+<zmconv_c0_lnd           > 0.007  </zmconv_c0_lnd>
+<zmconv_c0_ocn           > 0.007  </zmconv_c0_ocn>
+<zmconv_dmpdz            >-0.7e-3 </zmconv_dmpdz>
+<zmconv_ke               > 5E-6   </zmconv_ke>
+<zmconv_tiedke_add       > 0.8D0  </zmconv_tiedke_add>
+<zmconv_cape_cin         > 1      </zmconv_cape_cin>
+<zmconv_mx_bot_lyr_adj   > 2      </zmconv_mx_bot_lyr_adj>
 
 <!-- Macrophysics/microphysics coupling -->
 <cld_macmic_num_steps hgrid="ne4np4"   > 6 </cld_macmic_num_steps>
@@ -78,7 +90,8 @@
 <cld_macmic_num_steps hgrid="ne1024np4"> 1 </cld_macmic_num_steps>
 
 <!-- SHOC timestep -->
-<shoc_timestep> 20 </shoc_timestep>
+<!--shoc_timestep> 20 </shoc_timestep-->
+<shoc_timestep> 150.0D0 </shoc_timestep>
 
 <!-- Energy fixer options -->
 <ieflx_opt  > 0     </ieflx_opt>
@@ -166,20 +179,7 @@
 <iradsw hgrid="ne1024np4"> 4 </iradsw>
 <iradlw hgrid="ne1024np4"> 4 </iradlw>
 
-<!-- Settings related to the SCREAM NH dycore -->
-<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
-<tstep_type> 9 </tstep_type>
-<!-- Settings specific for ne256 configuration -->
-<se_tstep hgrid="ne256np4"> 37.5 </se_tstep>
-<dt_tracer_factor hgrid="ne256np4"> 8 </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne256np4"> 8 </hypervis_subcycle_q>
-
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
-
-<!-- Turn off Gravity Waves -->
-<use_gw_front>.false.</use_gw_front>
-<use_gw_oro>.false.</use_gw_oro>
-<use_gw_convect>.false.</use_gw_convect>
 
 </namelist_defaults>

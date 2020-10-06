@@ -165,13 +165,15 @@
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
 
 <!-- Spun-up F-case initial conditions do not exist for these grids -->
-<ncdata dyn="se" hgrid="ne256np4"  >DUMMY-IC</ncdata>
 
-<!-- Initial conditions for DYAMOND1 (2016-08-01) hindcast campaign -->
+<!-- Initial conditions for DYAMOND1 (2016-08-01) and DYAMOND2 (2020-01-20) hindcast campaign -->
 <ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
 <ncdata hgrid="ne1024np4" nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
+<ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc          </ncdata>
 <ncdata hgrid="ne512np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
 <ncdata hgrid="ne512np4"  nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
 <ncdata hgrid="ne30np4"   nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
 <ncdata hgrid="ne30np4"   nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
 <ncdata hgrid="ne4np4"    nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
