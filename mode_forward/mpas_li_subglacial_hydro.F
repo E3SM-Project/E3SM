@@ -913,7 +913,7 @@ module li_subglacial_hydro
 
       ! calculate effective conductivity on edges
       effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-         (gradMagPhiEdge(:)+1.0e-10_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+         (gradMagPhiEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
