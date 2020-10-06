@@ -431,6 +431,7 @@ contains
 
           !   compute frequently used parameters: ln(sigmag),
           !   volume-to-number and volume-to-surface conversions, ...
+          write(105,*)'BALLI:',m,sigmag_amode(m)
           alnsg_amode(m) = log( sigmag_amode(m) )
 
           voltonumb_amode(m) = 1._r8 / ( (pi/6._r8)*                            &

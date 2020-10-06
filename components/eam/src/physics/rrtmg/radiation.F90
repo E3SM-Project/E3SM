@@ -450,6 +450,7 @@ end function radiation_nextsw_cday
     ! Determine whether modal aerosols are affecting the climate, and if so
     ! then initialize the modal aerosol optics module
     call rad_cnst_get_info(0, nmodes=nmodes)
+    print*,'BALLI:rad:',nmodes
     if (nmodes > 0) call modal_aer_opt_init()
 
     call hirsbt_init()

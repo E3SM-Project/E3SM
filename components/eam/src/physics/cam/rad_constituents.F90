@@ -393,7 +393,9 @@ subroutine rad_cnst_readnl(nlfile)
    ! lists.
    if (masterproc) write(iulog,*) nl//subname//': Radiation constituent lists:'
    do i = 0, N_DIAG
+      write(104,*)'BALLI:i',i
       if (active_calls(i)) then
+         write(104,*)'BALLI:act_i',i
          call list_init1(namelist(i), gaslist(i), aerosollist(i), ma_list(i))
 
          if (masterproc .and. verbose) then
@@ -1111,6 +1113,7 @@ subroutine list_init1(namelist, gaslist, aerlist, ma_list)
    end do
    aerlist%numaerosols = naero
    ma_list%nmodes      = nmodes
+   write(104,*)'BALLI_nm:',ma_list%nmodes
 
    ! allocate storage for the aerosol, gas, and mode lists
    allocate( &
@@ -1784,6 +1787,13 @@ subroutine parse_rad_specifier(specifier, namelist_data)
     namelist_data%camname(:namelist_data%ncnst) = camname(:namelist_data%ncnst)
     namelist_data%radname(:namelist_data%ncnst) = radname(:namelist_data%ncnst)
     namelist_data%type(:namelist_data%ncnst)    = type(:namelist_data%ncnst)
+
+    do i = 1, number
+       write(102,*)'BALLI:',trim(namelist_data%source(i))
+       write(102,*)trim(namelist_data%camname(i))
+       write(102,*)trim(namelist_data%radname(i))
+       write(102,*)trim(namelist_data%type(i))
+    enddo
 
 end subroutine parse_rad_specifier
 
