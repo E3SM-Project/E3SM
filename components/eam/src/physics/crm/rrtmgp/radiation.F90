@@ -29,7 +29,6 @@ module radiation
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
    use rrtmgp_interface, only: &
-      k_dist_sw, k_dist_lw, &
       rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
@@ -438,9 +437,6 @@ contains
       use time_manager,       only: get_nstep, get_step_size, is_first_restart_step
       use radiation_data,     only: init_rad_data
       use physics_types,      only: physics_state
-
-      ! RRTMGP modules
-      use mo_load_coefficients, only: rrtmgp_load_coefficients=>load_and_init
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -1090,9 +1086,6 @@ contains
 
       ! Index to visible channel for diagnostic outputs
       use radconstants, only: idx_sw_diag
-
-      ! RRTMGP radiation drivers and derived types
-      use mo_rrtmgp_util_string, only: lower_case
 
       ! CAM history module provides subroutine to send output data to the history
       ! buffer to be aggregated and written to disk
@@ -1967,7 +1960,6 @@ contains
                                   fluxes_allsky, fluxes_clrsky, qrs, qrsc)
      
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_clr_all_sky, only: rte_sw
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             set_aerosol_optics_sw
@@ -2132,7 +2124,6 @@ contains
                                 fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
-      use mo_rrtmgp_util_string, only: lower_case
 
       character(len=*), intent(in) :: gas_names(:)
       real(r8), intent(in) :: gas_vmr(:,:,:)
@@ -2533,13 +2524,11 @@ contains
    ! Function to check if a wavenumber is in the visible or IR
    logical function is_visible(wavenumber)
 
-      use mo_rte_kind, only: wp
-      
       ! Input wavenumber; this needs to be input in inverse cm (cm^-1)
-      real(wp), intent(in) :: wavenumber
+      real(r8), intent(in) :: wavenumber
 
       ! Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1
-      real(wp), parameter :: visible_wavenumber_threshold = 14286._wp  ! cm^-1
+      real(r8), parameter :: visible_wavenumber_threshold = 14286._r8  ! cm^-1
 
       ! Wavenumber is in the visible if it is above the visible threshold
       ! wavenumber, and in the infrared if it is below the threshold
@@ -2775,7 +2764,7 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use rad_constituents, only: rad_cnst_get_gas
-      use mo_rrtmgp_util_string, only: lower_case, string_loc_in_array
+      use mo_rrtmgp_util_string, only: string_loc_in_array
 
       integer, intent(in) :: icall
       type(physics_state), intent(in) :: state

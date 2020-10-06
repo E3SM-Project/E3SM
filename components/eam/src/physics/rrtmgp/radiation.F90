@@ -24,9 +24,8 @@ module radiation
       rrtmg_to_rrtmgp_swbands
    use physconst, only: cpair, cappa
 
-   ! RRTMGP gas optics object to store coefficient information. This is imported
-   ! here so that we can make the k_dist objects module data and only load them
-   ! once.
+   ! RRTMGP interface to separate E3SM-specific data types from RRTMGP-specific
+   ! data types, that may be in Fortran or C++
    use rrtmgp_interface, only: &
       rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
@@ -34,7 +33,6 @@ module radiation
       rrtmgp_get_max_temperature => get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
-   use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -436,9 +434,6 @@ contains
       use time_manager,       only: get_nstep, get_step_size, is_first_restart_step
       use radiation_data,     only: init_rad_data
       use physics_types, only: physics_state
-
-      ! RRTMGP modules
-      use mo_load_coefficients, only: rrtmgp_load_coefficients=>load_and_init
 
       ! For optics
       use cloud_rad_props, only: cloud_rad_props_init
@@ -1532,13 +1527,13 @@ contains
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
 
-      real(wp), dimension(ncol) :: coszrs_day
-      real(wp), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
-      real(wp), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
-      real(wp), dimension(ncol,nlev_rad+1) :: pint_day
-      real(wp), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
-      real(wp), dimension(ncol,nlev_rad-1,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
-      real(wp), dimension(ncol,nlev_rad-1,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
+      real(r8), dimension(ncol) :: coszrs_day
+      real(r8), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
+      real(r8), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
+      real(r8), dimension(ncol,nlev_rad+1) :: pint_day
+      real(r8), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
+      real(r8), dimension(ncol,nlev_rad-1,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
+      real(r8), dimension(ncol,nlev_rad-1,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
 
       ! Scaling factor for total sky irradiance; used to account for orbital
@@ -2141,13 +2136,11 @@ contains
    ! Function to check if a wavenumber is in the visible or IR
    logical function is_visible(wavenumber)
 
-      use mo_rte_kind, only: wp
-      
       ! Input wavenumber; this needs to be input in inverse cm (cm^-1)
-      real(wp), intent(in) :: wavenumber
+      real(r8), intent(in) :: wavenumber
 
       ! Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1
-      real(wp), parameter :: visible_wavenumber_threshold = 14286._wp  ! cm^-1
+      real(r8), parameter :: visible_wavenumber_threshold = 14286._r8  ! cm^-1
 
       ! Wavenumber is in the visible if it is above the visible threshold
       ! wavenumber, and in the infrared if it is below the threshold

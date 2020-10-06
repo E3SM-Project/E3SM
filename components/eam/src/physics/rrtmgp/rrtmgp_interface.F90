@@ -24,7 +24,7 @@ module rrtmgp_interface
 
    ! Gas optics objects that hold k-distribution information. These are made
    ! module variables because we only want to initialize them once at init time.
-   type(ty_gas_optics_rrtmgp), public :: k_dist_sw, k_dist_lw
+   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! Make these module variables so that we do not have to provide access to
    ! k_dist objects; this just makes it easier to switch between F90 and C++
@@ -36,10 +36,7 @@ module rrtmgp_interface
       get_nbnds_sw, get_nbnds_lw, &
       get_ngpts_sw, get_ngpts_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      get_min_temperature, get_max_temperature, &
-      initialize_rrtmgp_fluxes, free_fluxes, &
-      free_optics_sw, free_optics_lw, reset_fluxes, &
-      set_gas_concentrations
+      get_min_temperature, get_max_temperature
 
 contains
 
@@ -327,43 +324,6 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine free_fluxes(fluxes)
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      if (associated(fluxes%flux_up)) deallocate(fluxes%flux_up)
-      if (associated(fluxes%flux_dn)) deallocate(fluxes%flux_dn)
-      if (associated(fluxes%flux_net)) deallocate(fluxes%flux_net)
-      if (associated(fluxes%flux_dn_dir)) deallocate(fluxes%flux_dn_dir)
-      if (associated(fluxes%bnd_flux_up)) deallocate(fluxes%bnd_flux_up)
-      if (associated(fluxes%bnd_flux_dn)) deallocate(fluxes%bnd_flux_dn)
-      if (associated(fluxes%bnd_flux_net)) deallocate(fluxes%bnd_flux_net)
-      if (associated(fluxes%bnd_flux_dn_dir)) deallocate(fluxes%bnd_flux_dn_dir)
-   end subroutine free_fluxes
-
-   !----------------------------------------------------------------------------
-
-   subroutine reset_fluxes(fluxes)
-
-      use mo_rte_kind, only: wp
-      use mo_fluxes_byband, only: ty_fluxes_byband
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-
-      ! Reset broadband fluxes
-      fluxes%flux_up(:,:) = 0._wp
-      fluxes%flux_dn(:,:) = 0._wp
-      fluxes%flux_net(:,:) = 0._wp
-      if (associated(fluxes%flux_dn_dir)) fluxes%flux_dn_dir(:,:) = 0._wp
-
-      ! Reset band-by-band fluxes
-      fluxes%bnd_flux_up(:,:,:) = 0._wp
-      fluxes%bnd_flux_dn(:,:,:) = 0._wp
-      fluxes%bnd_flux_net(:,:,:) = 0._wp
-      if (associated(fluxes%bnd_flux_dn_dir)) fluxes%bnd_flux_dn_dir(:,:,:) = 0._wp
-
-   end subroutine reset_fluxes
-
-   !----------------------------------------------------------------------------
-
    subroutine free_optics_sw(optics)
       use mo_optical_props, only: ty_optical_props_2str
       type(ty_optical_props_2str), intent(inout) :: optics
@@ -454,44 +414,6 @@ contains
    end subroutine set_gas_concentrations
 
    !----------------------------------------------------------------------------
-
-   subroutine initialize_rrtmgp_fluxes(ncol, nlevels, nbands, fluxes, do_direct)
-
-      use mo_fluxes_byband, only: ty_fluxes_byband
-
-      integer, intent(in) :: ncol, nlevels, nbands
-      type(ty_fluxes_byband), intent(inout) :: fluxes
-      logical, intent(in), optional :: do_direct
-
-      logical :: do_direct_local
-
-      if (present(do_direct)) then
-         do_direct_local = .true.
-      else
-         do_direct_local = .false.
-      end if
-
-      ! Allocate flux arrays
-      ! NOTE: fluxes defined at interfaces, so need to either pass nlevels as
-      ! number of model levels plus one, or allocate as nlevels+1 if nlevels
-      ! represents number of model levels rather than number of interface levels.
-
-      ! Broadband fluxes
-      allocate(fluxes%flux_up(ncol, nlevels))
-      allocate(fluxes%flux_dn(ncol, nlevels))
-      allocate(fluxes%flux_net(ncol, nlevels))
-      if (do_direct_local) allocate(fluxes%flux_dn_dir(ncol, nlevels))
-
-      ! Fluxes by band
-      allocate(fluxes%bnd_flux_up(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_dn(ncol, nlevels, nbands))
-      allocate(fluxes%bnd_flux_net(ncol, nlevels, nbands))
-      if (do_direct_local) allocate(fluxes%bnd_flux_dn_dir(ncol, nlevels, nbands))
-
-      ! Initialize
-      call reset_fluxes(fluxes)
-
-   end subroutine initialize_rrtmgp_fluxes
 
    ! Stop run ungracefully since we don't want dependencies on E3SM abortutils
    ! here
