@@ -12,11 +12,19 @@
                         <argument flag="--nx">50</argument>
                         <argument flag="--ny">58</argument>
                         <argument flag="--dc">1000.0</argument>
+                        <argument flag="--nonperiodic_x"></argument>
+                        <argument flag="--nonperiodic_y"></argument>
+                        <argument flag="--o">grid.nc</argument>
+                </step>
+
+                <step executable="MpasCellCuller.x">
+                        <argument flag="">grid.nc</argument>
+                        <argument flag="">culled.nc</argument>
                 </step>
 
                 <!-- run though mesh converter to make sure MPAS compliant -->
                 <step executable="MpasMeshConverter.x" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
-                        <argument flag="">grid.nc</argument>
+                        <argument flag="">culled.nc</argument>
                         <argument flag="">mpas_grid.nc</argument>
                 </step>
 

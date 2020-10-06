@@ -22,19 +22,18 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print("No filename provided. Using output.nc.")
-        options.filename = "output.nc"
+   print("No filename provided. Using output.nc.")
+   options.filename = "output.nc"
 
 if not options.time:
-	print("No time provided. Using time -1.")
-        time_slice = -1
+   print("No time provided. Using time -1.")
+   time_slice = -1
 else:
-        time_slice = int(options.time)
+   time_slice = int(options.time)
 
 
 
 f = netCDF4.Dataset(options.filename,'r')
-#xtime = f.variables['xtime'][:]
 xCell = f.variables['xCell'][:]
 yCell = f.variables['yCell'][:]
 xEdge = f.variables['xEdge'][:]
@@ -50,11 +49,9 @@ closing = f.variables['closingRate'][time_slice,:]
 melt = f.variables['basalMeltInput'][time_slice,:]
 sliding = f.variables['basalSpeed'][time_slice,:]
 days = f.variables['daysSinceStart'][:]
-xtime = f.variables['xtime'][:]
 
-print("Total number of time levels={}".format(len(days))
+print("Total number of time levels={}".format(len(days)))
 print("Using time slice {}, which is year {}".format(time_slice, days[time_slice]/365.0))
-print("xtime=" + ''.join(xtime[time_slice,:]))
 
 print("Attempting to read thickness field from landice_grid.nc.")
 fin = netCDF4.Dataset("landice_grid.nc",'r')
