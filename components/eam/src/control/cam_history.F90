@@ -3604,6 +3604,8 @@ end subroutine print_active_fldlst
     integer :: nbsec           ! time of day component of base date [seconds]
     integer :: yr, mon, day    ! year, month, day components of a date
 
+    character(len=  8) :: curdate  ! current date
+    character(len=  8) :: curtime  ! current time
     character(len=max_chars) :: str       ! character temporary 
     character(len=max_chars) :: fname_tmp ! local copy of field name
     character(len=max_chars) :: calendar  ! Calendar type
@@ -3740,6 +3742,10 @@ end subroutine print_active_fldlst
 #if defined (E3SM_SCM_REPLAY)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
+    call datetime(curdate, curtime)
+    str = 'created on ' // curdate // ' ' // curtime
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'history' , trim(str))
+
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'username',username)
@@ -3747,10 +3753,9 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'git_version', version)
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution', 'E3SM-Project')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
-                      'E3SM-DATA-SUPPORT@LISTSERV.LLNL.GOV')
+                      'e3sm-data-support@listserv.llnl.gov')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 
