@@ -15,22 +15,26 @@ void Functions<S,D>
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& dz_zt,
   const uview_1d<const Spack>& tke,
-  Scalar&                      numer,
-  Scalar&                      denom)
+  Scalar&                      l_inf)
 {
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   // Compute numerator
+  Scalar numer = 0;
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*zt_grid(k)*dz_zt(k);
   }, numer);
 
   // Compute denominator
+  Scalar denom = 0;
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*dz_zt(k);
   }, denom);
+
+  // Set l_inf
+  l_inf = sp(0.1)*(numer/denom);
 }
 
 } // namespace shoc

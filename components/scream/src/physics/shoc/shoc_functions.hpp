@@ -185,6 +185,15 @@ struct Functions
     Scalar&                      wl_int);
 
   KOKKOS_FUNCTION
+  static void compute_l_inf_shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& tke,
+    Scalar&                      l_inf);
+  
+  KOKKOS_FUNCTION
   static void compute_brunt_shoc_length(
     const MemberType&            team,
     const Int&                   nlev,
