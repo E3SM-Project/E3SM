@@ -348,9 +348,17 @@
 					description="minimum Richardson number to prevent overly large bolus Kappa values"
 					possible_values="numbers greater than zero"
 		/>
-		<nml_option name="config_gm_EG_kappa_factor" type="real" default_value="2.0" units="NA"
+		<nml_option name="config_gm_EG_kappa_factor" type="real" default_value="3.0" units="NA"
 					description="factor to scale diffusivity for Eden Greatbach scheme"
 					possible_values="small positive reals"
+		/>
+		<nml_option name="config_gm_EG_rossby_factor" type="real" default_value="2.0" units="NA"
+					description="factor multiplying the rossby length in the E&G scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
+					possible_values="small values greater than or equal to one"
+		/>
+		<nml_option name="config_gm_EG_rhines_factor" type="real" default_value="0.3" units="NA"
+					description="factor multiplying the rhines length in the E&G scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
+					possible_values="small positive values less than equal to one"
 		/>
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
 					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
