@@ -1144,6 +1144,7 @@ Int Functions<S,D>
                  team, ocol_location);
 #endif
   });
+  Kokkos::fence();
 
   auto finish = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
