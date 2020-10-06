@@ -42,7 +42,7 @@ module radiation
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: handle_error, clip_values, &
       fluxes_t, initialize_fluxes, free_fluxes, reset_fluxes, &
-      expand_day_fluxes
+      expand_day_fluxes, get_gas_vmr
 
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
@@ -1550,13 +1550,7 @@ contains
 
                      ! Set gas concentrations
                      call t_startf('rad_gas_concentrations')
-                     do igas = 1,size(active_gases)
-                        ! Get volume mixing ratio for this gas
-                        call get_gas_vmr(icall, state, pbuf, trim(active_gases(igas)), vmr_col(igas,1:ncol,1:pver))
-                        !call get_gas_vmr(icall, state, pbuf, trim(active_gases(igas)), vmr_col(igas,1:ncol,ktop:kbot))
-                        ! Copy top model level to level above model top
-                        !vmr_col(igas,1:ncol,1) = vmr_col(igas,1:ncol,ktop)
-                     end do
+                     call get_gas_vmr(icall, state, pbuf, active_gases, vmr_col)
                      call t_stopf('rad_gas_concentrations')
 
                      ! Do shortwave cloud and aerosol optics calculations
@@ -2756,108 +2750,6 @@ contains
                   state%ncol, state%lchnk)
 
    end subroutine output_cloud_optics_lw
-
-   !----------------------------------------------------------------------------
-
-   subroutine get_gas_vmr(icall, state, pbuf, gas_name, vmr)
-
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
-      use rad_constituents, only: rad_cnst_get_gas
-      use mo_rrtmgp_util_string, only: string_loc_in_array
-
-      integer, intent(in) :: icall
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-      character(len=*), intent(in) :: gas_name
-      real(r8), intent(out) :: vmr(:,:)
-
-      ! Mass mixing ratio
-      real(r8), pointer :: mass_mix_ratio(:,:)
-
-      ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
-      ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
-      ! CO and N2, which RRTMG did not have.
-      character(len=3), dimension(8) :: gas_species = (/ &
-         'H2O', 'CO2', 'O3 ', 'N2O', &
-         'CO ', 'CH4', 'O2 ', 'N2 ' &
-      /)
-      real(r8), dimension(8) :: mol_weight_gas = (/ &
-         18.01528, 44.0095, 47.9982, 44.0128, &
-         28.0101, 16.04246, 31.998, 28.0134 &
-      /)  ! g/mol
-
-      ! Molar weight of air
-      real(r8), parameter :: mol_weight_air = 28.97  ! g/mol
-                                       
-      ! Defaults for gases that are not available (TODO: is this still accurate?)
-      real(r8), parameter :: co_vmr = 1.0e-7_r8
-      real(r8), parameter :: n2_vmr = 0.7906_r8
-
-      ! Loop indices
-      integer :: igas
-
-      ! Number of columns
-      integer :: ncol
-
-      ! Name of routine
-      character(len=32) :: subname = 'get_gas_vmr'
-
-      ! Number of columns in chunk
-      ncol = state%ncol
-
-      ! Get index into gas names we define above that we know the molecular 
-      ! weights for; if this gas is not in list of gases we know about, skip
-      igas = string_loc_in_array(gas_name, gas_species)
-      if (igas <= 0) then
-         call endrun('Gas name ' // trim(gas_name) // ' not recognized.')
-      end if
-         
-      ! initialize
-      vmr(:,:) = 0._r8
-
-      select case(trim(gas_species(igas)))
-
-         case('CO')
-
-            ! CO not available, use default
-            vmr(1:ncol,1:pver) = co_vmr
-
-         case('N2')
-
-            ! N2 not available, use default
-            vmr(1:ncol,1:pver) = n2_vmr
-
-         case('H2O')
-
-            ! Water vapor is represented as specific humidity in CAM, so we
-            ! need to handle water a little differently; first, read water vapor
-            ! specific humidity into mass mixing ratio array
-            call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, &
-                                  mass_mix_ratio)
-            
-            ! Convert to volume mixing ratio by multiplying by the ratio of
-            ! molecular weight of dry air to molecular weight of gas. Note that
-            ! first specific humidity (held in the mass_mix_ratio array read
-            ! from rad_constituents) is converted to an actual mass mixing
-            ! ratio.
-            vmr(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) / ( &
-               1._r8 - mass_mix_ratio(1:ncol,1:pver) &
-            )  * mol_weight_air / mol_weight_gas(igas)
-
-         case DEFAULT
-
-            ! Get mass mixing ratio from the rad_constituents interface
-            call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf,  mass_mix_ratio)
-
-            ! Convert to volume mixing ratio by multiplying by the ratio of
-            ! molecular weight of dry air to molecular weight of gas
-            vmr(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) &
-                               * mol_weight_air / mol_weight_gas(igas)
-
-      end select
-
-   end subroutine get_gas_vmr
 
    !----------------------------------------------------------------------------
 

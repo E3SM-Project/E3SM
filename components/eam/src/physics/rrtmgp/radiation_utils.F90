@@ -10,7 +10,7 @@ module radiation_utils
              calculate_heating_rate, clip_values, &
              handle_error, &
              fluxes_t, initialize_fluxes, reset_fluxes, free_fluxes, &
-             expand_day_fluxes
+             expand_day_fluxes, get_gas_vmr
 
    ! Interface blocks for overloaded procedures
    interface compress_day_columns
@@ -237,6 +237,107 @@ contains
       end do
 
    end subroutine expand_day_columns_2d
+
+   !-------------------------------------------------------------------------------
+
+   subroutine get_gas_vmr(icall, state, pbuf, gas_names, gas_vmr) 
+
+      use physics_types, only: physics_state
+      use physics_buffer, only: physics_buffer_desc
+      use rad_constituents, only: rad_cnst_get_gas
+
+      integer, intent(in) :: icall
+      type(physics_state), intent(in) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      character(len=*), intent(in), dimension(:) :: gas_names
+      real(r8), intent(out), dimension(:,:,:) :: gas_vmr
+
+      ! Mass mixing ratio
+      real(r8), pointer :: mmr(:,:)
+
+      ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
+      ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
+      ! CO and N2, which RRTMG did not have.
+      character(len=3), dimension(8) :: gas_species = (/ &
+         'H2O', 'CO2', 'O3 ', 'N2O', &
+         'CO ', 'CH4', 'O2 ', 'N2 ' &
+      /)
+      real(r8), dimension(8) :: mol_weight_gas = (/ &
+         18.01528, 44.0095, 47.9982, 44.0128, &
+         28.0101, 16.04246, 31.998, 28.0134 &
+      /)  ! g/mol
+
+      ! Molar weight of air
+      real(r8), parameter :: mol_weight_air = 28.97  ! g/mol
+                                       
+      ! Defaults for gases that are not available (TODO: is this still accurate?)
+      real(r8), parameter :: co_vol_mix_ratio = 1.0e-7_r8
+      real(r8), parameter :: n2_vol_mix_ratio = 0.7906_r8
+
+      ! Loop indices
+      integer :: igas
+
+      ! Number of columns
+      integer :: ncol
+      integer :: nlev
+
+      ! Name of subroutine for error messages
+      character(len=32) :: subname = 'get_gas_vmr'
+
+      ! Number of columns in chunk
+      ncol = state%ncol
+      nlev = size(gas_vmr,3)
+
+      ! initialize
+      gas_vmr(:,:,:) = 0._r8
+
+      ! For each gas species needed for RRTMGP, read the mass mixing ratio from the
+      ! CAM rad_constituents interface, convert to volume mixing ratios, and
+      ! subset for daytime-only indices if needed.
+      do igas = 1,size(gas_names)
+
+         select case(trim(gas_names(igas)))
+
+            case('CO')
+
+               ! CO not available, use default
+               gas_vmr(igas,1:ncol,1:nlev) = co_vol_mix_ratio
+
+            case('N2')
+
+               ! N2 not available, use default
+               gas_vmr(igas,1:ncol,1:nlev) = n2_vol_mix_ratio
+
+            case('H2O')
+
+               ! Water vapor is represented as specific humidity in CAM, so we
+               ! need to handle water a little differently
+               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, mmr)
+
+               ! Convert to volume mixing ratio by multiplying by the ratio of
+               ! molecular weight of dry air to molecular weight of gas. Note that
+               ! first specific humidity (held in the mass_mix_ratio array read
+               ! from rad_constituents) is converted to an actual mass mixing
+               ! ratio.
+               gas_vmr(igas,1:ncol,1:nlev) = mmr(1:ncol,1:nlev) / ( &
+                  1._r8 - mmr(1:ncol,1:nlev) &
+               )  * mol_weight_air / mol_weight_gas(igas)
+
+            case DEFAULT
+
+               ! Get mass mixing ratio from the rad_constituents interface
+               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, mmr)
+
+               ! Convert to volume mixing ratio by multiplying by the ratio of
+               ! molecular weight of dry air to molecular weight of gas
+               gas_vmr(igas,1:ncol,1:nlev) = mmr(1:ncol,1:nlev) &
+                                            * mol_weight_air / mol_weight_gas(igas)
+
+         end select
+
+      end do  ! igas
+
+   end subroutine get_gas_vmr
 
    !-------------------------------------------------------------------------------
 
