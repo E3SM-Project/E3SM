@@ -3814,9 +3814,9 @@ subroutine shoc_diag_obklen(&
   do i=1,shcol
     th_sfc = thl_sfc(i) + (lcond/cp)*cldliq_sfc(i)
     thv_sfc = th_sfc*(1._rtype+eps*qv_sfc(i)-cldliq_sfc(i))
-    ustar(i) = max(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2),ustar_min)
+    ustar(i) = max(bfb_sqrt(bfb_square(uw_sfc(i)) + bfb_square(vw_sfc(i))),ustar_min)
     kbfs(i) = wthl_sfc(i)+eps*th_sfc*wqw_sfc(i)
-    obklen(i) = -thv_sfc*ustar(i)**3/(ggr*vk*(kbfs(i)+sign(1.e-10_rtype,kbfs(i))))
+    obklen(i) = -thv_sfc*bfb_cube(ustar(i))/(ggr*vk*(kbfs(i)+sign(1.e-10_rtype,kbfs(i))))
   enddo
 
   return
@@ -4353,7 +4353,7 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
 
   do k=1,nlev
     do i=1,shcol
-        tkes=sqrt(tke(i,k))
+        tkes=bfb_sqrt(tke(i,k))
         numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
         denom(i)=denom(i)+tkes*dz_zt(i,k)
     enddo
