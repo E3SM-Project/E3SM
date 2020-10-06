@@ -49,7 +49,6 @@ IF ("${CPR_OUTPUT}" MATCHES "ifort.*")
   SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
 #new
 #  SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
-  SET (AVX_VERSION "0" CACHE STRING "")
 
 #or just these? was used before
 #SET (ADD_Fortran_FLAGS "-fp-model strict -diag-disable 10411" CACHE STRING "")
