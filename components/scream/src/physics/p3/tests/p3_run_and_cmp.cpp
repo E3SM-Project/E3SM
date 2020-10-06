@@ -93,10 +93,15 @@ static Int compare (const std::string& label, const Scalar* a,
 }
 
 struct Baseline {
-  Baseline (const Int nsteps=6, const Int ncol=3, const Int repeat=0) : m_ic_ncol(ncol), m_repeat(repeat) {
-    for (const bool do_predict_nc : {true, false})
-      //                 initial condit,     dt,  nsteps, prescribe or predict nc
-      params_.push_back({ic::Factory::mixed, 300, nsteps, do_predict_nc});
+  Baseline (const Int nsteps=6, const Int ncol=3, const Int repeat=0, const std::string predict_nc="both") :
+    m_ic_ncol(ncol), m_repeat(repeat)
+  {
+    for (const bool do_predict_nc : {true, false}) {
+      if (predict_nc == "both" || ( (do_predict_nc and predict_nc == "yes") || (!do_predict_nc and predict_nc == "no") )) {
+        //                 initial condit,     dt,  nsteps, prescribe or predict nc
+        params_.push_back({ic::Factory::mixed, 300, nsteps, do_predict_nc});
+      }
+    }
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -105,8 +110,7 @@ struct Baseline {
     Int nerr = 0;
 
     // These times are thrown out, I just wanted to be able to use auto
-    auto start = std::chrono::steady_clock::now(), finish = start;
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+    Int total_duration_microsec = 0;
 
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
@@ -118,6 +122,7 @@ struct Baseline {
         if (m_repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
                     << ", dt=" << d->dt << ", ts=" << d->it << " predict_nc=" << d->do_predict_nc;
+
           if (!use_fortran) {
             std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
           }
@@ -125,15 +130,10 @@ struct Baseline {
         }
 
         for (int it=0; it<ps.it; it++) {
-          if (r != -1 && m_repeat > 0) { // do not count the "cold" run
-            start  = std::chrono::steady_clock::now();
-          }
-
-          p3_main(*d, use_fortran);
+          Int current_microsec = p3_main(*d, use_fortran);
 
           if (r != -1 && m_repeat > 0) { // do not count the "cold" run
-            finish = std::chrono::steady_clock::now();
-            duration += std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+            total_duration_microsec += current_microsec;
           }
 
           if (m_repeat == 0) {
@@ -143,7 +143,7 @@ struct Baseline {
       }
 
       if (m_repeat > 0) {
-        const double report_time = (1e-6*duration.count()) / m_repeat;
+        const double report_time = (1e-6*total_duration_microsec) / m_repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
@@ -241,12 +241,13 @@ int main (int argc, char** argv) {
     std::cout <<
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
-      "  -g          Generate baseline file. Default False.\n"
-      "  -f          Use fortran impls instead of c++. Default False.\n"
-      "  -t <tol>    Tolerance for relative error. Default 0.\n";
-      "  -s <steps>  Number of timesteps. Default=6.\n";
-      "  -i <cols>   Number of columns. Default=6.\n";
-      "  -r <repeat> Number of repititions, implies timing run (generate + no I/O). Default=0.\n";
+      "  -g              Generate baseline file. Default False.\n"
+      "  -f              Use fortran impls instead of c++. Default False.\n"
+      "  -t <tol>        Tolerance for relative error. Default 0.\n";
+      "  -s <steps>      Number of timesteps. Default=6.\n";
+      "  -i <cols>       Number of columns. Default=6.\n";
+      "  -r <repeat>     Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
+      "  -p <predict_nc> yes|no|both. Default=both.\n";
     return 1;
   }
 
@@ -255,6 +256,7 @@ int main (int argc, char** argv) {
   Int timesteps = 6;
   Int ncol = 3;
   Int repeat = 0;
+  std::string predict_nc = "both";
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
     if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
@@ -281,6 +283,13 @@ int main (int argc, char** argv) {
         generate = true;
       }
     }
+    if (ekat::argv_matches(argv[i], "-p", "--predict-nc")) {
+      expect_another_arg(i, argc);
+      ++i;
+      predict_nc = std::string(argv[i]);
+      EKAT_REQUIRE_MSG(predict_nc == "yes" || predict_nc == "no" || predict_nc == "both",
+                       "Predict option value must be one of yes|no|both");
+    }
   }
 
   // Decorate baseline name with precision.
@@ -288,7 +297,7 @@ int main (int argc, char** argv) {
   baseline_fn += std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv); {
-    Baseline bln(timesteps, ncol, repeat);
+    Baseline bln(timesteps, ncol, repeat, predict_nc);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn, use_fortran);
