@@ -10,16 +10,18 @@ acct = 'cli115'
 case_dir = os.getenv('HOME')+'/E3SM/Cases/'
 src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC1/'
 
+### flags to control config/build/submit sections
 # clean        = True
-newcase      = True
-config       = True
-build        = True
+# newcase      = True
+# config       = True
+# build        = True
 submit       = True
 # continue_run = True
 
-stop_opt,stop_n,resub = 'ndays',2,0
+### run duration and resubmission (remember to set continue_run)
+stop_opt,stop_n,resub = 'ndays',73*4,0
 
-# this stuff should be the same for all runs
+### same settings for all runs
 compset = 'F-MMFXX'
 arch    = 'GNUGPU'
 ne,npg  = 45,2
@@ -28,29 +30,34 @@ crm_dx  = 3200
 crm_dt  = 10
 rad_nx  = 2
 
+### time stamps for distinguishing different settings
 # timestamp = '20200930' # rad_nx=4
-timestamp = '20201002' # rad_nx=2
+# timestamp = '20201002' # rad_nx=2
+timestamp = '20201006' # rad_nx=2 after rebasing
 
-# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_72','CRMNX_32','CRMNY_32','MOMFB',timestamp]); num_nodes=1000
-# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32','MOMFB',timestamp]); num_nodes=1000
-# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp]); num_nodes=1000
+### common parts of the case name
+case_list = ['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32']
 
-# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_72','CRMNX_32',timestamp]); num_nodes=30
-# num_nodes=200 ; task_per_node=48
-# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32',timestamp,f'NN_{num_nodes}',f'TPN_{task_per_node}']); 
+### specific case names and task/node settings
+# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32','MOMFB',timestamp] )
+# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32',timestamp] )
+num_nodes= 150; task_per_node=48; case = '.'.join(case_list+[timestamp] )
+
+### alternate case name for testing # of nodes and tasks
+# num_nodes=200 ; task_per_node=48; case = '.'.join(case_list+[timestamp,f'NN_{num_nodes}',f'TPN_{task_per_node}'] )
 
 # Impose wall limits for Summits
-if num_nodes>=  1: walltime =  '2:00'
-if num_nodes>= 46: walltime =  '6:00'
-if num_nodes>= 92: walltime = '12:00'
-if num_nodes>=922: walltime = '24:00'
-# walltime =  '0:30'
-
+# if num_nodes>=  1: walltime =  '2:00'
+# if num_nodes>= 46: walltime =  '6:00'
+# if num_nodes>= 92: walltime = '12:00'
+# if num_nodes>=922: walltime = '24:00'
+walltime = '12:00'
 
 ### add these modifiers to enable debug mode or state variable checks
-# case = case+'.debug-on'
-# case = case+'.checks-on'
+# case += '.debug-on'
+# case += '.checks-on'
 
+### specify atmos initial condition file
 # init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
 init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/HICCUP/data/'
 params = [p.split('_') for p in case.split('.')]
@@ -58,7 +65,7 @@ for p in params:
    if p[0]=='NLEV': 
       if p[1]!='72': init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}.nc'
 
-### land IC
+### specify land initial condition file
 land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
 land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
 #---------------------------------------------------------------------------------------------------
@@ -205,10 +212,10 @@ if submit :
    # Specify history output frequency and variables
    #------------------------------   
    file.write(' nhtfrq    = 0,-1,-3 \n') 
-   file.write(' mfilt     = 1, 24, 8 \n') # 1-day files
-   # file.write(' mfilt     = 1,120,40 \n') # 5-day files
+   # file.write(' mfilt     = 1, 24, 8 \n') # 1-day files for testing
+   file.write(' mfilt     = 1,120,40 \n') # 5-day files for production
    if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
-      file.write(" fincl1    = 'MMF_DU','MMF_DV' \n")
+      file.write(" fincl1    = 'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' \n")
    # hourly 2D fields
    file.write(" fincl2    = 'PS','PSL','TS'")
    file.write(             ",'PRECT','TMQ'")
