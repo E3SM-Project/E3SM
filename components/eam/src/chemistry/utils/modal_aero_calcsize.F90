@@ -12,7 +12,7 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_id
 
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
-                            rad_cnst_get_mode_props, rad_cnst_get_mode_num
+                            rad_cnst_get_mode_props, rad_cnst_get_mode_num, N_DIAG
 
 use cam_logfile,      only: iulog
 use cam_abortutils,   only: endrun
@@ -63,16 +63,15 @@ save
 public modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
 
-logical :: do_adjust_default
-logical :: do_aitacc_transfer_default
 
 !Mimic enumerators for aerosol types
 integer, parameter:: inter_aero   = 1
 integer, parameter:: cld_brn_aero = 2
 
 integer :: dgnum_idx = -1
+integer :: max_active_calls !maximum number of radiation diagnostic calls which are active
 
-integer, parameter :: maxpair_csizxf = 1
+integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
 integer, parameter :: maxspec_csizxf = ntot_aspectype
 #else
@@ -83,14 +82,54 @@ integer, parameter :: maxspec_csizxf = 8
 
 real(r8), parameter :: third = 1.0_r8/3.0_r8
 
-integer :: npair_csizxf = -123456789
-integer :: modefrm_csizxf(maxpair_csizxf)
-integer :: modetoo_csizxf(maxpair_csizxf)
-integer :: nspecfrm_csizxf(maxpair_csizxf)
-integer :: lspecfrmc_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspecfrma_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspectooc_csizxf(maxspec_csizxf,maxpair_csizxf)
-integer :: lspectooa_csizxf(maxspec_csizxf,maxpair_csizxf)
+!---------------------------------------------------------------------------------
+!Note: For diagnostic calls, users can ask for any diagnostics like rad_diag_1
+!      and rad_diag_3 (e.g. skipping rad_diag_2). Therefore the arrays should
+!      have a length of N_DIAG (unless we define another array which maps this
+!      info)
+!---------------------------------------------------------------------------------
+!integer, parameter :: npair_csizxf = 1 !N_DIAG
+integer :: npair_csizxf = 1 !N_DIAG
+
+logical :: do_adjust_default                        !flag to turn on/off  aerosol size adjustment process
+logical :: do_aitacc_transfer_default!(npair_csizxf) !flag to turn on/off  aerosol aitken<->accumulation transfer process
+
+!--------------------------------------------------------------------------------
+!Naming convention:
+!"*_csizxf": variables for transfering ("xf") species from one mode to another
+!"*frm*"   : "From" mode from where the species will be moved to the "to"("*_to*")
+!            mode
+!
+! All ararys will start with a zero index as 0 index is reserved for prognostic
+! calls
+!--------------------------------------------------------------------------------
+
+!"modefrm_csizxf" stores mode number "from" which species will be moved
+!to a mode stored in "modetoo_csizxf".
+![E.g. if modefrm_csizxf(3)=2 and modetoo_csizxf(3)=1, for rad_diag_3,
+! species will be moved from 2nd mode to the 1st mode.]
+integer :: modefrm_csizxf(0:maxpair_csizxf)
+integer :: modetoo_csizxf(0:maxpair_csizxf)
+
+!Total number of species in the "from" mode.
+![ E.g. for rad_diag_3, if nspecfrm_csizxf(3)=7,
+!it means 7 species exist in modefrm_csizxf(3).
+!In this case, if modefrm_csizxf(3)=2,
+!it means 2nd mode has 7 species]
+integer :: nspecfrm_csizxf(0:maxpair_csizxf)
+
+!"lspec*" are the indices in constituent(cnst_name) and state Q array
+! (state%q) arrays.
+!These arrays hold species index for "from" and "to" for each pair
+
+![E.g. for rad_diag_3:
+!"lspecfrm*_csizxf" will hold index of a specie of the mode modefrm_csizxf(3)
+!"lspecto*_csizxf" will hold index of a specie of the mode modetoo_csizxf(3)
+!"*a_*" and "*c_* refers to interstitial and cloud borne species
+integer :: lspecfrmc_csizxf(maxspec_csizxf, 0:maxpair_csizxf)
+integer :: lspecfrma_csizxf(maxspec_csizxf, 0:maxpair_csizxf)
+integer :: lspectooc_csizxf(maxspec_csizxf, 0:maxpair_csizxf)
+integer :: lspectooa_csizxf(maxspec_csizxf, 0:maxpair_csizxf)
 
 !===============================================================================
 contains
@@ -130,7 +169,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    integer, intent(in) :: species_class(:)
 
    ! local
-   integer  :: ipair, iq, iqfrm, iqtoo
+   integer  :: ipair, iq, iqfrm, iqtoo, irad, iballi
    integer  :: aer_type
    integer  :: lsfrm, lstoo, lsfrma, lsfrmc, lstooa, lstooc, lunout
    integer  :: mfrm, mtoo
@@ -155,32 +194,47 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
    endif
 
-   npair_csizxf = 0
-   modefrm_csizxf(1) = 0
-   modetoo_csizxf(1) = 0
+   !initialize 
+   !(0 index 0f modefrm_csizxf and  modetoo_csizxf is reserved for the prognostic call)
+   do irad = 0, npair_csizxf
+      modefrm_csizxf(irad) = -1
+      modetoo_csizxf(irad) = -1
+   enddo
 
 #ifndef MODAL_AERO
    do_adjust_default          = .false.
    do_aitacc_transfer_default = .false.
-
 #else
-   !  do_adjust_default allows adjustment to be turned on/off
+   !  do_adjust_default allows aerosol size  adjustment to be turned on/off
    do_adjust_default = .true.
 
    !  do_aitacc_transfer_default allows aitken <--> accum mode transfer to be turned on/off
    !  *** it can only be true when aitken & accum modes are both present
    !      and have prognosed number and diagnosed surface/sigmag
+
    nait = modeptr_aitken
    nacc = modeptr_accum
+
+   call rad_cnst_get_info(1,nmodes=iballi)
+   write(103,*)'BALLI:1:',iballi
+   call rad_cnst_get_info(2,nmodes=iballi)
+   write(103,*)'BALLI:2:',iballi
+   call rad_cnst_get_info(3,nmodes=iballi)
+   write(103,*)'BALLI:3:',iballi
+   call rad_cnst_get_info(4,nmodes=iballi)
+   write(103,*)'BALLI:4:',iballi
+
+
    do_aitacc_transfer_default = .false.
-   if ((modeptr_aitken > 0) .and.   &
-      (modeptr_accum  > 0) .and.   &
-      (modeptr_aitken /= modeptr_accum)) then
-      do_aitacc_transfer_default = .true.
-      if (mprognum_amode(nait) <= 0) do_aitacc_transfer_default = .false.
-      if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_default = .false.
+   if ((nait > 0) .and.   &
+      (nacc  > 0) .and.   &
+      (nait /= nacc)) then
+      do_aitacc_transfer_default=.true.!(:) = .true.
+      if (mprognum_amode(nait) <= 0) do_aitacc_transfer_default=.true.!(:) = .false.
+      if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_default=.true.!(:) = .false.
    end if
 
+   !BALLI:Should do_adjust_defualt, be an array with lenght of diagnostic calls???????
    if ( .not. do_adjust_default ) return
 
 !
@@ -194,7 +248,7 @@ do_aitacc_transfer_if_block1: &
 !	(a2 <--> a1 transfer)
 !   transfers include number_a, number_c, mass_a, mass_c
 !
-      npair_csizxf = 1
+      !npair_csizxf = 1
       modefrm_csizxf(1) = nait
       modetoo_csizxf(1) = nacc
 
