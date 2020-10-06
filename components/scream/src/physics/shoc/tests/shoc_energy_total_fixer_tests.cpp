@@ -33,19 +33,22 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
     //     shoc_energy_total_fixer
 
     // FIRST TEST
+    // Surface flux test.  Have two columns, one with zero surface fluxes
+    //   and the other with positive surface fluxes.  Verify the column
+    //   with surface fluxes has greater total energy "before".
 
     // Timestep [s]
-    static constexpr Real dtime = 300.0;
+    static constexpr Real dtime = 300;
     // Number of macmic steps
     static constexpr Int nadv = 2;
     // Air density [km/m3]
     static constexpr Real rho_zt[nlev] = {0.4, 0.6, 0.7, 0.9, 1.0};
     // Interface heights [m]
-    static constexpr Real zi_grid[nlevi] = {11000.0, 7500.0, 5000.0, 3000.0, 1500.0, 0.0};
+    static constexpr Real zi_grid[nlevi] = {11000, 7500, 5000, 3000, 1500, 0};
     // Define integrated static energy, kinetic energy, water vapor,
     //  and liquid water respectively
-    static constexpr Real se = 200.0;
-    static constexpr Real ke = 150.0;
+    static constexpr Real se = 200;
+    static constexpr Real ke = 150;
     static constexpr Real wv = 0.5;
     static constexpr Real wl = 0.1;
     // Define surface sensible heat flux [K m/s]
@@ -53,7 +56,7 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
     // Define surface total water flux [kg/kg m/s]
     static constexpr Real wqw_sfc = 0.01;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergytotData SDS(shcol, nlev, nlevi, dtime, nadv);
 
     // Test that the inputs are reasonable.
@@ -79,17 +82,17 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
 
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// For zt grid, set as midpoint of zi grid
-	SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-	SDS.rho_zt[offset] = rho_zt[n];
+        // For zt grid, set as midpoint of zi grid
+        SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+        SDS.rho_zt[offset] = rho_zt[n];
       }
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	SDS.zi_grid[offset] = zi_grid[n];
+        SDS.zi_grid[offset] = zi_grid[n];
       }
     }
 
@@ -97,25 +100,25 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zt_grid[offset] >= 0.0);
-	REQUIRE(SDS.rho_zt[offset] > 0.0);
+        REQUIRE(SDS.zt_grid[offset] >= 0);
+        REQUIRE(SDS.rho_zt[offset] > 0);
 
-	// Check that heights increase upward
-	if (n > nlev-1){
-          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
-	}
+        // Check that heights increase upward
+        if (n > nlev-1){
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        }
       }
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	REQUIRE(SDS.zi_grid[offset] >= 0.0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
 
-	// Check that heights increase upward
-	if (n > nlevi-1){
-          REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
-	}
+        // Check that heights increase upward
+        if (n > nlevi-1){
+          REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+        }
       }
     }
 

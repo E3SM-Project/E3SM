@@ -62,23 +62,23 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < km1; ++n) {
-	const auto offset = n + s * km1;
+        const auto offset = n + s * km1;
 
-	// For zt grid heights compute as midpoint
-	//  between interface heights
-	SDS.x1[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-	if (s == 0){
-	  SDS.y1[offset] = thetal_zt[n];
-	}
-	else{
-	  SDS.y1[offset] = u_wind_zt[n];
-	}
+        // For zt grid heights compute as midpoint
+        //  between interface heights
+        SDS.x1[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+        if (s == 0){
+          SDS.y1[offset] = thetal_zt[n];
+        }
+        else{
+          SDS.y1[offset] = u_wind_zt[n];
+        }
       }
 
       // Fill in test data on zi_grid.
       for(Int n = 0; n < km2; ++n) {
-	const auto offset   = n + s * km2;
-	SDS.x2[offset] = zi_grid[n];
+        const auto offset   = n + s * km2;
+        SDS.x2[offset] = zi_grid[n];
       }
     }
 
@@ -87,14 +87,14 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Check that zt decreases upward
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < km1 - 1; ++n) {
-	const auto offset = n + s * km1;
-	REQUIRE(SDS.x1[offset + 1] - SDS.x1[offset] < 0.0);
+        const auto offset = n + s * km1;
+        REQUIRE(SDS.x1[offset + 1] - SDS.x1[offset] < 0.0);
       }
 
       // Check that zi decreases upward
       for(Int n = 0; n < km2 - 1; ++n) {
-	const auto offset = n + s * km2;
-	REQUIRE(SDS.x2[offset + 1] - SDS.x2[offset] < 0.0);
+        const auto offset = n + s * km2;
+        REQUIRE(SDS.x2[offset + 1] - SDS.x2[offset] < 0.0);
       }
     }
 
@@ -105,59 +105,59 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < km1; ++n) {
-	const auto offset = n + s * km1;
-	const auto offseti = n + s * km2;
+        const auto offset = n + s * km1;
+        const auto offseti = n + s * km2;
 
-	// check boundary points
-	// First upper boundary
-	if (n == 0){
-	  const auto uppergradient = SDS.y1[offset] - SDS.y1[offset+1];
-	  if (uppergradient > 0.0){
-	    // if upper gradient is positive then make sure that
-	    //  the temperature of the highest nlevi layer is greater
-	    //  than the tempature of the highest nlev layer
-	    REQUIRE(SDS.y2[offseti] > SDS.y1[offset]);
-	  }
-	  if (uppergradient < 0.0){
-	    REQUIRE(SDS.y2[offseti] < SDS.y1[offset]);
-	  }
-	  if (uppergradient == 0.0){
-	    REQUIRE(SDS.y2[offseti] == SDS.y2[offseti]);
-	  }
-	}
+        // check boundary points
+        // First upper boundary
+        if (n == 0){
+          const auto uppergradient = SDS.y1[offset] - SDS.y1[offset+1];
+          if (uppergradient > 0.0){
+            // if upper gradient is positive then make sure that
+            //  the temperature of the highest nlevi layer is greater
+            //  than the tempature of the highest nlev layer
+            REQUIRE(SDS.y2[offseti] > SDS.y1[offset]);
+          }
+          if (uppergradient < 0.0){
+            REQUIRE(SDS.y2[offseti] < SDS.y1[offset]);
+          }
+          if (uppergradient == 0.0){
+            REQUIRE(SDS.y2[offseti] == SDS.y2[offseti]);
+          }
+        }
 
         // Now the lower boundary
-	else if (n == km1-1){
-	  const auto lowergradient = SDS.y1[offset-1] - SDS.y1[offset];
-	  if (lowergradient > 0.0){
-	    // if lower gradient is positive then make sure that
-	    //  the temperature of the lowest nlevi layer is lower
-	    //  than the tempature of the lowest nlev layer
-	    REQUIRE(SDS.y2[offseti+1] < SDS.y1[offset]);
-	  }
-	  if (lowergradient < 0.0){
-	    REQUIRE(SDS.y2[offseti+1] > SDS.y1[offset]);
-	  }
-	  if (lowergradient == 0.0){
-	    REQUIRE(SDS.y2[offseti+1] == SDS.y2[offset]);
-	  }
-	}
+        else if (n == km1-1){
+          const auto lowergradient = SDS.y1[offset-1] - SDS.y1[offset];
+          if (lowergradient > 0.0){
+            // if lower gradient is positive then make sure that
+            //  the temperature of the lowest nlevi layer is lower
+            //  than the tempature of the lowest nlev layer
+            REQUIRE(SDS.y2[offseti+1] < SDS.y1[offset]);
+          }
+          if (lowergradient < 0.0){
+            REQUIRE(SDS.y2[offseti+1] > SDS.y1[offset]);
+          }
+          if (lowergradient == 0.0){
+            REQUIRE(SDS.y2[offseti+1] == SDS.y2[offset]);
+          }
+        }
 
-	// Now make sure all points are bounded as expected
-	else{
-	  const auto gradient = SDS.y1[offset-1] - SDS.y1[offset];
-	  if (gradient == 0.0){
-	    REQUIRE(SDS.y2[offseti] == SDS.y1[offset]);
-	  }
-	  else if (gradient > 0.0){
-	    REQUIRE(SDS.y2[offseti] < SDS.y1[offset-1]);
-	    REQUIRE(SDS.y2[offseti] > SDS.y1[offset]);
-	  }
-	  else {
-	    REQUIRE(SDS.y2[offseti] > SDS.y1[offset-1]);
-	    REQUIRE(SDS.y2[offseti] < SDS.y1[offset]);
-	  }
-	}
+        // Now make sure all points are bounded as expected
+        else{
+          const auto gradient = SDS.y1[offset-1] - SDS.y1[offset];
+          if (gradient == 0.0){
+            REQUIRE(SDS.y2[offseti] == SDS.y1[offset]);
+          }
+          else if (gradient > 0.0){
+            REQUIRE(SDS.y2[offseti] < SDS.y1[offset-1]);
+            REQUIRE(SDS.y2[offseti] > SDS.y1[offset]);
+          }
+          else {
+            REQUIRE(SDS.y2[offseti] > SDS.y1[offset-1]);
+            REQUIRE(SDS.y2[offseti] < SDS.y1[offset]);
+          }
+        }
 
       }
     }
@@ -173,20 +173,20 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Fill in test data on zi_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < km2; ++n) {
-	const auto offset = n + s * km2;
+        const auto offset = n + s * km2;
 
-	// Load up stuff on interface grid.  Here we
-	//  are going to use information from the last test
-	//  to initialize our grid
-	SDS2.x1[offset] = SDS.x2[offset];
-	SDS2.y1[offset] = SDS.y2[offset];
+        // Load up stuff on interface grid.  Here we
+        //  are going to use information from the last test
+        //  to initialize our grid
+        SDS2.x1[offset] = SDS.x2[offset];
+        SDS2.y1[offset] = SDS.y2[offset];
       }
 
       // Load up stuff on midpoint grid, use output from
       //  the last test here.
       for(Int n = 0; n < km1; ++n) {
-	const auto offset   = n + s * km1;
-	SDS2.x2[offset] = SDS.x1[offset];
+        const auto offset   = n + s * km1;
+        SDS2.x2[offset] = SDS.x1[offset];
       }
     }
 
@@ -196,23 +196,23 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < km1; ++n) {
-	const auto offset = n + s * km1;
-	const auto offseti = n + s * km2;
+        const auto offset = n + s * km1;
+        const auto offseti = n + s * km2;
 
-	// compute gradient
-	const auto gradient = SDS2.y1[offseti] - SDS2.y1[offseti+1];
+        // compute gradient
+        const auto gradient = SDS2.y1[offseti] - SDS2.y1[offseti+1];
 
         if (gradient == 0.0){
-	  REQUIRE(SDS2.y2[offset] == SDS2.y1[offseti]);
-	}
-	else if (gradient > 0.0){
-	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti+1]);
-	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti]);
-	}
-	else {
-	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti+1]);
-	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti]);
-	}
+          REQUIRE(SDS2.y2[offset] == SDS2.y1[offseti]);
+        }
+        else if (gradient > 0.0){
+          REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti+1]);
+          REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti]);
+        }
+        else {
+          REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti+1]);
+          REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti]);
+        }
       }
     }
   }

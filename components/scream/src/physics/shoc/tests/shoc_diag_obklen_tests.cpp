@@ -50,7 +50,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     // Surface water vapor [kg/kg]
     static constexpr Real qv_sfc[shcol] = {1e-2, 2e-2, 1.5e-2, 9e-3, 5e-3};
 
-    // Initialzie data structure for bridgeing to F90
+    // Define bounds for reasonable output
+    static constexpr Real obklen_lower = -10;
+    static constexpr Real obklen_upper = 1000;
+    static constexpr Real ustar_bound = 10;
+    static constexpr Real kbfs_bound = 10;
+
+    // Initialize data structure for bridging to F90
     SHOCObklenData SDS(shcol);
 
     // Test that the inputs are reasonable.
@@ -99,9 +105,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
       }
 
       // Verify output falls within some reasonable bounds
-      REQUIRE( (SDS.ustar[s] > -10 && SDS.ustar[s] < 10) );
-      REQUIRE( (SDS.kbfs[s] > -10 && SDS.kbfs[s] < 10) );
-      REQUIRE( (SDS.obklen[s] > -10 && SDS.obklen[s] < 1000));
+      REQUIRE(std::abs(SDS.ustar[s]) < ustar_bound);
+      REQUIRE(std::abs(SDS.kbfs[s]) < kbfs_bound);
+      REQUIRE( (SDS.obklen[s] > obklen_lower && SDS.obklen[s] < obklen_upper));
     }
 
     // TEST TWO

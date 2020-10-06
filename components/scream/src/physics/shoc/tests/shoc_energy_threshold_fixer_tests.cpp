@@ -25,6 +25,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
   static void run_property()
   {
+    static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
@@ -35,31 +36,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
     // TEST ONE
     // Set up a reasonable profile verify results are as expected
 
-    // Host model TKE.  currently these values are dimensionless and
-    //  will be later multipled by tke_min value to get profile in [m2/s2]
-    Real tke_input[nlev] = {1.0, 1.0, 10.0, 40.0, 50.0};
-    //  Pressure at interface [hPa] (later converted to Pa)
-    Real pint[nlevi] = {500.0, 600.0, 700.0, 800.0, 900.0, 1000.0};
+    // Host model TKE  [m2/s2]
+    Real tke_input[nlev] = {mintke, mintke, 0.01, 0.4, 0.5};
+    //  Pressure at interface [Pa]
+    Real pint[nlevi] = {500e2, 600e2, 700e2, 800e2, 900e2, 1000e2};
 
     // Integrated total energy after SHOC.
-    static constexpr Real te_a = 100.0;
+    static constexpr Real te_a = 100;
     // Integrated total energy before SHOC
-    static constexpr Real te_b = 110.0;
-
-    // Tke minimum value
-    static constexpr Real tke_min = 0.0004;
+    static constexpr Real te_b = 110;
 
     // convert pressure to Pa
     for(Int n = 0; n < nlevi; ++n) {
-      pint[n] = 100.0*pint[n];
+      pint[n] = pint[n];
     }
 
-    // convert TKE from dimensionaless to [m2/s2]
-    for(Int n = 0; n < nlev; ++n) {
-      tke_input[n] = tke_min*tke_input[n];
-    }
-
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergythreshfixerData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
@@ -72,15 +64,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
       SDS.te_a[s] = te_a;
       SDS.te_b[s] = te_b;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_input[n];
+        SDS.tke[offset] = tke_input[n];
       }
 
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	SDS.pint[offset] = pint[n];
+        SDS.pint[offset] = pint[n];
       }
     }
 
@@ -88,9 +80,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.tke[offset] >= tke_min);
+        REQUIRE(SDS.tke[offset] >= mintke);
       }
     }
 
@@ -111,8 +103,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
       if (SDS.shoctop[s] < nlev){
         const auto offset_stop = (SDS.shoctop[s]-1) + s * nlev;
-        REQUIRE(SDS.tke[offset_stop] == tke_min);
-        REQUIRE(SDS.tke[offset_stop+1] > tke_min);
+        REQUIRE(SDS.tke[offset_stop] == mintke);
+        REQUIRE(SDS.tke[offset_stop+1] > mintke);
       }
     }
 

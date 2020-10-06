@@ -27,11 +27,11 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
 
     // Tests for the SHOC function:
     //   f0_to_f5_diag_third_shoc_moment
-  
+
     // TEST ONE
     // Zero test.  Given no gradients, verify that relevant
-    //  terms are zero. 
-    
+    //  terms are zero.
+
     // 1/grid spacing [m-1]
     constexpr static Real thedz = 0.1;
     // 1/grid spacing for two grids [m-1]
@@ -48,10 +48,10 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     constexpr static Real w_sec_zero = 0.4;
     // TKE [m2/s2]
     constexpr static Real tke_zero = 0.5;
-  
+
     // Initialize data structure for bridging to F90
     SHOCFtermdiagthirdmomsData SDS;
-    
+
     // Fill in data
     SDS.thedz = thedz;
     SDS.thedz2 = thedz2;
@@ -71,18 +71,18 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     SDS.w_sec_zi = w_sec_zero;
     SDS.tke = tke_zero;
     SDS.tke_kc = tke_zero;
-    
+
     // Be sure inputs are as we expect
     REQUIRE(SDS.thedz > 0);
     REQUIRE(SDS.thedz2 > 0);
     REQUIRE(SDS.wthl_sec_kc == SDS.wthl_sec_kb);
     REQUIRE(SDS.thl_sec_kc == SDS.thl_sec_kb);
-    REQUIRE(SDS.w_sec_kc == SDS.w_sec); 
-    REQUIRE(SDS.tke_kc == SDS.tke);          
-    
-    // Call the fortran implementation    
-    f0_to_f5_diag_third_shoc_moment(SDS);    
-    
+    REQUIRE(SDS.w_sec_kc == SDS.w_sec);
+    REQUIRE(SDS.tke_kc == SDS.tke);
+
+    // Call the fortran implementation
+    f0_to_f5_diag_third_shoc_moment(SDS);
+
     // Check result, make sure all outputs are zero
     REQUIRE(SDS.f0 == 0);
     REQUIRE(SDS.f1 == 0);
@@ -90,9 +90,9 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     REQUIRE(SDS.f3 == 0);
     REQUIRE(SDS.f4 == 0);
     REQUIRE(SDS.f5 == 0);
-    
-    // TEST TWO 
-    // Positive gradient test.  Feed the function values of the second 
+
+    // TEST TWO
+    // Positive gradient test.  Feed the function values of the second
     //  moments with positive gradients.  All fterms should have positive values
 
     // liquid water flux [K m/s]
@@ -100,22 +100,22 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     // liquid water flux [K m/s] above
     constexpr static Real wthl_sec_kc = 0.02;
     // liquid water flux [K m/s] below
-    constexpr static Real wthl_sec_kb = 0.00;        
+    constexpr static Real wthl_sec_kb = 0;
     // thetal variance [K^2]
     constexpr static Real thl_sec = 2;
     // thetal variance [K^2] above
     constexpr static Real thl_sec_kc = 2.5;
     // thetal variance [K^2]
-    constexpr static Real thl_sec_kb = 1.7;    
+    constexpr static Real thl_sec_kb = 1.7;
     // vertical velocity variance [m2/s2]
     constexpr static Real w_sec = 0.4;
     // vertical velocity variance [m2/s2] above
-    constexpr static Real w_sec_kc = 0.5;    
+    constexpr static Real w_sec_kc = 0.5;
     // TKE [m2/s2]
     constexpr static Real tke = 0.5;
     // TKE [m2/s2] above
-    constexpr static Real tke_kc = 0.55;    
-    
+    constexpr static Real tke_kc = 0.55;
+
     // Feed in data
     SDS.wthl_sec = wthl_sec;
     SDS.wthl_sec_kc = wthl_sec_kc;
@@ -128,31 +128,31 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     SDS.w_sec_zi = w_sec;
     SDS.tke = tke;
     SDS.tke_kc = tke_kc;
-    
+
     // Verify input is what we want for this test
     REQUIRE(wthl_sec > 0);
     REQUIRE(wthl_sec_kc > wthl_sec_kb);
     REQUIRE(thl_sec_kc > thl_sec_kb);
-    REQUIRE(w_sec_kc > w_sec); 
-    REQUIRE(tke_kc > tke);   
-    
-    // Call the fortran implementation    
-    f0_to_f5_diag_third_shoc_moment(SDS);    
+    REQUIRE(w_sec_kc > w_sec);
+    REQUIRE(tke_kc > tke);
 
-    // Check result, make sure all outputs are zero
+    // Call the fortran implementation
+    f0_to_f5_diag_third_shoc_moment(SDS);
+
+    // Check result, make sure all outputs are greater than zero
     REQUIRE(SDS.f0 > 0);
     REQUIRE(SDS.f1 > 0);
     REQUIRE(SDS.f2 > 0);
     REQUIRE(SDS.f3 > 0);
     REQUIRE(SDS.f4 > 0);
     REQUIRE(SDS.f5 > 0);
-    
+
   }
-  
+
   static void run_bfb()
   {
     // TODO
-  }  
+  }
 
 };
 
@@ -165,7 +165,7 @@ namespace{
 TEST_CASE("shoc_fterm_diag_third_moms_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFtermdiagThirdMoms;
-  
+
   TestStruct::run_property();
 }
 

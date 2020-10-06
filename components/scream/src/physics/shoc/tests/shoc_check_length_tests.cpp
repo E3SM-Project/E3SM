@@ -24,6 +24,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
   static void run_property()
   {
+    static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
+    static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
 
@@ -36,14 +38,14 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     //  corrects these erroneous values.
 
     // Define the host grid box size x-direction [m]
-    static constexpr Real host_dx = 3000.0;
+    static constexpr Real host_dx = 3000;
     // Defin the host grid box size y-direction [m]
-    static constexpr Real host_dy = 5000.0;
+    static constexpr Real host_dy = 5000;
     // Define mixing length [m]
     //   In profile include values of zero and very large values
-    Real shoc_mix[nlev] = {50000.0, 4000.0, 2000.0, 0.0, 500.0};
+    Real shoc_mix[nlev] = {50000, 4000, 2000, 0, 500};
 
-    // Initialize data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCMixcheckData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -68,8 +70,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
     // Be sure that relevant variables are greater than zero
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.host_dx[s] > 0.0);
-      REQUIRE(SDS.host_dy[s] > 0.0);
+      REQUIRE(SDS.host_dx[s] > 0);
+      REQUIRE(SDS.host_dy[s] > 0);
     }
 
     // Call the fortran implementation
@@ -81,7 +83,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
         const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] > 0.0);
+        REQUIRE(SDS.shoc_mix[offset] >= minlen);
+        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
       }
     }

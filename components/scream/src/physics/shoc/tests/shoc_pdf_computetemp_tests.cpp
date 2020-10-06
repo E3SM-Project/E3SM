@@ -44,6 +44,10 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     // Decrease base pres by a certain amount each test
     static constexpr Real presincr = -10000;
 
+    // Define reasonable bounds for checking
+    static constexpr Real Tl_lower_bound = 150;
+    static constexpr Real Tl_upper_bound = 350;
+
     Real Tl1_save;
 
     // Initialize data structure for bridging to F90
@@ -71,6 +75,10 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
       shoc_assumed_pdf_compute_temperature(SDS);
 
       // Check the result
+      // Make sure temperature falls within reasonable bound
+      REQUIRE(SDS.Tl1 < Tl_upper_bound);
+      REQUIRE(SDS.Tl1 > Tl_lower_bound);
+
       // If pressure is greater than basepressure then
       //  make sure that temperature is greater than thetal
       if (SDS.pval > SDS.basepres){

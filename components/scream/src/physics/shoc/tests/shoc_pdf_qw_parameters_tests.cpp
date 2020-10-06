@@ -33,15 +33,15 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     // gaussians is also larger
 
     // Define the flux of total water [kg/kg m/s] small value
-    static constexpr Real wqwsec_small = 0.0001;
+    static constexpr Real wqwsec_small = 1e-4;
     // Define the flux of total water [kg/kg m/s] large value
-    static constexpr Real wqwsec_large = 0.0005;
+    static constexpr Real wqwsec_large = 5e-4;
     // Define the standard deviation of vertical velocity [m/s]
     static constexpr Real sqrtw2_test1 = 0.5;
     // Define the variance of total water [kg^2/kg^2]
     static constexpr Real qwsec_test1 = 1e-4;
     // Define grid mean total water [kg/kg]
-    static constexpr Real qw_first_test1 = 0.015;
+    static constexpr Real qw_first_test1 = 1.5e-2;
     // Define first gaussian vertical velocity [m/s]
     static constexpr Real w1_1_test1 = 1.5;
     // Define second gaussian vertical velocity [m/s]
@@ -53,6 +53,11 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
 
     // conversion factor from kg/kg to g/kg
     static constexpr Real qvconv=1000;
+
+    // Define reasonable bounds checking for output
+    static constexpr Real qw_bound_low = 1e-3; // [kg/kg]
+    static constexpr Real qw_bound_high = 5e-2; // [kg/kg]
+    static constexpr Real qw2_bound_high = 1e-2; // [kg^2/kg^2]
 
     // Be sure this value is actually larger
     REQUIRE(wqwsec_large > wqwsec_small);
@@ -109,6 +114,14 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
 
     // Now check the result
     REQUIRE(qwgaus_diff_result2 > qwgaus_diff_result1);
+
+    // Make sure output is within reasonable bounds
+    REQUIRE( (SDS.qw1_1 > qw_bound_low && SDS.qw1_2 > qw_bound_low) );
+    REQUIRE( (SDS.qw1_1 < qw_bound_high && SDS.qw1_2 < qw_bound_high) );
+    REQUIRE( (SDS.qw2_1 > 0 && SDS.qw2_2 > 0) );
+    REQUIRE( (SDS.qw2_2 < qw2_bound_high && SDS.qw2_2 < qw2_bound_high) );
+    REQUIRE( (SDS.sqrtqw2_1 > 0 && SDS.sqrtqw2_2 > 0) );
+    REQUIRE( (SDS.sqrtqw2_1 < std::sqrt(qw2_bound_high) && SDS.sqrtqw2_2 < std::sqrt(qw2_bound_high)) );
 
     // TEST TWO
     // Run the test two times given idential inputs, except one test

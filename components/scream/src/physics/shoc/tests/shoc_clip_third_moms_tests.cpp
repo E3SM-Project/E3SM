@@ -29,15 +29,15 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
 
     // Tests for the SHOC function:
     //   clipping_diag_third_shoc_moments
-  
+
     //  Test to be sure that very high values of w3
-    //    are reduced but still the same sign   
-  
+    //    are reduced but still the same sign
+
     // Define the second moment of vertical velocity
-    static constexpr Real w_sec_zi[nlevi] = {0.3, 0.4, 0.5, 0.4, 0.1}; 
+    static constexpr Real w_sec_zi[nlevi] = {0.3, 0.4, 0.5, 0.4, 0.1};
     // Define the third moment of vertical velocity
-    static constexpr Real w3_in[nlevi] = {0.2, 99999, -99999, 0.2, 0.05}; 
-    
+    static constexpr Real w3_in[nlevi] = {0.2, 99999, -99999, 0.2, 0.05};
+
     // Define a local logical
     bool w3_large;
 
@@ -47,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     // Test that the inputs are reasonable.
     REQUIRE(SDS.shcol() > 0);
     REQUIRE(SDS.nlevi() > 1);
-    
+
     // load up the input data
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -55,14 +55,14 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
         const auto offset = n + s * nlevi;
 
         SDS.w_sec_zi[offset] = w_sec_zi[n];
-	SDS.w3[offset] = w3_in[n];
+        SDS.w3[offset] = w3_in[n];
       }
     }
-    
+
     // Verify the data
     // For this particular test wen want to be sure that
     //   the input has relatively small values of w2 (let's say
-    //   all smaller than 1, which is reasonable) and let's 
+    //   all smaller than 1, which is reasonable) and let's
     //   be sure that w3 has some very large unreasonable values
     for(Int s = 0; s < shcol; ++s) {
       // Initialize conditional to make sure there are
@@ -72,37 +72,37 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
         const auto offset = n + s * nlevi;
 
         REQUIRE(SDS.w_sec_zi[offset] <= 1);
-	if (abs(SDS.w3[offset]) > 1000){
-	  w3_large = true;
-	}
+        if (abs(SDS.w3[offset]) > 1000){
+          w3_large = true;
+        }
         SDS.w_sec_zi[offset] = w_sec_zi[n];
-	SDS.w3[offset] = w3_in[n];
+        SDS.w3[offset] = w3_in[n];
       }
       REQUIRE(w3_large == true);
     }
-    
-    // Call the fortran implementation    
+
+    // Call the fortran implementation
     clipping_diag_third_shoc_moments(SDS);
-    
+
     // Check the result
-    // For large values of w3, verify that the result has been 
+    // For large values of w3, verify that the result has been
     //  reduced and is of the same sign
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
-	if (abs(w3_in[n]) > 1000){
-	  REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
-	  if (w3_in[n] < 0){
-	    REQUIRE(SDS.w3[offset] < 0);
-	  }
-	} 
-	
+
+        if (abs(w3_in[n]) > 1000){
+          REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
+          if (w3_in[n] < 0){
+            REQUIRE(SDS.w3[offset] < 0);
+          }
+        }
+
       }
-    }    
-    
+    }
+
   }
-  
+
   static void run_bfb()
   {
     SHOCClipthirdmomsData SDS_f90[] = {
@@ -165,7 +165,7 @@ namespace{
 TEST_CASE("shoc_clip_third_moms_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestClipThirdMoms;
-  
+
   TestStruct::run_property();
 }
 

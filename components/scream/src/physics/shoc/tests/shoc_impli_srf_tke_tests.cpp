@@ -39,7 +39,7 @@ struct UnitWrap::UnitTest<D>::TestImpTkeSfcStress {
     // Surface moment flux, meridional direction [m3/s3]
     static constexpr Real vw_sfc[shcol] = {-0.01, -0.01, 0.3, 0, -0.3};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCTkesrffluxData SDS(shcol);
 
     // Test that the inputs are reasonable.

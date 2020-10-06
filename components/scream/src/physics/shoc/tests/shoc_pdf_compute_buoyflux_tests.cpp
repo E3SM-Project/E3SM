@@ -42,6 +42,9 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
     // Define the input pressure [Pa]
     static constexpr Real pval = 85000;
 
+    // Define reasonable bounds to check output [K m/s]
+    static constexpr Real wthv_sec_bound = 10;
+
     // Initialize data structure for bridging to F90
     SHOCPDFcompbuoyfluxData SDS;
 
@@ -103,6 +106,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
     //  the liquid water flux
     REQUIRE(SDS.wthv_sec > SDS.wthlsec);
     REQUIRE(SDS.wthv_sec > SDS.wqls);
+    REQUIRE(std::abs(SDS.wthv_sec) < wthv_sec_bound);
   }
 
   static void run_bfb()

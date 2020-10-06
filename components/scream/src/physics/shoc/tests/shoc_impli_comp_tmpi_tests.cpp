@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     // Define timestep [s]
     static constexpr Real dtime = 300;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCComptmpiData SDS(shcol, nlevi, dtime);
 
     // Test that the inputs are reasonable.
@@ -55,28 +55,28 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     // Fill in test data on zi_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         // Feed second column SMALLER dz values
-	SDS.dz_zi[offset] = dz_zi[n]/(1+s);
-	SDS.rho_zi[offset] = rho_zi[n];
+        SDS.dz_zi[offset] = dz_zi[n]/(1+s);
+        SDS.rho_zi[offset] = rho_zi[n];
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
         const auto offsets = n + (1+s)*nlevi;
-	// make sure that density is in reasonable bounds
+        // make sure that density is in reasonable bounds
         REQUIRE( (SDS.rho_zi[offset] > 0 && SDS.rho_zi[offset] < 1.5) );
         // Make sure top level dz_zi value is zero
-	if (n == 0){
-          REQUIRE(SDS.dz_zi[offset] == 0.0);
-	}
-	// Otherwise, should be greater than zero
-	else{
-          REQUIRE(SDS.dz_zi[offset] > 0.0);
+        if (n == 0){
+          REQUIRE(SDS.dz_zi[offset] == 0);
+        }
+        // Otherwise, should be greater than zero
+        else{
+          REQUIRE(SDS.dz_zi[offset] > 0);
           // Verify that the second column has smaller dz values
           if (s < shcol-1){
             REQUIRE(SDS.dz_zi[offset] > SDS.dz_zi[offsets]);
