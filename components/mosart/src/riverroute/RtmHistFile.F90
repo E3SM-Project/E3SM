@@ -686,10 +686,9 @@ contains
     call getdatetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'institution' , 'E3SM-Project')
     call ncd_putatt(lnfid, ncd_global, 'institution_id' , 'E3SM-Project')
     call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
-             'E3SM-DATA-SUPPORT@LISTSERV.LLNL.GOV')
+             'e3sm-data-support@listserv.llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)
