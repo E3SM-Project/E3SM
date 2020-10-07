@@ -102,10 +102,10 @@ contains
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       type (mpas_pool_type), intent(in) :: tracersPool !< Input: tracer fields
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
-      logical, intent(in), optional :: full
+      logical, intent(in), optional :: full   !< Input: Run all computations?
 
-      integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
-      integer :: boundaryMask, velMask, err, nCells, nEdges, nVertices
+      integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i, j
+      integer :: err, nCells, nEdges, nVertices
       integer, pointer  :: nVertLevels, vertexDegree
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray, nVerticesArray
 
@@ -116,9 +116,8 @@ contains
         verticesOnEdge, edgesOnEdge, edgesOnVertex,boundaryCell, kiteIndexOnCell, &
         verticesOnCell, edgeSignOnVertex, edgeSignOnCell, edgesOnCell, edgeMask
 
-      real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2, coef_3rd_order, r_tmp, &
-        invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, invLength, layerThicknessVertex, coef, &
-        shearMean, shearSquared, delU2, sumSurfaceLayer, surfaceLayerDepth, rSurfaceLayer
+      real (kind=RKIND) :: coef_3rd_order, r_tmp, &
+        invAreaCell1
 
       real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
@@ -128,15 +127,14 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
         normalGMBolusVelocity, tangentialVelocity, pressure, circulation, kineticEnergyCell, montgomeryPotential, &
-        vertAleTransportTop, zMid, zTop, divergence, relativeVorticity, relativeVorticityCell, &
+        zMid, zTop, divergence, relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedRelativeVorticityEdge, &
         normalizedRelativeVorticityCell, density, displacedDensity, potentialDensity, &
-        temperature, salinity, vertVelocityTop, vertTransportVelocityTop, &
+        vertVelocityTop, vertTransportVelocityTop, &
         vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
         RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
-      character :: c1*6
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -149,8 +147,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
-      real (kind=RKIND) :: areaTri1, layerThicknessVertexInv, tempRiVal, dcEdge_temp, dvEdge_temp, weightsOnEdge_temp
-      real (kind=RKIND), dimension(:), allocatable:: layerThicknessVertexVec
+      real (kind=RKIND) :: dcEdge_temp, dvEdge_temp, weightsOnEdge_temp
       integer :: edgeSignOnCell_temp
 
       logical :: full_compute = .true.
@@ -369,19 +366,17 @@ contains
       !$omp end do
       !$omp end parallel
 
-      ! Need 0,1,2 halo cells
-      nCells = nCellsArray( 3 )
-      !
-      ! Compute kinetic energy
-      !
-      if ( ke_vertex_flag == 1 ) then
-         call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
-      end if
+         !
+         ! Compute kinetic energy
+         !
+         if ( ke_vertex_flag == 1 ) then
+            call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
+         end if
 
-      call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
-                layerThickness, relativeVorticity, &
-                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
-                normalizedRelativeVorticityCell)
+         call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
+                   layerThickness, relativeVorticity, &
+                   normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                   normalizedRelativeVorticityCell)
       end if    ! full_compute
 
       !
@@ -1326,7 +1321,7 @@ contains
       integer :: iEdge, iCell, k, i, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
+      integer, dimension(:), pointer :: nEdgesOnCell, &
         maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
@@ -1449,11 +1444,10 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       integer, intent(in), optional :: timeLevelIn !< Input: Input time level for state pool
 
-      integer :: iEdge, cell1, cell2, eoe, i, j, k
+      integer :: iEdge, cell1, cell2, eoe, j, k
       integer, pointer :: nEdgesSolve
       real (kind=RKIND), dimension(:), pointer :: fEdge
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, normalVelocity, normalBaroclinicVelocity
-      type (dm_info) :: dminfo
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnEdge
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnEdge
@@ -1707,8 +1701,6 @@ contains
 !>    CVMix/KPP requires the following fields as intent(in):
 !>       surfaceBuoyancyForcing
 !>       surfaceFrictionVelocity
-!>       bulkRichardsonNumberBuoy
-!>       bulkRichardsonNumberShear
 !>
 !
 !-----------------------------------------------------------------------
@@ -1754,13 +1746,10 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: &
            activeTracers
 
-      real (kind=RKIND), dimension(:,:), pointer ::  &
-           bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
-
       ! local
-      integer :: iCell, iEdge, i, k, err, timeLevel
+      integer :: iCell, iEdge, i, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
+      real (kind=RKIND) :: turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
       real (kind=RKIND) :: sumSurfaceStressSquared
 
       ! Scratch Arrays
@@ -2274,15 +2263,8 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, maxLevelVertexBot
 
       real (kind=RKIND), dimension(:), pointer :: real1DArr
-      real (kind=RKIND), dimension(:, :), pointer :: real2DArr
-      real (kind=RKIND), dimension(:, :, :), pointer :: real3DArr
-      real (kind=RKIND), dimension(:, :, :, :), pointer :: real4DArr
-      real (kind=RKIND), dimension(:, :, :, :, :), pointer :: real5DArr
-      integer, dimension(:), pointer :: int1DArr
-      integer, dimension(:, :), pointer :: int2DArr
-      integer, dimension(:, :, :), pointer :: int3DArr
 
-      integer :: iCell, iEdge, iVertex, iTracer, k
+      integer :: iCell, iEdge, iTracer, k
 
       logical :: fatalErrorDetected
 
