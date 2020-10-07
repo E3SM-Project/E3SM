@@ -525,94 +525,13 @@ contains
 
       if ( full_compute ) then
 
-      !
-      ! average tracer values over the ocean surface layer
-      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-      if(config_use_cvmix_kpp) then
-
-        nCells = nCellsArray( 1 )
-
-        !$omp parallel
-        !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
-        do iCell=1,nCells
-          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
-          sumSurfaceLayer=0.0_RKIND
-          tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
-          indexSurfaceLayerDepth(iCell) = -9.e30
-          do k=1,maxLevelCell(iCell)
-           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
-           rSurfaceLayer = maxLevelCell(iCell)
-           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-             sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
-             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
-             indexSurfaceLayerDepth(iCell) = rSurfaceLayer
-             exit
-           endif
-          end do
-          tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
-          do k=1,int(rSurfaceLayer)
-            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell) &
-                                              * layerThickness(k,iCell)
-          enddo
-          k=min( int(rSurfaceLayer)+1, maxLevelCell(iCell) )
-          tracersSurfaceLayerValue(:,iCell) = (tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
-                                            * activeTracers(:,k,iCell) * layerThickness(k,iCell)) / surfaceLayerDepth
-        enddo
-        !$omp end do
-        !$omp end parallel
-
-        nEdges = nEdgesArray( 1 )
-
-        !
-        ! average normal velocity values over the ocean surface layer
-        ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-        !
-
-        !$omp parallel
-        !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
-        do iEdge=1,nEdges
-          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
-          cell1=cellsOnEdge(1,iEdge)
-          cell2=cellsOnEdge(2,iEdge)
-          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
-          sumSurfaceLayer=0.0_RKIND
-          rSurfaceLayer = min(1, maxLevelEdgeTop(iEdge))
-          do k=1,maxLevelEdgeTop(iEdge)
-           rSurfaceLayer = k
-           sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
-           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iEdge)
-             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iEdge)
-             exit
-           endif
-          end do
-          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
-          do k=1,int(rSurfaceLayer)
-            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge) &
-                                              * layerThicknessEdge(k,iEdge)
-          enddo
-          k=int(rSurfaceLayer)+1
-          if(k.le.maxLevelEdgeTop(iEdge)) then
-            normalVelocitySurfaceLayer(iEdge) = (normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer) &
-                                              * normalVelocity(k,iEdge) * layerThicknessEdge(k,iEdge)) / surfaceLayerDepth
-          end if
-        enddo
-        !$omp end do
-        !$omp end parallel
-
-      endif
-
-      nCells = nCellsArray( 2 )
-
-      ! compute the attenuation coefficient for surface fluxes
-      !$omp parallel
-      !$omp do schedule(runtime)
-      do iCell = 1, nCells
-         surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
-         surfaceFluxAttenuationCoefficientRunoff(iCell) = config_flux_attenuation_coefficient_runoff
-      end do
-      !$omp end do
-      !$omp end parallel
+         !
+         ! average tracer values over the ocean surface layer
+         ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+         call ocn_diagnostic_solve_surfaceLayer(layerThickness, activeTracers, &
+                layerThicknessEdge, normalVelocity, tracersSurfaceLayerValue,  &
+                indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
+                surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)!{{{
 
       end if ! full_compute
 
@@ -1181,6 +1100,164 @@ contains
       !$omp end parallel
 
    end subroutine ocn_diagnostic_solve_richardson!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_surfaceLayer
+!
+!> \brief   Computes diagnostic variables for surface layer
+!> \author  Matt Turner
+!> \date    October 2020
+!> \details
+!>  This routine computes the diagnostic variables for averages of tracer
+!>    values at surface layer
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_surfaceLayer(layerThickness, activeTracers, &
+                layerThicknessEdge, normalVelocity, tracersSurfaceLayerValue,  &
+                indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
+                surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)!{{{
+
+      use ocn_mesh   ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        layerThickness      !< Input: layer thickness
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+        activeTracers
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        layerThicknessEdge
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        normalVelocity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         tracersSurfaceLayerValue
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         indexSurfaceLayerDepth
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         normalVelocitySurfaceLayer
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         surfaceFluxAttenuationCoefficient
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         surfaceFluxAttenuationCoefficientRunoff
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: nCells, nEdges
+      integer :: iCell, iEdge
+      integer :: k
+      real(kind=RKIND) :: rSurfaceLayer
+      integer :: cell1, cell2
+      real(kind=RKIND) :: surfaceLayerDepth
+      real(kind=RKIND) :: sumSurfaceLayer
+
+      !
+      ! average tracer values over the ocean surface layer
+      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+      if(config_use_cvmix_kpp) then
+
+        nCells = nCellsOwned
+
+        !$omp parallel
+        !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+        do iCell=1,nCells
+          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
+          sumSurfaceLayer=0.0_RKIND
+          tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
+          indexSurfaceLayerDepth(iCell) = -9.e30
+          do k=1,maxLevelCell(iCell)
+           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+           rSurfaceLayer = maxLevelCell(iCell)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
+             indexSurfaceLayerDepth(iCell) = rSurfaceLayer
+             exit
+           endif
+          end do
+          tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
+          do k=1,int(rSurfaceLayer)
+            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell) &
+                                              * layerThickness(k,iCell)
+          enddo
+          k=min( int(rSurfaceLayer)+1, maxLevelCell(iCell) )
+          tracersSurfaceLayerValue(:,iCell) = (tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
+                                            * activeTracers(:,k,iCell) * layerThickness(k,iCell)) / surfaceLayerDepth
+        enddo
+        !$omp end do
+        !$omp end parallel
+
+        nEdges = nEdgesOwned
+
+        !
+        ! average normal velocity values over the ocean surface layer
+        ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+        !
+
+        !$omp parallel
+        !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+        do iEdge=1,nEdges
+          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
+          cell1=cellsOnEdge(1,iEdge)
+          cell2=cellsOnEdge(2,iEdge)
+          surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
+          sumSurfaceLayer=0.0_RKIND
+          rSurfaceLayer = min(1, maxLevelEdgeTop(iEdge))
+          do k=1,maxLevelEdgeTop(iEdge)
+           rSurfaceLayer = k
+           sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iEdge)
+             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iEdge)
+             exit
+           endif
+          end do
+          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
+          do k=1,int(rSurfaceLayer)
+            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge) &
+                                              * layerThicknessEdge(k,iEdge)
+          enddo
+          k=int(rSurfaceLayer)+1
+          if(k.le.maxLevelEdgeTop(iEdge)) then
+            normalVelocitySurfaceLayer(iEdge) = (normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer) &
+                                              * normalVelocity(k,iEdge) * layerThicknessEdge(k,iEdge)) / surfaceLayerDepth
+          end if
+        enddo
+        !$omp end do
+        !$omp end parallel
+
+      endif
+
+      nCells = nCellsHalo( 1 )
+
+      ! compute the attenuation coefficient for surface fluxes
+      !$omp parallel
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
+         surfaceFluxAttenuationCoefficientRunoff(iCell) = config_flux_attenuation_coefficient_runoff
+      end do
+      !$omp end do
+      !$omp end parallel
+
+   end subroutine ocn_diagnostic_solve_surfaceLayer!}}}
 
 !***********************************************************************
 !
