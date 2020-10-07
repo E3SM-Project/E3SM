@@ -236,7 +236,9 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 IF (${HOMME_USE_KOKKOS})
   # This option will only help propagate tests, it won't make bfb builds.
   # Compiler flags should be set separately in *.cmake file.
-  OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
+  IF (HOMME_ENABLE_TESTING)
+    OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
+  ENDIF ()
 
   IF (CUDA_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
@@ -380,7 +382,7 @@ IF (${HOMME_USE_KOKKOS})
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
-IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
+IF (HOMMEXX_BFB_TESTING)
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
