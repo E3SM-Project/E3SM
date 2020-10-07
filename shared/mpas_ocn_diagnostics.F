@@ -510,13 +510,10 @@ contains
       !$omp end do
       !$omp end parallel
 
-      end if ! full_compute
-
       !
       ! Gradient Richardson number
       !
 
-      if ( full_compute ) then
       nCells = nCellsArray(3)
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
