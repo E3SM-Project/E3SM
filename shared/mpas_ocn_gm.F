@@ -647,9 +647,10 @@ contains
                 eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_Visbeck(iEdge)*betaEdge(iEdge))) /  &
                                       (1.0E-11_RKIND + sqrt(sumRi)))
                 gmBolusKappa(iEdge) = config_GM_Visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
-                gmBolusKappa(iEdge) = max(config_GM_Visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_Visbeck_max_kappa))
+                gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
+                                          config_GM_spatially_variable_max_kappa))
              else !for really shallow columns use min bolus kappa
-                gmBolusKappa(iEdge) = config_GM_Visbeck_min_kappa
+                gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
              end if
            end do
            !$omp end do
@@ -686,8 +687,8 @@ contains
                  Length = min(config_gm_EG_Rossby_factor*Lr,config_gm_EG_Rhines_factor*L_rhines)
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
-                 gmKappaScaling(k,iEdge) = max(config_GM_Visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
-                         Length**2.0*sigma, config_GM_Visbeck_max_kappa)) / gmBolusKappa(iEdge)
+                 gmKappaScaling(k,iEdge) = max(config_GM_spatially_variable_min_kappa, min(config_gm_EG_kappa_factor* &
+                         Length**2.0*sigma, config_GM_spatially_variable_max_kappa)) / gmBolusKappa(iEdge)
               enddo
            enddo
            !$omp end do
@@ -958,7 +959,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_GM_kappa
+               gmBolusKappa(iEdge) = config_GM_spatially_constant_kappa
             end do
             !$omp end do
             !$omp end parallel
@@ -970,11 +971,11 @@ contains
             local_config_GM_compute_EdenGreatbatch = .false.
 
             RediGMinitValue = 0.0_RKIND
-            ! for N2 dependence, we still assign Kappa as a constant.
+            ! for N2 dependence, we still assign Kappa as a constant to be multiplied by N2 scaling.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_GM_kappa
+               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
             !$omp end parallel
@@ -992,7 +993,7 @@ contains
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-              gmBolusKappa(iEdge) = config_GM_Visbeck_max_kappa
+              gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
             !$omp end parallel
@@ -1010,7 +1011,7 @@ contains
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-              gmBolusKappa(iEdge) = config_GM_Visbeck_max_kappa
+              gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
             !$omp end parallel
