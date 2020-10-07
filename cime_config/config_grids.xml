@@ -964,7 +964,7 @@
       <mask>oRRS15to5</mask>
     </model_grid>
 
-    <!--amb model_grid alias="northamericax4v1pg2_r0125_WC14to60E2r3" compset="(DOCN|XOCN|SOCN|AQP1)">
+    <model_grid alias="northamericax4v1pg2_r0125_WC14to60E2r3" compset="(DOCN|XOCN|SOCN|AQP1|EAM.+ELM.+MPASO)">
       <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">WC14to60E2r3</grid>
@@ -972,12 +972,12 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>WC14to60E2r3</mask>
-    </model_grid-->
+    </model_grid>
 
-    <model_grid alias="northamericax4v1pg2_r0125_WC14to60E2r3" compset="(CAM5.+ELM.+MPASO)">
+    <model_grid alias="northamericax4v1pg2_r0125_WC14to60E2r3_ICG" compset="(EAM.+ELM.+MPASO)">
       <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
       <grid name="lnd">r0125</grid>
-      <grid name="ocnice">WC14to60E2r3</grid>
+      <grid name="ocnice">WC14to60E2r3_ICG</grid>
       <grid name="rof">r0125</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>

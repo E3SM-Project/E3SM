@@ -9407,7 +9407,7 @@
   </grid>
   <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%WC14to60E2r3">
     <mach name="compy">
-      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
         <comment> rmod025a </comment>
         <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
@@ -9436,7 +9436,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> rmod074a </comment>
         <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
@@ -9465,7 +9465,7 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*CAM5.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
         <comment> rmod115b </comment>
         <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
