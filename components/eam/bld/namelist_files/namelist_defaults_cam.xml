@@ -1352,7 +1352,6 @@
 <zmconv_ke                       hgrid="256x512"                      > 1.0E-6 </zmconv_ke>
 <zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigmem                                                       >.false. </zmconv_trigmem>
 <zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
 <zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
 <zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>

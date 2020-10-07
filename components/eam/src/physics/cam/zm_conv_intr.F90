@@ -12,8 +12,7 @@ module zm_conv_intr
 ! July 2015 B. Singh Added code for unified convective trasport
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
-   use physconst,    only: cpair                              
-   use physconst,    only: latvap, gravit   !songxl 2014-05-20
+   use physconst,    only: cpair
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
    use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
    use cam_history,  only: outfld, addfld, horiz_only, add_default
@@ -330,12 +329,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer, dimension(:,:) :: flxsnow      ! Convective-scale flux of snow   at interfaces (kg/m2/s)
    real(r8), pointer, dimension(:,:) :: dp_cldliq
    real(r8), pointer, dimension(:,:) :: dp_cldice
-!<songxl 2014-05-20----------
-   real(r8), pointer, dimension(:,:) :: hu_nm1
-   real(r8), pointer, dimension(:,:) :: cnv_nm1
-   real(r8), pointer, dimension(:,:) :: tm1   ! intermediate T between n and n-1 time step
-   real(r8), pointer, dimension(:,:) :: qm1   ! intermediate q between n and n-1 time step
-!>songxl 2014-05-20---------
 
    ! DCAPE-ULL
    real(r8), pointer, dimension(:,:) :: t_star ! intermediate T between n and n-1 time step
