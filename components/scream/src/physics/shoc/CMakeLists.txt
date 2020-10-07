@@ -43,6 +43,7 @@ if (NOT CUDA_BUILD)
     shoc_check_length_scale_shoc_length.cpp
     shoc_compute_conv_vel_shoc_length.cpp
     shoc_compute_l_inf_shoc_length.cpp
+    shoc_diag_obklen.cpp
   ) # SHOC ETI SRCS
 endif()
 

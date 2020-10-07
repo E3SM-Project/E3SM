@@ -221,6 +221,19 @@ struct Functions
     const uview_1d<const Spack>& thv,
     const uview_1d<const Spack>& wthv_sec,
     Scalar&                      conv_vel);
+
+  KOKKOS_FUNCTION
+  static void shoc_diag_obklen(
+    const Scalar& uw_sfc,
+    const Scalar& vw_sfc,
+    const Scalar& wthl_sfc,
+    const Scalar& wqw_sfc,
+    const Scalar& thl_sfc,
+    const Scalar& cldliq_sfc,
+    const Scalar& qv_sfc,
+    Scalar&       ustar,
+    Scalar&       kbfs,
+    Scalar&       obklen);
 }; // struct Functions
 
 } // namespace shoc
@@ -245,6 +258,7 @@ struct Functions
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
 # include "shoc_compute_conv_vel_shoc_length_impl.hpp"
+# include "shoc_diag_obklen_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
