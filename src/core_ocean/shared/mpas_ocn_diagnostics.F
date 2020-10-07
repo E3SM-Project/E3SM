@@ -633,6 +633,8 @@ contains
 
       nCells = nCellsArray( size(nCellsArray) )
 
+      if ( full_compute ) then
+
       !
       ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
@@ -648,6 +650,8 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+      end if ! full_compute
 
       !
       ! Gradient Richardson number
@@ -693,6 +697,8 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+      if ( full_compute ) then
 
       !
       ! average tracer values over the ocean surface layer
@@ -821,6 +827,8 @@ contains
       end do
       !$omp end do
       !$omp end parallel
+
+      end if ! full_compute
 
       call mpas_timer_stop('diagnostic solve')
 
