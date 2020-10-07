@@ -4341,12 +4341,23 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   !=========================================================
   !
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_l_inf_shoc_length_f
+#endif
+ 
   implicit none
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
   real(rtype), intent(inout) :: l_inf(shcol)
   real(rtype) :: tkes, numer(shcol), denom(shcol)
   integer k, i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_l_inf_shoc_length_f(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+    return
+  endif
+#endif
 
   numer(:) = 0._rtype
   denom(:) = 0._rtype
