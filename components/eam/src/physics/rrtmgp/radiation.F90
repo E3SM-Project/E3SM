@@ -1389,13 +1389,12 @@ contains
                call get_gas_vmr(icall, state, pbuf, active_gases, gas_vmr)
                call t_stopf('rad_gas_concentrations_sw')
                ! Get aerosol optics
+               aer_tau_bnd_lw = 0._r8
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
                   aer_tau_bnd_lw = 0._r8
                   call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, aer_tau_bnd_lw)
                   call t_stopf('rad_aer_optics_lw')
-               else
-                  aer_tau_bnd_lw = 0
                end if
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
@@ -1620,7 +1619,6 @@ contains
          fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, fluxes_allsky_day%bnd_flux_dn_dir, &
          fluxes_clrsky_day%flux_up, fluxes_clrsky_day%flux_dn, fluxes_clrsky_day%flux_net, fluxes_clrsky_day%flux_dn_dir, &
          fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
-         !fluxes_allsky_day, fluxes_clrsky_day, &
          tsi_scaling &
       )
       call t_stopf('rad_calculations_sw')
@@ -1777,6 +1775,7 @@ contains
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
       ! Add an empty level above model top
+      ! TODO: handle gases here too
       cld_tau_gpt_rad = 0
       cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt(:,:,:)
       aer_tau_bnd_rad = 0
@@ -2090,6 +2089,11 @@ contains
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
       call get_sw_spectral_boundaries(lower_bounds, upper_bounds, 'cm^-1')
+
+      ! We need to reorder the spectral bounds since we store them in RRTMG
+      ! order in radconstants!
+      lower_bounds = reordered(lower_bounds, rrtmg_to_rrtmgp_swbands)
+      upper_bounds = reordered(upper_bounds, rrtmg_to_rrtmgp_swbands)
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")

@@ -177,6 +177,9 @@ contains
       aer_optics_sw%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
       aer_optics_sw%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
 
+      ! Apply delta scaling to account for forward-scattering
+      call handle_error(aer_optics_sw%delta_scale())
+
       ! Set gas concentrations
       call t_startf('rad_set_gases_sw')
       call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
@@ -257,7 +260,6 @@ contains
       call t_startf('longwave cloud optics')
       call handle_error(cld_optics%alloc_1scl(ncol, nlev, k_dist_lw, name='longwave cloud optics'))
       cld_optics%tau = 0.0
-      !cld_optics%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,1:pver,:)
       cld_optics%tau(1:ncol,1:nlev,:) = cld_tau_gpt(1:ncol,1:nlev,:)
       call handle_error(cld_optics%delta_scale())
       call t_stopf('longwave cloud optics')
@@ -274,6 +276,7 @@ contains
       aer_optics%tau = 0
       !aer_optics%tau(1:ncol,2:nlev,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
       aer_optics%tau(1:ncol,1:nlev,1:nlwbands) = aer_tau_bnd(1:ncol,1:nlev,1:nlwbands)
+      call handle_error(aer_optics%delta_scale())
 
       ! Do longwave radiative transfer calculations
       call handle_error(rte_lw( &

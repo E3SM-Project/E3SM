@@ -2471,6 +2471,11 @@ contains
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
       call get_sw_spectral_boundaries(lower_bounds, upper_bounds, 'cm^-1')
 
+      ! We need to reorder the spectral bounds since we store them in RRTMG
+      ! order in radconstants!
+      lower_bounds = reordered(lower_bounds, rrtmg_to_rrtmgp_swbands)
+      upper_bounds = reordered(upper_bounds, rrtmg_to_rrtmgp_swbands)
+
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")
       do iband = 1,nswbands
