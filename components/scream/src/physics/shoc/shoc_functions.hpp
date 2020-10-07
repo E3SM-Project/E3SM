@@ -258,7 +258,7 @@ struct Functions
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
 # include "shoc_compute_conv_vel_shoc_length_impl.hpp"
-# include "shoc_shoc_diag_obklen_impl.hpp"
+# include "shoc_diag_obklen_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
