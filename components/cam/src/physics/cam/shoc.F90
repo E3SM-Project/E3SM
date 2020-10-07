@@ -3778,6 +3778,10 @@ subroutine shoc_diag_obklen(&
          cldliq_sfc,qv_sfc,&        ! Input
          ustar,kbfs,obklen)         ! Ouput
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: shoc_diag_obklen_f
+#endif
+    
   implicit none
 
 ! INPUT VARIABLES
@@ -3810,6 +3814,16 @@ subroutine shoc_diag_obklen(&
   integer :: i
   real(rtype) :: th_sfc  ! potential temperature at surface
   real(rtype) :: thv_sfc ! virtual potential temperature at surface
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call shoc_diag_obklen_f(shcol,uw_sfc,vw_sfc,&      ! Input
+                            wthl_sfc,wqw_sfc,thl_sfc,& ! Input
+                            cldliq_sfc,qv_sfc,&        ! Input
+                            ustar,kbfs,obklen)         ! Ouput
+    return
+  endif
+#endif
 
   do i=1,shcol
     th_sfc = thl_sfc(i) + (lcond/cp)*cldliq_sfc(i)
