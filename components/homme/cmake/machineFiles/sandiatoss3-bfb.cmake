@@ -43,6 +43,9 @@ SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 
+# Set kokkos arch, to get correct avx flags
+SET (Kokkos_ARCH_SNB ON CACHE BOOL "")
+
 SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
 # Openmpi 1.8 only
 SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")

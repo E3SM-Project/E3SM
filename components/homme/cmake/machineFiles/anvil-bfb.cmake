@@ -7,6 +7,9 @@ SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicxx CACHE FILEPATH "")
 
+# Set kokkos arch, to get correct avx flags
+SET (Kokkos_ARCH_BDW ON CACHE BOOL "")
+
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
 #
 # anvil module system doesn't set environment variables, but will put
