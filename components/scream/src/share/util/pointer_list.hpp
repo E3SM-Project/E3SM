@@ -33,7 +33,7 @@ public:
     bool operator==(iterator other) const {return m_iter == other.m_iter;}
     bool operator!=(iterator other) const {return !(*this == other);}
     pointer operator->() const {return *m_iter;}
-    const reference& operator*() const {return **m_iter;}
+    reference operator*() const {return **m_iter;}
   private:
     base_iter_type m_iter;
   };
@@ -43,7 +43,7 @@ public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = const ValueType;
     using difference_type = std::ptrdiff_t;
-    using pointer = PointerType;
+    using pointer = const PointerType;
     using reference = const ValueType&;
     using base_iter_type = typename std::vector<PointerType>::const_iterator;
 
@@ -58,7 +58,7 @@ public:
     bool operator==(iterator other) const {return m_iter == other.m_iter;}
     bool operator!=(iterator other) const {return !(*this == other);}
     pointer operator->() const {return *m_iter;}
-    const reference& operator*() const {return **m_iter;}
+    reference operator*() const {return **m_iter;}
   private:
     base_iter_type m_iter;
   };
@@ -68,6 +68,12 @@ public:
   const_iterator begin() const;
   iterator end();
   const_iterator end() const;
+
+  // Returns the number of elements in the list.
+  size_t size() const { return m_list.size(); }
+
+  // Adds a pointer to the end of the list.
+  void append(PointerType ptr) { m_list.push_back(ptr); }
 
 private:
 

@@ -75,7 +75,7 @@ public:
 
   // Adds a propery check to this field.
   void add_property_check(std::shared_ptr<property_check_type> property_check) {
-    m_prop_checks.push_back(property_check);
+    m_prop_checks.append(property_check);
   }
 
   // These (forward) iterators allow access to the set of property checks on the
