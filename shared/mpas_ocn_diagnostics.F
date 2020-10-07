@@ -92,7 +92,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, &!{{{
-                                   timeLevelIn)
+                                   timeLevelIn, full)
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: statePool !< Input: State information
@@ -102,6 +102,7 @@ contains
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       type (mpas_pool_type), intent(in) :: tracersPool !< Input: tracer fields
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
+      logical, intent(in), optional :: full
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
       integer :: boundaryMask, velMask, err, nCells, nEdges, nVertices
@@ -168,6 +169,14 @@ contains
       real (kind=RKIND) :: areaTri1, layerThicknessVertexInv, tempRiVal, dcEdge_temp, dvEdge_temp, weightsOnEdge_temp
       real (kind=RKIND), dimension(:), allocatable:: layerThicknessVertexVec
       integer :: edgeSignOnCell_temp
+
+      logical :: full_compute = .true.
+
+      if ( present(full) ) then
+         full_compute = full
+      else
+         full_compute = .true.
+      end if
 
       call mpas_timer_start('diagnostic solve')
 
@@ -285,6 +294,8 @@ contains
 
       ! Need owned cells for relativeVorticityCell
       nCells = nCellsArray( 1 )
+
+      if ( full_compute ) then
 
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, j, k, iVertex)
@@ -511,6 +522,8 @@ contains
 
       deallocate(normalizedPlanetaryVorticityVertex, &
                  normalizedRelativeVorticityVertex)
+
+      end if    ! full_compute
 
       !
       ! equation of state
