@@ -50,7 +50,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     // Surface water vapor [kg/kg]
     static constexpr Real qv_sfc[shcol] = {1e-2, 2e-2, 1.5e-2, 9e-3, 5e-3};
 
-    // Initialzie data structure for bridgeing to F90
+    // Define bounds for reasonable output
+    static constexpr Real obklen_lower = -10;
+    static constexpr Real obklen_upper = 1000;
+    static constexpr Real ustar_bound = 10;
+    static constexpr Real kbfs_bound = 10;
+
+    // Initialize data structure for bridging to F90
     SHOCObklenData SDS(shcol);
 
     // Test that the inputs are reasonable.
@@ -99,9 +105,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
       }
 
       // Verify output falls within some reasonable bounds
-      REQUIRE( (SDS.ustar[s] > -10 && SDS.ustar[s] < 10) );
-      REQUIRE( (SDS.kbfs[s] > -10 && SDS.kbfs[s] < 10) );
-      REQUIRE( (SDS.obklen[s] > -10 && SDS.obklen[s] < 1000));
+      REQUIRE(std::abs(SDS.ustar[s]) < ustar_bound);
+      REQUIRE(std::abs(SDS.kbfs[s]) < kbfs_bound);
+      REQUIRE( (SDS.obklen[s] > obklen_lower && SDS.obklen[s] < obklen_upper));
     }
 
     // TEST TWO
@@ -157,7 +163,58 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCObklenData SDS_f90[] = {
+      //             shcol
+      SHOCObklenData(12),
+      SHOCObklenData(10),
+      SHOCObklenData(7),
+      SHOCObklenData(2)
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCObklenData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCObklenData SDS_cxx[] = {
+      SHOCObklenData(SDS_f90[0]),
+      SHOCObklenData(SDS_f90[1]),
+      SHOCObklenData(SDS_f90[2]),
+      SHOCObklenData(SDS_f90[3])
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      shoc_diag_obklen(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      shoc_diag_obklen_f(d.shcol(), d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+                         d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs,
+                         d.obklen);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCObklenData& d_f90 = SDS_f90[i];
+      SHOCObklenData& d_cxx = SDS_cxx[i];
+      for (Int s = 0; s < d_f90.dim1; ++s) {
+        REQUIRE(d_f90.ustar[s] == d_cxx.ustar[s]);
+        REQUIRE(d_f90.kbfs[s] == d_cxx.kbfs[s]);
+        REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);
+      }
+    }
   }
 };
 
@@ -174,7 +231,7 @@ TEST_CASE("shoc_diag_obklen_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_diagobklen_length_bfb", "shoc")
+TEST_CASE("shoc_diag_obklen_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
 

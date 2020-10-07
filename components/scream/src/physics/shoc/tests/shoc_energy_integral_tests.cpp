@@ -42,18 +42,18 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Define host model dry static energy [J kg-1]
     static constexpr Real host_dse[nlev] = {350e3, 325e3, 315e3, 310e3, 300e3};
-    // Defin the pressure difference [hPa] (converted to Pa later)
-    static constexpr Real pdel[nlev]={100.0, 75.0, 50.0, 25.0, 10.0};
+    // Defin the pressure difference [Pa]
+    static constexpr Real pdel[nlev]={100e2, 75e2, 50e2, 25e2, 10e2};
     // Define zonal wind on nlev grid [m/s]
-    static constexpr Real u_wind[nlev] = {-4.0, -4.0, -3.0, -1.0, -2.0};
+    static constexpr Real u_wind[nlev] = {-4, -4, -3, -1, -2};
     // Define meridional wind on nlev grid [m/s]
-    static constexpr Real v_wind[nlev] = {1.0, 2.0, 3.0, 4.0, 5.0};
-    // Define the total water mixing ratio [g/kg] (converted to kg/kg later)
-    static constexpr Real rtm[nlev] = {7.0, 9.0, 11.0, 15.0, 20.0};
+    static constexpr Real v_wind[nlev] = {1, 2, 3, 4, 5};
+    // Define the total water mixing ratio [kg/kg]
+    static constexpr Real rtm[nlev] = {7e-3, 9e-3, 11e-3, 15e-3, 20e-3};
     // Define cloud mixing ratio [g/kg] (converted to kg/kg later)
-    static constexpr Real rcm[nlev] = {0.001, 0.01, 0.04, 0.002, 0.001};
+    static constexpr Real rcm[nlev] = {1e-6, 1e-5, 4e-5, 2e-6, 1e-6};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergyintData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -64,23 +64,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// Add one degree K in the second column
-	SDS.host_dse[offset] = s+host_dse[n];
+        // Add one degree K in the second column
+        SDS.host_dse[offset] = s+host_dse[n];
 
-	// convert to [kg/kg]
-	// Force the first column of cloud liquid
-	//   to be zero!
-	SDS.rcm[offset] = s*rcm[n]/1000.0;
-	SDS.rtm[offset] = rtm[n]/1000.0;
+        // Force the first column of cloud liquid
+        //   to be zero!
+        SDS.rcm[offset] = s*rcm[n];
+        SDS.rtm[offset] = rtm[n];
 
-	// convert to Pa
-	SDS.pdel[offset] = pdel[n]*100.0;
+        // convert to Pa
+        SDS.pdel[offset] = pdel[n];
 
-	// Increase winds with increasing columns
-	SDS.u_wind[offset] = (1.0+s)*u_wind[n];
-	SDS.v_wind[offset] = (1.0+s)*v_wind[n];
+        // Increase winds with increasing columns
+        SDS.u_wind[offset] = (1.0+s)*u_wind[n];
+        SDS.v_wind[offset] = (1.0+s)*v_wind[n];
       }
     }
 
@@ -88,22 +87,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.host_dse[offset] > 0.0);
-	REQUIRE(SDS.rcm[offset] >= 0.0);
-	REQUIRE(SDS.rtm[offset] > 0.0);
+        REQUIRE(SDS.host_dse[offset] > 0);
+        REQUIRE(SDS.rcm[offset] >= 0);
+        REQUIRE(SDS.rtm[offset] > 0);
 
-	// make sure the two columns are different and
-	//  as expected for the relevant variables
-	if (s == 0){
+        // make sure the two columns are different and
+        //  as expected for the relevant variables
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
           REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
           REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
-          REQUIRE(SDS.rcm[offset] == 0.0);
+          REQUIRE(SDS.rcm[offset] == 0);
           REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
-	}
+        }
       }
     }
 
@@ -113,16 +112,16 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     // Check test
     for(Int s = 0; s < shcol; ++s) {
       // Verify relevant integrals are reasonable
-      REQUIRE(SDS.se_int[s] > 0.0);
-      REQUIRE(SDS.ke_int[s] > 0.0);
-      REQUIRE(SDS.wv_int[s] > 0.0);
-      REQUIRE(SDS.wl_int[s] >= 0.0);
+      REQUIRE(SDS.se_int[s] > 0);
+      REQUIRE(SDS.ke_int[s] > 0);
+      REQUIRE(SDS.wv_int[s] > 0);
+      REQUIRE(SDS.wl_int[s] >= 0);
       // Do column comparison tests
       if (s == 0){
-	REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
-	REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
-	REQUIRE(SDS.wl_int[s] == 0.0);
-	REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
+        REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
+        REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
+        REQUIRE(SDS.wl_int[s] == 0);
+        REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
       }
     }
   }

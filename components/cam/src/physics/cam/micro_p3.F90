@@ -1108,7 +1108,11 @@ contains
        diag_eff_radius_qi,rho_qi,do_predict_nc, &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,  &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,qv_prev,t_prev,col_location)
+       vap_ice_exchange,qv_prev,t_prev,col_location &
+#ifdef SCREAM_CONFIG_IS_CMAKE
+       , elapsed_s &
+#endif
+)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -1185,6 +1189,10 @@ contains
     real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: inv_qc_relvar
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    real(rtype), intent(out) :: elapsed_s ! duration of main loop in seconds
+#endif
+
     !
     !----- Local variables and parameters:  -------------------------------------------------!
     !
@@ -1231,6 +1239,10 @@ contains
     logical(btype), parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
 
     real(rtype),dimension(its:ite,kts:kte) :: qc_old, nc_old, qr_old, nr_old, qi_old, ni_old, qv_old, th_atm_old
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
+#endif
 
     !-----------------------------------------------------------------------------------!
     !  End of variables/parameters declarations
@@ -1302,6 +1314,10 @@ contains
     ni_old = ni   ! Ice  # microphysics tendency, initialize
     qv_old = qv         ! Vapor  microphysics tendency, initialize
     th_atm_old = th_atm         ! Pot. Temp. microphysics tendency, initialize
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    call system_clock(clock_count1, clock_count_rate, clock_count_max)
+#endif
 
     !==
     !-----------------------------------------------------------------------------------!
@@ -1437,6 +1453,12 @@ contains
        !.....................................................
 
     enddo i_loop_main
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    call system_clock(clock_count2, clock_count_rate, clock_count_max)
+    clock_count_diff = clock_count2 - clock_count1
+    elapsed_s = real(clock_count_diff) / real(clock_count_rate)
+#endif
 
     !PMC deleted "if WRF" stuff
     !PMC deleted typeDiags optional output stuff

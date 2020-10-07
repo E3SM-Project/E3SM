@@ -3757,6 +3757,10 @@ subroutine shoc_diag_obklen(&
          cldliq_sfc,qv_sfc,&        ! Input
          ustar,kbfs,obklen)         ! Ouput
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: shoc_diag_obklen_f
+#endif
+    
   implicit none
 
 ! INPUT VARIABLES
@@ -3790,12 +3794,22 @@ subroutine shoc_diag_obklen(&
   real(rtype) :: th_sfc  ! potential temperature at surface
   real(rtype) :: thv_sfc ! virtual potential temperature at surface
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call shoc_diag_obklen_f(shcol,uw_sfc,vw_sfc,&      ! Input
+                            wthl_sfc,wqw_sfc,thl_sfc,& ! Input
+                            cldliq_sfc,qv_sfc,&        ! Input
+                            ustar,kbfs,obklen)         ! Ouput
+    return
+  endif
+#endif
+
   do i=1,shcol
     th_sfc = thl_sfc(i) + (lcond/cp)*cldliq_sfc(i)
     thv_sfc = th_sfc*(1._rtype+eps*qv_sfc(i)-cldliq_sfc(i))
-    ustar(i) = max(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2),ustar_min)
+    ustar(i) = max(bfb_sqrt(bfb_square(uw_sfc(i)) + bfb_square(vw_sfc(i))),ustar_min)
     kbfs(i) = wthl_sfc(i)+eps*th_sfc*wqw_sfc(i)
-    obklen(i) = -thv_sfc*ustar(i)**3/(ggr*vk*(kbfs(i)+sign(1.e-10_rtype,kbfs(i))))
+    obklen(i) = -thv_sfc*bfb_cube(ustar(i))/(ggr*vk*(kbfs(i)+sign(1.e-10_rtype,kbfs(i))))
   enddo
 
   return
@@ -4320,6 +4334,10 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   !=========================================================
   !
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_l_inf_shoc_length_f
+#endif
+ 
   implicit none
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
@@ -4327,12 +4345,19 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   real(rtype) :: tkes, numer(shcol), denom(shcol)
   integer k, i
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_l_inf_shoc_length_f(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+    return
+  endif
+#endif
+
   numer(:) = 0._rtype
   denom(:) = 0._rtype
 
   do k=1,nlev
     do i=1,shcol
-        tkes=sqrt(tke(i,k))
+        tkes=bfb_sqrt(tke(i,k))
         numer(i)=numer(i)+tkes*zt_grid(i,k)*dz_zt(i,k)
         denom(i)=denom(i)+tkes*dz_zt(i,k)
     enddo
@@ -4402,7 +4427,7 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   integer i
 
   do i=1,shcol
-    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
+    conv_vel(i) = bfb_pow(max(0._rtype,conv_vel(i)), (1._rtype/3._rtype))
 
     if (conv_vel(i) .gt. 0._rtype) then
       tscale(i)=pblh(i)/conv_vel(i)

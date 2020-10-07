@@ -134,6 +134,7 @@ TEST_CASE("field_repo", "") {
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Column};
+  std::vector<FieldTag> tags3 = {FieldTag::VerticalLevel};
 
   const auto km = 1000*m;
 
@@ -143,10 +144,13 @@ TEST_CASE("field_repo", "") {
   FieldIdentifier fid4("field_2", tags2, km/s);
   FieldIdentifier fid5("field_3", tags2, km/s);
   FieldIdentifier fid6("field_4", tags2, km/s);
+  FieldIdentifier fid7("field_5", tags2, km/s);
+  FieldIdentifier fid8("field_5", tags3, km/s);
 
   std::vector<int> dims1 = {2, 3, 4};
   std::vector<int> dims2 = {2, 3, 3};
   std::vector<int> dims3 = {13};
+  std::vector<int> dims4 = {6};
 
   fid1.set_dimensions(dims1);
   fid2.set_dimensions(dims2);
@@ -154,6 +158,13 @@ TEST_CASE("field_repo", "") {
   fid4.set_dimensions(dims3);
   fid5.set_dimensions(dims3);
   fid6.set_dimensions(dims3);
+  fid7.set_dimensions(dims3);
+  fid8.set_dimensions(dims4);
+
+  fid2.set_grid_name("grid_1");
+  fid3.set_grid_name("grid_2");
+  fid7.set_grid_name("grid_3");
+  fid8.set_grid_name("grid_3");
 
   FieldRepository<Real,DefaultDevice>  repo;
 
@@ -167,6 +178,9 @@ TEST_CASE("field_repo", "") {
   // Test that you can assign more than one group to a field
   repo.register_field(fid5,{"group_3","group_5"});
   repo.register_field(fid6,{"group_4","group_5","group_6"});
+  // Test for same field and grid name, different layout
+  repo.register_field(fid7,"group_7");
+  repo.register_field(fid8,"group_7");
   // Should not be able to register fields to the 'state' group (it's reserved)
   REQUIRE_THROWS(repo.register_field(fid2,"state"));
   // Should not be able to register the same field name with two different units
@@ -178,13 +192,25 @@ TEST_CASE("field_repo", "") {
 
   // Check registration is indeed closed
   REQUIRE (repo.repository_state()==RepoState::Closed);
-  REQUIRE (repo.size()==4);
-  REQUIRE (repo.internal_size()==5);
+  REQUIRE (repo.size()==5);
+  REQUIRE (repo.internal_size()==7);
 
   auto f1 = repo.get_field(fid1);
   auto f2 = repo.get_field(fid2);
   auto f5 = repo.get_field(fid5);
   auto f6 = repo.get_field(fid6);
+
+  // Check that get_field with a field name and grid name as arguments returns the appropriate field
+  // Using grid_1 should return fid2 field, using grid_2 should return fid3 field, using grid_3 should throw an error.
+  // Retrieving field 5 on grid 3 should return an error since it has been defined on grid 3 with two different layouts.
+  auto& f7 = repo.get_field("field_2","grid_1");
+  auto& f8 = repo.get_field("field_2","grid_2");
+  REQUIRE_THROWS( repo.get_field("field_5","grid_3") );
+  REQUIRE_THROWS( repo.get_field("field_2","grid_3") );
+  REQUIRE(f7.get_header().get_identifier()==fid2);
+  REQUIRE(f7.get_header().get_identifier()!=fid3);
+  REQUIRE(f8.get_header().get_identifier()!=fid2);
+  REQUIRE(f8.get_header().get_identifier()==fid3);
 
   // Check the two fields identifiers are indeed different
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());

@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <namelist_defaults>
 
+<start_ymd>20200120</start_ymd>
+
+<!-- Atmosphere initial condition -->
+<ncdata hgrid="ne1024np4">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc</ncdata>
+<ncdata hgrid="ne256np4">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc</ncdata>
+
 <!-- TODO: enable COSP once we do an E3SM->SCREAM merge -->
 
 <!-- Solar constant from CMIP6 input4MIPS -->

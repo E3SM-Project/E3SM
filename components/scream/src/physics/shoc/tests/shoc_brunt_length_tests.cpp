@@ -39,11 +39,14 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     //  to test a range of conditions.
 
     // Grid difference centered on thermo grid [m]
-    static constexpr Real dz_zt[nlev] = {100.0, 75.0, 50.0, 25.0, 10.0};
+    static constexpr Real dz_zt[nlev] = {100, 75, 50, 25, 10};
     // Virtual potential temperature on interface grid [K]
-    static constexpr Real thv_zi[nlevi] = {310.0, 305.0, 300.0, 300.0, 295.0, 305.0};
+    static constexpr Real thv_zi[nlevi] = {310, 305, 300, 300, 295, 305};
 
-    // Initialize data structure for bridgeing to F90
+    // Define reasonable bound for output
+    static constexpr Real brunt_bound = 1;
+
+    // Initialize data structure for bridging to F90
     SHOCBruntlengthData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
@@ -76,13 +79,13 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev - 1; ++n) {
         const auto offset = n + s * nlev;
-        REQUIRE(SDS.dz_zt[offset] > 0.0);
-        REQUIRE(SDS.thv[offset] > 0.0);
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.thv[offset] > 0);
       }
 
       for(Int n = 0; n < nlevi - 1; ++n) {
         const auto offset = n + s * nlevi;
-        REQUIRE(SDS.thv_zi[offset] > 0.0);
+        REQUIRE(SDS.thv_zi[offset] > 0);
       }
     }
 
@@ -98,22 +101,21 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
         //  is the correct sign given atmospheric conditions
 
         // well mixed layer
-        if (thv_zi[n] - thv_zi[n+1] == 0.0){
-          REQUIRE(SDS.brunt[offset] == 0.0);
+        if (thv_zi[n] - thv_zi[n+1] == 0){
+          REQUIRE(SDS.brunt[offset] == 0);
         }
         // unstable layer
-        if (thv_zi[n] - thv_zi[n+1] < 0.0){
-          REQUIRE(SDS.brunt[offset] < 0.0);
+        if (thv_zi[n] - thv_zi[n+1] < 0){
+          REQUIRE(SDS.brunt[offset] < 0);
         }
         // stable layer
-        if (thv_zi[n] - thv_zi[n+1] > 0.0){
-          REQUIRE(SDS.brunt[offset] > 0.0);
+        if (thv_zi[n] - thv_zi[n+1] > 0){
+          REQUIRE(SDS.brunt[offset] > 0);
         }
 
         // Validate that values fall within some
         //  reasonable bounds for this variable.
-        REQUIRE(SDS.brunt[offset < 1.0]);
-        REQUIRE(SDS.brunt[offset > -1.0]);
+        REQUIRE(std::abs(SDS.brunt[offset]) < brunt_bound);
       }
     }
   }

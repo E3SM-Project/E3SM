@@ -297,6 +297,8 @@
       <value compset="2010_CAM5.*SCREAM-HR" >2010_scream_hr</value>
       <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr</value>
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr</value>
+      <value compset="2010_CAM5.*SCREAM-LR-DYAMOND2" >2010_scream_lr_dyamond2</value>
+      <value compset="2010_CAM5.*SCREAM-HR-DYAMOND2" >2010_scream_hr_dyamond2</value>  
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -412,6 +414,8 @@
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
     <desc compset="_CAM5.*SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_CAM5.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_CAM5.*SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_CAM5.*SCREAM-HR-DYAMOND2">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND2 (2020-01-20).</desc>
     <desc compset="_CAM5.*SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
     <desc compset="_CAM5.*SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
     <!-- old MMF / Super-Parameterization -->

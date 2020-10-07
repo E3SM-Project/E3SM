@@ -183,7 +183,7 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
-
+  
   KOKKOS_FUNCTION
   static void diag_second_moments_lbycond(const Int& shcol, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& ustar2, const uview_1d<const Spack>& wstar, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& qwthl_sec);
   
@@ -204,6 +204,15 @@ struct Functions
     const uview_1d<Spack>&       brunt);
 
   KOKKOS_FUNCTION
+  static void compute_l_inf_shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& tke,
+    Scalar&                      l_inf);
+
+  KOKKOS_FUNCTION
   static void check_length_scale_shoc_length(
     const MemberType&      team,
     const Int&             nlev,
@@ -222,6 +231,18 @@ struct Functions
     const uview_1d<const Spack>& wthv_sec,
     Scalar&                      conv_vel);
 
+  KOKKOS_FUNCTION
+  static void shoc_diag_obklen(
+    const Scalar& uw_sfc,
+    const Scalar& vw_sfc,
+    const Scalar& wthl_sfc,
+    const Scalar& wqw_sfc,
+    const Scalar& thl_sfc,
+    const Scalar& cldliq_sfc,
+    const Scalar& qv_sfc,
+    Scalar&       ustar,
+    Scalar&       kbfs,
+    Scalar&       obklen);
 }; // struct Functions
 
 } // namespace shoc
@@ -246,8 +267,10 @@ struct Functions
 # include "shoc_diag_second_moments_impl.hpp"
 # include "shoc_diag_second_shoc_moments_impl.hpp"
 # include "shoc_compute_brunt_shoc_length_impl.hpp"
+# include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
 # include "shoc_compute_conv_vel_shoc_length_impl.hpp"
+# include "shoc_diag_obklen_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

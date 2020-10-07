@@ -887,7 +887,7 @@ void Functions<S,D>
 }
 
 template <typename S, typename D>
-void Functions<S,D>
+Int Functions<S,D>
 ::p3_main(
   const P3PrognosticState& prognostic_state,
   const P3DiagnosticInputs& diagnostic_inputs,
@@ -926,6 +926,9 @@ void Functions<S,D>
 
   // per-column bools
   view_2d<bool> bools("bools", nj, 2);
+
+  // we do not want to measure init stuff
+  auto start = std::chrono::steady_clock::now();
 
   // p3_main loop
   Kokkos::parallel_for(
@@ -1141,6 +1144,11 @@ void Functions<S,D>
                  team, ocol_location);
 #endif
   });
+  Kokkos::fence();
+
+  auto finish = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start);
+  return duration.count();
 }
 
 } // namespace p3

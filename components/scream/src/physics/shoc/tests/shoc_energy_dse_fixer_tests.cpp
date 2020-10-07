@@ -26,7 +26,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
   static void run_property()
   {
     static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
-    static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;    
+    static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
     static constexpr Int shcol    = 6;
     static constexpr Int nlev     = 5;
 
@@ -48,7 +48,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
     // level indicee of SHOC top layer
     static constexpr Int shoctop[shcol] = {5, 3, 1, 2, 4, 4};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergydsefixerData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -60,9 +60,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
       SDS.shoctop[s] = shoctop[s];
       SDS.se_dis[s] = se_dis;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.host_dse[offset] = host_dse_input[n];
+        SDS.host_dse[offset] = host_dse_input[n];
       }
     }
 
@@ -74,9 +74,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
       REQUIRE(SDS.shoctop[s] >= 1);
       REQUIRE(SDS.shoctop[s] <= nlev);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.host_dse[offset] > 0.0);
+        REQUIRE(SDS.host_dse[offset] > 0.0);
       }
     }
 

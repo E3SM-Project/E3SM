@@ -166,6 +166,7 @@ contains
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
     real(kind=c_real) :: inv_qc_relvar(pcols,pver)        ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
     real(kind=c_real) :: inv_cp
+    real(kind=c_real) :: elapsed_s
 
     real(kind=c_real) :: col_location(pcols,3)
 
@@ -306,7 +307,8 @@ contains
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
          qv_prev(its:ite,kts:kte),&          ! IN qv from prev step
          t_prev(its:ite,kts:kte),&           ! IN T from prev step
-         col_location(its:ite,3)           & ! IN location of columns
+         col_location(its:ite,3),           & ! IN location of columns
+         elapsed_s &
          )
     do i = its,ite
       do k = kts,kte

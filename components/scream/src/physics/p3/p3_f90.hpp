@@ -62,7 +62,9 @@ private:
 };
 
 void p3_init();
-void p3_main(const FortranData& d, bool use_fortran=false);
+
+// Returns number of microseconds of p3_main execution
+Int p3_main(const FortranData& d, bool use_fortran=false);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are

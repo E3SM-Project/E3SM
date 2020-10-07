@@ -78,7 +78,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     Real host_dse_input[nlev];
     Real zt_grid[nlev];
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergyfixerData SDS(shcol, nlev, nlevi, dtime, nadv);
 
     // Test that the inputs are reasonable.

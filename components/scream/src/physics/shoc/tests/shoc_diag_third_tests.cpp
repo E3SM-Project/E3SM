@@ -30,14 +30,14 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Tests for the SHOC function:
     //   diag_third_shoc_moments
-    
+
     // Upper level test for w3
-    
+
     // Convective boundary layer test with extreme gradients
     // Most physics of the test have been applied in midlayer function.
     //  Here we give the profile very small dz and hence extreme gardients
-    //  to be sure that w3 is clipped appropriately.  
-    
+    //  to be sure that w3 is clipped appropriately.
+
     // Then we will increase w_sec and tke for a second test to verify that
     //  the magnitude of w3 has increased.
 
@@ -61,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     static constexpr Real thetal[nlev] = {330, 320, 310, 300, 305};
     // Define the buoyancy flux on zi grid [K m/s]
     static constexpr Real wthv_sec[nlev] = {0.002, 0.03, 0.04, 0.02, 0.04};
-    
+
     // Define TKE [m2/s2], compute from w_sec
     Real tke[nlev];
 
@@ -91,77 +91,74 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     // For this test shcol MUST be at least 2
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
     REQUIRE(SDS.nlevi() == SDS.nlev()+1);
-    
+
     // Load up the new data
-    for(Int s = 0; s < shcol; ++s) { 
-      // Fill in test data on zt_grid.     
+    for(Int s = 0; s < shcol; ++s) {
+      // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-	
+
         SDS.w_sec[offset] = w_sec[n];
         SDS.dz_zt[offset] = dz_zt[n];
         SDS.zt_grid[offset] = zt_grid[n];
         SDS.tke[offset] = tke[n];
-	
+
         SDS.isotropy[offset] = isotropy[n];
         SDS.brunt[offset] = brunt[n];
         SDS.thetal[offset] = thetal[n];
-        SDS.wthv_sec[offset] = wthv_sec[n];	
-	
+        SDS.wthv_sec[offset] = wthv_sec[n];
       }
 
-      // Fill in test data on zi_grid.     
+      // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         SDS.dz_zi[offset] = dz_zi[n];
         SDS.zi_grid[offset] = zi_grid[n];
         SDS.thl_sec[offset] = thl_sec[n];
         SDS.qw_sec[offset] = qw_sec[n];
         SDS.qwthl_sec[offset] = qwthl_sec[n];
         SDS.wthl_sec[offset] = wthl_sec[n];
-	
+
       }
-    }      
+    }
 
     // Check that the inputs make sense
     // Load up the new data
-    for(Int s = 0; s < shcol; ++s) { 
-      // Fill in test data on zt_grid.    
+    for(Int s = 0; s < shcol; ++s) {
+      // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-	
+
         REQUIRE(SDS.w_sec[offset] >= 0);
         // for this test make sure w_sec <= 1
         REQUIRE(SDS.w_sec[offset] <= 1);
-	
+
         REQUIRE(SDS.dz_zt[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] > 0);
         REQUIRE(SDS.tke[offset] > 0);
         REQUIRE(SDS.isotropy[offset] >= 0);
         REQUIRE(SDS.thetal[offset] >= 0);
       }
-      
+
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         REQUIRE(SDS.dz_zi[offset] >= 0);
         REQUIRE(SDS.zi_grid[offset] >= 0);
         REQUIRE(SDS.thl_sec[offset] >= 0);
         REQUIRE(SDS.qw_sec[offset] >= 0);
-	
-      }    
-      
+      }
     }
 
     // Call the fortran implementation
     diag_third_shoc_moments(SDS);
-    
+
     // Check to make sure there is at least one
     //  positive w3 value for convective boundary layer
     bool is_skew;
     // Verify that boundary points are zero
-    for(Int s = 0; s < shcol; ++s) { 
+    for(Int s = 0; s < shcol; ++s) {
       is_skew = false; // Initialize
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
@@ -169,42 +166,41 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         // For this test make sure w3 has been clipped.
         //  Given input w2, this should be less than 1
         REQUIRE(abs(SDS.w3[offset]) < 1);
-	
+
         if (SDS.w3[offset] > 0){
           is_skew = true;
-        }	
-	
+        }
       }
       REQUIRE(is_skew == true);
     }
-    
+
     // Now save the result from first column
     Real w3_test1[nlevi*shcol];
-    for(Int s = 0; s < shcol; ++s) { 
+    for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         w3_test1[offset] = SDS.w3[offset];
       }
     }
-    
+
     // Load up new and increased TKE values
-    for(Int s = 0; s < shcol; ++s) { 
+    for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	
+
         SDS.w_sec[offset] = 10*w_sec[n];
         // update new TKE value
         SDS.tke[offset] = 1.5*SDS.w_sec[offset];
       }
     }
-    
+
     // Call the fortran implementation
     diag_third_shoc_moments(SDS);
-    
+
     // Verify that new result is greater in magnitude
     //  that the result from test one
-    for(Int s = 0; s < shcol; ++s) { 
+    for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         if (n != 0 && n != nlevi-1){

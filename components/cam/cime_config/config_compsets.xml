@@ -378,6 +378,16 @@
     <lname>2010_CAM5%SCREAM-HR-DYAMOND1_ELM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+   <compset>
+    <alias>F2010-SCREAM-LR-DYAMOND2</alias>
+    <lname>2010_CAM5%SCREAM-LR-DYAMOND2_ELM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010-SCREAM-HR-DYAMOND2</alias>
+    <lname>2010_CAM5%SCREAM-HR-DYAMOND2_ELM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
   <!-- SCREAM compsets with old 2000 forcings -->
   <compset>
     <alias>F2000-SCREAM-LR</alias>
@@ -568,6 +578,8 @@
 	<value  compset="AR97_CAM">1997-06-19</value>
     <value  compset="_CAM5%SCREAM-LR-DYAMOND1">2016-08-01</value>
     <value  compset="_CAM5%SCREAM-HR-DYAMOND1">2016-08-01</value>
+    <value  compset="_CAM5%SCREAM-LR-DYAMOND2">2020-01-20</value>
+    <value  compset="_CAM5%SCREAM-HR-DYAMOND2">2020-01-20</value>
       </values>
     </entry>
 
@@ -620,7 +632,52 @@
       <values>
         <value compset="AR9[57]_CAM">262.5</value>
       </values>
+    </entry>
+
+    <entry id="SSTICE_DATA_FILENAME">
+      <values>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c200505.nc</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c200505.nc</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c200505.nc</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c200505.nc</value>
+      </values>
     </entry> 
+
+    <entry id="SSTICE_GRID_FILENAME">
+      <values>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.200505.nc</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.200505.nc</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.200505.nc</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.200505.nc</value>
+      </values>
+    </entry> 
+
+    <entry id="SSTICE_YEAR_ALIGN">
+      <values>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">2020</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">2020</value>
+      </values>
+    </entry> 
+
+    <entry id="SSTICE_YEAR_START">
+      <values>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">2020</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND2">2020</value>
+      </values>
+    </entry> 
+
+    <entry id="SSTICE_YEAR_END">
+      <values>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND1">2016</value>
+        <value compset="_CAM5%SCREAM-HR-DYAMOND2">2020</value>
+        <value compset="_CAM5%SCREAM-LR-DYAMOND2">2020</value>
+      </values>
+    </entry>
     
   </entries>
 

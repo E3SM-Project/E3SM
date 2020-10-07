@@ -69,7 +69,7 @@ class PerfAnalysis(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, argmap, force_threads, num_runs, tests, cmake_options, use_existing, scaling_exp, plot_friendly, machine):
+    def __init__(self, argmap, force_threads, num_runs, tests, cmake_options, use_existing, scaling_exp, plot_friendly, machine, scream_docs, verbose, cd):
     ###########################################################################
         self._argmap        = argmap
         self._force_threads = force_threads
@@ -80,13 +80,22 @@ class PerfAnalysis(object):
         self._scaling_exp   = scaling_exp
         self._plot_friendly = plot_friendly
         self._machine       = machine
+        self._scream_docs   = scream_docs
+        self._verbose       = verbose
+        self._cd            = cd
 
     ###############################################################################
     def build(self):
     ###############################################################################
+        cmake_cmd = "cmake {} ..".format(self._cmake_options)
+
+        if self._verbose:
+            print("In dir {}, building with cmake command: {}\nOutput will be stored in build.perf.log".\
+                  format(os.getcwd(), cmake_cmd))
+
         with open("build.perf.log", "w") as fd:
-            cmake_cmd = "cmake {} ..".format(self._cmake_options)
-            make_cmd  = "make -j8 VERBOSE=1"
+
+            make_cmd  = "make -j16 VERBOSE=1"
             fd.write(cmake_cmd + "\n")
             fd.write(run_cmd_no_fail(cmake_cmd, combine_output=True) + "\n\n")
             fd.write(make_cmd + "\n")
@@ -127,21 +136,48 @@ class PerfAnalysis(object):
                 threads = int(items[items.index("nthread") + 1])
                 return threads
 
-        expect(False, "Failed to find threads in:\n\n{}".format(output))
+        if "OMP_NUM_THREADS" in os.environ:
+            return int(os.environ["OMP_NUM_THREADS"])
+        else:
+            return 1
 
     ###############################################################################
-    def run_test(self, exename):
+    def formulate_cmd(self, test_exe):
     ###############################################################################
-        self.machine_specific_init(self._scaling_exp.threads)
-        self.test_specific_init(exename, self._scaling_exp.threads)
         prefix = "" if "NUMA_PREFIX" not in os.environ else "{} ".format(os.environ["NUMA_PREFIX"])
-        cmd = "{}./{} {}".format(prefix, exename, " ".join([str(item) for item in self._scaling_exp.values(incl_threads=False)]))
+        replaced = []
+        for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):
+            if name.upper() in test_exe:
+                test_exe = test_exe.replace(name.upper(), str(val))
+                replaced.append(name)
+
+        for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False)):
+            if name not in replaced:
+                test_exe += " {}".format(val)
+
+        cmd = "{}./{}".format(prefix, test_exe)
+        return cmd
+
+    ###############################################################################
+    def run_test(self, test_cmd):
+    ###############################################################################
+        if self._cd:
+            test_path, test_exe = os.path.split(test_cmd)
+            test_path = None if not test_path else test_path
+        else:
+            test_exe = test_cmd
+            test_path = None
+
+        self.machine_specific_init(self._scaling_exp.threads)
+        self.test_specific_init(test_exe, self._scaling_exp.threads)
+
+        cmd = self.formulate_cmd(test_exe)
         results = []
-        with open("{}.perf.log".format(exename), "w") as fd:
+        with open("{}.perf.log".format(test_exe), "w") as fd:
             fd.write(cmd + "\n\n")
             fd.write("ENV: \n{}\n\n".format(run_cmd_no_fail("env")))
             for _ in range(self._num_runs):
-                output = run_cmd_no_fail(cmd, verbose=not self._plot_friendly)
+                output = run_cmd_no_fail(cmd, from_dir=test_path, verbose=(not self._plot_friendly or self._verbose))
                 fd.write(output + "\n\n")
                 results.append(self.get_time(output))
 
@@ -167,7 +203,8 @@ class PerfAnalysis(object):
                    "{} doesn't look like a build directory".format(os.getcwd()))
 
         else:
-            expect(os.path.basename(os.getcwd()) == "micro-apps", "Please run from micro-apps directory")
+            if self._scream_docs:
+                expect(os.path.basename(os.getcwd()) == "micro-apps", "Please run from micro-apps directory")
 
             tmpdir = tempfile.mkdtemp(prefix="build", dir=os.getcwd())
             os.chdir(tmpdir)
@@ -184,8 +221,8 @@ class PerfAnalysis(object):
                 print("RUNNING {}".format(" ".join(["{}={}".format(name, val) for name, val in zip(self._argmap.keys(), self._scaling_exp.values(incl_threads=False))])))
 
             reference = None
-            for test in self._tests:
-                med_time, threads = self.run_test(test)
+            for test, test_cmd in self._tests.items():
+                med_time, threads = self.run_test(test_cmd)
                 self._scaling_exp.threads = threads
 
                 if self._plot_friendly:

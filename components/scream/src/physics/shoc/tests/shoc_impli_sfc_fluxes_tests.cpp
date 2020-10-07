@@ -55,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
     // time step [s]
     static constexpr Real dtime = 300;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCSfcfluxesData SDS(shcol, dtime);
 
     // Test that the inputs are reasonable.
