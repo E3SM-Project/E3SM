@@ -516,6 +516,7 @@ contains
       ! Gradient Richardson number
       !
 
+      if ( full_compute ) then
       nCells = nCellsArray(3)
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
@@ -536,6 +537,9 @@ contains
           RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
       end do
       !$omp end do
+      !$omp end parallel
+
+      end if    ! full_compute
 
       !
       ! extrapolate tracer values to ocean surface
@@ -544,6 +548,7 @@ contains
       ! field will be updated below is better approximations are available
 
 !TDR need to consider how to handle tracersSurfaceValues
+      !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          tracersSurfaceValue(:, iCell) = activeTracers(:,1, iCell)
