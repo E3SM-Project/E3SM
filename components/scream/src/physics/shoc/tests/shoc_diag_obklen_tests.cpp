@@ -209,10 +209,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     for (Int i = 0; i < num_runs; ++i) {
       SHOCObklenData& d_f90 = SDS_f90[i];
       SHOCObklenData& d_cxx = SDS_cxx[i];
-      for (Int i = 0; i < d_f90.dim1; ++i) {
-        REQUIRE(d_f90.ustar[i] == d_cxx.ustar[i]);
-        REQUIRE(d_f90.kbfs[i] == d_cxx.kbfs[i]);
-        REQUIRE(d_f90.obklen[i] == d_cxx.obklen[i]);
+      for (Int s = 0; s < d_f90.dim1; ++s) {
+        REQUIRE(d_f90.ustar[s] == d_cxx.ustar[s]);
+        REQUIRE(d_f90.kbfs[s] == d_cxx.kbfs[s]);
+        REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);
       }
     }
   }
