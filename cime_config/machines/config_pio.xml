@@ -5,6 +5,7 @@
   <entry id="PIO_VERSION">
     <values>
       <value>2</value>
+      <value mach="sooty">1</value>
     </values>
   </entry>
 
