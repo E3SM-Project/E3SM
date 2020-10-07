@@ -4434,7 +4434,7 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   integer i
 
   do i=1,shcol
-    conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
+    conv_vel(i) = bfb_pow(max(0._rtype,conv_vel(i)), (1._rtype/3._rtype))
 
     if (conv_vel(i) .gt. 0._rtype) then
       tscale(i)=pblh(i)/conv_vel(i)
