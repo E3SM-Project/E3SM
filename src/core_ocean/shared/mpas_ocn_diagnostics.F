@@ -146,23 +146,6 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
 
-      ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
-      !                                     divided by layer thickness, defined at vertices
-      !                              units: s^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: normalizedPlanetaryVorticityVertex
-      ! normalizedRelativeVorticityVertex: curl of horizontal velocity divided by layer thickness,
-      !                                    defined at vertices
-      !                             units: s^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: normalizedRelativeVorticityVertex
-      ! vorticityGradientNormalComponent: gradient of vorticity in the normal direction
-      !                                   (positive points from cell1 to cell2)
-      !                            units: s^{-1} m^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientNormalComponent
-      ! vorticityGradientTangentialComponent: gradient of vorticity in the tangent direction
-      !                                       (positive points from vertex1 to vertex2)
-      !                                units: s^{-1} m^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientTangentialComponent
-
 
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
@@ -395,134 +378,10 @@ contains
          call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
       end if
 
-      !
-      ! Compute normalized relative and planetary vorticity
-      !
-      allocate(normalizedPlanetaryVorticityVertex(nVertLevels, nVertices), &
-               normalizedRelativeVorticityVertex(nVertLevels, nVertices))
-
-      nVertices = nVerticesArray( 3 )
-
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaTri1, k, layerThicknessVertex, i)
-      do iVertex = 1, nVertices
-         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
-         do k = 1, maxLevelVertexBot(iVertex)
-            layerThicknessVertex = 0.0_RKIND
-            do i = 1, vertexDegree
-               layerThicknessVertex = layerThicknessVertex + layerThickness(k,cellsOnVertex(i,iVertex)) &
-                                    * kiteAreasOnVertex(i,iVertex)
-            end do
-            layerThicknessVertex = layerThicknessVertex * invAreaTri1
-
-            normalizedRelativeVorticityVertex(k,iVertex) = relativeVorticity(k,iVertex) / layerThicknessVertex
-            normalizedPlanetaryVorticityVertex(k,iVertex) = fVertex(iVertex) / layerThicknessVertex
-         end do
-      end do
-      !$omp end do
-      !$omp end parallel
-
-      nEdges = nEdgesArray( 3 )
-
-      !$omp parallel
-      !$omp do schedule(runtime) private(vertex1, vertex2, k)
-      do iEdge = 1, nEdges
-        normalizedRelativeVorticityEdge(:, iEdge) = 0.0_RKIND
-        normalizedPlanetaryVorticityEdge(:, iEdge) = 0.0_RKIND
-        vertex1 = verticesOnEdge(1, iEdge)
-        vertex2 = verticesOnEdge(2, iEdge)
-        do k = 1, maxLevelEdgeBot(iEdge)
-          normalizedRelativeVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedRelativeVorticityVertex(k, vertex1) &
-                                                    + normalizedRelativeVorticityVertex(k, vertex2))
-          normalizedPlanetaryVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedPlanetaryVorticityVertex(k, vertex1) &
-                                                     + normalizedPlanetaryVorticityVertex(k, vertex2))
-        end do
-      end do
-      !$omp end do
-      !$omp end parallel
-
-      nCells = nCellsArray( 2 )
-
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
-      do iCell = 1, nCells
-        normalizedRelativeVorticityCell(:, iCell) = 0.0_RKIND
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
-
-        do i = 1, nEdgesOnCell(iCell)
-          j = kiteIndexOnCell(i, iCell)
-          iVertex = verticesOnCell(i, iCell)
-          do k = 1, maxLevelCell(iCell)
-            normalizedRelativeVorticityCell(k, iCell) = normalizedRelativeVorticityCell(k, iCell) &
-              + kiteAreasOnVertex(j, iVertex) * normalizedRelativeVorticityVertex(k, iVertex) * invAreaCell1
-          end do
-        end do
-      end do
-      !$omp end do
-      !$omp end parallel
-
-      nCells = nCellsArray( size(nCellsArray) )
-      nVertices = nVerticesArray( size(nVerticesArray) )
-      nEdges = nCellsArray( size(nCellsArray) )
-
-      ! Diagnostics required for the Anticipated Potential Vorticity Method (apvm).
-      if (config_apvm_scale_factor>1e-10) then
-
-         allocate(vorticityGradientNormalComponent(nVertLevels, nEdges), &
-                  vorticityGradientTangentialComponent(nVertLevels, nEdges))
-
-         nEdges = nEdgesArray( 2 )
-
-         !$omp parallel
-         !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invLength, k)
-         do iEdge = 1,nEdges
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            vertex1 = verticesOnedge(1, iEdge)
-            vertex2 = verticesOnedge(2, iEdge)
-
-            invLength = 1.0_RKIND / dcEdge(iEdge)
-            ! Compute gradient of PV in normal direction
-            !   ( this computes the gradient for all edges bounding real cells )
-            do k=1,maxLevelEdgeTop(iEdge)
-               vorticityGradientNormalComponent(k,iEdge) = &
-                  (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
-            enddo
-
-            invLength = 1.0_RKIND / dvEdge(iEdge)
-            ! Compute gradient of PV in the tangent direction
-            !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
-            do k = 1,maxLevelEdgeBot(iEdge)
-              vorticityGradientTangentialComponent(k,iEdge) = &
-                 (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
-            enddo
-
-         enddo
-         !$omp end do
-
-         !
-         ! Modify PV edge with upstream bias.
-         !
-         !$omp do schedule(runtime) private(k)
-         do iEdge = 1,nEdges
-            do k = 1,maxLevelEdgeBot(iEdge)
-              normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
-                - config_apvm_scale_factor * dt * &
-                    (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
-                     + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
-            enddo
-         enddo
-         !$omp end do
-         !$omp end parallel
-
-         deallocate(vorticityGradientNormalComponent, &
-                    vorticityGradientTangentialComponent)
-
-      endif
-
-      deallocate(normalizedPlanetaryVorticityVertex, &
-                 normalizedRelativeVorticityVertex)
-
+      call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
+                layerThickness, relativeVorticity, &
+                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                normalizedRelativeVorticityCell)
       end if    ! full_compute
 
       !
@@ -1042,7 +901,218 @@ contains
       deallocate(kineticEnergyVertex, &
                  kineticEnergyVertexOnCells)
 
-   end subroutine ocn_diagnostic_solve_kineticEnergy
+   end subroutine ocn_diagnostic_solve_kineticEnergy!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_vorticity
+!
+!> \brief   Computes diagnostic variables for vorticity
+!> \author  Matt Turner
+!> \date    October 2020
+!> \details
+!>  This routine computes the diagnostic variables for vorticity
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
+                layerThickness, relativeVorticity, &
+                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                normalizedRelativeVorticityCell)!{{{
+
+      use ocn_mesh   ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: dt !< Input: Time step
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity     !< Input: transport
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         tangentialVelocity !< Input: transport
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        layerThickness      !< Input: layer thickness
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        relativeVorticity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        normalizedRelativeVorticityEdge
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        normalizedPlanetaryVorticityEdge
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        normalizedRelativeVorticityCell
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: nVertices, nEdges, nCells
+      integer :: iVertex, k, i, iEdge, iCell, j
+      integer :: vertex1, vertex2, cell1, cell2
+      real(kind=RKIND) :: invAreaTri1, invAreaCell1, invLength
+      real(kind=RKIND) :: layerThicknessVertex
+
+      ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
+      !                                     divided by layer thickness, defined at vertices
+      !                              units: s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalizedPlanetaryVorticityVertex
+      ! normalizedRelativeVorticityVertex: curl of horizontal velocity divided by layer thickness,
+      !                                    defined at vertices
+      !                             units: s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalizedRelativeVorticityVertex
+      ! vorticityGradientNormalComponent: gradient of vorticity in the normal direction
+      !                                   (positive points from cell1 to cell2)
+      !                            units: s^{-1} m^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientNormalComponent
+      ! vorticityGradientTangentialComponent: gradient of vorticity in the tangent direction
+      !                                       (positive points from vertex1 to vertex2)
+      !                                units: s^{-1} m^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientTangentialComponent
+
+
+
+      !
+      ! Compute normalized relative and planetary vorticity
+      !
+      allocate(normalizedPlanetaryVorticityVertex(nVertLevels, nVerticesAll), &
+               normalizedRelativeVorticityVertex(nVertLevels, nVerticesAll))
+
+      nVertices = nVerticesHalo( 2 )
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaTri1, k, layerThicknessVertex, i)
+      do iVertex = 1, nVertices
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
+         do k = 1, maxLevelVertexBot(iVertex)
+            layerThicknessVertex = 0.0_RKIND
+            do i = 1, vertexDegree
+               layerThicknessVertex = layerThicknessVertex + layerThickness(k,cellsOnVertex(i,iVertex)) &
+                                    * kiteAreasOnVertex(i,iVertex)
+            end do
+            layerThicknessVertex = layerThicknessVertex * invAreaTri1
+
+            normalizedRelativeVorticityVertex(k,iVertex) = relativeVorticity(k,iVertex) / layerThicknessVertex
+            normalizedPlanetaryVorticityVertex(k,iVertex) = fVertex(iVertex) / layerThicknessVertex
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      nEdges = nEdgesHalo( 2 )
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(vertex1, vertex2, k)
+      do iEdge = 1, nEdges
+        normalizedRelativeVorticityEdge(:, iEdge) = 0.0_RKIND
+        normalizedPlanetaryVorticityEdge(:, iEdge) = 0.0_RKIND
+        vertex1 = verticesOnEdge(1, iEdge)
+        vertex2 = verticesOnEdge(2, iEdge)
+        do k = 1, maxLevelEdgeBot(iEdge)
+          normalizedRelativeVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedRelativeVorticityVertex(k, vertex1) &
+                                                    + normalizedRelativeVorticityVertex(k, vertex2))
+          normalizedPlanetaryVorticityEdge(k, iEdge) = 0.5_RKIND * (normalizedPlanetaryVorticityVertex(k, vertex1) &
+                                                     + normalizedPlanetaryVorticityVertex(k, vertex2))
+        end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      nCells = nCellsHalo ( 1 )
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
+      do iCell = 1, nCells
+        normalizedRelativeVorticityCell(:, iCell) = 0.0_RKIND
+        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+
+        do i = 1, nEdgesOnCell(iCell)
+          j = kiteIndexOnCell(i, iCell)
+          iVertex = verticesOnCell(i, iCell)
+          do k = 1, maxLevelCell(iCell)
+            normalizedRelativeVorticityCell(k, iCell) = normalizedRelativeVorticityCell(k, iCell) &
+              + kiteAreasOnVertex(j, iVertex) * normalizedRelativeVorticityVertex(k, iVertex) * invAreaCell1
+          end do
+        end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      nCells = nCellsAll
+      nVertices = nVerticesAll
+      nEdges = nCellsAll
+
+      ! Diagnostics required for the Anticipated Potential Vorticity Method (apvm).
+      if (config_apvm_scale_factor>1e-10) then
+
+         allocate(vorticityGradientNormalComponent(nVertLevels, nEdges), &
+                  vorticityGradientTangentialComponent(nVertLevels, nEdges))
+
+         nEdges = nEdgesHalo( 1 )
+
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invLength, k)
+         do iEdge = 1,nEdges
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            vertex1 = verticesOnedge(1, iEdge)
+            vertex2 = verticesOnedge(2, iEdge)
+
+            invLength = 1.0_RKIND / dcEdge(iEdge)
+            ! Compute gradient of PV in normal direction
+            !   ( this computes the gradient for all edges bounding real cells )
+            do k=1,maxLevelEdgeTop(iEdge)
+               vorticityGradientNormalComponent(k,iEdge) = &
+                  (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
+            enddo
+
+            invLength = 1.0_RKIND / dvEdge(iEdge)
+            ! Compute gradient of PV in the tangent direction
+            !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
+            do k = 1,maxLevelEdgeBot(iEdge)
+              vorticityGradientTangentialComponent(k,iEdge) = &
+                 (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
+            enddo
+
+         enddo
+         !$omp end do
+
+         !
+         ! Modify PV edge with upstream bias.
+         !
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1,nEdges
+            do k = 1,maxLevelEdgeBot(iEdge)
+              normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
+                - config_apvm_scale_factor * dt * &
+                    (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
+                     + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
+            enddo
+         enddo
+         !$omp end do
+         !$omp end parallel
+
+         deallocate(vorticityGradientNormalComponent, &
+                    vorticityGradientTangentialComponent)
+
+      endif
+
+      deallocate(normalizedPlanetaryVorticityVertex, &
+                 normalizedRelativeVorticityVertex)
+
+
+   end subroutine ocn_diagnostic_solve_vorticity!}}}
 
 !***********************************************************************
 !
