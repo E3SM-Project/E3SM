@@ -494,47 +494,11 @@ contains
 
       if ( full_compute ) then
 
-      !
-      ! Brunt-Vaisala frequency (this has units of s^{-2})
-      !
-      coef = -gravity / rho_sw
-      !$omp parallel
-      !$omp do schedule(runtime) private(k)
-      do iCell = 1, nCells
-         BruntVaisalaFreqTop(1,iCell) = 0.0_RKIND
-         do k = 2, maxLevelCell(iCell)
-            BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) &
-              / (zMid(k-1,iCell) - zMid(k,iCell))
-          end do
-      end do
-      !$omp end do
-      !$omp end parallel
-
-      !
-      ! Gradient Richardson number
-      !
-
-      nCells = nCellsArray(3)
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
-      do iCell=1,nCells
-         RiTopOfCell(:,iCell) = 100.0_RKIND
-         do k=2,maxLevelCell(iCell)
-           shearSquared = 0.0_RKIND
-           do i = 1, nEdgesOnCell(iCell)
-             iEdge = edgesOnCell(i, iCell)
-             delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
-             shearSquared = shearSquared + edgeAreaFractionOfCell(i,iCell) * delU2
-           enddo
-           ! Note that the factor of two is from averaging dot product to cell center on a C-grid
-           shearMean = sqrt(2.0_RKIND*shearSquared )
-           shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
-           RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
-          end do
-          RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
-      end do
-      !$omp end do
-      !$omp end parallel
+         !
+         ! Brunt-Vaisala frequency and gradient Richardson number
+         !
+         call ocn_diagnostic_solve_richardson(displacedDensity, density, zMid, &
+                normalVelocity, edgeAreaFractionOfCell, BruntVaisalaFreqTop, RiTopOfCell)
 
       end if    ! full_compute
 
@@ -1115,6 +1079,108 @@ contains
 
 
    end subroutine ocn_diagnostic_solve_vorticity!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_richardson
+!
+!> \brief   Computes diagnostic variables for gradient richardson
+!> \author  Matt Turner
+!> \date    October 2020
+!> \details
+!>  This routine computes the diagnostic variables for gradient richardson
+!>   number and brunt viasala
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_richardson(displacedDensity, density, zMid, &
+                normalVelocity, edgeAreaFractionOfCell, BruntVaisalaFreqTop, RiTopOfCell)!{{{
+
+      use ocn_mesh   ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        displacedDensity
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        density
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        zMid
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        normalVelocity
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        edgeAreaFractionOfCell
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        BruntVaisalaFreqTop
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        RiTopOfCell
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND) :: coef, shearSquared, delU2, shearMean
+      integer :: iCell, k, i, iEdge
+      integer :: nCells
+      real(kind=RKIND) :: invAreaCell1
+
+      !
+      ! Brunt-Vaisala frequency (this has units of s^{-2})
+      !
+      coef = -gravity / rho_sw
+      !$omp parallel
+      !$omp do schedule(runtime) private(k)
+      do iCell = 1, nCellsAll
+         BruntVaisalaFreqTop(1,iCell) = 0.0_RKIND
+         do k = 2, maxLevelCell(iCell)
+            BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) &
+              / (zMid(k-1,iCell) - zMid(k,iCell))
+          end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      !
+      ! Gradient Richardson number
+      !
+
+      nCells = nCellsHalo( 2 )
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaCell1, k, shearSquared, i, iEdge, delU2, shearMean)
+      do iCell=1,nCells
+         RiTopOfCell(:,iCell) = 100.0_RKIND
+         do k=2,maxLevelCell(iCell)
+           shearSquared = 0.0_RKIND
+           do i = 1, nEdgesOnCell(iCell)
+             iEdge = edgesOnCell(i, iCell)
+             delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
+             shearSquared = shearSquared + edgeAreaFractionOfCell(i,iCell) * delU2
+           enddo
+           ! Note that the factor of two is from averaging dot product to cell center on a C-grid
+           shearMean = sqrt(2.0_RKIND*shearSquared )
+           shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
+           RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
+          end do
+          RiTopOfCell(1,iCell) = RiTopOfCell(2,iCell)
+      end do
+      !$omp end do
+      !$omp end parallel
+
+   end subroutine ocn_diagnostic_solve_richardson!}}}
 
 !***********************************************************************
 !
