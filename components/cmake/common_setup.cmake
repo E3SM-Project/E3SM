@@ -42,7 +42,11 @@ if (NOT HAS_RRTMGPXX EQUAL -1)
 endif()
 
 # If samxx or rrtmgpxx is being used, then YAKL must be used as well
-set(USE_YAKL ${USE_SAMXX} OR ${USE_RRTMGPXX})
+if (USE_SAMXX OR USE_RRTMGPXX)
+    set(USE_YAKL TRUE)
+else()
+    set(USE_YAKL FALSE)
+endif()
 
 # If YAKL is being used, then we need to enable USE_CXX
 if (${USE_YAKL})
