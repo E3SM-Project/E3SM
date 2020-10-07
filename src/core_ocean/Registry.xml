@@ -317,8 +317,8 @@
 					description="If true, the standard GM for the tracer advection and mixing is turned on."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_GM_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
+		<nml_option name="config_GM_spatially_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_kappa_function is set to constant."
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch" units="unitless"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
@@ -336,12 +336,12 @@
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"
 		/>
-		<nml_option name="config_GM_Visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for Visbeck scheme"
+		<nml_option name="config_GM_spatially_variable_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for spatially variable GM schemes (EdenGreatbatch, Visbeck)"
 					possible_values="values around 100s"
 		/>
-		<nml_option name="config_GM_Visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for Visbeck scheme"
+		<nml_option name="config_GM_spatially_variable_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for spatially variable GM schemes (EdenGreatbatch, Visbeck)"
 					possible_values="values around 100s"
 		/>
 		<nml_option name="config_gm_EG_riMin" type="real" default_value="200.0" units="NA"
