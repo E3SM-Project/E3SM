@@ -28,9 +28,9 @@ public:
       if ((i > 0) && (i < host_view.extent(0)-1)) {
         auto diff1 = host_view(i) - host_view(i-1);
         auto diff2 = host_view(i+1) - host_view(i);
-        s = (diff1 * diff2 > 0) ? (diff1 * diff2) : 0;
+        s *= (diff1 * diff2 > 0) ? (diff1 * diff2) : 0;
       } else {
-        s = 1;
+        s *= 1;
       }
     }, Kokkos::Prod<ScalarType>(sign));
     return (sign > 0);
