@@ -83,7 +83,7 @@ def buildnml(case, caseroot, compname):
         resolution  = lnd_grid
         clmusr      = ""
 
-    if lnd_grid == "CLM_USRDAT":
+    if lnd_grid == "ELM_USRDAT":
         config_opts = " "
         resolution = clm_usrdat_name
         clmusr     = " -clm_usr_name {}".format(clm_usrdat_name)
