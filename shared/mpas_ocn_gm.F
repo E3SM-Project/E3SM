@@ -683,7 +683,7 @@ contains
                  sigma = max(abs(fEdge(iEdge)),sqrt(2.0_RKIND*betaEdge(iEdge)* &
                              cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
                  L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
-                 Length = min(Lr,L_rhines)
+                 Length = min(config_gm_EG_Rossby_factor*Lr,config_gm_EG_Rhines_factor*L_rhines)
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
                  gmKappaScaling(k,iEdge) = max(config_GM_Visbeck_min_kappa, min(config_gm_EG_kappa_factor* &
