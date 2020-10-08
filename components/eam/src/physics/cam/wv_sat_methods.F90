@@ -109,7 +109,9 @@ subroutine wv_sat_methods_init(kind, tmelt_in, h2otrip_in, tboil_in, &
   ttrice = ttrice_in
   epsilo = epsilo_in
 
+
   omeps = 1._r8 - epsilo
+  write(106,*),'ep:',epsilo,omeps
 
 end subroutine wv_sat_methods_init
 
