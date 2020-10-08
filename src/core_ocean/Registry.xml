@@ -2553,7 +2553,7 @@
 			packages="gm"
 		/>
 		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
-			description="Scaling coefficient for GM kappa. Varies from 0 to 1.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_Redi_use_N2_based_taper = .false. the scaling is set to 1 everywhere."
+			description="Scaling coefficient for GM kappa. Varies from 0 to 1.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_Redi_N2_based_taper_enable = .false. the scaling is set to 1 everywhere."
 			packages="gm"
 		/>
 		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
