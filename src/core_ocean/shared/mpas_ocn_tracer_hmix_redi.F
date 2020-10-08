@@ -465,7 +465,7 @@ contains
 
       if (.not. config_use_Redi) return
 
-      if (config_redi_N2_limit_term1) then
+      if (config_Redi_N2_based_taper_limit_term1) then
          term1TaperFactor = 1.0_RKIND
       else
          term1TaperFactor = 0.0_RKIND
@@ -487,7 +487,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               RediKappa(iEdge) = config_Redi_kappa
+               RediKappa(iEdge) = config_Redi_constant_kappa
             end do
             !$omp end do
             !$omp end parallel
