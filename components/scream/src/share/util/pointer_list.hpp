@@ -5,11 +5,11 @@
 
 namespace scream {
 
-// A pointer_list is a linearly traversible list of pointers that provides
+// A PointerList is a linearly traversible list of pointers that provides
 // iterators that automatically double-dereference their referents. Under the
-// covers, a pointer_list is just a vector of the given pointer type.
+// covers, a PointerList is just a vector of the given pointer type.
 template <typename PointerType, typename ValueType>
-class pointer_list final {
+class PointerList final {
 
 public:
 
