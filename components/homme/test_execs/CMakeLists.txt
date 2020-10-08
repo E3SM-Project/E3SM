@@ -216,7 +216,12 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
 
     ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-    ADD_SUBDIRECTORY(theta-nlev128)
+
+    # This one we build it only if both theta and theta_kokkos are requested,
+    # since it's just needed for perf/correctness comparisons
+    IF (BUILD_HOMME_THETA)
+      ADD_SUBDIRECTORY(theta-nlev128)
+    ENDIF()
 
     IF (HOMMEXX_BFB_TESTING)
       ADD_SUBDIRECTORY(thetal_kokkos_ut)

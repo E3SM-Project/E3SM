@@ -123,22 +123,37 @@ ENDIF()
 SET (HOMME_USE_KOKKOS FALSE)
 IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
   SET (HOMME_USE_KOKKOS TRUE)
+
+  # This option will only help propagate tests, it won't make bfb builds.
+  # Compiler flags should be set separately in *.cmake file.
+  IF (HOMME_ENABLE_TESTING)
+    OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
+  ENDIF ()
+
   SET (HOMME_USE_CXX TRUE)
-  IF (NOT BUILD_HOMME_PREQX AND BUILD_HOMME_PREQX_KOKKOS AND HOMME_BUILD_EXECS)
+  IF (NOT BUILD_HOMME_PREQX AND BUILD_HOMME_PREQX_KOKKOS AND HOMMEXX_BFB_TESTING)
     # If we build preqx kokkos, we also build preqx, so we can compare
-    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON, "
+                    "and HOMMEXX_BFB_TESTING=ON.")
 
     # We need to compare against F90 implementation, so turn this on
     SET (BUILD_HOMME_PREQX TRUE)
   ENDIF ()
-ENDIF ()
 
+  IF (NOT BUILD_HOMME_THETA AND BUILD_HOMME_THETA_KOKKOS AND HOMMEXX_BFB_TESTING)
+    # If we build theta kokkos, we also build theta, so we can compare
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_THETA to ON, since BUILD_HOMME_THETA_KOKKOS is ON, "
+                    "and HOMMEXX_BFB_TESTING=ON.")
+
+    # We need to compare against F90 implementation, so turn this on
+    SET (BUILD_HOMME_THETA TRUE)
+  ENDIF ()
+ENDIF ()
 
 IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_KOKKOS TRUE)
 ENDIF ()
-
 
 IF (HOMME_USE_CXX)
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
@@ -234,11 +249,6 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  # This option will only help propagate tests, it won't make bfb builds.
-  # Compiler flags should be set separately in *.cmake file.
-  IF (HOMME_ENABLE_TESTING)
-    OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
-  ENDIF ()
 
   IF (CUDA_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
