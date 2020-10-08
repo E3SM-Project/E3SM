@@ -30,8 +30,6 @@ def buildlib(bldroot, installpath, case): # pylint: disable=unused-argument
         out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
         out.write(os.path.join(cimeroot, "src", "drivers", "mct", "main") + "\n")
 
-    with open(os.path.join(casebuild, "cplconf", "CCSM_cppdefs"), "w") as out:
-        out.write("")
     with open(os.path.join(casebuild, "cplconf", "CIME_cppdefs"), "w") as out:
         out.write("")
 
