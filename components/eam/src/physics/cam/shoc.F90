@@ -428,9 +428,9 @@ subroutine shoc_main ( &
     !  needed for the PDF closure
     call diag_third_shoc_moments(&
        shcol,nlev,nlevi,&                   ! Input
-       w_sec,thl_sec,qw_sec,qwthl_sec,&     ! Input
+       w_sec,thl_sec,&                      ! Input
        wthl_sec,isotropy,brunt,&            ! Input
-       thetal,tke,wthv_sec,&                ! Input
+       thetal,tke,&                         ! Input
        dz_zt,dz_zi,zt_grid,zi_grid,&        ! Input
        w3)                                  ! Output
 
@@ -1563,9 +1563,9 @@ end subroutine diag_second_moments_ubycond
 
 subroutine diag_third_shoc_moments(&
           shcol,nlev,nlevi, &                 ! Input
-          w_sec, thl_sec, qw_sec, qwthl_sec,& ! Input
+          w_sec, thl_sec, &                   ! Input
           wthl_sec, isotropy, brunt,&         ! Input
-          thetal,tke,wthv_sec,&               ! Input
+          thetal,tke,&                        ! Input
           dz_zt, dz_zi, zt_grid, zi_grid,&    ! Input
           w3)                                 ! Output
 
@@ -1588,10 +1588,6 @@ subroutine diag_third_shoc_moments(&
   real(rtype), intent(in) :: w_sec(shcol,nlev)
   ! second order liquid wat. potential temperature [K^2]
   real(rtype), intent(in) :: thl_sec(shcol,nlevi)
-  ! second order total water mixing ratio [kg2/kg2]
-  real(rtype), intent(in) :: qw_sec(shcol,nlevi)
-  ! covariance of temp and moisture [K kg/kg]
-  real(rtype), intent(in) :: qwthl_sec(shcol,nlevi)
   ! vertical flux of heat [K m/s]
   real(rtype), intent(in) :: wthl_sec(shcol,nlevi)
   ! return to isotropy timescale [s]
@@ -1602,8 +1598,6 @@ subroutine diag_third_shoc_moments(&
   real(rtype), intent(in) :: thetal(shcol,nlev)
   ! turbulent kinetic energy [m2/s2]
   real(rtype), intent(in) :: tke(shcol,nlev)
-  ! buoyancy flux [K m/s]
-  real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   ! thickness centered on thermodynamic grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! thickness centered on interface grid [m]
@@ -1622,14 +1616,12 @@ subroutine diag_third_shoc_moments(&
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: brunt_zi(shcol,nlevi)
   real(rtype) :: thetal_zi(shcol,nlevi)
-  real(rtype) :: wthv_sec_zi(shcol,nlevi)
 
   ! Interpolate variables onto the interface levels
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,brunt,brunt_zi,nlev,nlevi,shcol,largeneg)
   call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol,(2._rtype/3._rtype)*mintke)
   call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol,0._rtype)
-  call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
 
   !Diagnose the third moment of the vertical-velocity
   call compute_diag_third_shoc_moment(&
