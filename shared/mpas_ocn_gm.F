@@ -260,7 +260,7 @@ contains
       ! It is only needed when redi mixing is enabled.
       if ( config_use_redi ) then
 
-      if ( config_Redi_N2_based_taper_enable .and. .not. local_config_GM_kappa_lat_depth_variable ) then
+      if ( config_Redi_N2_based_taper_enable ) then
 
          !$omp parallel
          !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
