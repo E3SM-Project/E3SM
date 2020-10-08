@@ -487,7 +487,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               RediKappa(iEdge) = config_Redi_kappa
+               RediKappa(iEdge) = config_Redi_constant_kappa
             end do
             !$omp end do
             !$omp end parallel
