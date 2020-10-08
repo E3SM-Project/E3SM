@@ -275,10 +275,10 @@ contains
             maxLocation = k
             do k = maxLocation, maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-
-               RediKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
-                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-                                           1.0_RKIND)
+!!!!!!!!! LUKE WILL CHANGE THIS LOGIC, OCT 8 2020
+!               RediKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
+!                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+!                                           1.0_RKIND)
             end do
          end do
          !$omp end do
@@ -555,17 +555,19 @@ contains
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
-                  gmKappaScaling(k, iEdge) = min(max(config_GM_min_stratification_ratio, &
-                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-                                               1.0_RKIND)
+!!!!!!!!! LUKE WILL CHANGE THIS LOGIC, OCT 8 2020
+!                  gmKappaScaling(k, iEdge) = min(max(config_GM_min_stratification_ratio, &
+!                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+!                                               1.0_RKIND)
                end do
            enddo
            !$omp end do
            !$omp end parallel
          end if
 
-         ! For config_GM_closure = 'N2_dependent' or 'Visbeck' or 'EdenGreatbatch' compute a spatially
-         ! variable baroclinic phase speed, the mode can be specified by config_GM_baroclinic_mode
+         ! For config_GM_closure = 'N2_dependent' or 'Visbeck' or 'EdenGreatbatch' compute a
+         ! spatially variable baroclinic phase speed, the mode can be specified by
+         ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
             !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
@@ -584,7 +586,7 @@ contains
                end do
 
                cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed,                          &
-                                          sumN2/(config_GM_baroclinic_mode*3.141592_RKIND))
+                                          sumN2/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
 
             end do
             !$omp end do
@@ -682,27 +684,17 @@ contains
                        + 1.0e-18_RKIND )
                  RiTopOfEdge = BruntVaisalaFreqTopEdge * shearEdgeInv
                  sigma = max(abs(fEdge(iEdge)),sqrt(2.0_RKIND*betaEdge(iEdge)* &
-                             cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_gm_EG_riMin)
+                             cGMphaseSpeed(iEdge))) / sqrt(RiTopOfEdge + config_GM_EG_riMin)
                  L_rhines = sigma / (1.0E-18_RKIND + betaEdge(iEdge))
-                 Length = min(config_gm_EG_Rossby_factor*Lr,config_gm_EG_Rhines_factor*L_rhines)
+                 Length = min(config_GM_EG_Rossby_factor*Lr,config_GM_EG_Rhines_factor*L_rhines)
                  !For compatibility with other schemes, we normalize by the 2-D kappa field, which will
                  !be removed below in the computation of the stream function
-                 gmKappaScaling(k,iEdge) = max(config_GM_spatially_variable_min_kappa, min(config_gm_EG_kappa_factor* &
+                 gmKappaScaling(k,iEdge) = max(config_GM_spatially_variable_min_kappa, min(config_GM_EG_kappa_factor* &
                          Length**2.0*sigma, config_GM_spatially_variable_max_kappa)) / gmBolusKappa(iEdge)
               enddo
            enddo
            !$omp end do
            !$omp end parallel
-         endif
-
-         if(config_Redi_set_RediKappa_to_GMKappa) then
-            !$omp parallel
-            !$omp do schedule(runtime)
-            do iEdge = 1, nEdges
-               RediKappa(iEdge) = gmResolutionTaper(iEdge)*gmBolusKappa(iEdge)
-            end do
-            !$omp end do
-            !$omp end parallel
          endif
 
          nEdges = nEdgesArray(3)
@@ -959,7 +951,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_GM_spatially_constant_kappa
+               gmBolusKappa(iEdge) = config_GM_constant_kappa
             end do
             !$omp end do
             !$omp end parallel
