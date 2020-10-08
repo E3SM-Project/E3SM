@@ -31,10 +31,10 @@ public:
     auto f_view = field.get_view();
     auto host_view = Kokkos::create_mirror_view(field.get_view());
     Kokkos::deep_copy(host_view, field.get_view());
-    ScalarType min_val = -90000000;//host_view(0);
+    ScalarType min_val;
     Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& m) {
-      m = std::min(m, host_view(i));
-    }, min_val);
+      m = std::min(host_view(0), host_view(i));
+    }, Kokkos::Min<ScalarType>(min_val));
     return (min_val > 0);
   }
 

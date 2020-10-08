@@ -32,11 +32,13 @@ public:
   bool check(const Field<ScalarType, Device>& field) const override {
     auto host_view = Kokkos::create_mirror_view(field.get_view());
     Kokkos::deep_copy(host_view, field.get_view());
-    bool bounded = true;
-    Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, bool& b) {
-      b = b && ((host_view(i) >= m_lower_bound) && ((host_view(i) <= m_upper_bound)));
-    }, bounded);
-    return bounded;
+    typename Kokkos::MinMax<ScalarType>::value_type minmax;
+    Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i,
+        typename Kokkos::MinMax<ScalarType>::value_type& mm) {
+      mm.min_val = std::min(host_view(0), host_view(i));
+      mm.max_val = std::max(host_view(0), host_view(i));
+    }, minmax);
+    return ((minmax.min_val >= m_lower_bound) && (minmax.max_val <= m_upper_bound));
   }
 
   bool can_repair() const override {

@@ -267,10 +267,8 @@ TEST_CASE("field_property_check", "") {
     // positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    printf("view extent 0: %d\n", host_view.extent(0));
     Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
       host_view(i) = i+1;
-      printf("view(%d) = %g\n", i, host_view(i));
     });
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
@@ -307,6 +305,78 @@ TEST_CASE("field_property_check", "") {
       REQUIRE(not iter->check(f1));
       iter->repair(f1);
       REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check boundedness.
+  SECTION ("field_boundedness_check") {
+    Field<Real,Device> f1(fid);
+    auto boundedness_check = std::make_shared<FieldBoundednessCheck<Real, Device> >(1, 72);
+    REQUIRE(boundedness_check->can_repair());
+    f1.add_property_check(boundedness_check);
+    f1.allocate_view();
+
+    // Assign positive values to the field and make sure it passes our test for
+    // positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = i+1;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign non-positive values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = -i;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+      iter->repair(f1);
+      REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check monotonicity.
+  SECTION ("field_monotonicity_check") {
+    Field<Real,Device> f1(fid);
+    auto mono_check = std::make_shared<FieldMonotonicityCheck<Real, Device> >();
+    REQUIRE(not mono_check->can_repair());
+    f1.add_property_check(mono_check);
+    f1.allocate_view();
+
+    // Assign monotonically-increasing values to the field and make sure it
+    // passes our test for positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = i+1;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign monotonically-decreasing values to the field and make sure it
+    // also passes the check.
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = -i;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Write a positive value to the middle of the array that causes the
+    // monotonicity check to fail.
+    host_view(host_view.extent(0)/2) = 1;
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
     }
   }
 

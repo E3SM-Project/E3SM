@@ -23,13 +23,17 @@ public:
   bool check(const Field<ScalarType, Device>& field) const override {
     auto host_view = Kokkos::create_mirror_view(field.get_view());
     Kokkos::deep_copy(host_view, field.get_view());
-    bool monotonic = true;
-    Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, bool& m) {
+    ScalarType sign;
+    Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& s) {
       if ((i > 0) && (i < host_view.extent(0)-1)) {
-        m = m && ((host_view(i+1) > host_view(i)) && (host_view(i) > host_view(i-1)));
+        auto diff1 = host_view(i) - host_view(i-1);
+        auto diff2 = host_view(i+1) - host_view(i);
+        s = (diff1 * diff2 > 0) ? (diff1 * diff2) : 0;
+      } else {
+        s = 1;
       }
-    }, monotonic);
-    return monotonic;
+    }, Kokkos::Prod<ScalarType>(sign));
+    return (sign > 0);
   }
 
   bool can_repair() const override {
