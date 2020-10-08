@@ -260,7 +260,7 @@ contains
       ! It is only needed when redi mixing is enabled.
       if ( config_use_redi ) then
 
-      if ( config_Redi_use_N2_based_taper .and. .not. local_config_GM_kappa_lat_depth_variable ) then
+      if ( config_Redi_N2_based_taper_enable .and. .not. local_config_GM_kappa_lat_depth_variable ) then
 
          !$omp parallel
          !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
@@ -275,10 +275,9 @@ contains
             maxLocation = k
             do k = maxLocation, maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-!!!!!!!!! LUKE WILL CHANGE THIS LOGIC, OCT 8 2020
-!               RediKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
-!                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-!                                           1.0_RKIND)
+               RediKappaScaling(k, iCell) = min(max(config_Redi_N2_based_taper_min,                  &
+                                                    BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+                                                    1.0_RKIND)
             end do
          end do
          !$omp end do
@@ -555,10 +554,10 @@ contains
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
-!!!!!!!!! LUKE WILL CHANGE THIS LOGIC, OCT 8 2020
-!                  gmKappaScaling(k, iEdge) = min(max(config_GM_min_stratification_ratio, &
-!                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-!                                               1.0_RKIND)
+                  gmKappaScaling(k, iEdge) = min(max(config_GM_spatially_variable_min_kappa /         &
+                                                     config_GM_spatially_variable_max_kappa,          &
+                                                     BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+                                                     1.0_RKIND)
                end do
            enddo
            !$omp end do

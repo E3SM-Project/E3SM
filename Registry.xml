@@ -313,12 +313,16 @@
 					description="If true, Redi slope is tapered near sfc based on Large et al 1997"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_use_N2_based_taper" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_Redi_N2_based_taper_enable" type="logical" default_value=".true." units="unitless"
 					description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
-					description="If true, the N2 limiting is applied to the horizontal diffusion term"
+		<nml_option name="config_Redi_N2_based_taper_min" type="real" default_value="0.1" units="unitless"
+					description="minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007"
+					possible_values="greater than zero and less than 1"
+		/>
+		<nml_option name="config_Redi_N2_based_taper_limit_term1" type="logical" default_value=".true." units="unitless"
+					description="If true, the N2 lim iting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
