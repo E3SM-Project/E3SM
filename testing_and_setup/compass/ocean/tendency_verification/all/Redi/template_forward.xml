@@ -5,7 +5,7 @@
 		<option name="config_Redi_closure">'constant'</option>
 		<option name="config_Redi_use_slope_taper">.false.</option>
 		<option name="config_Redi_use_surface_taper">.false.</option>
-		<option name="config_Redi_N2_limit_term1">.false.</option>
+		<option name="config_Redi_N2_based_taper_limit_term1">.false.</option>
 		<option name="config_use_GM">.false.</option>
 		<option name="config_GM_closure">'constant'</option>
 		<option name="config_eddying_resolution_taper">'none'</option>

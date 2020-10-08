@@ -3,11 +3,11 @@
 		<option name="config_run_duration">'01-00-00_00:00:00'</option>
 		<option name="config_use_cvmix">.false.</option>
 		<option name="config_use_Redi">.true.</option>
-		<option name="config_Redi_kappa">600.0</option>
+		<option name="config_Redi_constant_kappa">600.0</option>
 		<option name="config_Redi_closure">'constant'</option>
 		<option name="config_Redi_use_slope_taper">.true.</option>
 		<option name="config_Redi_use_surface_taper">.false.</option>
-		<option name="config_Redi_N2_limit_term1">.true.</option>
+		<option name="config_Redi_N2_based_taper_limit_term1">.true.</option>
 		<option name="config_use_GM">.false.</option>
 		<option name="config_GM_closure">'constant'</option>
 		<option name="config_use_debugTracers">.true.</option>
