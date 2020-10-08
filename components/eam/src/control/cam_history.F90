@@ -3742,15 +3742,14 @@ end subroutine print_active_fldlst
 #if defined (E3SM_SCM_REPLAY)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
-    call datetime(curdate, curtime)
-    str = 'created on ' // curdate // ' ' // curtime
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'history' , trim(str))
-
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'username',username)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'hostname', hostname)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'git_version', version)
+    call datetime(curdate, curtime)
+    str = 'created on ' // curdate // ' ' // curtime
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'history' , trim(str))
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
