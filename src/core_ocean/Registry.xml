@@ -293,21 +293,17 @@
 					description="If true, Redi isopycnal mixing is turned on"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
-					description="The Redi diffusion coefficient"
-					possible_values="Positive real numbers"
+		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
+					description="Control what type of function is used for Redi $\kappa$."
+					possible_values="'constant', 'data'"
 		/>
-		<nml_option name="config_Redi_set_RediKappa_to_GMKappa" type="logical" default_value=".true." units="unitless"
-					description="If true RediKappa is forced to be equal to gmBolusKappa"
-					possible_values=".true. or .false."
+		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
+					possible_values="Positive real numbers."
 		/>
 		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
 					description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
 					possible_values="positive real numbers, but small"
-		/>
-		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
-					possible_values="'constant', 'data', 'match_GM'"
 		/>
 		<nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
 					description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
@@ -333,29 +329,25 @@
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch" units="unitless"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'N2_dependent', 'constant', 'Visbeck', 'EdenGreatbatch'"
+					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'"
 		/>
-		<nml_option name="config_GM_spatially_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
-		/>
-		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
-					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
-					possible_values="small positive reals"
 		/>
 		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
 					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
 		/>
 		<nml_option name="config_GM_spatially_variable_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for spatially variable GM schemes (EdenGreatbatch, Visbeck)"
+					description="minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'."
 					possible_values="values around 100s"
 		/>
 		<nml_option name="config_GM_spatially_variable_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
-					description="minimum value of bolus diffusivity for spatially variable GM schemes (EdenGreatbatch, Visbeck)"
+					description="minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'."
 					possible_values="values around 100s"
 		/>
-		<nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
-					description="baroclinic wave mode chosen for the Ferrari et al 2010 calculation"
+		<nml_option name="config_GM_spatially_variable_baroclinic_mode" type="real" default_value="1.0" units="NA"
+					description="baroclinic wave mode chosen for the Ferrari et al 2010 calculation. Used for all choices of config_GM_closure other than 'constant'."
 					possible_values="small positive numbers"
 		/>
 		<nml_option name="config_GM_Visbeck_alpha" type="real" default_value="0.005" units="NA"
@@ -366,19 +358,19 @@
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"
 		/>
-		<nml_option name="config_gm_EG_riMin" type="real" default_value="200.0" units="NA"
+		<nml_option name="config_GM_EG_riMin" type="real" default_value="200.0" units="NA"
 					description="minimum Richardson number to prevent overly large bolus Kappa values"
 					possible_values="numbers greater than zero"
 		/>
-		<nml_option name="config_gm_EG_kappa_factor" type="real" default_value="3.0" units="NA"
+		<nml_option name="config_GM_EG_kappa_factor" type="real" default_value="3.0" units="NA"
 					description="factor to scale diffusivity for Eden Greatbach scheme"
 					possible_values="small positive reals"
 		/>
-		<nml_option name="config_gm_EG_Rossby_factor" type="real" default_value="2.0" units="NA"
+		<nml_option name="config_GM_EG_Rossby_factor" type="real" default_value="2.0" units="NA"
 					description="factor multiplying the Rossby length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small values greater than or equal to one"
 		/>
-		<nml_option name="config_gm_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
+		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
