@@ -24,70 +24,112 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 
-static void run_second_mom_ubycond_bfb()
-{
-  SHOCSecondMomentUbycondData uby_fortran[] = {
-    // shcol
-    SHOCSecondMomentUbycondData(128),
-    SHOCSecondMomentUbycondData(128),
-    SHOCSecondMomentUbycondData(128),
-    SHOCSecondMomentUbycondData(128),
-  };
+  static void run_property()
+  {
+    // Property test for SHOC subroutine:
+    //   diag_second_moments_ubycond
 
-  static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(SHOCSecondMomentUbycondData);
+    static constexpr Int shcol    = 2;
 
-  for (auto& d : uby_fortran) {
-    d.randomize();
-  }
+    // Note that this subroutine does not have any inputs,
+    //  only outputs.  All outputs should be zero.
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
-  // inout data is in original state
-  SHOCSecondMomentUbycondData uby_cxx[num_runs] = {
-    SHOCSecondMomentUbycondData(uby_fortran[0]),
-    SHOCSecondMomentUbycondData(uby_fortran[1]),
-    SHOCSecondMomentUbycondData(uby_fortran[2]),
-    SHOCSecondMomentUbycondData(uby_fortran[3]),
-  };
+    // Initialize data structure for bridging to F90
+    SHOCSecondMomentUbycondData SDS(shcol);
 
-  // Get data from fortran
-  for (auto& d : uby_fortran) {
-    shoc_diag_second_moments_ubycond(d);
-  }
+    // Test that the inputs are reasonable
+    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(shcol > 0);
 
-  for (auto& d : uby_cxx) {
-    shoc_diag_second_moments_ubycond_f(d.shcol(), d.thl, d.qw, d.qwthl, d.wthl, d.wqw, d.uw, d.vw, d.wtke);
-  }
+    // Call the fortran implementation
+    shoc_diag_second_moments_ubycond(SDS);
 
+    // Verify the result
+    //  all output should be zero.
 
-  for (Int i = 0; i < num_runs; ++i) {
-    Int shcol = uby_cxx[i].shcol();
-    for (Int k = 0; k < shcol; ++k) {
-      REQUIRE(uby_fortran[i].thl[k]      == uby_cxx[i].thl[k]);
-      REQUIRE(uby_fortran[i].qw[k]       == uby_cxx[i].qw[k]);
-      REQUIRE(uby_fortran[i].qwthl[k]    == uby_cxx[i].qwthl[k]);
-      REQUIRE(uby_fortran[i].wthl[k]     == uby_cxx[i].wthl[k]);
-      REQUIRE(uby_fortran[i].wqw[k]      == uby_cxx[i].wqw[k]);
-      REQUIRE(uby_fortran[i].uw[k]       == uby_cxx[i].uw[k]);
-      REQUIRE(uby_fortran[i].vw[k]       == uby_cxx[i].vw[k]);
-      REQUIRE(uby_fortran[i].wtke[k]     == uby_cxx[i].wtke[k]);
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.thl_sec[s] == 0);
+      REQUIRE(SDS.qw_sec[s] == 0);
+      REQUIRE(SDS.qwthl_sec[s] == 0);
+      REQUIRE(SDS.wthl_sec[s] == 0);
+      REQUIRE(SDS.wqw_sec[s] == 0);
+      REQUIRE(SDS.uw_sec[s] == 0);
+      REQUIRE(SDS.vw_sec[s] == 0);
+      REQUIRE(SDS.wtke_sec[s] == 0);
     }
   }
-}
 
-static void run_second_mom_ubycond_phys()
-{
-    // TODO
-}
+  static void run_bfb()
+  {
+    SHOCSecondMomentUbycondData uby_fortran[] = {
+      // shcol
+      SHOCSecondMomentUbycondData(128),
+      SHOCSecondMomentUbycondData(128),
+      SHOCSecondMomentUbycondData(128),
+      SHOCSecondMomentUbycondData(128),
+    };
+
+    static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(SHOCSecondMomentUbycondData);
+
+    for (auto& d : uby_fortran) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCSecondMomentUbycondData uby_cxx[num_runs] = {
+      SHOCSecondMomentUbycondData(uby_fortran[0]),
+      SHOCSecondMomentUbycondData(uby_fortran[1]),
+      SHOCSecondMomentUbycondData(uby_fortran[2]),
+      SHOCSecondMomentUbycondData(uby_fortran[3]),
+    };
+
+    // Get data from fortran
+    for (auto& d : uby_fortran) {
+      shoc_diag_second_moments_ubycond(d);
+    }
+
+    for (auto& d : uby_cxx) {
+      shoc_diag_second_moments_ubycond_f(d.shcol(), d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
+    }
+
+
+    for (Int i = 0; i < num_runs; ++i) {
+      Int shcol = uby_cxx[i].shcol();
+      for (Int k = 0; k < shcol; ++k) {
+        REQUIRE(uby_fortran[i].thl_sec[k]      == uby_cxx[i].thl_sec[k]);
+        REQUIRE(uby_fortran[i].qw_sec[k]       == uby_cxx[i].qw_sec[k]);
+        REQUIRE(uby_fortran[i].qwthl_sec[k]    == uby_cxx[i].qwthl_sec[k]);
+        REQUIRE(uby_fortran[i].wthl_sec[k]     == uby_cxx[i].wthl_sec[k]);
+        REQUIRE(uby_fortran[i].wqw_sec[k]      == uby_cxx[i].wqw_sec[k]);
+        REQUIRE(uby_fortran[i].uw_sec[k]       == uby_cxx[i].uw_sec[k]);
+        REQUIRE(uby_fortran[i].vw_sec[k]       == uby_cxx[i].vw_sec[k]);
+        REQUIRE(uby_fortran[i].wtke_sec[k]     == uby_cxx[i].wtke_sec[k]);
+      }
+    }
+  }
+
+
 };
 
-}
-}
-}
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
-TEST_CASE("second_mom_uby", "shoc") {
-  using TRS = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomUbycond;
-  TRS::run_second_mom_ubycond_phys();
-  TRS::run_second_mom_ubycond_bfb();
+
+TEST_CASE("second_mom_uby_property", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomUbycond;
+
+  TestStruct::run_property();
 }
+
+TEST_CASE("second_mom_uby_bfb", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomUbycond;
+
+  TestStruct::run_bfb();
 }
+
+} // namespace

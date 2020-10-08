@@ -846,15 +846,16 @@ contains
 
   end subroutine aa_terms_diag_third_shoc_moment_c
 
-  subroutine shoc_diag_second_moments_srf_c(shcol, wthl, uw, vw, ustar2, wstar) bind(C)
+  subroutine shoc_diag_second_moments_srf_c(shcol, wthl_sfc, uw_sfc, vw_sfc, ustar2, wstar) bind(C)
    use shoc, only: diag_second_moments_srf
 
    ! argmens
    integer(kind=c_int), value, intent(in) :: shcol
-   real(kind=c_real), intent(in)  :: wthl(shcol), uw(shcol), vw(shcol)
+   real(kind=c_real), intent(in)  :: wthl_sfc(shcol), uw_sfc(shcol), vw_sfc(shcol)
    real(kind=c_real), intent(out) :: ustar2(shcol), wstar(shcol)
 
-   call diag_second_moments_srf(shcol, wthl, uw, vw, ustar2, wstar)
+   call diag_second_moments_srf(shcol, wthl_sfc, uw_sfc, vw_sfc, ustar2, wstar)
+
  end subroutine shoc_diag_second_moments_srf_c
 
   subroutine diag_third_shoc_moments_c(&
@@ -1239,14 +1240,14 @@ contains
 
   end subroutine shoc_assumed_pdf_compute_buoyancy_flux_c
 
- subroutine shoc_diag_second_moments_ubycond_c(shcol, thl, qw, wthl, wqw, qwthl, uw, vw, wtke) bind(C)
+ subroutine shoc_diag_second_moments_ubycond_c(shcol, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec) bind(C)
    use shoc, only: diag_second_moments_ubycond
 
    ! argmens
    integer(kind=c_int), value, intent(in) :: shcol
-   real(kind=c_real), intent(out)  :: thl(shcol), qw(shcol), qwthl(shcol),wthl(shcol),wqw(shcol), uw(shcol), vw(shcol), wtke(shcol)
+   real(kind=c_real), intent(out)  :: thl_sec(shcol), qw_sec(shcol), qwthl_sec(shcol),wthl_sec(shcol),wqw_sec(shcol), uw_sec(shcol), vw_sec(shcol), wtke_sec(shcol)
 
-   call diag_second_moments_ubycond(shcol, thl, qw, wthl, wqw, qwthl, uw, vw, wtke)
+   call diag_second_moments_ubycond(shcol, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec)
  end subroutine shoc_diag_second_moments_ubycond_c
 
  subroutine shoc_pblintd_init_pot_c(shcol, nlev, thl, ql, q, thv) bind(C)
@@ -1260,4 +1261,39 @@ contains
 
  end subroutine shoc_pblintd_init_pot_c
 
+  subroutine diag_second_moments_lbycond_c(shcol, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec) bind(C)
+    use shoc, only : diag_second_moments_lbycond
+
+    integer(kind=c_int) , value, intent(in) :: shcol
+    real(kind=c_real) , intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar
+    real(kind=c_real) , intent(out), dimension(shcol) :: wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec
+
+    call diag_second_moments_lbycond(shcol, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec)
+  end subroutine diag_second_moments_lbycond_c
+  
+  subroutine diag_second_moments_c(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
+    use shoc, only : diag_second_moments
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, zt_grid, shoc_mix
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(inout), dimension(shcol, nlevi) :: thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: w_sec
+
+    call diag_second_moments(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec)
+
+  end subroutine diag_second_moments_c
+  
+  subroutine diag_second_shoc_moments_c(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
+    use shoc, only : diag_second_shoc_moments
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, zt_grid, shoc_mix
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc
+    real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: w_sec
+
+    call diag_second_shoc_moments(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec)
+  end subroutine diag_second_shoc_moments_c
 end module shoc_iso_c

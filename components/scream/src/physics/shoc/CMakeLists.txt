@@ -39,6 +39,9 @@ if (NOT CUDA_BUILD)
     shoc_compute_diag_third_shoc_moment.cpp
     shoc_clipping_diag_third_shoc_moments.cpp
     shoc_energy_integrals.cpp
+    shoc_diag_second_moments_lbycond.cpp
+    shoc_diag_second_moments.cpp
+    shoc_diag_second_shoc_moments.cpp
     shoc_compute_brunt_shoc_length.cpp
     shoc_check_length_scale_shoc_length.cpp
     shoc_compute_conv_vel_shoc_length.cpp
