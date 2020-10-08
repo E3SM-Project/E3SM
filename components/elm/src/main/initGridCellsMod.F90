@@ -154,7 +154,6 @@ contains
              slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
              asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 
              topo_ind = topounit
-             !wttopounit2gridcell = 1._r8/(max_topounits)
              call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
           end do
        end do

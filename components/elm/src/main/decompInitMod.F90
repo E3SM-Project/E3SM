@@ -487,11 +487,6 @@ contains
        endif
 
     enddo
-    !if (masterproc) then
-    !   write(iulog,*) 'TKT numt ',numt 
-    !endif
-    ! determine offset for XXX (topounits/lunits/cols/pfts/cohorts) index
-    ! for each process
 
     allocate(proc_nXXX(0:npes-1), stat=ier)
     if (ier /= 0) then

@@ -14,7 +14,7 @@ module surfrdMod
   use clm_varcon      , only : grlnd
   use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use clm_varctl      , only : create_glacier_mec_landunit
-  use surfrdUtilsMod  , only : check_sums_equal_1
+  use surfrdUtilsMod  , only : check_sums_equal_1_2d
   use surfrdUtilsMod  , only : check_sums_equal_1_3d
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
@@ -973,7 +973,7 @@ contains
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
     integer  :: dimid                          ! netCDF id's
     logical  :: readvar                        ! is variable on dataset
-    real(r8),pointer :: array2D(:,:)                 ! local 2D array
+    real(r8),pointer :: array2D(:,:,:)                 ! local 2D array
     character(len=32) :: subname = 'surfrd_pftformat'! subroutine name
 !-----------------------------------------------------------------------
     SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg,max_topounits, natpft_size-1+natpft_lb/)), errMsg(__FILE__, __LINE__))
@@ -1011,13 +1011,13 @@ contains
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     else
-       allocate(array2D(begg:endg,1:cft_ub+1))
+       allocate(array2D(begg:endg,1:max_topounits,1:cft_ub+1))
        call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=array2D, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
-       wt_nat_patch(begg:endg, natpft_lb:natpft_ub) = array2D(begg:endg, natpft_lb+1:natpft_ub+1)
-       wt_cft      (begg:endg, cft_lb   :cft_ub   ) = array2D(begg:endg, cft_lb+1   :cft_ub+1   )
+       wt_nat_patch(begg:endg,:, natpft_lb:natpft_ub) = array2D(begg:endg,:, natpft_lb+1:natpft_ub+1)
+       wt_cft      (begg:endg,:, cft_lb   :cft_ub   ) = array2D(begg:endg,:, cft_lb+1   :cft_ub+1   )
        deallocate(array2D)
     endif
 

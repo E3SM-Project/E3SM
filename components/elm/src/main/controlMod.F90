@@ -879,7 +879,6 @@ contains
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
     write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
-    !write(iulog,*) '    Maximum number of topounits per grid = ', max_topounits
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'
     else

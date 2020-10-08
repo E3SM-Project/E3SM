@@ -632,9 +632,7 @@ contains
     do c = bounds%begc,bounds%endc
        tu = col_pp%topounit(c)
        topo_active_only = top_pp%active(tu) 
-      ! write(iulog,*) trim(subname),' At c = ',c,'is topounit active = ', topo_active_only
        if (topo_active_only) then ! Check only for the valid topounits
-       !   write(iulog,*) trim(subname),' At c = ',c,'total PFT weight is ',sumwtcol(c)
           if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
              write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
                          'active_only = ', active_only
@@ -646,9 +644,7 @@ contains
     do l = bounds%begl,bounds%endl
        tu = lun_pp%topounit(l)
        topo_active_only = top_pp%active(tu) 
-      ! write(iulog,*) trim(subname),' At l = ',l,'is topounit active = ', topo_active_only
        if (topo_active_only) then 
-        !  write(iulog,*) trim(subname),' At l = ',l,'total PFT weight is ',sumwtlunit(l)
           if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
              write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
@@ -659,9 +655,7 @@ contains
     
     do t = bounds%begt,bounds%endt       
        topo_active_only = top_pp%active(t)
-     !  write(iulog,*) trim(subname),' At t = ',t,'is topounit active = ', topo_active_only
        if (topo_active_only) then 
-       !   write(iulog,*) trim(subname),' At t = ',t,'total PFT weight is ',sumwttunit(t)
           if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
              write(iulog,*) trim(subname),' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
                          'active_only = ', active_only
@@ -671,7 +665,6 @@ contains
     end do
 
     do g = bounds%begg,bounds%endg
-     !  write(iulog,*) trim(subname),' At g = ',g,'total PFT weight is ',sumwtgcell(g)
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
           write(iulog,*) trim(subname),' ERROR: at g = ',g,'total PFT weight is ',sumwtgcell(g), &
                          'active_only = ', active_only

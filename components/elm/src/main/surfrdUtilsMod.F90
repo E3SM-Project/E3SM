@@ -172,76 +172,77 @@ contains
    use clm_varpar      , only : cft_size, cft_lb, cft_ub, natpft_lb, natpft_ub
    use pftvarcon       , only : nc3crop
    use landunit_varcon , only : istsoil, istcrop
+   use topounit_varcon , only : max_topounits
    ! !ARGUMENTS:
    implicit none
    integer          , intent(in)    :: begg, endg
    !
    ! !LOCAL VARIABLES:
-   integer  :: g, c    ! index
+   integer  :: g, c,t    ! index
    real(r8) :: wtpft_sum, wtcft_sum, tmp
    real(r8), parameter :: eps = 1.e-14_r8
    !-----------------------------------------------------------------------
 
    do g = begg, endg
+      do t = 1, max_topounits
+         if ( wt_lunit(g,t,istsoil) > 0.0_r8 ) then
 
-      if ( wt_lunit(g,istsoil) > 0.0_r8 ) then
-
-         ! Determine the wt of CFTs
-         wtcft_sum = 0.0_r8
-         do c = cft_lb, cft_ub
-            wtcft_sum = wtcft_sum + wt_cft(g,c)
-         enddo
-
-         if (wtcft_sum > 0.0_r8) then ! Crops are present in the PFTs
-
-            ! Set the CFT landunit fraction and update the PFT landunit fraction
-            wt_lunit(g,istcrop) = wtcft_sum/100._r8 * wt_lunit(g,istsoil)
-            wt_lunit(g,istsoil) = wt_lunit(g,istsoil) - wt_lunit(g,istcrop)
-
-            ! Update the CFT fraction w.r.t. CFT landunit
-            tmp = 0._r8
+            ! Determine the wt of CFTs
+            wtcft_sum = 0.0_r8
             do c = cft_lb, cft_ub
-               wt_cft(g,c) = wt_cft(g,c)/wtcft_sum * 100._r8
-               tmp = tmp + wt_cft(g,c);
+               wtcft_sum = wtcft_sum + wt_cft(g,t,c)
             enddo
-            if (abs(tmp - 100._r8) > eps) then
+
+            if (wtcft_sum > 0.0_r8) then ! Crops are present in the PFTs
+
+               ! Set the CFT landunit fraction and update the PFT landunit fraction
+               wt_lunit(g,t,istcrop) = wtcft_sum/100._r8 * wt_lunit(g,t,istsoil)
+               wt_lunit(g,t,istsoil) = wt_lunit(g,t,istsoil) - wt_lunit(g,t,istcrop)
+
+               ! Update the CFT fraction w.r.t. CFT landunit
+               tmp = 0._r8
                do c = cft_lb, cft_ub
-                  wt_cft(g,c) = wt_cft(g,c) + (100._r8 - tmp)/cft_size
+                  wt_cft(g,t,c) = wt_cft(g,t,c)/wtcft_sum * 100._r8
+                  tmp = tmp + wt_cft(g,t,c);
                enddo
-            endif
+               if (abs(tmp - 100._r8) > eps) then
+                  do c = cft_lb, cft_ub
+                     wt_cft(g,t,c) = wt_cft(g,t,c) + (100._r8 - tmp)/cft_size
+                  enddo
+               endif
 
-            ! Determine the PFT fraction
-            wtpft_sum = 0.0_r8
-            do c = natpft_lb, natpft_ub
-               wtpft_sum = wtpft_sum + wt_nat_patch(g,c)
-            enddo
-
-            if (wtpft_sum > 0.0_r8) then ! PFTs are present
-               ! Update the PFT fraction w.r.t. new PFT landunit
+               ! Determine the PFT fraction
+               wtpft_sum = 0.0_r8
                do c = natpft_lb, natpft_ub
-                  wt_nat_patch(g,c) = wt_nat_patch(g,c)/wtpft_sum * 100._r8
+                  wtpft_sum = wtpft_sum + wt_nat_patch(g,t,c)
                enddo
+
+               if (wtpft_sum > 0.0_r8) then ! PFTs are present
+                  ! Update the PFT fraction w.r.t. new PFT landunit
+                  do c = natpft_lb, natpft_ub
+                     wt_nat_patch(g,t,c) = wt_nat_patch(g,t,c)/wtpft_sum * 100._r8
+                  enddo
+               else
+                  do c = natpft_lb, natpft_ub
+                     wt_nat_patch(g,t,c) = 0._r8
+                  enddo
+               endif
             else
-               do c = natpft_lb, natpft_ub
-                  wt_nat_patch(g,c) = 0._r8
-               enddo
+               ! Crops are not present, so zero out the fraction of crops.
+               ! Assign first CFT 100% and This will not have an impact because the
+               ! fraction of crop landunit is zero.
+               wt_cft(g,t,:) = 0.0_r8
+               wt_cft(g,t,cft_lb) = 100.0_r8
             endif
+
          else
-            ! Crops are not present, so zero out the fraction of crops.
-            ! Assign first CFT 100% and This will not have an impact because the
-            ! fraction of crop landunit is zero.
-            wt_cft(g,:) = 0.0_r8
-            wt_cft(g,cft_lb) = 100.0_r8
-         endif
-
-      else
-         ! Natural vegetation landunit is not present, so crop landunit is also
-         ! not present
-         wt_cft(g,:) = 0.0_r8
-         wt_cft(g,cft_lb) = 100.0_r8
-      end if
+            ! Natural vegetation landunit is not present, so crop landunit is also
+            ! not present
+            wt_cft(g,t,:) = 0.0_r8
+            wt_cft(g,t,cft_lb) = 100.0_r8
+         end if
+      end do
    end do
-
  end subroutine convert_pft_to_cft
 
  !-----------------------------------------------------------------------

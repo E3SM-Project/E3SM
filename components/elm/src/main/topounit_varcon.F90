@@ -100,7 +100,7 @@ module topounit_varcon
        call ncd_inqdlen(ncid, dimid, topounits_size)  ! Get the dimension size of topounit from file
        max_topounits = topounits_size
     endif
-    if(has_topounit .and. max_topounits > 1) then
+    if(max_topounits > 1) then
        call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
        if (readvar) then
           call ncd_io(ncid=ncid, varname= 'topoPerGrid', flag='read', data=ldomain%num_tunits_per_grd, &
