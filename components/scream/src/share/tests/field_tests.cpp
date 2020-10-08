@@ -4,6 +4,9 @@
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_repository.hpp"
+#include "share/field/field_positivity_check.hpp"
+#include "share/field/field_boundedness_check.hpp"
+#include "share/field/field_monotonicity_check.hpp"
 
 #include "ekat/ekat_pack.hpp"
 
@@ -237,6 +240,119 @@ TEST_CASE("field_repo", "") {
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_3"));
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_4"));
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_6"),"Field_4"));
+}
+
+TEST_CASE("field_property_check", "") {
+
+  using namespace scream;
+  using namespace ekat::units;
+
+  using Device = DefaultDevice;
+
+  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
+  std::vector<int> dims = {2, 3, 12};
+
+  FieldIdentifier fid ("field_1", tags, m/s);
+  fid.set_dimensions(dims);
+
+  // Check positivity.
+  SECTION ("field_positivity_check") {
+    Field<Real,Device> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real, Device> >();
+    REQUIRE(not positivity_check->can_repair());
+    f1.add_property_check(positivity_check);
+    f1.allocate_view();
+
+    // Assign positive values to the field and make sure it passes our test for
+    // positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    printf("view extent 0: %d\n", host_view.extent(0));
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = i+1;
+      printf("view(%d) = %g\n", i, host_view(i));
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign non-positive values to the field and make sure it fails the check.
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = -i;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+    }
+  }
+
+  // Check positivity with repairs.
+  SECTION ("field_positivity_check_with_repairs") {
+    Field<Real,Device> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real, Device> >(1);
+    REQUIRE(positivity_check->can_repair());
+    f1.add_property_check(positivity_check);
+    f1.allocate_view();
+
+    // Assign non-positive values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+      host_view(i) = -i;
+    });
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+      iter->repair(f1);
+      REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check if we can extract a reshaped view
+  SECTION ("reshape simple") {
+    Field<Real,Device> f1 (fid);
+
+    // Should not be able to reshape before allocating
+    REQUIRE_THROWS(f1.get_reshaped_view<Real*>());
+
+    f1.allocate_view();
+
+    // Should not be able to reshape to this data type
+    REQUIRE_THROWS(f1.get_reshaped_view<Pack<Real,8>>());
+
+    auto v1d = f1.get_view();
+    auto v3d = f1.get_reshaped_view<Real[2][3][12]>();
+    REQUIRE(v3d.size()==v1d.size());
+  }
+
+  // Check if we can request multiple value types
+  SECTION ("reshape multiple value types") {
+    Field<Real,Device> f1 (fid);
+    f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
+    f1.allocate_view();
+
+    auto v1d = f1.get_view();
+    auto v3d_1 = f1.get_reshaped_view<Pack<Real,8>***>();
+    auto v3d_2 = f1.get_reshaped_view<Pack<Real,4>***>();
+    auto v3d_3 = f1.get_reshaped_view<Real***>();
+    auto v3d_4 = f1.get_reshaped_view<Real[2][3][16]>();
+
+    // The memory spans should be identical
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_2.impl_map().memory_span());
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_3.impl_map().memory_span());
+    REQUIRE (v3d_1.impl_map().memory_span()==v3d_4.impl_map().memory_span());
+
+    // Sizes differ, since they are in terms of the stored value type.
+    // Each Pack<Real,8> corresponds to two Pack<Real,4>, which corresponds to 4 Real's.
+    REQUIRE(2*v3d_1.size()==v3d_2.size());
+    REQUIRE(8*v3d_1.size()==v3d_3.size());
+    REQUIRE(8*v3d_1.size()==v3d_4.size());
+
+    // Trying to reshape into something that the allocation cannot accommodate should throw
+    REQUIRE_THROWS (f1.get_reshaped_view<Pack<Real,32>***>());
+  }
 }
 
 } // anonymous namespace

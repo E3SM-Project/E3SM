@@ -48,7 +48,7 @@ public:
   // class to provide simple access to the property checks.
   using property_check_type = FieldPropertyCheck<ScalarType, device_type>;
   using property_check_list = pointer_list<std::shared_ptr<property_check_type>,
-                                           const property_check_type>;
+                                           property_check_type>;
   using property_check_iterator = typename property_check_list::const_iterator;
 
   // Constructor(s)

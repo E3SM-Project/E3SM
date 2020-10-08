@@ -27,6 +27,14 @@ public:
   // Constructor(s)
   FieldPropertyCheck () = default;
 
+  // No copy constructor.
+  FieldPropertyCheck(const FieldPropertyCheck&) = delete;
+
+  // No assignment operator, either.
+  FieldPropertyCheck& operator=(const FieldPropertyCheck&) = delete;
+
+  virtual ~FieldPropertyCheck() {}
+
   // Override this method to perform a property check on a Field. The method
   // returns true if the property check passes, and false if it fails.
   virtual bool check(const Field<ScalarType, Device>& field) const = 0;
