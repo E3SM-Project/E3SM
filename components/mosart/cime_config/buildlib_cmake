@@ -42,9 +42,6 @@ def buildlib(bldroot, installpath, case):
 
     with open(os.path.join(casebuild, "mosartconf", "Filepath"), "w") as fd:
         fd.write(filepaths)
-
-    with open(os.path.join(casebuild, "mosartconf", "CCSM_cppdefs"), "w") as fd:
-        fd.write("")
     with open(os.path.join(casebuild, "mosartconf", "CIME_cppdefs"), "w") as fd:
         fd.write("")
 

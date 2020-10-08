@@ -29,12 +29,10 @@ def buildlib(bldroot, installpath, case):
     cppdefs      = case.get_value("CICE_CPPDEFS")
 
     #-------------------------------------------------------
-    # compute all cppdefs, unlike other components, needs to make a CCSM_cppdefs and CIME_cppdefs file
+    # compute all cppdefs, unlike other components, needs to make a CIME_cppdefs file
     #-------------------------------------------------------
 
     cppdefs += " -DBLCKX={} -DBLCKY={} -DMXBLCKS={}\n".format(cice_blckx, cice_blcky, cice_mxblcks)
-    with open(os.path.join(casebuild, "ciceconf", "CCSM_cppdefs"), "w") as fd:
-        fd.write(cppdefs)
     with open(os.path.join(casebuild, "ciceconf", "CIME_cppdefs"), "w") as fd:
         fd.write(cppdefs)
 
