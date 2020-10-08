@@ -781,25 +781,23 @@ struct CaarFunctorImpl {
     auto u_vadv = viewAsReal(Homme::subview(m_buffers.v_tens,kv.team_idx,0,igp,jgp));
     auto v_vadv = viewAsReal(Homme::subview(m_buffers.v_tens,kv.team_idx,1,igp,jgp));
 
-    Real facp, facm;
-
     // TODO: vectorize this code.
-    facp = 0.5*(eta_dot_dpdn(1)/dp(0));
-    u_vadv(0) = facp*(u(1)-u(0));
-    v_vadv(0) = facp*(v(1)-v(0));
+    const auto facp_1 = 0.5*eta_dot_dpdn(1)/dp(0);
+    u_vadv(0) = facp_1*(u(1)-u(0));
+    v_vadv(0) = facp_1*(v(1)-v(0));
 
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV-1),
                          [&](const int k) {
-      facp = 0.5*eta_dot_dpdn(k+1)/dp(k);
-      facm = 0.5*eta_dot_dpdn(k)/dp(k);
+      const auto facp = 0.5*eta_dot_dpdn(k+1)/dp(k);
+      const auto facm = 0.5*eta_dot_dpdn(k)/dp(k);
       u_vadv(k) = facp*(u(k+1)-u(k)) + facm*(u(k)-u(k-1));
       v_vadv(k) = facp*(v(k+1)-v(k)) + facm*(v(k)-v(k-1));
     });
 
     constexpr int last = NUM_PHYSICAL_LEV-1;
-    facm = 0.5*(eta_dot_dpdn(last)/dp(last));
-    u_vadv(last) = facm*(u(last)-u(last-1));
-    v_vadv(last) = facm*(v(last)-v(last-1));
+    const auto facm_N = 0.5*eta_dot_dpdn(last)/dp(last);
+    u_vadv(last) = facm_N*(u(last)-u(last-1));
+    v_vadv(last) = facm_N*(v(last)-v(last-1));
   }
 
   KOKKOS_INLINE_FUNCTION
