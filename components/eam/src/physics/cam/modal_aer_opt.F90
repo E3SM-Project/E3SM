@@ -34,6 +34,7 @@ use cam_abortutils,        only: endrun
 
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
+use shr_log_mod ,           only: errmsg => shr_log_errmsg
 
 implicit none
 private
@@ -119,7 +120,6 @@ subroutine modal_aer_opt_init()
 
    use ioFileMod,        only: getfil
    use phys_control,     only: phys_getopts
-   use shr_log_mod ,     only: errmsg => shr_log_errmsg
 
    ! Local variables
 
@@ -608,7 +608,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
            qaerwat_m, wetdens_m)
    else
-      call endrun('BALLI-no diag support')
+      call endrun('Radiation diagnostic calls are temporarily not supported,' // &
+                 ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
@@ -1276,6 +1277,8 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
            qaerwat_m, wetdens_m)
    else
+      call endrun('Radiation diagnostic calls are temporarily not supported,' // &
+                 ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
