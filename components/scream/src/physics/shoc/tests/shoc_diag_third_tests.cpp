@@ -215,7 +215,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize();
+      d.randomize({{d.thetal, {300, 301}}});
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
