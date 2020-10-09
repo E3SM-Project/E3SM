@@ -1345,6 +1345,8 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       end do
    endif
 
+   !Do not call outfld if ptend is not present
+   if(.not. ptend_present) return
    !
    ! do outfld calls
    !
