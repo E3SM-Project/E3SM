@@ -36,7 +36,8 @@ module atm_comp_mct
   use cam_restart      , only: get_restcase, get_restartdir
   use cam_history      , only: outfld, ctitle
   use cam_abortutils       , only: endrun
-  use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename
+  use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename, &
+                               hostname, username, version
 #ifdef SPMD
   use spmd_utils       , only: spmdinit, masterproc, iam, npes, nsmps, &
                                proc_smp_map
@@ -259,6 +260,7 @@ CONTAINS
             start_type=starttype,                                                     &
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
+            hostname=hostname, username=username, model_version=version,              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present,                         & 
