@@ -1427,6 +1427,9 @@
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
 
+<!-- Control output to create prescribed aerosol climatology -->
+<get_presc_aero_data>       .false. </get_presc_aero_data>
+
 <!-- physics chunk first dimension upper bound,
      encoding empirically-determined defaults -->
 <phys_chnk_fdim_max > 16 </phys_chnk_fdim_max>
