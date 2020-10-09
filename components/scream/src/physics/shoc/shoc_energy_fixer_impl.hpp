@@ -55,7 +55,7 @@ void Functions<S,D>::shoc_energy_fixer(
   team.team_barrier();
 
   // Compute the host timestep
-  const Scalar hdtime = dtime*float(nadv);
+  const Scalar hdtime = dtime*nadv;
 
   // Compute the total energy before and after SHOC call
   const auto s_rho_zi = ekat::scalarize(rho_zi);
@@ -65,21 +65,29 @@ void Functions<S,D>::shoc_energy_fixer(
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;
   te_b += (shf+lhf*(lcond+lice))*hdtime;
 
+  //Find which pack and pack index corresponds to shoctop
+  int shoctop_pack = shoctop/Spack::n;
+  int shoctop_indx = shoctop%Spack::n;
+
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
-  const auto s_tke = ekat::scalarize(tke);
-  const auto s_pint = ekat::scalarize(pint);
-  while (s_tke(shoctop) == mintke && shoctop < nlev-2) {
+  while (tke(shoctop_pack)[shoctop_indx] == mintke && shoctop < nlev-2) {
     shoctop += 1;
+
+    // Update indices for shoctop
+    shoctop_pack = shoctop/Spack::n;
+    shoctop_indx = shoctop%Spack::n;
   }
 
+  const auto nlevi_pack = ekat::npack<Spack>(nlevi)-1;
+  const int nlevi_indx = (nlevi-1)%Spack::n;
+
   // Compute the disbalance of total energy, over depth where SHOC is active.
-  se_dis = (te_a - te_b)/(s_pint(nlevi-1) - s_pint(shoctop));
+  se_dis = (te_a - te_b)/(pint(nlevi_pack)[nlevi_indx] - pint(shoctop_pack)[shoctop_indx]);
 
   // Update host_dse
-  const int begin_pack = shoctop/Spack::n;
   const auto nlev_packs = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, begin_pack, nlev_packs), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
     auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
 
     host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k)-se_dis*ggr);
