@@ -440,6 +440,7 @@ contains
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
+    logical :: get_presc_aero_data      ! produce verbose history output
 
     !-----------------------------------------------------------------------
 
