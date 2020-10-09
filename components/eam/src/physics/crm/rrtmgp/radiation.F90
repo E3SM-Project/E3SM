@@ -1069,7 +1069,8 @@ contains
    subroutine radiation_tend(state_in,ptend,    pbuf,          cam_out, cam_in,  &
                              landfrac,landm,    icefrac,       snowh,            &
                              fsns,    fsnt,     flns,          flnt,             &
-                             fsds,    net_flux, is_cmip6_volc                    )
+                             fsds,    net_flux, is_cmip6_volc, dt,               &
+                             clear_rh                                            )
 
       ! Performance module needed for timing functions
       use perf_mod, only: t_startf, t_stopf
@@ -1144,6 +1145,11 @@ contains
       ! This should be module data or something specific to aerosol where it is
       ! used?
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      real(r8),  intent(in)   :: dt               ! time step(s) - needed for aerosol optics call
+
+      real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity
+                                                                 ! that gets passed to modal_aero_wateruptake_dr
 
       ! These are not used anymore and exist only because the radiation call is
       ! inflexible
@@ -1458,10 +1464,16 @@ contains
                if (do_aerosol_rad) then
                   if (radiation_do('sw')) then
                      call t_startf('rad_aerosol_optics_sw')
-                     call set_aerosol_optics_sw( &
-                        icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                        aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
-                     )
+                     if(present(clear_rh)) then
+                        call set_aerosol_optics_sw( &
+                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
+                             clear_rh=clear_rh)
+                     else
+                        call set_aerosol_optics_sw( &
+                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw)
+                     endif
                      ! Now reorder bands to be consistent with RRTMGP
                      ! TODO: fix the input files themselves!
                      do icol = 1,size(aer_tau_bnd_sw,1)
@@ -1478,7 +1490,7 @@ contains
                   end if ! radiation_do('sw')
                   if (radiation_do('lw')) then
                      call t_startf('rad_aerosol_optics_lw')
-                     call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
+                     call set_aerosol_optics_lw(icall, dt, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
                      call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
                      call t_stopf('rad_aerosol_optics_lw')
                   end if ! radiation_do('lw')
