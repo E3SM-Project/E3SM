@@ -123,7 +123,7 @@ end subroutine aer_rad_props_init
 
 !==============================================================================
 
-subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
+subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f)
 
    ! Return bulk layer tau, omega, g, f for all spectral intervals.
@@ -136,6 +136,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    integer,             intent(in) :: nnite                ! number of night columns
    integer,             intent(in) :: idxnite(:)           ! local column indices of night columns
    logical,             intent(in) :: is_cmip6_volc        ! true if cmip6 style volcanic file is read otherwise false
+   real(r8),            intent(in) :: dt                   ! time step (s)
 
    real(r8), intent(out) :: tau    (pcols,0:pver,nswbands) ! aerosol extinction optical depth
    real(r8), intent(out) :: tau_w  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
@@ -262,7 +263,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
+      call modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
                          tau, tau_w, tau_w_g, tau_w_f)
    else
       tau    (1:ncol,:,:) = 0._r8
@@ -346,7 +347,7 @@ end subroutine aer_rad_props_sw
 
 !==============================================================================
 
-subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
+subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer)
 
    use radconstants,  only: ot_length
 
@@ -360,6 +361,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
    ! Arguments
    logical,             intent(in)  :: is_cmip6_volc
    integer,             intent(in)  :: list_idx                      ! index of the climate or a diagnostic list
+   real(r8),            intent(in)  :: dt                            ! time step(s)
    type(physics_state), intent(in), target :: state
    
    type(physics_buffer_desc), pointer :: pbuf(:)
@@ -418,7 +420,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_lw(list_idx, state, pbuf, odap_aer)
+      call modal_aero_lw(list_idx, dt, state, pbuf, odap_aer)
    else
       odap_aer = 0._r8
    end if
