@@ -48,6 +48,15 @@ public:
   // repair is successful. NOTE the const in this method!
   virtual void repair(Field<ScalarType, Device>& field) const = 0;
 
+  // Override this method to provide a more efficient way to check and repair
+  // a field in a single pass (applicable only to property checks that can
+  // repair a field).
+  virtual void check_and_repair(Field<ScalarType, Device>& field) const {
+    if (!check(field) && can_repair()) {
+      repair(field);
+    }
+  }
+
 };
 
 } // namespace scream
