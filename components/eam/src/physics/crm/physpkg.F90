@@ -2985,7 +2985,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc)
+         fsds, net_flx,is_cmip6_volc, ztodt, clear_rh=mmf_clear_rh)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

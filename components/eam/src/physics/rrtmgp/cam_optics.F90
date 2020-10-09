@@ -468,7 +468,8 @@ contains
    subroutine set_aerosol_optics_sw(icall, dt, state, pbuf, &
                                     night_indices, &
                                     is_cmip6_volc, &
-                                    tau_out, ssa_out, asm_out)
+                                    tau_out, ssa_out, asm_out, &
+                                    clear_rh)
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
@@ -481,6 +482,8 @@ contains
       integer, intent(in) :: night_indices(:)
       logical, intent(in) :: is_cmip6_volc
       real(r8), intent(out), dimension(:,:,:) :: tau_out, ssa_out, asm_out
+      real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity
+                                                                 ! that gets passed to modal_aero_wateruptake_dr
 
       ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
       ! account for the extra layer added above model top, but it is not entirely
@@ -504,9 +507,15 @@ contains
       tau_w = 0._r8
       tau_w_g = 0._r8
       tau_w_f = 0._r8
-      call aer_rad_props_sw(icall, dt, state, pbuf, &
-                            count(night_indices > 0), night_indices, is_cmip6_volc, &
-                            tau, tau_w, tau_w_g, tau_w_f)
+      if(present(clear_rh)) then
+         call aer_rad_props_sw(icall, dt, state, pbuf, &
+              count(night_indices > 0), night_indices, is_cmip6_volc, &
+              tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
+      else
+         call aer_rad_props_sw(icall, dt, state, pbuf, &
+              count(night_indices > 0), night_indices, is_cmip6_volc, &
+              tau, tau_w, tau_w_g, tau_w_f)
+      endif
 
       ! Extract quantities from products
       do icol = 1,ncol

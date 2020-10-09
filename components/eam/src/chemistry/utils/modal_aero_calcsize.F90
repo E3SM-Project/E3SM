@@ -510,7 +510,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    integer  :: lchnk                ! chunk identifier
    integer  :: ncol                 ! number of columns
-   integer  :: list_idx_local
 
    real(r8), pointer :: t(:,:)      ! Temperature in Kelvin
    real(r8), pointer :: pmid(:,:)   ! pressure at model levels (Pa)
@@ -609,10 +608,9 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       do_aitacc_transfer = do_aitacc_transfer_default
    end if
 
-   list_idx_local = 0
    if(present(list_idx_in)) then
-      if(.not. present(dgnumdry_m)) call endrun('list_idx_in is present but dgnumdry_m pointer is missing'//errmsg(__FILE__,__LINE__))
-      list_idx_local = list_idx_in
+      if(.not. present(dgnumdry_m)) call endrun('list_idx_in is present but dgnumdry_m' // &
+      ' pointer is missing'//errmsg(__FILE__,__LINE__))
    endif
 
    lchnk = state%lchnk
@@ -1481,7 +1479,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-   if (list_idx /= 0) then
+   if (present(list_idx_in)) then
       if (.not. present(dgnum_m)) then
          call endrun('modal_aero_calcsize_diag called for'// &
                      'diagnostic list but dgnum_m pointer not present')
@@ -1494,7 +1492,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    do n = 1, nmodes
 
-      if (list_idx == 0) then
+      if (.not.present(dgnum_m)) then
          call pbuf_get_field(pbuf, dgnum_idx, dgncur_a, start=(/1,1,n/), kount=(/pcols,pver,1/))
       else
          dgncur_a => dgnum_m(:,:,n)
