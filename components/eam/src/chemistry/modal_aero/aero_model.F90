@@ -1537,7 +1537,7 @@ contains
     ! for prognostic modal aerosols the transfer of mass between aitken and 
     ! accumulation modes is done in conjunction with the dry radius calculation
     call t_startf('calcsize')
-    call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
+    call modal_aero_calcsize_sub(state, dt, pbuf, ptend)
     call t_stopf('calcsize')
     
     ! Aerosol water uptake
