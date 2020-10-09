@@ -465,7 +465,7 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine set_aerosol_optics_sw(icall, state, pbuf, &
+   subroutine set_aerosol_optics_sw(icall, dt, state, pbuf, &
                                     night_indices, &
                                     is_cmip6_volc, &
                                     tau_out, ssa_out, asm_out)
@@ -475,6 +475,7 @@ contains
       use aer_rad_props, only: aer_rad_props_sw
       use radconstants, only: nswbands
       integer, intent(in) :: icall
+      real(r8), intent(in):: dt
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       integer, intent(in) :: night_indices(:)
@@ -503,7 +504,7 @@ contains
       tau_w = 0._r8
       tau_w_g = 0._r8
       tau_w_f = 0._r8
-      call aer_rad_props_sw(icall, state, pbuf, &
+      call aer_rad_props_sw(icall, dt, state, pbuf, &
                             count(night_indices > 0), night_indices, is_cmip6_volc, &
                             tau, tau_w, tau_w_g, tau_w_f)
 
@@ -531,7 +532,7 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, tau)
+   subroutine set_aerosol_optics_lw(icall, dt, state, pbuf, is_cmip6_volc, tau)
      
       use ppgrid, only: pcols, pver
       use physics_types, only: physics_state
@@ -541,6 +542,7 @@ contains
       use radconstants, only: nlwbands
 
       integer, intent(in) :: icall
+      real(r8), intent(in) :: dt   ! time step(s)
       type(physics_state), intent(in) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       logical, intent(in) :: is_cmip6_volc
@@ -551,7 +553,7 @@ contains
 
       ! Get aerosol absorption optical depth from CAM routine
       tau = 0._r8
-      call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, tau)
+      call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, tau)
 
    end subroutine set_aerosol_optics_lw
 
