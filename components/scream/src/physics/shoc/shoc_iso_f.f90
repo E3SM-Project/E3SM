@@ -282,6 +282,43 @@ subroutine shoc_pblintd_cldcheck_f(shcol, nlev, nlevi, zi, cldn, pblh) bind(C)
   real(kind=c_real), intent(inout) :: pblh(shcol)
 end subroutine shoc_pblintd_cldcheck_f
 
+subroutine compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in) :: pblh(shcol)
+  real(kind=c_real), intent(inout) :: conv_vel(shcol)
+  real(kind=c_real), intent(out) :: tscale(shcol)
+
+end subroutine compute_conv_time_shoc_length_f
+
+subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
+                         tke, zt_grid, zi_grid, dz_zt, dz_zi, wthv_sec, thetal, thv, &
+                         brunt, shoc_mix) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: shcol
+  integer(kind=c_int), intent(in), value :: nlev
+  integer(kind=c_int), intent(in), value :: nlevi
+
+  real(kind=c_real), intent(in) :: host_dx(shcol)
+  real(kind=c_real), intent(in) :: host_dy(shcol)
+  real(kind=c_real), intent(in) :: pblh(shcol)
+
+  real(kind=c_real), intent(in) :: tke(shcol,nlev)
+  real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+  real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+  real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+  real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+  real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
+  real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+  real(kind=c_real), intent(in) :: thv(shcol,nlev)
+
+  real(kind=c_real), intent(out) :: brunt(shcol,nlev)
+  real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
+
+end subroutine shoc_length_f
+
 end interface
 
 end module shoc_iso_f

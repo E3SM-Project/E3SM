@@ -249,6 +249,31 @@ struct Functions
     const Scalar& zi, const Scalar& cldn,
     Scalar& pblh);
 
+  KOKKOS_FUNCTION
+  static void compute_conv_time_shoc_length(
+    const Scalar& pblh,
+    Scalar&       conv_vel,
+    Scalar&       tscale);
+
+  KOKKOS_FUNCTION
+  static void shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                host_dx,
+    const Scalar&                host_dy,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& thetal,
+    const uview_1d<const Spack>& thv,
+    const uview_1d<Spack>&       thv_zi,
+    const uview_1d<Spack>&       brunt,
+    const uview_1d<Spack>&       shoc_mix);
 }; // struct Functions
 
 } // namespace shoc
@@ -278,6 +303,8 @@ struct Functions
 # include "shoc_compute_conv_vel_shoc_length_impl.hpp"
 # include "shoc_diag_obklen_impl.hpp"
 # include "shoc_pblintd_cldcheck_impl.hpp"
+# include "shoc_compute_conv_time_shoc_length_impl.hpp"
+#include "shoc_length_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
