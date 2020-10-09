@@ -1029,7 +1029,7 @@ contains
    subroutine radiation_tend(state,   ptend,    pbuf,          cam_out, cam_in,  &
                              landfrac,landm,    icefrac,       snowh,            &
                              fsns,    fsnt,     flns,          flnt,             &
-                             fsds,    net_flux, is_cmip6_volc                    )
+                             fsds,    net_flux, is_cmip6_volc, dt                )
 
       ! Performance module needed for timing functions
       use perf_mod, only: t_startf, t_stopf
@@ -1092,6 +1092,8 @@ contains
       ! This should be module data or something specific to aerosol where it is
       ! used?
       logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+
+      real(r8),  intent(in)   :: dt               ! time step(s) - needed for aerosol optics call
 
       ! These are not used anymore and exist only because the radiation call is
       ! inflexible
@@ -1318,7 +1320,7 @@ contains
                   aer_ssa_bnd_sw = 0._r8
                   aer_asm_bnd_sw = 0._r8
                   call set_aerosol_optics_sw( &
-                     icall, state, pbuf, &
+                     icall, dt, state, pbuf, &
                      night_indices(1:nnight), &
                      is_cmip6_volc, &
                      aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
@@ -1416,7 +1418,7 @@ contains
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
                   aer_tau_bnd_lw = 0._r8
-                  call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau_bnd_lw)
+                  call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, aer_tau_bnd_lw)
                   call t_stopf('rad_aer_optics_lw')
                else
                   aer_tau_bnd_lw = 0
