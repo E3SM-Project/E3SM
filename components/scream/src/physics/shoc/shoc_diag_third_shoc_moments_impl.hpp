@@ -41,7 +41,7 @@ void Functions<S,D>::diag_third_shoc_moments(
   // Interpolate variables onto the interface levels
   linear_interp(team,zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,0);
   linear_interp(team,zt_grid,zi_grid,brunt,brunt_zi,nlev,nlevi,largeneg);
-  linear_interp(team,zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,(2.0/3.0)*mintke);
+  linear_interp(team,zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,sp(2.0/3.0)*mintke);
   linear_interp(team,zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,0);
   team.team_barrier();
 
