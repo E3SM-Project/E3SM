@@ -617,8 +617,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
       call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
       !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      !call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-      !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+      call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
+           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,called_from='abc')
+      dgnumdry_m = 0.0_r8
    else
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes
@@ -1304,8 +1305,9 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
    if (list_idx == 0) then
       call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
       call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
+      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
       !call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-      !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+      !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m, called_from="abc")
    else
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes

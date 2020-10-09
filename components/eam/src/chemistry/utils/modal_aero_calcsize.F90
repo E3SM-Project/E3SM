@@ -545,7 +545,7 @@ end subroutine modal_aero_calcsize_init
 !===============================================================================
 
 subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
-   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m)
+   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m, called_from)
 
   implicit none
    !-----------------------------------------------------------------------
@@ -576,6 +576,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    logical,  optional, intent(in) :: update_mmr_in
    integer,  optional, intent(in) :: list_idx_in    ! diagnostic list index
    real(r8), optional, pointer    :: dgnumdry_m(:,:,:) ! interstital aerosol dry number mode radius (m)
+   character(len=*), optional :: called_from
 
 #ifdef MODAL_AERO
 
@@ -641,6 +642,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    !-----------------------------------------------------------------------
    integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
+   integer :: nballi
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -668,7 +670,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       list_idx_local  = list_idx_in
       if (.not. present(dgnumdry_m)) &
            call endrun('list_idx_in is present but dgnumdry_m pointer is missing'//errmsg(__FILE__,__LINE__))
-      dgncur_a => dgnumdry_m(:,:,:)
+      !dgncur_a => dgnumdry_m(:,:,:)
+      if(.not. associated(dgncur_a))allocate(dgncur_a(pcols,pver,ntot_amode))
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
@@ -682,8 +685,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
-      dqqcwdt(:,:,:)  = huge(dqqcwdt)
-      qsrflx(:,:,:,:) = huge(qsrflx)
+      dqqcwdt(:,:,:)  = 0.0_r8!huge(dqqcwdt)
+      qsrflx(:,:,:,:) = 0.0_r8!huge(qsrflx)
    endif
 
    pdel     => state%pdel !Only required if update_mmr = .true.
@@ -703,21 +706,27 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    !inverse of time step
    deltatinv = 1.0_r8/(deltat*close_to_one)
 
+   if(present(called_from) .and. trim(called_from) == 'abc')write(110,*)'BALLI_abc_1',update_mmr, do_adjust, do_aitacc_transfer, list_idx_local
 
+   call rad_cnst_get_info(list_idx_local, nmodes=nballi)
+
+
+ 
    !Now compute dry diameter for both interstitial and cloud borne aerosols
-   do imode = 1, ntot_amode
+   do imode = 1, nballi
 
       !----------------------------------------------------------------------
       !Initialize all parameters to the default values for the mode
       !----------------------------------------------------------------------
       !interstitial
-      call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
-           dgncur_a, v2ncur_a, dryvol_a)                               !output
 
+      call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
+           dgncur_a, v2ncur_a, dryvol_a,called_from)                               !output
+
+      if(.not. (present(called_from) .and. trim(called_from) == 'abc')) then
       !cloud borne
       call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
            dgncur_c, v2ncur_c, dryvol_c)                               !output
-
       !----------------------------------------------------------------------
       !Find # of species in this mode
       !----------------------------------------------------------------------
@@ -735,7 +744,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       !----------------------------------------------------------------------
       call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
 
-
       ! do size adjustment based on computed dry diameter values
       call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
            do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,                  & !input
@@ -743,10 +751,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
            drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
            num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
            dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)                                              !output
+      endif
 
    end do  ! do imode = 1, ntot_amode
 
-
+   if(present(called_from) .and. trim(called_from) == 'abc') then
+      write(110,*)'BALLI_abc_0 RETURNING'
+      return
+   endif
    !------------------------------------------------------------------------------
    ! when the aitken mode mean size is too big, the largest
    !    aitken particles are transferred into the accum mode
@@ -853,7 +865,7 @@ end subroutine modal_aero_calcsize_sub
 !---------------------------------------------------------------------------------------------
 
 subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
-     dgncur, v2ncur, dryvol )                                       !output
+     dgncur, v2ncur, dryvol, called_from )                                       !output
 
   !-----------------------------------------------------------------------------
   !Purpose: Set initial defaults for the dry diameter, volume to num
@@ -874,15 +886,21 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   real(r8), intent(out) :: dgncur(:,:,:) !diameter
   real(r8), intent(out) :: v2ncur(:,:,:) !volume to number
   real(r8), intent(out) :: dryvol(:,:)   !dry volume
+  character(len=*),optional :: called_from
 
   !local variables
   integer :: icol, klev
 
   do klev = top_lev, pver
      do icol = 1, ncol
+        !if(.not. (present(called_from) .and. trim(called_from) == 'abc') ) then
         dgncur(icol,klev,imode) = dgnum_amode(imode)     !diameter
+        !else
+           !print*,'BALLI:',dgnum_amode(imode)
+        !endif
         v2ncur(icol,klev,imode) = voltonumb_amode(imode) !volume to number
         dryvol(icol,klev)       = 0.0_r8                 !initialize dry vol
+
      end do
   end do
 
