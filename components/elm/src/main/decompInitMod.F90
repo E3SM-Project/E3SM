@@ -417,7 +417,7 @@ contains
        an  = ldecomp%gdc2glo(anumg)
        cid = lcid(an)
        ln  = anumg
-       if(has_topounit .and. max_topounits > 1) then
+       if(max_topounits > 1) then
           if (present(glcmask)) then
              call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                  ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln))
@@ -757,7 +757,7 @@ contains
     ! Determine gcount, tcount, lcount, ccount and pcount
 
     do gi = begg,endg
-       if(has_topounit .and. max_topounits > 1) then
+       if(max_topounits > 1) then
           if (present(glcmask)) then
              call subgrid_get_gcellinfo (gi, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                  ncohorts=icohorts, glcmask=glcmask(gi), num_tunits_per_grd= ldomain%num_tunits_per_grd(gi) )
@@ -1845,7 +1845,7 @@ contains
 
        do anumg = begg,endg
           ln  = anumg
-          if(has_topounit .and. max_topounits > 1) then
+          if(max_topounits > 1) then
              if (present(glcmask)) then
                 call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                      ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )

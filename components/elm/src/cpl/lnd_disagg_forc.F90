@@ -486,31 +486,10 @@ contains
        
        lwrad_t = lwrad_g + lnd2atm_vars%eflx_lwrad_out_grc(g) * &
           4._r8 * (tair_t - tair_g) / tsfc_g
-!       if (masterproc) then  ! TKT debugging
-!            write(iulog,*) ' lwrad_g =  ', lwrad_g 
-!            write(iulog,*) ' lnd2atm_vars%eflx_lwrad_out_grc(g) ', lnd2atm_vars%eflx_lwrad_out_grc(g) 
-!            write(iulog,*) ' tair_t ',tair_t
-!            write(iulog,*) ' tair_g ',tair_g
-!            write(iulog,*) ' tsfc_g ',tsfc_g
-!            write(iulog,*) ' lwrad_t ',lwrad_t
-!       end if
        
     end if
        top_af%lwrad(t) = lwrad_t
 
-!            newsum_lwrad_g = newsum_lwrad_g + top_pp%wtgcell(t)*lwrad_t
-
-
-       ! Make sure that, after normalization, the grid cell mean is conserved
-!           if (sum_wts_g > 0._r8) then
-!               if (abs((newsum_lwrad_g / sum_wts_g) - lwrad_g) > 1.e-8_r8) then
-!                  write(iulog,*) 'g, newsum_lwrad_g, sum_wts_g, forc_lwrad_g: ', &
-!                       g, newsum_lwrad_g, sum_wts_g, lwrad_g
-!                  call endrun(msg=' ERROR: Energy conservation error downscaling longwave'//&
-!                       errMsg(__FILE__, __LINE__))
-!               end if
-!            end if
-   
   end subroutine downscale_longwave_to_topounit
   
   !-------------------------------------------------------
@@ -564,17 +543,6 @@ contains
     else
        deltaS = (snow_g*(hrise/mxEl))
     end if
-    !if (masterproc) then  ! TKT debugging
-    !   write(iulog,*) ' uovern_t =  ', uovern_t 
-    !   write(iulog,*) ' grdElv ', grdElv 
-    !   write(iulog,*) ' topoElv ', topoElv       
-    !   write(iulog,*) ' mxElv ', mxElv
-    !   write(iulog,*) ' rain_g ', rain_g
-    !   write(iulog,*) ' snow_g ', snow_g
-    !   write(iulog,*) ' hrise ', hrise
-    !   write(iulog,*) ' deltaR ', deltaR
-    !   write(iulog,*) ' deltaS ', deltaS
-    !end if
   end subroutine downscale_precip_to_topounit_FNM  
   
   !-------------------------------------------------------

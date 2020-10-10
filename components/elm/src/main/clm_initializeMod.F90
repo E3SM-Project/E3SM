@@ -293,7 +293,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
-    if(has_topounit .and. max_topounits > 1) then    
+    if(max_topounits > 1) then    
        if (create_glacier_mec_landunit) then
           call decompInit_clumps(ldomain%glcmask,ldomain%num_tunits_per_grd)
           call decompInit_ghosts(ldomain%glcmask,ldomain%num_tunits_per_grd)
@@ -355,7 +355,7 @@ contains
     call initGridCells()
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
-    if(has_topounit .and. max_topounits > 1) then 
+    if(max_topounits > 1) then 
        if (create_glacier_mec_landunit) then
           call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
        else

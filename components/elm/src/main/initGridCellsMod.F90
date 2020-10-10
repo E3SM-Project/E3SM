@@ -131,7 +131,7 @@ contains
           tmp_tpu = ldomain%num_tunits_per_grd(gdc)       ! Actual number of topounits per grid
           tmp_tpu2 = num_tunit_per_grd(gdc)
           tmp_msk = ldomain%mask(gdc)
-          if(has_topounit .and. max_topounits > 1) then
+          if(max_topounits > 1) then
              ntopos = tmp_tpu                                
           else 
              ntopos = max_topounits

@@ -85,7 +85,7 @@ CONTAINS
           end do
           kmax=pver-1
           do k=kmax-1,1,-1
-             if(pint(kmax)-pint(k).gt.2.e4)then
+             if(pint(kmax)-pint(k).gt.2.e4_r8)then
                 kmin=k
                 exit
              end if 
@@ -99,9 +99,9 @@ CONTAINS
 !---- determine the brunt-vaisala frequency
 !
           do k = 2, pver
-            thx(k)=0.5*(state%t(i,k)*(state%ps(i)/pmid(k))**cappa+state%t(i,k-1)*(state%ps(i)/pmid(k-1))**cappa)
-            tint(k)=0.5*(state%t(i,k)+state%t(i,k-1))
-            qint(k)=0.5*(state%q(i,k,1)+state%q(i,k-1,1))
+            thx(k)=0.5_r8*(state%t(i,k)*(state%ps(i)/pmid(k))**cappa+state%t(i,k-1)*(state%ps(i)/pmid(k-1))**cappa)
+            tint(k)=0.5_r8*(state%t(i,k)+state%t(i,k-1))
+            qint(k)=0.5_r8*(state%q(i,k,1)+state%q(i,k-1,1))
           end do
 !
           thx(pver+1) = state%t(i,pver)
@@ -114,7 +114,7 @@ CONTAINS
           rovg=rair/gravit
           do k = pver, 1, -1
             zint(k) = zint(k+1)+                             &
-                 rovg*state%t(i,k)*(1. + zvir * state%q(i,k,1))*(lnpint(k+1)-lnpint(k))
+                 rovg*state%t(i,k)*(1.0_r8 + zvir * state%q(i,k,1))*(lnpint(k+1)-lnpint(k))
           end do
 !
           do k = 1, pver
@@ -127,7 +127,7 @@ CONTAINS
 !
           bvfmin = 1.e5_r8
           do k = kmin,kmax
-            if(rh(k).lt.0.9)then
+            if(rh(k).lt.0.9_r8)then
               bvf(k) = gravit*(thx(k)-thx(k+1))/         &
                  (0.5_r8*(thx(k)+thx(k+1))*(zmid(k)-zmid(k+1)))
             else
@@ -147,8 +147,8 @@ CONTAINS
           else
             uovern(i) = 0.0_r8
             cmass = 0.0_r8
-            wspdbar=0
-            bvfbar=0
+            wspdbar=0.0_r8
+            bvfbar=0.0_r8
             do k = kmin,kmax
               wspeed=state%u(i,k)*state%u(i,k)+state%v(i,k)*state%v(i,k)
               wspdbar= wspdbar+ wspeed*pdel(k)

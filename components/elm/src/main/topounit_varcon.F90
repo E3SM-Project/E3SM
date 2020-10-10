@@ -113,7 +113,6 @@ module topounit_varcon
   
        ! Make sure the number of topounits per grid consistent with the land mask
        do n = begg,endg
-          !write(iulog,*)'TKT num_tunits_per_grd(n), ldomain%mask(n) ', ldomain%num_tunits_per_grd(n), '<====>', ldomain%mask(n)
           if (ldomain%num_tunits_per_grd(n)>1 .and. ldomain%mask(n)==0) then
              write(iulog,*)trim(subname),&
                   'initialize1: landmask/Number of topounits mismatch'

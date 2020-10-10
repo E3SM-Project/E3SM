@@ -120,7 +120,7 @@ contains
     !ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
     !ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! For future improvement the number of valid topounits can be used from surface data
-    if(has_topounit .and. max_topounits > 1) then
+    if(max_topounits > 1) then
        ntopounits_per_gcell = num_tunits_per_grd                 !grc_pp%ntopounits2(gi) !tpu_lnd(gi)
     else 
        ntopounits_per_gcell = max_topounits

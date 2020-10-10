@@ -2677,7 +2677,7 @@ contains
               long_name='pft real/fake mask (0.=fake and 1.=real)', ncid=nfid(t), &
               imissing_value=ispval, ifill_value=ispval)
        end if
-       if(has_topounit .and. max_topounits > 1) then
+       if(max_topounits > 1) then
           if (ldomain%isgrid2d) then
              call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
                  dim1name='lon', dim2name='lat', &
@@ -2709,7 +2709,7 @@ contains
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-       if(has_topounit .and. max_topounits > 1) then
+       if(max_topounits > 1) then
           call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
        end if
     end if  ! (define/write mode

@@ -1126,12 +1126,6 @@ contains
            p = filterp(f)
            t = veg_pp%topounit(p)
            lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
-           !if (masterproc) then  ! TKT debugging
-           !   write (iulog,*) 'forc_rho(t): ', forc_rho(t)
-           !   write (iulog,*) 't_veg(p): ', t_veg(p)
-           !   write (iulog,*) 'uaf(p): ', uaf(p)
-           !   write (iulog,*) 'uaf(p)**2._r8+1.e-10_r8: ', uaf(p)**2._r8+1.e-10_r8   
-           !end if
          enddo
             
          ! Test for convergence
