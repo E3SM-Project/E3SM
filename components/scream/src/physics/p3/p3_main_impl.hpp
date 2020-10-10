@@ -74,11 +74,13 @@ void Functions<S,D>
   const MemberType& team,
   const Int& nk,
   const bool& predictNc,
+  const bool& do_prescribed_CCN,
   const Scalar& dt,
   const uview_1d<const Spack>& pres,
   const uview_1d<const Spack>& dpres,
   const uview_1d<const Spack>& dz,
   const uview_1d<const Spack>& nc_nuceat_tend,
+  const uview_1d<const Spack>& nccn_prescribed,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_cld_frac_l,
@@ -179,11 +181,15 @@ void Functions<S,D>
       // Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation
       // adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to
       // prescribe that value
-      if (!predictNc) {
-         nc(k).set(not_drymass, nccnst*inv_rho(k));
+
+      if (do_prescribed_CCN) {
+         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)));
+      } else if (predictNc) {
+         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0)); 
       } else {
-         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
+         nc(k).set(not_drymass, nccnst*inv_rho(k));
       }
+
     }
 
     drymass = qr(k) < qsmall;
@@ -233,6 +239,7 @@ void Functions<S,D>
   const MemberType& team,
   const Int& nk_pack,
   const bool& predictNc,
+  const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
   const view_dnu_table& dnu,
@@ -307,7 +314,7 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
-  constexpr Scalar T_zerodegc     = C::T_zerodegc;
+  constexpr Scalar T_zerodegc   = C::T_zerodegc;
   constexpr Scalar max_total_ni = C::max_total_ni;
   constexpr Scalar f1r          = C::f1r;
   constexpr Scalar f2r          = C::f2r;
@@ -551,7 +558,7 @@ void Functions<S,D>
 
     // deposition/condensation-freezing nucleation
     ice_nucleation(
-      T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc,
+      T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc, do_prescribed_CCN,
       qv2qi_nucleat_tend, ni_nucleat_tend, not_skip_all);
 
     // cloud water autoconversion
@@ -643,7 +650,7 @@ void Functions<S,D>
     //-- warm-phase only processes:
     update_prognostic_liquid(
       qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,
-      predictNc, inv_rho(k), exner(k), latent_heat_vapor(k), dt, th_atm(k), qv(k), qc(k), nc(k),
+      predictNc, do_prescribed_CCN, inv_rho(k), exner(k), latent_heat_vapor(k), dt, th_atm(k), qv(k), qc(k), nc(k),
       qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
@@ -988,6 +995,7 @@ Int Functions<S,D>
     const auto opres               = ekat::subview(diagnostic_inputs.pres, i);
     const auto odz                 = ekat::subview(diagnostic_inputs.dz, i);
     const auto onc_nuceat_tend     = ekat::subview(diagnostic_inputs.nc_nuceat_tend, i);
+    const auto onccn_prescribed    = ekat::subview(diagnostic_inputs.nccn, i);
     const auto oni_activated       = ekat::subview(diagnostic_inputs.ni_activated, i);
     const auto oinv_qc_relvar      = ekat::subview(diagnostic_inputs.inv_qc_relvar, i);
     const auto odpres              = ekat::subview(diagnostic_inputs.dpres, i);
@@ -1006,8 +1014,8 @@ Int Functions<S,D>
     const auto obm                 = ekat::subview(prognostic_state.bm, i);
     const auto oqv                 = ekat::subview(prognostic_state.qv, i);
     const auto oth                 = ekat::subview(prognostic_state.th, i);
-    const auto odiag_eff_radius_qc    = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
-    const auto odiag_eff_radius_qi    = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
+    const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
+    const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto omu_c               = ekat::subview(diagnostic_outputs.mu_c, i);
     const auto olamc               = ekat::subview(diagnostic_outputs.lamc, i);
@@ -1048,9 +1056,10 @@ Int Functions<S,D>
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
 
     p3_main_part1(
-      team, nk, infrastructure.predictNc, infrastructure.dt,
+      team, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
       opres, odpres, odz, onc_nuceat_tend, oexner, inv_exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
+      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion, onccn_prescribed, 
+      T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
@@ -1064,7 +1073,7 @@ Int Functions<S,D>
     // main k-loop (for processes):
     
     p3_main_part2(
-      team, nk_pack, infrastructure.predictNc, infrastructure.dt, inv_dt,
+      team, nk_pack, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
       dnu, ice_table_vals, collect_table_vals, revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oexner,
       inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,

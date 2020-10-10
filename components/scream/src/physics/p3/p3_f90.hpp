@@ -21,12 +21,13 @@ struct FortranData {
   using Array3 = typename KT::template lview<Scalar***>;
 
   bool do_predict_nc;
+  bool do_prescribed_CCN;
   const Int ncol, nlev;
 
   // In
   Real dt;
   Int it;
-  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
+  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
     ni, qm, bm, dpres, exner, qv_prev, t_prev;
   // Out
   Array1 precip_liq_surf, precip_ice_surf;

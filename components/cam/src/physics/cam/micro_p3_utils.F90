@@ -18,7 +18,7 @@ module micro_p3_utils
     real(rtype), public, parameter :: qsmall = 1.e-14_rtype
     real(rtype), public, parameter :: nsmall = 1.e-16_rtype
 
-    real(rtype) :: latent_heat_vapor, latent_heat_sublim, xlf
+    real(rtype) :: latent_heat_vapor, latent_heat_sublim, latent_heat_fusion
 
     real(rtype),public :: rho_1000mb,rho_600mb,ar,br,f1r,f2r,ecr,rho_h2o,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
        eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
@@ -145,7 +145,7 @@ module micro_p3_utils
 
     latent_heat_vapor = latvap           ! latent heat of vaporization
     latent_heat_sublim = latvap + latice  ! latent heat of sublimation
-    xlf  = latice           ! latent heat of fusion
+    latent_heat_fusion  = latice           ! latent heat of fusion
 
     ! limits for rime density [kg m-3]
     rho_rimeMin     =  50._rtype
@@ -219,14 +219,14 @@ module micro_p3_utils
 
        v(:,:) = latent_heat_vapor !latvap           ! latent heat of vaporization
        s(:,:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation
-       f(:,:) = xlf  !latice           ! latent heat of fusion
+       f(:,:) = latent_heat_fusion  !latice           ! latent heat of fusion
  
 ! Original P3 definition of latent heats:   
 !       do i = its,ite
 !          do k = kts,kte
 !          latent_heat_vapor(i,k)    = 3.1484e6-2370.*t(i,k)
 !          latent_heat_sublim(i,k)    = latent_heat_vapor(i,k)+0.3337e6
-!          xlf(i,k)     = latent_heat_sublim(i,k)-latent_heat_vapor(i,k)
+!          latent_heat_fusion(i,k)     = latent_heat_sublim(i,k)-latent_heat_vapor(i,k)
 !          end do
 !       end do
        return

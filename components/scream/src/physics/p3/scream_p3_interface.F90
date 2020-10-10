@@ -164,7 +164,8 @@ contains
     real(kind=c_real) :: liq_ice_exchange(pcols,pver) ! sum of liq-ice phase change tendenices
     real(kind=c_real) :: vap_liq_exchange(pcols,pver) ! sum of vap-liq phase change tendenices
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
-    real(kind=c_real) :: inv_qc_relvar(pcols,pver)        ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
+    real(kind=c_real) :: inv_qc_relvar(pcols,pver)    ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
+    real(kind=c_real) :: nccn_prescribed(pcols,pver)  ! prescribed nccn
     real(kind=c_real) :: inv_cp
     real(kind=c_real) :: elapsed_s
 
@@ -180,6 +181,7 @@ contains
 
     integer(kind=c_int) :: it, its, ite, kts, kte
     logical(kind=c_bool) :: do_predict_nc = .true.
+    logical(kind=c_bool) :: do_prescribed_CCN = .true.
     character(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
     real(kind=c_real) :: qtest
@@ -221,7 +223,7 @@ contains
         numice(:,k)  = q(i,k,5) !1.0e5_rtype!state%q(:,:,ixnumice)
         rain(:,k)    = q(i,k,6) !1.0e-5_rtype!state%q(:,:,ixrain)
         numrain(:,k) = q(i,k,7) !1.0e5_rtype!state%q(:,:,ixnumrain)
-        qm(:,k)   = q(i,k,8) !1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqm to ixcldrim to match Kai's code
+        qm(:,k)      = q(i,k,8) !1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqm to ixcldrim to match Kai's code
         rimvol(:,k)  = q(i,k,9) !1.0e4_rtype!state%q(:,:,ixrimvol)
       end do
       col_location(i,:) = real(i)
@@ -274,6 +276,7 @@ contains
          pmid(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
          dz(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
          nc_nuceat_tend(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
+         nccn_prescribed(its:ite,kts:kte),     &  ! IN ccn concentration
          ni_activated(its:ite,kts:kte),       & ! IN activated ice nuclei concentration kg-1
          inv_qc_relvar(its:ite,kts:kte),  & ! IN 1/(var(qc)/mean(qc)**2) used in P3.
          it,                          & ! IN     time step counter NOTE: starts at 1 for first time step
@@ -287,6 +290,7 @@ contains
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
          rho_qi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          do_predict_nc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
+         do_prescribed_CCN,           & ! IN  prescribed CCN
          ! AaronDonahue new stuff
          dpres(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values

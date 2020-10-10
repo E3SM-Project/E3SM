@@ -2073,6 +2073,12 @@ Exponent of power function fit used by P3 qc in accretion
 Default: 1.15_rtype
 </entry>
 
+<entry id="do_prescribed_CCN" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if CCN concentration is read in from ncdf file within p3.
+Default: FALSE
+</entry>
+
 <!-- micro_mg -->
 <entry id="micro_do_nccons" type="logical" category="microphys"
        group="micro_mg_nl" valid_values="" >

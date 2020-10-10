@@ -88,7 +88,7 @@ void Functions<S,D>
   const Spack& qc2qr_accret_tend, const Spack& nc_accret_tend,
   const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
   const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
-  const bool do_predict_nc, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
+  const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
   const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
   const Smask& context)
 {
@@ -99,7 +99,7 @@ void Functions<S,D>
   qc.set(context, qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt);
   qr.set(context, qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt);
 
-  if (do_predict_nc) {
+  if (do_predict_nc || do_prescribed_CCN) {
     nc.set(context, nc + (-nc_accret_tend-nc2nr_autoconv_tend+nc_selfcollect_tend)*dt);
   }
   else {

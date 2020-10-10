@@ -117,6 +117,8 @@ struct Functions
   struct P3DiagnosticInputs {
     // CCN activated number tendency [kg-1 s-1]
     view_2d<const Spack> nc_nuceat_tend;
+    // CCN prescribed number density [kg-1 s-1]
+    view_2d<const Spack> nccn;
     // Activated ice nuclei concentration [1/kg]
     view_2d<const Spack> ni_activated;
     // Assumed SGS 1/(var(qc)/mean(qc)) [kg2/kg2]
@@ -187,6 +189,8 @@ struct Functions
     Int kte;
     // Set to true to have P3 predict Nc, false to have Nc specified.
     bool predictNc;
+    // Set to true to use prescribed CCN
+    bool prescribedCCN;
     // Coordinates of columns, nj x 3
     view_2d<const Scalar> col_location;
   };
@@ -683,7 +687,7 @@ struct Functions
   static void update_prognostic_liquid(const Spack& qc2qr_accret_tend, const Spack& nc_accret_tend,
     const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
     const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
-    const bool do_predict_nc, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
+    const bool do_predict_nc, const bool do_prescribed_CCN, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
     const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
@@ -718,7 +722,7 @@ struct Functions
   static void ice_nucleation(const Spack& temp, const Spack& inv_rho,
                              const Spack& ni, const Spack& ni_activated,
                              const Spack& qv_supersat_i, const Scalar& inv_dt,
-                             const bool& do_predict_nc,
+                             const bool& do_predict_nc, const bool& do_prescribed_CCN,
                              Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
                              const Smask& context = Smask(true));
 
@@ -786,11 +790,13 @@ struct Functions
     const MemberType& team,
     const Int& nk,
     const bool& do_predict_nc,
+    const bool& do_prescribed_CCN,
     const Scalar& dt,
     const uview_1d<const Spack>& pres,
     const uview_1d<const Spack>& dpres,
     const uview_1d<const Spack>& dz,
     const uview_1d<const Spack>& nc_nuceat_tend,
+    const uview_1d<const Spack>& nccn_prescribed,
     const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& inv_cld_frac_l,
@@ -834,6 +840,7 @@ struct Functions
     const MemberType& team,
     const Int& nk_pack,
     const bool& do_predict_nc,
+    const bool& do_prescribed_CCN,
     const Scalar& dt,
     const Scalar& inv_dt,
     const view_dnu_table& dnu,

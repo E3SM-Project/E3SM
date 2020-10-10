@@ -56,11 +56,11 @@ static void run_bfb_p3_main_part1()
   constexpr Scalar sup_lower = -0.1;
 
   P3MainPart1Data isds_fortran[] = {
-    //            kts, kte, ktop, kbot, kdir, do_predict_nc,        dt
-    P3MainPart1Data(1,  72,    1,   72,    1, false,         1.800E+03),
-    P3MainPart1Data(1,  72,    1,   72,    1, true,          1.800E+03),
-    P3MainPart1Data(1,  72,   72,    1,   -1, false,         1.800E+03),
-    P3MainPart1Data(1,  72,   72,    1,   -1, true,          1.800E+03),
+    //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
+    P3MainPart1Data(1,  72,    1,   72,    1, false,          true,           1.800E+03),
+    P3MainPart1Data(1,  72,    1,   72,    1, true,           true,           1.800E+03),
+    P3MainPart1Data(1,  72,   72,    1,   -1, false,          false,          1.800E+03),
+    P3MainPart1Data(1,  72,   72,    1,   -1, true,           false,          1.800E+03),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart1Data);
@@ -89,8 +89,8 @@ static void run_bfb_p3_main_part1()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.dt,
-                    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
+    p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt,
+                    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
                     d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
                     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
                     d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
@@ -143,11 +143,11 @@ static void run_bfb_p3_main_part2()
   constexpr Scalar sup_lower = -0.1;
 
   P3MainPart2Data isds_fortran[] = {
-    //            kts, kte, ktop, kbot, kdir, do_predict_nc,        dt
-    P3MainPart2Data(1,  72,    1,   72,    1, false,         1.800E+03),
-    P3MainPart2Data(1,  72,    1,   72,    1, true,          1.800E+03),
-    P3MainPart2Data(1,  72,   72,    1,   -1, false,         1.800E+03),
-    P3MainPart2Data(1,  72,   72,    1,   -1, true,          1.800E+03),
+    //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
+    P3MainPart2Data(1,  72,    1,   72,    1, false,         true,        1.800E+03),
+    P3MainPart2Data(1,  72,    1,   72,    1, true,          true,        1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, false,         false,       1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, true,          false,       1.800E+03),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart2Data);
@@ -178,7 +178,7 @@ static void run_bfb_p3_main_part2()
   // Get data from cxx
   for (auto& d : isds_cxx) {
     p3_main_part2_f(
-      d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.dt, d.inv_dt,
+      d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
@@ -328,9 +328,9 @@ static void run_bfb_p3_main_part3()
 static void run_bfb_p3_main()
 {
   P3MainData isds_fortran[] = {
-    //      its, ite, kts, kte,   it,        dt, do_predict_nc
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true),
+    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainData);
@@ -340,6 +340,7 @@ static void run_bfb_p3_main()
         {d.pres           , {1.00000000E+02 , 9.87111111E+04}},
         {d.dz             , {1.22776609E+02 , 3.49039167E+04}},
         {d.nc_nuceat_tend , {0              , 0}},
+        {d.nccn_prescribed, {0              , 0}},
         {d.ni_activated   , {0              , 0}},
         {d.dpres          , {1.37888889E+03, 1.39888889E+03}},
         {d.exner          , {1.00371345E+00, 3.19721007E+00}},
@@ -379,9 +380,9 @@ static void run_bfb_p3_main()
     d.transpose<ekat::TransposeDirection::c2f>();
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
-      d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
+      d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
-      d.rho_qi, d.do_predict_nc, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend,
+      d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.exner, d.qv2qi_depos_tend, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c,
       d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
     d.transpose<ekat::TransposeDirection::f2c>();
