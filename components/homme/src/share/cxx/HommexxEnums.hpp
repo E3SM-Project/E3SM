@@ -41,6 +41,7 @@ enum class ComparisonOp {
 enum class ForcingAlg {
   FORCING_OFF,
   FORCING_DEBUG,
+  FORCING_0, // Unsupported
   FORCING_1, // Unsupported
   FORCING_2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
@@ -50,11 +51,29 @@ enum class MoistDry {
   DRY
 };
 
+enum class AdvectionForm {
+  Conservative,
+  NonConservative
+};
+
 enum class RemapAlg {
   PPM_MIRRORED = 1,
   PPM_FIXED_PARABOLA = 2,
   PPM_FIXED_MEANS = 3,
 };
+
+inline std::string remapAlg2str (const RemapAlg alg) {
+  switch (alg) {
+    case RemapAlg::PPM_MIRRORED:
+      return "PPM Mirrored";
+    case RemapAlg::PPM_FIXED_MEANS:
+      return "PPM Fixed Means";
+    case RemapAlg::PPM_FIXED_PARABOLA:
+      return "PPM Fixed Parabola";
+  }
+
+  return "UNKNOWN";
+}
 
 enum class TestCase {
   ASP_BAROCLINIC,
@@ -71,13 +90,66 @@ enum class TestCase {
   DCMIP2012_TEST2_2,
   DCMIP2012_TEST3,
   HELD_SUAREZ0,
-  JW_BAROCLINIC
+  JW_BAROCLINIC,
+  DCMIP2016_TEST1,
+  DCMIP2016_TEST2,
+  DCMIP2016_TEST3
 };
 
 enum class UpdateType {
   LEAPFROG,
   FORWARD
 };
+
+enum class TimeStepType {
+  // Explicit
+  LF              =  0, // LeapFrog
+  RK2             =  1,
+  IMEX_KG254_EX   =  4, // Explicit table from IMEX_KG254
+  ULLRICH_RK35    =  5,
+
+  // Implicit-Explicit
+  IMEX_KG243      =  6,
+  IMEX_KG254      =  7,
+  IMEX_KG355      =  9,
+  IMEX_KG255      = 10,
+
+  // Implicit
+  BE              = 11, // Backward Euler
+  BDF2            = 12
+};
+
+inline bool is_implicit (const TimeStepType& ts) {
+  return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
+}
+
+// ======= How to combine output/input during calculations ========== //
+
+enum class CombineMode {
+  Replace  = 0,   // out = in
+  Scale,          // out = alpha*in
+  Update,         // out = beta*out + in
+  ScaleUpdate,    // out = beta*out + alpha*in
+  ScaleAdd,       // out = out + alpha*in (special case of ScaleUpdate with beta=1)
+  Add,            // out = out + in (special case of ScaleAdd/Update with alpha=1, beta=1.0)
+  Multiply,       // out = out*in
+  Divide          // out = out/in
+};
+
+template<CombineMode CM>
+inline std::string cm2str () {
+  switch (CM) {
+    case CombineMode::Replace:      return "Replace";
+    case CombineMode::Scale:        return "Scale";
+    case CombineMode::Update:       return "Update";
+    case CombineMode::ScaleUpdate:  return "ScaleUpdate";
+    case CombineMode::ScaleAdd:     return "ScaleAdd";
+    case CombineMode::Add:          return "Add";
+    case CombineMode::Multiply:     return "Multiply";
+    case CombineMode::Divide:       return "Divide";
+  }
+  return "UNKNOWN";
+}
 
 // =================== Euler Step DSS Option ====================== //
 

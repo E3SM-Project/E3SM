@@ -7,52 +7,46 @@
 #ifndef HOMMEXX_CAAR_FUNCTOR_HPP
 #define HOMMEXX_CAAR_FUNCTOR_HPP
 
-#include "Derivative.hpp"
-#include "HybridVCoord.hpp"
-#include "SphereOperators.hpp"
 #include "Types.hpp"
+#include "RKStageData.hpp"
 #include <memory>
 
 namespace Homme {
 
-struct BuffersManager;
 struct CaarFunctorImpl;
 
 class Elements;
 class Tracers;
+class ReferenceElement;
+class SphereOperators;
+class SimulationParams;
+class HybridVCoord;
+
+class MpiBuffersManager;
+struct FunctorsBuffersManager;
 
 class CaarFunctor {
 public:
   CaarFunctor();
   CaarFunctor(const Elements &elements, const Tracers &tracers,
-              const Derivative &derivative, const HybridVCoord &hvcoord,
-              const SphereOperators &sphere_ops, 
-              const int rsplit);
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+              const SphereOperators &sphere_ops, const SimulationParams& params);
   CaarFunctor(const CaarFunctor &) = delete;
 
   ~CaarFunctor();
 
   CaarFunctor &operator=(const CaarFunctor &) = delete;
 
-  void
-  init_boundary_exchanges(const std::shared_ptr<BuffersManager> &bm_exchange);
+  int requested_buffer_size () const;
+  void init_buffers(const FunctorsBuffersManager& fbm);
+  void init_boundary_exchanges(const std::shared_ptr<MpiBuffersManager> &bm_exchange);
 
-  void set_n0_qdp(const int n0_qdp);
+  void set_rk_stage_data(const RKStageData& data);
 
-  void set_rk_stage_data(const int nm1, const int n0, const int np1,
-                         const Real dt, const Real eta_ave_w,
-                         const bool compute_diagnostics);
-
-  void run();
-
-  void run(const int nm1, const int n0, const int np1, const Real dt,
-           const Real eta_ave_w, const bool compute_diagnostics);
+  void run(const RKStageData& data);
 
 private:
   std::unique_ptr<CaarFunctorImpl> m_caar_impl;
-
-  // Setup the policies
-  Kokkos::TeamPolicy<ExecSpace, void> m_policy;
 };
 
 } // Namespace Homme

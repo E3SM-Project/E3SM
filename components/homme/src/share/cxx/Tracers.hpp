@@ -12,10 +12,12 @@
 namespace Homme {
 
 struct Tracers {
-  Tracers() = default;
+  Tracers() : m_inited(false) {}
   Tracers(const int num_elems, const int num_tracers);
 
-  void random_init();
+  void init (const int num_elems, const int num_tracers);
+
+  void randomize(const int seed);
 
   void pull_qdp(CF90Ptr &state_qdp);
   void push_qdp(F90Ptr &state_qdp) const;
@@ -25,6 +27,12 @@ struct Tracers {
     return nt;
   }
 
+  int num_elems () const {
+    return ne;
+  }
+
+  bool inited () const { return m_inited; }
+
   ExecViewManaged<Scalar*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> qdp;
   ExecViewManaged<Scalar*[QSIZE_D][NP][NP][NUM_LEV]>                    qtens_biharmonic; // Also doubles as just qtens.
   ExecViewManaged<Scalar*[QSIZE_D][2][NUM_LEV]>                         qlim;
@@ -33,6 +41,8 @@ struct Tracers {
 
 private:
   int nt;
+  int ne;
+  bool m_inited;
 };
 
 } // namespace Homme

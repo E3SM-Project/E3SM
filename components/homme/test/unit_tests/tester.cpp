@@ -7,10 +7,8 @@
 
 #include <Hommexx_Session.hpp>
 
-#ifndef HOMMEXX_NO_MPI_CONTEXT
-  #include <mpi/Comm.hpp>
-  #include <mpi/MpiContext.hpp>
-#endif
+#include <Context.hpp>
+#include <mpi/Comm.hpp>
 
 #include <mpi.h>
 
@@ -19,9 +17,7 @@ int main(int argc, char **argv) {
   // Initialize mpi
   MPI_Init(&argc,&argv);
 
-#ifndef HOMMEXX_NO_MPI_CONTEXT
-  Homme::MpiContext::singleton().get_comm().reset_mpi_comm(MPI_COMM_WORLD);
-#endif
+  Homme::Context::singleton().create<Homme::Comm>().reset_mpi_comm(MPI_COMM_WORLD);
   Homme::initialize_hommexx_session();
 
   int result = Catch::Session().run(argc, argv);

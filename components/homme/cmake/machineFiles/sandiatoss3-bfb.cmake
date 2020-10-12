@@ -43,6 +43,9 @@ SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 
+# Set kokkos arch, to get correct avx flags
+SET (Kokkos_ARCH_SNB ON CACHE BOOL "")
+
 SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
 # Openmpi 1.8 only
 SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")
@@ -55,7 +58,7 @@ SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "
 SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
 SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
 SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
-SET (ENABLE_PREQX_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
+SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
 SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
 
 # redsky upgrade 8/2017, need to load sems-netcdf module:
