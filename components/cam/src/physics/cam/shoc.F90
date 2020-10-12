@@ -29,6 +29,7 @@ public  :: shoc_init, shoc_main
 logical :: use_cxx = .true.
 
 real(rtype), parameter, public :: largeneg = -99999999.99_rtype
+real(rtype), parameter, public :: pi = 3.14159265 ! Pi
 
 !=========================================================
 ! Physical constants used in SHOC
@@ -1992,10 +1993,6 @@ subroutine shoc_assumed_pdf(&
   real(rtype) :: qwthl_sec_zt(shcol,nlev)
   real(rtype) :: qw_sec_zt(shcol,nlev)
 
-  ! define these so they don't have to be computed more than once
-  real(rtype), parameter :: sqrt2 = sqrt(2._rtype)
-  real(rtype), parameter :: sqrtpi = sqrt(2._rtype*3.14_rtype)
-
   epsterm=rgas/rv
 
   thl_tol=1.e-2_rtype
@@ -2536,7 +2533,7 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   ! Parameters
   real(rtype), parameter :: sqrt2 = sqrt(2._rtype)
-  real(rtype), parameter :: sqrtpi = sqrt(2._rtype*3.14_rtype)
+  real(rtype), parameter :: sqrt2pi = sqrt(2._rtype*pi)
 
   s=qw1-qs1*((1._rtype+beta*qw1)/(1._rtype+beta*qs1))
   cthl=((1._rtype+beta*qw1)/(1._rtype+beta*qs1)**2)*(cp/lcond) &
@@ -2551,7 +2548,7 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   if (std_s .ne. 0.0_rtype) then
     C=0.5_rtype*(1._rtype+erf(s/(sqrt2*std_s)))
-    IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrtpi)*exp(-0.5_rtype*(s/std_s)**2)
+    IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrt2pi)*exp(-0.5_rtype*(s/std_s)**2)
   else
     if (s .gt. 0._rtype) then
       C=1.0_rtype
