@@ -7,28 +7,26 @@ module module_ecpp_vars
 
   public
 
-  integer, public, parameter :: nupdraft_in  = 1  ! Number of updraft class
-  integer, public, parameter :: ndndraft_in  = 1  ! Number of dndraft class
+  integer, public, parameter :: nupdraft     = 1  ! Number of updraft class
+  integer, public, parameter :: ndndraft     = 1  ! Number of dndraft class
   integer, public, parameter :: ncls_ecpp_in = 3  ! Number of total number of ecpp transport class
-  ! = nupdraft_in+1+ndndraft_in
   integer, public, parameter :: ncc_in       = 2  ! number of clear/cloudy sub-calsses
   integer, public, parameter :: nprcp_in     = 2  ! Number of non-precipitating/precipitating sub-classes.
 
-  integer, public, parameter :: QUI       = 1, &  !Quiescent class
-  UP1       = 2     !First index for upward classes
+  integer, public, parameter :: QUI       = 1  ! Quiescent class
+  integer, public, parameter :: UP1       = 2  ! First index for upward classes
 
-  integer, public  :: DN1, & !First index of downward classes
-  NCLASS_TR !Num. of transport classes
-  !Both initialized based on
-  !runtime settings
+  integer, public  :: DN1       ! First index of downward classes
+  integer, public  :: NCLASS_TR ! Num. of transport classes
+  ! Both initialized based on runtime settings
 
-  integer, public :: NCLASS_CL = ncc_in, &  !Number of cloud classes
-  CLR = 1, &        !Clear sub-class
-  CLD = 2           !Cloudy sub-class
+  integer, public :: NCLASS_CL = ncc_in  ! Number of cloud classes
+  integer, public :: CLR = 1             ! Clear sub-class
+  integer, public :: CLD = 2             ! Cloudy sub-class
 
-  integer, public :: NCLASS_PR = nprcp_in, &  !Number of precipitaion classes
-  PRN = 1,       &  !Not precipitating sub-class
-  PRY = 2           !Is precipitating sub-class
+  integer, public :: NCLASS_PR = nprcp_in   ! Number of precipitaion classes
+  integer, public :: PRN = 1                ! Not precipitating sub-class
+  integer, public :: PRY = 2                ! Is precipitating sub-class
 
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: qlsink
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: precr
@@ -89,11 +87,16 @@ module module_ecpp_vars
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: prain_cen_sum
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: qlsink_avg_cen_sum
 
+contains
+
   !-----------------------------------------------------------------------------
-  subroutine allocate_ecpp_vars(ncrms, ndraft)
-    use openacc_utils
+  subroutine allocate_ecpp_vars(ncrms, ndraft, nzstag)
+    ! use openacc_utils
+    use grid,  only: nx, ny, nzm
     implicit none
     integer, intent(in) :: ncrms
+    integer, intent(in) :: ndraft
+    integer, intent(in) :: nzstag
 
     allocate( qlsink(   nx, ny, nzm, ncrms) )
     allocate( precr(    nx, ny, nzm, ncrms) )
@@ -127,7 +130,7 @@ module module_ecpp_vars
     allocate( xkhvsum(nzm,ncrms) )
 
     allocate( wwqui_cen_sum(       nzm,  ncrms) )
-    allocate( wwqui_bnd_sum(       nzm+1,ncrms)
+    allocate( wwqui_bnd_sum(       nzm+1,ncrms) )
     allocate( wwqui_cloudy_cen_sum(nzm,  ncrms) )
     allocate( wwqui_cloudy_bnd_sum(nzm+1,ncrms) )
 
@@ -169,8 +172,8 @@ module module_ecpp_vars
     deallocate( rh )
     deallocate( qvs )
     deallocate( qlsink_bf )
-    deallocate( prain, )
-    deallocate( cloud_bf)
+    deallocate( prain )
+    deallocate( qcloud_bf )
 
     deallocate( qcloudsum1 )
     deallocate( qcloud_bfsum1 )
