@@ -2190,7 +2190,7 @@ subroutine shoc_assumed_pdf_vv_parameters(&
   real(rtype) :: w_tol_sqd
   w_tol_sqd = bfb_square(2.e-2_rtype)
 
-  Skew_w=w3var/bfb_pow(w_sec,(3./2.))
+  Skew_w=w3var/bfb_sqrt(bfb_cube(w_sec))
 
   if (w_sec .le. w_tol_sqd) then
     Skew_w=0._rtype
