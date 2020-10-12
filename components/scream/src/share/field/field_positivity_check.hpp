@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_POSITIVITY_CHECK_HPP
 
 #include "share/field/field.hpp"
+#include "ekat/util/ekat_math_utils.hpp"
 
 namespace scream
 {
@@ -33,7 +34,11 @@ public:
     Kokkos::deep_copy(host_view, field.get_view());
     ScalarType min_val;
     Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& m) {
-      m = std::min(host_view(0), host_view(i));
+      if (i == 0) {
+        m = host_view(0);
+      } else {
+        m = ekat::impl::min(m, host_view(i));
+      }
     }, Kokkos::Min<ScalarType>(min_val));
     return (min_val > 0);
   }

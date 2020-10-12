@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_BOUNDEDNESS_CHECK_HPP
 
 #include "share/field/field.hpp"
+#include "ekat/util/ekat_math_utils.hpp"
 
 namespace scream
 {
@@ -38,8 +39,8 @@ public:
       if (i == 0) {
         mm.min_val = mm.max_val = host_view(0);
       } else {
-        mm.min_val = std::min(mm.min_val, host_view(i));
-        mm.max_val = std::max(mm.max_val, host_view(i));
+        mm.min_val = ekat::impl::min(mm.min_val, host_view(i));
+        mm.max_val = ekat::impl::max(mm.max_val, host_view(i));
       }
     }, Kokkos::MinMax<ScalarType>(minmax));
     return ((minmax.min_val >= m_lower_bound) && (minmax.max_val <= m_upper_bound));
