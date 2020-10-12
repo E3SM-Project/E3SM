@@ -4,10 +4,13 @@ from .core_parameter import CoreParameter
 class StreamflowParameter(CoreParameter):
     def __init__(self):
         super(StreamflowParameter, self).__init__()
+        self.main_title_seasonality = 'Seasonality'
+        self.main_title_bias = 'Bias of Annual Mean Discharge'
         self.max_num_gauges = None
         self.test_mat_file = None
         self.ref_mat_file = None
-        self.plot_type = 'seasonality'
+        self.output_file_seasonality = 'seasonality'
+        self.output_file_bias = 'bias'
         self.print_statements = False
         self.ref_timeseries_input = True
         self.test_timeseries_input = True
@@ -16,13 +19,6 @@ class StreamflowParameter(CoreParameter):
     def check_values(self):
         if not hasattr(self, 'gauges_path'):
             msg = 'gauges_path must be specified'
-            raise RuntimeError(msg)
-
-        # TODO: In future pull requests add 'scatter', 'bias'
-        valid_plot_types = ['seasonality']
-        if self.plot_type not in valid_plot_types:
-            msg = 'plot_type={} not in {}'.format(
-                self.plot_type, valid_plot_types)
             raise RuntimeError(msg)
 
         test_ref_start_yr_both_set = hasattr(self, 'test_start_yr') and hasattr(self, 'ref_start_yr')

@@ -160,21 +160,25 @@ class TestAllSets(unittest.TestCase):
             self.check_html_image(html_path, png_path)
 
     def check_streamflow_plots(self):
-        case_id = 'seasonality'
+        case_id = 'RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM'
         case_id_lower = case_id.lower()
         set_name = 'streamflow'
         variables = ['RIVER_DISCHARGE_OVER_LAND_LIQ']
         for variable in variables:
-            variable_lower = variable.lower()
-            png_path = '{}/{}/{}.png'.format(
-                set_name, case_id_lower, case_id_lower)
-            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
-            # Expected: streamflow_diags_model_to_model_local/streamflow/seasonality/seasonality.png
-            self.assertTrue(os.path.exists(full_png_path))
-            html_path = '{}viewer/{}/{}/{}/plot.html'.format(
-                TestAllSets.results_dir, set_name, case_id_lower, case_id_lower)
-            # Expected: streamflow_diags_model_to_model_local/viewer/streamflow/seasonality/seasonality/plot.html
-            self.check_html_image(html_path, png_path)
+            for plot_type in ['seasonality', 'bias']:
+                png_path = '{}/{}/{}.png'.format(
+                    set_name, case_id, plot_type)
+                expected = 'streamflow/RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM/{}.png'.format(plot_type)
+                self.assertEqual(png_path, expected)
+                full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+                self.assertTrue(os.path.exists(full_png_path))
+                html_path = 'viewer/{}/{}/{}-{}/{}.html'.format(
+                    set_name, plot_type, case_id_lower, plot_type, plot_type)
+                expected = 'viewer/streamflow/{}/river_discharge_over_land_liq_gsim-{}/{}.html'.format(
+                    plot_type, plot_type, plot_type)
+                self.assertEqual(html_path, expected)
+                full_html_path = '{}{}'.format(TestAllSets.results_dir, html_path)
+                self.check_html_image(full_html_path, png_path)
 
     # Test results_dir
     def test_results_dir(self):

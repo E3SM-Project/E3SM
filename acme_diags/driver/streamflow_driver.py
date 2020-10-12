@@ -6,7 +6,7 @@ import scipy.io
 import time
 import cdutil
 from acme_diags.driver import utils
-from acme_diags.plot.cartopy.streamflow_plot import plot_seasonality
+from acme_diags.plot.cartopy.streamflow_plot import plot_seasonality, plot_bias
 
 
 def get_drainage_area_error(radius, resolution, lon_ref, lat_ref, area_upstream, area_ref):
@@ -21,7 +21,7 @@ def get_drainage_area_error(radius, resolution, lon_ref, lat_ref, area_upstream,
             x = ((lon_ref + j * resolution) - (-180 + resolution / 2)) / resolution
             y = ((lat_ref + i * resolution) - (-90 + resolution / 2)) / resolution
             area_test[k] = area_upstream[int(x), int(y)] / 1000000
-            error_test[k] = abs(area_test[k] - area_ref) / area_ref
+            error_test[k] = numpy.abs(area_test[k] - area_ref) / area_ref
             lat_lon_test[k, 0] = lat_ref + i * resolution
             lat_lon_test[k, 1] = lon_ref + j * resolution
             k += 1
@@ -35,6 +35,8 @@ def get_drainage_area_error(radius, resolution, lon_ref, lat_ref, area_upstream,
 
 def get_seasonality(monthly):
     # See https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/2018MS001603 Equations 1 and 2
+    if monthly.shape[0] != 12:
+        raise Exception('monthly.shape={} does not include 12 months'.format(monthly.shape))
     num_years = monthly.shape[1]
     p_k = numpy.zeros((12, 1))
     # The total streamflow for each year (sum of Q_ij in the denominator of Equation 1, for all j)
@@ -64,7 +66,7 @@ def get_seasonality(monthly):
     return seasonality_index, peak_month
 
 
-def run_diag_seasonality(parameter):
+def run_diag(parameter):
     # Set path to the gauge metadata
     with open(parameter.gauges_path) as gauges_path:
         gauges_list = list(csv.reader(gauges_path))
@@ -170,11 +172,16 @@ def run_diag_seasonality(parameter):
         export = numpy.zeros((lat_lon.shape[0], 9))
         if parameter.print_statements:
             print('export.shape={}'.format(export.shape))
-        t0 = time.time()
+        drainage_area_error_time = 0
+        sum_time = 0
+        mean_time = 0
+        monthly_mean_time = 0
+        seasonality_time = 0
+        t_initial = time.time()
         for i in range(lat_lon.shape[0]):
             if parameter.print_statements and (i % 1000 == 0):
                 print('On gauge #{}'.format(i))
-            if parameter.max_num_gauges and i > parameter.max_num_gauges:
+            if parameter.max_num_gauges and i >= parameter.max_num_gauges:
                 break
             lat_ref = lat_lon[i, 1]
             lon_ref = lat_lon[i, 0]
@@ -182,8 +189,10 @@ def run_diag_seasonality(parameter):
             area_ref = gauges[i, 13].astype(numpy.float64)
 
             if area_upstream is not None:
+                t_initial_drainage_area_error = time.time()
                 drainage_area_error, lat_lon_ref = get_drainage_area_error(
                     radius, resolution, lon_ref, lat_ref, area_upstream, area_ref)
+                drainage_area_error_time += time.time() - t_initial_drainage_area_error
             else:
                 # Use the center location
                 lat_lon_ref = [lat_ref, lon_ref]
@@ -193,10 +202,17 @@ def run_diag_seasonality(parameter):
                 # Column 1 -- month
                 # Column origin_id + 1 -- the ref streamflow from gauge with the corresponding origin_id
                 extracted = ref_array[:, [0, 1, origin_id + 1]]
+                t_initial_monthly_mean = time.time()
                 monthly_mean = numpy.zeros((12,1)) + numpy.nan
+                # For GSIM, shape is (1380,)
+                month_array = extracted[:, 1]
                 for month in range(12):
                     # Add 1 to month to account for the months being 1-indexed
-                    if sum(extracted[:, 1] == month + 1) > 0:
+                    month_array_boolean = (month_array == month + 1)
+                    t_initial_sum = time.time()
+                    s = numpy.sum(month_array_boolean)
+                    sum_time += time.time() - t_initial_sum
+                    if s > 0:
                         # `extracted[:,1]`: for all x, examine `extracted[x,1]`
                         # `extracted[:,1] == m`: Boolean array where 0 means the item in position [x,1] is NOT m,
                         # and 1 means it is m
@@ -212,7 +228,10 @@ def run_diag_seasonality(parameter):
                         #               [1]]
                         # a[a[:,1] == 2, 2]: [[3],
                         #                     [3]]
-                        monthly_mean[month] = numpy.nanmean(extracted[extracted[:, 1] == month + 1, 2])
+                        t_initial_mean = time.time()
+                        monthly_mean[month] = numpy.nanmean(extracted[month_array_boolean, 2])
+                        mean_time += time.time() - t_initial_mean
+                monthly_mean_time += time.time() - t_initial_monthly_mean
                 # This is ref annual mean streamflow
                 annual_mean_ref = numpy.mean(monthly_mean)
             if parameter.ref_mat_file and numpy.isnan(annual_mean_ref):
@@ -228,7 +247,9 @@ def run_diag_seasonality(parameter):
                         monthly = mmat[:, ~numpy.isnan(mmat_id)]
                     else:
                         monthly = monthly_mean
+                    t_initial_seasonality = time.time()
                     seasonality_index_ref, peak_month_ref = get_seasonality(monthly)
+                    seasonality_time += time.time() - t_initial_seasonality
                 else:
                     ref_lon = int(1 + (lat_lon_ref[1] - (-180 + resolution / 2)) / resolution)
                     ref_lat = int(1 + (lat_lon_ref[0] - (-90 + resolution / 2)) / resolution)
@@ -241,7 +262,9 @@ def run_diag_seasonality(parameter):
                         monthly = numpy.ones((12, 1))
                     else:
                         monthly = mmat
+                    t_initial_seasonality = time.time()
                     seasonality_index_ref, peak_month_ref = get_seasonality(monthly)
+                    seasonality_time += time.time() - t_initial_seasonality
 
                 test_lon = int(1 + (lat_lon_ref[1] - (-180 + resolution / 2)) / resolution)
                 test_lat = int(1 + (lat_lon_ref[0] - (-90 + resolution / 2)) / resolution)
@@ -254,7 +277,9 @@ def run_diag_seasonality(parameter):
                     monthly = numpy.ones((12, 1))
                 else:
                     monthly = mmat
+                t_initial_seasonality = time.time()
                 seasonality_index_test, peak_month_test = get_seasonality(monthly)
+                seasonality_time += time.time() - t_initial_seasonality
 
                 export[i, 0] = annual_mean_ref
                 export[i, 1] = annual_mean_test
@@ -265,9 +290,20 @@ def run_diag_seasonality(parameter):
                 export[i, 5] = seasonality_index_test  # Seasonality index of test
                 export[i, 6] = peak_month_test  # Max flow month of test
                 export[i, 7:9] = lat_lon_ref  # latlon of ref
-        t1 = time.time()
+        t_final = time.time()
         if parameter.print_statements:
-            print('Loop time={}s={}m'.format(t1 - t0, (t1 - t0) / 60))
+            loop_time = t_final - t_initial
+            print('Loop time={}s={}m'.format(loop_time, loop_time/60))
+            print('Time spent on get_drainage_area_error={}s={}m={}%'.format(
+                drainage_area_error_time, drainage_area_error_time/60, 100*drainage_area_error_time/loop_time))
+            print('Time spent on monthly_mean={}s={}m={}%'.format(
+                monthly_mean_time, monthly_mean_time/60, 100*monthly_mean_time/loop_time))
+            print('---Time spent on sum={}s={}m={}%'.format(
+                sum_time, sum_time/60, 100*sum_time/loop_time))
+            print('---Time spent on mean={}s={}m={}%'.format(
+                mean_time, mean_time/60, 100*mean_time/loop_time))
+            print('Time spent on get_seasonality={}s={}m={}%'.format(
+                seasonality_time, seasonality_time/60, 100*seasonality_time/loop_time))
         # Remove the gauges with nan flow
         # `export[:,0]` => get first column of export
         # `numpy.isnan(export[:,0])` => Boolean column, True if value in export[x,0] is nan
@@ -295,22 +331,14 @@ def run_diag_seasonality(parameter):
 
         if parameter.print_statements:
             print('Variable: {}'.format(var))
-        parameter.var_id = '{}-seasonality'.format(var)
 
-        # This will be the title of the plot.
-        parameter.main_title = 'Seasonality'
-        parameter.viewer_descr[var] = parameter.main_title
-        parameter.output_file = 'seasonality'
-
-        # Plot
+        # Seasonality
         # Plot original ref and test, not regridded versions.
         plot_seasonality(export, parameter)
+
+        # Bias between test and ref as a percentage
+        # 100*((annual_mean_ref - annual_mean_test) / annual_mean_test)
+        bias = 100*((export[:,0] - export[:,1]) / export[:,1])
+        plot_bias(export, bias, parameter)
+
     return parameter
-
-
-def run_diag(parameter):
-    # TODO: Add bias plot and scatterplot in future pull requests.
-    if parameter.plot_type == 'seasonality':
-        return run_diag_seasonality(parameter)
-    else:
-        raise Exception('Invalid plot_type={}'.format(parameter.plot_type))
