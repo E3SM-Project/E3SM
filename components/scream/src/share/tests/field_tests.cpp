@@ -5,7 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field_positivity_check.hpp"
-#include "share/field/field_boundedness_check.hpp"
+#include "share/field/field_within_interval_check.hpp"
 #include "share/field/field_monotonicity_check.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -308,12 +308,12 @@ TEST_CASE("field_property_check", "") {
     }
   }
 
-  // Check boundedness.
-  SECTION ("field_boundedness_check") {
+  // Check that the values of a field lie within an interval.
+  SECTION ("field_with_interval_check") {
     Field<Real,Device> f1(fid);
-    auto boundedness_check = std::make_shared<FieldBoundednessCheck<Real, Device> >(1, 72);
-    REQUIRE(boundedness_check->can_repair());
-    f1.add_property_check(boundedness_check);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real, Device> >(1, 72);
+    REQUIRE(interval_check->can_repair());
+    f1.add_property_check(interval_check);
     f1.allocate_view();
 
     // Assign positive values to the field and make sure it passes our test for
@@ -377,6 +377,7 @@ TEST_CASE("field_property_check", "") {
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(not iter->check(f1));
+      REQUIRE_THROWS(iter->repair(f1)); // we can't repair it, either
     }
   }
 

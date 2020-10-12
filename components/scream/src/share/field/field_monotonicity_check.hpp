@@ -41,7 +41,7 @@ public:
   }
 
   void repair(Field<ScalarType, Device>& field) const override {
-    EKAT_ASSERT_MSG(false, "Cannot repair a non-monotonic field!");
+    EKAT_REQUIRE_MSG(false, "Cannot repair a non-monotonic field!");
   }
 };
 
