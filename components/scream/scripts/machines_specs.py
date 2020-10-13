@@ -35,7 +35,7 @@ MACHINE_METADATA = {
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "mappy"   : (["module purge", "module load sems-env sems-python/3.5.2 sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2"],
                   "$(which mpicxx)",
-                  "mpirun",
+                  "",
                   48,
                   48,
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
