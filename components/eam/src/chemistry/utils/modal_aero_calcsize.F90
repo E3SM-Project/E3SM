@@ -670,8 +670,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       list_idx_local  = list_idx_in
       if (.not. present(dgnumdry_m)) &
            call endrun('list_idx_in is present but dgnumdry_m pointer is missing'//errmsg(__FILE__,__LINE__))
-      !dgncur_a => dgnumdry_m(:,:,:)
-      if(.not. associated(dgncur_a))allocate(dgncur_a(pcols,pver,ntot_amode))
+      dgncur_a => dgnumdry_m(:,:,:)
+      !if(associated(dgnumdry_m) .and. list_idx_local>0) then
+      !   call endrun("BALLI is associated")
+      !else
+      !   call endrun("BALLI is NOT associated")
+      !endif
+      !if(.not. associated(dgncur_a))allocate(dgncur_a(pcols,pver,ntot_amode))
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
@@ -1360,7 +1365,7 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, aer_type, gravit, cmn
      dgncur, v2ncur, qsrflx, dqdt)
 
   !-----------------------------------------------------------------------------
-  !Purpose: updates diameter and colume to num based on limits
+  !Purpose: updates diameter and volume to num based on limits
   !
   !Called by: size_adjustment
   !Calls    : None

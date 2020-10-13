@@ -184,6 +184,10 @@ subroutine modal_aer_opt_init()
                      history_verbose_out = history_verbose, &
                      history_aero_optics_out = history_aero_optics )
 
+
+   !obtain nmodes for the climate (ilist = 0) list
+   call rad_cnst_get_info(0, nmodes=nmodes)
+
    !Allocate dry and wet size variables in an OMP PARRALLEL region as these
    !arrays are private for each thread and needs to be allocated for each OMP thread
    !$OMP PARALLEL
