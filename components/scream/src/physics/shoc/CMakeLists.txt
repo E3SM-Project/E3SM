@@ -12,7 +12,7 @@ set(SHOC_SRCS
   shoc_ic_cases.cpp
   shoc_iso_c.f90
   shoc_iso_f.f90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/shoc.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
   atmosphere_macrophysics.cpp
   scream_shoc_interface.F90
   shoc_diag_second_moments_srf.cpp

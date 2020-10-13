@@ -339,6 +339,7 @@ GetOptions(
     "cice_decomptype=s"         => \$opts{'cice_decomptype'},
     "clubb_sgs"                 => \$opts{'clubb_sgs'},
     "clubb_opts=s"              => \$opts{'clubb_opts'},
+    "shoc_sgs"                  => \$opts{'shoc_sgs'},
     "co2_cycle"                 => \$opts{'co2_cycle'},
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
