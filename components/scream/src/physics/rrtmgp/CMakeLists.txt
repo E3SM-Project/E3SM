@@ -38,10 +38,9 @@ set(RRTMGP_HEADERS
 
 add_library(rrtmgp ${RRTMGP_SRCS})
 target_include_directories(rrtmgp PUBLIC ${SCREAM_INCLUDE_DIRS})
-target_include_directories(rrtmgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
 target_include_directories(rrtmgp SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
-set_target_properties(rrtmgp PROPERTIES
-      Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+target_compile_options(rrtmgp PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+set_target_properties(rrtmgp PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(rrtmgp physics_share scream_share ${SCREAM_TPL_LIBRARIES})
 
 if (NOT SCREAM_LIB_ONLY)

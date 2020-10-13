@@ -202,11 +202,11 @@ set (SCREAM_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}/src
 )
 
-if (${SCREAM_DOUBLE_PRECISION})
+if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64 ")
+    set(SCREAM_Fortran_FLAGS -real-size 64)
   else()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
