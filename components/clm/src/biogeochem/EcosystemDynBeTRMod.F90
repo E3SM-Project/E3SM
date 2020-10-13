@@ -734,13 +734,13 @@ module EcosystemDynBeTRMod
      end if
      call t_stopf('CNUpdate0')
      !--------------------------------------------
-
-     call t_startf('phenology_flux_limiter')
-     call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
+     if(use_pheno_flux_limiter)then
+       call t_startf('phenology_flux_limiter')
+       call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
            num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
            veg_cf, veg_cs , c13_veg_cf, c13_veg_cs , c14_veg_cf, c14_veg_cs , &
            veg_nf, veg_ns, veg_pf, veg_ps)
-
+     endif
      call CNLitterToColumn(num_soilc, filter_soilc, &
          cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
 

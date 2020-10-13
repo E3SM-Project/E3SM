@@ -402,7 +402,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_gresp_storage_to_xfer        , s_gresp_storage,nelms)
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_d, nelms, num_carbon_fluxes)
-  
+
   !initialize stoichiometric relationship between carbon production flux and corresponding state varaibles
   call spm_list_init(spm_list, 1._r8, f_cpool_to_leafc             , s_leafc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_leafc_xfer_to_leafc        , s_leafc, nelms)
@@ -437,7 +437,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_gresp_storage_to_xfer      , s_gresp_xfer,nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_gresp_storage     , s_gresp_storage, nelms)
 
-   
+
   !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_carbon_p, nelms, f_gresp_storage_to_xfer)
   !initialize stoichiometry relationship between nutrient consumption and corresponding state variables
@@ -480,7 +480,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_grainn_xfer_to_grainn        , s_grainn_xfer,nelms)
   call spm_list_insert(spm_list, -1._r8, f_grainn_storage_to_xfer       , s_grainn_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_retransn_to_npool            , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_d, nelms, num_nutrient_fluxes)
   !initialize stoichiometry relationship between nutrient production and corresponding state variables
   call spm_list_init(spm_list, 1._r8, f_retransn_to_npool                , s_npool, nelms)
@@ -521,7 +521,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_frootn_to_retransn             , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_to_retransn          , s_retransn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livecrootn_to_retransn         , s_retransn, nelms)
-  !turn the list into sparse matrix form  
+  !turn the list into sparse matrix form
   call spm_list_to_mat(spm_list, spm_nutrient_p, nelms, num_nutrient_fluxes)
   end subroutine InitPhenoFluxLimiter
 !---------------------------------------------------------------------------
@@ -869,7 +869,7 @@ contains
     ystates(s_npool)               = veg_ns%npool(p)
     ystates(s_leafn)               = veg_ns%leafn(p)
     ystates(s_leafn_xfer)          = veg_ns%leafn_xfer(p)
-    ystates(s_leafn_storage)       = veg_nf%npool_to_leafn_storage(p)
+    ystates(s_leafn_storage)       = veg_ns%leafn_storage(p)
     ystates(s_frootn)              = veg_ns%frootn(p)
     ystates(s_frootn_xfer)         = veg_ns%frootn_xfer(p)
     ystates(s_frootn_storage)      = veg_ns%frootn_storage(p)
@@ -1042,9 +1042,7 @@ contains
 
   associate(                                                     &
     ivt                   => veg_pp%itype                      , & ! Input:  [integer  (:)     ]  pft vegetation type
-    woody                 => veg_vp%woody                      , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
-    pf                    => veg_pf               , &
-    ps                    => veg_ps                &
+    woody                 => veg_vp%woody                        & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
   )
 
   ! set time steps
@@ -1059,7 +1057,7 @@ contains
     ystates(s_leafn_storage)       = veg_ps%leafp_storage(p)
     ystates(s_frootn)              = veg_ps%frootp(p)
     ystates(s_frootn_xfer)         = veg_ps%frootp_xfer(p)
-    ystates(s_frootn_storage)      = veg_pf%ppool_to_frootp_storage(p)
+    ystates(s_frootn_storage)      = veg_ps%frootp_storage(p)
     if (woody(ivt(p)) == 1.0_r8) then
       ystates(s_livestemn)           = veg_ps%livestemp(p)
       ystates(s_livestemn_xfer)      = veg_ps%livestemp_xfer(p)
@@ -1132,7 +1130,7 @@ contains
 
     rfluxes(f_leafn_to_litter)               = veg_pf%leafp_to_litter(p)
     rfluxes(f_leafn_xfer_to_leafn)           = veg_pf%leafp_xfer_to_leafp(p)
-    rfluxes(f_leafn_storage_to_xfer)         = veg_pf%ppool_to_leafp_storage(p)
+    rfluxes(f_leafn_storage_to_xfer)         = veg_pf%leafp_storage_to_xfer(p)
     rfluxes(f_frootn_xfer_to_frootn)         = veg_pf%frootp_xfer_to_frootp(p)
     rfluxes(f_frootn_storage_to_xfer)        = veg_pf%frootp_storage_to_xfer(p)
     rfluxes(f_leafn_to_retransn)             = veg_pf%leafp_to_retransp(p)
@@ -1187,14 +1185,71 @@ contains
 
     call fpmax(rfluxes(f_leafn_to_litter)               , veg_pf%leafp_to_litter(p))
     call fpmax(rfluxes(f_leafn_xfer_to_leafn)           , veg_pf%leafp_xfer_to_leafp(p))
-    call fpmax(rfluxes(f_leafn_storage_to_xfer)         , veg_pf%ppool_to_leafp_storage(p))
+    call fpmax(rfluxes(f_leafn_storage_to_xfer)         , veg_pf%leafp_storage_to_xfer(p))
     call fpmax(rfluxes(f_frootn_xfer_to_frootn)         , veg_pf%frootp_xfer_to_frootp(p))
     call fpmax(rfluxes(f_frootn_storage_to_xfer)        , veg_pf%frootp_storage_to_xfer(p))
     call fpmax(rfluxes(f_leafn_to_retransn)             , veg_pf%leafp_to_retransp(p))
     call fpmax(rfluxes(f_frootn_to_litter)              , veg_pf%frootp_to_litter(p))
     call fpmax(rfluxes(f_retransn_to_npool)             , veg_pf%retransp_to_ppool(p))
+
+
+    !write(iulog,*)'lphel p',p,ystates(s_npool),veg_ps%ppool(p)
+
   enddo
   end associate
   end subroutine phosphorus_flux_limiter
+
+  !-------------------------------------------------------------------------------
+
+  subroutine checkval_phos(veg_ps, veg_pf, p)
+  !
+  !DESCRIPTION:
+  !double check the success of the flux limiter solver
+  use VegetationDataType, only : vegetation_phosphorus_flux
+  use VegetationDataType, only : vegetation_phosphorus_state
+  implicit none
+  type(vegetation_phosphorus_flux)  , intent(inout) :: veg_pf
+  type(vegetation_phosphorus_state) , intent(inout) :: veg_ps
+  integer, intent(in) :: p
+
+  real(r8) :: ystate, dt
+
+  associate(                                                     &
+    ivt                   => veg_pp%itype                      , & ! Input:  [integer  (:)     ]  pft vegetation type
+    woody                 => veg_vp%woody                        & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+  )
+
+  ! set time steps
+  dt = real( get_step_size(), r8 )
+
+  !npool check
+  ystate =veg_ps%ppool(p)- veg_pf%ppool_to_leafp(p) * dt &
+                         - veg_pf%ppool_to_leafp_storage(p) * dt &
+                         - veg_pf%ppool_to_frootp(p) * dt &
+                         - veg_pf%ppool_to_frootp_storage(p) * dt
+  if (woody(ivt(p)) == 1._r8) then
+    ystate = ystate - veg_pf%ppool_to_livestemp(p) * dt &
+                     - veg_pf%ppool_to_livestemp_storage(p) * dt &
+                     - veg_pf%ppool_to_livecrootp(p) * dt &
+                     - veg_pf%ppool_to_livecrootp_storage(p) * dt &
+                     - veg_pf%ppool_to_deadstemp(p) * dt &
+                     - veg_pf%ppool_to_deadcrootp(p) * dt &
+                     - veg_pf%ppool_to_deadstemp_storage(p) * dt &
+                     - veg_pf%ppool_to_deadcrootp_storage(p) * dt
+  endif
+  if (ivt(p) >= npcropmin) then
+    ystate = ystate -  veg_pf%ppool_to_livestemp(p) * dt &
+                    - veg_pf%ppool_to_livestemp_storage(p) * dt &
+                    - veg_pf%ppool_to_grainp(p) * dt &
+                    - veg_pf%ppool_to_grainp_storage(p) * dt
+  endif
+  ystate = ystate  &
+                  + veg_pf%retransp_to_ppool(p) * dt + veg_pf%sminp_to_ppool(p) * dt &
+                  + veg_pf%biochem_pmin_to_plant(p) * dt
+  write(iulog,*)'lphel check',p,ystate
+  end associate
+  end subroutine checkval_phos
+
+
 
 end module PhenologyFLuxLimitMod

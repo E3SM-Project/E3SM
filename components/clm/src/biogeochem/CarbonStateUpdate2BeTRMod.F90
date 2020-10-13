@@ -150,7 +150,8 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
-    use tracer_varcon,  only : is_active_betr_bgc
+    use ALMbetrNLMod           , only : do_betr_bgc_type
+    use tracer_varcon          , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -176,8 +177,6 @@ contains
       ! set time steps
       dt = real( get_step_size(), r8 )
 
-      if ( (.not. is_active_betr_bgc) .and. &
-           .not.(use_pflotran .and. pf_cmode)) then
          ! column level carbon fluxes from harvest mortality
          do j = 1, nlevdecomp
             ! column loop
@@ -197,8 +196,6 @@ contains
                ! wood to product pools - states updated in WoodProducts()
             end do
          end do
-
-      endif
 
       ! patch loop
       do fp = 1,num_soilp

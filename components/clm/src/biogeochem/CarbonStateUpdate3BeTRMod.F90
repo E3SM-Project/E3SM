@@ -12,6 +12,7 @@ module CarbonStateUpdate3BeTRMod
   use clm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
+  use clm_varctl       , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
   use clm_varctl       , only : use_pflotran, pf_cmode
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
@@ -37,6 +38,7 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by fire fluxes
     !
+    use CNDecompCascadeConType , only : decomp_cascade_con
     use tracer_varcon       , only : is_active_betr_bgc
     use subgridAveMod       , only : p2c
     ! !ARGUMENTS:
@@ -76,7 +78,6 @@ contains
          end do
        end do
 
-
         ! litter and CWD losses to fire
         do l = 1, ndecomp_pools
             do j = 1, nlevdecomp
@@ -86,6 +87,20 @@ contains
                end do
             end do
         end do
+
+      ! SOM C losses due to erosion
+      if ( ero_ccycle ) then
+         do l = 1, ndecomp_pools
+            if ( decomp_cascade_con%is_soil(l) ) then
+               do j = 1, nlevdecomp
+                  do fc = 1, num_soilc
+                     c = filter_soilc(fc)
+                     col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%decomp_cpools_yield_vr(c,j,l) * dt
+                  end do
+               end do
+            end if
+         end do
+      end if
 
   end subroutine CarbonStateUpdate3Soil
 
