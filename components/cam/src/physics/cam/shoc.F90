@@ -379,9 +379,9 @@ subroutine shoc_main ( &
 
     ! Update the turbulent length scale
     call shoc_length(&
-       shcol,nlev,nlevi,tke,&               ! Input
+       shcol,nlev,nlevi,&               ! Input
        host_dx,host_dy,pblh,&               ! Input
-       zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
+       tke,zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
        thetal,wthv_sec,thv,&                ! Input
        brunt,shoc_mix)                      ! Output
 
@@ -3092,15 +3092,19 @@ end subroutine check_tke
 ! Compute the turbulent length scale
 
 subroutine shoc_length(&
-         shcol,nlev,nlevi,tke,&        ! Input
+         shcol,nlev,nlevi,&        ! Input
          host_dx,host_dy,pblh,&        ! Input
-         zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
+         tke,zt_grid,zi_grid,dz_zt,dz_zi,& ! Input
          thetal,wthv_sec,thv,&         ! Input
          brunt,shoc_mix)               ! Output
 
   ! Purpose of this subroutine is to compute the SHOC
   !  mixing length scale, which is used to compute the
   !  turbulent dissipation in the SGS TKE equation
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: shoc_length_f
+#endif
 
   implicit none
 
@@ -3145,6 +3149,18 @@ subroutine shoc_length(&
   real(rtype) :: conv_vel(shcol), tscale(shcol)
   real(rtype) :: thv_zi(shcol,nlevi)
   real(rtype) :: l_inf(shcol)
+
+  integer :: i,k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_length_f(shcol,nlev,nlevi,host_dx,host_dy,pblh,tke,&
+                         zt_grid,zi_grid,dz_zt,dz_zi,wthv_sec,thetal,&
+                         thv,brunt,shoc_mix)
+
+      return
+   endif
+#endif
 
   ! Interpolate virtual potential temperature onto interface grid
   call linear_interp(zt_grid,zi_grid,thv,thv_zi,nlev,nlevi,shcol,0._rtype)
@@ -4425,6 +4441,10 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   !  convective velocity scale is zero then
   !  set to a minimum threshold
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_conv_time_shoc_length_f
+#endif
+
   implicit none
   integer, intent(in) :: shcol
 ! Planetary boundary layer (PBL) height [m]
@@ -4435,6 +4455,13 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   real(rtype), intent(inout) ::  tscale(shcol)
 
   integer i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_conv_time_shoc_length_f(shcol,pblh,conv_vel,tscale)
+    return
+  endif
+#endif
 
   do i=1,shcol
     conv_vel(i) = bfb_pow(max(0._rtype,conv_vel(i)), (1._rtype/3._rtype))
