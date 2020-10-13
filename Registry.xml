@@ -1748,6 +1748,61 @@
 		/>
 	</nml_record>
 
+	<nml_record name="prescribed_ice" in_defaults="false">
+		<nml_option name="config_prescribed_ice_stream_year_first" type="integer" default_value="-999" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_year_last" type="integer" default_value="-999" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_model_year_align" type="integer" default_value="-999" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_fldvarname" type="character" default_value="ice_cov" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_fldfilename" type="character" default_value="unset" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_domtvarname" type="character" default_value="time" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_domxvarname" type="character" default_value="xc" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_domyvarname" type="character" default_value="yc" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_domareaname" type="character" default_value="area" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_dommaskname" type="character" default_value="mask" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_domfilename" type="character" default_value="unset" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_mapread" type="character" default_value="NOT_SET" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+		<nml_option name="config_prescribed_ice_stream_fill" type="logical" default_value="false" units="unitless"
+			description="Prescribed ice stream parameter for e3sm sea ice driver."
+			possible_values="Unknown"
+		/>
+	</nml_record>
+
 	<streams>
 		<stream name="mesh"
 				type="none"
