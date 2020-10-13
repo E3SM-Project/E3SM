@@ -6,6 +6,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   endif()
 
   add_subdirectory(scream_p3)
+  add_subdirectory(scream_zm)
   add_subdirectory(scream_p3_shoc)
   add_subdirectory(rrtmgp)
 endif()
