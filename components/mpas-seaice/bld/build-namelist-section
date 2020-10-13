@@ -90,10 +90,21 @@ add_default($nl, 'config_calculate_coriolis');
 # Namelist group: use_sections #
 ################################
 
+if ($prognostic_mode eq 'prescribed') {
+        add_default($nl, 'config_use_dynamics', 'val'=>".false");
+} else {
+        add_default($nl, 'config_use_dynamics');
+}
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
 add_default($nl, 'config_use_column_package');
+if ($prognostic_mode eq 'prescribed') {
+        add_default($nl, 'config_use_prescribed_ice', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_prescribed_ice');
+}
+add_default($nl, 'config_use_prescribed_ice_forcing');
 
 ###########################
 # Namelist group: forcing #
@@ -422,6 +433,24 @@ add_default($nl, 'config_use_data_icebergs');
 ###############################
 
 add_default($nl, 'config_check_state');
+
+##################################
+# Namelist group: prescribed_ice #
+##################################
+
+add_default($nl, 'config_prescribed_ice_stream_year_first');
+add_default($nl, 'config_prescribed_ice_stream_year_last');
+add_default($nl, 'config_prescribed_ice_model_year_align');
+add_default($nl, 'config_prescribed_ice_stream_fldvarname');
+add_default($nl, 'config_prescribed_ice_stream_fldfilename');
+add_default($nl, 'config_prescribed_ice_stream_domtvarname');
+add_default($nl, 'config_prescribed_ice_stream_domxvarname');
+add_default($nl, 'config_prescribed_ice_stream_domyvarname');
+add_default($nl, 'config_prescribed_ice_stream_domareaname');
+add_default($nl, 'config_prescribed_ice_stream_dommaskname');
+add_default($nl, 'config_prescribed_ice_stream_domfilename');
+add_default($nl, 'config_prescribed_ice_stream_mapread');
+add_default($nl, 'config_prescribed_ice_stream_fill');
 
 ##########################################
 # Namelist group: AM_highFrequencyOutput #

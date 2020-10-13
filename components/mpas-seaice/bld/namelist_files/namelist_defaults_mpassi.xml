@@ -82,10 +82,13 @@
 <config_calculate_coriolis>true</config_calculate_coriolis>
 
 <!-- use_sections -->
+<config_use_dynamics>true</config_use_dynamics>
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>
 <config_use_forcing>false</config_use_forcing>
 <config_use_column_package>true</config_use_column_package>
+<config_use_prescribed_ice>false</config_use_prescribed_ice>
+<config_use_prescribed_ice_forcing>false</config_use_prescribed_ice_forcing>
 
 <!-- forcing -->
 <config_atmospheric_forcing_type>'CORE'</config_atmospheric_forcing_type>
@@ -384,6 +387,21 @@
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>
+
+<!-- prescribed_ice -->
+<config_prescribed_ice_stream_year_first>-999</config_prescribed_ice_stream_year_first>
+<config_prescribed_ice_stream_year_last>-999</config_prescribed_ice_stream_year_last>
+<config_prescribed_ice_model_year_align>-999</config_prescribed_ice_model_year_align>
+<config_prescribed_ice_stream_fldvarname>'ice_cov'</config_prescribed_ice_stream_fldvarname>
+<config_prescribed_ice_stream_fldfilename>'unset'</config_prescribed_ice_stream_fldfilename>
+<config_prescribed_ice_stream_domtvarname>'time'</config_prescribed_ice_stream_domtvarname>
+<config_prescribed_ice_stream_domxvarname>'xc'</config_prescribed_ice_stream_domxvarname>
+<config_prescribed_ice_stream_domyvarname>'yc'</config_prescribed_ice_stream_domyvarname>
+<config_prescribed_ice_stream_domareaname>'area'</config_prescribed_ice_stream_domareaname>
+<config_prescribed_ice_stream_dommaskname>'mask'</config_prescribed_ice_stream_dommaskname>
+<config_prescribed_ice_stream_domfilename>'unset'</config_prescribed_ice_stream_domfilename>
+<config_prescribed_ice_stream_mapread>'NOT_SET'</config_prescribed_ice_stream_mapread>
+<config_prescribed_ice_stream_fill>false</config_prescribed_ice_stream_fill>
 
 <!-- AM_highFrequencyOutput -->
 <config_AM_highFrequencyOutput_enable>false</config_AM_highFrequencyOutput_enable>
