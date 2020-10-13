@@ -1239,7 +1239,7 @@ end subroutine micro_p3_readnl
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
          qv_prev(its:ite,kts:kte),         & ! IN  qv at end of prev p3_main call   kg kg-1
          t_prev(its:ite,kts:kte),          & ! IN  t at end of prev p3_main call    K
-         col_location(its:ite,:3),          & ! IN column locations
+         col_location(its:ite,:3)          & ! IN column locations
          )
 
     p3_main_outputs(:,:,:) = -999._rtype
