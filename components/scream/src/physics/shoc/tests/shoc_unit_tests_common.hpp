@@ -111,6 +111,7 @@ struct UnitWrap {
     struct TestDiagSecondMomentsLbycond;
     struct TestDiagSecondMoments;
     struct TestDiagSecondShocMoments;
+    struct TestPblintdCldCheck;
   };
 
 };
