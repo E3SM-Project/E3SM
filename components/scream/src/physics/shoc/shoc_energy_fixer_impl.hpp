@@ -57,10 +57,12 @@ void Functions<S,D>::shoc_energy_fixer(
   // Compute the host timestep
   const Scalar hdtime = dtime*nadv;
 
+  const auto nlevi_pack = ekat::npack<Spack>(nlevi)-1;
+  const int nlevi_indx = (nlevi-1)%Spack::n;
+
   // Compute the total energy before and after SHOC call
-  const auto s_rho_zi = ekat::scalarize(rho_zi);
-  const Scalar shf = wthl_sfc*cp*s_rho_zi(nlevi-1);
-  const Scalar lhf = wqw_sfc*s_rho_zi(nlevi-1);
+  const Scalar shf = wthl_sfc*cp*rho_zi(nlevi_pack)[nlevi_indx];
+  const Scalar lhf = wqw_sfc*rho_zi(nlevi_pack)[nlevi_indx];
   te_a = se_a + ke_a + (lcond+lice)*wv_a +lice*wl_a;
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;
   te_b += (shf+lhf*(lcond+lice))*hdtime;
@@ -78,9 +80,6 @@ void Functions<S,D>::shoc_energy_fixer(
     shoctop_pack = shoctop/Spack::n;
     shoctop_indx = shoctop%Spack::n;
   }
-
-  const auto nlevi_pack = ekat::npack<Spack>(nlevi)-1;
-  const int nlevi_indx = (nlevi-1)%Spack::n;
 
   // Compute the disbalance of total energy, over depth where SHOC is active.
   se_dis = (te_a - te_b)/(pint(nlevi_pack)[nlevi_indx] - pint(shoctop_pack)[shoctop_indx]);

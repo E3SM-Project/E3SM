@@ -1786,15 +1786,6 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
 
-  Kokkos::Array<view_1d, 3> temp_1d_d;
-  Kokkos::Array<view_2d, 10> temp_2d_d;
-  Kokkos::Array<int, 10> dim1_sizes = {shcol, shcol, shcol, shcol, shcol,
-                                       shcol, shcol, shcol, shcol, shcol};
-  Kokkos::Array<int, 10> dim2_sizes = {nlev, nlev, nlevi, nlev, nlevi,
-                                       nlev, nlev, nlev,  nlev, nlev};
-  Kokkos::Array<const Real*, 10> ptr_array = {tke,      zt_grid, zi_grid, dz_zt, dz_zi,
-                                              wthv_sec, thetal,  thv,     brunt, shoc_mix};
-
   Kokkos::Array<view_1d, 10> temp_1d_d;
   Kokkos::Array<const Real*, 10> ptr_array_1d = {se_b, ke_b, wv_b, wl_b,     se_a,
                                                  ke_a, wv_a, wl_a, wthl_sfc, wqw_sfc};
