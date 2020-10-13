@@ -1475,6 +1475,7 @@ contains
     enddo
 #endif
   endif
+
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1515,6 +1516,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,            only : bfb_pow
+#endif
 #endif
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1661,7 +1665,11 @@ contains
       endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#ifdef HOMMEXX_BFB_TESTING
+         exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
+#else
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+#endif
       enddo
    endif
    
@@ -1687,8 +1695,6 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
-     
-
 
   end subroutine applyCAMforcing_tracers
   

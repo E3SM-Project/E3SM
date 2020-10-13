@@ -25,6 +25,7 @@
 <config_dt ice_grid="oARRM60to10">900.0</config_dt>
 <config_dt ice_grid="oARRM60to6">900.0</config_dt>
 <config_dt ice_grid="EC30to60E2r2">1800.0</config_dt>
+<config_dt ice_grid="WC14to60E2r3">1800.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -124,6 +125,7 @@
 <config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="EC30to60E2r2">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="WC14to60E2r3">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -408,7 +410,7 @@
 <config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
 
 <!-- AM_ridgingDiagnostics -->
-<config_AM_ridgingDiagnostics_enable>false</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable>true</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>true</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -423,7 +425,7 @@
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 
 <!-- AM_geographicalVectors -->
-<config_AM_geographicalVectors_enable>false</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>true</config_AM_geographicalVectors_compute_on_startup>
@@ -495,7 +497,7 @@
 <config_AM_icePresent_write_on_startup>false</config_AM_icePresent_write_on_startup>
 
 <!-- AM_timeSeriesStatsDaily -->
-<config_AM_timeSeriesStatsDaily_enable>false</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
 <config_AM_timeSeriesStatsDaily_compute_interval>'dt'</config_AM_timeSeriesStatsDaily_compute_interval>

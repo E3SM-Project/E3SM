@@ -6,13 +6,26 @@
 
 #include "HyperviscosityFunctor.hpp"
 #include "HyperviscosityFunctorImpl.hpp"
+#include "FunctorsBuffersManager.hpp"
+
+#include "Context.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsState.hpp"
+#include "ElementsDerivedState.hpp"
+#include "SimulationParams.hpp"
 
 namespace Homme
 {
 
-HyperviscosityFunctor::HyperviscosityFunctor (const SimulationParams& params, const Elements& elements, const Derivative& deriv)
+HyperviscosityFunctor::HyperviscosityFunctor ()
 {
-  m_hvf_impl.reset (new HyperviscosityFunctorImpl(params,elements,deriv));
+  auto& c = Context::singleton();
+  auto& params   = c.get<SimulationParams>();
+  auto& geometry = c.get<ElementsGeometry>();
+  auto& state    = c.get<ElementsState>();
+  auto& derived  = c.get<ElementsDerivedState>();
+
+  m_hvf_impl.reset (new HyperviscosityFunctorImpl(params,geometry,state,derived));
 }
 
 HyperviscosityFunctor::~HyperviscosityFunctor ()
@@ -22,6 +35,16 @@ HyperviscosityFunctor::~HyperviscosityFunctor ()
   // deleter, which needs to know the size of the stored type, and which
   // would be called from the implicitly declared default destructor, which
   // would be in the header file, where HyperviscosityFunctorImpl type is incomplete.
+}
+
+int HyperviscosityFunctor::requested_buffer_size () const {
+  assert (m_hvf_impl);
+  return m_hvf_impl->requested_buffer_size();
+}
+
+void HyperviscosityFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
+  assert (m_hvf_impl);
+  m_hvf_impl->init_buffers(fbm);
 }
 
 void HyperviscosityFunctor::init_boundary_exchanges () {

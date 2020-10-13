@@ -256,12 +256,181 @@ runTestsStd() {
   done
 }
 
+
 createAllRunScripts() {
   touch $subListFile
   echo "num_submissions=${NUM_TEST_FILES}" > $subListFile
 
   for testFileNum in $(seq 1 ${NUM_TEST_FILES})
   do
+    #add summit-p9 here later
+    if [ "${HOMME_MACHINE}" == "summit-gpu" ] ; then
+       createRunScriptSummit
+    else
+       createAllRunScriptsGeneric
+    fi
+
+    echo "subFile$testFileNum=$thisRunScript" >>  $subListFile
+
+    # Make the script executable
+    chmod u+x ${thisRunScript}
+
+    # Reset the variables (in case they are not redefined in the next iteration)
+    unset OMP_NUM_TESTS
+    unset NUM_TESTS
+
+  done
+}
+
+emptyLine(){
+echo "" >> $1
+}
+
+
+createRunScriptSummit() {
+    testFile=TEST_FILE_${testFileNum}
+    source ${!testFile}
+
+    TEST_NAME=`basename ${!testFile} .sh`
+
+    if [ "${CREATE_BASELINE}" == true ] ; then
+      # Create the run script
+      thisRunScript="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}/${TEST_NAME}-run.sh"
+      outputDir="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}"
+    else
+      # Create the run script
+      thisRunScript=`dirname ${!testFile}`/${TEST_NAME}-run.sh
+      outputDir=`dirname ${!testFile}`
+    fi
+
+    # delete the run script file if it exists
+    rm -f ${thisRunScript}
+
+    # Set up header
+    #add more for sbatch
+    echo "#!/bin/bash" > $thisRunScript
+    emptyLine $thisRunScript
+
+    # cd into the correct dir
+    echo "cd $outputDir " >> $thisRunScript
+    emptyLine $thisRunScript
+
+    # Remove all existing netcdf files
+    echo "rm -f movies/* " >> $thisRunScript
+    emptyLine $thisRunScript
+
+    #check if this is a gpu exec
+    if [[ "$EXEC" == *"kokkos"* ]] ; then
+      echo "source ${HOMME_DIR}/${SUMMIT_MODULES_GPU}">> $thisRunScript
+    else
+      echo "source ${HOMME_DIR}/${SUMMIT_MODULES_P9}">> $thisRunScript
+    fi
+    emptyLine $thisRunScript
+
+    #kokkos needs omp_num_threads set
+    if [ -n "${OMP_NUMBER_THREADS_KOKKOS}" ]; then
+      echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS_KOKKOS}" >> $thisRunScript
+      emptyLine $thisRunScript
+    fi
+
+    testExec=$TEST_1
+
+    #check if this is a gpu exec
+    if [[ "$EXEC" == *"kokkos"* ]] ; then
+      echo "${SUMMIT_JSRUN_GPU} \\" >> $thisRunScript
+      echo "${testExec} \\" >> $thisRunScript
+      echo "${SUMMIT_JSRUN_TAIL} > ${TEST_NAME}_1.out 2> ${TEST_NAME}_1.err" >>$thisRunScript
+      emptyLine $thisRunScript
+    fi   
+
+#cprnc
+if true; then
+    if [ "${CREATE_BASELINE}" == false ] ; then
+      mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}
+
+      ############################################################
+      # Now set up the cprnc diffing against baslines
+      ############################################################
+      # load the cprnc files for this run
+      FILES="${NC_OUTPUT_FILES}"
+
+      if [ -z "${FILES}" ] ; then
+          echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
+      fi
+
+      # for files in movies
+      for file in $FILES
+      do
+        echo "file = ${file}"
+        baseFilename=`basename $file`
+
+        # new result
+        newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
+
+        # result in the repo
+        repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
+
+        diffStdout=${TEST_NAME}.${baseFilename}.out
+        diffStderr=${TEST_NAME}.${baseFilename}.err
+
+        echo "# Running cprnc to difference ${baseFilename} against baseline " >> $thisRunScript
+        #echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
+        cmd="${SUMMIT_JSRUN_SERIAL} ${CPRNC_BINARY} -m ${repoFile} ${newFile} > $diffStdout 2> $diffStderr"
+        #echo "  $cmd"
+        echo ${cmd} >> $thisRunScript
+        emptyLine $thisRunScript
+      done
+      ############################################################
+      # Now set up the cprnc diffing against REF solutions
+      # these could be internally generated, or included in the repo
+      ############################################################
+      # load the cprnc files for this run
+      REFFILES=( ${NC_OUTPUT_REF} )
+      FILES="${NC_OUTPUT_CHECKREF}"
+
+      if [ -z "${FILES}" ] ; then
+          echo "Test ${TEST_NAME} doesn't specify any reference file tests"
+      fi
+
+      # for files in movies
+      COUNT=0
+      for file in $FILES
+      do
+        refname=${REFFILES[$COUNT]}
+        echo "ref = ${refname}"
+        echo "file = ${file}"
+        baseFilename=`basename $file`
+
+        # new result
+        newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/${file}
+        refFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/${refname}
+
+        diffStdout=${TEST_NAME}.ref.${baseFilename}.out
+        diffStderr=${TEST_NAME}.ref.${baseFilename}.err
+
+        echo "# Running cprnc to difference ${baseFilename} against reference " >> $thisRunScript
+        cmd="${SUMMIT_JSRUN_SERIAL} ${CPRNC_BINARY} -m ${refFile} ${newFile} > $diffStdout 2> $diffStderr"
+        echo ${cmd} >> $thisRunScript
+        emptyLine $thisRunScript
+        echo "" >> $thisRunScript # blank line
+        let COUNT+=1
+      done
+
+    fi
+    ############################################################
+    # Finished setting up cprnc
+    ############################################################
+
+fi
+
+
+
+}
+
+
+
+
+createAllRunScriptsGeneric() {
 
     testFile=TEST_FILE_${testFileNum}
     source ${!testFile}
@@ -414,17 +583,6 @@ createAllRunScripts() {
     ############################################################
     # Finished setting up cprnc
     ############################################################
-
-    echo "subFile$testFileNum=$thisRunScript" >>  $subListFile
-
-    # Make the script executable
-    chmod u+x ${thisRunScript}
-
-    # Reset the variables (in case they are not redefined in the next iteration)
-    unset OMP_NUM_TESTS
-    unset NUM_TESTS
-
-  done
 
 }
 

@@ -220,17 +220,36 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2-1900_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3':
+        ic_date += '200714'
+        ic_prefix += 'ocean.WC14to60E2r3'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3_ICG':
+        ic_date += '201002'
+        ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3-1900_ICG':
+        ic_date += '201002'
+        ic_prefix += 'mpaso.WC14to60E2r3-1900.rstFromG-anvil'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -728,6 +747,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="barotropicSpeed"/>')
         lines.append('    <var name="landIceFreshwaterFlux"/>')
         lines.append('    <var name="pressureAdjustedSSH"/>')
+        lines.append('    <var name="atmosphericPressure"/>')
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             lines.append('    <var name="CO2_gas_flux"/>')
             lines.append('    <var name="CO2_alt_gas_flux"/>')
@@ -966,6 +986,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <var name="daysSinceStartOfSim"/>')
         lines.append('    <var name="binBoundaryMerHeatTrans"/>')
+        lines.append('    <var name="binBoundaryZonalMean"/>')
         lines.append('    <var name="ssh"/>')
         lines.append('    <var_struct name="tracers"/>')
         lines.append('    <var name="velocityMeridional"/>')
@@ -992,6 +1013,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="dThreshMLD"/>')
         lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="vertVelocityTop"/>')
+        lines.append('    <var name="zMid"/>')
+        lines.append('    <var name="atmosphericPressure"/>')
         if not ocn_grid.startswith("oRRS1"):
             lines.append('    <var name="normalGMBolusVelocity"/>')
             lines.append('    <var name="vertGMBolusVelocityTop"/>')
@@ -1002,6 +1025,8 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
             lines.append('    <var name="normalGMBolusVelocityTimesTemperature"/>')
             lines.append('    <var name="normalGMBolusVelocitySquared"/>')
+            lines.append('    <var name="gmKappaScaling"/>')
+            lines.append('    <var name="gmBolusKappa"/>')
 
         lines.append('    <var_struct name="tracersSurfaceFlux"/>')
         lines.append('    <var name="penetrativeTemperatureFlux"/>')
@@ -1067,6 +1092,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
         lines.append('    <var name="activeTracerVertMixMLTend"/>')
         lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="BruntVaisalaFreqTop"/>')
         lines.append('    <var name="bruntVaisalaFreqML"/>')
         lines.append('    <var name="activeTracersTendML"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')

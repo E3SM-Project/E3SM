@@ -15,6 +15,7 @@
 namespace Homme {
 
 class EulerStepFunctorImpl;
+struct FunctorsBuffersManager;
 
 class EulerStepFunctor {
   std::shared_ptr<EulerStepFunctorImpl> p_;
@@ -24,6 +25,8 @@ public:
 
   void reset(const SimulationParams& params);
 
+  int requested_buffer_size () const;
+  void init_buffers    (const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 
   void precompute_divdp();

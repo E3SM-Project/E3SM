@@ -189,6 +189,10 @@ do ie=nets,nete
     end do
     ps=p0
     call set_thermostate(elem(ie),ps,temperature,hvcoord)
+
+#ifdef MODEL_THETA_L
+    elem(ie)%state%w_i = 0.0
+#endif
 enddo
 
 
