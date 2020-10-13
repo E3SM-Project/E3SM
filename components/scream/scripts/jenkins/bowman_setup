@@ -1,5 +1,0 @@
-export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-bowman/bin:$PATH
-
-source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
-
-SCREAM_MACHINE=bowman
