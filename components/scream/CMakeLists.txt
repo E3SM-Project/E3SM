@@ -188,19 +188,13 @@ include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 
-# Init scream TPLs info to whatever EKAT set.
-set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
-set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
+# # Init scream TPLs info to whatever EKAT set.
+# set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
+# set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
-
-set (SCREAM_INCLUDE_DIRS
-  ${SCREAM_SRC_DIR}
-  ${EKAT_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/src
-)
 
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")

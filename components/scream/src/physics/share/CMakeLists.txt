@@ -25,11 +25,9 @@ if (NOT CUDA_BUILD)
 endif()
 
 add_library(physics_share ${PHYSICS_SHARE_SRCS})
-target_include_directories(physics_share PUBLIC ${SCREAM_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(physics_share SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 target_compile_options(physics_share PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 set_target_properties(physics_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(physics_share scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

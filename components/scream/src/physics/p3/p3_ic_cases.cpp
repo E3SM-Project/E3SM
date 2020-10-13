@@ -1,5 +1,5 @@
 #include "p3_ic_cases.hpp"
-#include "physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 
 #include "ekat/ekat_assert.hpp"
 

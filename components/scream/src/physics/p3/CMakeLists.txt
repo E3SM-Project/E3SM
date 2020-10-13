@@ -1,11 +1,3 @@
-set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
-list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-
-set(GENF90 ${CIMEROOT}/src/externals/genf90/genf90.pl)
-set(ENABLE_GENF90 True)
-include(genf90_utils)
-include(Sourcelist_utils)
-
 set(P3_SRCS
   p3_f90.cpp
   p3_functions_f90.cpp
@@ -66,11 +58,9 @@ endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
 add_library(p3 ${P3_SRCS})
-target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS})
-target_include_directories(p3 SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 target_compile_options(p3 PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 set_target_properties(p3 PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(p3 physics_share scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(p3 physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

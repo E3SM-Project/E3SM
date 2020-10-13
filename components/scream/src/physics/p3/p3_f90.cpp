@@ -1,6 +1,6 @@
 #include "p3_f90.hpp"
 #include "p3_functions_f90.hpp"
-#include "physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
 #include "ekat/ekat_assert.hpp"

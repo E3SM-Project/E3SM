@@ -2,8 +2,8 @@
 #define P3_PREVENT_ICE_OVERDEPLETION_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics_functions.hpp" // also for ETI when not GPU
-#include "physics_saturation_impl.hpp"
+#include "physics/share/physics_functions.hpp" // also for ETI when not GPU
+#include "physics/share/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
