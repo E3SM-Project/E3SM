@@ -1,5 +1,8 @@
 function(build_mpas_models)
 
+  # fix for new kokkos version; undo when mpas uses new kokkos build infrastructure
+  set(USE_KOKKOS FALSE)
+
   file(GLOB MPASCONFS "${BUILDCONF}/mpas*conf" "${BUILDCONF}/maliconf")
 
   foreach(ITEM IN LISTS MPASCONFS)
