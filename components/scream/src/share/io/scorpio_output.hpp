@@ -65,8 +65,6 @@ public:
 
   // Main Functions
   void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
-  void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const std::string filename);
-  void init_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
   void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
   void finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
 
@@ -80,6 +78,7 @@ protected:
   void register_variables();
   void set_degrees_of_freedom();
   void register_views(const FieldRepository<Real, device_type>& field_repo);
+  void new_file(const std::string filename);
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -92,6 +91,9 @@ protected:
   Int m_out_frequency;
   std::string m_out_units;
 
+  Int m_total_dofs;
+  Int m_local_dofs;
+
   std::map<std::string,FieldIdentifier>  m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
@@ -99,6 +101,8 @@ protected:
   std::map<std::string,view_type>        m_view;
 
   bool m_is_init = false;
+  bool m_is_restart_hist = false;
+  bool m_is_restart = false;
 
   std::map<std::string,Int> m_status = {
                                   {"Init",          0},  // Records the number of files this output stream has managed
@@ -112,25 +116,8 @@ private:
 }; // Class AtmosphereOutput
 
 // ====================== IMPLEMENTATION ===================== //
+/* ---------------------------------------------------------- */
 inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
-{
-
-  m_status["Init"] += 1;
-  m_filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";  //TODO: The filename should be treated as a prefix to enable multiple files for the same control.  Like in the case of monthly output with 1 snap/file.
-  EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
-  init_impl(field_repo, gm);
-} 
-/* ---------------------------------------------------------- */
-inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const std::string filename)
-{
-
-  m_status["Init"] += 1;
-  m_filename = filename;
-  EKAT_REQUIRE_MSG(!m_is_init,"Error! File " + m_filename + " has already been initialized.\n");
-  init_impl(field_repo, gm);
-} 
-/* ---------------------------------------------------------- */
-inline void AtmosphereOutput::init_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -142,15 +129,16 @@ inline void AtmosphereOutput::init_impl(const FieldRepository<Real, device_type>
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
   m_out_frequency   = freq_params.get<Int>("OUT_N");
   m_out_units       = freq_params.get<std::string>("OUT_OPTION");
+  if (m_params.isParameter("RESTART FILE")) {m_is_restart = m_params.get<bool>("RESTART FILE");}
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
   m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
-  int local_dofs = m_gids.size();
-  MPI_Allreduce(&local_dofs, &total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
-  EKAT_REQUIRE_MSG(m_comm.size()<=total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
+  m_local_dofs = m_gids.size();
+  MPI_Allreduce(&m_local_dofs, &m_total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
+  EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
 
   // Create map of fields in this output with the field_identifier in the field repository.
   auto& var_params = m_params.sublist("FIELDS");
@@ -162,24 +150,7 @@ inline void AtmosphereOutput::init_impl(const FieldRepository<Real, device_type>
     add_identifier(field_repo,var_name);
   }
 
-  // Register new netCDF file for output.
-  register_outfile(m_filename);
-
-  // Register dimensions with netCDF file.
-  for (auto it : m_dims)
-  {
-    if(it.first == "COL") { it.second=total_dofs;}
-    register_dimension(m_filename,it.first,it.first,it.second);
-  }
-  register_dimension(m_filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
-  // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables();
   register_views(field_repo);
-  set_degrees_of_freedom();
-
-  // Finish the definition phase for this file.
-  eam_pio_enddef  (m_filename); 
-  m_is_init = true;
 
 } // init
 /* ---------------------------------------------------------- */
@@ -197,7 +168,17 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
   // Preamble to writing output this step
   if (is_write) 
   {
-    if (!m_is_init) {init(field_repo, gm);} // If m_is_init is false than the previous step was at max_n_steps.  Need a new file.
+    if( !m_is_init) 
+    {
+      std::string filename;
+      if (m_is_restart)
+      {
+        filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".r.nc";
+      } else {
+        filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";
+      }
+      new_file(filename);
+    }
 
     pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
     m_status["Snaps"] += 1;           // Update the snap tally, used to determine if a new file is needed.
@@ -259,12 +240,11 @@ inline void AtmosphereOutput::finalize(const FieldRepository<Real, device_type>&
   if (m_is_init) {eam_pio_closefile(m_filename);} // if m_is_init is true then the file was not closed during run step, close it now.
 
   // Check if a restart history needs to be written before finishing output.
-  bool is_restart_hist = (m_avg_type != "Instant" and m_status["Avg Count"]>0);
-  if (is_restart_hist)
+  m_is_restart_hist = (m_avg_type != "Instant" and m_status["Avg Count"]>0);
+  if (m_is_restart_hist)
   {
-    std::string filename = m_params.get<std::string>("FILENAME") + ".r.nc";
-    printf("ASD - Restart History needed - %s\n",filename.c_str());
-    init(field_repo, gm, filename);
+    std::string filename = m_params.get<std::string>("FILENAME") + ".rhist.nc";
+    new_file(filename);
     pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
     for (auto const& f_map : m_fields)
     {
@@ -272,6 +252,8 @@ inline void AtmosphereOutput::finalize(const FieldRepository<Real, device_type>&
       auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.
       grid_write_data_array(m_filename,name,m_dofs.at(name),l_view.data());
     }
+    std::string avgcnt = "avg_count";
+    grid_write_data_array(m_filename,"avg_count",1,&m_status["Avg Count"]);
     eam_pio_closefile(m_filename);
   }
 
@@ -367,7 +349,8 @@ inline void AtmosphereOutput::register_variables()
     register_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
   }
   // Finish by registering time as a variable.  TODO: Should this really be something registered during the reg. dimensions step? 
-  register_variable(m_filename,"time","time",1,{"time"},  PIO_REAL,"t");
+  register_variable(m_filename,"time","time",1,{"time"},  PIO_REAL,"time");
+  if (m_is_restart_hist) { register_variable(m_filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
 } // register_variables
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::set_degrees_of_freedom()
@@ -379,19 +362,28 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
   {
     auto  name = it.first;
     auto& fid  = it.second;
-    Int dof_len, n_dim_len;
+    bool has_cols = true;
+    Int dof_len, n_dim_len, dof_start, dof_stop, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.
     dof_len = fid.get_layout().size();
     // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
     // is stored here as m_gids.  Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
     // can be found by taking the quotient of dof_len and the length of m_gids.
-    n_dim_len = dof_len/m_gids.size();
+    if (fid.get_layout().has_tag(FieldTag::Column))
+    {
+      num_cols = m_gids.size();
+    } else {
+      // This field is not defined over columns
+      // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
+      num_cols = 1;
+      has_cols = false;
+    }
+    n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global output indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
     std::vector<Int> var_dof(dof_len);
     Int dof_it = 0;
-    int num_gids = m_gids.size();
-    for (int ii=0;ii<num_gids;++ii)
+    for (int ii=0;ii<num_cols;++ii)
     {
       for (int jj=0;jj<n_dim_len;++jj)
       {
@@ -404,11 +396,43 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
   }
   // Set degree of freedom for "time"
   set_dof(m_filename,"time",0,0);
+  if (m_is_restart_hist) { 
+    Int var_dof[1] = {0};
+    set_dof(m_filename,"avg_count",1,var_dof); 
+   }
   /* TODO: 
    * Adjust DOF to accomodate packing for fields 
    * Gather DOF info directly from grid manager
   */
 } // set_degrees_of_freedom
+/* ---------------------------------------------------------- */
+inline void AtmosphereOutput::new_file(const std::string filename)
+{
+  using namespace scream;
+  using namespace scream::scorpio;
+
+  m_filename = filename;
+
+  // Register new netCDF file for output.
+  register_outfile(m_filename);
+
+  // Register dimensions with netCDF file.
+  for (auto it : m_dims)
+  {
+    if(it.first == "COL") { it.second=m_total_dofs;}  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
+    register_dimension(m_filename,it.first,it.first,it.second);
+  }
+  register_dimension(m_filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
+  if (m_is_restart_hist) { register_dimension(m_filename,"cnt","cnt",1); }
+  // Register variables with netCDF file.  Must come after dimensions are registered.
+  register_variables();
+  set_degrees_of_freedom();
+
+  // Finish the definition phase for this file.
+  eam_pio_enddef  (m_filename); 
+  m_is_init = true;
+
+}
 /* ---------------------------------------------------------- */
 } //namespace scream
 #endif // SCREAM_SCORPIO_OUTPUT_HPP

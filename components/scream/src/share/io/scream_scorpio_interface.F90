@@ -46,7 +46,7 @@ module scream_scorpio_interface
   use physics_utils, only: rtype, rtype8, itype, btype
   use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
       PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe, &
-      pio_init
+      pio_init, pio_freedecomp
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
@@ -137,6 +137,7 @@ module scream_scorpio_interface
     character(tag_len)           :: tag              ! Unique tag associated with this decomposition
     type(io_desc_t),     pointer :: iodesc => NULL() ! PIO - decomposition
     type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition
+    logical                      :: iodesc_set = .false.
   end type iodesc_list_t
   ! Define the first iodesc_list_t 
   type(iodesc_list_t), target :: iodesc_list_top
@@ -661,6 +662,7 @@ contains
 
     integer :: ierr
     type(pio_file_list_t), pointer :: curr => NULL()
+    type(iodesc_list_t),   pointer :: curr_iodesc=>NULL()
 
     ! Close all the PIO Files 
     curr => pio_file_list_top
@@ -671,6 +673,16 @@ contains
       end if
       curr => curr%next
     end do
+    ! Free all decompositions from PIO
+    curr_iodesc => iodesc_list_top
+    do while(associated(curr_iodesc))
+      if (associated(curr_iodesc%iodesc).and.curr_iodesc%iodesc_set) then
+        call pio_freedecomp(pio_subsystem,curr_iodesc%iodesc)
+      end if
+      curr_iodesc => curr_iodesc%next
+    end do
+    
+
     call PIO_finalize(pio_subsystem, ierr)
     nullify(pio_subsystem)
 
@@ -786,6 +798,7 @@ contains
         allocate(curr%iodesc)
       else
         call pio_initdecomp(pio_subsystem, dtype, dimension_len, compdof, curr%iodesc, rearr=pio_rearranger)
+        curr%iodesc_set = .true.
       end if
       iodesc => curr%iodesc
     end if 

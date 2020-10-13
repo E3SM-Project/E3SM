@@ -221,13 +221,23 @@ inline void AtmosphereInput::set_degrees_of_freedom()
   {
     auto  name = it.first;
     auto& fid  = it.second;
-    Int dof_len, n_dim_len;
+    bool has_cols = true;
+    Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.
     dof_len = fid.get_layout().size();
     // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
     // is stored here as m_gids.  Thus, for this field, the total number of dof's in the other dimensions (i.e. levels)
     // can be found by taking the quotient of dof_len and the length of m_gids.
-    n_dim_len = dof_len/m_gids.size();
+    if (fid.get_layout().has_tag(FieldTag::Column))
+    {
+      num_cols = m_gids.size();
+    } else {
+      // This field is not defined over columns
+      // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
+      num_cols = 1;
+      has_cols = false;
+    }
+    n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global input indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
     Int var_dof[dof_len];

@@ -45,7 +45,7 @@ protected:
   bool                                 param_set = false;
   bool                                 gm_set    = false;
   bool                                 repo_set  = false;
-  bool                                 no_output = true;  //TODO, when restarts are active then this paradigm won't work.  We will still need an output stream for restarts.  Possible solution, have restart information be a part of YAML control entries for output.  Then this will still work.
+  bool                                 no_output = true;  
 
 }; // class OutputManager
 /*===============================================================================================*/
@@ -54,7 +54,7 @@ protected:
 inline void OutputManager::new_output(const ekat::ParameterList& params)
 {
   output_type output_instance(pio_comm,params);
-  output_instance.init(*m_device_field_repo, *m_grids_manager);
+  output_instance.init(*m_device_field_repo,*m_grids_manager);
   m_output_streams.push_back(output_instance);
   if( no_output ) {no_output = false;}
 }
@@ -125,7 +125,7 @@ inline void OutputManager::finalize(Real current_ts)
     it.finalize(*m_device_field_repo, *m_grids_manager, current_ts);
   }
   // Finalize PIO overall
-  eam_pio_finalize();
+  //eam_pio_finalize();
 }
 /*===============================================================================================*/
 inline void OutputManager::finalize(util::TimeStamp& current_ts)
@@ -136,16 +136,17 @@ inline void OutputManager::finalize(util::TimeStamp& current_ts)
   {
     it.finalize(*m_device_field_repo, *m_grids_manager, current_ts.get_seconds());
   }
-  // Finalize PIO overall
-  eam_pio_finalize();
+  // Finalize PIO overall  //TODO: Do we actually want to do this if the component coupler may be in charge of this?
+//  eam_pio_finalize();
 }
 /*===============================================================================================*/
 inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
 {
-  params.set<std::string>("FILENAME", "scorpio_restart_test");
+  params.set<std::string>("FILENAME", "scorpio_restart_test");  //TODO change this to some sort of case_name, TODO: control so suffix is .r.nc
   // Parse the parameters that controls this output instance.
   params.set<std::string>("AVERAGING TYPE","Instant");
   params.set<std::string>("GRID","Physics");
+  params.set<bool>("RESTART FILE",true);
   auto& freq_params = params.sublist("FREQUENCY");
   freq_params.get<Int>("OUT_MAX_STEPS",1);
   
@@ -161,7 +162,6 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
     f_it+=std::to_string(it_cnt);
     field_params.set<std::string>(f_it,it);
   }
-  params.print(); 
 }
 /*===============================================================================================*/
 } // namespace scream

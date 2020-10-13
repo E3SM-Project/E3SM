@@ -46,6 +46,10 @@ TEST_CASE("field_identifier", "") {
   REQUIRE_THROWS(fid2.set_dimensions(dims2));
 
   REQUIRE (fid1!=fid2);
+
+  // Check that has_tag option works
+  REQUIRE(fid1.get_layout.has_tag(FieldTag::GaussPoint));
+  REQUIRE(!fid1.get_layout.has_tag(FieldTag::Component));
 }
 
 TEST_CASE("field_tracking", "") {

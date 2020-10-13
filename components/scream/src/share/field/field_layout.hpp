@@ -47,6 +47,9 @@ public:
   // Note: as soon as a dimension is set, it cannot be changed.
   void set_dimension  (const int idim, const int dimension);
   void set_dimensions (const std::vector<int>& dims);
+  
+  // ----- Getters/Checkers ----- //
+  bool has_tag(FieldTag tag) const;
 
 protected:
 
@@ -71,6 +74,20 @@ inline int FieldLayout::size () const {
     prod *= m_dims[idim];
   }
   return prod;
+}
+
+inline bool FieldLayout::has_tag(FieldTag tag) const
+{
+  bool found = false;
+  for (auto it : m_tags)
+  {
+    if (it==tag)
+    {
+      found = true;
+      break;
+    }
+  }
+  return found;
 }
 
 inline FieldTag FieldLayout::tag (const int idim) const { 

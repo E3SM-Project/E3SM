@@ -1,0 +1,15 @@
+%YAML 1.1
+---
+FILENAME: io_output_test_instant
+AVERAGING TYPE: Instant
+GRID: Physics
+FREQUENCY:
+  OUT_N: 10
+  OUT_OPTION: Steps
+  OUT_MAX_STEPS: 1
+FIELDS:
+  Number of Fields: 3
+  field 1: field_1
+  field 2: field_2
+  field 3: field_3
+...
