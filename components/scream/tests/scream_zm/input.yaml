@@ -1,0 +1,20 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Atmosphere Processes:
+  Number of Entries: 1
+
+  Process 0:
+    Process Name: ZM
+    Grid: Physics
+    Can Initialize All Inputs: true
+
+Grids Manager:
+  Type: Physics Only
+  Reference Grid: Physics
+  Physics Only:
+    Number of global columns:   32
+    Number of vertical levels: 128
+...

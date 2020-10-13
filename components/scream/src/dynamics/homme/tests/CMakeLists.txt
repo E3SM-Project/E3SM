@@ -15,5 +15,6 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   set (UNIT_TEST_EXTRA_LIBRARY_DIRS ${dynLibDir})
 
   # Test dynamics-physics fields remapping
-  CreateUnitTest(homme_pd_remap "homme_pd_remap_tests.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS})
+  CreateUnitTest(homme_pd_remap "homme_pd_remap_tests.cpp" "${NEED_LIBS}"
+    COMPILER_DEFS ${EXTRA_CONFIG_DEFS})
 endif()

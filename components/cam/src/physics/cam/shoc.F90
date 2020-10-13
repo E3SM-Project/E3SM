@@ -4164,6 +4164,11 @@ subroutine pblintd_cldcheck(      &
                    shcol,nlev,nlevi, &                  ! Input
                    zi,cldn,          &                  ! Input
                    pblh)                                ! InOutput
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_pblintd_cldcheck_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4182,6 +4187,14 @@ subroutine pblintd_cldcheck(      &
     !
     integer  :: i                       ! longitude index
     logical  :: cldcheck(shcol)      ! True=>if cloud in lowest layer
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_pblintd_cldcheck_f(shcol, nlev, nlevi, zi, cldn, pblh)
+      return
+   endif
+#endif
+
     !
     ! Final requirement on PBL heightis that it must be greater than the depth
     ! of the lowest model level if there is any cloud diagnosed in

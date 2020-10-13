@@ -2707,7 +2707,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
       if (dum2.lt.dum1) then
          dum = 1._rtype
       else if (dum2.ge.dum1) then
-         dum = 2._rtype-bfb_exp(2300._rtype*(dum2-dum1))
+         dum = 2._rtype - bfb_exp(2300._rtype*(dum2-dum1))
       endif
 
       if (iparam.eq.1) then
@@ -2848,7 +2848,7 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,   
    real(rtype) :: dumqv_sat_i, qdep_satadj
 
    dumqv_sat_i = qv_sat(t_atm,pres,1)
-   qdep_satadj = (qv-dumqv_sat_i)/(1._rtype+bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv*bfb_square(t_atm)))*inv_dt
+   qdep_satadj = (qv-dumqv_sat_i)/(1._rtype + bfb_square(latent_heat_sublim)*dumqv_sat_i/(cp*rv* bfb_square(t_atm) ))*inv_dt
    qidep  = qidep*min(1._rtype,max(0._rtype, qdep_satadj)/max(qidep, 1.e-20_rtype))
    qi2qv_sublim_tend  = qi2qv_sublim_tend*min(1._rtype,max(0._rtype,-qdep_satadj)/max(qi2qv_sublim_tend, 1.e-20_rtype))
 

@@ -13,7 +13,10 @@ SET (NEED_LIBS ${dynLibName} scream_control scream_share pio timing ${BLAS_LIBRA
 SET (UNIT_TEST_EXTRA_LIBRARY_DIRS ${dynLibDir})
 
 # Test atmosphere processes
-CreateUnitTest(homme_stand_alone "homme_stand_alone.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} EXE_ARGS "< namelist.nl" LABELS "dynamics;driver")
+CreateUnitTest(homme_stand_alone "homme_stand_alone.cpp" "${NEED_LIBS}"
+    COMPILER_DEFS ${EXTRA_CONFIG_DEFS}
+    EXE_ARGS "< namelist.nl"
+    LABELS "dynamics;driver")
 
 # Set homme's test options, so that we can configure the namelist correctly
 SET (HOMME_TEST_NE 2)
