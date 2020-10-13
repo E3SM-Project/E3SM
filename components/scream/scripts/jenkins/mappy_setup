@@ -1,0 +1,5 @@
+module load sems-env sems-python/3.5.2
+
+source ./scream/components/scream/scripts/jenkins/sandia_son_proxy
+
+SCREAM_MACHINE=mappy

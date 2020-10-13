@@ -1042,7 +1042,7 @@
 <micro_tend_output       	      > .true.  </micro_tend_output>
 <p3_qc_autoCon_Expon    		      >  2.47   </p3_qc_autoCon_Expon>
 <p3_qc_accret_Expon    		      >  1.15   </p3_qc_accret_Expon>
-<do_prescribed_CCN>                    > .false. </do_prescribed_CCN>
+<do_prescribed_CCN                    > .false. </do_prescribed_CCN>
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 

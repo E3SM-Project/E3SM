@@ -18,6 +18,7 @@ set(SHOC_SRCS
   shoc_diag_second_moments_srf.cpp
   shoc_diag_second_moments_ubycond.cpp
   shoc_pblintd_init_pot.cpp
+  shoc_pblintd_cldcheck.cpp
   shoc_check_tke.cpp
 )
 
