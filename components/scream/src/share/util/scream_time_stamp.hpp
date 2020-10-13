@@ -17,7 +17,6 @@ public:
 
   // === Query methods === //
 
-  int    get_nstep   () const { return m_nstep; }
   int    get_years   () const { return m_yy; }
   int    get_months  () const { return m_mm; }
   int    get_days    () const { return m_dd; }
@@ -35,11 +34,10 @@ public:
 
 protected:
 
-  int     m_nstep     // Number of global timesteps
   int     m_yy;       // Year
   int     m_mm;       // Month
   int     m_dd;       // Day
-  double  m_ss;       // Second (of the day)
+  double  m_ss;      // Second (of the day)
 };
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
