@@ -73,15 +73,15 @@ public:
 protected:
   // Internal functions
   void add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name);
-  void register_variables();
-  void set_degrees_of_freedom();
+  void register_variables(const std::string filename);
+  void set_degrees_of_freedom(const std::string filename);
   void register_views(const FieldRepository<Real, device_type>& field_repo);
   void new_file(const std::string filename);
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
   
-  std::string m_filename;
+  std::string m_casename;
   std::string m_avg_type;
   std::string m_grid_name;
 
@@ -91,6 +91,9 @@ protected:
 
   Int m_total_dofs;
   Int m_local_dofs;
+
+  Int m_restart_hist_n;
+  std::string m_restart_hist_option;
 
   std::map<std::string,FieldIdentifier>  m_fields;
   std::map<std::string,Int>              m_dofs;
@@ -121,12 +124,15 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   using namespace scream::scorpio;
 
   // Parse the parameters that controls this output instance.
+  m_casename        = m_params.get<std::string>("FILENAME");
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
   m_grid_name       = m_params.get<std::string>("GRID");
   auto& freq_params = m_params.sublist("FREQUENCY");
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
   m_out_frequency   = freq_params.get<Int>("OUT_N");
   m_out_units       = freq_params.get<std::string>("OUT_OPTION");
+  m_restart_hist_n  = m_params.get<Int>("restart_hist_N");
+  m_restart_hist_option = m_params.get<std::string>("restart_hist_OPTION");
   if (m_params.isParameter("RESTART FILE")) {m_is_restart = m_params.get<bool>("RESTART FILE");}
 
   // Gather data from grid manager:
@@ -160,26 +166,39 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
   m_status["Run"] += 1;
   m_status["Avg Count"] += 1;
 
-  // Check to see if output will be written this step
-  bool is_write = (m_status["Avg Count"] == m_out_frequency);
-  bool avg_init = (m_status["Avg Count"] == 1); // If Avg Count was 0 last step then we need to reset the view.
+  // For the RUN step we always update the local views of each field to reflect the most recent step.
+  // Following the update we have two courses of action:
+  // 1. Do nothing else, this means that the frequency of output doesn't correspond with this step.
+  // 2. Write output.
+  //   a. This is either typical output or restart output.
+  //   b. In the case of typical output we also reset the average counter and the local view.
+  //   c. A standard restart is just an instance of typical output, so that fits under this category.
+  // The other kind of output is the restart history output.  This allows a restart run to also have
+  // a consistent set if history outputs.
+  // 1. A restart history is not necessary for,
+  //   a. Instantaneous output streams.
+  //   b. When the history has also be written this step.  In other words, when the average counter is 0.
+  // Final point, typical output, a restart file and a restart history file can be distinguished by the
+  // suffix, (.nc) is typical, (.r.nc) is a restart and (.rhist.nc) is a restart history file.
+
+  // Check to see if output is expected and what kind.
+  bool is_typical = (m_status["Avg Count"] == m_out_frequency);
+  bool is_rhist   = (m_status["Avg Count"] == m_restart_hist_n) and !is_typical;
+  bool is_write = is_typical or is_rhist; // General flag for if output is written
   // Preamble to writing output this step
+  std::string filename = m_casename+"_"+std::to_string(m_status["Init"]);
+  if (m_is_restart) { filename+=".r"; }
+  if (is_rhist)     { filename+=".rhist"; }
+  filename += ".nc";
+  //
   if (is_write) 
   {
-    if( !m_is_init) 
-    {
-      std::string filename;
-      if (m_is_restart)
-      {
-        filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".r.nc";
-      } else {
-        filename = m_params.get<std::string>("FILENAME")+"_"+std::to_string(m_status["Init"])+".nc";
-      }
-      new_file(filename);
-    }
+    // If we closed the file in the last write because we reached max steps, or this is a restart history file,
+    // we need to create a new file for writing.
+    if( !m_is_init or is_rhist ) { new_file(filename); }
 
-    pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
-    m_status["Snaps"] += 1;           // Update the snap tally, used to determine if a new file is needed.
+    pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
+    if (is_typical) { m_status["Snaps"] += 1; }  // Update the snap tally, used to determine if a new file is needed and only needed for typical output.
   }
 
   // Take care of updating and possibly writing fields.
@@ -193,9 +212,6 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type != "Instant")
     {
-      // If this is the start of a new averaging flag then init the local view.
-      if (avg_init) { for (int ii=0; ii<f_len; ++ii) {l_view(ii) = g_view(ii); }
-      }
       // Update local view given the averaging type.  TODO make this a switch statement?
       if (m_avg_type == "Average")
       {
@@ -210,22 +226,34 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
         EKAT_REQUIRE_MSG(true, "Error! IO Class, updating local views, averaging type of " + m_avg_type + " is not supported.");
       }
     } // m_avg_type != "Instant"
-    if (is_write) {grid_write_data_array(m_filename,name,m_dofs.at(name),l_view.data());}
+    if (is_write) {
+      grid_write_data_array(filename,name,m_dofs.at(name),l_view.data());
+      if (is_typical) { 
+        for (int ii=0; ii<f_len; ++ii) { l_view(ii) = g_view(ii); }  // Reset local view after writing.  Only for typical output.
+      }
+    }
   }
 
   // Finish up any updates to output file and snap counter.
   if (is_write)
   {
-    sync_outfile(m_filename);
+    sync_outfile(filename);
     // If snaps equals max per file, close this file and set flag to open a new one next write step.
-    if (m_status["Snaps"] == m_out_max_steps)
+    if (is_typical)
     {
-      m_status["Snaps"] = 0;
-      eam_pio_closefile(m_filename);
-      m_is_init = false;
+      if (m_status["Snaps"] == m_out_max_steps)
+      {
+        m_status["Snaps"] = 0;
+        eam_pio_closefile(filename);
+        m_is_init = false;
+      }
+      // Zero out the Avg Count count now that snap has been written.
+      m_status["Avg Count"] = 0;
     }
-    // Zero out the Avg Count count now that snap has bee written.
-    m_status["Avg Count"] = 0;
+    else  // must be that is_rhist=true
+    { 
+      eam_pio_closefile(filename); 
+    }
   }
 
 } // run
@@ -236,32 +264,14 @@ finalize(const FieldRepository<Real, device_type>& /* field_repo */, const Grids
   using namespace scream;
   using namespace scream::scorpio;
 
-  if (m_is_init) {eam_pio_closefile(m_filename);} // if m_is_init is true then the file was not closed during run step, close it now.
-
-  // Check if a restart history needs to be written before finishing output.
-  m_is_restart_hist = (m_avg_type != "Instant" and m_status["Avg Count"]>0);
-  if (m_is_restart_hist)
-  {
-    std::string filename = m_params.get<std::string>("FILENAME") + ".rhist.nc";
-    new_file(filename);
-    pio_update_time(m_filename,time); // Universal scorpio command to set the timelevel for this snap.
-    for (auto const& f_map : m_fields)
-    {
-      auto name   = f_map.first;
-      auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.
-      grid_write_data_array(m_filename,name,m_dofs.at(name),l_view.data());
-    }
-    std::string avgcnt = "avg_count";
-    grid_write_data_array(m_filename,"avg_count",1,&m_status["Avg Count"]);
-    eam_pio_closefile(m_filename);
-  }
+  // Nothing to do at the moment, but keep just in case future development needs a finalization step
 
   m_status["Finalize"] += 1;
 } // finalize
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::check_status()
 {
-  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",m_comm.rank(),m_filename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
+  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
 } // check_status
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name)
@@ -325,7 +335,7 @@ inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_
   }
 }
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::register_variables()
+inline void AtmosphereOutput::register_variables(const std::string filename)
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -345,14 +355,14 @@ inline void AtmosphereOutput::register_variables()
     io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
     vec_of_dims.push_back("time");  //TODO: See the above comment on time.
-    register_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
+    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
   }
   // Finish by registering time as a variable.  TODO: Should this really be something registered during the reg. dimensions step? 
-  register_variable(m_filename,"time","time",1,{"time"},  PIO_REAL,"time");
-  if (m_is_restart_hist) { register_variable(m_filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
+  register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
+  if (m_is_restart_hist) { register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
 } // register_variables
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::set_degrees_of_freedom()
+inline void AtmosphereOutput::set_degrees_of_freedom(const std::string filename)
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -394,10 +404,10 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
     m_dofs.emplace(std::make_pair(name,dof_len));
   }
   // Set degree of freedom for "time"
-  set_dof(m_filename,"time",0,0);
+  set_dof(filename,"time",0,0);
   if (m_is_restart_hist) { 
     Int var_dof[1] = {0};
-    set_dof(m_filename,"avg_count",1,var_dof); 
+    set_dof(filename,"avg_count",1,var_dof); 
    }
   /* TODO: 
    * Adjust DOF to accomodate packing for fields 
@@ -410,25 +420,23 @@ inline void AtmosphereOutput::new_file(const std::string filename)
   using namespace scream;
   using namespace scream::scorpio;
 
-  m_filename = filename;
-
   // Register new netCDF file for output.
-  register_outfile(m_filename);
+  register_outfile(filename);
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims)
   {
     if(it.first == "COL") { it.second=m_total_dofs;}  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
-    register_dimension(m_filename,it.first,it.first,it.second);
+    register_dimension(filename,it.first,it.first,it.second);
   }
-  register_dimension(m_filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
-  if (m_is_restart_hist) { register_dimension(m_filename,"cnt","cnt",1); }
+  register_dimension(filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
+  if (m_is_restart_hist) { register_dimension(filename,"cnt","cnt",1); }
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables();
-  set_degrees_of_freedom();
+  register_variables(filename);
+  set_degrees_of_freedom(filename);
 
   // Finish the definition phase for this file.
-  eam_pio_enddef  (m_filename); 
+  eam_pio_enddef  (filename); 
   m_is_init = true;
 
 }

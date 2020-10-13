@@ -107,9 +107,9 @@ std::shared_ptr<FieldRepository<Real,DefaultDevice>> get_test_repo(const Int num
   fid3.set_grid_name("Physics");
   // Register fields with repo
   repo->registration_begins();
-  repo->register_field(fid1,{"output"});
+  repo->register_field(fid1,{"output","restart"});
   repo->register_field(fid2,{"output","restart"});
-  repo->register_field(fid3,{"output","restart"});
+  repo->register_field(fid3,{"output"});
   repo->registration_ends();
 
   // Initialize these fields

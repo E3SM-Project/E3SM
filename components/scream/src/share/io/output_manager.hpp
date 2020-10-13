@@ -80,19 +80,27 @@ inline void OutputManager::init()
   MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   
+  // Check for restart output
+  Int restart_hist_N = 0;
+  std::string restart_hist_OPTION = "None";
+  if (m_params.isSublist("Restart Control"))
+  {
+    auto& out_params = m_params.sublist("Restart Control");
+    make_restart_param_list(out_params);
+    new_output(out_params);
+    // Gather restart frequency info for restart history files
+    auto& freq_params = out_params.sublist("FREQUENCY");
+    restart_hist_N = freq_params.get<Int>("OUT_N");
+    restart_hist_OPTION = freq_params.get<std::string>("OUT_OPTION");
+  }
   // Construct and store an output stream instance for each output request.
   auto& list_of_files = m_params.get<std::vector<std::string>>("Output YAML Files");    // First grab the list of Output files from the control YAML
   for (auto& it : list_of_files)
   {
     ekat::ParameterList out_params(it);
     parse_yaml_file(it,out_params);
-    new_output(out_params);
-  }
-  // Check for restart output
-  if (m_params.isSublist("Restart Control"))
-  {
-    auto& out_params = m_params.sublist("Restart Control");
-    make_restart_param_list(out_params);
+    out_params.set<Int>("restart_hist_N",restart_hist_N);
+    out_params.set<std::string>("restart_hist_OPTION",restart_hist_OPTION);
     new_output(out_params);
   }
 }
@@ -149,6 +157,9 @@ inline void OutputManager::make_restart_param_list(ekat::ParameterList& params)
   params.set<bool>("RESTART FILE",true);
   auto& freq_params = params.sublist("FREQUENCY");
   freq_params.get<Int>("OUT_MAX_STEPS",1);
+  // Restart files don't also need a restart history file
+  params.set<Int>("restart_hist_N",0);
+  params.set<std::string>("restart_hist_OPTION","NONE");
   
   // set fields for restart
   auto& restart_fields = m_device_field_repo->get_field_groups().at("restart");
