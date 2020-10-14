@@ -48,7 +48,6 @@ void Functions<S,D>::shoc_energy_fixer(
   Scalar te_a = 0;
   Scalar te_b = 0;
   Scalar se_dis = 0;
-  Int shoctop = 0;
 
   // Compute linear interpolation of data into rho_zi
   linear_interp(team,zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,0);
@@ -57,29 +56,36 @@ void Functions<S,D>::shoc_energy_fixer(
   // Compute the host timestep
   const Scalar hdtime = dtime*nadv;
 
+  // Compute the total energy before and after SHOC call
   const auto nlevi_pack = ekat::npack<Spack>(nlevi)-1;
   const int nlevi_indx = (nlevi-1)%Spack::n;
-
-  // Compute the total energy before and after SHOC call
   const Scalar shf = wthl_sfc*cp*rho_zi(nlevi_pack)[nlevi_indx];
   const Scalar lhf = wqw_sfc*rho_zi(nlevi_pack)[nlevi_indx];
   te_a = se_a + ke_a + (lcond+lice)*wv_a +lice*wl_a;
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;
   te_b += (shf+lhf*(lcond+lice))*hdtime;
 
-  //Find which pack and pack index corresponds to shoctop
-  int shoctop_pack = shoctop/Spack::n;
-  int shoctop_indx = shoctop%Spack::n;
-
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
-  while (tke(shoctop_pack)[shoctop_indx] == mintke && shoctop < nlev-2) {
-    shoctop += 1;
+  Int shoctop = 0;
+  const auto nlevm2_packs = ekat::npack<Spack>(nlev-2);
+  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlevm2_packs),
+                          [&] (Int k, Int& local_shoctop) {
+    // Find the minimum index corresponding to mintke!=tke(indx).
+    // Here we set all indices s.t. tke==mintke to nlev-2 since
+    // we require shoctop <= nlev-2
+    auto local_indices = ekat::range<IntSmallPack>(k*IntSmallPack::n);
+    local_indices.set(tke(k)==mintke, nlev-2);
+    const Int min_indx = ekat::min(local_indices);
 
-    // Update indices for shoctop
-    shoctop_pack = shoctop/Spack::n;
-    shoctop_indx = shoctop%Spack::n;
-  }
+    if (min_indx < local_shoctop) {
+      local_shoctop = min_indx;
+    }
+  }, Kokkos::Min<int>(shoctop));
+
+  // Get pack indices for shoctop
+  const int shoctop_pack = shoctop/Spack::n;
+  const int shoctop_indx = shoctop%Spack::n;
 
   // Compute the disbalance of total energy, over depth where SHOC is active.
   se_dis = (te_a - te_b)/(pint(nlevi_pack)[nlevi_indx] - pint(shoctop_pack)[shoctop_indx]);
