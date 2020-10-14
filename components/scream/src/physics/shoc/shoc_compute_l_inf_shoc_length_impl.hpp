@@ -32,6 +32,7 @@ void Functions<S,D>
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*dz_zt(k);
   }, denom);
+  team.team_barrier();
 
   // Set l_inf
   l_inf = sp(0.1)*(numer/denom);
