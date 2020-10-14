@@ -1067,15 +1067,16 @@
         <command name="load">parallel-netcdf/1.11.0-6qz7skn</command>
       </modules>
       <modules compiler="intel18">
-        <command name="load">intel/18.0.4-62uvgmb</command>
+        <command name="load">intel/18.0.4-443hhug</command>
         <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
-        <command name="load">netcdf/4.4.1-fijcsqi</command>
-        <command name="load">netcdf-cxx/4.2-cixenix</command>
-        <command name="load">netcdf-fortran/4.4.4-mmtrep3</command>
+        <command name="load">netcdf-cxx/4.2-rzdxzwf</command>
       </modules>
       <modules compiler="intel18" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-verbs-m57bia7</command>
-        <command name="load">parallel-netcdf/1.11.0-ny4vo3o</command>
+        <command name="load">mvapich2/2.3.1-verbs-dtbb6xk</command>
+        <command name="load">hdf5/1.10.5-4rufvi6</command>
+        <command name="load">netcdf/4.4.1-4odwn5a</command>
+        <command name="load">netcdf-fortran/4.4.4-kgp5hqm</command>
+        <command name="load">parallel-netcdf/1.8.1-xqvwg7l</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/8.2.0-xhxgy33</command>
