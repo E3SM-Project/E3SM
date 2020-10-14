@@ -5390,17 +5390,12 @@ end subroutine print_active_fldlst
 
     hash_key = gen_hash_key(fldname)
     ff = tbl_hash_pri(hash_key)
-    if(trim(fldname) == 'EXTINCT')print*,'BALLI:his_2:',ff, trim(fldname)
     if ( ff < 0 ) then
       io = abs(ff)
       in = tbl_hash_oflow(io)
       do ii = 1, in
         ff = tbl_hash_oflow(io+ii)
-        if(trim(fldname) == 'EXTINCT')then
-           print*,'BALLI:his_1:',trim(masterlist(ff)%thisentry%field%name), trim(fldname),ff
-        else
-           if ( masterlist(ff)%thisentry%field%name == fldname ) exit
-        endif
+        if ( masterlist(ff)%thisentry%field%name == fldname ) exit
       end do
     end if
 
@@ -5411,7 +5406,6 @@ end subroutine print_active_fldlst
     end if
 
     if (associated(masterlist(ff)%thisentry) .and. masterlist(ff)%thisentry%field%name /= fldname ) then
-       print*,'BALLI:his:',trim(masterlist(ff)%thisentry%field%name),trim(fldname),ff,associated(masterlist(ff)%thisentry)
       call endrun ('GET_MASTERLIST_INDX: error finding field '//fldname//' on master list')
     end if
 
@@ -5507,28 +5501,28 @@ end subroutine print_active_fldlst
     !
     !  Dump out primary and overflow hashing tables.
     !
-       if ( masterproc ) then
-          do ii = 0, tbl_hash_pri_sz-1
-             if ( tbl_hash_pri(ii) /= 0 ) write(iulog,*) 'tbl_hash_pri', ii, tbl_hash_pri(ii)
-          end do
+    !   if ( masterproc ) then
+    !      do ii = 0, tbl_hash_pri_sz-1
+    !         if ( tbl_hash_pri(ii) /= 0 ) write(iulog,666) 'tbl_hash_pri', ii, tbl_hash_pri(ii)
+    !      end do
     !
-          do ii = 1, tbl_hash_oflow_sz
-             if ( tbl_hash_oflow(ii) /= 0 ) write(iulog,*) 'tbl_hash_oflow', ii, tbl_hash_oflow(ii)
-          end do
+    !      do ii = 1, tbl_hash_oflow_sz
+    !         if ( tbl_hash_oflow(ii) /= 0 ) write(iulog,666) 'tbl_hash_oflow', ii, tbl_hash_oflow(ii)
+    !      end do
     !
-          itemp = 0
-          ii = 1
-          do 
-             if ( tbl_hash_oflow(ii) == 0 ) exit
-             itemp = itemp + 1
-             write(iulog,*) 'Overflow chain ', itemp, ' has ', tbl_hash_oflow(ii), ' entries:'
-             do ff = 1, tbl_hash_oflow(ii)  ! dump out colliding names on this chain
-                write(iulog,*) '     ', ff, ' = ', tbl_hash_oflow(ii+ff), &
-                           ' ', masterlist(tbl_hash_oflow(ii+ff))%thisentry%field%name
-             end do
-             ii = ii + tbl_hash_oflow(ii) +1 !advance pointer to start of next chain
-          end do
-       end if
+    !      itemp = 0
+    !      ii = 1
+    !      do 
+    !         if ( tbl_hash_oflow(ii) == 0 ) exit
+    !         itemp = itemp + 1
+    !         write(iulog,*) 'Overflow chain ', itemp, ' has ', tbl_hash_oflow(ii), ' entries:'
+    !         do ff = 1, tbl_hash_oflow(ii)  ! dump out colliding names on this chain
+    !            write(iulog,*) '     ', ff, ' = ', tbl_hash_oflow(ii+ff), &
+    !                       ' ', masterlist(tbl_hash_oflow(ii+ff))%thisentry%field%name
+    !         end do
+    !         ii = ii + tbl_hash_oflow(ii) +1 !advance pointer to start of next chain
+    !      end do
+    !   end if
 
     return
 666 format(1x, a, '(', i4, ')', 1x, i6)

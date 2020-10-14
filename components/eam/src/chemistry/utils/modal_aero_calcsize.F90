@@ -169,7 +169,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    integer, intent(in) :: species_class(:)
 
    ! local
-   integer  :: ipair, iq, iqfrm, iqtoo, irad, iballi
+   integer  :: ipair, iq, iqfrm, iqtoo, irad
    integer  :: aer_type
    integer  :: lsfrm, lstoo, lsfrma, lsfrmc, lstooa, lstooc, lunout
    integer  :: mfrm, mtoo
@@ -194,7 +194,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
    endif
 
-   !initialize 
+   !initialize
    !(0 index 0f modefrm_csizxf and  modetoo_csizxf is reserved for the prognostic call)
    do irad = 0, npair_csizxf
       modefrm_csizxf(irad) = -1
@@ -211,20 +211,8 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !  do_aitacc_transfer_default allows aitken <--> accum mode transfer to be turned on/off
    !  *** it can only be true when aitken & accum modes are both present
    !      and have prognosed number and diagnosed surface/sigmag
-
    nait = modeptr_aitken
    nacc = modeptr_accum
-
-   call rad_cnst_get_info(1,nmodes=iballi)
-   write(103,*)'BALLI:1:',iballi
-   call rad_cnst_get_info(2,nmodes=iballi)
-   write(103,*)'BALLI:2:',iballi
-   call rad_cnst_get_info(3,nmodes=iballi)
-   write(103,*)'BALLI:3:',iballi
-   call rad_cnst_get_info(4,nmodes=iballi)
-   write(103,*)'BALLI:4:',iballi
-
-
    do_aitacc_transfer_default = .false.
    if ((nait > 0) .and.   &
       (nacc  > 0) .and.   &
@@ -248,7 +236,7 @@ do_aitacc_transfer_if_block1: &
 !	(a2 <--> a1 transfer)
 !   transfers include number_a, number_c, mass_a, mass_c
 !
-      !npair_csizxf = 1
+      npair_csizxf = 1
       modefrm_csizxf(1) = nait
       modetoo_csizxf(1) = nacc
 
@@ -431,17 +419,17 @@ do_adjust_if_block2: &
          unit = '#/m2/s'
          fieldname = trim(tmpnamea) // '_sfcsiz1'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column source'
-         !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol .and. history_verbose) then
-            !call add_default(fieldname, 1, ' ')
+            call add_default(fieldname, 1, ' ')
          end if
          if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
          fieldname = trim(tmpnamea) // '_sfcsiz2'
          long_name = trim(tmpnamea) // ' calcsize number-adjust column sink'
-         !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+         call addfld( fieldname, horiz_only, 'A', unit, long_name )
          if (history_aerosol .and. history_verbose) then
-            !call add_default(fieldname, 1, ' ')
+            call add_default(fieldname, 1, ' ')
          end if
          if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
       end do   ! aer_type = ...
@@ -492,33 +480,33 @@ do_aitacc_transfer_if_block2: &
                (tmpnamea(1:3) == 'NUM')) unit = '#/m2/s'
             fieldname = trim(tmpnamea) // '_sfcsiz3'
             long_name = trim(tmpnamea) // ' calcsize aitken-to-accum adjust column tendency'
-            !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+            call addfld( fieldname, horiz_only, 'A', unit, long_name )
             if (history_aerosol .and. history_verbose) then
-               !call add_default(fieldname, 1, ' ')
+               call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
             fieldname = trim(tmpnameb) // '_sfcsiz3'
             long_name = trim(tmpnameb) // ' calcsize aitken-to-accum adjust column tendency'
-            !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+            call addfld( fieldname, horiz_only, 'A', unit, long_name )
             if (history_aerosol .and. history_verbose) then
-               !call add_default(fieldname, 1, ' ')
+               call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
             fieldname = trim(tmpnamea) // '_sfcsiz4'
             long_name = trim(tmpnamea) // ' calcsize accum-to-aitken adjust column tendency'
-            !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+            call addfld( fieldname, horiz_only, 'A', unit, long_name )
             if (history_aerosol .and. history_verbose) then
-               !call add_default(fieldname, 1, ' ')
+               call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
             fieldname = trim(tmpnameb) // '_sfcsiz4'
             long_name = trim(tmpnameb) // ' calcsize accum-to-aitken adjust column tendency'
-            !call addfld( fieldname, horiz_only, 'A', unit, long_name )
+            call addfld( fieldname, horiz_only, 'A', unit, long_name )
             if (history_aerosol .and. history_verbose) then
-               !call add_default(fieldname, 1, ' ')
+               call add_default(fieldname, 1, ' ')
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
@@ -545,7 +533,7 @@ end subroutine modal_aero_calcsize_init
 !===============================================================================
 
 subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
-   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m, called_from)
+   do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m, caller)
 
   implicit none
    !-----------------------------------------------------------------------
@@ -574,9 +562,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    logical,  optional, intent(in) :: do_adjust_in
    logical,  optional, intent(in) :: do_aitacc_transfer_in
    logical,  optional, intent(in) :: update_mmr_in
-   integer,  optional, intent(in) :: list_idx_in    ! diagnostic list index
+   integer,  optional, intent(in) :: list_idx_in       ! diagnostic list index
    real(r8), optional, pointer    :: dgnumdry_m(:,:,:) ! interstital aerosol dry number mode radius (m)
-   character(len=*), optional :: called_from
+
+   !This subroutine is called from various places in the code
+   !"caller" optional variable can hold the name of the subroutine
+   !which called this subroutine (for debugging only)
+   character(len=*), optional     :: caller
 
 #ifdef MODAL_AERO
 
@@ -600,7 +592,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    real(r8), pointer :: dgncur_a(:,:,:)
 
    integer  :: iq, nspec, imode, klev, icol, idx
-   integer  :: num_idx
+   integer  :: nmodes, num_idx
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
 
@@ -642,7 +634,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    !-----------------------------------------------------------------------
    integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
-   integer :: nballi
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -671,12 +662,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       if (.not. present(dgnumdry_m)) &
            call endrun('list_idx_in is present but dgnumdry_m pointer is missing'//errmsg(__FILE__,__LINE__))
       dgncur_a => dgnumdry_m(:,:,:)
-      !if(associated(dgnumdry_m) .and. list_idx_local>0) then
-      !   call endrun("BALLI is associated")
-      !else
-      !   call endrun("BALLI is NOT associated")
-      !endif
-      !if(.not. associated(dgncur_a))allocate(dgncur_a(pcols,pver,ntot_amode))
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
@@ -690,9 +675,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
-      dqqcwdt(:,:,:)  = 0.0_r8!huge(dqqcwdt)
-      qsrflx(:,:,:,:) = 0.0_r8!huge(qsrflx)
+      dqqcwdt(:,:,:)  = huge(dqqcwdt)
+      qsrflx(:,:,:,:) = huge(qsrflx)
    endif
+
+   if(present(caller)) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
 
    pdel     => state%pdel !Only required if update_mmr = .true.
    state_q  => state%q    !BSINGH - it is okay to use it for num mmr but not for specie mmr (as diagnostic call may miss some species)
@@ -711,27 +698,22 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    !inverse of time step
    deltatinv = 1.0_r8/(deltat*close_to_one)
 
-   if(present(called_from) .and. trim(called_from) == 'abc')write(110,*)'BALLI_abc_1',update_mmr, do_adjust, do_aitacc_transfer, list_idx_local
+   call rad_cnst_get_info(list_idx_local, nmodes=nmodes)
 
-   call rad_cnst_get_info(list_idx_local, nmodes=nballi)
-
-
- 
    !Now compute dry diameter for both interstitial and cloud borne aerosols
-   do imode = 1, nballi
+   do imode = 1, nmodes
 
       !----------------------------------------------------------------------
       !Initialize all parameters to the default values for the mode
       !----------------------------------------------------------------------
       !interstitial
-
       call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
-           dgncur_a, v2ncur_a, dryvol_a,called_from)                               !output
+           dgncur_a, v2ncur_a, dryvol_a)                               !output
 
-      if(.not. (present(called_from) .and. trim(called_from) == 'abc')) then
       !cloud borne
       call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
            dgncur_c, v2ncur_c, dryvol_c)                               !output
+
       !----------------------------------------------------------------------
       !Find # of species in this mode
       !----------------------------------------------------------------------
@@ -749,6 +731,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       !----------------------------------------------------------------------
       call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
 
+
       ! do size adjustment based on computed dry diameter values
       call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
            do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,                  & !input
@@ -756,14 +739,10 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
            drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
            num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
            dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)                                              !output
-      endif
 
    end do  ! do imode = 1, ntot_amode
 
-   if(present(called_from) .and. trim(called_from) == 'abc') then
-      write(110,*)'BALLI_abc_0 RETURNING'
-      return
-   endif
+
    !------------------------------------------------------------------------------
    ! when the aitken mode mean size is too big, the largest
    !    aitken particles are transferred into the accum mode
@@ -829,16 +808,16 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
             tmpnamea = cnst_name(lsfrm)
             tmpnameb = cnst_name(lstoo)
             fieldname = trim(tmpnamea) // '_sfcsiz3'
-            !call outfld( fieldname, qsrflx(:,lsfrm,3,inter_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lsfrm,3,inter_aero), pcols, lchnk)
 
             fieldname = trim(tmpnameb) // '_sfcsiz3'
-            !call outfld( fieldname, qsrflx(:,lstoo,3,inter_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lstoo,3,inter_aero), pcols, lchnk)
 
             fieldname = trim(tmpnamea) // '_sfcsiz4'
-            !call outfld( fieldname, qsrflx(:,lsfrm,4,inter_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lsfrm,4,inter_aero), pcols, lchnk)
 
             fieldname = trim(tmpnameb) // '_sfcsiz4'
-            !call outfld( fieldname, qsrflx(:,lstoo,4,inter_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lstoo,4,inter_aero), pcols, lchnk)
          endif
 
          lsfrm = lspecfrmc_csizxf(iq,ipair)
@@ -848,16 +827,16 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
             tmpnameb = cnst_name_cw(lstoo)
 
             fieldname = trim(tmpnamea) // '_sfcsiz3'
-            !call outfld( fieldname, qsrflx(:,lsfrm,3,cld_brn_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lsfrm,3,cld_brn_aero), pcols, lchnk)
 
             fieldname = trim(tmpnameb) // '_sfcsiz3'
-            !call outfld( fieldname, qsrflx(:,lstoo,3,cld_brn_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lstoo,3,cld_brn_aero), pcols, lchnk)
 
             fieldname = trim(tmpnamea) // '_sfcsiz4'
-            !call outfld( fieldname, qsrflx(:,lsfrm,4,cld_brn_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lsfrm,4,cld_brn_aero), pcols, lchnk)
 
             fieldname = trim(tmpnameb) // '_sfcsiz4'
-            !call outfld( fieldname, qsrflx(:,lstoo,4,cld_brn_aero), pcols, lchnk)
+            call outfld( fieldname, qsrflx(:,lstoo,4,cld_brn_aero), pcols, lchnk)
          endif
       end do   ! iq = ...
 
@@ -870,7 +849,7 @@ end subroutine modal_aero_calcsize_sub
 !---------------------------------------------------------------------------------------------
 
 subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
-     dgncur, v2ncur, dryvol, called_from )                                       !output
+     dgncur, v2ncur, dryvol )                                       !output
 
   !-----------------------------------------------------------------------------
   !Purpose: Set initial defaults for the dry diameter, volume to num
@@ -891,21 +870,15 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   real(r8), intent(out) :: dgncur(:,:,:) !diameter
   real(r8), intent(out) :: v2ncur(:,:,:) !volume to number
   real(r8), intent(out) :: dryvol(:,:)   !dry volume
-  character(len=*),optional :: called_from
 
   !local variables
   integer :: icol, klev
 
   do klev = top_lev, pver
      do icol = 1, ncol
-        !if(.not. (present(called_from) .and. trim(called_from) == 'abc') ) then
         dgncur(icol,klev,imode) = dgnum_amode(imode)     !diameter
-        !else
-           !print*,'BALLI:',dgnum_amode(imode)
-        !endif
         v2ncur(icol,klev,imode) = voltonumb_amode(imode) !volume to number
         dryvol(icol,klev)       = 0.0_r8                 !initialize dry vol
-
      end do
   end do
 
@@ -1883,10 +1856,10 @@ subroutine output_flds(name, idx, lchnk, aer_type, qsrflx)
   character(len=fieldname_len) :: fieldname
 
   fieldname = trim(name) // '_sfcsiz1'
-  !call outfld( fieldname, qsrflx(:,idx,1,aer_type), pcols, lchnk)
+  call outfld( fieldname, qsrflx(:,idx,1,aer_type), pcols, lchnk)
 
   fieldname = trim(name) // '_sfcsiz2'
-  !call outfld( fieldname, qsrflx(:,idx,2,aer_type), pcols, lchnk)
+  call outfld( fieldname, qsrflx(:,idx,2,aer_type), pcols, lchnk)
 
   return
 end subroutine output_flds

@@ -9,7 +9,7 @@ module modal_aer_opt
 
 ! uses Wiscombe's (1979) mie scattering code
 
-use module_perturb
+
 use shr_kind_mod,      only: r8 => shr_kind_r8, shr_kind_cl
 use ppgrid,            only: pcols, pver, pverp
 use constituents,      only: pcnst
@@ -33,9 +33,7 @@ use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
 
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
-use modal_aero_calcsize,    only: modal_aero_calcsize_sub, modal_aero_calcsize_diag
-use phys_grid,     only: phys_grid_find_col, get_rlat_p, get_rlon_p
-
+use modal_aero_calcsize,    only: modal_aero_calcsize_sub
 
 implicit none
 private
@@ -202,7 +200,7 @@ subroutine modal_aer_opt_init()
    ! Add diagnostic fields to history output.
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
-   !call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
+   call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
    call addfld ('AODALL',horiz_only,    'A','  ','AOD 550 nm for all time and species', flag_xyfill=.true.)
@@ -372,22 +370,22 @@ subroutine modal_aer_opt_init()
    do ilist = 1, n_diag
       if (call_list(ilist)) then
          
-         !call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','/m', &
-         !     'Aerosol extinction', flag_xyfill=.true.)
-         !call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
-         !     'Aerosol absorption', flag_xyfill=.true.)
-         !call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
-         !     'Aerosol optical depth 550 nm', flag_xyfill=.true.)
-         !call addfld ('AODALL'//diag(ilist),       horiz_only, 'A','  ', &
-         !     'AOD 550 nm all time', flag_xyfill=.true.)
-         !call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
-         !     'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('EXTINCT'//diag(ilist), (/ 'lev' /), 'A','/m', &
+              'Aerosol extinction', flag_xyfill=.true.)
+         call addfld ('ABSORB'//diag(ilist),  (/ 'lev' /), 'A','/m', &
+              'Aerosol absorption', flag_xyfill=.true.)
+         call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('AODALL'//diag(ilist),       horiz_only, 'A','  ', &
+              'AOD 550 nm all time', flag_xyfill=.true.)
+         call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
+              'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
          
-         !call add_default ('EXTINCT'//diag(ilist), 1, ' ')
-         !call add_default ('ABSORB'//diag(ilist),  1, ' ')
-         !call add_default ('AODVIS'//diag(ilist),  1, ' ')
-         !call add_default ('AODALL'//diag(ilist),  1, ' ')
-         !call add_default ('AODABS'//diag(ilist),  1, ' ')
+         call add_default ('EXTINCT'//diag(ilist), 1, ' ')
+         call add_default ('ABSORB'//diag(ilist),  1, ' ')
+         call add_default ('AODVIS'//diag(ilist),  1, ' ')
+         call add_default ('AODALL'//diag(ilist),  1, ' ')
+         call add_default ('AODABS'//diag(ilist),  1, ' ')
          
       end if
    end do
@@ -608,37 +606,16 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    !1. Deallocate dgnumdry_m etc. variables in a finalize call
 
    !Assign unphysical values to detect any inadvertant use of these variables
-   !dgnumdry_m(:,:,:) = huge(1.0_r8)
-   !dgnumwet_m(:,:,:) = huge(1.0_r8)
-   !qaerwat_m(:,:,:)  = huge(1.0_r8)
+   dgnumdry_m(:,:,:) = huge(1.0_r8)
+   dgnumwet_m(:,:,:) = huge(1.0_r8)
+   qaerwat_m(:,:,:)  = huge(1.0_r8)
 
    !Compute new sizes (dry diameters as dgnumdry_m) of aerosol particles
-   !call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-   !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+   call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
+        list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
 
-   if (list_idx == 0) then
-      ! water uptake and wet radius for the climate list has already been calculated
-      call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
-      call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,called_from='abc')
-      dgnumdry_m = 0.0_r8
-   else
-      ! If doing a diagnostic calculation then need to calculate the wet radius
-      ! and water uptake for the diagnostic modes
-      !allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
-      !         qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
-      !if (istat > 0) then
-      !   call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
-      !end if
-      call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)!BALLI
-      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
-   endif
    !Compute water uptake by particles to reach their new size "dgnumwet_m"
-
+   call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
 
    do m = 1, nmodes
 
@@ -1126,12 +1103,12 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       aodabs(idxnite(i))    = fillvalue
    end do
 
-   !call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
-   !call outfld('tropopause_m', tropopause_m, pcols, lchnk)
-   !call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
-   !call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
-   !call outfld('AODALL'//diag(list_idx),   aodall,  pcols, lchnk)
-   !call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
+   call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
+   call outfld('tropopause_m', tropopause_m, pcols, lchnk)
+   call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
+   call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
+   call outfld('AODALL'//diag(list_idx),   aodall,  pcols, lchnk)
+   call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
 
    ! These diagnostics are output only for climate list
    if (list_idx == 0) then
@@ -1298,36 +1275,16 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
    !1. Deallocate dgnumdry_m etc. variables in a finalize call
 
    !Assign unphysical values to detect any inadvertant use of these variables
-   !dgnumdry_m(:,:,:) = huge(1.0_r8)
-   !dgnumwet_m(:,:,:) = huge(1.0_r8)
-   !qaerwat_m(:,:,:)  = huge(1.0_r8)
+   dgnumdry_m(:,:,:) = huge(1.0_r8)
+   dgnumwet_m(:,:,:) = huge(1.0_r8)
+   qaerwat_m(:,:,:)  = huge(1.0_r8)
 
    !Compute new sizes (dry diameters as dgnumdry_m) of aerosol particles
-   !call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-   !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
+   call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
+        list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
 
-   if (list_idx == 0) then
-      call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
-      call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      !call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-      !     list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m, called_from="abc")
-   else
-      ! If doing a diagnostic calculation then need to calculate the wet radius
-      ! and water uptake for the diagnostic modes
-      !allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
-      !         qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
-      !if (istat > 0) then
-      !   call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
-      !end if
-
-      call modal_aero_calcsize_sub(state, pbuf, dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      !Compute water uptake by particles to reach their new size "dgnumwet_m"
-      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
-   endif
-
+   !Compute water uptake by particles to reach their new size "dgnumwet_m"
+   call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, qaerwat_m)
 
    do m = 1, nmodes
 
@@ -1420,7 +1377,7 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
             end do
 
             do i = 1, ncol
-               if(icolprnt(lchnk) == i .and. ilw ==1 .and. k==62 .and. m==2) write(107,*)'BALLI:dopaer(i):',dopaer(i)
+
                if ((dopaer(i) <= -1.e-10_r8) .or. (dopaer(i) >= 20._r8)) then
 
                   if (dopaer(i) <= -1.e-10_r8) then
@@ -1432,7 +1389,6 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar)
                   end if
 
                   write(iulog,*) 'dopaer(',i,',',k,',',m,',',lchnk,')=', dopaer(i)
-                  write(iulog,*)'Lat,lon',get_rlat_p(lchnk, i)*57.296_r8, get_rlon_p(lchnk, i)*57.296_r8
                   write(iulog,*) 'k=',k,' pabs=', pabs(i)
                   write(iulog,*) 'wetvol=',wetvol(i),' dryvol=',dryvol(i),     &
                      ' watervol=',watervol(i)
