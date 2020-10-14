@@ -195,7 +195,7 @@ module cime_comp_mod
   ! public data
   public  :: timing_dir
   public  :: mpicom_GLOID
-  public  :: mpi_init_time
+  public  :: cime_pre_init2_lb
 
   ! public routines
   public  :: cime_pre_init1
@@ -379,6 +379,7 @@ module cime_comp_mod
   integer       :: cktime_cnt(10)    ! cktime counter array
   real(r8)      :: max_cplstep_time
   real(r8)      :: mpi_init_time     ! time elapsed in mpi_init call
+  real(r8)      :: cime_pre_init2_lb ! time elapsed in cime_pre_init2 call after call to t_initf
   character(CL) :: timing_file       ! Local path to tprof filename
   character(CL) :: timing_dir        ! timing directory
   character(CL) :: tchkpt_dir        ! timing checkpoint directory
@@ -993,6 +994,10 @@ contains
 
     real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
+    integer(i8) :: beg_count          ! start time
+    integer(i8) :: end_count          ! end time
+    integer(i8) :: irtc_rate          ! factor to convert time to seconds
+
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
     !----------------------------------------------------------
@@ -1003,6 +1008,24 @@ contains
          pethreads_GLOID )
     call t_initf(NLFileName, LogPrint=.true., mpicom=mpicom_GLOID, &
          MasterTask=iamroot_GLOID,MaxThreads=maxthreads)
+
+    !----------------------------------------------------------
+    !| Record timer parent/child relationships for what has
+    !  occurred previously. CPL:INIT timer is stopped in
+    !  cime_driver.
+    !----------------------------------------------------------
+    call t_startf('CPL:INIT')
+    call t_adj_detailf(+1)
+
+    call t_startf('CPL:cime_pre_init1')
+    call t_startstop_valsf('CPL:mpi_init', walltime=mpi_init_time)
+    call t_stopf('CPL:cime_pre_init1')
+
+    call t_startf('CPL:ESMF_Initialize')
+    call t_stopf('CPL:ESMF_Initialize')
+
+    call t_startf('CPL:cime_pre_init2')
+    beg_count = shr_sys_irtc(irtc_rate)
 
     if (iamin_CPLID) then
        call seq_io_cpl_init()
@@ -1310,6 +1333,21 @@ contains
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
     endif
+
+    call t_stopf('CPL:cime_pre_init2')
+
+    ! CPL:cime_pre_init2 timer elapsed time will be double counted
+    ! in cime_driver. Recording time spent in timer using shr_sys_irtc
+    ! so that this can be adjusted. Count is started inside the t_startf
+    ! call and stopped outside the t_stopf call to approximate the portion
+    ! of the cost of the two clocks in t_startf/t_stopf that is captured
+    ! by the cime_pre_init2 timer.
+    end_count = shr_sys_irtc(irtc_rate)
+    cime_pre_init2_lb = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
+
+    call t_adj_detailf(-1)
+    ! Remember: CPL:INIT timer is still running, and needs to be stopped
+    ! in cime_driver.F90.
 
   end subroutine cime_pre_init2
 
