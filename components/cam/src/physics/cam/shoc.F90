@@ -461,7 +461,7 @@ subroutine shoc_main ( &
      zt_grid,zi_grid,&                     ! Input
      se_b,ke_b,wv_b,wl_b,&                 ! Input
      se_a,ke_a,wv_a,wl_a,&                 ! Input
-     wthl_sfc,wqw_sfc,pdel,&               ! Input
+     wthl_sfc,wqw_sfc,&                    ! Input
      rho_zt,tke,presi,&                    ! Input
      host_dse)                             ! Input/Output
 
@@ -3514,9 +3514,13 @@ subroutine shoc_energy_fixer(&
          zt_grid,zi_grid,&              ! Input
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
-         wthl_sfc,wqw_sfc,pdel,&        ! Input
+         wthl_sfc,wqw_sfc,&             ! Input
          rho_zt,tke,pint,&              ! Input
          host_dse)                      ! Input/Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: shoc_energy_fixer_f
+#endif
 
   implicit none
 
@@ -3551,8 +3555,6 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(in) :: wthl_sfc(shcol)
   ! Surface latent heat flux [kg/kg m/s]
   real(rtype), intent(in) :: wqw_sfc(shcol)
-  ! pressure differenes [Pa]
-  real(rtype), intent(in) :: pdel(shcol,nlev)
   ! heights on midpoint grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
@@ -3571,6 +3573,19 @@ subroutine shoc_energy_fixer(&
   ! LOCAL VARIABLES
   real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
   integer :: shoctop(shcol)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call shoc_energy_fixer_f(shcol,nlev,nlevi,dtime,nadv,& ! Input
+                              zt_grid,zi_grid,&              ! Input
+                              se_b,ke_b,wv_b,wl_b,&          ! Input
+                              se_a,ke_a,wv_a,wl_a,&          ! Input
+                              wthl_sfc,wqw_sfc,&             ! Input
+                              rho_zt,tke,pint,&              ! Input
+                              host_dse)                      ! Input/Output
+      return
+   endif
+#endif
 
   call shoc_energy_total_fixer(&
          shcol,nlev,nlevi,dtime,nadv,&  ! Input

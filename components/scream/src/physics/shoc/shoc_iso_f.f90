@@ -319,6 +319,20 @@ subroutine shoc_length_f(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
 
 end subroutine shoc_length_f
 
+subroutine shoc_energy_fixer_f(shcol, nlev, nlevi, dtime, nadv, zt_grid, zi_grid,&
+                               se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a,&
+                               wthl_sfc, wqw_sfc, rho_zt, tke, pint, host_dse) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, nadv
+  real(kind=c_real) , value, intent(in) :: dtime
+  real(kind=c_real) , intent(in), dimension(shcol, nlev) :: zt_grid, rho_zt, tke
+  real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: zi_grid, pint
+  real(kind=c_real) , intent(in), dimension(shcol) :: se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, wqw_sfc
+  real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: host_dse
+
+end subroutine shoc_energy_fixer_f
+
 end interface
 
 end module shoc_iso_f
