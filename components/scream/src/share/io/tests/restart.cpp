@@ -54,7 +54,7 @@ TEST_CASE("restart","")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  Int max_steps = 5;
+  Int max_steps = 15;
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)
   {

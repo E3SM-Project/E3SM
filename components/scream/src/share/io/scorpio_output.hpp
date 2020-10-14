@@ -64,6 +64,7 @@ public:
   // Main Functions
   void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
   void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
+  void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const util::TimeStamp& time);
   void finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
 
   // Helper Functions
@@ -77,6 +78,7 @@ protected:
   void set_degrees_of_freedom(const std::string filename);
   void register_views(const FieldRepository<Real, device_type>& field_repo);
   void new_file(const std::string filename);
+  void run_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time, const std::string time_str);  // Actual run routine called by outward facing "run"
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -102,7 +104,7 @@ protected:
   std::map<std::string,view_type>        m_view;
 
   bool m_is_init = false;
-  bool m_is_restart_hist = false;
+  bool m_is_restart_hist = false;  //TODO:  If instead we rely on the timestamp to determine how many steps are represented in the averaging value, or maybe filename, we won't need this.
   bool m_is_restart = false;
 
   std::map<std::string,Int> m_status = {
@@ -158,14 +160,34 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
 
 } // init
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& /* gm */, const Real time) 
+inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const util::TimeStamp& time)
+{
+  std::string time_str = time.to_string();
+  std::replace( time_str.begin(), time_str.end(), ' ', '.');
+  time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
+  run_impl(field_repo,gm,time.get_seconds(),time_str);
+}
+/*-----*/
+inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time)
+{
+  // Convert time in seconds to a DD-HHMMSS string:
+  const int ss = static_cast<int>(time);
+  const int h =  ss / 3600;
+  const int m = (ss % 3600) / 60;
+  const int s = (ss % 3600) % 60;
+  const std::string zero = "00";
+  std::string time_str = (h==0 ? zero : std::to_string(h)) + (m==0 ? zero : std::to_string(m)) + (s==0 ? zero : std::to_string(s));
+  //
+  run_impl(field_repo,gm,time,time_str);
+}
+/*-----*/
+inline void AtmosphereOutput::run_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& /* gm */, const Real time, const std::string time_str) 
 {
   using namespace scream;
   using namespace scream::scorpio;
 
   m_status["Run"] += 1;
   m_status["Avg Count"] += 1;
-
   // For the RUN step we always update the local views of each field to reflect the most recent step.
   // Following the update we have two courses of action:
   // 1. Do nothing else, this means that the frequency of output doesn't correspond with this step.
@@ -186,16 +208,30 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
   bool is_rhist   = (m_status["Avg Count"] == m_restart_hist_n) and !is_typical;
   bool is_write = is_typical or is_rhist; // General flag for if output is written
   // Preamble to writing output this step
-  std::string filename = m_casename+"_"+std::to_string(m_status["Init"]);
-  if (m_is_restart) { filename+=".r"; }
-  if (is_rhist)     { filename+=".rhist"; }
+  std::string filename = m_casename+"."+m_avg_type+"."+m_out_units+"_x"+std::to_string(m_out_frequency)+"."+time_str;
+  if (m_is_restart) 
+  { 
+    filename+=".r";
+    std::ofstream rpointer;
+    rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
+    rpointer << filename + ".nc" << std::endl;
+  }
+  if (is_rhist)
+  { 
+    filename+=".rhist"; 
+    std::ofstream rpointer;
+    rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
+    rpointer << filename + ".nc" << std::endl;
+    m_is_restart_hist = true;
+  }
   filename += ".nc";
   //
   if (is_write) 
   {
     // If we closed the file in the last write because we reached max steps, or this is a restart history file,
     // we need to create a new file for writing.
-    if( !m_is_init or is_rhist ) { new_file(filename); }
+    new_file(filename);
+    if( !m_is_init and is_typical ) { m_is_init=true; }
 
     pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
     if (is_typical) { m_status["Snaps"] += 1; }  // Update the snap tally, used to determine if a new file is needed and only needed for typical output.
@@ -255,6 +291,8 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
       eam_pio_closefile(filename); 
     }
   }
+  // Reset flag for restart history write.
+  m_is_restart_hist = false;
 
 } // run
 /* ---------------------------------------------------------- */
@@ -437,7 +475,6 @@ inline void AtmosphereOutput::new_file(const std::string filename)
 
   // Finish the definition phase for this file.
   eam_pio_enddef  (filename); 
-  m_is_init = true;
 
 }
 /* ---------------------------------------------------------- */

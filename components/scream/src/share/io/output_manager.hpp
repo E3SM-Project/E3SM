@@ -111,7 +111,7 @@ inline void OutputManager::run(util::TimeStamp& current_ts)
   if (no_output) { return; }
   for (auto& it : m_output_streams)
   {
-    it.run(*m_device_field_repo, *m_grids_manager, current_ts.get_seconds());
+    it.run(*m_device_field_repo, *m_grids_manager, current_ts);
   }
 }
 /*-----------------------------------------------------------------------------------------------*/

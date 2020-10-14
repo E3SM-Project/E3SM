@@ -77,10 +77,10 @@ TEST_CASE("input_output_basic","")
   // Cycle through each output and make sure it is correct.
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
-  auto ins_params = get_in_params("instant");
-  auto avg_params = get_in_params("average");
-  auto min_params = get_in_params("min");
-  auto max_params = get_in_params("max");
+  auto ins_params = get_in_params("Instant");
+  auto avg_params = get_in_params("Average");
+  auto min_params = get_in_params("Min");
+  auto max_params = get_in_params("Max");
   // Check instant output
   input_type ins_input(io_comm,ins_params);
   ins_input.pull_input(*field_repo,*grid_man);
@@ -226,7 +226,8 @@ ekat::ParameterList get_om_params(const Int casenum)
 ekat::ParameterList get_in_params(const std::string type)
 {
   ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
+//  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
+  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.1-1-0.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
   f_list.set<Int>("Number of Fields",3);

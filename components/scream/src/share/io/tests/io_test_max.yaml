@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-FILENAME: io_output_test_max
+FILENAME: io_output_test
 AVERAGING TYPE: Max
 GRID: Physics
 FREQUENCY:
