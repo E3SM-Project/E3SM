@@ -768,6 +768,7 @@ flags should be captured within MPAS CMake files.
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
+  <MOAB_PATH>/home/iulian/moab-blds/blues/moabs29</MOAB_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
