@@ -91,7 +91,6 @@ integer  ::      prec_sed_idx = 0
 integer  ::      snow_sed_idx = 0
 integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
-integer  ::      pblh_idx = 0
 
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
@@ -185,7 +184,8 @@ subroutine diag_init()
    call addfld ('UAP',(/ 'lev' /), 'A','m/s','Zonal wind (after physics)'        )
    call addfld ('VAP',(/ 'lev' /), 'A','m/s','Meridional wind (after physics)'   )
    call addfld (apcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (after physics)')
-   call addfld ('CAPE', horiz_only, 'A', 'J/kg', 'Convectively available potential energy')
+   call addfld ('CAPE2d', horiz_only, 'A', 'J/kg', 'Convectively available potential energy')
+   call addfld ('CIN2d', horiz_only, 'A', 'J/kg', 'Convective inhibition')
    
    if ( dycore_is('LR') .or. dycore_is('SE') ) then
       call addfld ('TFIX',horiz_only,    'A'     ,'K/s','T fixer (T equivalent of Energy correction)')
@@ -1817,7 +1817,7 @@ subroutine diag_conv(state, ztodt, pbuf)
 !-----------------------------------------------------------------------
    use physconst,     only: cpair
    use tidal_diag,    only: get_tidal_coeffs
-   use physconst,     only: cpair, rair, gravit, latvap
+   use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
 ! Arguments:
 
@@ -1848,6 +1848,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8):: snowl(pcols)                ! stratiform snow rate
    real(r8):: prect(pcols)                ! total (conv+large scale) precip rate
    real(r8):: cape(pcols)                 ! CAPE
+   real(r8):: cin(pcols)                  ! CIN
    integer :: pblt(pcols)                 ! Indicee of PBL top
    real(r8) :: dcoef(4)                   ! for tidal component of T tend
 
@@ -1922,9 +1923,14 @@ subroutine diag_conv(state, ztodt, pbuf)
    end do
    
    ! Add CAPE and CIN calculation here
-   call diag_CAPEandCIN(state%q(:ncol,:pver,1),state%t(:ncol,:pver),&
-          state%pmid(:ncol,:pver),state%pint(:ncol,:pverp),state%zm(:ncol,:pver),&
-          pblt(:ncol),latvap,rair,gravit,cpair,cape)
+   ! Note that this routine needs the input pressures to be in units of hPa 
+   call diag_CAPEandCIN(ncol,state%q(:ncol,:pver,1),state%t(:ncol,:pver),&
+          0.01_r8*state%pmid(:ncol,:pver),0.01_r8*state%pint(:ncol,:pverp),&
+          state%zm(:ncol,:pver),state%zi(:ncol,:pverp),pblh(:ncol),&
+          state%phis(:ncol),epsilo,latvap,rair,gravit,cpair,cape,cin)
+          
+   call outfld('CAPE2d', cape, pcols, lchnk )
+   call outfld('CIN2d', cin, pcols, lchnk )    
 
 end subroutine diag_conv
 
@@ -2336,10 +2342,12 @@ end subroutine diag_phys_tend_writeout
    if ( cnst_cam_outfld(ixcldice) ) call outfld (bpcnst(ixcldice), state%q(1,1,ixcldice), pcols, lchnk)
 
    end subroutine diag_state_b4_phys_write
+
+!#######################################################################
    
    subroutine diag_CAPEandCIN(ncol, &
-                     q, t, p, pf, z, pblt &
-                     rl, rd, grav, cp, cape)
+                     q, t, p, pf, zm, zi, pblh, phis, &
+                     eps1, rl, rd, grav, cp, cape, cin)
                      
    !----------------------------------------------------------------------- 
    ! 
@@ -2365,10 +2373,13 @@ end subroutine diag_phys_tend_writeout
 
       real(r8), intent(in) :: q(pcols,pver)        ! spec. humidity
       real(r8), intent(in) :: t(pcols,pver)        ! temperature
-      real(r8), intent(in) :: p(pcols,pver)        ! pressure
-      real(r8), intent(in) :: z(pcols,pver)        ! height
-      real(r8), intent(in) :: pf(pcols,pver+1)     ! pressure at interfaces
-      real(r8), intent(in) :: pblt(pcols)          ! index of pbl depth
+      real(r8), intent(in) :: p(pcols,pver)        ! pressure [hPa]
+      real(r8), intent(in) :: zm(pcols,pver)       ! midpoint height [m]
+      real(r8), intent(in) :: zi(pcols,pverp)      ! interface height [m]
+      real(r8), intent(in) :: pf(pcols,pverp)      ! pressure at interfaces [hPa]
+      real(r8), intent(in) :: pblh(pcols)          ! PBL height
+      real(r8), intent(in) :: phis(pcols)          ! Surface geopotential
+      real(r8), intent(in) :: eps1                 ! epsilon value
       real(r8), intent(in) :: rd                   ! gas constant for dry air
       real(r8), intent(in) :: rl                   ! latent heat of vaporizaiton
       real(r8), intent(in) :: grav                 ! gravity
@@ -2378,14 +2389,19 @@ end subroutine diag_phys_tend_writeout
    !
 
       real(r8), intent(out) :: cape(pcols)          ! convective aval. pot. energy.
+      real(r8), intent(out) :: cin(pcols)           ! covective inhibition
 
    !
    !--------------------------Local Variables------------------------------
    !
-      real(r8) capeten(pcols,5)     ! provisional value of cape
+      integer, parameter :: num_cin = 1
+   
+      real(r8) capeten(pcols,num_cin)     ! provisional value of cape
       real(r8) tv(pcols,pver)       ! virtual temperature 
       real(r8) tpv(pcols,pver)      ! virtual temperature of parcel
       real(r8) buoy(pcols,pver)
+      ! heights needed for 
+      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver)
 
       real(r8) :: tp(pcols,pver)       ! parcel temperature
       real(r8) :: qstp(pcols,pver)     ! saturation mixing ratio of parcel
@@ -2403,12 +2419,13 @@ end subroutine diag_phys_tend_writeout
       integer lel(pcols)        !
       integer lon(pcols)        ! level of onset of deep convection
       integer mx(pcols)         ! level of max moist static energy      
+      integer pblt(pcols)       ! integer of PBLH
 
       logical plge600(pcols)
       integer knt(pcols)
-      integer lelten(pcols,5)
+      integer lelten(pcols,num_cin)
 
-      real(r8) e
+      real(r8) e, tiedke_add, rgrav
 
       integer i
       integer k
@@ -2418,7 +2435,37 @@ end subroutine diag_phys_tend_writeout
    !
    !-----------------------------------------------------------------------
    !
-      do n = 1,5
+   !  Find level to limit deep convection to
+      msg = 18 ! initial value
+
+      tiedke_add = 0.8_r8 ! set to value EAM uses
+      rgrav = 1._r8/grav
+      
+   !  Determine indicee of PBL height, set up required height arrays
+      do i = 1, ncol
+         zs(i) = phis(i)*rgrav
+         zf(i,pver+1) = zi(i,pver+1) + zs(i)
+      end do
+      
+      do k = 1,pver
+         do i = 1, ncol
+            z(i,k) = zm(i,k) + zs(i)
+            zf(i,k) = zi(i,k) + zs(i)
+         end do
+      end do
+      
+   !  Now actually find indicee of PBL height
+      do k = pver -1, 1, -1
+        do i = 1, ncol
+          if (abs(z(i,k)-zs(i)-pblh(i)) < (zf(i,k)-zf(i,k+1))*0.5_r8) pblt(i) = k
+        end do
+      end do
+      
+      do i = 1,ncol
+         cin(i) = 0._r8
+      end do
+      
+      do n = 1,num_cin
          do i = 1,ncol
             lelten(i,n) = pver
             capeten(i,n) = 0._r8
@@ -2451,7 +2498,7 @@ end subroutine diag_phys_tend_writeout
       do k = pver,msg + 1,-1
          do i = 1,ncol
             hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
-            if (k >= nint(pblt(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
+            if (k >= pblt(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k
             end if
@@ -2573,7 +2620,7 @@ end subroutine diag_phys_tend_writeout
          do i = 1,ncol
             if (k < lcl(i) .and. plge600(i)) then
                if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
-                  knt(i) = min(5,knt(i) + 1)
+                  knt(i) = min(num_cin,knt(i) + 1)
                   lelten(i,knt(i)) = k
                end if
             end if
@@ -2582,7 +2629,7 @@ end subroutine diag_phys_tend_writeout
    !
    ! calculate convective available potential energy (cape).
    !
-      do n = 1,5
+      do n = 1,num_cin
          do k = msg + 1,pver
             do i = 1,ncol
                if (plge600(i) .and. k <= mx(i) .and. k > lelten(i,n)) then
@@ -2591,12 +2638,13 @@ end subroutine diag_phys_tend_writeout
             end do
          end do
       end do
+      
    !
    ! find maximum cape from all possible tentative capes from
    ! one sounding,
    ! and use it as the final cape, april 26, 1995
    !
-      do n = 1,5
+      do n = 1,num_cin
          do i = 1,ncol
             if (capeten(i,n) > cape(i)) then
                cape(i) = capeten(i,n)
@@ -2604,14 +2652,49 @@ end subroutine diag_phys_tend_writeout
             end if
          end do
       end do
+      
+   ! Compute CIN based on information of levels computed above, which
+   !  is the buoyancy integrated from surface to the lauching level
+      
+      write(*,*) 'MXlev ', mx
+      do k = msg + 1, pver
+        do i = 1, ncol
+           if (k > mx(i)) then 
+             cin(i) = cin(i) + rd*buoy(i,k) * log(pf(i,k+1)/pf(i,k))
+           endif
+        end do
+      end do   
    !
    ! put lower bound on cape for diagnostic purposes.
    !
       do i = 1,ncol
          cape(i) = max(cape(i), 0._r8)
+         cin(i) = max(cin(i), 0._r8)
       end do
    !
       return
    end subroutine diag_CAPEandCIN 
+   
+!#######################################################################   
+   
+   ! Wrapper for qsat_water that does translation between Pa and hPa
+   ! qsat_water uses Pa internally, so get it right, need to pass in Pa.
+   ! Afterward, set es back to hPa.
+   elemental subroutine qsat_hPa(t, p, es, qm)
+     use wv_saturation, only: qsat_water
+
+     ! Inputs
+     real(r8), intent(in) :: t    ! Temperature (K)
+     real(r8), intent(in) :: p    ! Pressure (hPa)
+     ! Outputs
+     real(r8), intent(out) :: es  ! Saturation vapor pressure (hPa)
+     real(r8), intent(out) :: qm  ! Saturation mass mixing ratio
+                                  ! (vapor mass over dry mass, kg/kg)
+
+     call qsat_water(t, p*100._r8, es, qm)
+
+     es = es*0.01_r8
+
+   end subroutine qsat_hPa   
 
 end module cam_diagnostics
