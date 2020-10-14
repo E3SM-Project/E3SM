@@ -2541,7 +2541,8 @@ end subroutine diag_phys_tend_writeout
    !
       do k = pver,msg + 1,-1
          do i=1,ncol
-            if (k > lcl(i) .and. k <= mx(i) .and. plge600(i)) then
+!            if (k > lcl(i) .and. k <= mx(i) .and. plge600(i)) then
+             if (k > lcl(i) .and. plge600(i)) then 
                tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
                qstp(i,k) = q(i,mx(i))
                tp(i,k) = t(i,mx(i))* (p(i,k)/p(i,mx(i)))**(0.2854_r8* (1._r8-0.28_r8*q(i,mx(i))))
@@ -2656,10 +2657,11 @@ end subroutine diag_phys_tend_writeout
    ! Compute CIN based on information of levels computed above, which
    !  is the buoyancy integrated from surface to the lauching level
       
-      write(*,*) 'MXlev ', mx
+!      write(*,*) 'MXlev ', mx
       do k = msg + 1, pver
         do i = 1, ncol
            if (k > mx(i)) then 
+!             write(*,*) 'CINcalc ', rd, buoy(i,k), log(pf(i,k+1)/pf(i,k))
              cin(i) = cin(i) + rd*buoy(i,k) * log(pf(i,k+1)/pf(i,k))
            endif
         end do
@@ -2669,7 +2671,7 @@ end subroutine diag_phys_tend_writeout
    !
       do i = 1,ncol
          cape(i) = max(cape(i), 0._r8)
-         cin(i) = max(cin(i), 0._r8)
+!         cin(i) = max(cin(i), 0._r8)
       end do
    !
       return
