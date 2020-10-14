@@ -7,6 +7,9 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 namespace scream {
 namespace util {
@@ -93,14 +96,16 @@ std::string TimeStamp::to_string () const {
   const int h =  ss / 3600;
   const int m = (ss % 3600) / 60;
   const int s = (ss % 3600) % 60;
-  const std::string zero = "00";
-  const std::string single = "0";
-  // For h:m:s, check if 0, and if so, use "00" rather than to_string, which returns "0"
-  // if <10 use "0x" rather than to_string, which returns just one character.
-  return std::to_string(m_mm+1) + "-" + std::to_string(m_dd+1) + "-" + std::to_string(m_yy) + " " + 
-         (h==0 ? zero : (h<10 ? single+std::to_string(h) : std::to_string(h))) + ":" + 
-         (m==0 ? zero : (m<10 ? single+std::to_string(m) : std::to_string(m))) + ":" + 
-         (s==0 ? zero : (s<10 ? single+std::to_string(s) : std::to_string(s)));
+
+  std::ostringstream ymdhms;
+  ymdhms << std::setw(4) << std::setfill('0') << m_yy << "-";
+  ymdhms << std::setw(2) << std::setfill('0') << m_mm+1 << "-";
+  ymdhms << std::setw(2) << std::setfill('0') << m_dd+1 << " ";
+  ymdhms << std::setw(2) << std::setfill('0') << h << ":";
+  ymdhms << std::setw(2) << std::setfill('0') << m << ":";
+  ymdhms << std::setw(2) << std::setfill('0') << s;
+  return ymdhms.str();
+
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {
