@@ -380,50 +380,6 @@ TEST_CASE("field_property_check", "") {
       REQUIRE_THROWS(iter->repair(f1)); // we can't repair it, either
     }
   }
-
-  // Check if we can extract a reshaped view
-  SECTION ("reshape simple") {
-    Field<Real,Device> f1 (fid);
-
-    // Should not be able to reshape before allocating
-    REQUIRE_THROWS(f1.get_reshaped_view<Real*>());
-
-    f1.allocate_view();
-
-    // Should not be able to reshape to this data type
-    REQUIRE_THROWS(f1.get_reshaped_view<Pack<Real,8>>());
-
-    auto v1d = f1.get_view();
-    auto v3d = f1.get_reshaped_view<Real[2][3][12]>();
-    REQUIRE(v3d.size()==v1d.size());
-  }
-
-  // Check if we can request multiple value types
-  SECTION ("reshape multiple value types") {
-    Field<Real,Device> f1 (fid);
-    f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
-    f1.allocate_view();
-
-    auto v1d = f1.get_view();
-    auto v3d_1 = f1.get_reshaped_view<Pack<Real,8>***>();
-    auto v3d_2 = f1.get_reshaped_view<Pack<Real,4>***>();
-    auto v3d_3 = f1.get_reshaped_view<Real***>();
-    auto v3d_4 = f1.get_reshaped_view<Real[2][3][16]>();
-
-    // The memory spans should be identical
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_2.impl_map().memory_span());
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_3.impl_map().memory_span());
-    REQUIRE (v3d_1.impl_map().memory_span()==v3d_4.impl_map().memory_span());
-
-    // Sizes differ, since they are in terms of the stored value type.
-    // Each Pack<Real,8> corresponds to two Pack<Real,4>, which corresponds to 4 Real's.
-    REQUIRE(2*v3d_1.size()==v3d_2.size());
-    REQUIRE(8*v3d_1.size()==v3d_3.size());
-    REQUIRE(8*v3d_1.size()==v3d_4.size());
-
-    // Trying to reshape into something that the allocation cannot accommodate should throw
-    REQUIRE_THROWS (f1.get_reshaped_view<Pack<Real,32>***>());
-  }
 }
 
 } // anonymous namespace
