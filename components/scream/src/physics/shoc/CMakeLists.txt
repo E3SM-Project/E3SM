@@ -50,6 +50,7 @@ if (NOT CUDA_BUILD)
     shoc_diag_obklen.cpp
     shoc_compute_conv_time_shoc_length.cpp
     shoc_length.cpp
+    shoc_energy_fixer.cpp
   ) # SHOC ETI SRCS
 endif()
 

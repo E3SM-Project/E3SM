@@ -403,7 +403,7 @@ contains
   subroutine shoc_energy_fixer_c(shcol, nlev, nlevi, dtime, nadv, &
                                  zt_grid, zi_grid, se_b, ke_b, wv_b, &
                                  wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
-                                 wqw_sfc, pdel, rho_zt, tke, pint, &
+                                 wqw_sfc, rho_zt, tke, pint, &
                                  host_dse) bind (C)
     use shoc, only: shoc_energy_fixer
 
@@ -424,7 +424,6 @@ contains
     real(kind=c_real), intent(in) :: wl_a(shcol)
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
-    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: tke(shcol,nlev)
     real(kind=c_real), intent(in) :: pint(shcol,nlevi)
@@ -434,7 +433,7 @@ contains
     call shoc_energy_fixer(shcol, nlev, nlevi, dtime, nadv, &
                            zt_grid, zi_grid, se_b, ke_b, wv_b, &
                            wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
-                           wqw_sfc, pdel, rho_zt, tke, pint, &
+                           wqw_sfc, rho_zt, tke, pint, &
                            host_dse)
 
   end subroutine shoc_energy_fixer_c
