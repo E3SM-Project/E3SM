@@ -61,7 +61,7 @@ TEST_CASE("input_output_basic","")
     {
       auto f_dev  = field_repo->get_field(it,"Physics").get_view();
       auto f_host = Kokkos::create_mirror_view( f_dev );
-      for (Int jj=0;jj<f_host.size();++jj)
+      for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }

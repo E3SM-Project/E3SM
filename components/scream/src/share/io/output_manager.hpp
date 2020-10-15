@@ -71,14 +71,14 @@ inline void OutputManager::init()
   // Starting with the stride.  NOTE: Only a stride of 1 is supported right now.  TODO: Allow for stride of any value.
   Int stride = m_params.get<Int>("PIO Stride");
   EKAT_REQUIRE_MSG(stride==1,"Error! Output only supports a PIO Stride of 1");  // TODO: Delete when no longer valid.
-  Int comm_color = atm_comm.rank() % stride;
-  auto pio_comm = atm_comm;  // TODO, EKAT should have a comm_split option (.split(comm_color));
+  // Int comm_color = atm_comm.rank() % stride;
+  // auto pio_comm = atm_comm;  // TODO, EKAT should have a comm_split option (.split(comm_color));
   // PIO requires a subsystem to begin.  TODO, the component coupler actually inits the subsystem for the ATM,
   //                                     When the surface coupling is complete we can pass compid from the coupler
   //                                     to the manager and switch the third arguement below from true to false.
-  int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
+  // int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
   MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   
   // Construct and store an output stream instance for each output request.
   auto& list_of_files = m_params.get<std::vector<std::string>>("Output YAML Files");    // First grab the list of Output files from the control YAML

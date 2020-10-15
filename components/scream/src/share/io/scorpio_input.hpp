@@ -28,9 +28,6 @@ public:
   using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
   using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
 
-  using Int = scream::Int;
-  using Real = scream::Real;
-
   virtual ~AtmosphereInput () = default;
 
   // Constructor
@@ -125,8 +122,6 @@ inline void AtmosphereInput::run(const FieldRepository<Real, device_type>& field
 {
   using namespace scream;
   using namespace scream::scorpio;
-  using Int = scream::Int;
-  using Real = scream::Real;
 
   // Begin reading all fields and replacing values in field manager
   for (auto const& f_map : m_fields)
@@ -221,7 +216,7 @@ inline void AtmosphereInput::set_degrees_of_freedom()
   {
     auto  name = it.first;
     auto& fid  = it.second;
-    bool has_cols = true;
+    // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.
     dof_len = fid.get_layout().size();
@@ -235,14 +230,14 @@ inline void AtmosphereInput::set_degrees_of_freedom()
       // This field is not defined over columns
       // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
       num_cols = 1;
-      has_cols = false;
+      // has_cols = false;
     }
     n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global input indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
-    Int var_dof[dof_len];
+    std::vector<Int> var_dof(dof_len);
     Int dof_it = 0;
-    for (int ii=0;ii<m_gids.size();++ii)
+    for (size_t ii=0;ii<m_gids.size();++ii)
     {
       for (int jj=0;jj<n_dim_len;++jj)
       {
@@ -250,7 +245,7 @@ inline void AtmosphereInput::set_degrees_of_freedom()
         ++dof_it;
       }
     }
-    set_dof(m_filename,name,dof_len,var_dof);
+    set_dof(m_filename,name,dof_len,var_dof.data());
     m_dofs.emplace(std::make_pair(name,dof_len));
   }
   /* TODO: 

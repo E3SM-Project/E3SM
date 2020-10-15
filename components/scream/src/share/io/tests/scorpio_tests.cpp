@@ -44,6 +44,7 @@ TEST_CASE("scorpio_interface_output", "") {
 
   int nerr = 0; // Set a record of the number of errors encountered.
   /* Create the set of SCORPIO output files and their respective dimensions and variables. */
+  // int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
   Int myrank, numranks;
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a sub
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);  // Store rank and total number of ranks for determining which chunk of global array this rank is responsible for reading.

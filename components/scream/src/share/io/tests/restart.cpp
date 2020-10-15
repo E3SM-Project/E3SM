@@ -26,7 +26,7 @@ using input_type = AtmosphereInput;
 std::shared_ptr<FieldRepository<Real,DefaultDevice>> get_test_repo(const Int num_cols, const Int num_levs);
 std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
 ekat::ParameterList                                  get_om_params(const Int casenum);
-ekat::ParameterList                                  get_in_params(const std::string type);
+// ekat::ParameterList                                  get_in_params(const std::string type);
 
 
 TEST_CASE("restart","")
@@ -63,7 +63,7 @@ TEST_CASE("restart","")
     {
       auto f_dev  = field_repo->get_field(it,"Physics").get_view();
       auto f_host = Kokkos::create_mirror_view( f_dev );
-      for (Int jj=0;jj<f_host.size();++jj)
+      for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
@@ -173,18 +173,18 @@ ekat::ParameterList get_om_params(const Int casenum)
   return om_params;  
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_in_params(const std::string type)
-{
-  ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
-  in_params.set<std::string>("GRID","Physics");
-  auto& f_list = in_params.sublist("FIELDS");
-  f_list.set<Int>("Number of Fields",3);
-  for (int ii=1;ii<=3+1;++ii)
-  {
-    f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-  }
-  return in_params;
-}
+// ekat::ParameterList get_in_params(const std::string type)
+// {
+//   ekat::ParameterList in_params("Input Parameters");
+//   in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
+//   in_params.set<std::string>("GRID","Physics");
+//   auto& f_list = in_params.sublist("FIELDS");
+//   f_list.set<Int>("Number of Fields",3);
+//   for (int ii=1;ii<=3+1;++ii)
+//   {
+//     f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
+//   }
+//   return in_params;
+// }
 /*===================================================================================================================*/
 } // undefined namespace

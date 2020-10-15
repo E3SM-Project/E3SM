@@ -52,8 +52,6 @@ public:
   using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
   using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
 
-  using Int = scream::Int;
-
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
@@ -135,7 +133,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
   m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
-  int total_dofs;
+  // int total_dofs;
   m_local_dofs = m_gids.size();
   MPI_Allreduce(&m_local_dofs, &m_total_dofs, 1, MPI_INT, MPI_SUM, m_comm.mpi_comm());
   EKAT_REQUIRE_MSG(m_comm.size()<=m_total_dofs,"Error, PIO interface only allows for the IO comm group size to be less than or equal to the total # of columns in grid.  Consider decreasing size of IO comm group.\n");
@@ -154,7 +152,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
 
 } // init
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time) 
+inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& /* gm */, const Real time) 
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -232,7 +230,8 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
 
 } // run
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time) 
+inline void AtmosphereOutput::
+finalize(const FieldRepository<Real, device_type>& /* field_repo */, const GridsManager& /* gm */, const Real time) 
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -362,8 +361,8 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
   {
     auto  name = it.first;
     auto& fid  = it.second;
-    bool has_cols = true;
-    Int dof_len, n_dim_len, dof_start, dof_stop, num_cols;
+    // bool has_cols = true;
+    Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.
     dof_len = fid.get_layout().size();
     // For a SCREAM Physics grid, only the total number of columns is decomposed over MPI ranks.  The global id (gid)
@@ -376,7 +375,7 @@ inline void AtmosphereOutput::set_degrees_of_freedom()
       // This field is not defined over columns
       // TODO, when we allow for dynamics mesh this check will need to be adjusted for the element tag as well.
       num_cols = 1;
-      has_cols = false;
+      // has_cols = false;
     }
     n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global output indices" for this
