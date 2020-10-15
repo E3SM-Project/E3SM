@@ -3329,6 +3329,13 @@ qr2qv_evap_tend,nr_evap_tend)
       !negative (adding mass) if A_c (other processes) are losing mass. We don't
       !allow rain evap to also condense by forcing qr2qv_evap_tend to be positive
       qr2qv_evap_tend = max(0._rtype, qr2qv_evap_tend)
+
+      !We can't evaporate more rain mass than we had to start with
+      !Sanity check: We're applying to rainy region outside cloud here because
+      !qr inside cloud should be protected from evap. Conversion to rainy-area
+      !ave just below scales by (cldfrac_r - cld_frac)/cldfrac_r < 1 so 
+      !total qr isn't pushed negative. 
+      qr2qv_evap_tend = min(qr2qv_evap_tend,qr_incld*inv_dt)
       
       !Evap rate so far is an average over the rainy area outside clouds.
       !Turn this into an average over the entire raining area
