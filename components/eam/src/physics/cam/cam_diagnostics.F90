@@ -387,6 +387,24 @@ subroutine diag_init()
    call addfld ('TH9251000',horiz_only,   'A','K','Theta difference 925 mb - 1000 mb')   
    call addfld ('THE9251000',horiz_only,   'A','K','ThetaE difference 925 mb - 1000 mb') 
 
+   ! Add in fields for T and U (not already included) to track Sudden Stratospheric Warming events
+   ! Levels include: 250, 200, 150, 100, 50, 25, 10, 5, 2, 1, and TOP (numbers in hPa)
+   call addfld ('T250',horiz_only,   'A', 'K',   'Temperature at 250 mbar pressure surface')
+   call addfld ('T150',horiz_only,   'A', 'K',   'Temperature at 150 mbar pressure surface')
+   call addfld ('T050',horiz_only,   'A', 'K',   'Temperature at 50 mbar pressure surface')
+   call addfld ('T025',horiz_only,   'A', 'K',   'Temperature at 25 mbar pressure surface')
+   call addfld ('T005',horiz_only,   'A', 'K',   'Temperature at 5 mbar pressure surface')
+   call addfld ('T002',horiz_only,   'A', 'K',   'Temperature at 2 mbar pressure surface')
+   call addfld ('T001',horiz_only,   'A', 'K',   'Temperature at 1 mbar pressure surface')
+   call addfld ('TTOP',horiz_only,   'A', 'K',   'Highest model level temperature')
+   call addfld ('U150',horiz_only,   'A', 'm/s', 'Zonal wind at 150 mbar pressure surface')
+   call addfld ('U050',horiz_only,   'A', 'm/s', 'Zonal wind at 50 mbar pressure surface')
+   call addfld ('U025',horiz_only,   'A', 'm/s', 'Zonal wind at 25 mbar pressure surface')
+   call addfld ('U005',horiz_only,   'A', 'm/s', 'Zonal wind at 5 mbar pressure surface')
+   call addfld ('U002',horiz_only,   'A', 'm/s', 'Zonal wind at 2 mbar pressure surface')
+   call addfld ('U001',horiz_only,   'A', 'm/s', 'Zonal wind at 1 mbar pressure surface')
+   call addfld ('UTOP',horiz_only,   'A', 'm/s', 'Highest model level zonal wind')
+
    call addfld ('U90M',horiz_only,    'A','m/s','Zonal wind at turbine hub height (90m above surface)')
    call addfld ('V90M',horiz_only,    'A','m/s','Meridional wind at turbine hub height (90m above surface)')
 
@@ -1790,6 +1808,61 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
        call outfld('T010           ', p_surf, pcols, lchnk )
     end if
+
+    if (hist_fld_active('T250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%t, p_surf)
+       call outfld('T250           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%t, p_surf)
+       call outfld('T150           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%t, p_surf)
+       call outfld('T050           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T025')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2500._r8, state%t, p_surf)
+       call outfld('T025           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T005')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 500._r8, state%t, p_surf)
+       call outfld('T005           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T002')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 200._r8, state%t, p_surf)
+       call outfld('T002           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T001')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 100._r8, state%t, p_surf)
+       call outfld('T001           ', p_surf, pcols, lchnk )
+    end if
+    call outfld ('TTOP    ', state%t(:,1)  ,  pcols, lchnk)
+    if (hist_fld_active('U150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  15000._r8, state%u, p_surf)
+       call outfld('U150    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
+       call outfld('U050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U025')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2500._r8, state%u, p_surf)
+       call outfld('U025    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U005')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  500._r8, state%u, p_surf)
+       call outfld('U005    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U002')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  200._r8, state%u, p_surf)
+       call outfld('U002    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U001')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  100._r8, state%u, p_surf)
+       call outfld('U001    ', p_surf, pcols, lchnk )
+    end if
+    call outfld ('UTOP    ', state%u(:,1)  ,  pcols, lchnk)
 
 
   !---------------------------------------------------------

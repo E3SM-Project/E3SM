@@ -543,37 +543,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-#########################################
-# Namelist group: Redi_isopycnal_mixing #
-#########################################
-
-add_default($nl, 'config_use_Redi');
-add_default($nl, 'config_Redi_kappa');
-add_default($nl, 'config_Redi_set_RediKappa_to_GMKappa');
-add_default($nl, 'config_Redi_maximum_slope');
-add_default($nl, 'config_Redi_closure');
-add_default($nl, 'config_Redi_use_slope_taper');
-add_default($nl, 'config_Redi_use_surface_taper');
-add_default($nl, 'config_Redi_use_N2_based_taper');
-add_default($nl, 'config_Redi_N2_limit_term1');
-
-############################################
-# Namelist group: GM_eddy_parameterization #
-############################################
-
-add_default($nl, 'config_use_GM');
-add_default($nl, 'config_GM_kappa');
-add_default($nl, 'config_GM_closure');
-add_default($nl, 'config_GM_baroclinic_mode');
-add_default($nl, 'config_GM_Visbeck_alpha');
-add_default($nl, 'config_GM_Visbeck_max_depth');
-add_default($nl, 'config_GM_Visbeck_min_kappa');
-add_default($nl, 'config_GM_Visbeck_max_kappa');
-add_default($nl, 'config_gm_EG_riMin');
-add_default($nl, 'config_gm_EG_kappa_factor');
-add_default($nl, 'config_GM_min_stratification_ratio');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
-
 ####################################################
 # Namelist group: mesoscale_eddy_parameterizations #
 ####################################################
@@ -581,6 +550,38 @@ add_default($nl, 'config_GM_constant_gravWaveSpeed');
 add_default($nl, 'config_eddying_resolution_taper');
 add_default($nl, 'config_eddying_resolution_ramp_min');
 add_default($nl, 'config_eddying_resolution_ramp_max');
+
+#########################################
+# Namelist group: Redi_isopycnal_mixing #
+#########################################
+
+add_default($nl, 'config_use_Redi');
+add_default($nl, 'config_Redi_closure');
+add_default($nl, 'config_Redi_constant_kappa');
+add_default($nl, 'config_Redi_maximum_slope');
+add_default($nl, 'config_Redi_use_slope_taper');
+add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_N2_based_taper_enable');
+add_default($nl, 'config_Redi_N2_based_taper_min');
+add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+
+############################################
+# Namelist group: GM_eddy_parameterization #
+############################################
+
+add_default($nl, 'config_use_GM');
+add_default($nl, 'config_GM_closure');
+add_default($nl, 'config_GM_constant_kappa');
+add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_spatially_variable_min_kappa');
+add_default($nl, 'config_GM_spatially_variable_max_kappa');
+add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
+add_default($nl, 'config_GM_Visbeck_alpha');
+add_default($nl, 'config_GM_Visbeck_max_depth');
+add_default($nl, 'config_GM_EG_riMin');
+add_default($nl, 'config_GM_EG_kappa_factor');
+add_default($nl, 'config_GM_EG_Rossby_factor');
+add_default($nl, 'config_GM_EG_Rhines_factor');
 
 ####################################
 # Namelist group: Rayleigh_damping #

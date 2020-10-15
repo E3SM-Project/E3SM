@@ -97,9 +97,9 @@ ENDIF ()
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
+OPTION(BUILD_HOMME_THETA_KOKKOS "SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
-OPTION(ENABLE_PREQX_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
@@ -120,27 +120,42 @@ IF (${HOMME_USE_TRILINOS})
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
-IF (${BUILD_HOMME_PREQX_KOKKOS})
+SET (HOMME_USE_KOKKOS FALSE)
+IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
   SET (HOMME_USE_KOKKOS TRUE)
+
+  # This option will only help propagate tests, it won't make bfb builds.
+  # Compiler flags should be set separately in *.cmake file.
+  IF (HOMME_ENABLE_TESTING)
+    OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
+  ENDIF ()
+
   SET (HOMME_USE_CXX TRUE)
-  IF (NOT ${BUILD_HOMME_PREQX} AND ${HOMME_BUILD_EXECS})
+  IF (NOT BUILD_HOMME_PREQX AND BUILD_HOMME_PREQX_KOKKOS AND HOMMEXX_BFB_TESTING)
     # If we build preqx kokkos, we also build preqx, so we can compare
-    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON, "
+                    "and HOMMEXX_BFB_TESTING=ON.")
 
     # We need to compare against F90 implementation, so turn this on
     SET (BUILD_HOMME_PREQX TRUE)
   ENDIF ()
+
+  IF (NOT BUILD_HOMME_THETA AND BUILD_HOMME_THETA_KOKKOS AND HOMMEXX_BFB_TESTING)
+    # If we build theta kokkos, we also build theta, so we can compare
+    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_THETA to ON, since BUILD_HOMME_THETA_KOKKOS is ON, "
+                    "and HOMMEXX_BFB_TESTING=ON.")
+
+    # We need to compare against F90 implementation, so turn this on
+    SET (BUILD_HOMME_THETA TRUE)
+  ENDIF ()
 ENDIF ()
-IF (${HOMME_ENABLE_COMPOSE})
+
+IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_KOKKOS TRUE)
 ENDIF ()
-#if not kokkos, then no bfb tests
-IF (NOT ${BUILD_HOMME_PREQX_KOKKOS})
-  SET (ENABLE_PREQX_KOKKOS_BFB_TESTS FALSE)
-ENDIF ()
 
-IF (${HOMME_USE_CXX})
+IF (HOMME_USE_CXX)
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -181,6 +196,9 @@ IF (${HOMME_USE_KOKKOS})
 
   # An option to allow to use GPU pointers for MPI calls. The value of this option is irrelevant for CPU/KNL builds.
   OPTION (HOMMEXX_MPI_ON_DEVICE "Whether we want to use device pointers for MPI calls (relevant only for GPU builds)" ON)
+
+  # An option to allow workspace sharing on GPU
+  OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
 ENDIF()
 
 ##############################################################################
@@ -231,12 +249,14 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  IF (${CUDA_FOUND})
-    # Note: If you ask for GPU to be bfb with CPU, you should also ask for a strict fp model on cpu.
-    OPTION (HOMMEXX_GPU_BFB_WITH_CPU "Whether we want cpu and gpu solution to be bfb" OFF)
-  ENDIF ()
 
-  SET (HOMMEXX_VECTOR_SIZE 8 CACHE STRING
+  IF (CUDA_BUILD)
+    SET (DEFAULT_VECTOR_SIZE 1)
+  ELSE ()
+    SET (DEFAULT_VECTOR_SIZE 8)
+  ENDIF()
+
+  SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
     "If AVX or Cuda don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
@@ -371,7 +391,8 @@ IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS} AND ${ENABLE_PREQX_KOKKOS_BFB_TESTS})
+# This folder contains the CMake macro used to build cxx unit tests
+IF (HOMMEXX_BFB_TESTING)
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
@@ -407,6 +428,9 @@ IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
 ENDIF()
 
+IF(${BUILD_HOMME_THETA_KOKKOS})
+  ADD_SUBDIRECTORY(src/theta-l_kokkos)
+ENDIF()
 IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
 ENDIF()
@@ -421,6 +445,10 @@ ENDIF()
 
 # Tests and execs only if this is a standalone build
 IF (${HOMME_BUILD_EXECS})
+  # Set a default value for USE_MPIEXEC.
+  # NOTE: if USE_MPIEXEC is already set, this line has no effect.
+  SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
+
   ADD_SUBDIRECTORY(test_execs)
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()

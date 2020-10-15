@@ -18,7 +18,7 @@ set(PERFOBJS
   homme/src/share/edge_mod_base.F90
   homme/src/share/derivative_mod_base.F90
   homme/src/share/bndry_mod_base.F90
-  homme/src/theta-l/prim_advance_mod.F90
+  homme/src/theta-l/share/prim_advance_mod.F90
   homme/src/preqx/share/prim_advance_mod.F90
   eam/src/physics/cam/uwshcu.F90
   eam/src/chemistry/aerosol/wetdep.F90)

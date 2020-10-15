@@ -25,6 +25,9 @@ character(shr_kind_cl), public :: bnd_topo = 'bnd_topo'   ! full pathname for to
 character(shr_kind_cl), public :: absems_data = 'absems_data' ! full pathname for time-invariant absorption dataset
 
 character(shr_kind_cl), public :: caseid = ' '  ! Case identifier
+character(shr_kind_cl), public :: hostname = ' '  ! hostname
+character(shr_kind_cl), public :: username = ' '  ! username
+character(shr_kind_cl), public :: version = ' '  ! version
 logical, public :: brnch_retain_casename = .false.
 
 integer, parameter :: nlen = shr_kind_cl                ! String length

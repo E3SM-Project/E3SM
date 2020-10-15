@@ -2,6 +2,8 @@
 
 MACRO(PREQX_KOKKOS_SETUP)
 
+SET (KOKKOS_TARGET TRUE)
+
 INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
@@ -18,6 +20,7 @@ SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS
+  ${TARGET_DIR}/cxx
   ${PIO_INCLUDE_DIRS}
   ${UTILS_TIMING_DIR}
   ${UTILS_TIMING_SRC_DIR}
@@ -94,6 +97,8 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/compose_mod.F90
   ${SRC_SHARE_DIR}/compose_test_mod.F90
   ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
+  ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
+  ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
 )
 
 SET(TEST_SRC_F90
@@ -144,33 +149,38 @@ SET(PREQX_DEPS_F90
 )
 
 SET(PREQX_DEPS_CXX
+  ${TARGET_DIR}/cxx/cxx_f90_interface_preqx.cpp
+  ${TARGET_DIR}/cxx/CamForcing.cpp
+  ${TARGET_DIR}/cxx/Diagnostics.cpp
+  ${TARGET_DIR}/cxx/ElementsForcing.cpp
+  ${TARGET_DIR}/cxx/ElementsState.cpp
+  ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
+  ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/CamForcing.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/Derivative.cpp
-  ${SRC_SHARE_DIR}/cxx/Diagnostics.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp
+  ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
   ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
-  ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctorImpl.cpp
+  ${SRC_SHARE_DIR}/cxx/ReferenceElement.cpp
   ${SRC_SHARE_DIR}/cxx/Tracers.cpp
   ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp
-  ${SRC_SHARE_DIR}/cxx/cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/BuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
-  ${SRC_SHARE_DIR}/cxx/mpi/MpiContext.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
-  ${SRC_SHARE_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/prim_advec_tracers_remap.cpp
   ${SRC_SHARE_DIR}/cxx/prim_driver.cpp
   ${SRC_SHARE_DIR}/cxx/prim_step.cpp
   ${SRC_SHARE_DIR}/cxx/vertical_remap.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
 )
 
 IF (${HOMME_USE_TRILINOS})
@@ -229,8 +239,5 @@ IF (${HOMME_BUILD_EXECS})
   ############################################################################
   # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
   ############################################################################
-  # Need to set this, so createTestExec will call link_to_kokkos
-  SET (USE_KOKKOS_KERNELS ON)
   createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 ENDIF ()
-

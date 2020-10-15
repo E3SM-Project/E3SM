@@ -9,6 +9,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include "PackTraits.hpp"
 #include "Config.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "Dimensions.hpp"
@@ -29,18 +30,18 @@ using F90Ptr = Real *const; // Using this in a function signature emphasizes
 using CF90Ptr = const Real *const; // Using this in a function signature
                                    // emphasizes that the ordering is Fortran
 
-#if (HOMMEXX_AVX_VERSION > 0)
-using VectorTagType =
-    KokkosKernels::Batched::Experimental::AVX<Real, ExecSpace>;
-#else
-using VectorTagType =
-    KokkosKernels::Batched::Experimental::SIMD<Real, ExecSpace>;
-#endif // HOMMEXX_AVX_VERSION
+using VectorTagType = KokkosKernels::Batched::Experimental::SIMD<Real, ExecSpace>;
 
-using VectorType =
-    KokkosKernels::Batched::Experimental::VectorTag<VectorTagType, VECTOR_SIZE>;
+using VectorType = KokkosKernels::Batched::Experimental::VectorTag<VectorTagType, VECTOR_SIZE>;
 
 using Scalar = KokkosKernels::Batched::Experimental::Vector<VectorType>;
+
+// Specialize PackTraits for Scalar
+template<>
+struct PackTraits<Scalar> {
+  static constexpr int pack_length = Scalar::vector_length;
+  using value_type = Real;
+};
 
 static_assert(sizeof(Scalar) > 0, "Vector type has 0 size");
 static_assert(sizeof(Scalar) == sizeof(Real[VECTOR_SIZE]), "Vector type is not correctly defined");
@@ -126,11 +127,85 @@ using MPIViewUnmanaged = MPIView<DataType, MemoryUnmanaged>;
 template <typename DataType>
 using ScratchView = ViewType<DataType, ScratchMemSpace, MemoryUnmanaged>;
 
+namespace Impl {
+// Turn a View's MemoryTraits (traits::memory_traits) into the equivalent
+// unsigned int mask. This is an implementation detail for Unmanaged; see next.
+template <typename View>
+  struct MemoryTraitsMask {
+    enum : unsigned int {
+      value = ((View::traits::memory_traits::is_random_access ? Kokkos::RandomAccess : 0) |
+               (View::traits::memory_traits::is_atomic ? Kokkos::Atomic : 0) |
+               (View::traits::memory_traits::is_restrict ? Kokkos::Restrict : 0) |
+               (View::traits::memory_traits::is_aligned ? Kokkos::Aligned : 0) |
+               (View::traits::memory_traits::is_unmanaged ? Kokkos::Unmanaged : 0))
+        };
+  };
+}
+
+template <typename View>
+using Unmanaged =
+  // Provide a full View type specification, augmented with Unmanaged.
+  Kokkos::View<typename View::traits::scalar_array_type,
+               typename View::traits::array_layout,
+               typename View::traits::device_type,
+               Kokkos::MemoryTraits<
+                 // All the current values...
+                 Impl::MemoryTraitsMask<View>::value |
+                 // ... |ed with the one we want, whether or not it's
+                 // already there.
+                 Kokkos::Unmanaged> >;
+
+
 // To view the fully expanded name of a complicated template type T,
 // just try to access some non-existent field of MyDebug<T>. E.g.:
 // MyDebug<T>::type i;
 template <typename T> struct MyDebug {};
 
+namespace Remap {
+// All VertRemapAlg types must provide the following methods:
+// compute_grids_phase, and compute_remap_phase
+//
+// compute_grids_phase is expected to have less parallelism available and to
+// compute quantities which are independent of the tracers,
+// based on the computed partitions
+//
+// compute_remap_phase remaps each of the tracers based on the quantities
+// previously computed in compute_grids_phase.
+// It is also expected to have a large amount of parallelism, specifically
+// qsize * num_elems
+struct VertRemapAlg {};
+} // namespace Remap
+
 } // Homme
+
+// A kokkos-compatible implementation of a static array of 2 Real's
+namespace Kokkos {
+
+struct Real2 {
+  Homme::Real v[2];
+  KOKKOS_FORCEINLINE_FUNCTION
+  Real2 () : v{0,0} {}
+
+  KOKKOS_FORCEINLINE_FUNCTION
+  Real2& operator+= (const Real2& o) {
+    v[0] += o.v[0];
+    v[1] += o.v[1];
+    return *this;
+  }
+};
+
+template<>
+struct reduction_identity<Homme::Scalar> {
+  KOKKOS_FORCEINLINE_FUNCTION
+  static Homme::Scalar sum()  {return Homme::Scalar(reduction_identity<Homme::Real>::sum());}
+};
+
+// Specialization of a Kokkos structure, needed in the initialization of reduction operations.
+template<> struct reduction_identity<Real2> {
+  KOKKOS_FORCEINLINE_FUNCTION
+  static Real2 sum() { return Real2(); }
+};
+
+} // namespace Kokkos
 
 #endif // HOMMEXX_TYPES_HPP

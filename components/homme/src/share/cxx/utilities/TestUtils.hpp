@@ -8,6 +8,7 @@
 #define HOMMEXX_TEST_UTILS_HPP
 
 #include "Types.hpp"
+#include "ErrorDefs.hpp"
 #include <functional>
 
 namespace Homme {
@@ -38,11 +39,20 @@ void genRandArray(Scalar *const x, int length, rngAlg &engine, PDF &&pdf) {
 template <typename ViewType, typename rngAlg, typename PDF>
 typename std::enable_if<Kokkos::is_view<ViewType>::value, void>::type
 genRandArray(ViewType view, rngAlg &engine, PDF &&pdf,
-             std::function<bool(typename ViewType::HostMirror)> constraint) {
+             std::function<bool(typename ViewType::HostMirror)> constraint,
+             const int max_attempts = 1000) {
   typename ViewType::HostMirror mirror = Kokkos::create_mirror_view(view);
+  int iter=0;
+  bool success;
   do {
     genRandArray(mirror.data(), view.size(), engine, pdf);
-  } while (constraint(mirror) == false);
+    ++iter;
+    success = constraint(mirror);
+  } while (!success && iter<max_attempts);
+  if (!success) {
+    Errors::runtime_abort("Error! Failed to randomly initialize Kokkos view '" +
+                           view.label() + "' in " + std::to_string(max_attempts) + " attempts.\n");
+  }
   Kokkos::deep_copy(view, mirror);
 }
 
