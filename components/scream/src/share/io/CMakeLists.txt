@@ -5,11 +5,6 @@ set(SCREAM_SCORPIO_SRCS
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
-set (SCREAM_LIBS
-     scream_share
-     scream_control
-)
-
 # Create or import scorpio targets
 include (${SCREAM_SOURCE_DIR}/cmake/tpls/Scorpio.cmake)
 CreateScorpioTarget(TRUE) # Note: the input is whether we want FLIB too. We want/need both, so look for both
@@ -26,7 +21,7 @@ add_library(scream_io ${SCREAM_SCORPIO_SRCS})
 set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link libraries
-target_link_libraries(scream_io PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
+target_link_libraries(scream_io PUBLIC scream_share ${SCREAM_CIME_LIBS})
 
 if (NOT SCREAM_LIBS_ONLY)
   add_subdirectory(tests)
