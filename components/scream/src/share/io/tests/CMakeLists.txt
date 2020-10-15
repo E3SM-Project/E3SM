@@ -10,13 +10,13 @@ set (ARRAY_SCORPIO_SRCS
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
-# Test atmosphere processes
-CreateUnitTest(scorpio_interface "scorpio_tests.cpp" scream_io 
-  MPI_RANKS 1 4
-)
-CreateUnitTest(scorpio_yaml "scorpio_yaml_test.cpp" scream_io
-  MPI_RANKS 1 4
-)
+## Test atmosphere processes
+#CreateUnitTest(scorpio_interface "scorpio_tests.cpp" scream_io 
+#  MPI_RANKS 1 4
+#)
+#CreateUnitTest(scorpio_yaml "scorpio_yaml_test.cpp" scream_io
+#  MPI_RANKS 1 4
+#)
 # TODO: this test needs to be moved in scream/tests, since it requires scream_control and p3.
 #       When cmake parses the share folder (which we are inside right now), the control and p3
 #       folders have not been parsed yet, so we cannot use their libs.
@@ -28,24 +28,24 @@ CreateUnitTest(io_test "io.cpp" scream_io)
 
 CreateUnitTest(restart_test "restart.cpp" scream_io)
 
-configure_file(scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
-configure_file(scorpio_control.yaml scorpio_control.yaml COPYONLY)
-configure_file(scorpio_output1.yaml scorpio_output1.yaml COPYONLY)
-configure_file(scorpio_output2.yaml scorpio_output2.yaml COPYONLY)
-# configure_file(scorpio_ad_test.yaml scorpio_ad_test.yaml COPYONLY)
-# configure_file(scorpio_ad_out_ins.yaml scorpio_ad_out_ins.yaml COPYONLY)
-# configure_file(scorpio_ad_out_avg.yaml scorpio_ad_out_avg.yaml COPYONLY)
+#configure_file(scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
+#configure_file(scorpio_control.yaml scorpio_control.yaml COPYONLY)
+#configure_file(scorpio_output1.yaml scorpio_output1.yaml COPYONLY)
+#configure_file(scorpio_output2.yaml scorpio_output2.yaml COPYONLY)
+#configure_file(scorpio_ad_test.yaml scorpio_ad_test.yaml COPYONLY)
+#configure_file(scorpio_ad_out_ins.yaml scorpio_ad_out_ins.yaml COPYONLY)
+#configure_file(scorpio_ad_out_avg.yaml scorpio_ad_out_avg.yaml COPYONLY)
 
 configure_file(io_test_instant.yaml io_test_instant.yaml COPYONLY)
 configure_file(io_test_average.yaml io_test_average.yaml COPYONLY)
 configure_file(io_test_max.yaml io_test_max.yaml COPYONLY)
 configure_file(io_test_min.yaml io_test_min.yaml COPYONLY)
 configure_file(io_test_restart.yaml io_test_restart.yaml COPYONLY)
-# Copy p3 lookup tables to local data directory
-# FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-# CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4
-#                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-# CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
-#                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-# CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_universal_constants.inp
-#                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+## Copy p3 lookup tables to local data directory
+#FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+#CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4
+#               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+#CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
+#               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+#CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_universal_constants.inp
+#               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)

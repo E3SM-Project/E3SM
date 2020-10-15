@@ -227,7 +227,7 @@ ekat::ParameterList get_in_params(const std::string type)
 {
   ekat::ParameterList in_params("Input Parameters");
 //  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
-  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.1-1-0.000010.nc");
+  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
   f_list.set<Int>("Number of Fields",3);
