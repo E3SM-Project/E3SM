@@ -29,15 +29,13 @@ public:
   // Overrides.
 
   bool check(const Field<ScalarType, Device>& field) const override {
-    auto f_view = field.get_view();
-    auto host_view = Kokkos::create_mirror_view(field.get_view());
-    Kokkos::deep_copy(host_view, field.get_view());
+    auto view = field.get_view();
     ScalarType min_val;
-    Kokkos::parallel_reduce(host_view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& m) {
+    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& m) {
       if (i == 0) {
-        m = host_view(0);
+        m = view(0);
       } else {
-        m = ekat::impl::min(m, host_view(i));
+        m = ekat::impl::min(m, view(i));
       }
     }, Kokkos::Min<ScalarType>(min_val));
     return (min_val > 0);
@@ -49,14 +47,12 @@ public:
 
   void repair(Field<ScalarType, Device>& field) const override {
     if (can_repair()) {
-      auto host_view = Kokkos::create_mirror_view(field.get_view());
-      Kokkos::deep_copy(host_view, field.get_view());
-      Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
-        if (host_view(i) < m_lower_bound) {
-          host_view(i) = m_lower_bound;
+      auto view = field.get_view();
+      Kokkos::parallel_for(view.extent(0), KOKKOS_LAMBDA(Int i) {
+        if (view(i) < 0) {
+          view(i) = m_lower_bound;
         }
       });
-      Kokkos::deep_copy(field.get_view(), host_view);
     }
   }
 

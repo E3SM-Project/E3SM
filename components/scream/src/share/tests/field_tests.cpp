@@ -267,18 +267,18 @@ TEST_CASE("field_property_check", "") {
     // positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = i+1;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(iter->check(f1));
     }
 
     // Assign non-positive values to the field and make sure it fails the check.
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = -i;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(not iter->check(f1));
@@ -297,9 +297,9 @@ TEST_CASE("field_property_check", "") {
     // and then repair the field so it passes.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = -i;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(not iter->check(f1));
@@ -320,9 +320,9 @@ TEST_CASE("field_property_check", "") {
     // positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = i+1;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(iter->check(f1));
@@ -330,9 +330,9 @@ TEST_CASE("field_property_check", "") {
 
     // Assign non-positive values to the field, make sure it fails the check,
     // and then repair the field so it passes.
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = -i;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(not iter->check(f1));
@@ -353,9 +353,9 @@ TEST_CASE("field_property_check", "") {
     // passes our test for positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = i+1;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(iter->check(f1));
@@ -363,9 +363,9 @@ TEST_CASE("field_property_check", "") {
 
     // Assign monotonically-decreasing values to the field and make sure it
     // also passes the check.
-    Kokkos::parallel_for(host_view.extent(0), KOKKOS_LAMBDA(Int i) {
+    for (int i = 0; i < host_view.extent(0); ++i) {
       host_view(i) = -i;
-    });
+    }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
       REQUIRE(iter->check(f1));
