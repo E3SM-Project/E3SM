@@ -438,7 +438,7 @@ inline void AtmosphereOutput::set_degrees_of_freedom(const std::string filename)
         ++dof_it;
       }
     }
-    set_dof(m_filename,name,dof_len,var_dof.data());
+    set_dof(filename,name,dof_len,var_dof.data());
     m_dofs.emplace(std::make_pair(name,dof_len));
   }
   // Set degree of freedom for "time"
