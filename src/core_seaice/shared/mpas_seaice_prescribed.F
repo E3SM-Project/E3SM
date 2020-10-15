@@ -265,8 +265,8 @@ contains
                 do iCategory = 1, nCategories
 
                    ! find relevant thickness category
-                   if (iceThickness <  categoryThicknessLimits(iCategory) .and. & !!!! index limits
-                       iceThickness >= categoryThicknessLimits(iCategory-1)) then
+                   if (iceThickness >= categoryThicknessLimits(iCategory) .and. & !!!! index limits
+                       iceThickness <  categoryThicknessLimits(iCategory+1)) then
 
                       if (iceAreaCategory(1,iCategory,iCell) > 0.0_RKIND) then
                          snowThickness = snowVolumeCategory(1,iCategory,iCell) / iceAreaCategory(1,iCategory,iCell)
