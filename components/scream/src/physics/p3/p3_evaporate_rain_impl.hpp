@@ -180,6 +180,14 @@ void Functions<S,D>
     //allow rain evap to also condense by forcing qr2qv_evap_tend to be positive
     qr2qv_evap_tend.set(is_rain_evap && (qr2qv_evap_tend<0), 0);
 
+    //We can't evaporate more rain mass than we had to start with
+    //Note: We're applying to rainy region outside cloud here because
+    //qr inside cloud should be protected from evap. Conversion to rainy-area
+    //average just below scales by (cldfrac_r - cld_frac)/cldfrac_r < 1 so 
+    //total qr isn't pushed negative. 
+    qr2qv_evap_tend.set(is_rain_evap && (qr2qv_evap_tend>qr_incld*inv_dt),
+			qr_incld*inv_dt);
+    
     //Evap rate so far is an average over the rainy area outside clouds.
     //Turn this into an average over the entire raining area
     qr2qv_evap_tend.set(is_rain_evap, qr2qv_evap_tend*(cld_frac_r-cld_frac)/cld_frac_r);
