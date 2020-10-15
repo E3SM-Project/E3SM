@@ -20,9 +20,17 @@ def create_viewer(root_dir, parameters):
     # Appears in the second and third columns of the bolded rows.
     cols = ['Description', 'Plot']
     viewer.add_page(display_name, short_name=set_name, columns=cols)
-    for plot_type in ['seasonality', 'bias']:
+    for plot_type in ['seasonality_map', 'annual_map', 'annual_scatter']:
+        if plot_type == 'seasonality_map':
+            group_name = 'Seasonality Map'
+        elif plot_type == 'annual_map':
+            group_name = 'Mean Annual Streamflow Map'
+        elif plot_type == 'annual_scatter':
+            group_name = 'Mean Annual Streamflow Scatter Plot'
+        else:
+            raise Exception('Invalid plot_type={}'.format(plot_type))
         # Appears in the first column of the bolded rows.
-        viewer.add_group(plot_type.capitalize())
+        viewer.add_group(group_name)
         for param in parameters:
             # We need to make sure we have relative paths, and not absolute ones.
             # This is why we don't use get_output_dir() as in the plotting script
@@ -33,13 +41,19 @@ def create_viewer(root_dir, parameters):
             #  If so, we'll need to create unique image_relative_paths
             for var in param.variables:
                 param.var_id = '{}-{}'.format(var, plot_type)
-                if plot_type == 'seasonality':
-                    param.viewer_descr[var] = param.main_title_seasonality
-                    output_file = param.output_file_seasonality
+                if plot_type == 'seasonality_map':
+                    param.viewer_descr[var] = param.main_title_seasonality_map
+                    output_file = param.output_file_seasonality_map
+                elif plot_type == 'annual_map':
+                    param.viewer_descr[var] = param.main_title_annual_map
+                    output_file = param.output_file_annual_map
+                elif plot_type == 'annual_scatter':
+                    param.viewer_descr[var] = param.main_title_annual_scatter
+                    output_file = param.output_file_annual_scatter
                 else:
-                    param.viewer_descr[var] = param.main_title_bias
-                    output_file = param.output_file_bias
-                # param.output_file_{seasonality, bias} is defined in acme_diags/parameter/streamflow_parameter.py
+                    raise Exception('Invalid plot_type={}'.format(plot_type))
+                # param.output_file_{seasonality, annual_map, annual_scatter} is defined in
+                # acme_diags/parameter/streamflow_parameter.py.
                 # relative_path must use param.case_id and output_file
                 # to match the file_path determined in
                 # acme_diags/plot/cartopy/streamflow_plot.py.
@@ -60,7 +74,7 @@ def create_viewer(root_dir, parameters):
                 # Link to an html version of the plot png file.
                 # Appears in the third column of the non-bolded rows.
                 meta = create_metadata(param)
-                viewer.add_col(image_relative_path, is_file=True, title=plot_type.capitalize(),
+                viewer.add_col(image_relative_path, is_file=True, title='Plot',
                                other_files=formatted_files,
                                meta=meta)
 
