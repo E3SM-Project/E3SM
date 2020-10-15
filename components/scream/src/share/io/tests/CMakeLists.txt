@@ -1,9 +1,6 @@
 #include(ScreamUtils)
 include(ScreamUtils)
 
-# include(CsmShare)
-# CreateCsmShareTarget()
-
 set (ARRAY_SCORPIO_SRCS
   scorpio_tests.cpp
   scorpio_yaml_test.cpp

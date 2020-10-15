@@ -23,15 +23,7 @@ macro (CreateCsmShareTarget)
       target_link_libraries(csm_share INTERFACE piof)
     endif ()
   else ()
-    set (CSM_SHARE_BIN_DIR ${CMAKE_BINARY_DIR}/externals/csm_share)
-
-    add_subdirectory (${SCREAM_CIME_SRC_DIR}/share/util ${CSM_SHARE_BIN_DIR})
-
-    add_library(csm_share ${share_sources})
-    set_target_properties(csm_share PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY 
-        ARCHIVE_OUTPUT_DIRECTORY ${CSM_SHARE_BIN_DIR})
-      
+    message (FATAL_ERROR "Error! CsmShare not yet supported in standalone mode.")
   endif ()
 
 endmacro()
