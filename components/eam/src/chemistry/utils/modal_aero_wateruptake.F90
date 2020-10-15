@@ -253,7 +253,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    hygro(:,:,:)    = 0._r8
 
 
-   if (list_idx == 0) then
+   if (.not. present(list_idx_in)) then
       call pbuf_get_field(pbuf, dgnum_idx,      dgncur_a )
       call pbuf_get_field(pbuf, dgnumwet_idx,   dgncur_awet )
       call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens)
@@ -423,7 +423,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !----------------------------------------------------------------------------
    ! write history output if not in diagnostic mode
 
-   if (list_idx == 0) then
+   if (.not.present(list_idx_in)) then
 
       aerosol_water(:ncol,:) = 0._r8
       do m = 1, nmodes

@@ -793,7 +793,7 @@ end function radiation_nextsw_cday
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, is_cmip6_volc)
+       fsds, net_flx, is_cmip6_volc, dt)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -851,6 +851,7 @@ end function radiation_nextsw_cday
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
+    real(r8), intent(in)    :: dt               ! time step(s)
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
@@ -1276,7 +1277,7 @@ end function radiation_nextsw_cday
                   ! update the concentrations in the RRTMG state object
                   call  rrtmg_state_update( state, pbuf, icall, r_state )
 
-                  call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
+                  call aer_rad_props_sw( icall, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
                   call t_startf ('rad_rrtmg_sw')
@@ -1429,7 +1430,7 @@ end function radiation_nextsw_cday
                   ! update the conctrations in the RRTMG state object
                   call  rrtmg_state_update( state, pbuf, icall, r_state)
 
-                  call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
+                  call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf,  aer_lw_abs)
                   
                   call t_startf ('rad_rrtmg_lw')
                   call rad_rrtmg_lw( &
