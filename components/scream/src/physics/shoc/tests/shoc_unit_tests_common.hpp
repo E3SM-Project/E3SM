@@ -112,6 +112,7 @@ struct UnitWrap {
     struct TestDiagSecondMoments;
     struct TestDiagSecondShocMoments;
     struct TestPblintdCldCheck;
+    struct TestComputeShocVapor;
   };
 
 };

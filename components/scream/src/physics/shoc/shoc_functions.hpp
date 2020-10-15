@@ -299,6 +299,8 @@ struct Functions
     const uview_1d<const Spack>& pint,
     const uview_1d<Spack>&       rho_zi,
     const uview_1d<Spack>&       host_dse);
+  KOKKOS_FUNCTION
+  static void compute_shoc_vapor(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& ql, const uview_1d<Spack>& qv);
 }; // struct Functions
 
 } // namespace shoc
@@ -331,6 +333,7 @@ struct Functions
 # include "shoc_compute_conv_time_shoc_length_impl.hpp"
 #include "shoc_length_impl.hpp"
 # include "shoc_energy_fixer_impl.hpp"
+# include "shoc_compute_shoc_vapor_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

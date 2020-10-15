@@ -1306,4 +1306,13 @@ contains
     call pblintd_cldcheck(shcol, nlev, nlevi, zi, cldn, pblh)
   end subroutine shoc_pblintd_cldcheck_c
 
+  subroutine compute_shoc_vapor_c(shcol, nlev, qw, ql, qv) bind(C)
+    use shoc, only : compute_shoc_vapor
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
+
+    call compute_shoc_vapor(shcol, nlev, qw, ql, qv)
+  end subroutine compute_shoc_vapor_c
 end module shoc_iso_c
