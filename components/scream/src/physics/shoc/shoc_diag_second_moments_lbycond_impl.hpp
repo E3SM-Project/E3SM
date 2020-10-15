@@ -23,7 +23,7 @@ void Functions<S,D>
   // thermodynamic variances and covariances are computed
   // according to that of Andre et al. 1978.
 
-  const auto ufmin = 0.01;
+  const Scalar ufmin = 0.01;
 
   auto uf = std::sqrt(ustar2+sp(0.3)*wstar*wstar);
   uf = ekat::impl::max<Scalar>(ufmin,uf);
