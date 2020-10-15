@@ -1917,17 +1917,12 @@ subroutine diag_conv(state, ztodt, pbuf)
       end if
    end do
    
-   ! Initialize indicee of PBL top
-   do i = 1,ncol
-      pblt(i) = pver
-   end do
-   
    ! Add CAPE and CIN calculation here
    ! Note that this routine needs the input pressures to be in units of hPa 
-   call diag_CAPEandCIN(ncol,state%q(:ncol,:pver,1),state%t(:ncol,:pver),&
-          0.01_r8*state%pmid(:ncol,:pver),0.01_r8*state%pint(:ncol,:pverp),&
-          state%zm(:ncol,:pver),state%zi(:ncol,:pverp),pblh(:ncol),&
-          state%phis(:ncol),epsilo,latvap,rair,gravit,cpair,cape,cin)
+   call diag_CAPEandCIN(ncol,state%q(:pcols,:pver,1),state%t(:pcols,:pver),&
+          0.01_r8*state%pmid(:pcols,:pver),0.01_r8*state%pint(:pcols,:pverp),&
+          state%zm(:pcols,:pver),state%zi(:pcols,:pverp),pblh(:pcols),&
+          state%phis(:pcols),epsilo,latvap,rair,gravit,cpair,cape,cin)
           
    call outfld('CAPE2d', cape, pcols, lchnk )
    call outfld('CIN2d', cin, pcols, lchnk )    
@@ -2374,9 +2369,9 @@ end subroutine diag_phys_tend_writeout
       real(r8), intent(in) :: q(pcols,pver)        ! spec. humidity
       real(r8), intent(in) :: t(pcols,pver)        ! temperature
       real(r8), intent(in) :: p(pcols,pver)        ! pressure [hPa]
+      real(r8), intent(in) :: pf(pcols,pverp)      ! pressure at interfaces [hPa]
       real(r8), intent(in) :: zm(pcols,pver)       ! midpoint height [m]
       real(r8), intent(in) :: zi(pcols,pverp)      ! interface height [m]
-      real(r8), intent(in) :: pf(pcols,pverp)      ! pressure at interfaces [hPa]
       real(r8), intent(in) :: pblh(pcols)          ! PBL height
       real(r8), intent(in) :: phis(pcols)          ! Surface geopotential
       real(r8), intent(in) :: eps1                 ! epsilon value
@@ -2399,7 +2394,8 @@ end subroutine diag_phys_tend_writeout
       real(r8) capeten(pcols,num_cin)     ! provisional value of cape
       real(r8) tv(pcols,pver)       ! virtual temperature 
       real(r8) tpv(pcols,pver)      ! virtual temperature of parcel
-      real(r8) buoy(pcols,pver)
+      real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations
+      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations
       ! heights needed for 
       real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver)
 
@@ -2438,7 +2434,7 @@ end subroutine diag_phys_tend_writeout
    !  Find level to limit deep convection to
       msg = 18 ! initial value
 
-      tiedke_add = 0.8_r8 ! set to value EAM uses
+      tiedke_add = 0.0_r8 ! set to value EAM uses
       rgrav = 1._r8/grav
       
    !  Determine indicee of PBL height, set up required height arrays
@@ -2460,7 +2456,8 @@ end subroutine diag_phys_tend_writeout
           if (abs(z(i,k)-zs(i)-pblh(i)) < (zf(i,k)-zf(i,k+1))*0.5_r8) pblt(i) = k
         end do
       end do
-      
+   
+   !  Intialize CIN
       do i = 1,ncol
          cin(i) = 0._r8
       end do
@@ -2551,6 +2548,7 @@ end subroutine diag_phys_tend_writeout
    !
                tpv(i,k) = tp(i,k)*(1._r8+1.608_r8*q(i,mx(i)))/ (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2586,6 +2584,7 @@ end subroutine diag_phys_tend_writeout
 
                tpv(i,k) =  tp(i,k) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2612,6 +2611,7 @@ end subroutine diag_phys_tend_writeout
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
                tpv(i,k) = tp(i,k) * (1._r8+1.608_r8*qstp(i,k))/(1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2657,12 +2657,10 @@ end subroutine diag_phys_tend_writeout
    ! Compute CIN based on information of levels computed above, which
    !  is the buoyancy integrated from surface to the lauching level
       
-!      write(*,*) 'MXlev ', mx
       do k = msg + 1, pver
         do i = 1, ncol
-           if (k > mx(i)) then 
-!             write(*,*) 'CINcalc ', rd, buoy(i,k), log(pf(i,k+1)/pf(i,k))
-             cin(i) = cin(i) + rd*buoy(i,k) * log(pf(i,k+1)/pf(i,k))
+           if (k > lcl(i)) then 
+             cin(i) = cin(i) + rd*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
            endif
         end do
       end do   
@@ -2671,7 +2669,7 @@ end subroutine diag_phys_tend_writeout
    !
       do i = 1,ncol
          cape(i) = max(cape(i), 0._r8)
-!         cin(i) = max(cin(i), 0._r8)
+         cin(i) = max(cin(i), 0._r8)
       end do
    !
       return
