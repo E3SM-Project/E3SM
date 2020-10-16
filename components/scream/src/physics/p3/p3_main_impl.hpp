@@ -702,9 +702,13 @@ void Functions<S,D>
     // Outputs associated with aerocom comparison:
     pratot(k).set(not_skip_all, qc2qr_accret_tend); // cloud drop accretion by rain
     prctot(k).set(not_skip_all, qc2qr_autoconv_tend); // cloud drop autoconversion to rain
-
-    impose_max_total_ni(ni(k), max_total_ni, inv_rho(k), not_skip_all);
-
+    
+    //impose_max_total_ni is meant to operate on in-cloud vals. ni_incld is an output of
+    //calculate_incloud_mixingratios below but we need to generate it earlier for impose_max_total_ni
+    ni_incld(k).set(not_skip_all, ni(k)/cld_frac_i(k));
+    impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_all);
+    ni(k).set(not_skip_all, ni_incld(k)*cld_frac_i(k));
+    
     // Recalculate in-cloud values for sedimentation
     calculate_incloud_mixingratios(
       qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k), inv_cld_frac_l(k), inv_cld_frac_i(k), inv_cld_frac_r(k),

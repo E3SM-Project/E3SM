@@ -889,7 +889,11 @@ contains
          is_hydromet_present = .true.
       endif
 
-      call impose_max_total_ni(ni(k),max_total_ni,inv_rho(k))
+      !impose_max_total_ni is meant to operate on in-cloud vals. ni_incld is an output of
+      !calculate_incloud_mixingratios below but we need to generate it earlier for impose_max_total_ni
+      ni_incld(k)=ni(k)/cld_frac_i(k)
+      call impose_max_total_ni(ni_incld(k),max_total_ni,inv_rho(k))
+      ni(k)=ni_incld(k)*cld_frac_i(k)
 
       ! Record microphysics tendencies for output:
       ! warm-phase process rates
