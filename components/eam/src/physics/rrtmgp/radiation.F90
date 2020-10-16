@@ -1182,6 +1182,7 @@ contains
 
       ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
+      real(r8), dimension(pcols,pver) :: c_cldf  ! Combined cloud/snow fraction
 
       !----------------------------------------------------------------------
 
@@ -1213,6 +1214,13 @@ contains
          icswp => zeros
          des => zeros
       end if
+
+      ! Compute combined cloud and snow fraction
+      do icol = 1,size(cld,1)
+         do ilay = 1,size(cld,2)
+            c_cldf(icol,ilay) = max(cld(icol,ilay), cldfsnow(icol,ilay))
+         end do
+      end do
 
       ! Initialize clearsky-heating rates to make sure we do not get garbage
       ! for columns beyond ncol or nday
@@ -1280,7 +1288,7 @@ contains
          ! Output the band-by-band cloud optics BEFORE we reorder bands, because
          ! we hard-coded the indices for diagnostic bands in radconstants.F90 to
          ! correspond to the optical property look-up tables.
-         call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+         call output_cloud_optics_sw(state, c_cldf, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
          ! Now reorder bands to be consistent with RRTMGP
          ! We need to fix band ordering because the old input files assume RRTMG
          ! band ordering, but this has changed in RRTMGP.
@@ -1780,42 +1788,66 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine output_cloud_optics_sw(state, tau, ssa, asm)
+   subroutine output_cloud_optics_sw(state, coszrs, cldf, tau, ssa, asm, tau_liq, tau_ice)
       use ppgrid, only: pver
       use physics_types, only: physics_state
       use cam_history, only: outfld
       use radconstants, only: idx_sw_diag
+      use cam_history_support, only: fillvalue
 
       type(physics_state), intent(in) :: state
-      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      real(r8), intent(in), dimension(:,:) :: cldf
+      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm, tau_liq, tau_ice
+      real(r8), dimension(size(tau,1), size(tau,2)) :: &
+         tot_cld_vistau, tot_icld_vistau, liq_icld_vistau, ice_icld_vistau
       character(len=*), parameter :: subname = 'output_cloud_optics_sw'
-      integer :: sw_band_index
+      integer :: sw_band_index, ncol, nlay, icol, ilay
+
+      ncol = state%ncol
+      nlay = pver
 
       ! Check values
-      call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
+      call assert_valid(tau(1:ncol,1:nlay,1:nswbands), &
                         trim(subname) // ': optics%optical_depth')
-      call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
+      call assert_valid(ssa(1:ncol,1:nlay,1:nswbands), &
                         trim(subname) // ': optics%single_scattering_albedo')
-      call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &
+      call assert_valid(asm(1:ncol,1:nlay,1:nswbands), &
                         trim(subname) // ': optics%assymmetry_parameter')
 
-      ! Send outputs to history buffer
+      ! Output band-by-band optical properties
       call outfld('CLOUD_TAU_SW', &
-                  tau(1:state%ncol,1:pver,1:nswbands), &
-                  state%ncol, state%lchnk)
+                  tau(1:ncol,1:nlay,1:nswbands), &
+                  ncol, state%lchnk)
       call outfld('CLOUD_SSA_SW', &
-                  ssa(1:state%ncol,1:pver,1:nswbands), &
-                  state%ncol, state%lchnk)
+                  ssa(1:ncol,1:nlay,1:nswbands), &
+                  ncol, state%lchnk)
       call outfld('CLOUD_G_SW', &
-                  asm(1:state%ncol,1:pver,1:nswbands), &
-                  state%ncol, state%lchnk)
+                  asm(1:ncol,1:nlay,1:nswbands), &
+                  ncol, state%lchnk)
+
+      ! Compute and output diagnostics for single (550 nm) band
       sw_band_index = get_band_index_sw(550._r8, 'nm')
-      call outfld('TOT_ICLD_VISTAU', &
-                  tau(1:state%ncol,1:pver,sw_band_index), &
-                  state%ncol, state%lchnk)
-      call outfld('CLDTAU', &
-                  sum(tau(1:state%ncol,1:pver,sw_band_index), dim=2), &
-                  state%ncol, state%lchnk)
+      do icol = 1,size(tau, 1)
+         do ilay = 1,size(tau, 2)
+            ! NOTE: this logical is inside the loop to make this play nice with GPU parallelism
+            if (coszrs(icol) > 0) then
+               tot_icld_vistau(icol,ilay) = tau    (icol,ilay,sw_band_index)
+               liq_icld_vistau(icol,ilay) = tau_liq(icol,ilay,sw_band_index)
+               ice_icld_vistau(icol,ilay) = tau_ice(icol,ilay,sw_band_index)
+               tot_cld_vistau(icol,ilay)  = cldf(icol,ilay) * tot_icld_vistau(icol,ilay)
+            else
+               tot_icld_vistau(icol,ilay) = fillvalue
+               liq_icld_vistau(icol,ilay) = fillvalue
+               ice_icld_vistau(icol,ilay) = fillvalue
+               tot_cld_vistau(icol,ilay)  = fillvalue
+            end if
+         end do
+      end do
+      call outfld('TOT_CLD_VISTAU' ,  tot_cld_vistau(1:ncol,1:nlay), ncol, state%lchnk)       
+      call outfld('TOT_ICLD_VISTAU', tot_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
+      call outfld('LIQ_ICLD_VISTAU', liq_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
+      call outfld('ICE_ICLD_VISTAU', ice_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
+      call outfld('CLDTAU', sum(tau_cld_vistau(1:ncol,1:nlay), dim=2), ncol, state%lchnk)
    end subroutine output_cloud_optics_sw
 
    !----------------------------------------------------------------------------
