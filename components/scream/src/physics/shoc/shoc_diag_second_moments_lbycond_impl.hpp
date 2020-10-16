@@ -40,7 +40,8 @@ void Functions<S,D>
   uw_sec   = uw_sfc;
   vw_sec   = vw_sfc;
 
-  wtke_sec = ekat::impl::max<Scalar>(sqrt(ustar2),ufmin)*ekat::impl::max<Scalar>(sqrt(ustar2),ufmin)*ekat::impl::max<Scalar>(sqrt(ustar2),ufmin);
+  auto max_val = ekat::impl::max(sqrt(ustar2),ufmin);
+  wtke_sec = max_val*max_val*max_val;
 }
 } // namespace shoc
 } // namespace scream
