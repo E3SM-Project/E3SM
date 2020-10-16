@@ -1919,10 +1919,9 @@ subroutine diag_conv(state, ztodt, pbuf)
    
    ! Add CAPE and CIN calculation here
    ! Note that this routine needs the input pressures to be in units of hPa 
-   call diag_CAPEandCIN(ncol,state%q(:pcols,:pver,1),state%t(:pcols,:pver),&
-          0.01_r8*state%pmid(:pcols,:pver),0.01_r8*state%pint(:pcols,:pverp),&
-          state%zm(:pcols,:pver),state%zi(:pcols,:pverp),pblh(:pcols),&
-          state%phis(:pcols),cape,cin)
+   call diag_CAPEandCIN(ncol,state%q(:pcols,:pver,1),state%t,&
+          0.01_r8*state%pmid,0.01_r8*state%pint,state%zm,state%zi,pblh,&
+          state%phis,cape,cin)
           
    call outfld('CAPE2d', cape, pcols, lchnk )
    call outfld('CIN2d', cin, pcols, lchnk )    
