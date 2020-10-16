@@ -1288,7 +1288,7 @@ contains
          ! Output the band-by-band cloud optics BEFORE we reorder bands, because
          ! we hard-coded the indices for diagnostic bands in radconstants.F90 to
          ! correspond to the optical property look-up tables.
-         call output_cloud_optics_sw(state, c_cldf, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+         call output_cloud_optics_sw(state, coszrs, c_cldf, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
          ! Now reorder bands to be consistent with RRTMGP
          ! We need to fix band ordering because the old input files assume RRTMG
          ! band ordering, but this has changed in RRTMGP.
@@ -1796,6 +1796,7 @@ contains
       use cam_history_support, only: fillvalue
 
       type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:) :: coszrs
       real(r8), intent(in), dimension(:,:) :: cldf
       real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm, tau_liq, tau_ice
       real(r8), dimension(size(tau,1), size(tau,2)) :: &
