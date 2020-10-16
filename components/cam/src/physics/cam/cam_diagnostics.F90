@@ -19,6 +19,7 @@ use dycore,        only: dycore_is
 use phys_control,  only: phys_getopts
 use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
+use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
 use cam_abortutils,    only: endrun
 
@@ -1817,7 +1818,6 @@ subroutine diag_conv(state, ztodt, pbuf)
 !-----------------------------------------------------------------------
    use physconst,     only: cpair
    use tidal_diag,    only: get_tidal_coeffs
-   use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
 ! Arguments:
 
@@ -1922,7 +1922,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call diag_CAPEandCIN(ncol,state%q(:pcols,:pver,1),state%t(:pcols,:pver),&
           0.01_r8*state%pmid(:pcols,:pver),0.01_r8*state%pint(:pcols,:pverp),&
           state%zm(:pcols,:pver),state%zi(:pcols,:pverp),pblh(:pcols),&
-          state%phis(:pcols),epsilo,latvap,rair,gravit,cpair,cape,cin)
+          state%phis(:pcols),cape,cin)
           
    call outfld('CAPE2d', cape, pcols, lchnk )
    call outfld('CIN2d', cin, pcols, lchnk )    
@@ -2342,7 +2342,7 @@ end subroutine diag_phys_tend_writeout
    
    subroutine diag_CAPEandCIN(ncol, &
                      q, t, p, pf, zm, zi, pblh, phis, &
-                     eps1, rl, rd, grav, cp, cape, cin)
+                     cape, cin)
                      
    !----------------------------------------------------------------------- 
    ! 
@@ -2350,7 +2350,7 @@ end subroutine diag_phys_tend_writeout
    ! Compute CAPE and CIN for diagnostic output only
    ! 
    ! Method: 
-   ! Borrowed from the CAM3 subroutine "buoyan" that computed CAPE
+   ! Originated from the CAM3.5 subroutine "buoyan" that computed CAPE
    !  in the ZM convection scheme, with modifications.  Also extended
    !  to compute and output CIN
    ! 
@@ -2361,85 +2361,73 @@ end subroutine diag_phys_tend_writeout
    !-----------------------------------------------------------------------
       implicit none
    !-----------------------------------------------------------------------
-   !
-   ! input arguments
-   !
-      integer, intent(in) :: ncol                  ! number of atmospheric columns
 
-      real(r8), intent(in) :: q(pcols,pver)        ! spec. humidity
-      real(r8), intent(in) :: t(pcols,pver)        ! temperature
-      real(r8), intent(in) :: p(pcols,pver)        ! pressure [hPa]
-      real(r8), intent(in) :: pf(pcols,pverp)      ! pressure at interfaces [hPa]
-      real(r8), intent(in) :: zm(pcols,pver)       ! midpoint height [m]
-      real(r8), intent(in) :: zi(pcols,pverp)      ! interface height [m]
-      real(r8), intent(in) :: pblh(pcols)          ! PBL height
-      real(r8), intent(in) :: phis(pcols)          ! Surface geopotential
-      real(r8), intent(in) :: eps1                 ! epsilon value
-      real(r8), intent(in) :: rd                   ! gas constant for dry air
-      real(r8), intent(in) :: rl                   ! latent heat of vaporizaiton
-      real(r8), intent(in) :: grav                 ! gravity
-      real(r8), intent(in) :: cp                   ! cpair
-   !
-   ! output arguments
-   !
+   !  INPUTS arguments
+      integer, intent(in) :: ncol             ! number of atmospheric columns
 
-      real(r8), intent(out) :: cape(pcols)          ! convective aval. pot. energy.
-      real(r8), intent(out) :: cin(pcols)           ! covective inhibition
+      real(r8), intent(in) :: q(pcols,pver)   ! spec. humidity [kg/kg]
+      real(r8), intent(in) :: t(pcols,pver)   ! temperature [K]
+      real(r8), intent(in) :: p(pcols,pver)   ! pressure [hPa]
+      real(r8), intent(in) :: pf(pcols,pverp) ! pressure at interfaces [hPa]
+      real(r8), intent(in) :: zm(pcols,pver)  ! midpoint height [m]
+      real(r8), intent(in) :: zi(pcols,pverp) ! interface height [m]
+      real(r8), intent(in) :: pblh(pcols)     ! PBL height [m]
+      real(r8), intent(in) :: phis(pcols)     ! Surface geopotential [m]
+
+   !  OUTPUT arguments
+      real(r8), intent(out) :: cape(pcols)    ! convective aval. pot. energy [J/kg]
+      real(r8), intent(out) :: cin(pcols)     ! covective inhibition [J/kg]
 
    !
    !--------------------------Local Variables------------------------------
    !
+      ! number of "potential CAPEs" to consider in the CAPE calculation
+      ! For this diagnostic set to the standard of 1
       integer, parameter :: num_cin = 1
    
-      real(r8) capeten(pcols,num_cin)     ! provisional value of cape
-      real(r8) tv(pcols,pver)       ! virtual temperature 
-      real(r8) tpv(pcols,pver)      ! virtual temperature of parcel
-      real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations
-      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations
-      ! heights needed for 
-      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver)
+      real(r8) capeten(pcols,num_cin) ! provisional value of cape
+      real(r8) tv(pcols,pver)       ! virtual temperature [K]
+      real(r8) tpv(pcols,pver)      ! virtual temperature of parcel [K]
+      real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations [K]
+      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K}
+      
+      ! heights needed for diagnostic [m] 
+      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver) 
 
-      real(r8) :: tp(pcols,pver)       ! parcel temperature
-      real(r8) :: qstp(pcols,pver)     ! saturation mixing ratio of parcel
-      real(r8) :: tl(pcols)            ! parcel temperature at lcl
+      real(r8) :: tp(pcols,pver)   ! parcel temperature [K]
+      real(r8) :: qstp(pcols,pver) ! saturation mixing ratio of parcel [kg/kg]
+      real(r8) :: tl(pcols)        ! parcel temperature at lcl [K]
 
-      real(r8) a1(pcols)
-      real(r8) a2(pcols)
-      real(r8) estp(pcols)
-      real(r8) pl(pcols)
-      real(r8) plexp(pcols)
-      real(r8) hmax(pcols)
-      real(r8) hmn(pcols)
-      real(r8) y(pcols)
-      integer lcl(pcols)        !
-      integer lel(pcols)        !
+      integer lcl(pcols)        ! level of lifting condensation level
+      integer lel(pcols)        ! level of equilibrium level
       integer lon(pcols)        ! level of onset of deep convection
       integer mx(pcols)         ! level of max moist static energy      
-      integer pblt(pcols)       ! integer of PBLH
+      integer pblt(pcols)       ! integer of PBL height
 
-      logical plge600(pcols)
-      integer knt(pcols)
-      integer lelten(pcols,num_cin)
+      ! Miscellanous 2d arrays needed for diagnostic
+      real(r8) :: a1(pcols), a2(pcols), estp(pcols), pl(pcols)
+      real(r8) :: plexp(pcols), hmax(pcols), hmn(pcols), y(pcols)
+      integer :: knt(pcols)
+      integer :: lelten(pcols,num_cin)
 
-      real(r8) e, tiedke_add, rgrav
+      real(r8) :: e, tiedke_add, rgravit
 
-      integer i
-      integer k
-      integer msg
-      integer n
+      ! Indicees
+      integer :: i, k, n
       
    !
    !-----------------------------------------------------------------------
    !
-   !  Find level to limit deep convection to
-      msg = 18 ! initial value
 
-      tiedke_add = 0.0_r8 ! set to value EAM uses
-      rgrav = 1._r8/grav
+      ! Optional argument used in CAM/EAM to increase buoyancy
+      !  according to Tiedke.  For diagnostics purposes, set to zero.
+      tiedke_add = 0.0_r8
+       
+      rgravit = 1._r8/gravit
       
-   !  Determine indicee of PBL height, set up required height arrays
+   !  Determine indicee of PBL height, first set up required height arrays
       do i = 1, ncol
-         zs(i) = phis(i)*rgrav
+         zs(i) = phis(i)*rgravit
          zf(i,pver+1) = zi(i,pver+1) + zs(i)
       end do
       
@@ -2456,20 +2444,18 @@ end subroutine diag_phys_tend_writeout
           if (abs(z(i,k)-zs(i)-pblh(i)) < (zf(i,k)-zf(i,k+1))*0.5_r8) pblt(i) = k
         end do
       end do
-   
-   !  Intialize CIN
-      do i = 1,ncol
-         cin(i) = 0._r8
-      end do
       
+   !  Initialize provisional variables
       do n = 1,num_cin
          do i = 1,ncol
             lelten(i,n) = pver
             capeten(i,n) = 0._r8
          end do
       end do
-   !
+   
+   !  Initialize variables
       do i = 1,ncol
+         cin(i) = 0._r8
          lon(i) = pver
          knt(i) = 0
          lel(i) = pver
@@ -2491,20 +2477,21 @@ end subroutine diag_phys_tend_writeout
    ! set "launching" level(mx) to be at maximum moist static energy.
    ! search for this level stops at planetary boundary layer top.
    !
-
-      do k = pver,msg + 1,-1
+      do k = pver,1,-1
          do i = 1,ncol
-            hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
+            hmn(i) = cpair*t(i,k) + gravit*z(i,k) + latvap*q(i,k)
             if (k >= pblt(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k
             end if
          end do
       end do
-   !
+   
+   !  Following computation to compute the Temperature and pressure of the
+   !   LCL following Bolton 1980.
       do i = 1,ncol
          lcl(i) = mx(i)
-         e = p(i,mx(i))*q(i,mx(i))/ (eps1+q(i,mx(i)))
+         e = p(i,mx(i))*q(i,mx(i))/ (epsilo+q(i,mx(i)))
          tl(i) = 2840._r8/ (3.5_r8*log(t(i,mx(i)))-log(e)-4.805_r8) + 55._r8
          if (tl(i) < t(i,mx(i))) then
             plexp(i) = (1._r8/ (0.2854_r8* (1._r8-0.28_r8*q(i,mx(i)))))
@@ -2515,37 +2502,22 @@ end subroutine diag_phys_tend_writeout
          end if
       end do
 
-   !
-   ! calculate lifting condensation level (lcl).
-   !
-      do k = pver,msg + 2,-1
+   ! Find the index of the LCL
+      do k = pver,2,-1
          do i = 1,ncol
             if (k <= mx(i) .and. (p(i,k) > pl(i) .and. p(i,k-1) <= pl(i))) then
                lcl(i) = k - 1
             end if
          end do
       end do
-   !
-   ! if lcl is above the nominal level of non-divergence (600 mbs),
-   ! no deep convection is permitted (ensuing calculations
-   ! skipped and cape retains initialized value of zero).
-   !
-      do i = 1,ncol
-         plge600(i) = pl(i).ge.600._r8
-      end do
-   !
+   
    ! initialize parcel properties in sub-cloud layer below lcl.
-   !
-      do k = pver,msg + 1,-1
+      do k = pver,1,-1
          do i=1,ncol
-!            if (k > lcl(i) .and. k <= mx(i) .and. plge600(i)) then
-             if (k > lcl(i) .and. plge600(i)) then 
+             if (k > lcl(i)) then 
                tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
                qstp(i,k) = q(i,mx(i))
                tp(i,k) = t(i,mx(i))* (p(i,k)/p(i,mx(i)))**(0.2854_r8* (1._r8-0.28_r8*q(i,mx(i))))
-   !
-   ! buoyancy is increased by 0.5 k as in tiedtke
-   !
                tpv(i,k) = tp(i,k)*(1._r8+1.608_r8*q(i,mx(i)))/ (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
 	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
@@ -2553,57 +2525,47 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
-   !
    ! define parcel properties at lcl (i.e. level immediately above pl).
-   !
-      do k = pver,msg + 1,-1
+      do k = pver,1,-1
          do i=1,ncol
-            if (k == lcl(i) .and. plge600(i)) then
+            if (k == lcl(i)) then
                tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
                qstp(i,k) = q(i,mx(i))
                tp(i,k) = tl(i)* (p(i,k)/pl(i))**(0.2854_r8* (1._r8-0.28_r8*qstp(i,k)))
-   !              estp(i)  =exp(21.656_r8 - 5418._r8/tp(i,k))
-   ! use of different formulas for es has about 1 g/kg difference
-   ! in qs at t= 300k, and 0.02 g/kg at t=263k, with the formula
-   ! above giving larger qs.
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
-               a1(i) = cp / rl + qstp(i,k) * (1._r8+ qstp(i,k) / eps1) * rl * eps1 / &
-                       (rd * tp(i,k) ** 2)
-               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/eps1*qstp(i,k))* &
-                       (1._r8+qstp(i,k)/eps1)*eps1**2*rl*rl/ &
-                       (rd**2*tp(i,k)**4)-qstp(i,k)* &
-                       (1._r8+qstp(i,k)/eps1)*2._r8*eps1*rl/ &
-                       (rd*tp(i,k)**3))
+               a1(i) = cpair / latvap + qstp(i,k) * (1._r8+ qstp(i,k) / epsilo) * latvap * epsilo / &
+                       (rair * tp(i,k) ** 2)
+               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/epsilo*qstp(i,k))* &
+                       (1._r8+qstp(i,k)/epsilo)*epsilo**2*latvap*latvap/ &
+                       (rair**2*tp(i,k)**4)-qstp(i,k)* &
+                       (1._r8+qstp(i,k)/epsilo)*2._r8*epsilo*latvap/ &
+                       (rair*tp(i,k)**3))
                a1(i) = 1._r8/a1(i)
                a2(i) = -a2(i)*a1(i)**3
                y(i) = q(i,mx(i)) - qstp(i,k)
                tp(i,k) = tp(i,k) + a1(i)*y(i) + a2(i)*y(i)**2
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
-   !
-   ! buoyancy is increased by 0.5 k in cape calculation.
-
                tpv(i,k) =  tp(i,k) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
 	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
-   !
+
    ! main buoyancy calculation.
-   !
-      do k = pver - 1,msg + 1,-1
+      do k = pver - 1,1,-1
          do i=1,ncol
-            if (k < lcl(i) .and. plge600(i)) then
+            if (k < lcl(i)) then
                tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
                qstp(i,k) = qstp(i,k+1)
                tp(i,k) = tp(i,k+1)* (p(i,k)/p(i,k+1))**(0.2854_r8* (1._r8-0.28_r8*qstp(i,k)))
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
-               a1(i) = cp/rl + qstp(i,k)* (1._r8+qstp(i,k)/eps1)*rl*eps1/ (rd*tp(i,k)**2)
-               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/eps1*qstp(i,k))* &
-                       (1._r8+qstp(i,k)/eps1)*eps1**2*rl*rl/ &
-                       (rd**2*tp(i,k)**4)-qstp(i,k)* &
-                       (1._r8+qstp(i,k)/eps1)*2._r8*eps1*rl/ &
-                       (rd*tp(i,k)**3))
+               a1(i) = cpair/latvap + qstp(i,k)* (1._r8+qstp(i,k)/epsilo)*latvap*epsilo/ (rair*tp(i,k)**2)
+               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/epsilo*qstp(i,k))* &
+                       (1._r8+qstp(i,k)/epsilo)*epsilo**2*latvap*latvap/ &
+                       (rair**2*tp(i,k)**4)-qstp(i,k)* &
+                       (1._r8+qstp(i,k)/epsilo)*2._r8*epsilo*latvap/ &
+                       (rair*tp(i,k)**3))
                a1(i) = 1._r8/a1(i)
                a2(i) = -a2(i)*a1(i)**3
                y(i) = qstp(i,k+1) - qstp(i,k)
@@ -2616,10 +2578,9 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
-   !
-      do k = msg + 2,pver
+      do k = 2,pver
          do i = 1,ncol
-            if (k < lcl(i) .and. plge600(i)) then
+            if (k < lcl(i)) then
                if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
                   knt(i) = min(num_cin,knt(i) + 1)
                   lelten(i,knt(i)) = k
@@ -2627,24 +2588,21 @@ end subroutine diag_phys_tend_writeout
             end if
          end do
       end do
-   !
+
    ! calculate convective available potential energy (cape).
-   !
       do n = 1,num_cin
-         do k = msg + 1,pver
+         do k = 1,pver
             do i = 1,ncol
-               if (plge600(i) .and. k <= mx(i) .and. k > lelten(i,n)) then
-                  capeten(i,n) = capeten(i,n) + rd*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
+               if (k <= mx(i) .and. k > lelten(i,n)) then
+                  capeten(i,n) = capeten(i,n) + rair*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
                end if
             end do
          end do
       end do
       
-   !
    ! find maximum cape from all possible tentative capes from
    ! one sounding,
    ! and use it as the final cape, april 26, 1995
-   !
       do n = 1,num_cin
          do i = 1,ncol
             if (capeten(i,n) > cape(i)) then
@@ -2655,17 +2613,16 @@ end subroutine diag_phys_tend_writeout
       end do
       
    ! Compute CIN based on information of levels computed above, which
-   !  is the buoyancy integrated from surface to the lauching level
-      
-      do k = msg + 1, pver
+   !  is the buoyancy integrated from surface to the lauching level     
+      do k = 1, pver
         do i = 1, ncol
            if (k > lcl(i)) then 
-             cin(i) = cin(i) + rd*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
+             cin(i) = cin(i) + rair*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
            endif
         end do
       end do   
    !
-   ! put lower bound on cape for diagnostic purposes.
+   ! put lower bound on cape and cin for diagnostic purposes.
    !
       do i = 1,ncol
          cape(i) = max(cape(i), 0._r8)
