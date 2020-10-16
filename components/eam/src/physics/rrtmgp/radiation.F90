@@ -1288,7 +1288,10 @@ contains
          ! Output the band-by-band cloud optics BEFORE we reorder bands, because
          ! we hard-coded the indices for diagnostic bands in radconstants.F90 to
          ! correspond to the optical property look-up tables.
-         call output_cloud_optics_sw(state, coszrs, c_cldf, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+         call output_cloud_optics_sw( &
+            state, coszrs, c_cldf, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+            liq_tau_bnd_sw, ice_tau_bnd_sw &
+         )
          ! Now reorder bands to be consistent with RRTMGP
          ! We need to fix band ordering because the old input files assume RRTMG
          ! band ordering, but this has changed in RRTMGP.
@@ -1848,7 +1851,7 @@ contains
       call outfld('TOT_ICLD_VISTAU', tot_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
       call outfld('LIQ_ICLD_VISTAU', liq_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
       call outfld('ICE_ICLD_VISTAU', ice_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
-      call outfld('CLDTAU', sum(tau_cld_vistau(1:ncol,1:nlay), dim=2), ncol, state%lchnk)
+      call outfld('CLDTAU', sum(tot_cld_vistau(1:ncol,1:nlay), dim=2), ncol, state%lchnk)
    end subroutine output_cloud_optics_sw
 
    !----------------------------------------------------------------------------
