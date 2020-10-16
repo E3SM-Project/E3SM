@@ -1118,6 +1118,10 @@ subroutine diag_second_moments_lbycond(&
          uw_sec, vw_sec, wtke_sec,&                   ! Output
          thl_sec, qw_sec, qwthl_sec)                  ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_moments_lbycond_f
+#endif
+
   ! Purpose of this subroutine is to diagnose the lower
   !  boundary condition for the second order moments needed
   !  for the SHOC parameterization.
@@ -1171,11 +1175,24 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), parameter :: a_const = 1.8_rtype
   real(rtype), parameter :: ufmin = 0.01_rtype
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call diag_second_moments_lbycond_f(     &
+                shcol,           &                           ! Input
+                wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &         ! Input
+                ustar2,wstar,            &                   ! Input
+                wthl_sec,wqw_sec,&                           ! Output
+                uw_sec, vw_sec, wtke_sec,&                   ! Output
+                thl_sec,qw_sec,qwthl_sec)                    ! Output
+      return
+   endif
+#endif
+
   ! apply the surface conditions to diagnose turbulent
   !  moments at the surface
   do i=1,shcol
 
-    uf = sqrt(ustar2(i) + 0.3_rtype * wstar(i) * wstar(i))
+    uf = bfb_sqrt(ustar2(i) + 0.3_rtype * wstar(i) * wstar(i))
     uf = max(ufmin,uf)
 
     ! Diagnose thermodynamics variances and covariances
@@ -1190,7 +1207,7 @@ subroutine diag_second_moments_lbycond(&
     wqw_sec(i) = wqw_sfc(i)
     uw_sec(i) = uw_sfc(i)
     vw_sec(i) = vw_sfc(i)
-    wtke_sec(i) = bfb_cube(max(sqrt(ustar2(i)),0.01_rtype))
+    wtke_sec(i) = bfb_cube(max(bfb_sqrt(ustar2(i)),0.01_rtype))
 
   enddo ! end i loop (column loop)
   return
