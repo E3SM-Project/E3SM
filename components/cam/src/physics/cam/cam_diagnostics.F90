@@ -185,8 +185,8 @@ subroutine diag_init()
    call addfld ('UAP',(/ 'lev' /), 'A','m/s','Zonal wind (after physics)'        )
    call addfld ('VAP',(/ 'lev' /), 'A','m/s','Meridional wind (after physics)'   )
    call addfld (apcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (after physics)')
-   call addfld ('CAPE2d', horiz_only, 'A', 'J/kg', 'Convectively available potential energy')
-   call addfld ('CIN2d', horiz_only, 'A', 'J/kg', 'Convective inhibition')
+   call addfld ('CAPE', horiz_only, 'A', 'J/kg', 'Convectively available potential energy')
+   call addfld ('CIN', horiz_only, 'A', 'J/kg', 'Convective inhibition')
    
    if ( dycore_is('LR') .or. dycore_is('SE') ) then
       call addfld ('TFIX',horiz_only,    'A'     ,'K/s','T fixer (T equivalent of Energy correction)')
@@ -1923,8 +1923,8 @@ subroutine diag_conv(state, ztodt, pbuf)
           0.01_r8*state%pmid,0.01_r8*state%pint,state%zm,state%zi,pblh,&
           state%phis,cape,cin)
           
-   call outfld('CAPE2d', cape, pcols, lchnk )
-   call outfld('CIN2d', cin, pcols, lchnk )    
+   call outfld('CAPE', cape, pcols, lchnk )
+   call outfld('CIN', cin, pcols, lchnk )
 
 end subroutine diag_conv
 
