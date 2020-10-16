@@ -820,9 +820,6 @@ void Functions<S,D>
 
     // Ice
     {
-      //bugfix todo: this ice section should all use in-cloud values
-      impose_max_total_ni(ni(k), max_total_ni, inv_rho(k));
-
       const auto qi_gt_small = qi(k) >= qsmall;
       const auto qi_small    = !qi_gt_small;
 
@@ -838,6 +835,8 @@ void Functions<S,D>
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 
+      impose_max_total_ni(ni_incld, max_total_ni, inv_rho(k));
+      
       TableIce table_ice;
       lookup_ice(qi_incld, ni_incld, qm_incld, rhop, table_ice, qi_gt_small);
 

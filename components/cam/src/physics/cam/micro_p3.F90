@@ -1022,9 +1022,6 @@ contains
 
       ! ice:
 
-      !BUG BELOW: *all* of this qi stuff needs to be incld. will fix in future PR.
-      call impose_max_total_ni(ni(k),max_total_Ni,inv_rho(k))
-
       qi_not_small:  if (qi(k).ge.qsmall) then
 
          !impose lower limits to prevent taking log of # < 0
@@ -1038,8 +1035,9 @@ contains
          call calc_bulkRhoRime(qi_incld,qm_incld,bm_incld,rhop)
          qm(k)=qm_incld*cld_frac_i(k)
          bm(k)=bm_incld*cld_frac_i(k)
- 
-         ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi(k),ni(k),rho(k))
+
+         call impose_max_total_ni(ni_incld,max_total_Ni,inv_rho(k))
+
          call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
               dum5,dum6,isize,rimsize,densize,     &
               qi_incld,ni_incld,           &
