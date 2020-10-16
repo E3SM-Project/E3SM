@@ -2339,25 +2339,25 @@ end subroutine diag_phys_tend_writeout
    end subroutine diag_state_b4_phys_write
 
 !#######################################################################
-   
+
    subroutine diag_CAPEandCIN(ncol, &
                      q, t, p, pf, zm, zi, pblh, phis, &
                      cape, cin)
-                     
-   !----------------------------------------------------------------------- 
-   ! 
-   ! Purpose: 
+
+   !-----------------------------------------------------------------------
+   !
+   ! Purpose:
    ! Compute CAPE and CIN for diagnostic output only
-   ! 
-   ! Method: 
+   !
+   ! Method:
    ! Originated from the CAM3.5 subroutine "buoyan" that computed CAPE
    !  in the ZM convection scheme, with modifications.  Also extended
    !  to compute and output CIN
-   ! 
+   !
    ! Author:
    ! Original:          P. Rasch, April 1996
    ! Modifications:     P. Bogenschutz, 2020
-   ! 
+   !
    !-----------------------------------------------------------------------
       implicit none
    !-----------------------------------------------------------------------
@@ -2384,15 +2384,15 @@ end subroutine diag_phys_tend_writeout
       ! number of "potential CAPEs" to consider in the CAPE calculation
       ! For this diagnostic set to the standard of 1
       integer, parameter :: num_cin = 1
-   
+
       real(r8) capeten(pcols,num_cin) ! provisional value of cape
       real(r8) tv(pcols,pver)       ! virtual temperature [K]
       real(r8) tpv(pcols,pver)      ! virtual temperature of parcel [K]
       real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations [K]
       real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K}
-      
-      ! heights needed for diagnostic [m] 
-      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver) 
+
+      ! heights needed for diagnostic [m]
+      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver)
 
       real(r8) :: tp(pcols,pver)   ! parcel temperature [K]
       real(r8) :: qstp(pcols,pver) ! saturation mixing ratio of parcel [kg/kg]
@@ -2401,7 +2401,7 @@ end subroutine diag_phys_tend_writeout
       integer lcl(pcols)        ! level of lifting condensation level
       integer lel(pcols)        ! level of equilibrium level
       integer lon(pcols)        ! level of onset of deep convection
-      integer mx(pcols)         ! level of max moist static energy      
+      integer mx(pcols)         ! level of max moist static energy
       integer pblt(pcols)       ! integer of PBL height
 
       ! Miscellanous 2d arrays needed for diagnostic
@@ -2414,7 +2414,7 @@ end subroutine diag_phys_tend_writeout
 
       ! Indicees
       integer :: i, k, n
-      
+
    !
    !-----------------------------------------------------------------------
    !
@@ -2422,29 +2422,29 @@ end subroutine diag_phys_tend_writeout
       ! Optional argument used in CAM/EAM to increase buoyancy
       !  according to Tiedke.  For diagnostics purposes, set to zero.
       tiedke_add = 0.0_r8
-       
+
       rgravit = 1._r8/gravit
-      
+
    !  Determine indicee of PBL height, first set up required height arrays
       do i = 1, ncol
          zs(i) = phis(i)*rgravit
          zf(i,pver+1) = zi(i,pver+1) + zs(i)
       end do
-      
+
       do k = 1,pver
          do i = 1, ncol
             z(i,k) = zm(i,k) + zs(i)
             zf(i,k) = zi(i,k) + zs(i)
          end do
       end do
-      
+
    !  Now actually find indicee of PBL height
       do k = pver -1, 1, -1
         do i = 1, ncol
           if (abs(z(i,k)-zs(i)-pblh(i)) < (zf(i,k)-zf(i,k+1))*0.5_r8) pblt(i) = k
         end do
       end do
-      
+
    !  Initialize provisional variables
       do n = 1,num_cin
          do i = 1,ncol
@@ -2452,7 +2452,7 @@ end subroutine diag_phys_tend_writeout
             capeten(i,n) = 0._r8
          end do
       end do
-   
+
    !  Initialize variables
       do i = 1,ncol
          cin(i) = 0._r8
@@ -2486,7 +2486,7 @@ end subroutine diag_phys_tend_writeout
             end if
          end do
       end do
-   
+
    !  Following computation to compute the Temperature and pressure of the
    !   LCL following Bolton 1980.
       do i = 1,ncol
@@ -2510,11 +2510,11 @@ end subroutine diag_phys_tend_writeout
             end if
          end do
       end do
-   
+
    ! initialize parcel properties in sub-cloud layer below lcl.
       do k = pver,1,-1
          do i=1,ncol
-             if (k > lcl(i)) then 
+             if (k > lcl(i)) then
                tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
                qstp(i,k) = q(i,mx(i))
                tp(i,k) = t(i,mx(i))* (p(i,k)/p(i,mx(i)))**(0.2854_r8* (1._r8-0.28_r8*q(i,mx(i))))
@@ -2599,7 +2599,7 @@ end subroutine diag_phys_tend_writeout
             end do
          end do
       end do
-      
+
    ! find maximum cape from all possible tentative capes from
    ! one sounding,
    ! and use it as the final cape, april 26, 1995
@@ -2611,16 +2611,16 @@ end subroutine diag_phys_tend_writeout
             end if
          end do
       end do
-      
+
    ! Compute CIN based on information of levels computed above, which
-   !  is the buoyancy integrated from surface to the lauching level     
+   !  is the buoyancy integrated from surface to the lauching level
       do k = 1, pver
         do i = 1, ncol
-           if (k > lcl(i)) then 
+           if (k > lcl(i)) then
              cin(i) = cin(i) + rair*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
            endif
         end do
-      end do   
+      end do
    !
    ! put lower bound on cape and cin for diagnostic purposes.
    !
@@ -2630,10 +2630,10 @@ end subroutine diag_phys_tend_writeout
       end do
    !
       return
-   end subroutine diag_CAPEandCIN 
-   
-!#######################################################################   
-   
+   end subroutine diag_CAPEandCI
+
+!#######################################################################
+
    ! Wrapper for qsat_water that does translation between Pa and hPa
    ! qsat_water uses Pa internally, so get it right, need to pass in Pa.
    ! Afterward, set es back to hPa.
@@ -2652,6 +2652,6 @@ end subroutine diag_phys_tend_writeout
 
      es = es*0.01_r8
 
-   end subroutine qsat_hPa   
+   end subroutine qsat_hPa
 
 end module cam_diagnostics
