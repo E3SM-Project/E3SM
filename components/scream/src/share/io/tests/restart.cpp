@@ -29,7 +29,7 @@ ekat::ParameterList                                  get_om_params(const Int cas
 // ekat::ParameterList                                  get_in_params(const std::string type);
 
 
-TEST_CASE("restart","")
+TEST_CASE("restart","io")
 {
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.

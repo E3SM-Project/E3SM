@@ -28,7 +28,7 @@ std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Com
 ekat::ParameterList                                  get_om_params(const Int casenum);
 ekat::ParameterList                                  get_in_params(const std::string type);
 
-TEST_CASE("input_output_basic","")
+TEST_CASE("input_output_basic","io")
 {
 
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
@@ -227,7 +227,7 @@ ekat::ParameterList get_in_params(const std::string type)
 {
   ekat::ParameterList in_params("Input Parameters");
 //  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
-  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.1-1-0.000010.nc");
+  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
   f_list.set<Int>("Number of Fields",3);
