@@ -2519,7 +2519,7 @@ end subroutine diag_phys_tend_writeout
                tp(i,k) = t(i,mx(i))* (p(i,k)/p(i,mx(i)))**(0.2854_r8* (1._r8-0.28_r8*q(i,mx(i))))
                tpv(i,k) = tp(i,k)*(1._r8+1.608_r8*q(i,mx(i)))/ (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
-	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2546,7 +2546,7 @@ end subroutine diag_phys_tend_writeout
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
                tpv(i,k) =  tp(i,k) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
-	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2572,7 +2572,7 @@ end subroutine diag_phys_tend_writeout
                call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
                tpv(i,k) = tp(i,k) * (1._r8+1.608_r8*qstp(i,k))/(1._r8+q(i,mx(i)))
                buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
-	       neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
             end if
          end do
       end do
@@ -2629,7 +2629,7 @@ end subroutine diag_phys_tend_writeout
       end do
    !
       return
-   end subroutine diag_CAPEandCI
+   end subroutine diag_CAPEandCIN
 
 !#######################################################################
 
