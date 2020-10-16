@@ -309,9 +309,9 @@ TEST_CASE("field_property_check", "") {
   }
 
   // Check that the values of a field lie within an interval.
-  SECTION ("field_with_interval_check") {
+  SECTION ("field_within_interval_check") {
     Field<Real,Device> f1(fid);
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real, Device> >(1, 72);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real, Device> >(0, 100);
     REQUIRE(interval_check->can_repair());
     f1.add_property_check(interval_check);
     f1.allocate_view();
@@ -321,7 +321,7 @@ TEST_CASE("field_property_check", "") {
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
     for (int i = 0; i < host_view.extent(0); ++i) {
-      host_view(i) = i+1;
+      host_view(i) = i;
     }
     Kokkos::deep_copy(f1_view, host_view);
     for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
