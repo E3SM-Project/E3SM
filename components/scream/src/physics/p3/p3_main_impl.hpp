@@ -443,7 +443,6 @@ void Functions<S,D>
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
         const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), qi_gt_small);
-        qi(k).set(qi_gt_small, qi_incld(k)*cld_frac_i(k) );
         qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
         bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
@@ -836,7 +835,6 @@ void Functions<S,D>
       auto bm_incld = bm(k)/cld_frac_i(k);
 
       const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, qi_gt_small);
-      qi(k).set(qi_gt_small, qi_incld*cld_frac_i(k) );
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 

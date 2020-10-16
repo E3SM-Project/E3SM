@@ -622,7 +622,6 @@ contains
          nr_incld(k)    = max(nr_incld(k),nsmall)
 
          call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
-         qi(k)=qi_incld(k)*cld_frac_i(k)
          qm(k)=qm_incld(k)*cld_frac_i(k)
          bm(k)=bm_incld(k)*cld_frac_i(k)
 
@@ -1037,7 +1036,6 @@ contains
          bm_incld=bm(k)/cld_frac_i(k)
 
          call calc_bulkRhoRime(qi_incld,qm_incld,bm_incld,rhop)
-         qi(k)=qi_incld*cld_frac_i(k)
          qm(k)=qm_incld*cld_frac_i(k)
          bm(k)=bm_incld*cld_frac_i(k)
  
@@ -3829,7 +3827,6 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
                !--Compute Vq, Vn:
                ni_incld(k) = max(ni_incld(k),nsmall) !impose lower limits to prevent log(<0)
                call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
-               qi(k)=qi_incld(k)*cld_frac_i(k)
                qm(k)=qm_incld(k)*cld_frac_i(k)
                bm(k)=bm_incld(k)*cld_frac_i(k)
                
