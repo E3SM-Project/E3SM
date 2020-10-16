@@ -853,6 +853,7 @@ void Functions<S,D>
       // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
       ni_incld.set(qi_gt_small, min(ni_incld, table_val_ni_lammax * ni_incld));
       ni_incld.set(qi_gt_small, max(ni_incld, table_val_ni_lammin * ni_incld));
+      ni(k) = ni_incld*cld_frac_i(k);
 
       // --this should already be done in s/r 'calc_bulkRhoRime'
       const auto qm_small = qm(k) < qsmall && qi_gt_small;

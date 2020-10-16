@@ -1058,7 +1058,8 @@ contains
          ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
          ni_incld = min(ni_incld,table_val_ni_lammax*ni_incld)
          ni_incld = max(ni_incld,table_val_ni_lammin*ni_incld)
-
+         ni(k) = ni_incld*cld_frac_i(k)
+         
          !--this should already be done in s/r 'calc_bulkRhoRime'
          if (qm(k).lt.qsmall) then
             qm(k) = 0._rtype
