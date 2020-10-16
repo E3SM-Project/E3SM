@@ -593,6 +593,8 @@ end function radiation_nextsw_cday
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     call addfld('ICE_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', 'Ice in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+    call addfld('CLDTAU'         , horiz_only , 'A',  '1', 'Column integrated cloud 550nm optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
     ! get list of active radiation calls
     call rad_cnst_get_call_list(active_calls)
@@ -603,7 +605,7 @@ end function radiation_nextsw_cday
 
           call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', sampling_seq='rad_lwsw')
           call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface',&
-	   sampling_seq='rad_lwsw')
+                                                                                 sampling_seq='rad_lwsw')
           call addfld('SOLS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward visible direct  to surface', &
                                                                                  sampling_seq='rad_lwsw')
           call addfld('SOLLD'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar downward near infrared diffuse to surface', &
@@ -1378,10 +1380,10 @@ end function radiation_nextsw_cday
           if (cldfsnow_idx > 0) then
              snow_icld_vistau(:ncol,:) = snow_tau(idx_sw_diag,:ncol,:)
           endif
-	  ! multiply by total cloud fraction to get gridbox value
-	  tot_cld_vistau(:ncol,:) = c_cld_tau(idx_sw_diag,:ncol,:)*cldfprime(:ncol,:)
+          ! multiply by total cloud fraction to get gridbox value
+          tot_cld_vistau(:ncol,:) = c_cld_tau(idx_sw_diag,:ncol,:)*cldfprime(:ncol,:)
 
-	  ! add fillvalue for night columns
+          ! add fillvalue for night columns
           do i = 1, Nnite
               tot_cld_vistau(IdxNite(i),:)   = fillvalue
               tot_icld_vistau(IdxNite(i),:)  = fillvalue
@@ -1399,7 +1401,9 @@ end function radiation_nextsw_cday
           if (cldfsnow_idx > 0) then
              call outfld('SNOW_ICLD_VISTAU', snow_icld_vistau, pcols, lchnk)
           endif
-
+          call outfld('CLDTAU', &
+                  sum(tot_cld_vistau(1:state%ncol,1:pver), dim=2), &
+                  state%ncol, state%lchnk)
           call t_stopf ('rad_sw')
        end if   ! dosw
 
