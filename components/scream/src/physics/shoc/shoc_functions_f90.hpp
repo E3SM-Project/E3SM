@@ -825,6 +825,18 @@ struct SHOCPblintdCldCheckData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCPblintdCldCheckData, 3);
 };
 
+struct ComputeShocVaporData : public PhysicsTestData {
+  // Inputs
+  Real *qw, *ql;
+  
+  // Outputs
+  Real *qv;
+  
+  ComputeShocVaporData(Int shcol_, Int nlev_) :
+    PhysicsTestData(shcol_, nlev_, {&qw, &ql, &qv}) {}
+  
+  SHOC_NO_SCALAR(ComputeShocVaporData, 2)
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void shoc_grid                                      (SHOCGridData &d);
 void shoc_diag_obklen                               (SHOCObklenData &d);
@@ -886,6 +898,7 @@ void shoc_pblintd_cldcheck                          (SHOCPblintdCldCheckData& d)
 void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d);
 void diag_second_moments(DiagSecondMomentsData& d);
 void diag_second_shoc_moments(DiagSecondShocMomentsData& d);
+void compute_shoc_vapor(ComputeShocVaporData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -939,6 +952,7 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
                          Real* se_a, Real* ke_a, Real* wv_a, Real* wl_a, Real* wthl_sfc,
                          Real* wqw_sfc, Real* rho_zt, Real* tke, Real* pint,
                          Real* host_dse);
+void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
 } // end _f function decls
 
 }  // namespace shoc

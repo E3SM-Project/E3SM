@@ -333,6 +333,13 @@ subroutine shoc_energy_fixer_f(shcol, nlev, nlevi, dtime, nadv, zt_grid, zi_grid
 
 end subroutine shoc_energy_fixer_f
 
+  subroutine compute_shoc_vapor_f(shcol, nlev, qw, ql, qv) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
+  end subroutine compute_shoc_vapor_f
 end interface
 
 end module shoc_iso_f

@@ -255,7 +255,9 @@ void diag_second_shoc_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal,
                                 Real *wthl_sec, Real *wqw_sec, Real *qwthl_sec, 
                                 Real *uw_sec, Real *vw_sec, Real *wtke_sec, Real *w_sec);                        
 
-void shoc_pblintd_cldcheck_c(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh); 
+void shoc_pblintd_cldcheck_c(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
+
+void compute_shoc_vapor_c(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
 
 } // end _c function decls
 
@@ -741,6 +743,13 @@ void shoc_pblintd_cldcheck(SHOCPblintdCldCheckData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void compute_shoc_vapor(ComputeShocVaporData& d)
+{
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  compute_shoc_vapor_c(d.shcol(), d.nlev(), d.qw, d.ql, d.qv);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
 // end _c impls
 
 //
@@ -1858,5 +1867,9 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
   ekat::device_to_host<int,1>({host_dse}, {shcol}, {nlev}, inout_views, true);
 }
 
+void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
+{
+  // TODO
+}
 } // namespace shoc
 } // namespace scream
