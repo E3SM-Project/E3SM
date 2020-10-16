@@ -17,17 +17,20 @@ PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, const std::vector<Real**>
 
 PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
                                  const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-                                 const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+                                 const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c,
+                                 const std::vector<Real**>& ptrs_3d) :
   dim1(dim1_),
   dim2(dim2_),
   dim3(dim3_),
-  m_total(dim1_ * dim2_),
-  m_totali(dim1_ * dim3_),
+  m_total(dim1 * dim2),
+  m_totali(dim1 * dim3),
+  m_total3d(dim1 * dim2 * dim3),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
   m_ptrs_c(ptrs_c),
   m_indices_c(idx_c),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * dim1, 0),
+  m_ptrs_3d(ptrs_3d),
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * dim1 + m_ptrs_3d.size() * m_total3d, 0),
   m_idx_data(idx_c.size() * dim1, 0)
 {
   init_ptrs();
@@ -40,6 +43,7 @@ PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
   dim3       = rhs.dim3;
   m_total    = rhs.m_total;
   m_totali   = rhs.m_totali;
+  m_total3d  = rhs.m_total3d;
   m_data     = rhs.m_data;      // Copy
   m_idx_data = rhs.m_idx_data;  // Copy
 
@@ -63,6 +67,11 @@ void PhysicsTestData::init_ptrs()
     offset += m_totali;
   }
 
+  for (size_t i = 0; i < m_ptrs_3d.size(); ++i) {
+    *(m_ptrs_3d[i]) = data_begin + offset;
+    offset += m_total3d;
+  }
+
   for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
     *(m_ptrs_c[i]) = data_begin + offset;
     offset += dim1;
@@ -82,7 +91,7 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
 
   range_type ranges_copy(ranges);
 
-  for (auto& item : { PT{&m_ptrs, m_total} , PT{&m_ptrs_i, m_totali}, PT{&m_ptrs_c, dim1} }) {
+  for (auto& item : { PT{&m_ptrs, m_total} , PT{&m_ptrs_i, m_totali}, PT{&m_ptrs_3d, m_total3d}, PT{&m_ptrs_c, dim1} }) {
     auto& ptrs = *item.first;
     const Int num_per = item.second;
     for (Real** ptr : ptrs) {

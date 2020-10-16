@@ -13,13 +13,13 @@ namespace {
 
 struct FakeClass1 : public PhysicsTestData
 {
-  Real *one12, *two12, *three13, *four13;
+  Real *one12, *two12, *three13, *four13, *five3d;
 
   Int* ints;
 
   FakeClass1(Int dim1, Int dim2, Int dim3) :
     PhysicsTestData(dim1, dim2, dim3,
-                    {&one12, &two12}, {&three13, &four13}, {}, {&ints}) {}
+                    {&one12, &two12}, {&three13, &four13}, {}, {&ints}, {&five3d}) {}
 
   PTD_STD_DEF(FakeClass1, 3, 0);
 };
@@ -60,7 +60,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
     };
 
     for (auto& d : fakes1_1) {
-      d.randomize({ {d.two12, {-2.0, -1.0}}, {d.three13, {-3.0, -2.0}}, {d.ints, {42, 84}} });
+      d.randomize({ {d.two12, {-2.0, -1.0}}, {d.three13, {-3.0, -2.0}}, {d.ints, {42, 84}}, {d.five3d, {6.0, 9.0}} });
     }
 
     static constexpr Int num_runs = sizeof(fakes1_1) / sizeof(FakeClass1);
@@ -95,6 +95,10 @@ struct UnitWrap::UnitTest<D>::TestTestData
       REQUIRE(d1.total1x3() == d2.total1x3());
       REQUIRE(d1.total1x3() == d3.total1x3());
 
+      REQUIRE(d1.total3d() == std::get<0>(dims[n]) * std::get<1>(dims[n]) * std::get<2>(dims[n]));
+      REQUIRE(d1.total3d() == d2.total3d());
+      REQUIRE(d1.total3d() == d3.total3d());
+
       REQUIRE(d1.dim1 == std::get<0>(dims[n]));
       REQUIRE(d1.dim1 == d2.dim1);
       REQUIRE(d1.dim1 == d3.dim1);
@@ -120,6 +124,12 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE(d1.four13[i] == d2.four13[i]);
         REQUIRE(d1.four13[i] == d3.four13[i]);
       }
+      for (Int i = 0; i < d1.total3d(); ++i) {
+        REQUIRE( (d1.five3d[i] > 6.0 && d1.five3d[i] < 9.0) );
+
+        REQUIRE(d1.five3d[i] == d2.five3d[i]);
+        REQUIRE(d1.five3d[i] == d3.five3d[i]);
+      }
       for (Int i = 0; i < d1.dim1; ++i) {
         REQUIRE( (d1.ints[i] >= 42 && d1.ints[i] <= 84) );
 
@@ -136,6 +146,12 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
           REQUIRE(d1.one12[fidx] == d2.one12[cidx]);
           REQUIRE(d1.two12[fidx] == d2.two12[cidx]);
+
+          for (Int k = 0; k < d1.dim3; ++k) {
+            const Int c3didx = (d1.dim2*d1.dim3)*i + j*d1.dim3 + k;
+            const Int f3didx = (d1.dim1*d1.dim2)*k + j*d1.dim1 + i;
+            REQUIRE(d1.five3d[f3didx] == d2.five3d[c3didx]);
+          }
         }
         for (Int j = 0; j < d1.dim3; ++j) {
           const Int cidx = d1.dim3*i + j;
@@ -154,6 +170,9 @@ struct UnitWrap::UnitTest<D>::TestTestData
       for (Int i = 0; i < d1.total1x3(); ++i) {
         REQUIRE(d1.three13[i] == d2.three13[i]);
         REQUIRE(d1.four13[i]  == d2.four13[i]);
+      }
+      for (Int i = 0; i < d1.total3d(); ++i) {
+        REQUIRE(d1.five3d[i] == d2.five3d[i]);
       }
 
       // Check that different data obj are using different memory spaces

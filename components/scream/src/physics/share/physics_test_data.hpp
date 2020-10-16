@@ -120,8 +120,31 @@ struct SHOCGridData : public PhysicsTestData {
 
 namespace scream {
 
+// struct PhysicsTestDataGeneric
+// {
+//   PhysicsTestDataGeneric(const std::vector<std::vector<Int> >& dims,
+//                          const std::vector<std::vector<Real**> > reals,
+//                          const std::vector<std::vector<Int**> > ints);
+
+//   template <ekat::TransposeDirection::Enum D>
+//   void transpose();
+
+//   void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
+
+//   Int total(void* member) const;
+
+//  private:
+//   void init_ptrs();
+
+//   std::vector<std::vector<Int> >    m_dims;  // list of dims of data, reals come before ints
+//   std::vector<std::vector<Real**> > m_reals; // list of real data ptrs. idx here will match m_dims idx
+//   std::vector<std::vector<Int**> >  m_ints;  // lits of integer data ptrs. idx here will match m_dims[m_reals.size() + idx]
+//   std::vector<Real> m_real_data;
+//   std::vector<Int>  m_int_data;
+// };
+
 // Base class for common test data setup
-struct PhysicsTestData
+struct PhysicsTestData // : public PhysicsTestDataGeneric
 {
   Int dim1, dim2, dim3;
 
@@ -135,10 +158,11 @@ struct PhysicsTestData
                   const std::vector<Int**>& idx_c = {});  // [dim1] (optional)
 
   PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
-                  const std::vector<Real**>& ptrs,        // [schol x dim2]
-                  const std::vector<Real**>& ptrs_i,      // [schol x dim3]
-                  const std::vector<Real**>& ptrs_c = {}, // [schol] (optional)
-                  const std::vector<Int**>& idx_c = {});  // [schol] (optional)
+                  const std::vector<Real**>& ptrs,          // [dim1 x dim2]
+                  const std::vector<Real**>& ptrs_i,        // [dim1 x dim3]
+                  const std::vector<Real**>& ptrs_c = {},   // [dim1] (optional)
+                  const std::vector<Int**>& idx_c = {},     // [dim1] (optional)
+                  const std::vector<Real**>& ptrs_3d = {}); // [dim1 x dim2 x dim3] (optional)
 
   // Delete this to block subclasses getting the default impls, which would be incorrect
   PhysicsTestData(const PhysicsTestData &rhs) = delete;
@@ -151,18 +175,25 @@ struct PhysicsTestData
     std::vector<Real> data(m_data.size());
 
     // Transpose on the zt grid
+    Int offset = 0;
     for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      ekat::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , dim1, dim2);
+      ekat::transpose<D>(*(m_ptrs[i]), data.data() + offset, dim1, dim2);
+      offset += m_total;
     }
 
     // Transpose on the zi grid
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      ekat::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), dim1, dim3);
+      ekat::transpose<D>(*(m_ptrs_i[i]), data.data() + offset, dim1, dim3);
+      offset += m_totali;
+    }
+
+    for (size_t i = 0; i < m_ptrs_3d.size(); ++i) {
+      ekat::transpose<D>(*(m_ptrs_3d[i]), data.data() + offset, dim1, dim2, dim3);
+      offset += m_total3d;
     }
 
     // Copy the column only grid
-    const Int c_start_offset = m_ptrs.size()*m_total + m_ptrs_i.size()*m_totali;
-    std::copy(m_data.begin() + c_start_offset, m_data.end(), data.begin() + c_start_offset);
+    std::copy(m_data.begin() + offset, m_data.end(), data.begin() + offset);
 
     m_data = data;
 
@@ -182,6 +213,7 @@ struct PhysicsTestData
 
   Int total1x2() const { return m_total; }
   Int total1x3() const { return m_totali; }
+  Int total3d()  const { return m_total3d; }
 
  protected:
 
@@ -191,8 +223,8 @@ struct PhysicsTestData
   void init_ptrs();
 
   // Internals
-  Int m_total, m_totali;
-  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c;
+  Int m_total, m_totali, m_total3d;
+  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c, m_ptrs_3d;
   std::vector<Int**> m_indices_c;
   std::vector<Real> m_data;
   std::vector<Int> m_idx_data;
