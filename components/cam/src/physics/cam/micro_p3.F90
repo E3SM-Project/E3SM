@@ -622,7 +622,6 @@ contains
          nr_incld(k)    = max(nr_incld(k),nsmall)
 
          call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
-         qi(k)=qi_incld(k)*cld_frac_i(k)
          qm(k)=qm_incld(k)*cld_frac_i(k)
          bm(k)=bm_incld(k)*cld_frac_i(k)
 
@@ -890,7 +889,11 @@ contains
          is_hydromet_present = .true.
       endif
 
-      call impose_max_total_ni(ni(k),max_total_ni,inv_rho(k))
+      !impose_max_total_ni is meant to operate on in-cloud vals. ni_incld is an output of
+      !calculate_incloud_mixingratios below but we need to generate it earlier for impose_max_total_ni
+      ni_incld(k)=ni(k)/cld_frac_i(k)
+      call impose_max_total_ni(ni_incld(k),max_total_ni,inv_rho(k))
+      ni(k)=ni_incld(k)*cld_frac_i(k)
 
       ! Record microphysics tendencies for output:
       ! warm-phase process rates
@@ -1023,9 +1026,6 @@ contains
 
       ! ice:
 
-      !BUG BELOW: *all* of this qi stuff needs to be incld. will fix in future PR.
-      call impose_max_total_ni(ni(k),max_total_Ni,inv_rho(k))
-
       qi_not_small:  if (qi(k).ge.qsmall) then
 
          !impose lower limits to prevent taking log of # < 0
@@ -1037,11 +1037,11 @@ contains
          bm_incld=bm(k)/cld_frac_i(k)
 
          call calc_bulkRhoRime(qi_incld,qm_incld,bm_incld,rhop)
-         qi(k)=qi_incld*cld_frac_i(k)
          qm(k)=qm_incld*cld_frac_i(k)
          bm(k)=bm_incld*cld_frac_i(k)
- 
-         ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi(k),ni(k),rho(k))
+
+         call impose_max_total_ni(ni_incld,max_total_Ni,inv_rho(k))
+
          call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
               dum5,dum6,isize,rimsize,densize,     &
               qi_incld,ni_incld,           &
@@ -1060,7 +1060,8 @@ contains
          ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
          ni_incld = min(ni_incld,table_val_ni_lammax*ni_incld)
          ni_incld = max(ni_incld,table_val_ni_lammin*ni_incld)
-
+         ni(k) = ni_incld*cld_frac_i(k)
+         
          !--this should already be done in s/r 'calc_bulkRhoRime'
          if (qm(k).lt.qsmall) then
             qm(k) = 0._rtype
@@ -3829,7 +3830,6 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
                !--Compute Vq, Vn:
                ni_incld(k) = max(ni_incld(k),nsmall) !impose lower limits to prevent log(<0)
                call calc_bulkRhoRime(qi_incld(k),qm_incld(k),bm_incld(k),rhop)
-               qi(k)=qi_incld(k)*cld_frac_i(k)
                qm(k)=qm_incld(k)*cld_frac_i(k)
                bm(k)=bm_incld(k)*cld_frac_i(k)
                
