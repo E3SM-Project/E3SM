@@ -1252,4 +1252,55 @@ contains
 
 
 
+  !-------------------------------------------------------------------------------
+
+  subroutine checkval_nitro(veg_ns, veg_nf, p)
+  !
+  !DESCRIPTION:
+  !double check the success of the flux limiter solver
+  use VegetationDataType, only : vegetation_nitrogen_flux
+  use VegetationDataType, only : vegetation_nitrogen_state
+  implicit none
+  type(vegetation_nitrogen_flux)  , intent(inout) :: veg_nf
+  type(vegetation_nitrogen_state) , intent(inout) :: veg_ns
+  integer, intent(in) :: p
+
+  real(r8) :: ystate, dt
+
+  associate(                                                     &
+    ivt                   => veg_pp%itype                      , & ! Input:  [integer  (:)     ]  pft vegetation type
+    woody                 => veg_vp%woody                        & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+  )
+
+  ! set time steps
+  dt = real( get_step_size(), r8 )
+
+  !npool check
+  ystate =veg_ns%npool(p)- veg_nf%npool_to_leafn(p) * dt &
+                         - veg_nf%npool_to_leafn_storage(p) * dt &
+                         - veg_nf%npool_to_frootn(p) * dt &
+                         - veg_nf%npool_to_frootn_storage(p) * dt
+  if (woody(ivt(p)) == 1._r8) then
+    ystate = ystate  - veg_nf%npool_to_livestemn(p) * dt &
+                     - veg_nf%npool_to_livestemn_storage(p) * dt &
+                     - veg_nf%npool_to_livecrootn(p) * dt &
+                     - veg_nf%npool_to_livecrootn_storage(p) * dt &
+                     - veg_nf%npool_to_deadstemn(p) * dt &
+                     - veg_nf%npool_to_deadcrootn(p) * dt &
+                     - veg_nf%npool_to_deadstemn_storage(p) * dt &
+                     - veg_nf%npool_to_deadcrootn_storage(p) * dt
+  endif
+  if (ivt(p) >= npcropmin) then
+    ystate = ystate - veg_nf%npool_to_livestemn(p) * dt &
+                    - veg_nf%npool_to_livestemn_storage(p) * dt &
+                    - veg_nf%npool_to_grainn(p) * dt &
+                    - veg_nf%npool_to_grainn_storage(p) * dt
+  endif
+  ystate = ystate + veg_nf%retransn_to_npool(p) * dt &
+                  + veg_nf%sminn_to_npool(p) * dt &
+                  + veg_nf%nfix_to_plantn(p) * dt
+
+  write(iulog,*)'lphel check',p,ystate,veg_ns%npool(p)
+  end associate
+  end subroutine checkval_nitro
 end module PhenologyFLuxLimitMod
