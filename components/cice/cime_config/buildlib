@@ -42,22 +42,15 @@ if (-f "Filepath") {
 #  force gmake to recompile if any of the cppdefs are different 
 #-------------------------------------------------------------- 
 my $recompile = 'FALSE';
-my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/CIME_cppdefs";
+my $cppdefsfile;
 if (-e "$OBJROOT/ice/obj/CIME_cppdefs") {
-    if (compare("$OBJROOT/ice/obj/CIME_cppdefs.new", "$OBJROOT/ice/obj/CIME_cppdefs") != 0) {
-        $recompile = 'TRUE';
-    }
-    # NOTE - the following remove statements are what force cice to recompile if
-    # the cppdefs are different
-    print "recompile is $recompile \n";
-    if ($recompile eq 'TRUE') {
-        my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
-        system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
-    }
-    my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/CIME_cppdefs";
+    $cppdefsfile = 'CIME_cppdefs';
 }
 elsif (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
-    if (compare("$OBJROOT/ice/obj/CCSM_cppdefs.new", "$OBJROOT/ice/obj/CCSM_cppdefs") != 0) {
+    $cppdefsfile = 'CCSM_cppdefs';
+}
+if (-e "$OBJROOT/ice/obj/$cppdefsfile") {
+    if (compare("$OBJROOT/ice/obj/CIME_cppdefs.new", "$OBJROOT/ice/obj/$cppdefsfile") != 0) {
         $recompile = 'TRUE';
     }
     # NOTE - the following remove statements are what force cice to recompile if
@@ -67,8 +60,8 @@ elsif (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
         my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
     }
-    my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
 }
+my $sysmod = "cp -f $OBJROOT/ice/obj/CIME_cppdefs.new $OBJROOT/ice/obj/$cppdefsfile";
 system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 
 chdir $CASEROOT;
