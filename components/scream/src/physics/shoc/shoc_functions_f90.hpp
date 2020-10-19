@@ -837,6 +837,20 @@ struct ComputeShocVaporData : public PhysicsTestData {
   
   SHOC_NO_SCALAR(ComputeShocVaporData, 2)
 };
+struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
+  // Inputs
+  Int shcol, nlev, nlevi, num_tracer;
+  Real dtime;
+  Real *dz_zt, *dz_zi, *rho_zt, *zt_grid, *zi_grid, *tk, *tkh, *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc;
+  
+  // Inputs/Outputs
+  Real *thetal, *qw, *tracer, *tke, *u_wind, *v_wind;
+  
+  UpdatePrognosticsImplicitData(Int shcol_, Int nlev_, Int nlevi_, Int num_tracer_, Real dtime_) :
+    PhysicsTestDataGeneric({{ shcol, nlev }, { shcol, nlevi }, { shcol }, { shcol, nlev, num_tracer }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &tracer }}, {}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
+  
+  PTDG_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void shoc_grid                                      (SHOCGridData &d);
 void shoc_diag_obklen                               (SHOCObklenData &d);
@@ -899,6 +913,7 @@ void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d);
 void diag_second_moments(DiagSecondMomentsData& d);
 void diag_second_shoc_moments(DiagSecondShocMomentsData& d);
 void compute_shoc_vapor(ComputeShocVaporData& d);
+void update_prognostics_implicit(UpdatePrognosticsImplicitData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -953,6 +968,7 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
                          Real* wqw_sfc, Real* rho_zt, Real* tke, Real* pint,
                          Real* host_dse);
 void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
+void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind);
 } // end _f function decls
 
 }  // namespace shoc
