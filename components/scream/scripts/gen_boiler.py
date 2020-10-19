@@ -264,6 +264,29 @@ UT_ARG_DATA = [
     ("ball2", "integer", "out", ("shcol",)),
 ]
 
+UT_ARG_DATA2 = [
+    ("foo1", "real", "in", ("shcol",)),
+    ("foo2", "real", "in", ("shcol",)),
+    ("bar1", "real", "in", ("shcol","nlev")),
+    ("bar2", "real", "in", ("shcol","nlev")),
+    ("bak1", "real", "in", ("shcol","nlevi")),
+    ("bak2", "real", "in", ("shcol","nlevi")),
+    ("tracerd1", "real", "in", ("shcol","nlev", "ntracers")),
+    ("tracerd2", "real", "in", ("shcol","nlev", "ntracers")),
+    ("gag", "real", "in", None),
+    ("baz", "real", "inout", ("shcol",)),
+    ("bag", "integer", "in", ("shcol",)),
+    ("bab1", "integer", "out", None),
+    ("bab2", "integer", "out", None),
+    ("val", "logical", "in", None),
+    ("shcol", "integer", "in", None),
+    ("nlev", "integer", "in", None),
+    ("nlevi", "integer", "in", None),
+    ("ntracers", "integer", "in", None),
+    ("ball1", "integer", "out", ("shcol",)),
+    ("ball2", "integer", "out", ("shcol",)),
+]
+
 #
 # Free functions
 #
@@ -651,6 +674,8 @@ def parse_f90_args(line):
     [('dz', 'real', 'inout', ('3', '4'))]
     >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1), y1(ncol , km1 )')
     [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))]
+    >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)')
+    [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))]
     """
     expect(line.count("::") == 1, "Expected line format 'type-info :: names' for: {}".format(line))
     metadata_str, names_str = line.split("::")
@@ -685,17 +710,18 @@ def parse_f90_args(line):
 ###############################################################################
 def parse_origin(contents, subs):
 ###############################################################################
-    """
+    r"""
     Returns a map of subname->[(argname, argtype, intent, dims)]
 
     >>> teststr = '''
     ...
     ...   SUBROUTINE p3_get_tables(mu_r_user, revap_user, &
-    ...           vn_user, vm_user)
+    ...           tracerd, vn_user, vm_user)
     ...     ! This can be called after p3_init_b.
     ...     implicit none
     ...     real(rtype), dimension(150), intent(out) :: mu_r_user
     ...     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
+    ...     real(rtype), dimension(300,10,42), intent(out) :: tracerd
     ...     mu_r_user(:) = mu_r_table(:)
     ...     revap_user(:,:) = revap_table(:,:)
     ...     vn_user(:,:) = vn_table(:,:)
@@ -730,8 +756,9 @@ def parse_origin(contents, subs):
     ...     do i = 1,150
     ...   END SUBROUTINE p3_init_b
     ... '''
-    >>> sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())
-    [('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))]), ('p3_init_b', [])]
+    >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
+    ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
+    ('p3_init_b', [])
     """
     begin_regexes = [get_subroutine_begin_regex(sub) for sub in subs]
     arg_decl_regex = re.compile(r"^.+intent\s*[(]\s*(in|out|inout)\s*[)]")
@@ -792,6 +819,8 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
     'real(kind=c_real) , intent(in), dimension(10, 150) :: foo, bar'
     >>> gen_arg_f90_decl("real", "out", ("10", "150"), ["foo", "bar"])
     'real(kind=c_real) , intent(out), dimension(10, 150) :: foo, bar'
+    >>> gen_arg_f90_decl("real", "out", ("10", "150", "42"), ["foo", "bar"])
+    'real(kind=c_real) , intent(out), dimension(10, 150, 42) :: foo, bar'
     >>> gen_arg_f90_decl("logical", "in", None, ["biz", "baz"])
     'logical(kind=c_bool) , value, intent(in) :: biz, baz'
     >>> gen_arg_f90_decl("integer", "inout", None, ["barg"])
@@ -896,6 +925,8 @@ def needs_transpose(arg_data):
     False
     >>> needs_transpose([("foo", "real", "in", ("100","50")), ("bar", "real", "in", None)])
     True
+    >>> needs_transpose([("foo", "real", "in", ("100","50","42")), ("bar", "real", "in", None)])
+    True
     >>> needs_transpose([("foo", "real", "in", None), ("bar", "real", "in", None)])
     False
     """
@@ -915,7 +946,7 @@ def gen_cxx_data_args(arg_data):
     >>> gen_cxx_data_args([("foo", "real", "in", ("100",)), ("bar", "real", "in", None), ("baz", "integer", "inout", None), ("bag", "integer", "inout", ("100",))])
     ['d.foo', 'd.bar', '&d.baz', 'd.bag']
     """
-    all_dims = group_data(arg_data)[0:3]
+    all_dims = group_data(arg_data)[3]
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
     arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
@@ -1006,97 +1037,113 @@ def gen_struct_members(arg_data):
 ###############################################################################
 def group_data(arg_data, filter_out_intent=None):
 ###############################################################################
-    """
-    Given data, return (i_dim, k_dim, j_dim, [scalars], [ik_reals], [ij_reals], [i_reals], [i_ints])
+    r"""
+    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]})
 
-    >>> group_data(UT_ARG_DATA)
-    ('shcol', 'nlev', 'nlevi', [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')], ['bar1', 'bar2'], ['bak1', 'bak2'], ['foo1', 'foo2', 'baz'], ['bag', 'ball1', 'ball2'])
+    >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA2)]))
+    ['shcol']
+    ['nlev', 'nlevi']
+    ['ntracers']
+    ['shcol', 'nlev', 'nlevi', 'ntracers']
+    [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')]
+    OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
+    OrderedDict([(('shcol',), ['bag', 'ball1', 'ball2'])])
     """
-    i_ints   = []
-    i_reals  = []
-    ik_reals = []
-    ij_reals = [] # j = alternate k dim
     scalars  = []
 
-    i_dim = None
-    k_dim = None
-    j_dim = None
+    fst_dims = []
+    snd_dims = []
+    trd_dims = []
 
     for name, argtype, _, dims in arg_data:
         if dims is not None:
-            expect(len(dims) >= 1 and len(dims) <= 2,
-                   "Only 1d and 2d data is support, {} has too many dims".format(name))
+            expect(len(dims) >= 1 and len(dims) <= 3,
+                   "Only 1d-3d data is supported, {} has too many dims: {}".format(name, len(dims)))
 
-            if i_dim is None:
-                i_dim = dims[0]
-            else:
-                expect(i_dim == dims[0],
-                       "Ambiguous dimension for {}, expected {}, got{}".format(name, i_dim, dims[0]))
+            if dims[0] not in fst_dims:
+                fst_dims.append(dims[0])
+            if len(dims) > 1 and dims[1] not in snd_dims:
+                snd_dims.append(dims[1])
+            if len(dims) > 2 and dims[2] not in trd_dims:
+                trd_dims.append(dims[2])
 
-            if len(dims) == 2:
-                if k_dim is None:
-                    k_dim = dims[1]
-                elif k_dim == dims[1]:
-                    pass
-                elif j_dim is None:
-                    j_dim = dims[1]
-                elif j_dim == dims[1]:
-                    pass
-                else:
-                    expect(False, "Unable to identify dimension {} for arg {}".format(dims[1], name))
+    all_dims = list(OrderedDict([(item, None) for item in (fst_dims + snd_dims + trd_dims)]))
+    real_data = OrderedDict()
+    int_data = OrderedDict()
 
     for name, argtype, intent, dims in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
-                if (name not in [i_dim, k_dim, j_dim]):
+                if name not in all_dims:
                     scalars.append( (name, CXX_TYPE_MAP[argtype]))
                 else:
                     expect(argtype == "integer", "Expected dimension {} to be of type integer".format(name))
 
             elif argtype == "integer":
-                expect(len(dims) == 1 and dims[0] == i_dim, "integer data {} has unsupported dims {}".format(name, dims))
-                i_ints.append(name)
-
-            elif len(dims) == 1:
-                expect(dims[0] == i_dim and argtype in ["integer", "real"],
-                       "1d real data {} has unsupported dims {}".format(name, dims))
-                if argtype == "real":
-                    i_reals.append(name)
-                else:
-                    i_ints.append(name)
+                int_data.setdefault(dims, []).append(name)
 
             else:
-                expect(len(dims) == 2 and dims[0] == i_dim and dims[1] in [k_dim, j_dim],
-                       "2d real data {} has unsupported dims {}".format(name, dims))
-                if dims[1] == k_dim:
-                    ik_reals.append(name)
-                else:
-                    ij_reals.append(name)
+                real_data.setdefault(dims, []).append(name)
 
-    return i_dim, k_dim, j_dim, scalars, ik_reals, ij_reals, i_reals, i_ints
+    return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data
 
 ###############################################################################
-def gen_struct_api(physics, struct_name, arg_data):
+def is_sugar_compatible(physics, arg_data):
 ###############################################################################
-    r"""
-    Given data, generate code for data struct api
-
-    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)))
-    DataSubName(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-      PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag, &ball1, &ball2}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
-    <BLANKLINE>
-    SHOC_SCALARS(DataSubName, 3, 4, gag, bab1, bab2, val)
     """
-    i_dim, k_dim, j_dim, scalars, ik_reals, ij_reals, i_reals, i_ints = group_data(arg_data)
+    Can we use PhysicsTestData syntax sugar
+
+    >>> is_sugar_compatible("shoc", UT_ARG_DATA)
+    True
+    >>> is_sugar_compatible("shoc", UT_ARG_DATA2)
+    False
+    >>> is_sugar_compatible("p3", UT_ARG_DATA)
+    False
+    """
+    fst_dims, snd_dims, trd_dims, all_dims, _, _, int_data = group_data(arg_data)
+    sugar_compatible = physics == "shoc"
+    if len(all_dims) > 3 or len(fst_dims) > 1 or len(snd_dims) > 2 or len(trd_dims) > 1:
+        sugar_compatible = False
+    if int_data and (len(int_data) > 1 or (fst_dims[0],) not in int_data):
+        sugar_compatible = False
+
+    return sugar_compatible
+
+###############################################################################
+def gen_struct_api_sugar(physics, struct_name, arg_data):
+###############################################################################
+    """
+    Return struct contents using syntactic sugar
+    """
+    fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data = group_data(arg_data)
+    ik_reals, ij_reals, i_reals, td_reals, i_ints = [], [], [], [], []
+    for dims, reals in real_data.items():
+        if len(dims) == 1:
+            expect(not i_reals, "Multiple sets of i_reals?")
+            i_reals = reals
+
+        if len(dims) == 2:
+            if not ik_reals:
+                ik_reals = reals
+            elif not ij_reals:
+                ij_reals = reals
+            else:
+                expect(False, "Multiple sets of 2d reals?")
+
+        if len(dims) == 3:
+            expect(not td_reals, "Multiple sets of 3d reals?")
+            td_reals = reals
+
+    i_ints = list(int_data.values())[0]
 
     result = []
-    dim_args = [(item, "Int") for item in [i_dim, k_dim, j_dim] if item is not None]
+    dim_args = [(item, "Int") for item in all_dims if item is not None]
     cons_args = dim_args + scalars
     result.append("{struct_name}({cons_args}) :".\
                   format(struct_name=struct_name,
                          cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
     parent_call = "  PhysicsTestData({}".format(", ".join(["{}_".format(name) for name, _ in dim_args]))
-    for item in (ik_reals, ij_reals, i_reals, i_ints):
+    for item in (ik_reals, ij_reals, i_reals, i_ints, td_reals):
         if len(item) > 0:
             parent_call += ", {{{}}}".format(", ".join(["&{}".format(name) for name in item]))
 
@@ -1115,7 +1162,71 @@ def gen_struct_api(physics, struct_name, arg_data):
             result.append("SHOC_SCALARS({}, {}, {}, {})".format(struct_name, len(dim_args), len(scalars),
                                                                 ", ".join([name for name, _ in scalars])))
     else:
-        expect(False, "p3 is not supported for now") # TODO
+        expect(False, "p3 sugar is not supported for now") # TODO
+
+    return result
+
+###############################################################################
+def gen_struct_api_generic(physics, struct_name, arg_data):
+###############################################################################
+    fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data = group_data(arg_data)
+
+    result = []
+    dim_args = [(item, "Int") for item in all_dims if item is not None]
+    cons_args = dim_args + scalars
+    result.append("{struct_name}({cons_args}) :".\
+                  format(struct_name=struct_name,
+                         cons_args=", ".join(["{} {}_".format(argtype, name) for name, argtype in cons_args])))
+
+    dim_cxx_vec = []
+    real_vec = []
+    int_vec = []
+    for dims, reals in real_data.items():
+        dim_cxx_vec.append("{{ {} }}".format(", ".join(dims)))
+        real_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in reals])))
+
+    for dims, ints in int_data.items():
+        dim_cxx_vec.append("{{ {} }}".format(", ".join(dims)))
+        int_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in reals])))
+
+    parent_call = "  PhysicsTestDataGeneric({{{}}}, {{{}}}, {{{}}})".format(", ".join(dim_cxx_vec), ", ".join(real_vec), ", ".join(int_vec))
+
+    parent_call += ", {}".format(", ".join(["{0}({0}_)".format(name) for name, _ in cons_args]))
+
+    parent_call += " {}"
+    result.append(parent_call)
+    result.append("")
+
+    result.append("PTDG_STD_DEF({}, {}, {});".\
+                  format(struct_name, len(cons_args), ", ".join([name for name, _ in cons_args])))
+
+    return result
+
+###############################################################################
+def gen_struct_api(physics, struct_name, arg_data):
+###############################################################################
+    r"""
+    Given data, generate code for data struct api
+
+    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)))
+    DataSubName(Int shcol_, Int nlev_, Int nlevi_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+      PhysicsTestData(shcol_, nlev_, nlevi_, {&bar1, &bar2}, {&bak1, &bak2}, {&foo1, &foo2, &baz}, {&bag, &ball1, &ball2}), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+    <BLANKLINE>
+    SHOC_SCALARS(DataSubName, 3, 4, gag, bab1, bab2, val)
+
+    >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA2)))
+    DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
+      PhysicsTestDataGeneric({{ shcol }, { shcol, nlev }, { shcol, nlevi }, { shcol, nlev, ntracers }, { shcol }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &tracerd1, &tracerd2 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+    <BLANKLINE>
+    PTDG_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+    """
+    sugar_compatible = is_sugar_compatible(physics, arg_data)
+
+    if sugar_compatible:
+        return gen_struct_api_sugar(physics, struct_name, arg_data)
+
+    else:
+        return gen_struct_api_generic(physics, struct_name, arg_data)
 
     return result
 
@@ -1430,7 +1541,8 @@ class GenBoiler(object):
         struct_members   = "\n  ".join(gen_struct_members(arg_data))
         any_arrays       = has_arrays(arg_data)
         struct_name      = get_data_struct_name(sub)
-        inheritance      = " : public PhysicsTestData" if any_arrays else ""
+        base_class       = "PhysicsTestData" if is_sugar_compatible(phys, arg_data) else "PhysicsTestDataGeneric"
+        inheritance      = " : public {}".format(base_class) if any_arrays else ""
         api              = "\n  " + "\n  ".join(gen_struct_api(phys, struct_name, arg_data) if any_arrays else "")
 
         result = \
@@ -1582,9 +1694,12 @@ class GenBoiler(object):
               FakeSubData& d_cxx = cxx_data[i];
               REQUIRE(d_f90.bab1 == d_cxx.bab1);
               REQUIRE(d_f90.bab2 == d_cxx.bab2);
-              for (Int k = 0; k < d_f90.dim1; ++k) {
+              for (Int k = 0; k < d_f90.total(baz); ++k) {
+                REQUIRE(d_f90.total(baz) == d_cxx.total(baz));
                 REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
+                REQUIRE(d_f90.total(baz) == d_cxx.total(ball1));
                 REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
+                REQUIRE(d_f90.total(baz) == d_cxx.total(ball2));
                 REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
               }
         <BLANKLINE>
@@ -1612,18 +1727,25 @@ class GenBoiler(object):
 """
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
 
-        _, _, _, scalars, ik_reals, ij_reals, i_reals, i_ints = group_data(arg_data, filter_out_intent="in")
+        _, _, _, _, scalars, real_data, int_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
-        i_arrays = i_reals + i_ints
         for scalar in scalars:
             check_scalars += "      REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
 
-        for items, total_call in [(ik_reals, "total1x2()"), (ij_reals, "total1x3()"), (i_arrays, "dim1")]:
-            if len(items) > 0:
-                check_arrays += "      for (Int k = 0; k < d_f90.{}; ++k) {{\n".format(total_call)
-                for item in items:
-                    check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=item)
-                check_arrays += "      }\n"
+        all_data = OrderedDict(real_data)
+        for k, v in int_data.items():
+            if k in all_data:
+                all_data[k].extend(v)
+            else:
+                all_data[k] = v
+
+        for _, data in all_data.items():
+            check_arrays += "      for (Int k = 0; k < d_f90.total({}); ++k) {{\n".format(data[0])
+            for datum in data:
+                check_arrays += "        REQUIRE(d_f90.total({orig}) == d_cxx.total({name}));\n".format(orig=data[0], name=datum)
+                check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
+
+            check_arrays += "      }\n"
 
         result = \
 """  static void run_bfb()

@@ -118,13 +118,21 @@ struct SHOCGridData : public PhysicsTestData {
   PTD_DATA_COPY_CTOR(name, PTD_ADD_##dim##_##num_scalars);  \
   PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
 
+// For PhysicsTestDataGeneric, the dimensions are also struct scalars
+#define PTDG_STD_DEF(name, num_scalars, ...) \
+  PTD_DATA_COPY_CTOR(name, num_scalars);     \
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+
 namespace scream {
 
+// Fully Generic Data struct for multi-dimensions reals and ints
 struct PhysicsTestDataGeneric
 {
-  PhysicsTestDataGeneric(const std::vector<std::vector<Int> >& dims,
-                         const std::vector<std::vector<Real**> > reals,
-                         const std::vector<std::vector<Int**> > ints);
+  // dims -> the dimensions of real data should come before dimensions of int data
+  PhysicsTestDataGeneric(
+    const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
+    const std::vector<std::vector<Real**> > reals, // vector of pointers to real* members
+    const std::vector<std::vector<Int**> > ints);  // vector of pointers to int* members
 
   Int total(void* member) const;
 
@@ -144,7 +152,8 @@ struct PhysicsTestDataGeneric
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another
   template <ekat::TransposeDirection::Enum D>
-  void transpose() {
+  void transpose()
+  {
     std::vector<Real> real_data(m_real_data);
     std::vector<Int>  int_data(m_int_data);
     Int real_offset = 0;
