@@ -1254,7 +1254,7 @@ contains
 
   end subroutine prim_step
 
-  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &       
+  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &
                                 compute_diagnostics, single_column)
     use control_mod,        only: ftype, nu_p, dt_tracer_factor, dt_remap_factor, prescribed_wind, transport_alg
     use hybvcoord_mod,      only: hvcoord_t

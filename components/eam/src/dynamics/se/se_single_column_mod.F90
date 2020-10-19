@@ -110,8 +110,6 @@ subroutine scm_setfield(elem,iop_update_phase1)
   logical, intent(in) :: iop_update_phase1
   type(element_t), intent(inout) :: elem(:)
 
-#ifndef MODEL_THETA_L
-
   integer i, j, k, ie
 
   do ie=1,nelemd
@@ -121,8 +119,6 @@ subroutine scm_setfield(elem,iop_update_phase1)
       if (have_omega .and. iop_update_phase1) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
-
-#endif
 
 end subroutine scm_setfield
 
@@ -192,7 +188,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       !   temperature back potential temperature on floating levels.
       dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
-          dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i) 
+          dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
 #endif
 
     dt=dtime
@@ -230,13 +226,13 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-#ifdef MODEL_THETA_L  
+#ifdef MODEL_THETA_L
            temperature(i,j,:),temperature(i,j,:),&
 #else
            elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
 #endif
            forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
-           stateQin_qfcst,p(i,j,:),stateQin1,1)         
+           stateQin_qfcst,p(i,j,:),stateQin1,1)
 
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 
@@ -247,7 +243,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
                 (Rgas*exner(i,j,:))
 #else
-    elem(ie)%state%T(i,j,:,t1) = forecast_t(:)           
+    elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
 #endif
     elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
     elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
