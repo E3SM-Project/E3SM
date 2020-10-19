@@ -106,6 +106,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
       REQUIRE( std::abs(qrtend[0] - qr_tiny[0]/dt
 			*(cld_frac_r[0]-cld_frac_l[0])/cld_frac_r[0])<1e-8 );
       REQUIRE( std::abs(nrtend[0] - qrtend[0]*nr_incld[0]/qr_tiny[0]) < 1e-8 );//always true
+      REQUIRE( nrtend[0] <= nr_incld[0]/dt); //keep end-of-step nr positive. Should always be true.
 
     //if no rainy areas outside cloud, don't evap
     Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
@@ -123,7 +124,16 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
 			      qrtend,nrtend);
     REQUIRE( std::abs(qrtend[0])<1e-8 );
     REQUIRE( std::abs(nrtend[0])<1e-8 );
-    
+
+    //for case with lots of evap, make sure doesn't overdeplete qr_incld
+    Functions::evaporate_rain(qr_incld,qc_incld,nr_incld,qi_incld,
+			      //qv -> qv*0.1 to encourage lots of rain evap
+			      cld_frac_l,cld_frac_r,qv*0.1,qv_prev,qv_sat_l,qv_sat_i,
+			      ab,abi,epsr,epsi_tot,t,t_prev,latent_heat_sublim,dqsdt,dt,
+			      qrtend,nrtend);
+    REQUIRE( qrtend[0] <= qr_incld[0]/dt);
+    REQUIRE( nrtend[0] <= nr_incld[0]/dt); //keep end-of-step nr positive. Should always be true.
+	     
   }; //end run_property
     
   static void run_bfb(){

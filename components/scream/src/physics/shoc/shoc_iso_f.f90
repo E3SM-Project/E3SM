@@ -150,10 +150,10 @@ interface
   subroutine linear_interp_f(x1, x2, y1, y2, km1, km2, ncol, minthresh) bind(C)
     use iso_c_binding
 
+    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
     real(kind=c_real) , intent(in), dimension(ncol, km1) :: x1, y1
     real(kind=c_real) , intent(in), dimension(ncol, km2) :: x2
     real(kind=c_real) , intent(out), dimension(ncol, km2) :: y2
-    integer(kind=c_int) , value, intent(in) :: km1, km2, ncol
     real(kind=c_real) , value, intent(in) :: minthresh
   end subroutine linear_interp_f
 
@@ -189,13 +189,15 @@ subroutine shoc_energy_integrals_f(shcol, nlev, host_dse, pdel,&
 
 end subroutine shoc_energy_integrals_f
 
-  subroutine diag_second_moments_lbycond_f(shcol, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar, wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec) bind(C)
-    use iso_c_binding
+subroutine diag_second_moments_lbycond_f(shcol, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar, & 
+  wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec) bind(C)
+  use iso_c_binding
 
-    integer(kind=c_int) , value, intent(in) :: shcol
-    real(kind=c_real) , intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar
-    real(kind=c_real) , intent(out), dimension(shcol) :: wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec
-  end subroutine diag_second_moments_lbycond_f
+  integer(kind=c_int) , value, intent(in) :: shcol
+  real(kind=c_real) , intent(in), dimension(shcol) :: wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, ustar2, wstar
+  real(kind=c_real) , intent(out), dimension(shcol) :: wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec
+end subroutine diag_second_moments_lbycond_f
+
   subroutine diag_second_moments_f(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
     use iso_c_binding
 
@@ -333,6 +335,13 @@ subroutine shoc_energy_fixer_f(shcol, nlev, nlevi, dtime, nadv, zt_grid, zi_grid
 
 end subroutine shoc_energy_fixer_f
 
+  subroutine compute_shoc_vapor_f(shcol, nlev, qw, ql, qv) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
+  end subroutine compute_shoc_vapor_f
 end interface
 
 end module shoc_iso_f

@@ -443,7 +443,6 @@ void Functions<S,D>
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
         const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), qi_gt_small);
-        qi(k).set(qi_gt_small, qi_incld(k)*cld_frac_i(k) );
         qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
         bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
@@ -703,9 +702,13 @@ void Functions<S,D>
     // Outputs associated with aerocom comparison:
     pratot(k).set(not_skip_all, qc2qr_accret_tend); // cloud drop accretion by rain
     prctot(k).set(not_skip_all, qc2qr_autoconv_tend); // cloud drop autoconversion to rain
-
-    impose_max_total_ni(ni(k), max_total_ni, inv_rho(k), not_skip_all);
-
+    
+    //impose_max_total_ni is meant to operate on in-cloud vals. ni_incld is an output of
+    //calculate_incloud_mixingratios below but we need to generate it earlier for impose_max_total_ni
+    ni_incld(k).set(not_skip_all, ni(k)/cld_frac_i(k));
+    impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_all);
+    ni(k).set(not_skip_all, ni_incld(k)*cld_frac_i(k));
+    
     // Recalculate in-cloud values for sedimentation
     calculate_incloud_mixingratios(
       qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k), inv_cld_frac_l(k), inv_cld_frac_i(k), inv_cld_frac_r(k),
@@ -821,9 +824,6 @@ void Functions<S,D>
 
     // Ice
     {
-      //bugfix todo: this ice section should all use in-cloud values
-      impose_max_total_ni(ni(k), max_total_ni, inv_rho(k));
-
       const auto qi_gt_small = qi(k) >= qsmall;
       const auto qi_small    = !qi_gt_small;
 
@@ -836,10 +836,11 @@ void Functions<S,D>
       auto bm_incld = bm(k)/cld_frac_i(k);
 
       const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, qi_gt_small);
-      qi(k).set(qi_gt_small, qi_incld*cld_frac_i(k) );
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 
+      impose_max_total_ni(ni_incld, max_total_ni, inv_rho(k));
+      
       TableIce table_ice;
       lookup_ice(qi_incld, ni_incld, qm_incld, rhop, table_ice, qi_gt_small);
 
@@ -855,6 +856,7 @@ void Functions<S,D>
       // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
       ni_incld.set(qi_gt_small, min(ni_incld, table_val_ni_lammax * ni_incld));
       ni_incld.set(qi_gt_small, max(ni_incld, table_val_ni_lammin * ni_incld));
+      ni(k) = ni_incld*cld_frac_i(k);
 
       // --this should already be done in s/r 'calc_bulkRhoRime'
       const auto qm_small = qm(k) < qsmall && qi_gt_small;

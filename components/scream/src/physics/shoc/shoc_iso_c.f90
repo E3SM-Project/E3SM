@@ -194,24 +194,29 @@ contains
 
   end subroutine dp_inverse_c
 
-  subroutine sfc_fluxes_c(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,&
-                          wqw_sfc, wtke_sfc, thetal, qw, tke) bind(C)
+  subroutine sfc_fluxes_c(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                          wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                          thetal, qw, tke, tracer) bind(C)
     use shoc, only: sfc_fluxes
 
     integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: num_tracer
     real(kind=c_real), intent(in), value :: dtime
     real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
     real(kind=c_real), intent(in) :: rdp_zt_sfc(shcol)
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
     real(kind=c_real), intent(in) :: wtke_sfc(shcol)
+    real(kind=c_real), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
     real(kind=c_real), intent(inout) :: thetal(shcol)
     real(kind=c_real), intent(inout) :: qw(shcol)
     real(kind=c_real), intent(inout) :: tke(shcol)
+    real(kind=c_real), intent(inout) :: tracer(shcol,num_tracer)
 
-    call sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, &
-                    wthl_sfc, wqw_sfc, wtke_sfc, thetal, qw, tke)
+    call sfc_fluxes(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                    wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                    thetal, qw, tke, tracer)
 
   end subroutine sfc_fluxes_c
 
@@ -1306,4 +1311,13 @@ contains
     call pblintd_cldcheck(shcol, nlev, nlevi, zi, cldn, pblh)
   end subroutine shoc_pblintd_cldcheck_c
 
+  subroutine compute_shoc_vapor_c(shcol, nlev, qw, ql, qv) bind(C)
+    use shoc, only : compute_shoc_vapor
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
+
+    call compute_shoc_vapor(shcol, nlev, qw, ql, qv)
+  end subroutine compute_shoc_vapor_c
 end module shoc_iso_c

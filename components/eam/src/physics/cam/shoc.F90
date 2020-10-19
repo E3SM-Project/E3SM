@@ -318,6 +318,8 @@ subroutine shoc_main ( &
 
   ! air density on thermo grid [kg/m3]
   real(rtype) :: rho_zt(shcol,nlev)
+  ! SHOC water vapor [kg/kg]
+  real(rtype) :: shoc_qv(shcol,nlev)
 
   ! Grid difference centereted on thermo grid [m]
   real(rtype) :: dz_zt(shcol,nlev)
@@ -359,21 +361,26 @@ subroutine shoc_main ( &
     call shoc_grid( &
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,pdel,&               ! Input
-       dz_zt,dz_zi,rho_zt)          ! Output
+       dz_zt,dz_zi,rho_zt)                  ! Output
 
     ! Compute the planetary boundary layer height, which is an
     !   input needed for the length scale calculation.
+    
+    ! Update SHOC water vapor, to be used by the next two routines
+    call compute_shoc_vapor(&
+       shcol,nlev,qw,shoc_ql,&              ! Input
+       shoc_qv)                             ! Output
 
     call shoc_diag_obklen(&
        shcol,uw_sfc,vw_sfc,&                          ! Input
        wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
-       shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+       shoc_ql(:shcol,nlev),shoc_qv(:shcol,nlev),&    ! Input
        ustar,kbfs,obklen)                             ! Output
 
     call pblintd(&
        shcol,nlev,nlevi,&                   ! Input
        zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
-       qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+       shoc_qv,u_wind,v_wind,&              ! Input
        ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
        pblh)                                ! Output
 
@@ -402,6 +409,7 @@ subroutine shoc_main ( &
        dtime,dz_zt,dz_zi,rho_zt,&           ! Input
        zt_grid,zi_grid,tk,tkh,&             ! Input
        uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&     ! Input
+       wtracer_sfc,&                        ! Input
        thetal,qw,qtracers,tke,&             ! Input/Output
        u_wind,v_wind)                       ! Input/Output
 
@@ -471,16 +479,22 @@ subroutine shoc_main ( &
 
   ! Update PBLH, as other routines outside of SHOC
   !  may require this variable.
+  
+  ! Update SHOC water vapor, to be used by the next two routines
+  call compute_shoc_vapor(&
+     shcol,nlev,qw,shoc_ql,&              ! Input
+     shoc_qv)                             ! Output
+  
   call shoc_diag_obklen(&
      shcol,uw_sfc,vw_sfc,&                          ! Input
      wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
-     shoc_ql(:shcol,nlev),qtracers(:shcol,nlev,1),& ! Input
+     shoc_ql(:shcol,nlev),shoc_qv(:shcol,nlev),&    ! Input
      ustar,kbfs,obklen)                             ! Output
 
   call pblintd(&
      shcol,nlev,nlevi,&                   ! Input
      zt_grid,zi_grid,thetal,shoc_ql,&     ! Input
-     qtracers(:shcol,:,1),u_wind,v_wind,& ! Input
+     shoc_qv,u_wind,v_wind,&              ! Input
      ustar,obklen,kbfs,shoc_cldfrac,&     ! Input
      pblh)                                ! Output
   return
@@ -552,6 +566,46 @@ subroutine shoc_grid( &
 end subroutine shoc_grid
 
 !==============================================================
+! Compute vapor from SHOC prognostic/diagnostic variables
+
+subroutine compute_shoc_vapor( &
+          shcol,nlev,qw,ql,&           ! Input
+          qv)                          ! Output
+
+  ! Purpose of this subroutine is to compute water vapor
+  !   based on SHOC's prognostic total water mixing ratio
+  !   and diagnostic cloud water mixing ratio.
+
+  implicit none
+
+! INPUT VARIABLES
+  ! number of columns [-]
+  integer, intent(in) :: shcol
+  ! number of mid-point levels [-]
+  integer, intent(in) :: nlev
+  ! total water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: qw(shcol,nlev)
+  ! cloud water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: ql(shcol,nlev)
+
+! OUTPUT VARIABLES
+  ! water vapor mixing ratio [kg/kg]
+  real(rtype), intent(out) :: qv(shcol,nlev)
+
+! LOCAL VARIABLES
+  integer :: i, k
+
+  do k = 1, nlev
+    do i = 1, shcol
+      qv(i,k) = qw(i,k) - ql(i,k)
+    enddo
+  enddo
+
+  return
+
+end subroutine compute_shoc_vapor
+
+!==============================================================
 ! Update T, q, tracers, tke, u, and v based on implicit diffusion
 ! Here we use a backward Euler scheme.
 
@@ -560,6 +614,7 @@ subroutine update_prognostics_implicit( &
          dtime,dz_zt,dz_zi,rho_zt,&       ! Input
          zt_grid,zi_grid,tk,tkh,&         ! Input
          uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
+         wtracer_sfc,&                    ! Input
          thetal,qw,tracer,tke,&           ! Input/Output
          u_wind,v_wind)                   ! Input/Output
 
@@ -595,6 +650,8 @@ subroutine update_prognostics_implicit( &
   real(rtype), intent(in) :: wthl_sfc(shcol)
   ! vertical moisture flux at surface [kg/kg m/s]
   real(rtype), intent(in) :: wqw_sfc(shcol)
+  ! vertical tracer flux at surface [units vary m/s]
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
   ! heights of mid-point [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights at interfaces [m]
@@ -651,9 +708,9 @@ subroutine update_prognostics_implicit( &
   wtke_sfc(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! compute surface fluxes for liq. potential temp, water and tke
-  call sfc_fluxes(shcol, dtime, rho_zi(:,nlevi), rdp_zt(:,nlev), &
-                  wthl_sfc, wqw_sfc, wtke_sfc, thetal(:,nlev), &
-                  qw(:,nlev), tke(:,nlev))
+  call sfc_fluxes(shcol, num_tracer, dtime, rho_zi(:,nlevi), rdp_zt(:,nlev), &
+                  wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, & 
+                  thetal(:,nlev), qw(:,nlev), tke(:,nlev), tracer(:,nlev,:))
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -818,13 +875,15 @@ pure function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_sfc)
 end function tke_srf_flux_term
 
 
-subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
-                      wqw_sfc, wtke_sfc, thetal, qw, tke)
+subroutine sfc_fluxes(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
+                      wqw_sfc, wtke_sfc, wtracer_sfc, thetal, qw, tke, wtracer)
 
   implicit none
 
   !intent-ins
   integer,     intent(in) :: shcol
+  !number of tracers
+  integer,     intent(in) :: num_tracer
   !time step [s]
   real(rtype), intent(in) :: dtime
   !air density at interfaces [kg/m3]
@@ -837,6 +896,8 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
   real(rtype), intent(in) :: wqw_sfc(shcol)
   !vertical tke flux at surface [m3/s3]
   real(rtype), intent(in) :: wtke_sfc(shcol)
+  !vertical tracer flux at surface [units vary m/s]
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
   !intent-inouts
   !liquid water potential temperature [K]
@@ -845,9 +906,11 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
   real(rtype), intent(inout) :: qw(shcol)
   !turbulent kinetic energy [m2/s2]
   real(rtype), intent(inout) :: tke(shcol)
+  !tracers [units vary]
+  real(rtype), intent(inout) :: wtracer(shcol,num_tracer)
 
   !local variables
-  integer :: i
+  integer :: i, p
   real(rtype) :: cmnfac
 
   ! Apply the surface fluxes explicitly for temperature and moisture
@@ -857,6 +920,11 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
      thetal(i) = thetal(i) + cmnfac * wthl_sfc(i)
      qw(i)     = qw(i)     + cmnfac * wqw_sfc(i)
      tke(i)    = tke(i)    + cmnfac * wtke_sfc(i)
+  
+     ! surface fluxes for tracers
+     do p = 1, num_tracer
+        wtracer(i,p) = wtracer(i,p) + cmnfac * wtracer_sfc(i,p)
+     enddo
   enddo
 
 end subroutine sfc_fluxes
@@ -1065,6 +1133,10 @@ subroutine diag_second_moments_lbycond(&
          uw_sec, vw_sec, wtke_sec,&                   ! Output
          thl_sec, qw_sec, qwthl_sec)                  ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_moments_lbycond_f
+#endif
+
   ! Purpose of this subroutine is to diagnose the lower
   !  boundary condition for the second order moments needed
   !  for the SHOC parameterization.
@@ -1118,11 +1190,24 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), parameter :: a_const = 1.8_rtype
   real(rtype), parameter :: ufmin = 0.01_rtype
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call diag_second_moments_lbycond_f(     &
+                shcol,           &                           ! Input
+                wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &         ! Input
+                ustar2,wstar,            &                   ! Input
+                wthl_sec,wqw_sec,&                           ! Output
+                uw_sec, vw_sec, wtke_sec,&                   ! Output
+                thl_sec,qw_sec,qwthl_sec)                    ! Output
+      return
+   endif
+#endif
+
   ! apply the surface conditions to diagnose turbulent
   !  moments at the surface
   do i=1,shcol
 
-    uf = sqrt(ustar2(i) + 0.3_rtype * wstar(i) * wstar(i))
+    uf = bfb_sqrt(ustar2(i) + 0.3_rtype * wstar(i) * wstar(i))
     uf = max(ufmin,uf)
 
     ! Diagnose thermodynamics variances and covariances
@@ -1137,7 +1222,7 @@ subroutine diag_second_moments_lbycond(&
     wqw_sec(i) = wqw_sfc(i)
     uw_sec(i) = uw_sfc(i)
     vw_sec(i) = vw_sfc(i)
-    wtke_sec(i) = bfb_cube(max(sqrt(ustar2(i)),0.01_rtype))
+    wtke_sec(i) = bfb_cube(max(bfb_sqrt(ustar2(i)),0.01_rtype))
 
   enddo ! end i loop (column loop)
   return
