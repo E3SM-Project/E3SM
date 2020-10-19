@@ -127,8 +127,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.total1x2(); ++i) {
-        REQUIRE( (d1.one12[i] > 0.0  && d1.one12[i] < 1.0) );
-        REQUIRE( (d1.two12[i] > -2.0 && d1.two12[i] < -1.0) );
+        REQUIRE( (d1.one12[i] >= 0.0  && d1.one12[i] <= 1.0) );
+        REQUIRE( (d1.two12[i] >= -2.0 && d1.two12[i] <= -1.0) );
 
         REQUIRE(d1.one12[i] == d2.one12[i]);
         REQUIRE(d1.one12[i] == d3.one12[i]);
@@ -137,8 +137,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE(d1.two12[i] == d3.two12[i]);
       }
       for (Int i = 0; i < d1.total1x3(); ++i) {
-        REQUIRE( (d1.three13[i] > -3.0 && d1.three13[i] < -2.0) );
-        REQUIRE( (d1.four13[i] > 0.0   && d1.four13[i] < 1.0) );
+        REQUIRE( (d1.three13[i] >= -3.0 && d1.three13[i] <= -2.0) );
+        REQUIRE( (d1.four13[i] >= 0.0   && d1.four13[i] <= 1.0) );
 
         REQUIRE(d1.three13[i] == d2.three13[i]);
         REQUIRE(d1.three13[i] == d3.three13[i]);
@@ -147,7 +147,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE(d1.four13[i] == d3.four13[i]);
       }
       for (Int i = 0; i < d1.total3d(); ++i) {
-        REQUIRE( (d1.five3d[i] > 6.0 && d1.five3d[i] < 9.0) );
+        REQUIRE( (d1.five3d[i] >= 6.0 && d1.five3d[i] <= 9.0) );
 
         REQUIRE(d1.five3d[i] == d2.five3d[i]);
         REQUIRE(d1.five3d[i] == d3.five3d[i]);
@@ -255,13 +255,13 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.total1x2(); ++i) {
-        REQUIRE( (d1.one12[i] > 0.0  && d1.one12[i] < 1.0) );
+        REQUIRE( (d1.one12[i] >= 0.0 && d1.one12[i] <= 1.0) );
 
         REQUIRE(d1.one12[i] == d2.one12[i]);
         REQUIRE(d1.one12[i] == d3.one12[i]);
       }
       for (Int i = 0; i < d1.dim1; ++i) {
-        REQUIRE( (d1.two1[i] > -2.0 && d1.two1[i] < -1.0) );
+        REQUIRE( (d1.two1[i] >= -2.0 && d1.two1[i] <= -1.0) );
 
         REQUIRE(d1.two1[i] == d2.two1[i]);
         REQUIRE(d1.two1[i] == d3.two1[i]);
@@ -346,8 +346,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.dim1; ++i) {
-        REQUIRE( (d1.one1[i] > 0.0  && d2.one1[i] < 1.0) );
-        REQUIRE( (d1.two1[i] > -2.0 && d1.two1[i] < -1.0) );
+        REQUIRE( (d1.one1[i] >= 0.0  && d2.one1[i] <= 1.0) );
+        REQUIRE( (d1.two1[i] >= -2.0 && d1.two1[i] <= -1.0) );
       }
 
       // Check that different data obj are using different memory spaces
@@ -417,8 +417,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.total(d1.one123); ++i) {
-        REQUIRE( (d1.one123[i] > 0.0  && d1.one123[i] < 1.0) );
-        REQUIRE( (d1.two123[i] > -2.0 && d1.two123[i] < -1.0) );
+        REQUIRE( (d1.one123[i] >= 0.0  && d1.one123[i] <= 1.0) );
+        REQUIRE( (d1.two123[i] >= -2.0 && d1.two123[i] <= -1.0) );
 
         REQUIRE(d1.one123[i] == d2.one123[i]);
         REQUIRE(d1.one123[i] == d3.one123[i]);
@@ -427,7 +427,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE(d1.two123[i] == d3.two123[i]);
       }
       for (Int i = 0; i < d1.total(d1.three124); ++i) {
-        REQUIRE( (d1.three124[i] > -3.0 && d1.three124[i] < -2.0) );
+        REQUIRE( (d1.three124[i] >= -3.0 && d1.three124[i] <= -2.0) );
         REQUIRE( (d1.int124[i]  >= 42   && d1.int124[i]  <= 84) );
 
         REQUIRE(d1.three124[i] == d2.three124[i]);
