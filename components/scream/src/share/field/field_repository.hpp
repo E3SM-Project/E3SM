@@ -14,9 +14,9 @@ namespace scream
 
  /*
   *  A database for all the persistent fields needed in an atm time step
-  *  We template a field repository over the field value type and over
-  *  the device type. These two are enough to fully deduce the type of
-  *  the stored views.
+  *  We template a field repository over the field's (real) value type.
+  *  This is enough to fully deduce the type of the stored views. All views
+  *  are stored on the default device.
   *
   *  The fields are internally organized by name. Within each name,
   *  there can be multiple fields, which differ by their layout.
@@ -32,14 +32,13 @@ namespace scream
   *
   */
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 class FieldRepository {
 public:
 
   // Public types
-  using device_type     = Device;
-  using scalar_type     = ScalarType;
-  using field_type      = Field<scalar_type,device_type>;
+  using real_type       = RealType;
+  using field_type      = Field<real_type>;
   using header_type     = typename field_type::header_type;
   using identifier_type = typename header_type::identifier_type;
   using ci_string       = typename identifier_type::ci_string;
@@ -60,17 +59,17 @@ public:
   void registration_ends ();
   void clean_up ();
 
-  // Deduce the pack size from the scalar type (which must be of type Pack<ScalarType,N>, for some int N>0, or ScalarType)
-  template<typename RequestedValueType = scalar_type>
+  // Deduce the pack size from the scalar type (which must be of type Pack<RealType,N>, for some int N>0, or RealType)
+  template<typename RequestedValueType = real_type>
   void register_field (const identifier_type& identifier, const std::initializer_list<std::string>& groups_names);
 
-  template<typename RequestedValueType = scalar_type>
+  template<typename RequestedValueType = real_type>
   void register_field (const identifier_type& identifier, const std::set<std::string>& groups_names);
 
-  template<typename RequestedValueType = scalar_type>
+  template<typename RequestedValueType = real_type>
   void register_field (const identifier_type& identifier, const std::string& field_group);
 
-  template<typename RequestedValueType = scalar_type>
+  template<typename RequestedValueType = real_type>
   void register_field (const identifier_type& identifier);
 
   // Get information about the state of the repo
@@ -108,8 +107,8 @@ protected:
 
 // ============================== IMPLEMENTATION ============================= //
 
-template<typename ScalarType, typename Device>
-FieldRepository<ScalarType,Device>::FieldRepository ()
+template<typename RealType>
+FieldRepository<RealType>::FieldRepository ()
  : m_repo_state (RepoState::Clean)
 {
   m_reserved_groups.insert("state");
@@ -121,41 +120,41 @@ FieldRepository<ScalarType,Device>::FieldRepository ()
   //       This may require passing a parameter list or a list of strings to the constructor.
 }
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 template<typename RequestedValueType>
-void FieldRepository<ScalarType,Device>::register_field (const identifier_type& id) {
+void FieldRepository<RealType>::register_field (const identifier_type& id) {
   std::set<std::string> empty_set;
   register_field<RequestedValueType>(id,empty_set);
 }
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 template<typename RequestedValueType>
-void FieldRepository<ScalarType,Device>::
+void FieldRepository<RealType>::
 register_field (const identifier_type& id, const std::string& group_name) {
   std::set<std::string> group_name_set;
   group_name_set.insert(group_name);
   register_field<RequestedValueType>(id,group_name_set);
 }
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 template<typename RequestedValueType>
-void FieldRepository<ScalarType,Device>::
+void FieldRepository<RealType>::
 register_field (const identifier_type& id, const std::initializer_list<std::string>& groups_names) {
   register_field<RequestedValueType>(id,std::set<std::string>(groups_names));
 }
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 template<typename RequestedValueType>
-void FieldRepository<ScalarType,Device>::
+void FieldRepository<RealType>::
 register_field (const identifier_type& id, const std::set<std::string>& groups_names) {
 
   using ekat::ScalarTraits;
 
-  // Check that the requested value type is either ScalarType or Pack<ScalarType,N>, for some N>0.
-  static_assert(std::is_same<ScalarType,RequestedValueType>::value ||
-                std::is_same<ScalarType,typename ScalarTraits<RequestedValueType>::scalar_type>::value,
+  // Check that the requested value type is either RealType or Pack<RealType,N>, for some N>0.
+  static_assert(std::is_same<RealType,RequestedValueType>::value ||
+                std::is_same<RealType,typename ScalarTraits<RequestedValueType>::scalar_type>::value,
                 "Error! The template argument 'RequestedValueType' of this function must either match "
-                "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
+                "the template argument 'RealType' of this class or be a Pack type based on RealType.\n");
 
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
@@ -200,8 +199,8 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   }
 }
 
-template<typename ScalarType, typename Device>
-int FieldRepository<ScalarType,Device>::
+template<typename RealType>
+int FieldRepository<RealType>::
 internal_size () const {
   int s = 0;
   for (auto x : m_fields) {
@@ -210,16 +209,16 @@ internal_size () const {
   return s;
 }
 
-template<typename ScalarType, typename Device>
-bool FieldRepository<ScalarType,Device>::
+template<typename RealType>
+bool FieldRepository<RealType>::
 has_field (const identifier_type& identifier) const {
   auto it = m_fields.find(identifier.name());
   return it!=m_fields.end() && it->second.find(identifier)!=it->second.end();
 }
 
-template<typename ScalarType, typename Device>
-const typename FieldRepository<ScalarType,Device>::field_type&
-FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const {
+template<typename RealType>
+const typename FieldRepository<RealType>::field_type&
+FieldRepository<RealType>::get_field (const identifier_type& id) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   const auto& map = m_fields.find(id.name());
@@ -229,9 +228,9 @@ FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const 
   return it->second;
 }
 
-template<typename ScalarType, typename Device>
-const typename FieldRepository<ScalarType,Device>::field_type&
-FieldRepository<ScalarType,Device>::get_field (const std::string name, const std::string grid) const {
+template<typename RealType>
+const typename FieldRepository<RealType>::field_type&
+FieldRepository<RealType>::get_field (const std::string name, const std::string grid) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   // Keep track of the number of fields found for this name/grid combo
@@ -251,14 +250,14 @@ FieldRepository<ScalarType,Device>::get_field (const std::string name, const std
   return get_field(f_matches[0]);
 }
 
-template<typename ScalarType, typename Device>
-void FieldRepository<ScalarType,Device>::registration_begins () {
+template<typename RealType>
+void FieldRepository<RealType>::registration_begins () {
   // Update the state of the repo
   m_repo_state = RepoState::Open;
 }
 
-template<typename ScalarType, typename Device>
-void FieldRepository<ScalarType,Device>::registration_ends () {
+template<typename RealType>
+void FieldRepository<RealType>::registration_ends () {
   // Proceed to allocate fields
   for (auto& map : m_fields) {
     for (auto& it : map.second) {
@@ -270,8 +269,8 @@ void FieldRepository<ScalarType,Device>::registration_ends () {
   m_repo_state = RepoState::Closed;
 }
 
-template<typename ScalarType, typename Device>
-void FieldRepository<ScalarType,Device>::clean_up() {
+template<typename RealType>
+void FieldRepository<RealType>::clean_up() {
   m_fields.clear();
   m_repo_state = RepoState::Clean;
 }

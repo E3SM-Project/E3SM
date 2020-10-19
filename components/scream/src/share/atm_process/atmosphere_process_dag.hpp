@@ -13,7 +13,7 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs);
-  
+
   void add_field_initializer (const FieldInitializer& initializer);
 
   void write_dag (const std::string& fname, const int verbosity = VERB_MAX) const;

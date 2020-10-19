@@ -24,7 +24,7 @@ do_create_remapper (const grid_ptr_type from_grid,
   EKAT_REQUIRE_MSG(from_grid->name()==to_grid->name(),
                    "Error! So far, PhysicsOnlyGridsManager assumes only one type of grid for physiccs.\n");
 
-  return std::make_shared<IdentityRemapper<Real,device_type>>(from_grid);
+  return std::make_shared<IdentityRemapper<Real> >(from_grid);
 }
 
 void PhysicsOnlyGridsManager::build_grid (const std::string& grid_name) {

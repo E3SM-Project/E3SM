@@ -21,10 +21,8 @@ namespace scream {
 
 class FieldInitializer : public ekat::enable_shared_from_this<FieldInitializer> {
 public:
-  using device_type = DefaultDevice; // may need to template class on this
-
-  using field_type       = Field<      Real,device_type>;
-  using const_field_type = Field<const Real,device_type>;
+  using field_type       = Field<      Real>;
+  using const_field_type = Field<const Real>;
 
   virtual ~FieldInitializer () = default;
 
