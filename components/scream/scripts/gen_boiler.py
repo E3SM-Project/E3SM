@@ -37,7 +37,7 @@ struct UnitWrap::UnitTest<D>::{test_data_struct} {{
 
 namespace {{
 
-TEST_CASE({sub}_bfb, "[{physics}_functions]")
+TEST_CASE("{sub}_bfb", "[{physics}]")
 {{
   using TestStruct = scream::{physics}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{test_data_struct};
 

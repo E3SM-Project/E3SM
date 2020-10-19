@@ -756,7 +756,7 @@ void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  update_prognostics_implicit_c(d.shcol(), d.nlev(), d.nlevi(), d.num_tracer(), d.dtime, d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid, d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
+  update_prognostics_implicit_c(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime, d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid, d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 // end _c impls
