@@ -1124,7 +1124,8 @@ contains
     else
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
-      call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+      call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &
+             compute_diagnostics, single_column)
     end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1253,7 +1254,8 @@ contains
 
   end subroutine prim_step
 
-  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &       
+                                compute_diagnostics, single_column)
     use control_mod,        only: ftype, nu_p, dt_tracer_factor, dt_remap_factor, prescribed_wind, transport_alg
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
@@ -1273,9 +1275,10 @@ contains
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
     logical,              intent(in)    :: compute_diagnostics
+    logical,              intent(in)    :: single_column
 
     real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
-    integer :: ie, q, k, n, n0_qdp, np1_qdp
+    integer :: ie, q, k, n, n0_qdp, np1_qdp, nets_in, nete_in, np1_qdp_in
     logical :: compute_diagnostics_it, apply_forcing
 
     dt_q = dt*dt_tracer_factor
@@ -1304,7 +1307,7 @@ contains
        enddo
     end if
 
-    call set_tracer_transport_derived_values(elem, nets, nete, tl)
+    call set_tracer_transport_derived_values(elem, nets, nete, tl, single_column)
 
     call t_startf("prim_step_dyn")
     do n = 1, dt_tracer_factor
@@ -1331,8 +1334,12 @@ contains
           end if
        end if
 
-       call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
-            compute_diagnostics_it)
+       if (.not. single_column) then
+         call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
+              compute_diagnostics_it)
+       else
+         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+       endif
 
        if (dt_remap_factor == 0) then
           ! Set np1_qdp to -1. Since dt_remap == 0, the only part of
@@ -1357,7 +1364,20 @@ contains
              else
                 ! Set np1_qdp to -1 to remap dynamics variables but
                 ! not tracers.
-                call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, -1, nets, nete)
+
+		if (single_column) then
+                  nets_in=1
+                  nete_in=1
+                  np1_qdp_in = np1_qdp
+                else
+                  nets_in=nets
+                  nete_in=nete
+                  np1_qdp_in = -1
+                endif
+
+                call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, &
+		                    np1_qdp_in, nets_in, nete_in)
+
              end if
           end if
        end if
@@ -1365,7 +1385,7 @@ contains
     enddo
     call t_stopf("prim_step_dyn")
 
-    if (qsize > 0) then
+    if (qsize > 0 .and. .not. single_column) then
        call t_startf("PAT_remap")
        call Prim_Advec_Tracers_remap(elem, deriv1, hvcoord, hybrid, dt_q, tl, nets, nete)
        call t_stopf("PAT_remap")
@@ -1377,7 +1397,7 @@ contains
     end if
 
     ! Remap tracers.
-    if (qsize > 0) then
+    if (qsize > 0 .and. .not. single_column) then
        call sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
     end if
   end subroutine prim_step_flexible
@@ -1399,15 +1419,23 @@ contains
     call t_stopf("prim_diag")
   end subroutine run_diagnostics
 
-  subroutine set_tracer_transport_derived_values(elem, nets, nete, tl)
+  subroutine set_tracer_transport_derived_values(elem, nets, nete, tl, single_column_in)
     use control_mod,        only: nu_p, transport_alg
     use time_mod,           only: TimeLevel_t
 
     type(element_t),      intent(inout) :: elem(:)
     integer,              intent(in)    :: nets, nete
     type(TimeLevel_t),    intent(in)    :: tl
+    logical, optional,    intent(in)    :: single_column_in
 
     integer :: ie
+    logical :: single_column
+
+    if (.not. present(single_column_in)) then
+      single_column = .false.
+    else
+      single_column = single_column_in
+    endif
 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1416,7 +1444,9 @@ contains
     do ie = nets,nete
        elem(ie)%derived%eta_dot_dpdn = 0     ! mean vertical mass flux
        elem(ie)%derived%vn0 = 0              ! mean horizontal mass flux
-       elem(ie)%derived%omega_p = 0
+       ! If in single column mode we don't want to write over
+       !  the prescribed vertical velocity
+       if (.not. single_column) elem(ie)%derived%omega_p = 0
        if (nu_p > 0) then
           elem(ie)%derived%dpdiss_ave = 0
           elem(ie)%derived%dpdiss_biharmonic = 0
@@ -1475,7 +1505,6 @@ contains
     enddo
 #endif
   endif
-
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1696,6 +1725,7 @@ contains
    
 #endif
 
+
   end subroutine applyCAMforcing_tracers
   
   
@@ -1740,8 +1770,6 @@ contains
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
-
-    dt_q = dt*dt_tracer_factor
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1766,19 +1794,21 @@ contains
     
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
     call set_prescribed_scm(elem,dt,tl)
-    
+
+#ifndef MODEL_THETA_L
     do n=2,dt_tracer_factor
  
       call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
 
-      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
-      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel      
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
+      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
       
       ! call the single column forcing
       call set_prescribed_scm(elem,dt,tl)
       
     enddo
+#endif
 
   end subroutine prim_step_scm  
 
@@ -1884,7 +1914,16 @@ contains
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
         + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
+    enddo
+
+    ! If running theta_l model then the floating potential temperature
+    !   needs to be updated with the new floating levels
+#ifdef MODEL_THETA_L
+    do k=1,nlev
+      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
+                      elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
+    enddo
+#endif
 
     do p=1,qsize
       do k=1,nlev
