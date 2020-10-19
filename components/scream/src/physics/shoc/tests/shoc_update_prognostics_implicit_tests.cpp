@@ -13,7 +13,7 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici {
+struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
 
   static void run_bfb()
   {
@@ -83,7 +83,7 @@ namespace {
 
 TEST_CASE("update_prognostics_implicit_bfb", "[shoc]")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplici;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
 
   TestStruct::run_bfb();
 }

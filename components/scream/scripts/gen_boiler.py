@@ -437,8 +437,10 @@ def get_data_test_struct_name(sub):
     """
     >>> get_data_test_struct_name("my_sub_name")
     'TestMySubName'
+    >>> get_data_test_struct_name("update_prognostics_implicit")
+    'TestUpdatePrognosticsImplicit'
     """
-    return "Test{}".format(get_data_struct_name(sub).rstrip("Data"))
+    return "Test{}".format(get_data_struct_name(sub)[:-4])
 
 ###############################################################################
 def get_supported_pieces():
