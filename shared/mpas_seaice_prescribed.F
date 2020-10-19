@@ -300,7 +300,7 @@ contains
 
                          ! snow quantities
                          do iSnowLayer = 1, nSnowLayers
-                            snowEnthalpy(iIceLayer,iCategory,iCell) = colpkg_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
+                            snowEnthalpy(iSnowLayer,iCategory,iCell) = colpkg_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
                          enddo ! iSnowLayer
 
                       endif
