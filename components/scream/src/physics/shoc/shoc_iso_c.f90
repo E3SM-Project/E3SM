@@ -194,24 +194,29 @@ contains
 
   end subroutine dp_inverse_c
 
-  subroutine sfc_fluxes_c(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,&
-                          wqw_sfc, wtke_sfc, thetal, qw, tke) bind(C)
+  subroutine sfc_fluxes_c(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                          wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                          thetal, qw, tke, tracer) bind(C)
     use shoc, only: sfc_fluxes
 
     integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: num_tracer
     real(kind=c_real), intent(in), value :: dtime
     real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
     real(kind=c_real), intent(in) :: rdp_zt_sfc(shcol)
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
     real(kind=c_real), intent(in) :: wtke_sfc(shcol)
+    real(kind=c_real), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
     real(kind=c_real), intent(inout) :: thetal(shcol)
     real(kind=c_real), intent(inout) :: qw(shcol)
     real(kind=c_real), intent(inout) :: tke(shcol)
+    real(kind=c_real), intent(inout) :: tracer(shcol,num_tracer)
 
-    call sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, &
-                    wthl_sfc, wqw_sfc, wtke_sfc, thetal, qw, tke)
+    call sfc_fluxes(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                    wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                    thetal, qw, tke, tracer)
 
   end subroutine sfc_fluxes_c
 
