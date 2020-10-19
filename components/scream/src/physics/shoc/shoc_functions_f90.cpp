@@ -65,9 +65,9 @@ void compute_tmpi_c(Int nlevi, Int shcol, Real dtime, Real *rho_zi,
 
 void dp_inverse_c(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
-void sfc_fluxes_c(Int shcol, Real dtime, Real *rho_zi_sfc, Real *rdp_zt_sfc,
-                  Real *wthl_sfc, Real *wqw_sfc, Real *wtke_sfc, Real *thetal,
-                  Real *qw, Real *tke);
+void sfc_fluxes_c(Int shcol, Int num_tracer, Real dtime, Real *rho_zi_sfc, 
+                  Real *rdp_zt_sfc, Real *wthl_sfc, Real *wqw_sfc, Real *wtracer_sfc, 
+                  Real *wtke_sfc, Real *thetal, Real *qw, Real *tke, Real *tracer);
 
 void impli_srf_stress_term_c(Int shcol, Real *rho_zi_sfc, Real *uw_sfc,
                              Real *vw_sfc, Real *u_wind_sfc, Real *v_wind_sfc,
@@ -303,8 +303,9 @@ void dp_inverse(SHOCDpinverseData &d){
 void sfc_fluxes(SHOCSfcfluxesData &d){
   shoc_init(1, true); // single layer function
   d.transpose<ekat::TransposeDirection::c2f>();
-  sfc_fluxes_c(d.shcol(), d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc, d.wthl_sfc,
-               d.wqw_sfc, d.wtke_sfc, d.thetal, d.qw, d.tke);
+  sfc_fluxes_c(d.shcol(), d.num_tracer(), d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc,
+               d.wthl_sfc, d.wqw_sfc, d.wtke_sfc, d.wtracer_sfc, d.thetal, d.qw, 
+               d.tke, d.tracer);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

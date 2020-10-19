@@ -409,6 +409,7 @@ subroutine shoc_main ( &
        dtime,dz_zt,dz_zi,rho_zt,&           ! Input
        zt_grid,zi_grid,tk,tkh,&             ! Input
        uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&     ! Input
+       wtracer_sfc,&                        ! Input
        thetal,qw,qtracers,tke,&             ! Input/Output
        u_wind,v_wind)                       ! Input/Output
 
@@ -613,6 +614,7 @@ subroutine update_prognostics_implicit( &
          dtime,dz_zt,dz_zi,rho_zt,&       ! Input
          zt_grid,zi_grid,tk,tkh,&         ! Input
          uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
+         wtracer_sfc,&                    ! Input
          thetal,qw,tracer,tke,&           ! Input/Output
          u_wind,v_wind)                   ! Input/Output
 
@@ -648,6 +650,8 @@ subroutine update_prognostics_implicit( &
   real(rtype), intent(in) :: wthl_sfc(shcol)
   ! vertical moisture flux at surface [kg/kg m/s]
   real(rtype), intent(in) :: wqw_sfc(shcol)
+  ! vertical tracer flux at surface [units vary m/s]
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
   ! heights of mid-point [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights at interfaces [m]
@@ -704,9 +708,9 @@ subroutine update_prognostics_implicit( &
   wtke_sfc(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! compute surface fluxes for liq. potential temp, water and tke
-  call sfc_fluxes(shcol, dtime, rho_zi(:,nlevi), rdp_zt(:,nlev), &
-                  wthl_sfc, wqw_sfc, wtke_sfc, thetal(:,nlev), &
-                  qw(:,nlev), tke(:,nlev))
+  call sfc_fluxes(shcol, num_tracer, dtime, rho_zi(:,nlevi), rdp_zt(:,nlev), &
+                  wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, & 
+                  thetal(:,nlev), qw(:,nlev), tke(:,nlev), tracer(:,nlev,:))
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -871,13 +875,15 @@ pure function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_sfc)
 end function tke_srf_flux_term
 
 
-subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
-                      wqw_sfc, wtke_sfc, thetal, qw, tke)
+subroutine sfc_fluxes(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
+                      wqw_sfc, wtke_sfc, wtracer_sfc, thetal, qw, tke, wtracer)
 
   implicit none
 
   !intent-ins
   integer,     intent(in) :: shcol
+  !number of tracers
+  integer,     intent(in) :: num_tracer
   !time step [s]
   real(rtype), intent(in) :: dtime
   !air density at interfaces [kg/m3]
@@ -890,6 +896,8 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
   real(rtype), intent(in) :: wqw_sfc(shcol)
   !vertical tke flux at surface [m3/s3]
   real(rtype), intent(in) :: wtke_sfc(shcol)
+  !vertical tracer flux at surface [units vary m/s]
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
   !intent-inouts
   !liquid water potential temperature [K]
@@ -898,9 +906,11 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
   real(rtype), intent(inout) :: qw(shcol)
   !turbulent kinetic energy [m2/s2]
   real(rtype), intent(inout) :: tke(shcol)
+  !tracers [units vary]
+  real(rtype), intent(inout) :: wtracer(shcol,num_tracer)
 
   !local variables
-  integer :: i
+  integer :: i, p
   real(rtype) :: cmnfac
 
   ! Apply the surface fluxes explicitly for temperature and moisture
@@ -910,6 +920,11 @@ subroutine sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,  &
      thetal(i) = thetal(i) + cmnfac * wthl_sfc(i)
      qw(i)     = qw(i)     + cmnfac * wqw_sfc(i)
      tke(i)    = tke(i)    + cmnfac * wtke_sfc(i)
+  
+     ! surface fluxes for tracers
+     do p = 1, num_tracer
+        wtracer(i,p) = wtracer(i,p) + cmnfac * wtracer_sfc(i,p)
+     enddo
   enddo
 
 end subroutine sfc_fluxes
