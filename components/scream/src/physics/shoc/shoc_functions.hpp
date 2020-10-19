@@ -183,10 +183,14 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
-  
+ 
   KOKKOS_FUNCTION
-  static void diag_second_moments_lbycond(const Int& shcol, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& ustar2, const uview_1d<const Spack>& wstar, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& qwthl_sec);
-  
+  static void shoc_diag_second_moments_lbycond(
+    const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc,
+    const Scalar& ustar2, const Scalar& wstar,
+    Scalar& wthl_sec, Scalar& wqw_sec, Scalar& uw_sec, Scalar& vw_sec,
+    Scalar& wtke_sec, Scalar& thl_sec, Scalar& qw_sec, Scalar& qwthl_sec);
+ 
   KOKKOS_FUNCTION
   static void diag_second_moments(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
   
@@ -249,6 +253,58 @@ struct Functions
     const Scalar& zi, const Scalar& cldn,
     Scalar& pblh);
 
+  KOKKOS_FUNCTION
+  static void compute_conv_time_shoc_length(
+    const Scalar& pblh,
+    Scalar&       conv_vel,
+    Scalar&       tscale);
+
+  KOKKOS_FUNCTION
+  static void shoc_length(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                host_dx,
+    const Scalar&                host_dy,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& thetal,
+    const uview_1d<const Spack>& thv,
+    const uview_1d<Spack>&       thv_zi,
+    const uview_1d<Spack>&       brunt,
+    const uview_1d<Spack>&       shoc_mix);
+
+  KOKKOS_FUNCTION
+  static void shoc_energy_fixer(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                dtime,
+    const Int&                   nadv,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const Scalar&                se_b,
+    const Scalar&                ke_b,
+    const Scalar&                wv_b,
+    const Scalar&                wl_b,
+    const Scalar&                se_a,
+    const Scalar&                ke_a,
+    const Scalar&                wv_a,
+    const Scalar&                wl_a,
+    const Scalar&                wthl_sfc,
+    const Scalar&                wqw_sfc,
+    const uview_1d<const Spack>& rho_zt,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& pint,
+    const uview_1d<Spack>&       rho_zi,
+    const uview_1d<Spack>&       host_dse);
+  KOKKOS_FUNCTION
+  static void compute_shoc_vapor(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& ql, const uview_1d<Spack>& qv);
 }; // struct Functions
 
 } // namespace shoc
@@ -278,6 +334,10 @@ struct Functions
 # include "shoc_compute_conv_vel_shoc_length_impl.hpp"
 # include "shoc_diag_obklen_impl.hpp"
 # include "shoc_pblintd_cldcheck_impl.hpp"
+# include "shoc_compute_conv_time_shoc_length_impl.hpp"
+#include "shoc_length_impl.hpp"
+# include "shoc_energy_fixer_impl.hpp"
+# include "shoc_compute_shoc_vapor_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

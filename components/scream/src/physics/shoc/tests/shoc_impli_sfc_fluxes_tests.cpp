@@ -25,6 +25,7 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
   static void run_property()
   {
     static constexpr Int shcol = 5;
+    static constexpr Int num_tracer = 10;
 
     // Tests for the SHOC subroutine
     //   sfc_fluxes
@@ -55,11 +56,20 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
     // time step [s]
     static constexpr Real dtime = 300;
 
+    // Input for tracer (no units)
+    Real tracer_in[num_tracer];
+
+    // Feed tracer random data from 1 to 1000
+    for(Int t = 0; t < num_tracer; ++t) {
+      tracer_in[t] = rand()% 1000 + 1;
+    }
+
     // Initialize data structure for bridging to F90
-    SHOCSfcfluxesData SDS(shcol, dtime);
+    SHOCSfcfluxesData SDS(shcol, num_tracer, dtime);
 
     // Test that the inputs are reasonable.
     REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.num_tracer() == num_tracer);
     REQUIRE(shcol > 1);
 
     // Fill in test data, column only
@@ -73,6 +83,15 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
       SDS.thetal[s] = thetal_in;
       SDS.qw[s] = qw_in;
       SDS.tke[s] = tke_in;
+
+      for (Int t = 0; t < num_tracer; ++t){
+        const auto offset = t + s * num_tracer;
+        SDS.tracer[offset] = tracer_in[t];
+        // Feed tracer flux random data from -100 to 100
+        //   note this is different for every point
+        SDS.wtracer_sfc[offset] = rand()% 200 + (-100);
+      }
+
     }
 
     // Check that the inputs make sense
@@ -134,6 +153,20 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
       }
       else{
         REQUIRE(SDS.tke[s] == tke_in);
+      }
+
+      // Check tracer
+      for (Int t = 0; t < num_tracer; ++t){
+        const auto offset = t + s * num_tracer;
+        if (SDS.wtracer_sfc[offset] > 0){
+          REQUIRE(SDS.tracer[offset] > tracer_in[t]);
+        }
+        else if (SDS.wtracer_sfc[offset] < 0){
+          REQUIRE(SDS.tracer[offset] < tracer_in[t]);
+        }
+        else{
+          REQUIRE(SDS.tracer[offset] == tracer_in[t]);
+        }
       }
 
     }

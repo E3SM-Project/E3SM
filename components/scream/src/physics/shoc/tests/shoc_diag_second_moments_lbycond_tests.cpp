@@ -117,7 +117,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
   static void run_bfb()
   {
     DiagSecondMomentsLbycondData f90_data[] = {
-      // TODO
+      DiagSecondMomentsLbycondData(120),
+      DiagSecondMomentsLbycondData(120),
+      DiagSecondMomentsLbycondData(120),
+      DiagSecondMomentsLbycondData(120),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsLbycondData);
@@ -130,7 +133,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     DiagSecondMomentsLbycondData cxx_data[] = {
-      // TODO
+      DiagSecondMomentsLbycondData(f90_data[0]),
+      DiagSecondMomentsLbycondData(f90_data[1]),
+      DiagSecondMomentsLbycondData(f90_data[2]),
+      DiagSecondMomentsLbycondData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -143,7 +149,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      diag_second_moments_lbycond_f(d.shcol(), d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
+      diag_second_moments_lbycond_f(d.shcol(), d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, 
+         d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
     }
 
     // Verify BFB results, all data should be in C layout

@@ -83,7 +83,6 @@ struct UnitWrap {
     struct TestFtermInputThirdMoms;
     struct TestFtermdiagThirdMoms;
     struct TestOmegadiagThirdMoms;
-    struct TestW3diagThirdMoms;
     struct TestXYdiagThirdMoms;
     struct TestCompShocConvTime;
     struct TestCompShocConvVel;
@@ -112,6 +111,7 @@ struct UnitWrap {
     struct TestDiagSecondMoments;
     struct TestDiagSecondShocMoments;
     struct TestPblintdCldCheck;
+    struct TestComputeShocVapor;
   };
 
 };

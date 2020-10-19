@@ -115,8 +115,6 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
         // For zt grid, set as midpoint of zi grid
         SDS.zt_grid[offset] = zt_grid[n];
-        // For pdel, compute from pint
-        SDS.pdel[offset] = pint[n+1]-pint[n];
         SDS.rho_zt[offset] = rho_zt[n];
         SDS.tke[offset] = tke[n];
         SDS.host_dse[offset] = host_dse_input[n];
@@ -139,7 +137,6 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
         REQUIRE(SDS.zt_grid[offset] >= 0);
         REQUIRE(SDS.rho_zt[offset] > 0);
-        REQUIRE(SDS.pdel[offset] > 0);
         REQUIRE(SDS.tke[offset] >= 0);
 
         // Check that heights increase upward
@@ -265,7 +262,58 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCEnergyfixerData SDS_f90[] = {
+      //               shcol, nlev, nlevi, dtime, nadv
+      SHOCEnergyfixerData(10, 71, 72, 300, 2),
+      SHOCEnergyfixerData(10, 12, 13, 100, 10),
+      SHOCEnergyfixerData(7,  16, 17, 50, 1),
+      SHOCEnergyfixerData(2, 7, 8, 5, 5),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCEnergyfixerData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCEnergyfixerData SDS_cxx[] = {
+      SHOCEnergyfixerData(SDS_f90[0]),
+      SHOCEnergyfixerData(SDS_f90[1]),
+      SHOCEnergyfixerData(SDS_f90[2]),
+      SHOCEnergyfixerData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      shoc_energy_fixer(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      shoc_energy_fixer_f(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
+                          d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
+                          d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
+                          d.wqw_sfc, d.rho_zt, d.tke, d.pint,
+                          d.host_dse);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCEnergyfixerData& d_f90 = SDS_f90[i];
+      SHOCEnergyfixerData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
+      }
+    }
   }
 };
 

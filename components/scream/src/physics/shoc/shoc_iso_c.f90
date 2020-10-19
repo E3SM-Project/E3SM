@@ -194,24 +194,29 @@ contains
 
   end subroutine dp_inverse_c
 
-  subroutine sfc_fluxes_c(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, wthl_sfc,&
-                          wqw_sfc, wtke_sfc, thetal, qw, tke) bind(C)
+  subroutine sfc_fluxes_c(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                          wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                          thetal, qw, tke, tracer) bind(C)
     use shoc, only: sfc_fluxes
 
     integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: num_tracer
     real(kind=c_real), intent(in), value :: dtime
     real(kind=c_real), intent(in) :: rho_zi_sfc(shcol)
     real(kind=c_real), intent(in) :: rdp_zt_sfc(shcol)
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
     real(kind=c_real), intent(in) :: wtke_sfc(shcol)
+    real(kind=c_real), intent(in) :: wtracer_sfc(shcol,num_tracer)
 
     real(kind=c_real), intent(inout) :: thetal(shcol)
     real(kind=c_real), intent(inout) :: qw(shcol)
     real(kind=c_real), intent(inout) :: tke(shcol)
+    real(kind=c_real), intent(inout) :: tracer(shcol,num_tracer)
 
-    call sfc_fluxes(shcol, dtime, rho_zi_sfc, rdp_zt_sfc, &
-                    wthl_sfc, wqw_sfc, wtke_sfc, thetal, qw, tke)
+    call sfc_fluxes(shcol, num_tracer, dtime, rho_zi_sfc, rdp_zt_sfc, &
+                    wthl_sfc, wqw_sfc, wtke_sfc, wtracer_sfc, &
+                    thetal, qw, tke, tracer)
 
   end subroutine sfc_fluxes_c
 
@@ -403,7 +408,7 @@ contains
   subroutine shoc_energy_fixer_c(shcol, nlev, nlevi, dtime, nadv, &
                                  zt_grid, zi_grid, se_b, ke_b, wv_b, &
                                  wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
-                                 wqw_sfc, pdel, rho_zt, tke, pint, &
+                                 wqw_sfc, rho_zt, tke, pint, &
                                  host_dse) bind (C)
     use shoc, only: shoc_energy_fixer
 
@@ -424,7 +429,6 @@ contains
     real(kind=c_real), intent(in) :: wl_a(shcol)
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
-    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: tke(shcol,nlev)
     real(kind=c_real), intent(in) :: pint(shcol,nlevi)
@@ -434,7 +438,7 @@ contains
     call shoc_energy_fixer(shcol, nlev, nlevi, dtime, nadv, &
                            zt_grid, zi_grid, se_b, ke_b, wv_b, &
                            wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
-                           wqw_sfc, pdel, rho_zt, tke, pint, &
+                           wqw_sfc, rho_zt, tke, pint, &
                            host_dse)
 
   end subroutine shoc_energy_fixer_c
@@ -562,18 +566,18 @@ contains
 
   end subroutine calc_shoc_vertflux_c
 
-  subroutine shoc_length_c(shcol, nlev, nlevi, tke, host_dx, host_dy, pblh, &
-                zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
+  subroutine shoc_length_c(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
+                tke, zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
 		brunt, shoc_mix) bind (C)
     use shoc, only: shoc_length
 
     integer(kind=c_int), intent(in), value :: shcol
     integer(kind=c_int), intent(in), value :: nlev
     integer(kind=c_int), intent(in), value :: nlevi
-    real(kind=c_real), intent(in) :: tke(shcol,nlev)
     real(kind=c_real), intent(in) :: host_dx(shcol)
     real(kind=c_real), intent(in) :: host_dy(shcol)
     real(kind=c_real), intent(in) :: pblh(shcol)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
@@ -585,8 +589,8 @@ contains
     real(kind=c_real), intent(out) :: brunt(shcol,nlev)
     real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
 
-    call shoc_length(shcol, nlev, nlevi, tke, host_dx, host_dy, pblh, &
-                zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
+    call shoc_length(shcol, nlev, nlevi, host_dx, host_dy, pblh, &
+                tke, zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
 		brunt, shoc_mix)
 
   end subroutine shoc_length_c
@@ -1307,4 +1311,13 @@ contains
     call pblintd_cldcheck(shcol, nlev, nlevi, zi, cldn, pblh)
   end subroutine shoc_pblintd_cldcheck_c
 
+  subroutine compute_shoc_vapor_c(shcol, nlev, qw, ql, qv) bind(C)
+    use shoc, only : compute_shoc_vapor
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
+
+    call compute_shoc_vapor(shcol, nlev, qw, ql, qv)
+  end subroutine compute_shoc_vapor_c
 end module shoc_iso_c
