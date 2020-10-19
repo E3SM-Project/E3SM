@@ -594,8 +594,8 @@ contains
       call addfld('ICE_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', &
                   'Ice in-cloud visible optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
-      call addfld('CLDTAU', horiz_only, 'A', '1', &
-                  'Column integrated cloud 550nm optical depth', &
+      call addfld('CLDTAU_SW', horiz_only, 'A', '1', &
+                  'Column integrated 550 nm cloud optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
       call add_default('TOT_CLD_VISTAU',  1, ' ')
@@ -813,6 +813,9 @@ contains
       end do
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud 10.5 micron emissivity')
+      call addfld('CLDTAU_LW', horiz_only, 'A', '1', &
+                  'Column integrated 10.5 micron cloud optical depth', &
+                  sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
       ! Add default fields for single column mode
       if (single_column.and.scm_crm_mode) then
@@ -1851,7 +1854,7 @@ contains
       call outfld('TOT_ICLD_VISTAU', tot_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
       call outfld('LIQ_ICLD_VISTAU', liq_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
       call outfld('ICE_ICLD_VISTAU', ice_icld_vistau(1:ncol,1:nlay), ncol, state%lchnk)
-      call outfld('CLDTAU', sum(tot_cld_vistau(1:ncol,1:nlay), dim=2), ncol, state%lchnk)
+      call outfld('CLDTAU_SW', sum(tot_cld_vistau(1:ncol,1:nlay), dim=2), ncol, state%lchnk)
    end subroutine output_cloud_optics_sw
 
    !----------------------------------------------------------------------------
@@ -1866,19 +1869,23 @@ contains
       type(physics_state), intent(in) :: state
       real(r8), intent(in), dimension(:,:,:) :: tau
       real(r8), dimension(size(tau, 1), size(tau, 2)) :: emis
-      integer :: lw_band_index
+      integer :: lw_band_index, ncol, nlay
+
+      ncol = state%ncol
+      nlay = pver 
 
       ! Check values
       call assert_valid(tau(1:state%ncol,1:pver,1:nlwbands), 'cld_tau_lw')
 
       ! Output
-      call outfld('CLOUD_TAU_LW', &
-                  tau(1:state%ncol,1:pver,1:nlwbands), &
-                  state%ncol, state%lchnk)
+      call outfld('CLOUD_TAU_LW', tau(1:ncol,1:pver,1:nlwbands), ncol, state%lchnk)
       lw_band_index = get_band_index_lw(10.5_r8, 'micron')
-      call assert(lw_band_index == rrtmg_lw_cloudsim_band, 'lw_band_index != rrtmg_lw_cloudsim_band')
-      emis(1:state%ncol,:) = 1._r8 - exp(-tau(1:state%ncol,:,lw_band_index))
-      call outfld('EMIS', emis(1:state%ncol,1:pver), state%ncol, state%lchnk)
+      emis(1:ncol,:) = 1._r8 - exp(-tau(1:ncol,:,lw_band_index))
+      call outfld('EMIS', emis(1:ncol,1:pver), ncol, state%lchnk)
+
+      ! Compute column integrated LW optical depth
+      call outfld('CLDTAU_LW', sum(tau(1:ncol,1:nlay,lw_band_index), dim=2), ncol, state%lchnk)
+
    end subroutine output_cloud_optics_lw
 
    !----------------------------------------------------------------------------

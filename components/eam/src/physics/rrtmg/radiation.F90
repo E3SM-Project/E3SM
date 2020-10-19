@@ -593,7 +593,7 @@ end function radiation_nextsw_cday
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     call addfld('ICE_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', 'Ice in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
-    call addfld('CLDTAU'         , horiz_only , 'A',  '1', 'Column integrated cloud 550nm optical depth', &
+    call addfld('CLDTAU_SW'      , horiz_only , 'A',  '1', 'Column integrated cloud 550nm optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
     ! get list of active radiation calls
@@ -730,6 +730,8 @@ end function radiation_nextsw_cday
     end do
 
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
+    call addfld('CLDTAU_LW'      , horiz_only , 'A',  '1', 'Column integrated cloud 10.5m optical depth', &
+                                                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
     if (single_column.and.scm_crm_mode) then
        call add_default ('FUL     ', 1, ' ')
@@ -1401,7 +1403,7 @@ end function radiation_nextsw_cday
           if (cldfsnow_idx > 0) then
              call outfld('SNOW_ICLD_VISTAU', snow_icld_vistau, pcols, lchnk)
           endif
-          call outfld('CLDTAU', &
+          call outfld('CLDTAU_SW', &
                   sum(tot_cld_vistau(1:state%ncol,1:pver), dim=2), &
                   state%ncol, state%lchnk)
           call t_stopf ('rad_sw')
