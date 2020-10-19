@@ -828,13 +828,13 @@ struct SHOCPblintdCldCheckData : public PhysicsTestData {
 struct ComputeShocVaporData : public PhysicsTestData {
   // Inputs
   Real *qw, *ql;
-  
+
   // Outputs
   Real *qv;
-  
+
   ComputeShocVaporData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&qw, &ql, &qv}) {}
-  
+
   SHOC_NO_SCALAR(ComputeShocVaporData, 2)
 };
 struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
@@ -842,13 +842,13 @@ struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
   Int shcol, nlev, nlevi, num_tracer;
   Real dtime;
   Real *dz_zt, *dz_zi, *rho_zt, *zt_grid, *zi_grid, *tk, *tkh, *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc;
-  
+
   // Inputs/Outputs
   Real *thetal, *qw, *tracer, *tke, *u_wind, *v_wind;
-  
+
   UpdatePrognosticsImplicitData(Int shcol_, Int nlev_, Int nlevi_, Int num_tracer_, Real dtime_) :
     PhysicsTestDataGeneric({{ shcol, nlev }, { shcol, nlevi }, { shcol }, { shcol, nlev, num_tracer }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &tracer }}, {}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
-  
+
   PTDG_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
 };
 // Glue functions to call fortran from from C++ with the Data struct

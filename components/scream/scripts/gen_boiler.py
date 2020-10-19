@@ -239,7 +239,7 @@ PHYSICS = {
     "shoc" : (
         "components/cam/src/physics/cam/shoc.F90",
         "components/scream/src/physics/shoc",
-        "shoc_init(d.nlev, true);"
+        "shoc_init(REPLACE_ME, true);"
     ),
 }
 
@@ -938,19 +938,23 @@ def needs_transpose(arg_data):
     return False
 
 ###############################################################################
-def gen_cxx_data_args(arg_data):
+def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
     """
     Based on data, generate unpacking of Data struct args
 
-    >>> gen_cxx_data_args([("foo", "real", "in", ("100",)), ("bar", "real", "in", None), ("baz", "integer", "inout", None), ("bag", "integer", "inout", ("100",))])
-    ['d.foo', 'd.bar', '&d.baz', 'd.bag']
+    >>> gen_cxx_data_args("shoc", UT_ARG_DATA)
+    ['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol()', 'd.nlev()', 'd.nlevi()', 'd.ball1', 'd.ball2']
+
+    >>> gen_cxx_data_args("shoc", UT_ARG_DATA2)
+    ['d.foo1', 'd.foo2', 'd.bar1', 'd.bar2', 'd.bak1', 'd.bak2', 'd.tracerd1', 'd.tracerd2', 'd.gag', 'd.baz', 'd.bag', '&d.bab1', '&d.bab2', 'd.val', 'd.shcol', 'd.nlev', 'd.nlevi', 'd.ntracers', 'd.ball1', 'd.ball2']
     """
     all_dims = group_data(arg_data)[3]
+    func_call = "()" if is_sugar_compatible(physics, arg_data) else ""
     args_needs_ptr = [item[ARG_DIMS] is None and item[ARG_INTENT] != "in" for item in arg_data]
     arg_names      = [item[ARG_NAME] for item in arg_data]
     arg_dim_call   = [item[ARG_NAME] in all_dims for item in arg_data]
-    args = ["{}d.{}{}".format("&" if need_ptr else "", arg_name, "()" if dim_call else "")
+    args = ["{}d.{}{}".format("&" if need_ptr else "", arg_name, func_call if dim_call else "")
             for arg_name, need_ptr, dim_call in zip(arg_names, args_needs_ptr, arg_dim_call)]
     return args
 
@@ -1488,19 +1492,30 @@ class GenBoiler(object):
         >>> print(gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
         void fake_sub(FakeSubData& d)
         {
-          shoc_init(d.nlev, true);
+          shoc_init(d.nlev(), true);
           d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
         }
+
+        >>> print(gb.gen_cxx_c2f_glue_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA2))
+        void fake_sub(FakeSubData& d)
+        {
+          shoc_init(d.nlev, true);
+          d.transpose<ekat::TransposeDirection::c2f>();
+          fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
+          d.transpose<ekat::TransposeDirection::f2c>();
+        }
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
-        arg_data_args    = ", ".join(gen_cxx_data_args(arg_data))
+        arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
         need_transpose   = needs_transpose(arg_data)
         transpose_code_1 = "\n  d.transpose<ekat::TransposeDirection::c2f>();" if need_transpose else ""
         transpose_code_2 = "\n  d.transpose<ekat::TransposeDirection::f2c>();" if need_transpose else ""
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE)
+        func_call        = "()" if is_sugar_compatible(phys, arg_data) else ""
+        init_code        = init_code.replace("REPLACE_ME", "d.nlev{}".format(func_call))
 
         result = \
 """void {sub}({data_struct}& d)
@@ -1710,7 +1725,7 @@ class GenBoiler(object):
         data_struct = get_data_struct_name(sub)
         has_array = has_arrays(arg_data)
         need_transpose = needs_transpose(arg_data)
-        arg_data_args    = ", ".join(gen_cxx_data_args(arg_data))
+        arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
 
         gen_random = "" if not has_array else \
 """
@@ -1888,7 +1903,7 @@ template struct Functions<Real,DefaultDevice>;
         WITH:
         void fake_sub(FakeSubData& d)
         {
-          shoc_init(d.nlev, true);
+          shoc_init(d.nlev(), true);
           d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
@@ -1905,7 +1920,7 @@ template struct Functions<Real,DefaultDevice>;
         In file shoc_functions_f90.cpp, at line 2, would insert:
         void fake_sub(FakeSubData& d)
         {
-          shoc_init(d.nlev, true);
+          shoc_init(d.nlev(), true);
           d.transpose<ekat::TransposeDirection::c2f>();
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.shcol(), d.nlev(), d.nlevi(), d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
