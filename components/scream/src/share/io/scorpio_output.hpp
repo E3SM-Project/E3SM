@@ -1,6 +1,9 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
+#include <iostream>
+#include <fstream>
+
 #include "scream_config.h"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
