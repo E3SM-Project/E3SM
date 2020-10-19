@@ -1709,12 +1709,12 @@ class GenBoiler(object):
               FakeSubData& d_cxx = cxx_data[i];
               REQUIRE(d_f90.bab1 == d_cxx.bab1);
               REQUIRE(d_f90.bab2 == d_cxx.bab2);
-              for (Int k = 0; k < d_f90.total(baz); ++k) {
-                REQUIRE(d_f90.total(baz) == d_cxx.total(baz));
+              for (Int k = 0; k < d_f90.total(d_f90.baz); ++k) {
+                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.baz));
                 REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
-                REQUIRE(d_f90.total(baz) == d_cxx.total(ball1));
+                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball1));
                 REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
-                REQUIRE(d_f90.total(baz) == d_cxx.total(ball2));
+                REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
                 REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
               }
         <BLANKLINE>
@@ -1755,9 +1755,9 @@ class GenBoiler(object):
                 all_data[k] = v
 
         for _, data in all_data.items():
-            check_arrays += "      for (Int k = 0; k < d_f90.total({}); ++k) {{\n".format(data[0])
+            check_arrays += "      for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
             for datum in data:
-                check_arrays += "        REQUIRE(d_f90.total({orig}) == d_cxx.total({name}));\n".format(orig=data[0], name=datum)
+                check_arrays += "        REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
                 check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
 
             check_arrays += "      }\n"
