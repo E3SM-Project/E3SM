@@ -53,20 +53,20 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici {
     for (Int i = 0; i < num_runs; ++i) {
       UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
       UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total(thetal); ++k) {
-        REQUIRE(d_f90.total(thetal) == d_cxx.total(thetal));
+      for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
         REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-        REQUIRE(d_f90.total(thetal) == d_cxx.total(qw));
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.qw));
         REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-        REQUIRE(d_f90.total(thetal) == d_cxx.total(tke));
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.tke));
         REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-        REQUIRE(d_f90.total(thetal) == d_cxx.total(u_wind));
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.u_wind));
         REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-        REQUIRE(d_f90.total(thetal) == d_cxx.total(v_wind));
+        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.v_wind));
         REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
       }
-      for (Int k = 0; k < d_f90.total(tracer); ++k) {
-        REQUIRE(d_f90.total(tracer) == d_cxx.total(tracer));
+      for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
+        REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
         REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
       }
 
@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici {
 
 namespace {
 
-TEST_CASE(update_prognostics_implicit_bfb, "[shoc_functions]")
+TEST_CASE("update_prognostics_implicit_bfb", "[shoc]")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplici;
 
