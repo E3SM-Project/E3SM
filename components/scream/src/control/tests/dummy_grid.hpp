@@ -5,11 +5,11 @@ namespace scream {
 
 // === A dummy physics grids for this test === //
 
-template<typename ScalarType, typename DeviceType>
-class DummyPhysicsGridRemapper : public AbstractRemapper<ScalarType,DeviceType>
+template<typename RealType>
+class DummyPhysicsGridRemapper : public AbstractRemapper<RealType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using base_type       = AbstractRemapper<RealType>;
   using grid_type       = typename base_type::grid_type;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;

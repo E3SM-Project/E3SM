@@ -217,7 +217,7 @@ void AtmosphereProcessGroup::initialize_impl (const TimeStamp& t0) {
 }
 
 void AtmosphereProcessGroup::
-setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
+setup_remappers (const FieldRepository<Real>& field_repo) {
   // Now that all fields have been set, we can set the fields in the remappers
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     for (auto& it : m_inputs_remappers[iproc]) {
@@ -371,7 +371,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
   }
 }
 
-void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo) const {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     const auto& atm_proc = m_atm_processes[iproc];
     atm_proc->register_fields(field_repo);
@@ -411,7 +411,7 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>
   }
 }
 
-void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, device_type>& f) {
+void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->requires(fid)) {
@@ -420,7 +420,7 @@ void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real, de
   }
 }
 
-void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, device_type>& f) {
+void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real>& f) {
   const auto& fid = f.get_header().get_identifier();
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->computes(fid)) {
@@ -438,8 +438,8 @@ void AtmosphereProcessGroup::set_computed_field_impl (const Field<Real, device_t
 
 #ifdef SCREAM_DEBUG
 void AtmosphereProcessGroup::
-set_field_repos (const FieldRepository<Real, device_type>& repo,
-                 const FieldRepository<Real, device_type>& bkp_repo) {
+set_field_repos (const FieldRepository<Real>& repo,
+                 const FieldRepository<Real>& bkp_repo) {
   m_field_repo = &repo;
   m_bkp_field_repo = &bkp_repo;
   for (auto atm_proc : m_atm_processes) {
@@ -485,7 +485,7 @@ views_are_equal(const field_type& f1, const field_type& f2) {
 }
 #endif
 
-void AtmosphereProcessGroup::set_internal_field (const Field<Real, device_type>& f)
+void AtmosphereProcessGroup::set_internal_field (const Field<Real>& f)
 {
   const auto& fid = f.get_header().get_identifier();
   for (int iproc=0; iproc<m_group_size; ++iproc) {

@@ -342,6 +342,18 @@ end subroutine shoc_energy_fixer_f
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
   end subroutine compute_shoc_vapor_f
+  subroutine update_prognostics_implicit_f(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, num_tracer
+    real(kind=c_real) , value, intent(in) :: dtime
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: dz_zt, rho_zt, zt_grid, tk, tkh
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(in), dimension(shcol) :: uw_sfc, vw_sfc, wthl_sfc, wqw_sfc
+    real(kind=c_real) , intent(in), dimension(shcol, num_tracer) :: wtracer_sfc
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: thetal, qw, tke, u_wind, v_wind
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev, num_tracer) :: tracer
+  end subroutine update_prognostics_implicit_f
 end interface
 
 end module shoc_iso_f

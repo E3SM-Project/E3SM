@@ -8,11 +8,10 @@ namespace scream {
 
 // === A dummy atm process, on Physics grid === //
 
-template<typename DeviceType, int PackSize, bool forward>
+template<int PackSize, bool forward>
 class DummyProcess : public scream::AtmosphereProcess {
 public:
-  using device_type = DeviceType;
-  using exec_space  = typename device_type::execution_space;
+  using exec_space  = typename DefaultDevice::execution_space;
 
   DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
    : m_comm(comm)
@@ -97,7 +96,7 @@ public:
   void finalize_impl ( ) {}
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& field_repo) const {
+  void register_fields (FieldRepository<Real>& field_repo) const {
     using pack_type = ekat::Pack<Real,PackSize>;
     field_repo.template register_field<pack_type>(*m_input_fids.begin());
     field_repo.template register_field<pack_type>(*m_output_fids.begin());
@@ -110,10 +109,10 @@ public:
 protected:
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& f) {
+  void set_required_field_impl (const Field<const Real>& f) {
     m_input = f;
   }
-  void set_computed_field_impl (const Field<      Real, device_type>& f) {
+  void set_computed_field_impl (const Field<      Real>& f) {
     m_output = f;
   }
 
@@ -122,8 +121,8 @@ protected:
   std::set<FieldIdentifier> m_input_fids;
   std::set<FieldIdentifier> m_output_fids;
 
-  Field<const Real,device_type> m_input;
-  Field<Real,device_type>       m_output;
+  Field<const Real> m_input;
+  Field<Real>       m_output;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
 

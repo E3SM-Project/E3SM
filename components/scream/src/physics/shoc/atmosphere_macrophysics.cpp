@@ -94,7 +94,7 @@ void SHOCMacrophysics::finalize_impl()
 }
 // =========================================================================================
 
-void SHOCMacrophysics::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+void SHOCMacrophysics::register_fields (FieldRepository<Real>& field_repo) const {
   for (auto& fid : m_required_fields) {
     field_repo.register_field(fid);
   }
@@ -103,7 +103,7 @@ void SHOCMacrophysics::register_fields (FieldRepository<Real, device_type>& fiel
   }
 }
 
-void SHOCMacrophysics::set_required_field_impl (const Field<const Real, device_type>& f) {
+void SHOCMacrophysics::set_required_field_impl (const Field<const Real>& f) {
   // Store a copy of the field. We need this in order to do some tracking checks
   // at the beginning of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
@@ -114,7 +114,7 @@ void SHOCMacrophysics::set_required_field_impl (const Field<const Real, device_t
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void SHOCMacrophysics::set_computed_field_impl (const Field<      Real, device_type>& f) {
+void SHOCMacrophysics::set_computed_field_impl (const Field<Real>& f) {
   // Store a copy of the field. We need this in order to do some tracking updates
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
