@@ -7,7 +7,7 @@
 ! that use these macros:
 !
 ! use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-!                              cxx_log10, cxx_exp, cxx_tanh
+!                              cxx_log10, cxx_exp, cxx_tanh, cxx_erf
 
 #ifndef SCREAM_BFB_MATH_INC
 #define SCREAM_BFB_MATH_INC
@@ -26,6 +26,7 @@
 #  define bfb_exp(val) cxx_exp(val)
 #  define bfb_expm1(val) cxx_expm1(val)
 #  define bfb_tanh(val) cxx_tanh(val)
+#  define bfb_erf(val) cxx_erf(val)
 #else
 #  define bfb_pow(base, exp) (base)**(exp)
 #  define bfb_cbrt(base) (base)**thrd
@@ -37,6 +38,7 @@
 #  define bfb_tanh(val) tanh(val)
 #  define bfb_sqrt(val) sqrt(val)
 #  define bfb_tanh(val) tanh(val)
+#  define bfb_erf(val) erf(val)
 #endif
 
 #endif

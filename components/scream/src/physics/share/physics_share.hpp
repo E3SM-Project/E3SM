@@ -16,6 +16,7 @@ Real cxx_log10(Real input);
 Real cxx_exp(Real input);
 Real cxx_expm1(Real input);
 Real cxx_tanh(Real input);
+Real cxx_erf(Real input);
 
 }
 
