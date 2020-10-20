@@ -36,8 +36,6 @@ class AtmosphereDriver
 {
 public:
 
-  using device_type = DefaultDevice;
-
   // The initialization method should:
   //   1) create all the subcomponents needed, given the current simulation parameters
   //   2) initialize all the subcomponents
@@ -58,9 +56,9 @@ public:
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
 
-  const FieldRepository<Real,device_type>& get_field_repo () const { return *m_device_field_repo; }
+  const FieldRepository<Real>& get_field_repo () const { return *m_field_repo; }
 #ifdef SCREAM_DEBUG
-  const FieldRepository<Real,device_type>& get_bkp_field_repo () const { return m_bkp_device_field_repo; }
+  const FieldRepository<Real>& get_bkp_field_repo () const { return m_bkp_field_repo; }
 #endif
 
   // Get atmosphere time stamp
@@ -70,12 +68,12 @@ protected:
   void init_atm_inputs ();
   void inspect_atm_dag ();
 #ifdef SCREAM_DEBUG
-  void create_bkp_device_field_repo ();
+  void create_bkp_field_repo ();
 #endif
 
-  std::shared_ptr<FieldRepository<Real,device_type>>  m_device_field_repo;
+  std::shared_ptr<FieldRepository<Real> >  m_field_repo;
 #ifdef SCREAM_DEBUG
-  FieldRepository<Real,device_type>                   m_bkp_device_field_repo;
+  FieldRepository<Real>                    m_bkp_field_repo;
 #endif
   ekat::WeakPtrSet<FieldInitializer>                  m_field_initializers;
 

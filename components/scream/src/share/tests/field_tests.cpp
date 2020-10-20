@@ -63,8 +63,6 @@ TEST_CASE("field", "") {
   using namespace scream;
   using namespace ekat::units;
 
-  using Device = DefaultDevice;
-
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
   std::vector<int> dims = {2, 3, 12};
 
@@ -73,11 +71,11 @@ TEST_CASE("field", "") {
 
   // Check copy constructor
   SECTION ("copy ctor") {
-    Field<Real,Device> f1 (fid);
+    Field<Real> f1 (fid);
 
     f1.allocate_view();
 
-    Field<const Real,Device> f2 = f1;
+    Field<const Real> f2 = f1;
     REQUIRE(f2.get_header_ptr()==f1.get_header_ptr());
     REQUIRE(f2.get_view()==f1.get_view());
     REQUIRE(f2.is_allocated());
@@ -85,7 +83,7 @@ TEST_CASE("field", "") {
 
   // Check if we can extract a reshaped view
   SECTION ("reshape simple") {
-    Field<Real,Device> f1 (fid);
+    Field<Real> f1 (fid);
 
     // Should not be able to reshape before allocating
     REQUIRE_THROWS(f1.get_reshaped_view<Real*>());
@@ -102,7 +100,7 @@ TEST_CASE("field", "") {
 
   // Check if we can request multiple value types
   SECTION ("reshape multiple value types") {
-    Field<Real,Device> f1 (fid);
+    Field<Real> f1 (fid);
     f1.get_header().get_alloc_properties().request_value_type_allocation<Pack<Real,8>>();
     f1.allocate_view();
 
@@ -166,7 +164,7 @@ TEST_CASE("field_repo", "") {
   fid7.set_grid_name("grid_3");
   fid8.set_grid_name("grid_3");
 
-  FieldRepository<Real,DefaultDevice>  repo;
+  FieldRepository<Real>  repo;
 
   // Should not be able to register fields yet
   REQUIRE_THROWS(repo.register_field(fid1,"group_1"));

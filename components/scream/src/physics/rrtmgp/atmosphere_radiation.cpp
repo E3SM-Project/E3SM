@@ -22,12 +22,12 @@ namespace scream {
     void RRTMGPRadiation::finalize_impl  () {}
 
     // Register all required and computed field in the field repository
-    void RRTMGPRadiation::register_fields(FieldRepository<Real, device_type>& field_repo) const {
+    void RRTMGPRadiation::register_fields(FieldRepository<Real>& field_repo) const {
         for (auto& fid: m_required_fields) { field_repo.register_field(fid); }
         for (auto& fid: m_computed_fields) { field_repo.register_field(fid); }
     }
 
-    void RRTMGPRadiation::set_required_field_impl(const Field<const Real, device_type>& f) {
+    void RRTMGPRadiation::set_required_field_impl(const Field<const Real>& f) {
         /* The following copied from the P3 code */
         //const auto& name = f.get_header().get_identifier().name();
         //m_rrtmgp_fields_in.emplace(name,f);
@@ -38,7 +38,7 @@ namespace scream {
         //add_me_as_customer(f);
     }
 
-    void RRTMGPRadiation::set_computed_field_impl(const Field<      Real, device_type>& f) {
+    void RRTMGPRadiation::set_computed_field_impl(const Field<      Real>& f) {
         /* The following copied from the P3 code */
         //const auto& name = f.get_header().get_identifier().name();
         //m_rrtmgp_fields_out.emplace(name,f);

@@ -41,7 +41,7 @@ public:
   const ekat::Comm& get_comm () const { return m_comm; }
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& /* field_repo */) const {}
+  void register_fields (FieldRepository<Real>& /* field_repo */) const {}
 
   // Providing a list of required and computed fields
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_fids_in; }
@@ -61,8 +61,8 @@ protected:
   void finalize_impl ( /* inputs */ ) {}
 
   // Setting the field in the atmosphere process
-  void set_required_field_impl (const Field<const Real, device_type>& /* f */) {}
-  void set_computed_field_impl (const Field<      Real, device_type>& /* f */) {}
+  void set_required_field_impl (const Field<const Real>& /* f */) {}
+  void set_computed_field_impl (const Field<      Real>& /* f */) {}
 
   std::set<FieldIdentifier> m_fids_in;
   std::set<FieldIdentifier> m_fids_out;
@@ -213,8 +213,8 @@ setup_upgm (const int ne) {
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());
 
-  using dummy_remapper = DummySEGridRemapper<Real,DefaultDevice>;
-  using inverse_remapper = InverseRemapper<Real,DefaultDevice>;
+  using dummy_remapper = DummySEGridRemapper<Real>;
+  using inverse_remapper = InverseRemapper<Real>;
   auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);

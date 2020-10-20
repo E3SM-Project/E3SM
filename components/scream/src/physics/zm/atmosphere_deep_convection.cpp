@@ -135,7 +135,7 @@ void ZMDeepConvection::finalize_impl()
   zm_finalize_f90 ();
 }
 // =========================================================================================
-void ZMDeepConvection::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+void ZMDeepConvection::register_fields (FieldRepository<Real>& field_repo) const {
    for (auto& fid : m_required_fields) {
      field_repo.register_field(fid);
    }
@@ -144,7 +144,7 @@ void ZMDeepConvection::register_fields (FieldRepository<Real, device_type>& fiel
    }
  }
 
-void ZMDeepConvection::set_required_field_impl (const Field<const Real, device_type>& f) {
+void ZMDeepConvection::set_required_field_impl (const Field<const Real>& f) {
   // @Meredith: Diff between add_me_as_a_customer and get_tracking().add_customer? 
   
   // Store a copy of the field. We need this in order to do some tracking checks
@@ -160,7 +160,7 @@ void ZMDeepConvection::set_required_field_impl (const Field<const Real, device_t
 
 }
 
-void ZMDeepConvection::set_computed_field_impl (const Field<      Real, device_type>& f) {
+void ZMDeepConvection::set_computed_field_impl (const Field<      Real>& f) {
   // Store a copy of the field. We need this in order to do some tracking updates
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr

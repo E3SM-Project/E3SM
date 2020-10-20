@@ -21,8 +21,8 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real,device_type>;
-  using const_field_type = Field<const Real,device_type>;
+  using field_type       = Field<      Real>;
+  using const_field_type = Field<const Real>;
 
   // Constructors
   P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -47,7 +47,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& field_repo) const;
+  void register_fields (FieldRepository<Real>& field_repo) const;
 
   // Get the set of required/computed fields
   const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
@@ -61,8 +61,8 @@ protected:
   void finalize_impl   ();
 
   // Setting the fields in the atmospheric process
-  void set_required_field_impl (const Field<const Real, device_type>& f);
-  void set_computed_field_impl (const Field<      Real, device_type>& f);
+  void set_required_field_impl (const Field<const Real>& f);
+  void set_computed_field_impl (const Field<      Real>& f);
 
   std::set<FieldIdentifier> m_required_fields;
   std::set<FieldIdentifier> m_computed_fields;

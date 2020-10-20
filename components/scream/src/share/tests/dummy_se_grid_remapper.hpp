@@ -21,11 +21,11 @@ namespace scream
  *  Every call to the actual remap methods doesn't do anything.
  */
 
-template<typename ScalarType, typename DeviceType>
-class DummySEGridRemapper : public AbstractRemapper<ScalarType,DeviceType>
+template<typename RealType>
+class DummySEGridRemapper : public AbstractRemapper<RealType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using base_type       = AbstractRemapper<RealType>;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;

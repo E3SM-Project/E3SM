@@ -49,7 +49,6 @@ namespace scream
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using device_type = DefaultDevice; // may need to template class on this
   using TimeStamp = util::TimeStamp;
 
   virtual ~AtmosphereProcess () = default;
@@ -100,7 +99,8 @@ public:
     finalize_impl(/* what inputs? */);
   }
 
-  // These methods set fields in the atm process. Fields live on device and they are all 1d.
+  // These methods set fields in the atm process. Fields live on the default
+  // device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template function 'get_reshaped_view' (see field.hpp for details).
   // Note: this method will be called *after* set_grid, but *before* initialize.
@@ -109,13 +109,13 @@ public:
   //       However, if this process is of type Group, we don't really want to add it
   //       as provider/customer. The group is just a 'design layer', and the stored processes
   //       are the actuall providers/customers.
-  void set_required_field (const Field<const Real, device_type>& f) {
+  void set_required_field (const Field<const Real>& f) {
     ekat::error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
-  void set_computed_field (const Field<Real, device_type>& f) {
+  void set_computed_field (const Field<Real>& f) {
     ekat::error::runtime_check(computes(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not compute this field. "
                          "Something is wrong up the call stack. Please, contact developers.\n");
@@ -123,7 +123,7 @@ public:
   }
 
   // Register required/computed fields in the field repo
-  virtual void register_fields (FieldRepository<Real, device_type>& field_repo) const = 0;
+  virtual void register_fields (FieldRepository<Real>& field_repo) const = 0;
 
   // These two methods allow the driver to figure out what process need
   // a given field and what process updates a given field.
@@ -151,16 +151,16 @@ protected:
     return t_;
   }
 
-  void add_me_as_provider (const Field<Real, device_type>& f) {
+  void add_me_as_provider (const Field<Real>& f) {
     f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
   }
 
-  void add_me_as_customer (const Field<const Real, device_type>& f) {
+  void add_me_as_customer (const Field<const Real>& f) {
     f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
   }
 
-  virtual void set_required_field_impl (const Field<const Real, device_type>& f) = 0;
-  virtual void set_computed_field_impl (const Field<      Real, device_type>& f) = 0;
+  virtual void set_required_field_impl (const Field<const Real>& f) = 0;
+  virtual void set_computed_field_impl (const Field<      Real>& f) = 0;
 
 private:
 
