@@ -2636,7 +2636,7 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   if (std_s .ne. 0.0_rtype) then
     C=0.5_rtype*(1._rtype+bfb_erf(s/(sqrt2*std_s)))
-    IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrt2pi)*exp(-0.5_rtype*bfb_square(s/std_s))
+    IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrt2pi)*bfb_exp(-0.5_rtype*bfb_square(s/std_s))
   else
     if (s .gt. 0._rtype) then
       C=1.0_rtype
