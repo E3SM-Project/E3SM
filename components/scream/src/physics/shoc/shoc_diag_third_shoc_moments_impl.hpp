@@ -49,6 +49,7 @@ void Functions<S,D>::diag_third_shoc_moments(
   compute_diag_third_shoc_moment(team,nlev,nlevi,w_sec,thl_sec,wthl_sec,
                                  tke, dz_zt, dz_zi,isotropy_zi, brunt_zi,
                                  w_sec_zi,thetal_zi,w3);
+  team.team_barrier();
 
   // Perform clipping to prevent unrealistically large values from occuring
   clipping_diag_third_shoc_moments(team,nlevi,w_sec_zi,w3);
