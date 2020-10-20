@@ -1574,6 +1574,10 @@ subroutine diag_third_shoc_moments(&
   !  for the skewness calculation in the PDF.
   !  This calculation follows that of Canuto et al. (2001)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_third_shoc_moments_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -1616,6 +1620,19 @@ subroutine diag_third_shoc_moments(&
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: brunt_zi(shcol,nlevi)
   real(rtype) :: thetal_zi(shcol,nlevi)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+      call diag_third_shoc_moments_f(&
+        shcol,nlev,nlevi, &                 ! Input
+        w_sec, thl_sec, &                   ! Input
+        wthl_sec, isotropy, brunt,&         ! Input
+        thetal,tke,&                        ! Input
+        dz_zt, dz_zi, zt_grid, zi_grid,&    ! Input
+        w3)                                 ! Output
+     return
+  endif
+#endif
 
   ! Interpolate variables onto the interface levels
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
