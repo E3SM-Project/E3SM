@@ -4,13 +4,13 @@ set(PERFOBJS
   homme/src/share/edge_mod_base.F90
   homme/src/share/derivative_mod_base.F90
   homme/src/share/bndry_mod_base.F90
-  homme/src/theta-l/prim_advance_mod.F90
+  homme/src/theta-l/share/prim_advance_mod.F90
   homme/src/preqx/share/prim_advance_mod.F90
   homme/src/preqx/share/viscosity_preqx_base.F90
   homme/src/share/viscosity_base.F90
-  homme/src/theta-l/viscosity_theta.F90
-  homme/src/theta-l/eos.F90
-  cam/src/physics/cam/uwshcu.F90)
+  homme/src/theta-l/share/viscosity_theta.F90
+  homme/src/theta-l/share/eos.F90
+  eam/src/physics/cam/uwshcu.F90)
 
 set(REDUCED_PRECISION_OBJS ${CIMESRC_PATH}/share/util/shr_wv_sat_mod.F90)
 

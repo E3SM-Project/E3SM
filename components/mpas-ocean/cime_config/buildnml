@@ -26,6 +26,7 @@ def buildnml(case, caseroot, compname):
     cimeroot          = case.get_value("CIMEROOT")
     caseroot          = case.get_value("CASEROOT")
     casebuild         = case.get_value("CASEBUILD")
+    casename          = case.get_value("CASE")
     srcroot           = case.get_value("SRCROOT")
     din_loc_root      = case.get_value("DIN_LOC_ROOT")
     ocn_grid          = case.get_value("OCN_GRID")
@@ -44,6 +45,7 @@ def buildnml(case, caseroot, compname):
     ntasks_ocn        = case.get_value("NTASKS_OCN")
     rundir            = case.get_value("RUNDIR")
     run_type          = case.get_value("RUN_TYPE")
+    run_refcase       = case.get_value("RUN_REFCASE")
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
     stream_name       = 'streams.ocean'
@@ -220,17 +222,36 @@ def buildnml(case, caseroot, compname):
         restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2-1900_ICG':
-        ic_date += '200910'
+        ic_date += '201001'
         ic_prefix += 'mpaso.EC30to60E2r2-1900.rstFromG-anvil'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3':
+        ic_date += '200714'
+        ic_prefix += 'ocean.WC14to60E2r3'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3_ICG':
+        ic_date += '201002'
+        ic_prefix += 'mpaso.WC14to60E2r3.rstFromG-anvil'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
+    elif ocn_grid == 'WC14to60E2r3-1900_ICG':
+        ic_date += '201002'
+        ic_prefix += 'mpaso.WC14to60E2r3-1900.rstFromG-anvil'
+        decomp_date += '200714'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'WC14to60E2r3_moc_masks_and_transects.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -249,7 +270,7 @@ def buildnml(case, caseroot, compname):
 
     input_file = "{}/ocn/mpas-o/{}/{}.{}.nc".format(din_loc_root, ocn_mask, ic_prefix, ic_date)
     if run_type == 'hybrid' or run_type == 'branch':
-        input_file = "{}/mpaso.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        input_file = "{}/{}.mpaso.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
 
     #--------------------------------------------------------------------
@@ -380,7 +401,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('                  io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('                  filename_template="mpaso.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                  filename_template="{}.mpaso.rst.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('                  filename_interval="output_interval"')
         lines.append('                  clobber_mode="truncate"')
         lines.append('                  input_interval="initial_only"')
@@ -399,7 +420,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.hist.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -468,7 +489,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="block_debug_output"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.output_debug_block_$B.nc"')
+        lines.append('        filename_template="{}.mpaso.output_debug_block_$B.nc"'.format(casename))
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        filename_interval="1000-00-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
@@ -534,7 +555,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="mocStreamfunctionOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.mocStreamfunctionOutput.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="01-00-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -556,7 +577,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="globalStatsOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="netcdf"')
-        lines.append('        filename_template="mpaso.hist.am.globalStats.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.globalStats.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-01_00:00:00"')
@@ -582,7 +603,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="surfaceAreaWeightedAveragesOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="netcdf"')
-        lines.append('        filename_template="mpaso.hist.am.surfaceAreaWeightedAverages.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.surfaceAreaWeightedAverages.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -599,7 +620,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="waterMassCensusOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.waterMassCensus.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.waterMassCensus.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -618,7 +639,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="layerVolumeWeightedAverageOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.layerVolumeWeightedAverage.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.layerVolumeWeightedAverage.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -638,7 +659,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="zonalMeanOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.zonalMeans.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.zonalMeans.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -659,7 +680,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="meridionalHeatTransportOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.meridionalHeatTransport.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.meridionalHeatTransport.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -683,7 +704,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -704,7 +725,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-05_00:00:00"')
@@ -728,6 +749,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="barotropicSpeed"/>')
         lines.append('    <var name="landIceFreshwaterFlux"/>')
         lines.append('    <var name="pressureAdjustedSSH"/>')
+        lines.append('    <var name="atmosphericPressure"/>')
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             lines.append('    <var name="CO2_gas_flux"/>')
             lines.append('    <var name="CO2_alt_gas_flux"/>')
@@ -752,7 +774,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.mixedLayerDepths.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -769,7 +791,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.oceanHeatContent.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.oceanHeatContent.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -787,7 +809,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.mixedLayerHeatBudget.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.mixedLayerHeatBudget.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -810,7 +832,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.sedimentFluxIndex.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.sedimentFluxIndex.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -828,7 +850,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.sedimentTransport.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.sedimentTransport.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -856,7 +878,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.harmonicAnalysis.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.harmonicAnalysis.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -885,7 +907,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="harmonicAnalysisRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.rst.am.harmonicAnalysis.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.harmonicAnalysis.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
@@ -902,7 +924,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-01_00:00:00"')
@@ -956,7 +978,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -966,6 +988,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <var name="daysSinceStartOfSim"/>')
         lines.append('    <var name="binBoundaryMerHeatTrans"/>')
+        lines.append('    <var name="binBoundaryZonalMean"/>')
         lines.append('    <var name="ssh"/>')
         lines.append('    <var_struct name="tracers"/>')
         lines.append('    <var name="velocityMeridional"/>')
@@ -992,6 +1015,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="dThreshMLD"/>')
         lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="vertVelocityTop"/>')
+        lines.append('    <var name="zMid"/>')
+        lines.append('    <var name="atmosphericPressure"/>')
         if not ocn_grid.startswith("oRRS1"):
             lines.append('    <var name="normalGMBolusVelocity"/>')
             lines.append('    <var name="vertGMBolusVelocityTop"/>')
@@ -1002,6 +1027,8 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
             lines.append('    <var name="normalGMBolusVelocityTimesTemperature"/>')
             lines.append('    <var name="normalGMBolusVelocitySquared"/>')
+            lines.append('    <var name="gmKappaScaling"/>')
+            lines.append('    <var name="gmBolusKappa"/>')
 
         lines.append('    <var_struct name="tracersSurfaceFlux"/>')
         lines.append('    <var name="penetrativeTemperatureFlux"/>')
@@ -1067,6 +1094,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
         lines.append('    <var name="activeTracerVertMixMLTend"/>')
         lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="BruntVaisalaFreqTop"/>')
         lines.append('    <var name="bruntVaisalaFreqML"/>')
         lines.append('    <var name="activeTracersTendML"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
@@ -1173,7 +1201,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthlyMax.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthlyMax.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -1234,7 +1262,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthlyMin.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthlyMin.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -1291,7 +1319,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-03-00_00:00:00"')
@@ -1305,7 +1333,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -1318,7 +1346,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsDailyRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
@@ -1334,7 +1362,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
@@ -1350,7 +1378,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMax.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsMonthlyMax.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
@@ -1366,7 +1394,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMin.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsMonthlyMin.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
@@ -1378,7 +1406,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsClimatologyRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="initial_only"')
@@ -1390,7 +1418,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsCustomRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="initial_only"')
@@ -1433,7 +1461,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="forcing"')
         lines.append('        type="none"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
-        lines.append('        filename_template="mpaso.hist.forcing_variables.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="{}.mpaso.hist.forcing_variables.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate">')
         lines.append('')

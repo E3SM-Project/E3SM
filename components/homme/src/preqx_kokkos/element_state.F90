@@ -11,6 +11,7 @@ module element_state
   private
 
   public :: allocate_element_arrays
+  public :: setup_element_pointers_ie
 
   integer, public, parameter :: timelevels = 3
 
@@ -187,4 +188,36 @@ contains
     allocate(elem_accum_Q1mass    (np,np,qsize_d,  nelemd) )
 
   end subroutine allocate_element_arrays
+
+  subroutine setup_element_pointers_ie (ie, state, derived, accum)
+    !
+    ! Inputs
+    !
+    integer, intent(in) :: ie
+    type (elem_state_t),    intent(inout) :: state
+    type (derived_state_t), intent(inout) :: derived
+    type (elem_accum_t),    intent(inout) :: accum
+
+    ! State
+    state%v         => elem_state_v(:,:,:,:,:,ie)
+    state%T         => elem_state_temp(:,:,:,:,ie)
+    state%dp3d      => elem_state_dp3d(:,:,:,:,ie)
+    state%ps_v      => elem_state_ps_v(:,:,:,ie)
+    state%Q         => elem_state_Q(:,:,:,:,ie)
+    state%Qdp       => elem_state_Qdp(:,:,:,:,:,ie)
+    state%phis      => elem_state_phis(:,:,ie)
+
+    ! Derived
+    derived%omega_p => elem_derived_omega_p(:,:,:,ie)
+
+    ! Accum
+    accum%KEner     => elem_accum_KEner    (:,:,:,ie)
+    accum%PEner     => elem_accum_PEner    (:,:,:,ie)
+    accum%IEner     => elem_accum_IEner    (:,:,:,ie)
+    accum%IEner_wet => elem_accum_IEner_wet(:,:,:,ie)
+    accum%Qvar      => elem_accum_Qvar     (:,:,:,:,ie)
+    accum%Qmass     => elem_accum_Qmass    (:,:,:,:,ie)
+    accum%Q1mass    => elem_accum_Q1mass   (:,:,:,ie)
+  end subroutine setup_element_pointers_ie
+
 end module 

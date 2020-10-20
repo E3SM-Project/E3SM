@@ -918,8 +918,10 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch
-    use clm_varpar      , only : natpft_size, cft_size, natpft_lb
+    use clm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
+    use clm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
+    use clm_varpar      , only : cft_lb, cft_ub
+    use clm_varctl      , only : create_crop_landunit
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: begg, endg
@@ -929,11 +931,17 @@ contains
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
     integer  :: dimid                          ! netCDF id's
     logical  :: readvar                        ! is variable on dataset
+    real(r8),pointer :: array2D(:,:)                 ! local 2D array
     character(len=32) :: subname = 'surfrd_pftformat'! subroutine name
 !-----------------------------------------------------------------------
     SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg, natpft_size-1+natpft_lb/)), errMsg(__FILE__, __LINE__))
 
-    call check_dim(ncid, 'natpft', natpft_size)
+
+    if (.not. create_crop_landunit) then
+       call check_dim(ncid, 'natpft', natpft_size)
+    else
+       call check_dim(ncid, 'natpft', natpft_size + cft_size)
+    endif
     ! If cft_size == 0, then we expect to be running with a surface dataset
     ! that does
     ! NOT have a PCT_CFT array (or CONST_FERTNITRO_CFT array), and thus does not have a 'cft' dimension.
@@ -956,9 +964,20 @@ contains
     end if
     fert_cft = 0.0_r8
 
-    call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    if (.not. create_crop_landunit) then
+       call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
+            dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    else
+       allocate(array2D(begg:endg,1:cft_ub+1))
+       call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=array2D, &
+            dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+
+       wt_nat_patch(begg:endg, natpft_lb:natpft_ub) = array2D(begg:endg, natpft_lb+1:natpft_ub+1)
+       wt_cft      (begg:endg, cft_lb   :cft_ub   ) = array2D(begg:endg, cft_lb+1   :cft_ub+1   )
+       deallocate(array2D)
+    endif
 
   end subroutine surfrd_pftformat
 
@@ -978,7 +997,7 @@ contains
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
-    use surfrdUtilsMod  , only : convert_cft_to_pft
+    use surfrdUtilsMod  , only : convert_cft_to_pft, convert_pft_to_cft
     !
     ! !ARGUMENTS:
     integer, intent(in) :: begg, endg
@@ -1041,6 +1060,14 @@ contains
        else
           call endrun( msg=' ERROR: New format surface datasets require create_crop_landunit TRUE'//errMsg(__FILE__, __LINE__))
        end if
+    else
+       ! PFTs contain the crops but create_crop_landunit = .true.
+
+       ! Read the data and put them in PFT and CFT
+       call surfrd_pftformat(begg, endg, ncid)
+
+       ! Update the PFT and CFT fractions
+       call convert_pft_to_cft( begg, endg )
     end if
 
     ! Do some checking

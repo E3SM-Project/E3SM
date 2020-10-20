@@ -1546,9 +1546,6 @@ sub setup_cmdl_irrigation {
                   "both irrigation and crop can NOT be on.\n");
     }
   } else {
-    if ( $nl_flags->{'irrig'} =~ /$TRUE/i && $nl_flags->{'use_crop'} =~ /$FALSE/i ) {
-      fatal_error("The -irrig=.true. option requires -crop");
-    }
     if ( defined($nl->get_value("irrigate")) && $nl->get_value("irrigate") ne $nl_flags->{'irrig'} ) {
       my $irrigate = $nl->get_value("irrigate");
       fatal_error("The namelist value 'irrigate=$irrigate' contradicts the command line option '-irrig=$val'");
@@ -2143,11 +2140,6 @@ sub setup_logic_irrigate {
   if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
     if ( $nl_flags->{'use_crop'} eq ".true." ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'irrigate', 'val'=>$nl_flags->{'irrig'});
-    }
-    elsif ( defined($nl->get_value('irrigate')) ) {
-      if ($nl->get_value('irrigate') =~ /$TRUE/i ) {
-        fatal_error("irrigate TRUE needs crop TRUE but it is not\n");
-      }
     }
     $nl_flags->{'irrigate'} = lc($nl->get_value('irrigate'));
   }

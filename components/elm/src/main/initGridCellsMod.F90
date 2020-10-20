@@ -434,7 +434,7 @@ contains
 
        ! Note that we cannot simply use the 'ltype' argument to set itype here,
        ! because ltype will always indicate istcrop
-       if ( crop_prog )then
+       if (create_crop_landunit) then
           my_ltype = istcrop
        else
           my_ltype = istsoil

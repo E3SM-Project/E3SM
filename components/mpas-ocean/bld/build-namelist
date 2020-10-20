@@ -543,35 +543,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-#########################################
-# Namelist group: Redi_isopycnal_mixing #
-#########################################
-
-add_default($nl, 'config_use_Redi');
-add_default($nl, 'config_Redi_kappa');
-add_default($nl, 'config_Redi_set_RediKappa_to_GMKappa');
-add_default($nl, 'config_Redi_maximum_slope');
-add_default($nl, 'config_Redi_closure');
-add_default($nl, 'config_Redi_use_slope_taper');
-add_default($nl, 'config_Redi_use_surface_taper');
-add_default($nl, 'config_Redi_use_N2_based_taper');
-add_default($nl, 'config_Redi_N2_limit_term1');
-
-############################################
-# Namelist group: GM_eddy_parameterization #
-############################################
-
-add_default($nl, 'config_use_GM');
-add_default($nl, 'config_GM_kappa');
-add_default($nl, 'config_GM_closure');
-add_default($nl, 'config_GM_baroclinic_mode');
-add_default($nl, 'config_GM_visbeck_alpha');
-add_default($nl, 'config_GM_visbeck_max_depth');
-add_default($nl, 'config_GM_visbeck_min_kappa');
-add_default($nl, 'config_GM_visbeck_max_kappa');
-add_default($nl, 'config_GM_min_stratification_ratio');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
-
 ####################################################
 # Namelist group: mesoscale_eddy_parameterizations #
 ####################################################
@@ -579,6 +550,38 @@ add_default($nl, 'config_GM_constant_gravWaveSpeed');
 add_default($nl, 'config_eddying_resolution_taper');
 add_default($nl, 'config_eddying_resolution_ramp_min');
 add_default($nl, 'config_eddying_resolution_ramp_max');
+
+#########################################
+# Namelist group: Redi_isopycnal_mixing #
+#########################################
+
+add_default($nl, 'config_use_Redi');
+add_default($nl, 'config_Redi_closure');
+add_default($nl, 'config_Redi_constant_kappa');
+add_default($nl, 'config_Redi_maximum_slope');
+add_default($nl, 'config_Redi_use_slope_taper');
+add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_N2_based_taper_enable');
+add_default($nl, 'config_Redi_N2_based_taper_min');
+add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+
+############################################
+# Namelist group: GM_eddy_parameterization #
+############################################
+
+add_default($nl, 'config_use_GM');
+add_default($nl, 'config_GM_closure');
+add_default($nl, 'config_GM_constant_kappa');
+add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_spatially_variable_min_kappa');
+add_default($nl, 'config_GM_spatially_variable_max_kappa');
+add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
+add_default($nl, 'config_GM_Visbeck_alpha');
+add_default($nl, 'config_GM_Visbeck_max_depth');
+add_default($nl, 'config_GM_EG_riMin');
+add_default($nl, 'config_GM_EG_kappa_factor');
+add_default($nl, 'config_GM_EG_Rossby_factor');
+add_default($nl, 'config_GM_EG_Rhines_factor');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -595,11 +598,14 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 #########################
 
 add_default($nl, 'config_use_cvmix');
-add_default($nl, 'config_cvmix_use_kpp_buoyancyForcing_fix');
 add_default($nl, 'config_cvmix_prandtl_number');
-add_default($nl, 'config_use_cvmix_background');
+add_default($nl, 'config_cvmix_background_scheme');
 add_default($nl, 'config_cvmix_background_diffusion');
 add_default($nl, 'config_cvmix_background_viscosity');
+add_default($nl, 'config_cvmix_BryanLewis_bl1');
+add_default($nl, 'config_cvmix_BryanLewis_bl2');
+add_default($nl, 'config_cvmix_BryanLewis_transitionDepth');
+add_default($nl, 'config_cvmix_BryanLewis_transitionWidth');
 add_default($nl, 'config_use_cvmix_convection');
 add_default($nl, 'config_cvmix_convective_diffusion');
 add_default($nl, 'config_cvmix_convective_viscosity');
@@ -765,12 +771,11 @@ add_default($nl, 'config_open_ocean_freezing_temperature_coeff_0');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_S');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_p');
 add_default($nl, 'config_open_ocean_freezing_temperature_coeff_pS');
-add_default($nl, 'config_open_ocean_freezing_temperature_reference_pressure');
+add_default($nl, 'config_open_ocean_freezing_temperature_coeff_mushy_az1_liq');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_0');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_S');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_p');
 add_default($nl, 'config_land_ice_cavity_freezing_temperature_coeff_pS');
-add_default($nl, 'config_land_ice_cavity_freezing_temperature_reference_pressure');
 
 ##############################
 # Namelist group: eos_linear #

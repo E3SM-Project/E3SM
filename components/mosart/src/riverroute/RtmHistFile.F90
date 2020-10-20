@@ -220,7 +220,7 @@ contains
     !----------------------------------------------------------
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Initializing RTM history files'
+       write(iulog,*)  trim(subname),' Initializing MOSART history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -286,7 +286,7 @@ contains
     end do
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Successfully initialized RTM history files'
+       write(iulog,*)  trim(subname),' Successfully initialized MOSART history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -442,16 +442,16 @@ contains
     end if
 
     if (masterproc) then
-       write(iulog,*) 'There will be a total of ',ntapes,'RTM  history tapes'
+       write(iulog,*) 'There will be a total of ',ntapes,'MOSART  history tapes'
        do t=1,ntapes
           write(iulog,*)
           if (rtmhist_nhtfrq(t) == 0) then
-             write(iulog,*)'RTM History tape ',t,' write frequency is MONTHLY'
+             write(iulog,*)'MOSART History tape ',t,' write frequency is MONTHLY'
           else
-             write(iulog,*)'RTM History tape ',t,' write frequency = ',rtmhist_nhtfrq(t)
+             write(iulog,*)'MOSART History tape ',t,' write frequency = ',rtmhist_nhtfrq(t)
           endif
-          write(iulog,*)'Number of time samples on RTM history tape ',t,' is ',rtmhist_mfilt(t)
-          write(iulog,*)'Output precision on RTM history tape ',t,'=',rtmhist_ndens(t)
+          write(iulog,*)'Number of time samples on MOSART history tape ',t,' is ',rtmhist_mfilt(t)
+          write(iulog,*)'Output precision on MOSART history tape ',t,'=',rtmhist_ndens(t)
           write(iulog,*)
        end do
        call shr_sys_flush(iulog)
@@ -658,7 +658,7 @@ contains
           call shr_sys_flush(iulog)
        end if
        call ncd_pio_createfile(lnfid, trim(locfnh(t)))
-       call ncd_putatt(lnfid, ncd_global, 'title', 'RTM History file information' )
+       call ncd_putatt(lnfid, ncd_global, 'title', 'MOSART History file information' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
           "NOTE: None of the variables are weighted by land fraction!" )
     else
@@ -669,7 +669,7 @@ contains
        end if
        call ncd_pio_createfile(lnfid, trim(locfnhr(t)))
        call ncd_putatt(lnfid, ncd_global, 'title', &
-            'RTM Restart History information, required to continue a simulation' )
+            'MOSART Restart History information, required to continue a simulation' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
             "This entire file NOT needed for startup or branch simulations")
     end if
@@ -678,23 +678,21 @@ contains
     ! about the data set. Global attributes are information about the
     ! data set as a whole, as opposed to a single variable
 
-    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
+    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
+    call ncd_putatt(lnfid, ncd_global, 'git_version' , trim(version))
     call getdatetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
-    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
-    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
-    call ncd_putatt(lnfid, ncd_global, 'version' , trim(version))
-
-    str = &
-    '$Id: histFileMod.F90 36692 2012-04-27 18:39:55Z tcraig $'
-    call ncd_putatt(lnfid, ncd_global, 'revision_id', trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'case_title', trim(ctitle))
-    call ncd_putatt(lnfid, ncd_global, 'case_id', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'institution_id' , 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
+             'e3sm-data-support@listserv.llnl.gov')
+    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)
-    call ncd_putatt(lnfid, ncd_global, 'RTM_input_dataset', trim(str))
+    call ncd_putatt(lnfid, ncd_global, 'MOSART_input_dataset', trim(str))
 
     ! Define dimensions.
     ! Time is an unlimited dimension. Character string is treated as an array of characters.
