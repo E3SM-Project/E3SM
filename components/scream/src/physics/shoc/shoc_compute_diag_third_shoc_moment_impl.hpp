@@ -113,7 +113,8 @@ void Functions<S,D>
     w3(k).set(range_pack1 > 0 && range_pack1 < nlev,
               (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
   });
-
+  team.team_barrier();
+  
   // Set upper condition: w3(i,0) = 0
   w3(0)[0] = 0;
 }
