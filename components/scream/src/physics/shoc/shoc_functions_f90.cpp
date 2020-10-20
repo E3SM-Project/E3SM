@@ -228,38 +228,40 @@ void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_firs
 void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
                                Real pval, Real wqls, Real *wthv_sec);
 
-void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl_sec, Real* qw_sec, 
-                                       Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, 
+void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl_sec, Real* qw_sec,
+                                       Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec,
                                        Real* uw_sec, Real* vw_sec, Real* wtke_sec);
 
 void shoc_pblintd_init_pot_c(Int shcol, Int nlev, Real* thl, Real* ql, Real* q, Real* thv);
 
 void diag_second_moments_lbycond_c(Int shcol, Real *wthl_sfc, Real *wqw_sfc, Real *uw_sfc,
                                    Real *vw_sfc, Real *ustar2, Real *wstar, Real *wthl_sec,
-                                   Real *wqw_sec, Real *uw_sec, Real *vw_sec, Real *wtke_sec, 
+                                   Real *wqw_sec, Real *uw_sec, Real *vw_sec, Real *wtke_sec,
                                    Real *thl_sec, Real *qw_sec, Real *qwthl_sec);
-                                   
-void diag_second_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *qw, 
-                           Real *u_wind, Real *v_wind, Real *tke, Real *isotropy, 
-                           Real *tkh, Real *tk, Real *dz_zi, Real *zt_grid, Real *zi_grid, 
-                           Real *shoc_mix, Real *thl_sec, Real *qw_sec, Real *wthl_sec, 
-                           Real *wqw_sec, Real *qwthl_sec, Real *uw_sec, Real *vw_sec, 
+
+void diag_second_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *qw,
+                           Real *u_wind, Real *v_wind, Real *tke, Real *isotropy,
+                           Real *tkh, Real *tk, Real *dz_zi, Real *zt_grid, Real *zi_grid,
+                           Real *shoc_mix, Real *thl_sec, Real *qw_sec, Real *wthl_sec,
+                           Real *wqw_sec, Real *qwthl_sec, Real *uw_sec, Real *vw_sec,
                            Real *wtke_sec, Real *w_sec);
-                           
-void diag_second_shoc_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal, 
-                                Real *qw, Real *u_wind, Real *v_wind, Real *tke, 
-                                Real *isotropy, Real *tkh, Real *tk, Real *dz_zi, 
-                                Real *zt_grid, Real *zi_grid, Real *shoc_mix, 
-                                Real *wthl_sfc, Real *wqw_sfc, Real *uw_sfc, 
-                                Real *vw_sfc, Real *thl_sec, Real *qw_sec, 
-                                Real *wthl_sec, Real *wqw_sec, Real *qwthl_sec, 
-                                Real *uw_sec, Real *vw_sec, Real *wtke_sec, Real *w_sec);                        
+
+void diag_second_shoc_moments_c(Int shcol, Int nlev, Int nlevi, Real *thetal,
+                                Real *qw, Real *u_wind, Real *v_wind, Real *tke,
+                                Real *isotropy, Real *tkh, Real *tk, Real *dz_zi,
+                                Real *zt_grid, Real *zi_grid, Real *shoc_mix,
+                                Real *wthl_sfc, Real *wqw_sfc, Real *uw_sfc,
+                                Real *vw_sfc, Real *thl_sec, Real *qw_sec,
+                                Real *wthl_sec, Real *wqw_sec, Real *qwthl_sec,
+                                Real *uw_sec, Real *vw_sec, Real *wtke_sec, Real *w_sec);
 
 void shoc_pblintd_cldcheck_c(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
 
 void compute_shoc_vapor_c(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
 
-} // end _c function decls
+void update_prognostics_implicit_c(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind);
+
+} // extern "C" : end _c decls
 
 namespace scream {
 namespace shoc {
@@ -750,6 +752,13 @@ void compute_shoc_vapor(ComputeShocVaporData& d)
   shoc_init(d.nlev(), true);
   d.transpose<ekat::TransposeDirection::c2f>();
   compute_shoc_vapor_c(d.shcol(), d.nlev(), d.qw, d.ql, d.qv);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  update_prognostics_implicit_c(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime, d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid, d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc, d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 // end _c impls
@@ -1546,7 +1555,7 @@ void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* 
 
   view_2d
     shoc_mix_d(temp_2d_d[0]);
-  
+
   const Int nk_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -1930,6 +1939,10 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
 }
 
 void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
+{
+  // TODO
+}
+void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind)
 {
   // TODO
 }

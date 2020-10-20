@@ -53,6 +53,7 @@ if (NOT CUDA_BUILD)
     shoc_length.cpp
     shoc_energy_fixer.cpp
     shoc_compute_shoc_vapor.cpp
+    shoc_update_prognostics_implicit.cpp
   ) # SHOC ETI SRCS
 endif()
 

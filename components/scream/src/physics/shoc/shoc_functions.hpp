@@ -305,6 +305,9 @@ struct Functions
     const uview_1d<Spack>&       host_dse);
   KOKKOS_FUNCTION
   static void compute_shoc_vapor(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& ql, const uview_1d<Spack>& qv);
+  KOKKOS_FUNCTION
+  KOKKOS_FUNCTION
+  static void update_prognostics_implicit(const Int& shcol, const Int& nlev, const Int& nlevi, const Int& num_tracer, const Spack& dtime, const uview_1d<const Spack>& dz_zt, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& rho_zt, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& wtracer_sfc, const uview_1d<Spack>& thetal, const uview_1d<Spack>& qw, const uview_1d<Spack>& tracer, const uview_1d<Spack>& tke, const uview_1d<Spack>& u_wind, const uview_1d<Spack>& v_wind);
 }; // struct Functions
 
 } // namespace shoc
@@ -338,6 +341,7 @@ struct Functions
 #include "shoc_length_impl.hpp"
 # include "shoc_energy_fixer_impl.hpp"
 # include "shoc_compute_shoc_vapor_impl.hpp"
+# include "shoc_update_prognostics_implicit_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

@@ -118,10 +118,117 @@ struct SHOCGridData : public PhysicsTestData {
   PTD_DATA_COPY_CTOR(name, PTD_ADD_##dim##_##num_scalars);  \
   PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
 
+// For PhysicsTestDataGeneric, the dimensions are also struct scalars
+#define PTDG_STD_DEF(name, num_scalars, ...) \
+  PTD_DATA_COPY_CTOR(name, num_scalars);     \
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+
 namespace scream {
 
+// Fully Generic Data struct for multi-dimensions reals and ints
+struct PhysicsTestDataGeneric
+{
+  // dims -> the dimensions of real data should come before dimensions of int data
+  PhysicsTestDataGeneric(
+    const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
+    const std::vector<std::vector<Real**> > reals, // vector of pointers to real* members
+    const std::vector<std::vector<Int**> > ints);  // vector of pointers to int* members
+
+  Int total(void* member) const;
+
+  Int dim(void* member, size_t dim_idx) const;
+
+  // Delete this to block subclasses getting the default impls, which would be incorrect
+  PhysicsTestDataGeneric(const PhysicsTestDataGeneric &rhs) = delete;
+  PhysicsTestDataGeneric &operator=(const PhysicsTestDataGeneric &rhs) = delete;
+
+  // Initialize with random values. The default range is 0..1
+  // To use non-default ranges, you'll need to provide a pair of pairs, mapping
+  // the member to a range.
+  // Example, to use a -1 to 1 range for wthl member:
+  // d.randomize({ {d.wthl, {-1, 1}} });
+  void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
+
+  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
+  // format of all data from one language to another
+  template <ekat::TransposeDirection::Enum D>
+  void transpose()
+  {
+    std::vector<Real> real_data(m_real_data);
+    std::vector<Int>  int_data(m_int_data);
+    Int real_offset = 0;
+    Int int_offset = 0;
+
+    for (size_t i = 0; i < m_dims.size(); ++i) {
+      Int* current_offset = i < m_reals.size() ? &real_offset : &int_offset;
+      const Int num_members = i < m_reals.size() ? m_reals[i].size() : m_ints[i-m_reals.size()].size();
+
+      if (m_dims[i].size() > 1) { // no need to transpose 1d data
+        if (m_dims[i].size() == 2) {
+          if (i < m_reals.size()) {
+            for (size_t j = 0; j < m_reals[i].size(); ++j) {
+              ekat::transpose<D>(*(m_reals[i][j]), real_data.data() + *current_offset, m_dims[i][0], m_dims[i][1]);
+              *current_offset += m_totals[i];
+            }
+          }
+          else {
+            for (size_t j = 0; j < m_ints[i-m_reals.size()].size(); ++j) {
+              ekat::transpose<D>(*(m_ints[i-m_reals.size()][j]), int_data.data() + *current_offset, m_dims[i][0], m_dims[i][1]);
+              *current_offset += m_totals[i];
+            }
+          }
+        }
+        else if (m_dims[i].size() == 3) {
+          if (i < m_reals.size()) {
+            for (size_t j = 0; j < m_reals[i].size(); ++j) {
+              ekat::transpose<D>(*(m_reals[i][j]), real_data.data() + *current_offset, m_dims[i][0], m_dims[i][1], m_dims[i][2]);
+              *current_offset += m_totals[i];
+            }
+          }
+          else {
+            for (size_t j = 0; j < m_ints[i-m_reals.size()].size(); ++j) {
+              ekat::transpose<D>(*(m_ints[i-m_reals.size()][j]), int_data.data() + *current_offset, m_dims[i][0], m_dims[i][1], m_dims[i][2]);
+              *current_offset += m_totals[i];
+            }
+          }
+        }
+        else {
+          EKAT_REQUIRE_MSG(false, "Data dimension > 3 not currently supported");
+        }
+      }
+      else {
+        (*current_offset) += (m_totals[i] * num_members);
+      }
+    }
+
+    // Shift the indices. We might not be able to make the assumption that int data represented indices
+    for (size_t i = 0; i < int_data.size(); ++i) {
+      int_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
+      EKAT_ASSERT_MSG(int_data[i] >= 0, "Bad index: " << int_data[i]);
+    }
+
+    m_real_data = real_data;
+    m_int_data  = int_data;
+  }
+
+ protected:
+
+  PhysicsTestDataGeneric& assignment_impl(const PhysicsTestDataGeneric& rhs);
+
+ private:
+  void init_ptrs();
+  std::pair<size_t, size_t> get_index(void* member) const;
+
+  std::vector<std::vector<Int> >    m_dims;  // list of dims of data, reals come before ints
+  std::vector<std::vector<Real**> > m_reals; // list of real data ptrs. idx here will match m_dims idx
+  std::vector<std::vector<Int**> >  m_ints;  // lits of integer data ptrs. idx here will match m_dims[m_reals.size() + idx]
+  std::vector<Int>  m_totals;    // list of totals, same index space as m_dims
+  std::vector<Real> m_real_data; // all real data
+  std::vector<Int>  m_int_data;  // all int data
+};
+
 // Base class for common test data setup
-struct PhysicsTestData
+struct PhysicsTestData : public PhysicsTestDataGeneric
 {
   Int dim1, dim2, dim3;
 
@@ -135,64 +242,24 @@ struct PhysicsTestData
                   const std::vector<Int**>& idx_c = {});  // [dim1] (optional)
 
   PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
-                  const std::vector<Real**>& ptrs,        // [schol x dim2]
-                  const std::vector<Real**>& ptrs_i,      // [schol x dim3]
-                  const std::vector<Real**>& ptrs_c = {}, // [schol] (optional)
-                  const std::vector<Int**>& idx_c = {});  // [schol] (optional)
-
-  // Delete this to block subclasses getting the default impls, which would be incorrect
-  PhysicsTestData(const PhysicsTestData &rhs) = delete;
-  PhysicsTestData &operator=(const PhysicsTestData &rhs) = delete;
-
-  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
-  // format of all data from one language to another
-  template <ekat::TransposeDirection::Enum D>
-  void transpose() {
-    std::vector<Real> data(m_data.size());
-
-    // Transpose on the zt grid
-    for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      ekat::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , dim1, dim2);
-    }
-
-    // Transpose on the zi grid
-    for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      ekat::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), dim1, dim3);
-    }
-
-    // Copy the column only grid
-    const Int c_start_offset = m_ptrs.size()*m_total + m_ptrs_i.size()*m_totali;
-    std::copy(m_data.begin() + c_start_offset, m_data.end(), data.begin() + c_start_offset);
-
-    m_data = data;
-
-    // Shift the indices. We might not be able to make the assumption that int data represented indices
-    for (size_t i = 0; i < m_idx_data.size(); ++i) {
-      m_idx_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
-      EKAT_ASSERT_MSG(m_idx_data[i] >= 0, "Bad index: " << m_idx_data[i]);
-    }
-  }
-
-  // Initialize with random values. The default range is 0..1
-  // To use non-default ranges, you'll need to provide a pair of pairs, mapping
-  // the member to a range.
-  // Example, to use a -1 to 1 range for wthl member:
-  // d.randomize({ {d.wthl, {-1, 1}} });
-  void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
+                  const std::vector<Real**>& ptrs,          // [dim1 x dim2]
+                  const std::vector<Real**>& ptrs_i,        // [dim1 x dim3]
+                  const std::vector<Real**>& ptrs_c = {},   // [dim1] (optional)
+                  const std::vector<Int**>& idx_c = {},     // [dim1] (optional)
+                  const std::vector<Real**>& ptrs_3d = {}); // [dim1 x dim2 x dim3] (optional)
 
   Int total1x2() const { return m_total; }
   Int total1x3() const { return m_totali; }
+  Int total3d()  const { return m_total3d; }
 
  protected:
 
   PhysicsTestData& assignment_impl(const PhysicsTestData& rhs);
 
  private:
-  void init_ptrs();
-
   // Internals
-  Int m_total, m_totali;
-  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c;
+  Int m_total, m_totali, m_total3d;
+  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c, m_ptrs_3d;
   std::vector<Int**> m_indices_c;
   std::vector<Real> m_data;
   std::vector<Int> m_idx_data;
