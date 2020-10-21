@@ -470,7 +470,7 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_array(diagnosticsPool, config_AM_mocStreamfunction_vertical_velocity_value, vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
@@ -482,11 +482,7 @@ contains
          call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
          call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         if (trim(config_AM_mocStreamfunction_normal_velocity_value)=="normalVelocity") then
-            call mpas_pool_get_array(statePool, trim(config_AM_mocStreamfunction_normal_velocity_value), normalVelocity, timeLevel)
-         else
-            call mpas_pool_get_array(diagnosticsPool, trim(config_AM_mocStreamfunction_normal_velocity_value), normalVelocity, timeLevel)
-         end if
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -563,108 +559,106 @@ contains
      call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthRegion', mocStreamvalLatAndDepthRegion)
      mocStreamvalLatAndDepthRegion = mocStreamvalLatAndDepthRegionTotal * m3ps_to_Sv
 
-     if(config_use_GM) THEN !compute GM bolus streamfunction portion
-     block => domain % blocklist
-     do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+     if(config_use_GM) THEN !compute GM bolus contribution to the streamfunction
+       block => domain % blocklist
+       do while (associated(block))
+           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+           call mpas_pool_get_subpool(block % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
+           call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
-         call mpas_pool_get_array(mocStreamfunctionAMPool, 'binBoundaryMocStreamfunction', binBoundaryMocStreamfunction)
+           call mpas_pool_get_array(mocStreamfunctionAMPool, 'binBoundaryMocStreamfunction', binBoundaryMocStreamfunction)
 
-         binWidth = (binBoundaryMocStreamfunction(nMocStreamfunctionBinsUsed + 1) - binBoundaryMocStreamfunction(1)) &
-         / nMocStreamfunctionBinsUsed
+           binWidth = (binBoundaryMocStreamfunction(nMocStreamfunctionBinsUsed + 1) - binBoundaryMocStreamfunction(1)) &
+           / nMocStreamfunctionBinsUsed
 
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+           call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(meshPool, 'latCell', latCell)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+           call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertVelocityTop)
+           call mpas_pool_get_array(meshPool, 'latCell', latCell)
+           call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-         call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
+           call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
 
-         !!!! TRANSECT DOMAINSPLIT VARIABLES
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
-         call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
-         call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalVelocity)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+           !!!! TRANSECT DOMAINSPLIT VARIABLES
+           call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+           call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+           call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+           call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
+           call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalVelocity)
+           call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+           call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
+           !!!! TRANSECT CALCULATION
+           sumTransport = 0.0_RKIND
+           mocStreamValLatAndDepthLocal = 0.0_RKIND
+           mocStreamValLatAndDepthTotal = 0.0_RKIND
+           sumVertBinVelocity = 0.0_RKIND
+           mocStreamValLatAndDepthRegionLocal = 0.0_RKIND
+           mocStreamValLatAndDepthRegionTotal = 0.0_RKIND
+           sumVertBinVelocityRegion = 0.0_RKIND
 
-     !!!! TRANSECT CALCULATION
-         sumTransport = 0.0_RKIND
-         mocStreamValLatAndDepthLocal = 0.0_RKIND
-         mocStreamValLatAndDepthTotal = 0.0_RKIND
-         sumVertBinVelocity = 0.0_RKIND
-         mocStreamValLatAndDepthRegionLocal = 0.0_RKIND
-         mocStreamValLatAndDepthRegionTotal = 0.0_RKIND
-         sumVertBinVelocityRegion = 0.0_RKIND
+           do iTransect = 1,transectsInAddGroup
+              currentTransect = transectsInGroup(iTransect, transectGroupNumber)
+              do iEdge = 1,nEdgesSolve
+                 c1 = cellsOnEdge(1,iEdge)
+                 c2 = cellsOnEdge(2,iEdge)
+                 do k = 1, maxLevelEdgeTop(iEdge)
+                    sumTransport(k,iTransect) = sumTransport(k,iTransect) + &
+                       transectEdgeMaskSigns(currentTransect,iEdge) &
+                       * transectEdgeMasks(currentTransect, iEdge) &
+                       * normalVelocity(k,iEdge)*dvEdge(iEdge) &
+                       * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
+                 end do
+              end do
+              do k = 2, nVertLevels
+                 mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                    mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
+                    + sumTransport(k - 1, iTransect)
+              end do
+           end do
 
-         do iTransect = 1,transectsInAddGroup
-            currentTransect = transectsInGroup(iTransect, transectGroupNumber)
-            do iEdge = 1,nEdgesSolve
-               c1 = cellsOnEdge(1,iEdge)
-               c2 = cellsOnEdge(2,iEdge)
-               do k = 1, maxLevelEdgeTop(iEdge)
-                  sumTransport(k,iTransect) = sumTransport(k,iTransect) + &
-                     transectEdgeMaskSigns(currentTransect,iEdge) &
-                     * transectEdgeMasks(currentTransect, iEdge) &
-                     * normalVelocity(k,iEdge)*dvEdge(iEdge) &
-                     * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
-               end do
-            end do
-            do k = 2, nVertLevels
-               mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                  mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                  + sumTransport(k - 1, iTransect)
-            end do
-         end do
+           !!!! END TRANSECT CALCULATION
 
-         !!!! END TRANSECT CALCULATION
+           do iCell = 1,nCellsSolve
+              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+              do k = 1,maxLevelCell(iCell)
+                 do i = 1, regionsInAddGroup
+                    currentRegion = regionsInGroup(i, regionGroupNumber)
+                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertVelocityTop(k, iCell) * &
+                          areaCell(iCell) * regionCellMasks(currentRegion, iCell))
+                 end do
+                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertVelocityTop(k, iCell) * areaCell(iCell))
+              end do
+           end do
 
-         do iCell = 1,nCellsSolve
-            iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
-            do k = 1,maxLevelCell(iCell)
-               do i = 1, regionsInAddGroup
-                  currentRegion = regionsInGroup(i, regionGroupNumber)
-                  sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertVelocityTop(k, iCell) * &
-                        areaCell(iCell) * regionCellMasks(currentRegion, iCell))
-               end do
-               sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertVelocityTop(k, iCell) * areaCell(iCell))
-            end do
-         end do
+           do i = 1, regionsInAddGroup
+              do k = 1,nVertLevels
+                 do iBin = 2, nMocStreamfunctionBinsUsed + 1
+                    mocStreamValLatAndDepthLocal(iBin, k) = mocStreamValLatAndDepthLocal(iBin-1, k) &
+                       + sumVertBinVelocity(iBin, k)
+                    mocStreamValLatAndDepthRegionLocal(iBin, k, i) = mocStreamValLatAndDepthRegionLocal(iBin-1, k, i) &
+                       + sumVertBinVelocityRegion(iBin, k, i)
+                 end do
+              end do
+           end do
 
-         do i = 1, regionsInAddGroup
-            do k = 1,nVertLevels
-               do iBin = 2, nMocStreamfunctionBinsUsed + 1
-                  mocStreamValLatAndDepthLocal(iBin, k) = mocStreamValLatAndDepthLocal(iBin-1, k) &
-                     + sumVertBinVelocity(iBin, k)
-                  mocStreamValLatAndDepthRegionLocal(iBin, k, i) = mocStreamValLatAndDepthRegionLocal(iBin-1, k, i) &
-                     + sumVertBinVelocityRegion(iBin, k, i)
-               end do
-            end do
-         end do
+           block => block % next
+       end do
 
-         block => block % next
-     end do
+       call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1), mocStreamValLatAndDepthLocal, &
+           mocStreamvalLatAndDepthTotal)
 
-     call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1), mocStreamValLatAndDepthLocal, &
-         mocStreamvalLatAndDepthTotal)
+       call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1) * maxRegionsInGroup, &
+           mocStreamValLatAndDepthRegionLocal, mocStreamvalLatAndDepthRegionTotal)
 
-     call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1) * maxRegionsInGroup, &
-         mocStreamValLatAndDepthRegionLocal, mocStreamvalLatAndDepthRegionTotal)
+       call mpas_pool_get_subpool(domain % blocklist % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
+       call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthGM', mocStreamvalLatAndDepthGM)
+       mocStreamvalLatAndDepthGM = mocStreamvalLatAndDepthTotal * m3ps_to_Sv
 
-     call mpas_pool_get_subpool(domain % blocklist % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
-     call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthGM', mocStreamvalLatAndDepthGM)
-     mocStreamvalLatAndDepthGM = mocStreamvalLatAndDepthTotal * m3ps_to_Sv
-
-     call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthRegionGM', mocStreamvalLatAndDepthRegionGM)
-     mocStreamvalLatAndDepthRegionGM = mocStreamvalLatAndDepthRegionTotal * m3ps_to_Sv
+       call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthRegionGM', mocStreamvalLatAndDepthRegionGM)
+       mocStreamvalLatAndDepthRegionGM = mocStreamvalLatAndDepthRegionTotal * m3ps_to_Sv
 
      endif !config_use_GM
 
