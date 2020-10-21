@@ -66,6 +66,12 @@
 		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
+		<var name="mocStreamvalLatAndDepthGM" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Gent McWilliams Bolus Velocity"
+		/>
+		<var name="mocStreamvalLatAndDepthRegionGM" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Gent McWilliams Bolus Velocity"
+		/>
 		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
@@ -88,6 +94,8 @@
 			<var name="xtime"/>
 			<var name="mocStreamvalLatAndDepth"/>
 			<var name="mocStreamvalLatAndDepthRegion"/>
+			<var name="mocStreamvalLatAndDepthGM"/>
+			<var name="mocStreamvalLatAndDepthRegionGM"/>
 			<var name="binBoundaryMocStreamfunction"/>
 			<var name="refBottomDepth"/>
 
