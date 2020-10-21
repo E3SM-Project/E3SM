@@ -16,7 +16,67 @@
 #include "share/field/field_identifier.hpp"
 
 #include "share/grid/grids_manager.hpp"
-
+/*  The AtmosphereInput class handles all input streams to SCREAM.
+ *  It is important to note that there does not exist an InputManager,
+ *  like in the case of output.  So all input streams have to be managed
+ *  directly by the process that requires it.
+ *
+ *  The typical input call will be to the outward facing routine 'pull_input'.
+ *
+ *  pullinput calls the three typical init, run and finalize routines in order
+ *  and makes the input immediately availalbe. Note, init, run and finalize are
+ *  also outward facing but do not need those respective sections of the AD, 
+ *  i.e. during ad.init, ad.run and ad.finalize.
+ *
+ *  Currently, input can only handle single timesnap input files.  In other words
+ *  files that will be opened, read and closed within the same timestep and only
+ *  store one timesnap of data.
+ *  TODO: Develop infrastructure for reading input from files with multiple timesnaps
+ *  and over multiple timesteps of the simulation.
+ *
+ *  Note: the init, run and finalize are separate routines that are outward facing in
+ *  this class to facilitate cases where reading input over some number of simulation
+ *  timesteps is possible.
+ *
+ *  At construction time All input instances require
+ *  1. an EKAT comm group and
+ *  2. a EKAT parameter list
+ *  3. a pointer to the field repository
+ *  The parameter list contains all of the essential data regarding
+ *  the input file name and the set of variables to be read.  The parameter list can be
+ *  created localling in the process needing input, see src/share/io/tests/ for examples of
+ *  setting up the input parameter list.
+ *
+ *  A typical input parameter list looks like:
+ *  -----
+ *  Input Parameters
+ *    FILENAME: STRING
+ *    GRID: STRING
+ *    FIELDS
+ *      Number of Fields: INT
+ *      field_1: STRING
+ *      ...
+ *      field_N: STRING
+ *  -----
+ *  where,
+ *  FILENAME: is a string value of the name of the input file to be read.
+ *  GRID: is a string of the grid the input file is written on, currently only "Physics" is supported.
+ *  FIELDS: designation of a sublist, so empty here
+ *    Number of Fields: is an integer value>0 telling the number of fields
+ *    field_x: is the xth field variable name.  Should match the name in the file and the name in the field repo.  TODO: add a rename option if variable names differ in file and field repo.
+ *
+ * Usage:
+ * 1. Construct an instance of the AtmosphereInput class:
+ *    AtmosphereInput in_object(comm,params);
+ * 2. Use pull input to gather the desired data:
+ *    in_object.pull_input(*grid_manager)
+ *
+ * The AtmosphereInput class will replace all fields in the field_repo that are part of the input with
+ * data read from the input file.
+ *    
+ * --------------------------------------------------------------------------------
+ *  (2020-10-21) Aaron S. Donahue (LLNL)
+ */
 namespace scream
 {
 
@@ -31,16 +91,20 @@ public:
   virtual ~AtmosphereInput () = default;
 
   // Constructor
-  AtmosphereInput(const ekat::Comm& comm, const ekat::ParameterList& params)
+  AtmosphereInput(const ekat::Comm& comm, const ekat::ParameterList& params,
+                  const std::shared_ptr<const FieldRepository<Real,device_type>>& repo,
+                   const std::shared_ptr<const GridsManager>& gm)
   {
-    m_comm   = comm;
-    m_params = params;
+    m_comm       = comm;
+    m_params     = params;
+    m_field_repo = repo;
+    m_gm         = gm;
   }
 
   // Main Functions
-  void pull_input(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
-  void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
-  void run(const FieldRepository<Real, device_type>& field_repo);
+  void pull_input();
+  void init();
+  void run();
   void finalize();
 
   // Helper Functions
@@ -48,12 +112,14 @@ public:
 
 protected:
   // Internal functions
-  void add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name);
+  void add_identifier(const std::string name);
   void register_variables();
   void set_degrees_of_freedom();
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
+  std::shared_ptr<const FieldRepository<Real,device_type>> m_field_repo;
+  std::shared_ptr<const GridsManager>                      m_gm;
   
   std::string m_filename;
   std::string m_avg_type;
@@ -68,17 +134,23 @@ protected:
 
 private:
 
-}; // Class AtmosphereIntput
+}; // Class AtmosphereInput
 
 // ====================== IMPLEMENTATION ===================== //
-inline void AtmosphereInput::pull_input(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
+inline void AtmosphereInput::pull_input()
 {
-  init(field_repo,gm);
-  run(field_repo);
+/*  Run through the sequence of opening the file, reading input and then closing the file.  */
+  init();
+  run();
   finalize();
 } 
-inline void AtmosphereInput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm) 
+inline void AtmosphereInput::init() 
 {
+/* 
+ * Call all of the necessary SCORPIO routines to open the file, gather the variables and dimensions and set the degrees-of-freedom
+ * for reading.
+ * Organize local structures responsible for writing over field repo data.
+ */
   using namespace scream;
   using namespace scream::scorpio;
 
@@ -89,7 +161,7 @@ inline void AtmosphereInput::init(const FieldRepository<Real, device_type>& fiel
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
-  m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
+  m_gids = m_gm->get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
   int local_dofs = m_gids.size();
@@ -103,7 +175,7 @@ inline void AtmosphereInput::init(const FieldRepository<Real, device_type>& fiel
     /* Determine the variable name */
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
     /* Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid */
-    add_identifier(field_repo,var_name);
+    add_identifier(var_name);
   }
 
   // Register new netCDF file for input.
@@ -118,8 +190,9 @@ inline void AtmosphereInput::init(const FieldRepository<Real, device_type>& fiel
 
 } // init
 /* ---------------------------------------------------------- */
-inline void AtmosphereInput::run(const FieldRepository<Real, device_type>& field_repo)
+inline void AtmosphereInput::run()
 {
+/* Replace data in the field repo with data in from the input file for all fields designated as input */
   using namespace scream;
   using namespace scream::scorpio;
 
@@ -129,7 +202,7 @@ inline void AtmosphereInput::run(const FieldRepository<Real, device_type>& field
     // Get all the info for this field.
     auto name   = f_map.first;
     auto fid    = f_map.second;
-    auto l_view_dev = field_repo.get_field(fid).get_view();
+    auto l_view_dev = m_field_repo->get_field(fid).get_view();
     auto l_view_host = Kokkos::create_mirror_view( l_view_dev );
     grid_read_data_array(m_filename,name,m_dofs.at(name),l_view_dev.data());
     Kokkos::deep_copy(l_view_dev,l_view_host);
@@ -139,53 +212,44 @@ inline void AtmosphereInput::run(const FieldRepository<Real, device_type>& field
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::finalize() 
 {
+/* Cleanup by closing the input file */
   using namespace scream;
   using namespace scream::scorpio;
   eam_pio_closefile(m_filename);
 } // finalize
 /* ---------------------------------------------------------- */
-inline void AtmosphereInput::add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name)
+inline void AtmosphereInput::add_identifier(const std::string name)
 {
-  for (auto myalias=field_repo.begin();myalias!=field_repo.end();++myalias)
+/* 
+ * add_identifier routine adds a new field identifier to the local map of fields that will be used by this class for IO.
+ * INPUT:
+ *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
+ */
+  auto f = m_field_repo->get_field(name, m_grid_name);
+  auto fid = f.get_header().get_identifier();
+  m_fields.emplace(name,fid);
+  // check to see if all the dims for this field are already set to be registered.
+  for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
-    if (myalias->first == name) {
-      auto& map_it = myalias->second;
-      // map_it is now a map<FieldIdentifier, Field>. Loop over it, and pick all fields defined on the input grid
-      // map_it<Field::FieldHeader::FieldIdentifier,Field>
-      for (const auto& it : map_it) {
-        auto& field_id = it.first;
-        if (it.first.get_grid_name()!=m_grid_name) {
-          continue;
-        }
-        // ok, this field is on the correct mesh. add it to pio input
-        m_fields.emplace(name,field_id);
-        // check to see if all the dims for this field are already set to be registered.
-        std::map<std::string,Int>::iterator tag_loc;
-        for (int ii=0; ii<field_id.get_layout().rank(); ++ii)
-        {
-          // check tag against m_dims map.  If not in there, then add it.
-          auto& tag = field_id.get_layout().tags()[ii];
-          tag_loc = m_dims.find(tag2string(tag));
-          if (tag_loc == m_dims.end()) 
-          { 
-            m_dims.emplace(std::make_pair(tag2string(tag),field_id.get_layout().dim(ii)));
-          } else {  
-            EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==field_id.get_layout().dim(ii),
-              "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
-          }
-        }
-        return;
-      }
-      // Got this far means we found the field but not on the correct grid.
-      EKAT_REQUIRE_MSG(true,"Error! Field " + name + " found in repo, but not on grid " + m_grid_name + ".\n");
+    // check tag against m_dims map.  If not in there, then add it.
+    auto& tag = fid.get_layout().tags()[ii];
+    auto tag_loc = m_dims.find(tag2string(tag));
+    if (tag_loc == m_dims.end()) 
+    { 
+      m_dims.emplace(std::make_pair(tag2string(tag),fid.get_layout().dim(ii)));
+    } else {  
+      EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==fid.get_layout().dim(ii),
+        "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
     }
   }
-  // Got this far means that the field was never found in the repo.
-  EKAT_REQUIRE_MSG(true,"Error! Field " + name + " not found in repo.\n");
 } // add_identifier
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::register_variables()
 {
+/* Register each variable in IO stream with the SCORPIO interface.  See scream_scorpio_interface.* for details.
+ * This is necessary for the SCORPIO routines to be able to lookup variables in the io file with the appropriate
+ * degrees of freedom assigned to each core and the correct io decomposition.
+ */
   using namespace scream;
   using namespace scream::scorpio;
 
@@ -197,9 +261,9 @@ inline void AtmosphereInput::register_variables()
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
-    for (int ii=0;ii<fid.get_layout().rank();++ii) {
-      io_decomp_tag += "-" + tag2string(fid.get_layout().tag(ii)); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(tag2string(fid.get_layout().tag(ii))); // Add dimensions string to vector of dims.
+    for (auto& tag_ii : fid.get_layout().tags()) {
+      io_decomp_tag += "-" + tag2string(tag_ii); // Concatenate the dimension string to the io-decomp string
+      vec_of_dims.push_back(tag2string(tag_ii)); // Add dimensions string to vector of dims.
     }
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
@@ -209,6 +273,10 @@ inline void AtmosphereInput::register_variables()
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::set_degrees_of_freedom()
 {
+/* 
+ * Use information from the grids manager to determine which indices for each field are associated
+ * with this computational core.
+ */
   using namespace scream;
   using namespace scream::scorpio;
   // Cycle through all fields and set dof.

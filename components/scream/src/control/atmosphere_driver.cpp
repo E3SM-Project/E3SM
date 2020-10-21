@@ -192,7 +192,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
 
   // Finalize output streams, make sure files are closed
-  m_output_manager.finalize(m_current_ts);
+  m_output_manager.finalize();
 
   m_device_field_repo->clean_up();
 #ifdef SCREAM_DEBUG

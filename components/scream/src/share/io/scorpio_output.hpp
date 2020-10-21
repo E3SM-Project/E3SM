@@ -58,17 +58,21 @@ public:
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
-  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params)
+  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
+                   const std::shared_ptr<const FieldRepository<Real,device_type>>& repo,
+                   const std::shared_ptr<const GridsManager>& gm)
   {
-    m_comm   = comm;
-    m_params = params;
+    m_comm       = comm;
+    m_params     = params;
+    m_field_repo = repo;
+    m_gm         = gm;
   }
 
   // Main Functions
-  void init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm);
-  void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
-  void run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const util::TimeStamp& time);
-  void finalize(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time);
+  void init();
+  void run(const Real time);
+  void run(const util::TimeStamp& time);
+  void finalize();
 
   // Helper Functions
   void check_status();
@@ -76,15 +80,17 @@ public:
 
 protected:
   // Internal functions
-  void add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name);
+  void add_identifier(const std::string name);
   void register_variables(const std::string filename);
   void set_degrees_of_freedom(const std::string filename);
-  void register_views(const FieldRepository<Real, device_type>& field_repo);
+  void register_views();
   void new_file(const std::string filename);
-  void run_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time, const std::string time_str);  // Actual run routine called by outward facing "run"
+  void run_impl(const Real time, const std::string time_str);  // Actual run routine called by outward facing "run"
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
+  std::shared_ptr<const FieldRepository<Real,device_type>> m_field_repo;
+  std::shared_ptr<const GridsManager>                      m_gm;
   
   std::string m_casename;
   std::string m_avg_type;
@@ -123,7 +129,7 @@ private:
 
 // ====================== IMPLEMENTATION ===================== //
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm)
+inline void AtmosphereOutput::init()
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -142,7 +148,7 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
-  m_gids = gm.get_grid(m_grid_name)->get_dofs_gids();
+  m_gids = m_gm->get_grid(m_grid_name)->get_dofs_gids();
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   // int total_dofs;
   m_local_dofs = m_gids.size();
@@ -156,22 +162,22 @@ inline void AtmosphereOutput::init(const FieldRepository<Real, device_type>& fie
     /* Determine the variable name */
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
     /* Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid */
-    add_identifier(field_repo,var_name);
+    add_identifier(var_name);
   }
 
-  register_views(field_repo);
+  register_views();
 
 } // init
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const util::TimeStamp& time)
+inline void AtmosphereOutput::run(const util::TimeStamp& time)
 {
   std::string time_str = time.to_string();
   std::replace( time_str.begin(), time_str.end(), ' ', '.');
   time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
-  run_impl(field_repo,gm,time.get_seconds(),time_str);
+  run_impl(time.get_seconds(),time_str);
 }
 /*-----*/
-inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const GridsManager& gm, const Real time)
+inline void AtmosphereOutput::run(const Real time)
 {
   // Convert time in seconds to a DD-HHMMSS string:
   const int ss = static_cast<int>(time);
@@ -181,10 +187,10 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
   const std::string zero = "00";
   std::string time_str = (h==0 ? zero : std::to_string(h)) + (m==0 ? zero : std::to_string(m)) + (s==0 ? zero : std::to_string(s));
   //
-  run_impl(field_repo,gm,time,time_str);
+  run_impl(time,time_str);
 }
 /*-----*/
-inline void AtmosphereOutput::run_impl(const FieldRepository<Real, device_type>& field_repo, const GridsManager& /* gm */, const Real time, const std::string time_str) 
+inline void AtmosphereOutput::run_impl(const Real time, const std::string time_str) 
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -245,7 +251,7 @@ inline void AtmosphereOutput::run_impl(const FieldRepository<Real, device_type>&
   {
     // Get all the info for this field.
     auto name   = f_map.first;
-    auto g_view = field_repo.get_field(f_map.second).get_view();
+    auto g_view = m_field_repo->get_field(f_map.second).get_view();
     auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.  Use g_view for Instant?
     Int  f_len  = f_map.second.get_layout().size();
     // The next two operations do not need to happen if the frequency of output is instantaneous.
@@ -300,7 +306,7 @@ inline void AtmosphereOutput::run_impl(const FieldRepository<Real, device_type>&
 } // run
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::
-finalize(const FieldRepository<Real, device_type>& /* field_repo */, const GridsManager& /* gm */, const Real time) 
+finalize() 
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -312,50 +318,38 @@ finalize(const FieldRepository<Real, device_type>& /* field_repo */, const Grids
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::check_status()
 {
-  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
+  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",
+                   m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
 } // check_status
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::add_identifier(const FieldRepository<Real, device_type>& field_repo, const std::string name)
+inline void AtmosphereOutput::add_identifier(const std::string name)
 {
-  for (auto myalias=field_repo.begin();myalias!=field_repo.end();++myalias)
+/* 
+ * add_identifier routine adds a new field identifier to the local map of fields that will be used by this class for IO.
+ * INPUT:
+ *   field_repo: is a pointer to the field_repository for this simulation.
+ *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
+ */
+  auto f = m_field_repo->get_field(name, m_grid_name);
+  auto fid = f.get_header().get_identifier();
+  m_fields.emplace(name,fid);
+  // check to see if all the dims for this field are already set to be registered.
+  for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
-    if (myalias->first == name) {
-      auto& map_it = myalias->second;
-      // map_it is now a map<FieldIdentifier, Field>. Loop over it, and pick all fields defined on the output grid
-      // map_it<Field::FieldHeader::FieldIdentifier,Field>
-      for (const auto& it : map_it) {
-        auto& field_id = it.first;
-        if (it.first.get_grid_name()!=m_grid_name) {
-          continue;
-        }
-        // ok, this field is on the correct mesh. add it to pio output
-        m_fields.emplace(name,field_id);
-        // check to see if all the dims for this field are already set to be registered.
-        std::map<std::string,Int>::iterator tag_loc;
-        for (int ii=0; ii<field_id.get_layout().rank(); ++ii)
-        {
-          // check tag against m_dims map.  If not in there, then add it.
-          auto& tag = field_id.get_layout().tags()[ii];
-          tag_loc = m_dims.find(tag2string(tag));
-          if (tag_loc == m_dims.end()) 
-          { 
-            m_dims.emplace(std::make_pair(tag2string(tag),field_id.get_layout().dim(ii)));
-          } else {  
-            EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==field_id.get_layout().dim(ii),
-              "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
-          }
-        }
-        return;
-      }
-      // Got this far means we found the field but not on the correct grid.
-      EKAT_REQUIRE_MSG(true,"Error! Field " + name + " found in repo, but not on grid " + m_grid_name + ".\n");
+    // check tag against m_dims map.  If not in there, then add it.
+    auto& tag = fid.get_layout().tags()[ii];
+    auto tag_loc = m_dims.find(tag2string(tag));
+    if (tag_loc == m_dims.end()) 
+    { 
+      m_dims.emplace(std::make_pair(tag2string(tag),fid.get_layout().dim(ii)));
+    } else {  
+      EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==fid.get_layout().dim(ii),
+        "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
     }
   }
-  // Got this far means that the field was never found in the repo.
-  EKAT_REQUIRE_MSG(true,"Error! Field " + name + " not found in repo.\n");
 } // add_identifier
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_type>& field_repo)
+inline void AtmosphereOutput::register_views()
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -367,10 +361,10 @@ inline void AtmosphereOutput::register_views(const FieldRepository<Real, device_
     // If the "averaging type" is instant then just need a ptr to the view.
     if (m_avg_type == "Instant")
     {
-      m_view.emplace(name,field_repo.get_field(it.second).get_view());
+      m_view.emplace(name,m_field_repo->get_field(it.second).get_view());
     } else {
     // If anything else then we need a local copy that can be updated.
-      view_type view_copy("",field_repo.get_field(it.second).get_view().extent(0));
+      view_type view_copy("",m_field_repo->get_field(it.second).get_view().extent(0));
       m_view.emplace(name,view_copy);
     }
   }
@@ -389,9 +383,9 @@ inline void AtmosphereOutput::register_variables(const std::string filename)
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
-    for (int ii=0;ii<fid.get_layout().rank();++ii) {
-      io_decomp_tag += "-" + tag2string(fid.get_layout().tag(ii)); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(tag2string(fid.get_layout().tag(ii))); // Add dimensions string to vector of dims.
+    for (auto& tag_ii : fid.get_layout().tags()) {
+      io_decomp_tag += "-" + tag2string(tag_ii); // Concatenate the dimension string to the io-decomp string
+      vec_of_dims.push_back(tag2string(tag_ii)); // Add dimensions string to vector of dims.
     }
     io_decomp_tag += "-time";  // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger?  Should we register dimension variables (such as ncol and lat/lon) elsewhere in the dimension registration?  These won't have time.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.

@@ -71,7 +71,7 @@ TEST_CASE("input_output_basic","io")
     time += dt;
     m_output_manager.run(time);
   }
-  m_output_manager.finalize(time);
+  m_output_manager.finalize();
   // At this point we should have 4 files output:
   // 1 file each for averaged, instantaneous, min and max data.
   // Cycle through each output and make sure it is correct.
@@ -82,8 +82,8 @@ TEST_CASE("input_output_basic","io")
   auto min_params = get_in_params("Min");
   auto max_params = get_in_params("Max");
   // Check instant output
-  input_type ins_input(io_comm,ins_params);
-  ins_input.pull_input(*field_repo,*grid_man);
+  input_type ins_input(io_comm,ins_params,field_repo,grid_man);
+  ins_input.pull_input();
   auto f1_dev = field_repo->get_field("field_1","Physics").get_view();
   auto f2_dev = field_repo->get_field("field_2","Physics").get_view();
   auto f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
@@ -101,8 +101,8 @@ TEST_CASE("input_output_basic","io")
   }
   // Check average output
   Real tol = pow(10,-8);
-  input_type avg_input(io_comm,avg_params);
-  avg_input.pull_input(*field_repo,*grid_man);
+  input_type avg_input(io_comm,avg_params,field_repo,grid_man);
+  avg_input.pull_input();
   f1_dev = field_repo->get_field("field_1","Physics").get_view();
   f2_dev = field_repo->get_field("field_2","Physics").get_view();
   f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();

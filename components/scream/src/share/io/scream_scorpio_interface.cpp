@@ -44,6 +44,11 @@ namespace scream {
 namespace scorpio {
 /* ----------------------------------------------------------------- */
 void eam_init_pio_subsystem(const int mpicom) {
+  // TODO: Right now the compid has been hardcoded to 0 and the flag
+  // to create a init a subsystem in SCREAM is hardcoded to true.
+  // When surface coupling is established we will need to refactor this
+  // routine to pass the appropriate values depending on if we are running
+  // the full model or a unit test.
   GPTLinitialize();
   eam_init_pio_subsystem_c2f(mpicom,0,true);
 }
@@ -97,12 +102,13 @@ void register_dimension(const std::string &filename, const std::string& shortnam
 void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
-  const char* var_dimensions_c[numdims];
+  const char** var_dimensions_c = new const char*[numdims];
   for (int ii = 0;ii<numdims;++ii) 
   {
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
   get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+  delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
 void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
@@ -113,12 +119,13 @@ void get_variable(const std::string &filename, const std::string& shortname, con
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
-  const char* var_dimensions_c[numdims];
+  const char** var_dimensions_c = new const char*[numdims];
   for (int ii = 0;ii<numdims;++ii) 
   {
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
   register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+  delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {

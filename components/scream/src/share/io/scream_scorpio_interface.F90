@@ -43,7 +43,6 @@ module scream_scorpio_interface
 !==============================================================================!
 
   !------------
-  use physics_utils, only: rtype, rtype8, itype, btype
   use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
       PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe, &
       pio_init, pio_freedecomp
@@ -58,10 +57,16 @@ module scream_scorpio_interface
   use pionfatt_mod, only : PIO_put_att   => put_att
   use pionfput_mod, only : PIO_put_var   => put_var
 
+  use iso_c_binding
   implicit none
   save
 
 #include "scream_config.f"
+#ifdef SCREAM_DOUBLE_PRECISION
+# define rtype c_double
+#else
+# define rtype c_float
+#endif
                      
   public :: & 
             eam_pio_closefile,      & ! Close a specfic pio file.
@@ -560,8 +565,7 @@ contains
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
 #ifdef CIME_BUILD
-  ! TODO: have the code rely on shr_pio_mod only when the build is of the full
-  ! model. Note, these three variables from shr_pio_mod are only needed in the
+  ! Note, these three variables from shr_pio_mod are only needed in the
   ! case when we want to use the pio_subsystem that has already been defined by
   ! the component coupler.
   use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype

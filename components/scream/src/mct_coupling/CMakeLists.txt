@@ -50,13 +50,6 @@ set(ATM_SRC
 #  scream_scorpio_interface_iso_c2f.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
-# COMMENT FOR LUCA: If we move IO out of mct_coupling, ther must be cmake directives here that we can remove.
-if (USE_ESMF_LIB)
-  set(ESMFDIR "esmf")
-else()
-  set(ESMFDIR "noesmf")
-endif()
-set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
 set (SCREAM_LIBS
      scream_share
@@ -66,30 +59,8 @@ set (SCREAM_LIBS
      shoc
 )
 
-# In CIME builds, create imported targets for scorpio and csm_share
-include (Scorpio)
-CreateScorpioTarget(TRUE) # Note: the input is whether we want FLIB too. We want/need both, so look for both
-include (CsmShare)
-CreateCsmShareTarget()
-
-set (SCREAM_CIME_LIBS
-     scream_pioc
-     scream_piof
-     scream_csm_share
-)
-
 # Create atm lib
 add_library(atm ${ATM_SRC})
 
-# Set includes
-target_include_directories(atm PUBLIC ${SCREAM_INCLUDE_DIRS})
-
 # Set f90 compiled modules dir
 set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
-
-# Link libraries
-target_link_libraries(atm PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
-
-#if (NOT SCREAM_LIB_ONLY)
-#  add_subdirectory(io)
-#endif()

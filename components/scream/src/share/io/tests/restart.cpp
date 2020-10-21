@@ -72,13 +72,13 @@ TEST_CASE("restart","io")
     time += dt;
     m_output_manager.run(time);
   }
-  m_output_manager.finalize(time);
+  m_output_manager.finalize();
 
   // At this point we should have produced 2 files, a restart and a restart history file.
   
   // Finalize everything
   scorpio::eam_pio_finalize();
-  (*grid_man).clean_up();
+  grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
 std::shared_ptr<FieldRepository<Real,DefaultDevice>> get_test_repo(const Int num_cols, const Int num_levs)
