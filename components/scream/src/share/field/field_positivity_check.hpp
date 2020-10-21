@@ -12,8 +12,8 @@ namespace scream
 // can repair a field that fails the check by setting all nonpositive values
 // to that lower bound. If no specific lower bound is given (i.e. if the
 // default constructor is used), no repairs can be made.
-template<typename Realtype>
-class FieldPositivityCheck: public FieldPropertyCheck<Realtype> {
+template<typename RealType>
+class FieldPositivityCheck: public FieldPropertyCheck<RealType> {
 public:
 
   // Default constructor -- cannot repair fields that fail the check.
@@ -21,23 +21,19 @@ public:
 
   // Constructor with lower bound -- can repair fields that fail the check
   // by overwriting nonpositive values with the given lower bound.
-  explicit FieldPositivityCheck (Realtype lower_bound) :
+  explicit FieldPositivityCheck (RealType lower_bound) :
     m_lower_bound(lower_bound) {
     EKAT_ASSERT_MSG(lower_bound > 0, "lower_bound must be positive.");
   }
 
   // Overrides.
 
-  bool check(const Field<Realtype>& field) const override {
+  bool check(const Field<RealType>& field) const override {
     auto view = field.get_view();
-    Realtype min_val;
-    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, Realtype& m) {
-      if (i == 0) {
-        m = view(0);
-      } else {
-        m = ekat::impl::min(m, view(i));
-      }
-    }, Kokkos::Min<Realtype>(min_val));
+    RealType min_val = std::numeric_limits<RealType>::max();
+    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, RealType& m) {
+      m = ekat::impl::min(m, view(i));
+    }, Kokkos::Min<RealType>(min_val));
     return (min_val > 0);
   }
 
@@ -45,21 +41,21 @@ public:
     return (m_lower_bound > 0);
   }
 
-  void repair(Field<Realtype>& field) const override {
+  void repair(Field<RealType>& field) const override {
     if (can_repair()) {
       auto view = field.get_view();
+      RealType lower_bound = m_lower_bound;
       Kokkos::parallel_for(view.extent(0), KOKKOS_LAMBDA(Int i) {
-        if (view(i) < 0) {
-          view(i) = m_lower_bound;
-        }
+        view(i) = ekat::impl::max(lower_bound, view(i));
       });
+      Kokkos::fence();
     }
   }
 
 protected:
 
   // The given lower bound (0 if not supplied).
-  Realtype m_lower_bound;
+  RealType m_lower_bound;
 
 };
 
