@@ -58,7 +58,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real tke_in[nlev] = {0.2, 0.3, 0.5, 0.4, 0.1};
 
     // Input for tracer (no units)
-    Real tracer_in[shcol,nlev,num_tracer];
+//    Real tracer_in[shcol][nlev][num_tracer];
 
     // Compute needed grid information from zi_grid
     // Grid stuff to compute based on zi_grid
