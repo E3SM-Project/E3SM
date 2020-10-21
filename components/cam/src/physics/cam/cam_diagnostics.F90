@@ -300,6 +300,9 @@ subroutine diag_init()
    call addfld ('TVH',horiz_only,    'A','W/m',   'Total (vertically integrated) meridional MSE flux')
    call addfld ('DTENDTH', horiz_only, 'A', 'W/m2',   'Dynamic Tendency of Total (vertically integrated) moist static energy')
    call addfld ('DTENDTQ', horiz_only, 'A', 'kg/m2/s','Dynamic Tendency of Total (vertically integrated) specific humidity')
+!++BEH_adjust_tend
+   call addfld ('ATENDTE', horiz_only, 'A', 'kg/m2/s','Total (vertically integrated) energy tendency from dme_adjust')
+!--BEH_adjust_tend
    call addfld ('RELHUM',(/ 'lev' /), 'A','percent','Relative humidity')
    call addfld ('RHW',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to liquid')
    call addfld ('RHI',(/ 'lev' /), 'A','percent'   ,'Relative humidity with respect to ice')

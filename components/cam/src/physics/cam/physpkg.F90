@@ -1395,6 +1395,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
+!++BEH_adjust_tend
+    use cam_history,        only: hist_fld_active, outfld
+    use physconst,          only: cpair
+!--BEH_adjust_tend
 
     implicit none
 
@@ -1441,6 +1445,11 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
     real(r8) :: tmp_t     (pcols,pver) ! tmp space
     real(r8) :: ftem      (pcols,pver) ! tmp space
+!++BEH_adjust_tend
+    real(r8) :: ftem1     (pcols,pver) ! temp space
+    real(r8) :: dmv       (pcols,pver) ! change in water vapor mass during physics
+    real(r8) :: rtdt                   ! 1./ztodt
+!--BEH_adjust_tend
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
 
@@ -1779,6 +1788,24 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
     call physics_dme_adjust(state, tend, qini, ztodt)
+!++BEH_adjust_tend
+    if (hist_fld_active('ATENDTE')) then
+       rtdt = 1._r8/ztodt
+       ! ATENDTE = sum(cpd * dmv * T + dmv * 0.5 * (u**2+v**2)) + Phi_s * sum(dmv)
+       dmv = (state%q(:ncol,:pver,1) - qini(:ncol,:pver)) * state%pdel(:ncol,:pver) * rga * rtdt
+       do k=1,pver
+          ftem1(:ncol,k)=state%phis(:ncol)  !! surface geopotential in units (m2/s2)
+       end do
+       ftem(:ncol,:pver) = (cpair*state%t(:ncol,:pver)*dmv(:ncol,:pver)) + &
+            (dmv(:ncol,:pver) * 0.5_r8 * (state%u(:ncol,:pver)**2 + state%v(:ncol,:pver)**2)) + &
+            (ftem1(:ncol,:pver) * dmv(:ncol,:pver))
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       call outfld('ATENDTE', ftem(:ncol,1), pcols, lchnk )
+    endif
+!--BEH_adjust_tend
+
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
 !!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
 
