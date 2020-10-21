@@ -1592,7 +1592,7 @@ contains
     use clm_varcon        , only : rgas, tfrz, rpi
     use clm_varctl        , only : cnallocate_carbon_only
     !use clm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
-    use clm_varpar        , only : nlevsoi
+    use clm_varpar        , only : nlevsoi,nlevgrnd
     use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use pftvarcon         , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     use ColumnType        , only : col_pp        
@@ -1802,10 +1802,10 @@ contains
     real(r8) :: croot_average_length    ! average coarse root length [m]
     real(r8) :: soil_conductance        ! soil to root hydraulic conductance [1/s]
     real(r8) :: root_conductance        ! root hydraulic conductance [1/s]
-    real(r8) :: rai(nlevsoi)            ! root area index [m2/m2]
-    real(r8) :: rai_n(nlevsoi)            ! root area index [m2/m2]
-    real(r8) :: fs(nlevsoi)             ! root conductance scale factor (reduction in conductance due to decreasing (more negative) root water potential)
-    real(r8) :: fs_n(nlevsoi)             ! root conductance scale factor (reduction in conductance due to decreasing (more negative) root water potential)
+    real(r8) :: rai(nlevgrnd)            ! root area index [m2/m2]
+    real(r8) :: rai_n(nlevgrnd)            ! root area index [m2/m2]
+    real(r8) :: fs(nlevgrnd)             ! root conductance scale factor (reduction in conductance due to decreasing (more negative) root water potential)
+    real(r8) :: fs_n(nlevgrnd)             ! root conductance scale factor (reduction in conductance due to decreasing (more negative) root water potential)
     real(r8) :: gsminsun                ! Minimum stomatal conductance sunlit
     real(r8) :: gsminsha                ! Minimum stomatal conductance shaded
     real(r8) :: gs_slope_sun            ! Slope stomatal conductance sunlit
@@ -1814,7 +1814,8 @@ contains
     real(r8), parameter :: c_to_b = 2.0_r8           !(g biomass /g C)
     real(r8) :: lnc(bounds%begp:bounds%endp)   ! leaf N concentration (gN leaf/m^2)
     real(r8) :: lpc(bounds%begp:bounds%endp)   ! leaf N concentration (gN leaf/m^2)
-    real(r8) :: grav2(nlevsoi)        ! soil layer gravitational potential relative to surface (mm H2O) 
+    real(r8) :: grav2(nlevgrnd)        ! soil layer gravitational potential relative to surface (mm H2O) 
+    integer  :: nlevbed
 !Note that root density is for dry biomass not carbon. CLM provides root biomass
 !as carbon. The conversion is 0.5 g C / g biomass
 
@@ -1897,6 +1898,7 @@ contains
          s_vcmax       => veg_vp%s_vc                          , &
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
          sucsat        => soilstate_inst%sucsat_col             ,  & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
+         nlev2bed      =>    col_pp%nlevbed                     , &  ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ivt           => veg_pp%itype                             & ! Input:  [integer  (:)   ]  patch vegetation type
       )
       an_sun        =>    photosyns_inst%an_sun_patch         ! Output: [real(r8) (:,:) ]  net sunlit leaf photosynthesis (umol CO2/m**2/s)
@@ -1943,8 +1945,10 @@ contains
          froot_carbon(p) = tlai(p) / slatop(ivt(p))*froot_leaf(ivt(p))
          croot_carbon(p) = tlai(p)/slatop(ivt(p))*stem_leaf(ivt(p)) &
                   *croot_stem(ivt(p))
-
-         do j = 1,nlevsoi
+!         nlevbed = min(nlev2bed(c),nlevsoi)
+         nlevbed = nlev2bed(c)
+!         nlevbed = nlevsoi
+         do j = 1,nlevbed
 
             ! calculate conversion from conductivity to conductance
             root_biomass_density = c_to_b * froot_carbon(p) * rootfr(p,j) / dz(c,j)
@@ -2589,7 +2593,7 @@ contains
       ! unit leaf area), which are used in other parts of the model. Here, laican
       ! sums to either laisun or laisha.
 
-    grav2(1:nlevsoi) = z(c,1:nlevsoi) * 1000._r8
+    grav2(1:nlevbed) = z(c,1:nlevbed) * 1000._r8
       do f = 1, fn
          p = filterp(f)
 
@@ -3084,7 +3088,7 @@ contains
     !
     !
     ! !USES:
-    use clm_varpar        , only : nlevsoi
+    use clm_varpar        , only : nlevsoi, nlevgrnd
     implicit none
     !
     ! !ARGUMENTS:
@@ -3286,8 +3290,9 @@ contains
     ! calls spacF, spacA, and getvegwp
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use clm_varpar        , only : nlevsoi,nlevgrnd
     use clm_varcon        , only : rgas
+    use ColumnType        , only : col_pp        
     !!
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3510,8 +3515,9 @@ contains
     ! example a LINPACK linear algebra solver.
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use clm_varpar        , only : nlevsoi, nlevgrnd
     use clm_varcon        , only : rgas
+    use ColumnType        , only : col_pp
     !
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3545,6 +3551,7 @@ contains
     real(r8) :: invfactor             ! 
     real(r8), parameter :: tol_lai=.001_r8 ! minimum lai where transpiration is calc'd
     integer  :: j                     ! index
+    integer  :: nlevbed
     !------------------------------------------------------------------------------
 #ifndef NDEBUG
     ! Only execute this code if DEBUG=TRUE
@@ -3559,15 +3566,19 @@ contains
          laisha        => canopystate_inst%laisha_patch         , & ! Input:  [real(r8) (:)   ]  shaded leaf area
          htop          => canopystate_inst%htop_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy top (m)
          tsai          => canopystate_inst%tsai_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy one-sided stem area index, no burying by snow
+         nlev2bed      =>    col_pp%nlevbed                , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ivt           => veg_pp%itype                             & ! Input:  [integer  (:)   ]  patch vegetation type
          )
     
+    nlevbed = min(nlevsoi,nlev2bed(c))
+!         nlevbed = nlev2bed(c)
     ! initialize all elements to zero
+   
     A = 0._r8
     invA = 0._r8
 
     grav1 = htop(p)*1000._r8
-    
+     
     !compute conductance attentuation for each segment
     fsto1=  plc(x(sun),p,c,sun,veg)
     fsto2=  plc(x(sha),p,c,sha,veg)
@@ -3601,7 +3612,7 @@ contains
     A(4,3)= tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr
     A(4,4)= - tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr&
          - tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * dfr * (x(root)-x(xyl)-grav1)&
-         - sum(k_soil_root(p,1:nlevsoi))
+         - sum(k_soil_root(p,1:nlevbed))
 
     invfactor=1._r8
     A=invfactor*A
@@ -3686,7 +3697,7 @@ contains
     !  calculated for vegwp(p,:) as passed in via x
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
+    use clm_varpar        , only : nlevsoi, nlevgrnd
     use clm_varcon        , only : rgas
     use ColumnType        , only : col_pp
     !
@@ -3711,10 +3722,11 @@ contains
     real(r8) :: fx                    ! fraction of maximum conductance, xylem-to-leaf [-] 
     real(r8) :: fr                    ! fraction of maximum conductance, root-to-xylem [-]
     real(r8) :: grav1                 ! gravitational potential surface to canopy top (mm H2O) 
-    real(r8) :: grav2(nlevsoi)        ! soil layer gravitational potential relative to surface (mm H2O) 
+    real(r8) :: grav2(nlevgrnd)        ! soil layer gravitational potential relative to surface (mm H2O) 
     real(r8) :: temp                  ! used to copy f(sun) to f(sha) for special case
     real(r8), parameter :: tol_lai=.001_r8  ! needs to be the same as in calcstress and spacA (poor form, refactor)<
     integer  :: j                     ! index
+    integer  :: nlevbed
     !------------------------------------------------------------------------------
     
     associate(                                              &
@@ -3725,11 +3737,16 @@ contains
          tsai          => canopystate_inst%tsai_patch           , & ! Input:  [real(r8) (:)   ]  patch canopy one-sided stem area index, no burying by snow
          smp           => soilstate_inst%smp_l_col              , & ! Input: [real(r8) (:,:) ]  soil matrix potential [mm]
          qflx_tran_veg => veg_wf%qflx_tran_veg    , & ! Input:  [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
+         nlev2bed           =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          z             => col_pp%z                                   & ! Input:  [real(r8) (:,:) ]  layer node depth (m)
          )
+
+    nlevbed = min(nlevsoi,nlev2bed(c))
+!         nlevbed = nlevsoi
+!         nlevbed = nlev2bed(c)
     
     grav1 = htop(p) * 1000._r8
-    grav2(1:nlevsoi) = z(c,1:nlevsoi) * 1000._r8
+    grav2(1:nlevbed) = z(c,1:nlevbed) * 1000._r8
     
     fsto1=  plc(x(sun),p,c,sun,veg)
     fsto2=  plc(x(sha),p,c,sha,veg)
@@ -3743,8 +3760,8 @@ contains
          + laisha(p) * params_inst%kmax(veg_pp%itype(p),sha) * fx * (x(xyl)-x(sha)) &
          - tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1)
     f(root)= tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1) &
-         + sum( k_soil_root(p,1:nlevsoi) * (x(root)+grav2(1:nlevsoi)) ) &
-         - sum( k_soil_root(p,1:nlevsoi) * smp(c,1:nlevsoi) )
+         + sum( k_soil_root(p,1:nlevbed) * (x(root)+grav2(1:nlevbed)) ) &
+         - sum( k_soil_root(p,1:nlevbed) * smp(c,1:nlevbed) )
 
     waterflux_inst%sapflow_patch = & 
             tsai(p)*params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1)
@@ -3769,7 +3786,7 @@ contains
     !
     ! !USES:
     ! calls getqflx
-    use clm_varpar  , only : nlevsoi
+    use clm_varpar  , only : nlevsoi, nlevgrnd
     use ColumnType  , only : col_pp
     implicit none
     !
@@ -3796,9 +3813,10 @@ contains
     real(r8) :: fx                       ! fraction of maximum conductance, xylem-to-leaf [-]  
     real(r8) :: fr                       ! fraction of maximum conductance, root-to-xylem [-]  
     real(r8) :: grav1                    ! gravitational potential surface to canopy top (mm H2O)
-    real(r8) :: grav2(nlevsoi)           ! soil layer gravitational potential relative to surface (mm H2O) 
+    real(r8) :: grav2(nlevgrnd)           ! soil layer gravitational potential relative to surface (mm H2O) 
     integer  :: j                        ! index
     logical  :: havegs                   ! signals direction of calculation gs->qflx or qflx->gs 
+    integer  :: nlevbed
     !----------------------------------------------------------------------
     associate(                                                    &
          k_soil_root  => soilstate_inst%k_soil_root_patch       , & ! Input:  [real(r8) (:,:) ]  soil-root interface conductance (mm/s)
@@ -3813,11 +3831,16 @@ contains
          hk_l          => soilstate_inst%hk_l_col               , & ! Input: [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
          hksat         => soilstate_inst%hksat_col              , & ! Input: [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
          sucsat        => soilstate_inst%sucsat_col             , & ! Input: [real(r8) (:,:) ]  minimum soil suction (mm)
+         nlev2bed           =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          z             => col_pp%z                                   & ! Input: [real(r8) (:,:) ]  layer node depth (m)
          )
+
+    nlevbed = min(nlevsoi,nlev2bed(c))
+!         nlevbed = nlevsoi
+!         nlevbed = nlev2bed(c)
     
     grav1 = 1000._r8 *htop(p)
-    grav2(1:nlevsoi) = 1000._r8 * z(c,1:nlevsoi)
+    grav2(1:nlevbed) = 1000._r8 * z(c,1:nlevbed)
     
     !compute transpiration demand
     havegs=.true.
@@ -3825,11 +3848,11 @@ contains
          atm2lnd_inst, canopystate_inst, waterstate_inst, temperature_inst)
     
     !calculate root water potential
-    if ( abs(sum(k_soil_root(p,1:nlevsoi))) == 0._r8 ) then
-       x(root) = sum(smp(c,1:nlevsoi) - grav2)/nlevsoi
+    if ( abs(sum(k_soil_root(p,1:nlevbed))) == 0._r8 ) then
+       x(root) = sum(smp(c,1:nlevbed) - grav2(1:nlevbed))/nlevbed
     else
-       x(root) = (sum(k_soil_root(p,1:nlevsoi)*(smp(c,1:nlevsoi)-grav2))-qflx_sun-qflx_sha) &
-                  /sum(k_soil_root(p,1:nlevsoi))
+       x(root) = (sum(k_soil_root(p,1:nlevbed)*(smp(c,1:nlevbed)-grav2(1:nlevbed)))-qflx_sun-qflx_sha) &
+                  /sum(k_soil_root(p,1:nlevbed))
     endif
     
     !calculate xylem water potential
@@ -3855,7 +3878,7 @@ contains
 
     !calculate soil flux
     soilflux = 0._r8
-    do j = 1,nlevsoi
+    do j = 1,nlevbed
        soilflux = soilflux + k_soil_root(p,j)*(smp(c,j)-x(root)-grav2(j))
     enddo
 

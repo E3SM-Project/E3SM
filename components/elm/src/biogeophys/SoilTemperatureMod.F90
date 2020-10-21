@@ -869,6 +869,7 @@ end subroutine SolveTemperature
     real(r8) :: fl                        ! volume fraction of liquid or unfrozen water to total water
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
+    real(r8) :: csol_bedrock = 2.0e6_r8           ! vol. heat capacity of granite/sandstone  J/(m3 K)(Shabbir, 2000)
     !-----------------------------------------------------------------------
 
     call t_startf( 'SoilThermProp' )
@@ -1029,9 +1030,10 @@ end subroutine SolveTemperature
                  .AND. col_pp%itype(c) /= icol_sunwall .AND. col_pp%itype(c) /= icol_shadewall .AND. &
                  col_pp%itype(c) /= icol_roof) then
                cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
             else if (lun_pp%itype(l) == istwet) then 
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
-               if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
+               if (j > nlevbed) cv(c,j) = csol_bedrock*dz(c,j)
             else if (lun_pp%itype(l) == istice .OR. lun_pp%itype(l) == istice_mec) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif

@@ -306,6 +306,7 @@ contains
     integer  :: jtop(bounds%begc:bounds%endc)                ! top level at each column
     integer  :: jbot(bounds%begc:bounds%endc)                ! bottom level at each column
     real(r8) :: dtime                                        ! land model time step (sec)
+    real(r8) :: delta_z_zwt
     real(r8) :: hk(bounds%begc:bounds%endc,1:nlevgrnd)        ! hydraulic conductivity [mm h2o/s]
     real(r8) :: dhkdw(bounds%begc:bounds%endc,1:nlevgrnd)     ! d(hk)/d(vol_liq)
     real(r8) :: amx(bounds%begc:bounds%endc,1:nlevgrnd+1)     ! "a" left off diagonal of tridiagonal matrix
@@ -447,8 +448,8 @@ contains
                if(zwt(c) <= zi(c,j)) then
                   smp1 = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
                   !smp1 = max(0._r8,smp1)
-                  smp1 = max(sucsat(c,nlevsoi),smp1)
-                  vwc_zwt(c) = watsat(c,nlevsoi)*(smp1/sucsat(c,nlevbed))**(-1._r8/bsw(c,nlevsoi))
+                  smp1 = max(sucsat(c,nlevbed),smp1)
+                  vwc_zwt(c) = watsat(c,nlevbed)*(smp1/sucsat(c,nlevbed))**(-1._r8/bsw(c,nlevbed))
                   ! for temperatures close to tfrz, limit vwc to total water content 
                   vwc_zwt(c) = min(vwc_zwt(c), 0.5*(watsat(c,nlevbed) + h2osoi_vol(c,nlevbed)) )
                   exit
@@ -496,7 +497,9 @@ contains
          if(jwt(c) == nlevbed) then 
             tempi = 1._r8
             temp0 = (((sucsat(c,j)+zwtmm(c)-zimm(c,j))/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
-            vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/(zwtmm(c)-zimm(c,j))*(tempi-temp0)
+            delta_z_zwt = zwtmm(c) - zimm(c,j)
+            if(delta_z_zwt == 0._r8) delta_z_zwt = 1._r8
+            vol_eq(c,j+1) = -sucsat(c,j)*watsat(c,j)/(1._r8-1._r8/bsw(c,j))/(delta_z_zwt)*(tempi-temp0)
             vol_eq(c,j+1) = max(vol_eq(c,j+1),0.0_r8)
             vol_eq(c,j+1) = min(watsat(c,j),vol_eq(c,j+1))
             zq(c,j+1) = -sucsat(c,j)*(max(vol_eq(c,j+1)/watsat(c,j),0.01_r8))**(-bsw(c,j))
@@ -514,24 +517,24 @@ contains
             ! compute hydraulic conductivity based on liquid water content only
 
             if (origflag == 1) then
-               s1 = 0.5_r8*(h2osoi_vol(c,j) + h2osoi_vol(c,min(nlevsoi, j+1))) / &
-                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
+               s1 = 0.5_r8*(h2osoi_vol(c,j) + h2osoi_vol(c,min(nlevbed, j+1))) / &
+                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevbed, j+1))))
             else
-               s1 = 0.5_r8*(vwc_liq(c,j) + vwc_liq(c,min(nlevsoi, j+1))) / &
-                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
+               s1 = 0.5_r8*(vwc_liq(c,j) + vwc_liq(c,min(nlevbed, j+1))) / &
+                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevbed, j+1))))
             endif
             s1 = min(1._r8, s1)
             s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
 
             ! replace fracice with impedance factor, as in zhao 97,99
             if (origflag == 1) then
-               imped(c,j)=(1._r8-0.5_r8*(fracice(c,j)+fracice(c,min(nlevsoi, j+1))))
+               imped(c,j)=(1._r8-0.5_r8*(fracice(c,j)+fracice(c,min(nlevbed, j+1))))
             else
-               imped(c,j)=10._r8**(-e_ice*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevsoi, j+1)))))
+               imped(c,j)=10._r8**(-e_ice*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevbed, j+1)))))
             endif
             hk(c,j) = imped(c,j)*s1*s2
             dhkdw(c,j) = imped(c,j)*(2._r8*bsw(c,j)+3._r8)*s2* &
-                 (1._r8/(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
+                 (1._r8/(watsat(c,j)+watsat(c,min(nlevbed, j+1))))
 
             !compute un-restricted hydraulic conductivity
             !call soil_water_retention_curve%soil_hk(hksat(c,j), imped(c,j), s1, bsw(c,j), hktmp, dhkds)
@@ -830,7 +833,7 @@ contains
                qcharge(c) = min( 10.0_r8/dtime,qcharge(c))
             else
             ! if water table is below soil column, compute qcharge from dwat2(11)
-               qcharge(c) = dwat2(c,nlevsoi+1)*dzmm(c,nlevsoi+1)/dtime
+               qcharge(c) = dwat2(c,nlevbed+1)*dzmm(c,nlevbed+1)/dtime
             endif
          endif
       end do
@@ -1310,6 +1313,7 @@ contains
         real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
         real(r8) :: grav2                 ! soil layer gravitational potential relative to surface (mm H2O)
         integer , parameter :: soil=1,root=4  ! index values
+        integer  :: nlevbed
         !-----------------------------------------------------------------------   
         
         associate(&
@@ -1333,6 +1337,7 @@ contains
                                                                             ! fraction of vegetation not 
                                                                             ! covered by snow (0 OR 1) [-]  
               z                   => col_pp%z                              , & ! Input: [real(r8) (:,:) ]  layer node depth (m)
+              nlev2bed            =>    col_pp%nlevbed                     , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
               vegwp               => canopystate_vars%vegwp_patch         & ! Input: [real(r8) (:,:) ]  vegetation water 
                                                                             ! matric potential (mm)
               )
@@ -1341,7 +1346,9 @@ contains
              c = filterc(fc)
              qflx_phs_neg_col(c) = 0._r8
              
-             do j = 1, nlevsoi
+             nlevbed = nlev2bed(c)
+             qflx_rootsoi_col(c,:) = 0._r8
+             do j = 1, min(nlevbed,nlevsoi)
                 grav2 = z(c,j) * 1000._r8
                 temp(c) = 0._r8
                 do pi = 1,max_patch_per_col
@@ -1361,9 +1368,9 @@ contains
              end do
              
              ! Back out the effective root density
-             if( sum(qflx_rootsoi_col(c,1:nlevsoi))>0.0_r8 ) then
-                do j = 1, nlevsoi
-                   rootr_col(c,j) = qflx_rootsoi_col(c,j)/sum( qflx_rootsoi_col(c,1:nlevsoi))
+             if( sum(qflx_rootsoi_col(c,1:nlevbed))/=0.0_r8 ) then
+                do j = 1, nlevbed
+                   rootr_col(c,j) = qflx_rootsoi_col(c,j)/sum( qflx_rootsoi_col(c,1:nlevbed))
                 end do
              else
                 rootr_col(c,:) = 0.0_r8
