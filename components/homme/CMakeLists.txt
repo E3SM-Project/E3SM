@@ -191,8 +191,8 @@ IF (${HOMME_USE_KOKKOS})
   ENDIF()
 
   # Execution space parameters. 8 is a nice size for V100.
-  SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE INT "Minimum number of warps to get 100% occoupancy on GPU")
-  SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 16 CACHE INT "Maximum number of warps to get 100% occoupancy on GPU")
+  SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE STRING "Minimum number of warps to get 100% occoupancy on GPU")
+  SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 16 CACHE STRING "Maximum number of warps to get 100% occoupancy on GPU")
 
   # An option to allow to use GPU pointers for MPI calls. The value of this option is irrelevant for CPU/KNL builds.
   OPTION (HOMMEXX_MPI_ON_DEVICE "Whether we want to use device pointers for MPI calls (relevant only for GPU builds)" ON)
