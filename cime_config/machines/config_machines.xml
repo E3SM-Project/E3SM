@@ -1852,7 +1852,7 @@
       </modules>
       <modules>
         <command name="load">perl/5.20.0</command>
-        <command name="load">cmake/3.3.0</command>
+        <command name="load">cmake/3.17.1</command>
         <command name="load">python/2.7.8</command>
         <command name="load">svn/1.8.13</command>
       </modules>
@@ -1873,7 +1873,7 @@
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
     <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="MKLROOT">$ENV{MKLROOT} </env>
+      <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
