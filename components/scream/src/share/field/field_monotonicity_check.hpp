@@ -11,8 +11,8 @@ namespace scream
 // repairs to nonmonotonic fields can be performed. There are ways of repairing
 // non-monotonic fields given certain assumptions, but we do not make such
 // assumptions here.
-template<typename ScalarType, typename Device>
-class FieldMonotonicityCheck: public FieldPropertyCheck<ScalarType, Device> {
+template<typename Realtype>
+class FieldMonotonicityCheck: public FieldPropertyCheck<Realtype> {
 public:
 
   // Default constructor.
@@ -20,10 +20,10 @@ public:
 
   // Overrides.
 
-  bool check(const Field<ScalarType, Device>& field) const override {
+  bool check(const Field<Realtype>& field) const override {
     auto view = field.get_view();
-    ScalarType sign;
-    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, ScalarType& s) {
+    Realtype sign;
+    Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, Realtype& s) {
       if ((i > 0) && (i < view.extent(0)-1)) {
         auto diff1 = view(i) - view(i-1);
         auto diff2 = view(i+1) - view(i);
@@ -31,7 +31,7 @@ public:
       } else {
         s *= 1;
       }
-    }, Kokkos::Prod<ScalarType>(sign));
+    }, Kokkos::Prod<Realtype>(sign));
     return (sign > 0);
   }
 
@@ -39,7 +39,7 @@ public:
     return false;
   }
 
-  void repair(Field<ScalarType, Device>& field) const override {
+  void repair(Field<Realtype>& field) const override {
     EKAT_REQUIRE_MSG(false, "Cannot repair a non-monotonic field!");
   }
 };

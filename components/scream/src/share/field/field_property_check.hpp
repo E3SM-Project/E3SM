@@ -5,7 +5,7 @@ namespace scream
 {
 
 // Forward declaration of Field.
-template<typename ScalarType, typename Device> class Field;
+template<typename RealType> class Field;
 
 // =================== FIELD PROPERTY CHECK ======================== //
 
@@ -20,7 +20,7 @@ template<typename ScalarType, typename Device> class Field;
 //
 // FieldPropertyCheck is an abstract base class that provides an interface to
 // be implemented by a subclass.
-template<typename ScalarType, typename Device>
+template<typename RealType>
 class FieldPropertyCheck {
 public:
 
@@ -37,7 +37,7 @@ public:
 
   // Override this method to perform a property check on a Field. The method
   // returns true if the property check passes, and false if it fails.
-  virtual bool check(const Field<ScalarType, Device>& field) const = 0;
+  virtual bool check(const Field<RealType>& field) const = 0;
 
   // Override this method to return true if the property check is capable of
   // attempting to fix a field to make it satisfy a property check.
@@ -46,12 +46,12 @@ public:
   // Override this method to attempt to repair a field that doesn't pass this
   // property check. The field must be checked again to determine whether the
   // repair is successful. NOTE the const in this method!
-  virtual void repair(Field<ScalarType, Device>& field) const = 0;
+  virtual void repair(Field<RealType>& field) const = 0;
 
   // Override this method to provide a more efficient way to check and repair
   // a field in a single pass (applicable only to property checks that can
   // repair a field).
-  virtual void check_and_repair(Field<ScalarType, Device>& field) const {
+  virtual void check_and_repair(Field<RealType>& field) const {
     if (!check(field) && can_repair()) {
       repair(field);
     }

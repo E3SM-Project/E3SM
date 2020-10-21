@@ -46,7 +46,7 @@ public:
   // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
   // determine whether it satisfies certain properties. We use the PointerList
   // class to provide simple access to the property checks.
-  using property_check_type = FieldPropertyCheck<ScalarType, device_type>;
+  using property_check_type = FieldPropertyCheck<RealType>;
   using property_check_list = PointerList<std::shared_ptr<property_check_type>,
                                            property_check_type>;
   using property_check_iterator = typename property_check_list::const_iterator;

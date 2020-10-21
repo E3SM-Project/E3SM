@@ -257,8 +257,8 @@ TEST_CASE("field_property_check", "") {
 
   // Check positivity.
   SECTION ("field_positivity_check") {
-    Field<Real,Device> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real, Device> >();
+    Field<Real> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
     REQUIRE(not positivity_check->can_repair());
     f1.add_property_check(positivity_check);
     f1.allocate_view();
@@ -287,8 +287,8 @@ TEST_CASE("field_property_check", "") {
 
   // Check positivity with repairs.
   SECTION ("field_positivity_check_with_repairs") {
-    Field<Real,Device> f1(fid);
-    auto positivity_check = std::make_shared<FieldPositivityCheck<Real, Device> >(1);
+    Field<Real> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
     REQUIRE(positivity_check->can_repair());
     f1.add_property_check(positivity_check);
     f1.allocate_view();
@@ -310,8 +310,8 @@ TEST_CASE("field_property_check", "") {
 
   // Check that the values of a field lie within an interval.
   SECTION ("field_within_interval_check") {
-    Field<Real,Device> f1(fid);
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real, Device> >(0, 100);
+    Field<Real> f1(fid);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 100);
     REQUIRE(interval_check->can_repair());
     f1.add_property_check(interval_check);
     f1.allocate_view();
@@ -343,8 +343,8 @@ TEST_CASE("field_property_check", "") {
 
   // Check monotonicity.
   SECTION ("field_monotonicity_check") {
-    Field<Real,Device> f1(fid);
-    auto mono_check = std::make_shared<FieldMonotonicityCheck<Real, Device> >();
+    Field<Real> f1(fid);
+    auto mono_check = std::make_shared<FieldMonotonicityCheck<Real> >();
     REQUIRE(not mono_check->can_repair());
     f1.add_property_check(mono_check);
     f1.allocate_view();

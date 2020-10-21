@@ -11,8 +11,8 @@ namespace scream
 // bounded by the given upper and lower bounds (inclusively), and false if not.
 // It can repair a field that fails the check by clipping all unbounded values
 // to their closest bound.
-template<typename ScalarType, typename Device>
-class FieldWithinIntervalCheck: public FieldPropertyCheck<ScalarType, Device> {
+template<typename Realtype>
+class FieldWithinIntervalCheck: public FieldPropertyCheck<Realtype> {
 public:
 
   // No default constructor -- we need lower and upper bounds.
@@ -22,8 +22,8 @@ public:
   // can repair fields that fail the check by overwriting nonpositive values
   // with the given lower bound. If can_repair is false, the check cannot
   // apply repairs to the field.
-  explicit FieldWithinIntervalCheck (ScalarType lower_bound,
-                                     ScalarType upper_bound,
+  explicit FieldWithinIntervalCheck (Realtype lower_bound,
+                                     Realtype upper_bound,
                                      bool can_repair = true) :
     m_lower_bound(lower_bound),
     m_upper_bound(upper_bound),
@@ -34,18 +34,18 @@ public:
 
   // Overrides.
 
-  bool check(const Field<ScalarType, Device>& field) const override {
+  bool check(const Field<Realtype>& field) const override {
     auto view = field.get_view();
-    typename Kokkos::MinMax<ScalarType>::value_type minmax;
+    typename Kokkos::MinMax<Realtype>::value_type minmax;
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i,
-        typename Kokkos::MinMax<ScalarType>::value_type& mm) {
+        typename Kokkos::MinMax<Realtype>::value_type& mm) {
       if (i == 0) {
         mm.min_val = mm.max_val = view(0);
       } else {
         mm.min_val = ekat::impl::min(mm.min_val, view(i));
         mm.max_val = ekat::impl::max(mm.max_val, view(i));
       }
-    }, Kokkos::MinMax<ScalarType>(minmax));
+    }, Kokkos::MinMax<Realtype>(minmax));
     return ((minmax.min_val >= m_lower_bound) && (minmax.max_val <= m_upper_bound));
   }
 
@@ -53,7 +53,7 @@ public:
     return m_can_repair;
   }
 
-  void repair(Field<ScalarType, Device>& field) const override {
+  void repair(Field<Realtype>& field) const override {
     if (m_can_repair) {
       auto view = field.get_view();
       Kokkos::parallel_for(view.extent(0), KOKKOS_LAMBDA(Int i) {
@@ -72,7 +72,7 @@ public:
 protected:
 
   // Lower and upper bounds.
-  ScalarType m_lower_bound, m_upper_bound;
+  Realtype m_lower_bound, m_upper_bound;
 
   // Can we repair a field?
   bool m_can_repair;
