@@ -49,7 +49,7 @@ public:
   using property_check_type = FieldPropertyCheck<RealType>;
   using property_check_list = PointerList<std::shared_ptr<property_check_type>,
                                            property_check_type>;
-  using property_check_iterator = typename property_check_list::const_iterator;
+  using property_check_iterator = typename property_check_list::iterator;
 
   // Constructor(s)
   Field () = default;
@@ -75,16 +75,16 @@ public:
 
   // Adds a propery check to this field.
   void add_property_check(std::shared_ptr<property_check_type> property_check) {
-    m_prop_checks.append(property_check);
+    m_prop_checks->append(property_check);
   }
 
   // These (forward) iterators allow access to the set of property checks on the
   // field.
   property_check_iterator property_check_begin() const {
-    return m_prop_checks.begin();
+    return m_prop_checks->begin();
   }
   property_check_iterator property_check_end() const {
-    return m_prop_checks.end();
+    return m_prop_checks->end();
   }
 
   // Allows to get the underlying view, reshaped for a different data type.
@@ -115,7 +115,7 @@ protected:
   bool                            m_allocated;
 
   // List of property checks for this field.
-  property_check_list m_prop_checks;
+  std::shared_ptr<property_check_list> m_prop_checks;
 };
 
 template<typename RealType>
@@ -128,6 +128,7 @@ Field<RealType>::
 Field (const identifier_type& id)
  : m_header    (new header_type(id))
  , m_allocated (false)
+ , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's value_type.
   m_header->get_alloc_properties().request_value_type_allocation<value_type>();
