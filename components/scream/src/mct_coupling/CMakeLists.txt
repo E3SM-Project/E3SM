@@ -45,10 +45,6 @@ set(ATM_SRC
   dead_mct_mod.F90
   dead_data_mod.F90
   dead_mod.F90
-#  scream_scorpio_interface.F90
-#  scream_scorpio_interface.cpp
-#  scream_scorpio_interface_iso_c2f.F90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
 set (SCREAM_LIBS

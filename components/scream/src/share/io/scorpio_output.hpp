@@ -53,7 +53,8 @@ public:
   using device_type    = DefaultDevice; // may need to template class on this
   using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
   using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
-  using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
+  using view_type      = typename KokkosTypes<HostDevice>::template view<value_type*>;
+  using field_type     = Field<value_type, device_type>;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -106,11 +107,12 @@ protected:
   Int m_restart_hist_n;
   std::string m_restart_hist_option;
 
-  std::map<std::string,FieldIdentifier>  m_fields;
+  std::map<std::string,field_type>       m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
   dofs_list_type                         m_gids;
   std::map<std::string,view_type>        m_view;
+  std::map<std::string,view_type>        m_view_copy;
 
   bool m_is_init = false;
   bool m_is_restart_hist = false;  //TODO:  If instead we rely on the timestamp to determine how many steps are represented in the averaging value, or maybe filename, we won't need this.
@@ -249,17 +251,21 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   }
 
   // Take care of updating and possibly writing fields.
-  for (auto const& f_map : m_fields)
+  for (auto const& fmap : m_fields)
   {
     // Get all the info for this field.
-    auto name   = f_map.first;
-    auto g_view_d = m_field_repo->get_field(f_map.second).get_view();
-    auto g_view = Kokkos::create_mirror_view( g_view_d );
-    auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.  Use g_view for Instant?
-    Int  f_len  = f_map.second.get_layout().size();
+    auto name   = fmap.first;
+    auto g_view = m_view.at(name); 
+    Int  f_len  = fmap.second.get_header().get_identifier().get_layout().size();
+    view_type l_view;
     // The next two operations do not need to happen if the frequency of output is instantaneous.
-    if (m_avg_type != "Instant")
+    if (m_avg_type == "Instant")
     {
+      l_view = m_view.at(name);
+    }
+    else // output type uses multiple steps.
+    {
+      l_view = m_view_copy.at(name);
       // Update local view given the averaging type.  TODO make this a switch statement?
       if (m_avg_type == "Average")
       {
@@ -335,7 +341,7 @@ inline void AtmosphereOutput::add_identifier(const std::string name)
  */
   auto f = m_field_repo->get_field(name, m_grid_name);
   auto fid = f.get_header().get_identifier();
-  m_fields.emplace(name,fid);
+  m_fields.emplace(name,f);
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
@@ -358,17 +364,18 @@ inline void AtmosphereOutput::register_views()
   using namespace scream::scorpio;
 
   // Cycle through all fields and register.
-  for (auto it : m_fields)
+  for (auto fmap : m_fields)
   {
-    auto  name = it.first;
+    auto  name = fmap.first;
     // If the "averaging type" is instant then just need a ptr to the view.
-    if (m_avg_type == "Instant")
-    {
-      m_view.emplace(name,m_field_repo->get_field(it.second).get_view());
-    } else {
-    // If anything else then we need a local copy that can be updated.
-      view_type view_copy("",m_field_repo->get_field(it.second).get_view().extent(0));
-      m_view.emplace(name,view_copy);
+    auto view_d = fmap.second.get_view();
+    auto view_h = Kokkos::create_mirror_view( view_d );
+    m_view.emplace(name,view_h);
+    if (m_avg_type != "Instant") {
+    // If anything other than instant we need a local copy that can be updated.
+      view_type view_copy_d("",view_d.extent(0));
+      auto view_copy = Kokkos::create_mirror_view( view_copy_d );
+      m_view_copy.emplace(name,view_copy);
     }
   }
 }
@@ -379,10 +386,10 @@ inline void AtmosphereOutput::register_variables(const std::string filename)
   using namespace scream::scorpio;
 
   // Cycle through all fields and register.
-  for (auto it : m_fields)
+  for (auto fmap : m_fields)
   {
-    auto  name = it.first;
-    auto& fid  = it.second;
+    auto  name = fmap.first;
+    auto& fid  = fmap.second.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
@@ -404,11 +411,12 @@ inline void AtmosphereOutput::set_degrees_of_freedom(const std::string filename)
 {
   using namespace scream;
   using namespace scream::scorpio;
+
   // Cycle through all fields and set dof.
-  for (auto it : m_fields)
+  for (auto fmap : m_fields)
   {
-    auto  name = it.first;
-    auto& fid  = it.second;
+    auto  name = fmap.first;
+    auto& fid  = fmap.second.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.

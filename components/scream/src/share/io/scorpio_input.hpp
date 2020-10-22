@@ -93,7 +93,7 @@ public:
   // Constructor
   AtmosphereInput(const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const FieldRepository<Real,device_type>>& repo,
-                   const std::shared_ptr<const GridsManager>& gm)
+                  const std::shared_ptr<const GridsManager>& gm)
   {
     m_comm       = comm;
     m_params     = params;
