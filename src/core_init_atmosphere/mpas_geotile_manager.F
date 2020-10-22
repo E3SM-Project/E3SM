@@ -93,6 +93,11 @@ module mpas_geotile_manager
     !>     * signed = 0 ! No
     !>     * scalefactor = 1.0_RKIND
     !>     * endian = "big"
+    !>     * iswater = 16
+    !>     * islake = -1
+    !>     * isice = 24
+    !>     * isurban = 1
+    !>     * isoilwater = 14
     !
     !-----------------------------------------------------------------------
     function mpas_geotile_mgr_init(mgr, path) result(ierr)
@@ -106,11 +111,14 @@ module mpas_geotile_manager
         character (len=*), intent(in) :: path
 
         ! Local variables
+        character (len=StrKIND), pointer :: fieldType
         character (len=StrKIND), pointer :: endian
         integer, pointer :: tile_nx ! Number of pixels in the x-direction for a single tile
         integer, pointer :: tile_ny ! Number of pixels in the y-direction for a single tile
         integer, pointer :: signed
         integer, pointer :: tile_bdr
+        integer, pointer :: iswater, islake, isice, isurban, isoilwater
+        integer, pointer :: category_min, category_max
         integer :: err_level
         real (kind=RKIND), pointer :: dx ! Grid spacing in the x-direction
         real (kind=RKIND), pointer :: dy ! Grid spacing in the y-direction
@@ -155,7 +163,6 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor)
         call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
 
-
         !
         ! tile_bdr, signed, endian, and scale_factor all have default values, so if they
         ! are not present in the index file then set them as the default values, as
@@ -183,6 +190,77 @@ module mpas_geotile_manager
             allocate(tile_bdr)
             tile_bdr = 0
             call mpas_pool_add_config(mgr % pool, 'tile_bdr', tile_bdr)
+        endif
+
+        !
+        ! If this is a categorical field, then check to see if it has category_max and category_min,
+        ! and then set the defaults of iswater, islake, isice, isurban and isoilwater
+        !
+        call mpas_pool_get_config(mgr % pool, 'type', fieldType)
+        if (fieldType == 'categorical') then
+            category_max => null()
+            category_min => null()
+
+            call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+            call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
+
+            if (.not. associated(category_max)) then
+                call mpas_log_write("The index file of this categorical dataset did not contain a category_max parameter", &
+                                     messageType=MPAS_LOG_ERR)
+                call mpas_pool_set_error_level(err_level) ! Reset pool error level
+                ierr = 1
+                return
+            endif
+
+            if (.not. associated(category_min)) then
+                call mpas_log_write("The index file of this categorical dataset did not contain a category_min parameter", &
+                                     messageType=MPAS_LOG_ERR)
+                call mpas_pool_set_error_level(err_level) ! Reset pool error level
+                ierr = 1
+                return
+            endif
+
+            iswater => null()
+            islake => null()
+            isice => null()
+            isurban => null()
+            isoilwater => null()
+
+            call mpas_pool_get_config(mgr % pool, 'iswater', iswater)
+            call mpas_pool_get_config(mgr % pool, 'islake', islake)
+            call mpas_pool_get_config(mgr % pool, 'isice', isice)
+            call mpas_pool_get_config(mgr % pool, 'isurban', isurban)
+            call mpas_pool_get_config(mgr % pool, 'isoilwater', isoilwater)
+
+            if (.not. associated(iswater)) then
+                allocate(iswater)
+                iswater = 16
+                call mpas_pool_add_config(mgr % pool, 'iswater', iswater)
+            endif
+
+            if (.not. associated(islake)) then
+                allocate(islake)
+                islake = -1
+                call mpas_pool_add_config(mgr % pool, 'islake', islake)
+            endif
+
+            if (.not. associated(isice)) then
+                allocate(isice)
+                isice = 24
+                call mpas_pool_add_config(mgr % pool, 'isice', isice)
+            endif
+
+            if (.not. associated(isurban)) then
+                allocate(isurban)
+                isurban = 1
+                call mpas_pool_add_config(mgr % pool, 'isurban', isurban)
+            endif
+
+            if (.not. associated(isoilwater)) then
+                allocate(isoilwater)
+                isoilwater = 14
+                call mpas_pool_add_config(mgr % pool, 'isoilwater', isoilwater)
+            endif
         endif
 
         ! Reset the pool's error level

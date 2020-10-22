@@ -79,8 +79,6 @@
  character(len=StrKIND+1) :: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
  character(len=StrKIND+1) :: geog_sub_path       ! subdirectory names in config_geog_data_path, with trailing slash
 
- integer:: ismax_lu
-
  integer(c_int):: nx,ny,nz
  integer(c_int):: endian,isigned,istatus,wordsize
  integer:: i,j,k
@@ -286,20 +284,10 @@
 !
 ! Set land use and soil category parameters for water and ice
 !
-! TODO: Should this be moved to be above the interpolation of land use and soil at? Or
-! is it fine here?
  surface_input_select0: select case(trim(config_landuse_data))
     case('USGS')
-       ! Should we grab these values from the index file?
-       isice_lu = 24
-       iswater_lu = 16
-       ismax_lu = 24
        write(mminlu,'(a)') 'USGS'
     case('MODIFIED_IGBP_MODIS_NOAH')
-       ! Should we grab these values from the index file?
-       isice_lu = 15
-       iswater_lu = 17
-       ismax_lu = 20
        write(mminlu,'(a)') 'MODIFIED_IGBP_MODIS_NOAH'
     case default
          call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
@@ -479,10 +467,8 @@
                          messageType=MPAS_LOG_CRIT)
  endif
 
- allocate(ncat(ismax_lu, nCells))
- ncat(:,:) = 0
- lu_index(:) = 0
-
+ call mpas_pool_get_config(mgr % pool, 'iswater', iswater_lu_ptr)
+ call mpas_pool_get_config(mgr % pool, 'isice', isice_lu_ptr)
  call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
  call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
  call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
@@ -584,12 +570,10 @@
  end do
 
  do iCell = 1, nCells
-     lu_index(iCell) = 1
-     do i = 2, ismax_lu
-         if (ncat(i,iCell) > ncat(lu_index(iCell),iCell)) then
-             lu_index(iCell) = i
-         end if
-     end do
+    ! Because maxloc returns the location of the maximum value of an array as if the
+    ! starting index of the array is 1, and dataset categories do not necessarily start
+    ! at 1, we need to use category_min to ensure the correct category location is chosen.
+    lu_index(iCell) = maxloc(ncat(:,iCell), dim=1) - 1 + category_min
  end do
  deallocate(ncat)
 
@@ -615,12 +599,13 @@
  call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
  call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
  call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
  call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
  call mpas_pool_get_config(mgr % pool, 'isoilwater', iswater_soil_ptr)
 
  iswater_soil = iswater_soil_ptr
 
- allocate(ncat(category_max, nCells))
+ allocate(ncat(category_min:category_max, nCells))
  soilcat_top(:) = 0
  ncat(:,:) = 0
 
@@ -708,12 +693,10 @@
  end do
 
  do iCell = 1, nCells
-     soilcat_top(iCell) = 1
-     do i = 2, category_max ! TODO: Should we replace 2 with category_min + 1? What is 2 for? Why not 1?
-         if (ncat(i,iCell) > ncat(soilcat_top(iCell),iCell)) then
-            soilcat_top(iCell) = i
-         end if
-     end do
+    ! Because maxloc returns the location of the maximum value of an array as if the
+    ! starting index of the array is 1, and dataset categories do not necessarily start
+    ! at 1, we need to use category_min to ensure the correct category location is chosen.
+    soilcat_top(iCell) = maxloc(ncat(:,iCell), dim=1) - 1 + category_min
  end do
 
  deallocate(ncat)
