@@ -660,6 +660,10 @@ contains
        call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthRegionGM', mocStreamvalLatAndDepthRegionGM)
        mocStreamvalLatAndDepthRegionGM = mocStreamvalLatAndDepthRegionTotal * m3ps_to_Sv
 
+       !Add GM bolus contribution to resolved streamfunction to create total streamfunction
+       mocStreamvalLatAndDepthRegion = mocStreamvalLatAndDepthRegion + mocStreamvalLatAndDepthRegionGM
+       mocStreamvalLatAndDepth = mocStreamvalLatAndDepth + mocStreamvalLatAndDepthGM
+
      endif !config_use_GM
 
      deallocate(mocStreamvalLatAndDepthTotal)

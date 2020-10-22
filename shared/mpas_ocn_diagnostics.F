@@ -131,7 +131,7 @@ contains
         normalizedPlanetaryVorticityEdge, normalizedRelativeVorticityEdge, &
         normalizedRelativeVorticityCell, density, displacedDensity, potentialDensity, &
         temperature, salinity, vertVelocityTop, vertTransportVelocityTop, &
-        vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
+       vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
         RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
