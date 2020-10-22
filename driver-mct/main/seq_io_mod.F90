@@ -1438,7 +1438,7 @@ contains
     integer(in) :: dimid2(2)
     type(var_desc_t) :: varid
     logical :: lwhead, lwdata
-    integer :: start(4),count(4)
+    integer :: start(2),count(2)
     character(len=shr_cal_calMaxLen) :: lcalendar
     real(r8) :: time_val_1d(1)
     integer :: lfile_ind
@@ -1485,21 +1485,23 @@ contains
 
     if (lwdata) then
        start = 1
-       count = 1
+       count = 0
        if (present(nt)) then
           start(1) = nt
        endif
+       count(1) = 1
        time_val_1d(1) = time_val
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
-       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
+       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start=start,count=count,ival=time_val_1d)
        if (present(tbnds)) then
           rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
           start = 1
-          count = 1
+          count = 0
           if (present(nt)) then
              start(2) = nt
           endif
           count(1) = 2
+          count(2) = 1
           rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,tbnds)
        endif
 
