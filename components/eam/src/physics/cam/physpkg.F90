@@ -2551,16 +2551,11 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
  
-
-
+#undef NEWCLUBB
+#ifdef NEWCLUBB
 !!!!OG compute te without cp term before
     call check_energy_save_local_te(state, tend, "clubb", nstep, ztodt, teloc1)
-!!!! save old T
-    tbefore(:ncol,:pver)=state%T(:ncol,:pver)
 
-
-
-  
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
@@ -2586,20 +2581,26 @@ end if
                 !    Update physics tendencies and copy state to state_eq, because that is 
                 !      input for microphysics      
         
-
-
 !updates everything except T, s, and zm, zi
     call physics_almost_update(state, ptend, ztodt, tend)
 
     call check_energy_save_local_te(state, tend, "clubb", nstep, ztodt, teloc2)
                 
                 flx_vap(:ncol) = cam_in%cflx(:,1)
-
                 !moved it here
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol)
-                flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
+!old, is it wrong? ice does not leave model, ice is part of rliq that was
+!inserted into atm in clubb call and det_ice (some amount of ice from rliq)
+!released l. heat of amount det_s. det_s was accounted in ptend%s, so, no reason
+!to count det_ice or det_s as external fluxes
+!thus there are other changes, in particular, in call to check_energy, flx_heat,
+!and to how ddd is computed
+                !flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
+!newer
+                flx_heat(:ncol) = cam_in%shf(:ncol)
 
-ddd(:ncol) = flx_vap(:ncol)*(latvap+latice) -(flx_cnd(:ncol)-det_ice(:ncol))*latice*1000.0 + flx_heat(:ncol)
+!ddd(:ncol) = flx_vap(:ncol)*(latvap+latice) -(flx_cnd(:ncol)-det_ice(:ncol))*latice*1000.0 + flx_heat(:ncol)
+ddd(:ncol) = flx_vap(:ncol)*(latvap+latice) -(flx_cnd(:ncol))*latice*1000.0 + flx_heat(:ncol)
 ddd(:ncol) = ddd(:ncol)/(state%pint(:ncol,pverp) - state%pint(:ncol,1))*gravit
 ddd(:ncol) = ddd(:ncol)/cld_macmic_num_steps
 do k = 1, pver
@@ -2610,29 +2611,44 @@ enddo
 
 call physics_finish_update(state, ptend, ztodt, tend)
 
+
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt,&
                      flx_vap/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps,&
-                     det_ice/cld_macmic_num_steps,flx_heat/cld_macmic_num_steps)
+                     zero,flx_heat/cld_macmic_num_steps)
 
-
-!old call
-!                call physics_update(state, ptend, ztodt, tend)
+!with det_s, det_ice
 !                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt,&
-!                     cam_in%cflx(:,1)/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps, &
+!                     flx_vap/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps,&
 !                     det_ice/cld_macmic_num_steps,flx_heat/cld_macmic_num_steps)
 
+#else
+!old calls
 
+             call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
+                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, &
+                dlf, det_s, det_ice, lcldo)
 
+                !  Since we "added" the reserved liquid back in this routine, we
+                !  need 
+                !    to account for it in the energy checker
+                flx_cnd(:ncol) = -1._r8*rliq(:ncol)
+                flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
 
+                ! Unfortunately, physics_update does not know what time period
+                ! "tend" is supposed to cover, and therefore can't update it
+                ! with substeps correctly. For now, work around this by scaling
+                ! ptend down by the number of substeps, then applying it for
+                ! the full time (ztodt).
+                call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps,ncol)
+                !    Update physics tendencies and copy state to state_eq,
+                !    because that is 
+                !      input for microphysics              
+                call physics_update(state, ptend, ztodt, tend)
+                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt,&
+                     cam_in%cflx(:,1)/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps, &
+                     det_ice/cld_macmic_num_steps,flx_heat/cld_macmic_num_steps)
 
-
-
-
-
-
-
-
- 
+#endif
           endif
 
           call t_stopf('macrop_tend')
