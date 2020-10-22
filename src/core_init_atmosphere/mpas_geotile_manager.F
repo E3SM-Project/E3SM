@@ -560,7 +560,7 @@ module mpas_geotile_manager
         c_tile_ny = tile_ny + 2 * tile_bdr ! The number of pixels in the y direction, including halo cells
         c_tile_nz = tile_nz ! The number of pixels in the z direction
         c_wordsize = wordsize
-        c_scalefactor = scalefactor
+        c_scalefactor = real(scalefactor, c_float)
         c_signed = signed
 
         if (endian == "big") then
