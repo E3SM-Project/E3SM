@@ -107,7 +107,6 @@ contains
 
     real(r8) :: time1, time2                !times to compute "one_yr"
 
-
     !BALLI- add comment
 
     !Currently only handles cyclic or serial data types; exit if some other data_type detected
@@ -231,8 +230,8 @@ contains
     ierr = pio_inq_varid( piofile, 'altitude_int', old_dimid )
     ierr = pio_get_var( piofile, old_dimid, alts_int )
 
-    allocate(wrk_sw(2,mxnflds_sw,nalts,nlats,nswbands))!BALLI- handle erros for allocate everywhere!!
-    allocate(wrk_lw(2,mxnflds_lw,nalts,nlats,nlwbands))
+    allocate(wrk_sw(nlats,2,nalts,nswbands,mxnflds_sw))!BALLI- handle erros for allocate everywhere!!
+    allocate(wrk_lw(nlats,2,nalts,nlwbands,mxnflds_lw))
 
 
     ierr = pio_inq_dimid( piofile, 'solar_bands', old_dimid)
@@ -293,6 +292,7 @@ contains
     integer :: errcode, yr, mon, day, ncsec, it, itp1, itp1_old, banddim
 
     real(r8) :: data_time, curr_mdl_time, fact1, fact2, deltat_cyc
+    real(r8), allocatable :: rdata(:,:,:)
 
   !------------------------------------------------------------------------------------------------
 
@@ -381,45 +381,58 @@ contains
 
     fact2 = 1._r8-fact1
 
-    do ifld = 1,mxnflds_sw
-       if (read_data) then
+    if (read_data) then
+       allocate(rdata(nalts,nlats,nswbands))
+       do ifld = 1,mxnflds_sw
           !Get netcdf variable id for the field
           ierr = pio_inq_varid(piofile, trim(adjustl(specifier_sw(ifld))),var_id) !get id of the variable to read from iput file
           ! If current itp matches previous itp1, copy rather than reading from file
           if (it == itp1_old) then
-             wrk_sw(1,ifld,:,:,:) = wrk_sw(2,ifld,:,:,:)
+             wrk_sw(:,1,:,:,ifld) = wrk_sw(:,2,:,:,ifld)
           else
-             ierr = pio_get_var( piofile, var_id, strt_t, cnt_sw, wrk_sw(1,ifld,:,:,:) )!BALLI: handle error?
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_sw, rdata )!BALLI: handle error?
+             call transpose(rdata, wrk_sw(:,1,:,:,ifld))
           endif
-          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, wrk_sw(2,ifld,:,:,:) )!BALLI: handle error?
-       endif
+          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, rdata )!BALLI: handle error?
+          call transpose(rdata, wrk_sw(:,2,:,:,ifld))
+       end do
+       deallocate(rdata)
+    endif
 
+    do ifld = 1,mxnflds_sw
        !we always have to do interpolation as current model time changes time factors-fact1 and fact2
        !interpolate in lats, time and vertical
-       call interpolate_lats_time_vert(state, wrk_sw(:,ifld,:,:,:), nswbands, pbuf_idx_sw(ifld), fact1, fact2, pbuf2d )
+       call interpolate_lats_time_vert(state, wrk_sw(:,:,:,:,ifld), nswbands, pbuf_idx_sw(ifld), fact1, fact2, pbuf2d )
     enddo
 
-    do ifld = 1,mxnflds_lw
-       !Note that we have to reverse (compared with how they are mentioned in the netcdf file) the array dim sizes
-       if(read_data) then
+    if(read_data) then
+       allocate(rdata(nalts,nlats,nlwbands))
+       do ifld = 1,mxnflds_lw
+          !Note that we have to reverse (compared with how they are mentioned in the netcdf file) the array dim sizes
           ierr = pio_inq_varid(piofile, trim(adjustl(specifier_lw(ifld))),var_id) !get id of the variable to read from iput file
           ! If current itp matches previous itp1, copy rather than reading from file
           if (it == itp1_old) then
-             wrk_lw(1,ifld,:,:,:) = wrk_lw(2,ifld,:,:,:)
+             wrk_lw(:,1,:,:,ifld) = wrk_lw(:,2,:,:,ifld)
           else
-             ierr = pio_get_var( piofile, var_id, strt_t, cnt_lw, wrk_lw(1,ifld,:,:,:) )!BALLI: handle error?
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_lw, rdata )!BALLI: handle error?
+             call transpose(rdata, wrk_lw(:,1,:,:,ifld))
           endif
-          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, wrk_lw(2,ifld,:,:,:) )!BALLI: handle error?
-       endif
+          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, rdata )!BALLI: handle error?
+          call transpose(rdata, wrk_lw(:,2,:,:,ifld))
+       end do
+       deallocate(rdata)
+    endif
+
+    do ifld = 1,mxnflds_lw
        !we always have to do interpolation as current model time changes time factors-fact1 and fact2 
        !interpolate in lats, time and vertical
-       call interpolate_lats_time_vert(state, wrk_lw(:,ifld,:,:,:), nlwbands, pbuf_idx_lw(ifld), fact1, fact2, pbuf2d )
+       call interpolate_lats_time_vert(state, wrk_lw(:,:,:,:,ifld), nlwbands, pbuf_idx_lw(ifld), fact1, fact2, pbuf2d )
     enddo
 
     ! Chris Golaz: for debugging
     !if (masterproc) write(iulog,'(a,i5,2i3,i6,3f9.2,l2,2f8.4)')'advance_volc_radiation_data:', &
     !  yr,mon,day,ncsec,curr_mdl_time,datatimem,datatimep,read_data,fact1,fact2
-        
+
   end subroutine advance_volc_radiation_data
 
   !------------------------------------------------------------------------------------------------
@@ -487,26 +500,26 @@ contains
     use physics_buffer,   only: pbuf_get_field, physics_buffer_desc
     use physics_types,    only: physics_state
     use interpolate_data, only: lininterp_init, lininterp, interp_type, lininterp_finish    
-    use mo_util,          only: rebin
+    use mo_util,          only: rebin_fast
 
     !Arguments
     !--intent(in)
     type(physics_state), intent(in) :: state(begchunk:endchunk)
     integer,  intent(in) :: banddim, pbuf_idx
-    real(r8), intent(in) :: fact1, fact2, wrk(ntslc,nalts,nlats,banddim)
+    real(r8), intent(in) :: fact1, fact2, wrk(nlats,ntslc,nalts,banddim)
 
     !--intent (out)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     !Local variables
     type(interp_type) :: lat_wgts
-    integer  :: ichnk, ncols, k, iband, icol
+    integer  :: ichnk, ncols, k, iband, icol, status
 
     real(r8), parameter :: m2km  = 1.e-3_r8
 
-    real(r8) :: wrk_1d(ntslc,pcols), to_lats(pcols)
-    real(r8) :: datain(pcols,nalts,banddim)
-    real(r8) :: model_z(pverp),data_out_tmp(pcols,pver,banddim)    
+    real(r8) :: wrk_1d(pcols,ntslc), to_lats(pcols)
+    real(r8) :: datain(banddim,nalts,pcols)
+    real(r8) :: model_z(pverp),data_out_tmp(banddim,pver)
 
     real(r8), pointer :: data_out(:,:,:)
 
@@ -518,26 +531,41 @@ contains
        do iband = 1 , banddim 
           do k = 1, nalts
              !lats interpolation
-             call lininterp(wrk(1,k,:,iband), nlats, wrk_1d(1,1:ncols), ncols, lat_wgts)
-             call lininterp(wrk(2,k,:,iband), nlats, wrk_1d(2,1:ncols), ncols, lat_wgts)
-
+             call lininterp(wrk(:,1,k,iband), nlats, wrk_1d(1:ncols,1), ncols, lat_wgts)
+             call lininterp(wrk(:,2,k,iband), nlats, wrk_1d(1:ncols,2), ncols, lat_wgts)
              !time interpolation
-             datain(1:ncols,k,iband) = fact1*wrk_1d(1,1:ncols) + fact2*wrk_1d(2,1:ncols)
+             datain(iband,k,1:ncols) = fact1*wrk_1d(1:ncols,1) + fact2*wrk_1d(1:ncols,2)
           end do
        enddo       
        call lininterp_finish(lat_wgts)
        !vertical interpolation
-       do iband = 1, banddim
-          do icol = 1, ncols
-             !convert model's vertical coordinate from m to km and flip it to match data
-             model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
-             call rebin( nalts, pver, alts_int, model_z, datain(icol,:,iband), data_out_tmp(icol,:,iband) )
-             !flip in vertical to match model
-             data_out(icol,:,iband) = data_out_tmp(icol,pver:1:-1,iband)
-          enddo
+       do icol = 1, ncols
+          !convert model's vertical coordinate from m to km and flip it to match data
+          model_z(1:pverp) = m2km * state(ichnk)%zi(icol,pverp:1:-1)
+          call rebin_fast( nalts, pver, banddim, alts_int, model_z, datain(:,:,icol), data_out_tmp, status )
+          if (status /= 0) then
+             call endrun('read_volc_radiation_data.F90: rebin_fast detected nonmonotonic grids')
+          end if
+          !flip in vertical to match model
+          do iband = 1, banddim
+             data_out(icol,1:pver,iband) = data_out_tmp(iband,pver:1:-1)
+          end do
        enddo
     end do
 
   end subroutine interpolate_lats_time_vert
+
+  subroutine transpose(rd, ud)
+    real(r8), intent(in ) :: rd(:,:,:)
+    real(r8), intent(out) :: ud(:,:,:)
+
+    integer :: i, j
+
+    do j = 1, size(rd,1)
+       do i = 1, size(rd,2)
+          ud(i,j,:) = rd(j,i,:)
+       end do
+    end do
+  end subroutine transpose
   
 end module read_volc_radiation_data

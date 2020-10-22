@@ -330,10 +330,10 @@ contains
           dphi(:,:,nlev) = dphi_n0(:,:,nlev) - dt2*g*(w_np1(:,:,nlev) + x(:,:,nlev))
 
           alphas = 1
-          if (maxval(dphi(:,:,1:nlev)) >= 0) then
+          if (any(dphi(:,:,1:nlev) >= 0)) then
              do j=1,np
                 do i=1,np
-                   if (maxval(dphi(i,j,1:nlev)) < 0) cycle
+                   if (.not. any(dphi(i,j,1:nlev) >= 0)) cycle
 
                    ! Step halfway to the distance at which at least one dphi is 0.
                    alpha = 1
@@ -372,7 +372,8 @@ contains
                elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
-          reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
+          ! this is not used in this loop, so move out of loop
+          !reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
           deltaerr=maxval(abs(x))/wmax
 
           ! update iteration count and error measure
@@ -388,6 +389,7 @@ contains
        ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
        max_itercnt=max(itercount,max_itercnt)
        max_deltaerr=max(deltaerr,max_deltaerr)
+       reserr=maxval(abs(Fn))/(wmax*abs(dt2))
        max_reserr=max(reserr,max_reserr)
 #ifdef NEWTONCOND
        min_rcond=min(rcond,min_rcond)
