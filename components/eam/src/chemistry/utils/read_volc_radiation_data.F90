@@ -230,7 +230,7 @@ contains
     ierr = pio_inq_varid( piofile, 'altitude_int', old_dimid )
     ierr = pio_get_var( piofile, old_dimid, alts_int )
 
-    allocate(wrk_sw(nlats,2,nalts,nswbands,mxnflds_sw))!BALLI- handle erros for allocate everywhere!!
+    allocate(wrk_sw(nlats,2,nalts,nswbands,mxnflds_sw))
     allocate(wrk_lw(nlats,2,nalts,nlwbands,mxnflds_lw))
 
 
@@ -256,10 +256,10 @@ contains
     allocate(pbuf_idx_sw(mxnflds_sw),pbuf_idx_lw(mxnflds_lw))
 
     do ifld = 1, mxnflds_sw
-       pbuf_idx_sw(ifld) = pbuf_get_index(trim(specifier_sw(ifld)),errcode)!BALLI handle error?
+       pbuf_idx_sw(ifld) = pbuf_get_index(trim(specifier_sw(ifld)),errcode)
     enddo 
     do ifld = 1, mxnflds_lw
-       pbuf_idx_lw(ifld) = pbuf_get_index(trim(specifier_lw(ifld)),errcode)!BALLI handle error?
+       pbuf_idx_lw(ifld) = pbuf_get_index(trim(specifier_lw(ifld)),errcode)
     enddo
 
   end subroutine read_volc_radiation_data_init
@@ -390,10 +390,10 @@ contains
           if (it == itp1_old) then
              wrk_sw(:,1,:,:,ifld) = wrk_sw(:,2,:,:,ifld)
           else
-             ierr = pio_get_var( piofile, var_id, strt_t, cnt_sw, rdata )!BALLI: handle error?
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_sw, rdata )
              call transpose(rdata, wrk_sw(:,1,:,:,ifld))
           endif
-          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, rdata )!BALLI: handle error?
+          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_sw, rdata )
           call transpose(rdata, wrk_sw(:,2,:,:,ifld))
        end do
        deallocate(rdata)
@@ -414,10 +414,10 @@ contains
           if (it == itp1_old) then
              wrk_lw(:,1,:,:,ifld) = wrk_lw(:,2,:,:,ifld)
           else
-             ierr = pio_get_var( piofile, var_id, strt_t, cnt_lw, rdata )!BALLI: handle error?
+             ierr = pio_get_var( piofile, var_id, strt_t, cnt_lw, rdata )
              call transpose(rdata, wrk_lw(:,1,:,:,ifld))
           endif
-          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, rdata )!BALLI: handle error?
+          ierr = pio_get_var( piofile, var_id, strt_tp1, cnt_lw, rdata )
           call transpose(rdata, wrk_lw(:,2,:,:,ifld))
        end do
        deallocate(rdata)
