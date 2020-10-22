@@ -20,7 +20,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
-    static constexpr Int num_tracer = 10;
+    static constexpr Int num_tracer = 6;
   
     // Tests for the subroutine update_prognostics_implicit
 
@@ -58,7 +58,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real tke_in[nlev] = {0.2, 0.3, 0.5, 0.4, 0.1};
 
     // Input for tracer (no units)
-//    Real tracer_in[shcol][nlev][num_tracer];
+    Real tracer_in[shcol*nlev*num_tracer];
 
     // Compute needed grid information from zi_grid
     // Grid stuff to compute based on zi_grid
@@ -78,10 +78,81 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       }
     }
     // set upper condition for dz_zi
-    dz_zi[nlevi-1] = zt_grid[nlev-1]; 
+    dz_zi[nlevi-1] = zt_grid[nlev-1];
     
+    // Generate random data for input tracers 1 to 1000 (unitless)
+    for (Int i = 0; i < shcol*nlev*num_tracer; ++i){
+      tracer_in[i] = rand()% 1000 + 1;
+    }
+   
     // Initialize data structure for bridging to F90
-    UpdatePrognosticsImplicitData SDS(shcol,nlev,nlevi,num_tracer,dtime);     
+    UpdatePrognosticsImplicitData SDS(shcol,nlev,nlevi,num_tracer,dtime);
+    
+    // Test that the inputs are reasonable
+    REQUIRE(SDS.shcol == shcol);
+    REQUIRE(SDS.nlev == nlev);
+    REQUIRE(SDS.nlevi == nlevi);
+    REQUIRE(SDS.num_tracer == num_tracer);
+    REQUIRE(shcol > 1);
+    REQUIRE(nlev > 1);
+    REQUIRE(nlevi == nlev+1);
+    REQUIRE(num_tracer > 1);
+    
+    // Fill in test data, first for column only input
+    for(Int s = 0; s < shcol; ++s) {    
+      SDS.uw_sfc[s] = uw_sfc[s];
+      SDS.vw_sfc[s] = vw_sfc[s];
+      SDS.wthl_sfc[s] = wthl_sfc[s];
+      SDS.wqw_sfc[s] = wqw_sfc[s];
+      
+      for (Int t = 0; t < num_tracer; ++t){
+        const auto offset = t + s * num_tracer;
+        // If first column feed in zero surface fluxes for all tracers
+        if (s == 0){
+          SDS.wtracer_sfc[offset] = 0;
+        }
+        // Else feed tracer flux random data from -100 to 100 (unitless)
+        else{
+          SDS.wtracer_sfc[offset] = rand()%200 + (-100);
+        }
+      }
+      
+      // Fill in data on the nlev grid
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        
+        // TKH and TK get the same values on purpose
+        SDS.tkh[offset] = tkh[n];
+        SDS.tk[offset] = tkh[n];
+        
+        SDS.rho_zt[offset] = rho_zt[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        
+        // Prognostic input/output variables
+        SDS.thetal[offset] = thetal_in[n];
+        SDS.qw[offset] = qw_in[n];
+        SDS.u_wind[offset] = u_wind_in[n];
+        SDS.v_wind[offset] = v_wind_in[n];
+        SDS.tke[offset] = tke_in[n];
+      }
+      
+      // Fill in data on the nlevi grid
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+         
+        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.dz_zi[offset] = dz_zi[n];
+      }
+      
+      // Fill in tracer data
+      for (Int i = 0; i < shcol*nlev*num_tracer; ++i){
+        SDS.tracer[i] = tracer_in[i];
+      }
+    } // column loop
+    
+    // Call the fortran implementation
+    update_prognostics_implicit(SDS);
 
   } // run_property
 
