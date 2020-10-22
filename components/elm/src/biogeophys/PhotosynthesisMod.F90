@@ -1945,9 +1945,7 @@ contains
          froot_carbon(p) = tlai(p) / slatop(ivt(p))*froot_leaf(ivt(p))
          croot_carbon(p) = tlai(p)/slatop(ivt(p))*stem_leaf(ivt(p)) &
                   *croot_stem(ivt(p))
-!         nlevbed = min(nlev2bed(c),nlevsoi)
          nlevbed = nlev2bed(c)
-!         nlevbed = nlevsoi
          do j = 1,nlevbed
 
             ! calculate conversion from conductivity to conductance
@@ -3571,8 +3569,6 @@ contains
          )
     
     nlevbed = min(nlevsoi,nlev2bed(c))
-!         nlevbed = nlev2bed(c)
-    ! initialize all elements to zero
    
     A = 0._r8
     invA = 0._r8
@@ -3742,8 +3738,6 @@ contains
          )
 
     nlevbed = min(nlevsoi,nlev2bed(c))
-!         nlevbed = nlevsoi
-!         nlevbed = nlev2bed(c)
     
     grav1 = htop(p) * 1000._r8
     grav2(1:nlevbed) = z(c,1:nlevbed) * 1000._r8
@@ -3836,8 +3830,6 @@ contains
          )
 
     nlevbed = min(nlevsoi,nlev2bed(c))
-!         nlevbed = nlevsoi
-!         nlevbed = nlev2bed(c)
     
     grav1 = 1000._r8 *htop(p)
     grav2(1:nlevbed) = 1000._r8 * z(c,1:nlevbed)
