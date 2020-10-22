@@ -161,7 +161,9 @@ inline void AtmosphereInput::init()
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
-  m_gids = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  m_gids = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(m_gids,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   int total_dofs;
   int local_dofs = m_gids.size();

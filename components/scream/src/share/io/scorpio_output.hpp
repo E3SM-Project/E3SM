@@ -52,7 +52,7 @@ class AtmosphereOutput
 public:
   using device_type    = DefaultDevice; // may need to template class on this
   using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
-  using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
+  using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
   using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
 
   virtual ~AtmosphereOutput () = default;
@@ -148,7 +148,9 @@ inline void AtmosphereOutput::init()
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
-  m_gids = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
+  m_gids = Kokkos::create_mirror_view( gids_dev );
+  Kokkos::deep_copy(m_gids,gids_dev); 
   // Note, only the total number of columns is distributed over MPI ranks, need to sum over all procs this size to properly register COL dimension.
   // int total_dofs;
   m_local_dofs = m_gids.size();
@@ -251,7 +253,8 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   {
     // Get all the info for this field.
     auto name   = f_map.first;
-    auto g_view = m_field_repo->get_field(f_map.second).get_view();
+    auto g_view_d = m_field_repo->get_field(f_map.second).get_view();
+    auto g_view = Kokkos::create_mirror_view( g_view_d );
     auto l_view = m_view.at(name); //TODO: may want to fix this since l_view may not be actually updated.  Use g_view for Instant?
     Int  f_len  = f_map.second.get_layout().size();
     // The next two operations do not need to happen if the frequency of output is instantaneous.
