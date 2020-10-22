@@ -22,21 +22,15 @@
 // Whether the MPI operations have to be performed directly on the device
 #cmakedefine01 HOMMEXX_MPI_ON_DEVICE
 
-// Whether the GPU build should be bit-for-bit with the CPU build
-#cmakedefine01 HOMMEXX_GPU_BFB_WITH_CPU
+#cmakedefine01 HOMMEXX_CUDA_SHARE_BUFFER
 
 // Minimum and maximum number of warps to provide to a team
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
 #cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
 
-#cmakedefine CUDA_BUILD
-
-// The version of AVX available on the host
-#define HOMMEXX_AVX_VERSION ${AVX_VERSION}
-
-// User-defined VECTOR_SIZE; used if AVX_VERSION is 0 and Cuda is not active
+// User-defined VECTOR_SIZE
 #define HOMMEXX_VECTOR_SIZE ${HOMMEXX_VECTOR_SIZE}
 
 #define HOMMEXX_SHA1 "${LAST_GIT_COMMIT_SHA}"
 
-#endif
+#endif // HOMMEXX_CONFIG_H

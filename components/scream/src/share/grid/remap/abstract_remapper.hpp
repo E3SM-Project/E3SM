@@ -22,13 +22,12 @@ namespace scream
 // but as of now (07/2019) it is not the intent and projected use
 // of this class in the scream framework
 
-template<typename ScalarType, typename DeviceType>
+template<typename RealType>
 class AbstractRemapper
 {
 public:
-  using scalar_type     = ScalarType;
-  using device_type     = DeviceType;
-  using field_type      = Field<scalar_type,device_type>;
+  using real_type       = RealType;
+  using field_type      = Field<real_type>;
   using identifier_type = typename field_type::identifier_type;
   using layout_type     = typename identifier_type::layout_type;
   using grid_type       = AbstractGrid;
@@ -186,8 +185,8 @@ protected:
   int                 m_num_bound_fields;
 };
 
-template<typename ScalarType, typename DeviceType>
-AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+AbstractRemapper<RealType>::
 AbstractRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
  : m_state                 (RepoState::Clean)
@@ -202,8 +201,8 @@ AbstractRemapper (const grid_ptr_type& src_grid,
   EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 registration_begins () {
   EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
                        "Error! Cannot start registration on a non-clean repo.\n"
@@ -214,8 +213,8 @@ registration_begins () {
   m_state = RepoState::Open;
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 register_field (const identifier_type& src, const identifier_type& tgt) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
                        "Error! Cannot register fields in the remapper at this time.\n"
@@ -238,16 +237,16 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
   ++m_num_registered_fields;
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 register_field (const field_type& src, const field_type& tgt) {
   register_field(src.get_header().get_identifier(),
                  tgt.get_header().get_identifier());
   bind_field(src,tgt);
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 unregister_field (const identifier_type& src, const identifier_type& tgt) {
   EKAT_REQUIRE_MSG(m_state==RepoState::Open,
                      "Error! You can only un-register fields during the registration phase.\n");
@@ -269,8 +268,8 @@ unregister_field (const identifier_type& src, const identifier_type& tgt) {
   m_fields_are_bound.erase(m_fields_are_bound.begin()+ifield);
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 bind_field (const field_type& src, const field_type& tgt) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
                      "Error! Cannot bind fields in the remapper at this time.\n"
@@ -299,8 +298,8 @@ bind_field (const field_type& src, const field_type& tgt) {
   ++m_num_bound_fields;
 }
 
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
+template<typename RealType>
+void AbstractRemapper<RealType>::
 registration_ends () {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
                        "Error! Cannot call registration_ends at this time.\n"
@@ -314,11 +313,11 @@ registration_ends () {
 }
 
 // A short name for an AbstractRemapper factory
-template<typename ScalarType, typename Device>
+template<typename RealType>
 using RemapperFactory =
-    ekat::Factory<AbstractRemapper<ScalarType,Device>,
+    ekat::Factory<AbstractRemapper<RealType>,
                   ekat::CaseInsensitiveString,
-                  std::shared_ptr<AbstractRemapper<ScalarType,Device>>,
+                  std::shared_ptr<AbstractRemapper<RealType> >,
                   const ekat::ParameterList&>;
 
 } // namespace scream

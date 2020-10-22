@@ -48,8 +48,8 @@ do {                     \
 namespace Homme {
 namespace Errors {
 
-void runtime_check(bool cond, const std::string& message, int code);
-void runtime_abort(const std::string& message, int code);
+void runtime_check(bool cond, const std::string& message, int code = -1);
+void runtime_abort(const std::string& message, int code = -1);
 
 static constexpr int err_unknown_option               = 11;
 static constexpr int err_not_implemented              = 12;

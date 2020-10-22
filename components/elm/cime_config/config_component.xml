@@ -20,8 +20,8 @@
       <value compset="_ELM"                >-phys clm4_5</value>
       <value compset="_ELM50"                >-phys clm5_0</value>
       <value compset="_ELM%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
-      <value compset="1950_CAM5%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
-      <value compset="2010_CAM5%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="1950_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="2010_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>
@@ -39,9 +39,9 @@
     <default_value>UNSET</default_value>
     <values>
       <value compset="2000_DATM.*_ELM"  >2000_control</value> 
-      <value compset="2000_CAM.*_ELM"   >2000_control</value> 
-      <value compset="1996_CAM.*_ELM"   >2000_control</value> 
-      <value compset="5505_CAM.*_ELM"   >1850-2100_rcp4.5_transient</value> 
+      <value compset="2000_EAM.*_ELM"   >2000_control</value> 
+      <value compset="1996_EAM.*_ELM"   >2000_control</value> 
+      <value compset="5505_EAM.*_ELM"   >1850-2100_rcp4.5_transient</value> 
       <value compset="2003.*_ELM"       >2000_control</value>       
       <value compset="1850.*_ELM"       >1850_control</value> 
       <value compset="20TR.*_ELM"       >20thC_transient</value> 
@@ -64,34 +64,34 @@
       <value compset="AMIP.*_ELM"       >20thC_transient</value> 
       <value compset="ELM.*_CISM.*_TEST">glacierMEC_pd</value>
       <!-- Use rcp4.5 for PI to PDAY so will have data up to the current year available (for WACCM compsets that use PDAY) -->
-      <value compset="PIPD_CAM5"        >1850-2100_rcp4.5_transient</value>
+      <value compset="PIPD_EAM"        >1850-2100_rcp4.5_transient</value>
       <value compset="2013.*_ELM"       >1850-2100_rcp4.5_transient</value> 
       <value compset="PDAY.*_ELM"       >1850-2100_rcp4.5_transient</value> 
       <!-- CMIP6 DECK compsets and related BGC compsets -->
-      <value compset="1850_CAM5%CMIP6_ELM">1850_CMIP6_control</value>
-      <value compset="1850S_CAM5%CMIP6_ELM">1850_SCMIP6_control</value>
-      <value compset="1850_CAM5%CMIP6_ELM*_BGC%BCRC">1850_CMIP6bgc_control</value>
-      <value compset="1850S_CAM5%CMIP6_ELM">1850_SCMIP6_control</value>
-      <value compset="20TR_CAM5%CMIP6_ELM">20thC_CMIP6_transient</value>
-      <value compset="20TR_CAM5%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
+      <value compset="1850_EAM%CMIP6_ELM">1850_CMIP6_control</value>
+      <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
+      <value compset="1850_EAM%CMIP6_ELM*_BGC%BCRC">1850_CMIP6bgc_control</value>
+      <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
+      <value compset="20TR_EAM%CMIP6_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR_EAM%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_ELM%[^_]*BGC">20thC_bgc_transient</value>
-      <value compset="1950_CAM5%CMIP6-LR.*_ELM">1950_CMIP6LR_control</value>
-      <value compset="1950_CAM5%CMIP6-HR_ELM">1950_CMIP6HR_control</value>
-      <value compset="2010_CAM5%CMIP6_ELM">2010_CMIP6_control</value>
-      <value compset="2010S_CAM5%CMIP6_ELM">2010_CMIP6_control</value>
-      <value compset="SSP585_CAM5%CMIP6_ELM">2015-2100_SSP585_transient</value>
-      <value compset="SSP585_CAM5%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
-      <value compset="2010_CAM5%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
-      <value compset="2010_CAM5%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
-      <value compset="2010_CAM5.*SCREAM-LR" >2010_defscream_control</value>
-      <value compset="2010_CAM5.*SCREAM-HR" >2010_defscream_control</value>
-      <value compset="2010_CAM5.*SCREAM-LR-DYAMOND2" >2010_dy2scream_control</value>
-      <value compset="2010_CAM5.*SCREAM-HR-DYAMOND2" >2010_dy2scream_control</value>
-      <value compset="2000_CAM5.*SCREAM-LR" >2000_control</value>
-      <value compset="2000_CAM5.*SCREAM-HR" >2000_control</value>
+      <value compset="1950_EAM%CMIP6-LR.*_ELM">1950_CMIP6LR_control</value>
+      <value compset="1950_EAM%CMIP6-HR_ELM">1950_CMIP6HR_control</value>
+      <value compset="2010_EAM%CMIP6_ELM">2010_CMIP6_control</value>
+      <value compset="2010S_EAM%CMIP6_ELM">2010_CMIP6_control</value>
+      <value compset="SSP585_EAM%CMIP6_ELM">2015-2100_SSP585_transient</value>
+      <value compset="SSP585_EAM%CMIP6_ELM*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
+      <value compset="2010_EAM%CMIP6-LR_ELM">2010_CMIP6LR_control</value>
+      <value compset="2010_EAM%CMIP6-HR_ELM">2010_CMIP6HR_control</value>
+      <value compset="2010_EAM.*SCREAM-LR" >2010_defscream_control</value>
+      <value compset="2010_EAM.*SCREAM-HR" >2010_defscream_control</value>
+      <value compset="2010_EAM.*SCREAM-LR-DYAMOND2" >2010_dy2scream_control</value>
+      <value compset="2010_EAM.*SCREAM-HR-DYAMOND2" >2010_dy2scream_control</value>
+      <value compset="2000_EAM.*SCREAM-LR" >2000_control</value>
+      <value compset="2000_EAM.*SCREAM-HR" >2000_control</value>
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
-      <value compset="1850_CAM5%AR5sf_ELM">1850_CMIP6_control</value>
-      <value compset="20TR_CAM5%AR5sf_ELM">20thC_CMIP6_transient</value>
+      <value compset="1850_EAM%AR5sf_ELM">1850_CMIP6_control</value>
+      <value compset="20TR_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
@@ -144,7 +144,7 @@
     <!--list>1</list-->
     <default_value>constant</default_value>
     <values>
-      <value compset="_CAM.*_ELM"     >diagnostic</value>
+      <value compset="_EAM.*_ELM"     >diagnostic</value>
       <value compset="_ELM.*_BGC%BDRD">diagnostic</value>
       <value compset="_ELM.*_BGC%BPRP">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>

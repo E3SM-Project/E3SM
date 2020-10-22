@@ -863,9 +863,9 @@ contains
  end subroutine shoc_diag_second_moments_srf_c
 
   subroutine diag_third_shoc_moments_c(&
-                             shcol, nlev, nlevi, w_sec, thl_sec, qw_sec, &
-                             qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
-                             tke, wthv_sec, dz_zt, dz_zi, &
+                             shcol, nlev, nlevi, w_sec, thl_sec, &
+                             wthl_sec, isotropy, brunt, thetal, &
+                             tke, dz_zt, dz_zi, &
                              zt_grid, zi_grid, w3) bind(C)
   use shoc, only: diag_third_shoc_moments
 
@@ -874,14 +874,11 @@ contains
     integer(kind=c_int), intent(in), value :: nlevi
     real(kind=c_real), intent(in) :: w_sec(shcol,nlev)
     real(kind=c_real), intent(in) :: thl_sec(shcol,nlevi)
-    real(kind=c_real), intent(in) :: qw_sec(shcol,nlevi)
-    real(kind=c_real), intent(in) :: qwthl_sec(shcol,nlevi)
     real(kind=c_real), intent(in) :: wthl_sec(shcol,nlevi)
     real(kind=c_real), intent(in) :: isotropy(shcol,nlev)
     real(kind=c_real), intent(in) :: brunt(shcol,nlev)
     real(kind=c_real), intent(in) :: thetal(shcol,nlev)
     real(kind=c_real), intent(in) :: tke(shcol,nlev)
-    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
     real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
@@ -890,9 +887,9 @@ contains
     real(kind=c_real), intent(out) :: w3(shcol,nlevi)
 
     call diag_third_shoc_moments(&
-                     shcol, nlev, nlevi, w_sec, thl_sec, qw_sec, &
-                     qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
-                     tke, wthv_sec, dz_zt, dz_zi, zt_grid, zi_grid, w3)
+                     shcol, nlev, nlevi, w_sec, thl_sec, &
+                     wthl_sec, isotropy, brunt, thetal, &
+                     tke, dz_zt, dz_zi, zt_grid, zi_grid, w3)
 
   end subroutine diag_third_shoc_moments_c
 
@@ -1320,4 +1317,21 @@ contains
 
     call compute_shoc_vapor(shcol, nlev, qw, ql, qv)
   end subroutine compute_shoc_vapor_c
+
+  subroutine update_prognostics_implicit_c(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind) bind(C)
+    use shoc, only : update_prognostics_implicit
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi, num_tracer
+    real(kind=c_real) , value, intent(in) :: dtime
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: dz_zt, rho_zt, zt_grid, tk, tkh
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(in), dimension(shcol) :: uw_sfc, vw_sfc, wthl_sfc, wqw_sfc
+    real(kind=c_real) , intent(in), dimension(shcol, num_tracer) :: wtracer_sfc
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: thetal, qw, tke, u_wind, v_wind
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev, num_tracer) :: tracer
+
+    call update_prognostics_implicit(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind)
+  end subroutine update_prognostics_implicit_c
+
 end module shoc_iso_c
+

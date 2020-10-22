@@ -7,8 +7,8 @@ include(genf90_utils)
 include(Sourcelist_utils)
 
 set(ZM_SRCS
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/scream_abortutils.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/scream_abortutils.F90
   zm_conv.F90
   atmosphere_deep_convection.cpp
   scream_zm_interface.F90

@@ -127,6 +127,15 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
+if (HOMME_MACHINE MATCHES "summit-gpu")
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-gpu
+               ${CMAKE_BINARY_DIR}/load-modules-gpu COPYONLY)
+endif()
+if (HOMME_MACHINE MATCHES "summit-p9")
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-p9
+               ${CMAKE_BINARY_DIR}/load-modules-p9 COPYONLY)
+endif()
+
 # create list of all executables needed by tests
 ADD_CUSTOM_TARGET(test-execs)
 
@@ -184,13 +193,41 @@ IF(${BUILD_HOMME_PREQX})
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
+IF(BUILD_HOMME_TOOL)
+  ADD_SUBDIRECTORY(tool-nlev26)
+ENDIF()
 
 IF(${BUILD_HOMME_THETA})
-  ADD_SUBDIRECTORY(tool-nlev26)
   ADD_SUBDIRECTORY(theta-l-nlev20)
   ADD_SUBDIRECTORY(theta-l-nlev30)
   ADD_SUBDIRECTORY(theta-l-nlev40)
   ADD_SUBDIRECTORY(theta-l-nlev60)
+ENDIF()
+
+IF (${BUILD_HOMME_THETA_KOKKOS})
+  #summit-gpu will have only gpu targets
+  if (${HOMME_MACHINE} MATCHES "summit-gpu")
+
+    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+
+  else()
+
+    ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+
+    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+
+    # This one we build it only if both theta and theta_kokkos are requested,
+    # since it's just needed for perf/correctness comparisons
+    IF (BUILD_HOMME_THETA)
+      ADD_SUBDIRECTORY(theta-nlev128)
+    ENDIF()
+
+    IF (HOMMEXX_BFB_TESTING)
+      ADD_SUBDIRECTORY(thetal_kokkos_ut)
+    ENDIF()
+  endif()
+
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -203,13 +240,19 @@ IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(swim5)
 ENDIF()
 
+IF (HOMMEXX_BFB_TESTING)
+  # Test some stuff in the shared folder
+  ADD_SUBDIRECTORY (share_kokkos_ut)
+ENDIF ()
+
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(preqx-nlev26)
   ADD_SUBDIRECTORY(preqx-nlev26-kokkos)
   ADD_SUBDIRECTORY(preqx-nlev72)
   ADD_SUBDIRECTORY(preqx-nlev72-kokkos)
-  # Test some stuff in the shared folder
-  ADD_SUBDIRECTORY (share_kokkos_ut)
+  IF (HOMMEXX_BFB_TESTING)
+    ADD_SUBDIRECTORY(preqx_kokkos_ut)
+  ENDIF ()
 ENDIF ()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
@@ -220,7 +263,7 @@ SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
-  MESSAGE("-- Generating tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
+  MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
     "     ctest -L \"dev|unit\": Tests label dev or unit.")
@@ -229,6 +272,18 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     MESSAGE("-- For profile ${p}:")
     createTestsWithProfile(HOMME_PREQX_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
+  ENDFOREACH ()
+ENDIF()
+IF (${BUILD_HOMME_THETA_KOKKOS})
+  MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
+    "   Example ctest lines:\n"
+    "     ctest -LE \"nightly\": All tests except nightly.\n"
+    "     ctest -L \"dev|unit\": Tests label dev or unit.")
+  make_profiles_up_to(${HOMME_TESTING_PROFILE} profiles)
+  FOREACH (p ${profiles})
+    MESSAGE("-- For profile ${p}:")
+    createTestsWithProfile(HOMME_THETA_TESTS_WITH_PROFILE ${p})
+    CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(THETA_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
 ENDIF()
 
@@ -253,12 +308,16 @@ FOREACH(TEST_DIR ${TEST_DIR_LIST})
            "Copying test results ${TEST_DIR} to baseline directory ${Homme_Baseline_DIR}/${TEST_BASE_NAME}")
 ENDFOREACH()
 
-# Now create the submission-list.sh
+# Now create run scripts
+# To monitor the process, disable RESULT OUTPUT ERROR lines below
+# and add -x to the 1st line in createRunScripts
 EXECUTE_PROCESS(
   COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "all"
   RESULT_VARIABLE CREATE_RUNS_RESULT
   OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
   ERROR_VARIABLE CREATE_RUNS_ERROR)
+
+
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error

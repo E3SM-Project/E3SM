@@ -26,7 +26,7 @@ class AtmosphereProcessGroup : public AtmosphereProcess
 {
 public:
   using atm_proc_type     = AtmosphereProcess;
-  using remapper_type     = AbstractRemapper<Real, device_type>;
+  using remapper_type     = AbstractRemapper<Real>;
   using remapper_ptr_type = std::shared_ptr<remapper_type>;
 
   // Constructor(s)
@@ -52,7 +52,7 @@ public:
   void final_setup ();
 
   // Register all fields in the given repo
-  void register_fields (FieldRepository<Real, device_type>& field_repo) const;
+  void register_fields (FieldRepository<Real>& field_repo) const;
 
   // The methods used to query the process for its inputs/outputs
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
@@ -67,7 +67,7 @@ public:
     return m_atm_processes.at(i);
   }
 
-  void setup_remappers (const FieldRepository<Real, device_type>& field_repo);
+  void setup_remappers (const FieldRepository<Real>& field_repo);
 
   const std::vector<std::map<std::string,remapper_ptr_type>>&
   get_inputs_remappers () const { return m_inputs_remappers; }
@@ -78,11 +78,11 @@ public:
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
 #ifdef SCREAM_DEBUG
-  void set_field_repos (const FieldRepository<Real, device_type>& repo,
-                        const FieldRepository<Real, device_type>& bkp_repo);
+  void set_field_repos (const FieldRepository<Real>& repo,
+                        const FieldRepository<Real>& bkp_repo);
 #endif
 
-  void set_internal_field (const Field<Real, device_type>& f);
+  void set_internal_field (const Field<Real>& f);
 
 protected:
 
@@ -95,8 +95,8 @@ protected:
   void run_parallel   (const Real dt);
 
   // The methods to set the fields in the process
-  void set_required_field_impl (const Field<const Real, device_type>& f);
-  void set_computed_field_impl (const Field<      Real, device_type>& f);
+  void set_required_field_impl (const Field<const Real>& f);
+  void set_computed_field_impl (const Field<      Real>& f);
 
   // Method to build the identifier of a field on the reference grid given
   // an identifier on a different grid
@@ -152,11 +152,11 @@ protected:
   std::vector<std::map<std::string,remapper_ptr_type>> m_outputs_remappers;
 
 #ifdef SCREAM_DEBUG
-  using field_type = Field<Real, device_type>;
+  using field_type = Field<Real>;
   bool views_are_equal (const field_type& v1, const field_type& v2);
 
-  const FieldRepository<Real, device_type>*   m_field_repo;
-  const FieldRepository<Real, device_type>*   m_bkp_field_repo;
+  const FieldRepository<Real>*   m_field_repo;
+  const FieldRepository<Real>*   m_bkp_field_repo;
 
 #endif
 };

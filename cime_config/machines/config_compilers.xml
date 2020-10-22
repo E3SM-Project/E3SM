@@ -491,7 +491,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
     <append compile_threaded="TRUE"> -mp </append>
-    <append COMP_NAME="cam"> </append>
+    <append COMP_NAME="eam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
     <append COMP_NAME="datm"> -Mnovect </append>
     <append COMP_NAME="dlnd"> -Mnovect </append>
@@ -529,7 +529,7 @@ flags should be captured within MPAS CMake files.
   <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
   <FFLAGS>
     <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append COMP_NAME="cam"> -qspill=6000 </append>
+    <append COMP_NAME="eam"> -qspill=6000 </append>
   </FFLAGS>
   <LDFLAGS>
     <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
@@ -958,7 +958,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="TRUE">  -C=all  -g  -O0 -v  </append>
-    <append DEBUG="TRUE" COMP_NAME="cam">  -C=all  -g  -nan -O0 -v  </append>
+    <append DEBUG="TRUE" COMP_NAME="eam">  -C=all  -g  -nan -O0 -v  </append>
   </FFLAGS>
   <MPI_PATH MPILIB="mvapich2"> $ENV{MPI_LIB}</MPI_PATH>
   <NETCDF_PATH>$ENV{NETCDF_ROOT}</NETCDF_PATH>
@@ -1080,7 +1080,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
-    <append COMP_NAME="cam">-Mnovect</append>
+    <append COMP_NAME="eam">-Mnovect</append>
     <append COMP_NAME="cice">-Mnovect</append>
   </FFLAGS>
   <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>

@@ -1,0 +1,248 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's atmosphere component
+"""
+
+import os, sys, re
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "eam", compname)
+
+    os.chdir(caseroot)
+
+    # Gather case parameters
+    atm_grid		= case.get_value("ATM_GRID")
+    atm_ncpl		= case.get_value("ATM_NCPL")
+    build_complete	= case.get_value("BUILD_COMPLETE")
+    cam_config_opts	= case.get_value("CAM_CONFIG_OPTS")
+    cam_namelist_opts	= case.get_value("CAM_NAMELIST_OPTS")
+    cam_nml_use_case	= case.get_value("CAM_NML_USE_CASE")
+    cam_dycore		= case.get_value("CAM_DYCORE")
+    cam_target		= case.get_value("CAM_TARGET")
+    casebuild		= case.get_value("CASEBUILD")
+    ccsm_co2_ppmv	= case.get_value("CCSM_CO2_PPMV")
+    srcroot		= case.get_value("SRCROOT")
+    comp_interface	= case.get_value("COMP_INTERFACE")
+    comp_ocn		= case.get_value("COMP_OCN")
+    debug		= case.get_value("DEBUG")
+    din_loc_root	= case.get_value("DIN_LOC_ROOT")
+    exeroot		= case.get_value("EXEROOT")
+    mpilib		= case.get_value("MPILIB")
+    ncpl_base_period	= case.get_value("NCPL_BASE_PERIOD")
+    nthrds_atm		= case.get_value("NTHRDS_ATM")
+    ntasks_atm		= case.get_value("NTASKS_ATM")
+    ninst_atm		= case.get_value("NINST_ATM")
+    pts_mode		= case.get_value("PTS_MODE")
+    rundir		= case.get_value("RUNDIR")
+    run_type		= case.get_value("RUN_TYPE")
+    run_startdate	= case.get_value("RUN_STARTDATE")
+    run_refcase	        = case.get_value("RUN_REFCASE")
+    run_refdate	        = case.get_value("RUN_REFDATE")
+    run_reftod	        = case.get_value("RUN_REFTOD")
+    force_build_smp     = case.get_value("FORCE_BUILD_SMP")
+    os_                 = case.get_value("OS").lower()
+
+    eamconf_dir = os.path.join(casebuild, "eamconf")
+
+    if not os.path.isdir(eamconf_dir): os.mkdir(eamconf_dir)
+
+    #--------------------------------------------------------------------
+    # Invoke eam configure - output will go in $CASEBUILD/eamconf
+    #--------------------------------------------------------------------
+
+    if not build_complete:
+
+        # The following translation is hard-wired for backwards compatibility
+        # to support the differences between how the scripts specify the land grid
+        # and how it is specified internally
+
+        if atm_grid == 'T31':  atm_grid = "48x96"
+        if atm_grid == 'T42':  atm_grid = "64x128"
+        if atm_grid == 'T85':  atm_grid = "128x256"
+        if atm_grid == 'T341': atm_grid = "512x1024"
+
+        # Some settings for single column mode.
+        scm = "-scam -nosmp" if pts_mode else ""
+
+        spmd = "-nospmd" if mpilib == 'mpi-serial' else '-spmd'
+
+        smp = "-nosmp" if (nthrds_atm == 1 and not force_build_smp) else '-smp'
+
+        # The ocean component setting is only used by CAM to do attribute matching for
+        # setting default tuning parameter values.  In SOM mode we want to use the same
+        # tunings as the fully coupled B compset, so set the ocean component to pop in
+        # that case.
+        ocn = "pop" if (comp_ocn == "docn" and case.get_value("DOCN_MODE") == "som") else comp_ocn
+
+        comp = ""
+        if comp_interface == "mct":  comp = "mct"
+        if comp_interface == "esmf": comp = "esmf"
+
+        cam_lib_dirs = "-cosp_libdir {}/atm/obj/cosp".format(exeroot) if "cosp" in cam_config_opts else ""
+
+        # level information for CAM is part of the atm grid name - and must be stripped out
+        nlev=""
+        regex_ = re.compile("(.+)L(.+)")
+        match_ = regex_.match(atm_grid)
+        if match_:
+            atm_grid = match_.groups()[0]
+            nlev = "-nlev " + match_.groups()[1]
+
+        # specify target OS name
+        os_opt = "-target_os bgq" if os_ == 'bgq' else ""
+
+        # TODO: eam/bld/configure needs to be converted to python
+        config_cmd = "{} -s -ccsm_seq -ice none -ocn {} -caseroot {} -comp_intf {} {} -spmd {} -smp {} -dyn {} -dyn_target {} -res {} {} {} {} {}".\
+            format(os.path.join(srcroot, "components/eam/bld/configure"), ocn, caseroot, comp, scm, spmd, smp, cam_dycore, cam_target, atm_grid, nlev, cam_lib_dirs, cam_config_opts, os_opt)
+        run_cmd_no_fail(config_cmd, from_dir=eamconf_dir)
+
+    else:
+
+        # Verify that we have a config_cache file.
+        expect(os.path.exists(os.path.join(eamconf_dir, "config_cache.xml")), "Missing eam cache file")
+
+    #--------------------------------------------------------------------
+    # Invoke eam build-namelist - output will go in $CASEBUILD/eamconf
+    #--------------------------------------------------------------------
+
+    ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
+
+    usecase = ("-use_case " + cam_nml_use_case) if cam_nml_use_case not in [None, "UNSET"] else " "
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_atm + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_atm > 1:
+            inst_string = "_{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.atm{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.atm")):
+                safe_copy(os.path.join(rundir, "rpointer.atm"),
+                          os.path.join(rundir, "rpointer.atm{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create eamconf/cesm_namelist
+        # -----------------------------------------------------
+
+        ncdata = ""
+        if run_type == 'hybrid':
+            if os.path.exists("{}.eam{}.i.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)):
+                ncdata = "'{}.eam{}.i.{}-{}.nc'".format(run_refcase, inst_string, run_refdate, run_reftod)
+            else:
+                ncdata = "'{}.eam.i.{}-{}.nc'".format(run_refcase, run_refdate, run_reftod)
+
+            if inst_string != "":
+                logger.warning("WARNING: {} is being used".format(ncdata))
+
+        cam_branch_file = ""
+        if run_type == 'branch':
+            if os.path.exists("{}/{}.eam{}.r.{}-{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)):
+                cam_branch_file = "'{}/{}.eam{}.r.{}-{}.nc'".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+            else:
+                cam_branch_file = "'{}/{}.eam.r.{}-{}.nc'".format(rundir, run_refcase, run_refdate, run_reftod)
+                if inst_string != "":
+                    logger.warning("WARNING: {} is being used".format(cam_branch_file))
+
+        if ncpl_base_period == 'year':
+            dtime = ( 3600 * 24 * 365 ) // atm_ncpl
+        elif ncpl_base_period == 'day':
+            dtime = ( 3600 * 24 ) // atm_ncpl
+        elif ncpl_base_period == 'hour':
+            dtime = ( 3600 ) // atm_ncpl
+        else:
+            logger.warning("WARNING: {} is being used".format(ncpl_base_period))
+
+        start_ymd = run_startdate.replace("-", "")
+        ntasks = ntasks_atm / ninst_atm
+
+        infile_text = ""
+        infile_text += " dtime = {} \n".format(dtime)
+        infile_text += " co2vmr = {:f}e-6\n".format(ccsm_co2_ppmv)
+        infile_text += " start_ymd = {}".format(start_ymd)
+
+        if ncdata:          infile_text += " ncdata = {} \n".format(ncdata)
+        if cam_branch_file: infile_text += " cam_branch_file = {} \n".format(cam_branch_file)
+        if debug:           infile_text += " state_debug_checks = .true. \n"
+
+        create_namelist_infile(case,
+                               "{}/user_nl_eam{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(eamconf_dir),
+                               infile_text=infile_text)
+
+        # -----------------------------------------------------
+        # call build-namelist
+        # -----------------------------------------------------
+
+        if os.path.exists(os.path.join(casebuild, "eam.input_data_list")):
+            os.remove(os.path.join(casebuild, "eam.input_data_list"))
+
+        cam_buildnml_cmd =  os.path.join(srcroot, "components/eam/bld/build-namelist")
+        cam_buildnml_cmd += " -infile {}/cesm_namelist".format(eamconf_dir)
+        cam_buildnml_cmd += " -csmdata {} {} {}".format(din_loc_root, ignore, usecase)
+        cam_buildnml_cmd += " -inputdata {}/eam.input_data_list".format(casebuild)
+        cam_buildnml_cmd += " -ntasks {}".format(ntasks)
+        cam_buildnml_cmd += ' -namelist " &atmexp {} /" '.format(cam_namelist_opts)
+
+        # TODO: eam/bld/build-namelist needs to be converted to python
+        run_cmd_no_fail(cam_buildnml_cmd, from_dir=eamconf_dir)
+
+        # -----------------------------------------------------
+        # move atm_in to $RUNDIR
+        # -----------------------------------------------------
+
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(eamconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
+            safe_copy(os.path.join(eamconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
+
+        # -----------------------------------------------------
+        # copy scream input data
+        # -----------------------------------------------------
+
+        with SharedArea():
+            scream_data_dir = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+            for item in os.listdir(scream_data_dir):
+                tgt_dir  = os.path.join(din_loc_root, "atm/cam/physprops")
+                tgt_path = os.path.join(tgt_dir, item)
+                if not os.path.isdir(tgt_dir):
+                    try:
+                        os.makedirs(tgt_dir)
+                    except OSError:
+                        pass # lost the race
+
+                try:
+                    fd = os.open(tgt_path, os.O_CREAT | os.O_EXCL)
+                    # If we get to this line, we won the race
+                    os.close(fd)
+                    safe_copy(os.path.join(scream_data_dir, item), tgt_path)
+                except OSError:
+                    pass # lost the race
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "eam")
+
+if __name__ == "__main__":
+    _main_func()

@@ -103,7 +103,10 @@ struct LimiterTester {
   template <typename Array>
   static void urand (Array& a, Real lo, Real hi) {
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
     genRandArray(a, engine, std::uniform_real_distribution<Real>(lo, hi));
   }
 
