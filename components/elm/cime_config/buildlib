@@ -54,10 +54,13 @@ def _main_func():
     # create the library in libroot
     #-------------------------------------------------------
 
-    # Note that casebuild/clmconf/CCSM_cppdefs is created
+    # Note that casebuild/clmconf/CIME_cppdefs is created
     # by the call to clm's bld/configure in clm's cime_config/buildnml
-
-    cppdefs_file = os.path.join(casebuild, "clmconf", "CCSM_cppdefs")
+    cppdefs_file = ""
+    if os.path.isfile(os.path.join(casebuild, "clmconf", "CIME_cppdefs")):
+        cppdefs_file = os.path.join(casebuild, "clmconf", "CIME_cppdefs")
+    elif os.path.isfile(os.path.join(casebuild, "clmconf", "CCSM_cppdefs")):
+        cppdefs_file = os.path.join(casebuild, "clmconf", "CCSM_cppdefs"))
     user_cppdefs = ""
     with open(cppdefs_file, 'r') as f:
         cppdefs = f.readline()

@@ -33,7 +33,12 @@ if (-f "Filepath") {
     system($sysmod) == 0 or die "ERROR eam buildlib: $sysmod failed: $?\n";
 }
 
-my $camdefs = `cat $CASEBUILD/eamconf/CCSM_cppdefs`;
+if (-e "$CASEBUILD/eamconf/CIME_cppdefs") {
+    my $camdefs = `cat $CASEBUILD/eamconf/CIME_cppdefs`
+}
+elsif (-e "$CASEBUILD/eamconf/CCSM_cppdefs") {
+    my $camdefs = `cat $CASEBUILD/eamconf/CCSM_cppdefs`;
+}
 chomp($camdefs);
 my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=eam COMPLIB=${LIBROOT}/libatm.a USER_CPPDEFS=\"${camdefs}\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
 system($sysmod) == 0 or die "ERROR: eam buildlib $sysmod failed: $?\n";
