@@ -899,7 +899,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
 !!!!!! OG redefine ptend%s to conserve TE
 !!!!!! gw only uses ptend%u,v, no heat flx
-#if 0
+#undef GWOLD
+#ifdef GWOLD
+
+!!! old code
 !turn this one on to have bfb tests
         ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &

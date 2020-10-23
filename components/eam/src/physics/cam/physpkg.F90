@@ -2052,8 +2052,6 @@ type(physics_ptend)   :: ptend2            ! indivdual parameterization tendenci
     real(r8):: ed(pcols,pver)
     real(r8):: dp(pcols,pver)
 
-    real(r8):: tbefore(pcols,pver)
-    
     ! wg layer thickness in mbs (between upper/lower interface).
     real(r8):: dsubcld(pcols)
     
@@ -2353,14 +2351,15 @@ end if
     ! are zeroed here for input to the moist convection routine
     !
 
+
+#undef CONVOLD
+#ifndef CONVOLD
+
 !!!!OG compute te without cp term before
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc1)
-!!!! save old T
-    tbefore(:ncol,:pver)=state%T(:ncol,:pver)
 
 !call physics_state_copy(state,state_in)
 !icol = phys_debug_col(state%lchnk)
-
 
     call t_startf ('convect_deep_tend')
     call convect_deep_tend(  &
@@ -2377,15 +2376,11 @@ end if
 
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc2)
 
-
 !old
 !    call physics_update(state, ptend, ztodt, tend)
 !new
 !    call physics_almost_update(state, ptend, ztodt, tend)
 !    call physics_finish_update(state, ptend, ztodt, tend)
-
-
-
 
     call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
     call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
@@ -2418,6 +2413,42 @@ ptend%s(i,k) = ddd(i) - (teloc2(i,k) - teloc1(i,k))/ztodt / state%pdel(i,k) * gr
 enddo
 enddo
 call physics_finish_update(state, ptend, ztodt, tend)
+
+#else
+
+!!!!! old code
+    call convect_deep_tend(  &
+         cmfmc,      cmfcme,             &
+         dlf,        pflx,    zdu,       &
+         rliq,    &
+         ztodt,   &
+         state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
+         dsubcld, jt, maxg, ideep, lengath)
+    call t_stopf('convect_deep_tend')
+
+    call physics_update(state, ptend, ztodt, tend)
+
+    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp )
+    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp )
+    call pbuf_get_field(pbuf, prec_sh_idx, prec_sh )
+    call pbuf_get_field(pbuf, snow_sh_idx, snow_sh )
+    call pbuf_get_field(pbuf, prec_str_idx, prec_str)
+    call pbuf_get_field(pbuf, snow_str_idx, snow_str)
+    call pbuf_get_field(pbuf, prec_sed_idx, prec_sed)
+    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
+    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw )
+    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw )
+
+    if (use_subcol_microp) then
+      call pbuf_get_field(pbuf, prec_str_idx, prec_str_sc, col_type=col_type_subcol)
+      call pbuf_get_field(pbuf, snow_str_idx, snow_str_sc, col_type=col_type_subcol)
+    end if
+
+    ! Check energy integrals, including "reserved liquid"
+    flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
+
+#endif
+
 
 
     call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
