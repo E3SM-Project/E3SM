@@ -740,7 +740,7 @@ end subroutine check_energy_save_local_te
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
-          write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep, tediff, teflux", nstep, te_glob(4), te_glob(5)
+          write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep-1, tediff, teflux", nstep-1, te_glob(4), te_glob(5)
        end if
     else
        heat_glob = 0._r8
