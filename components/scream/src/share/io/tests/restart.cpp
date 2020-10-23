@@ -20,10 +20,9 @@
 namespace {
 using namespace scream;
 using namespace ekat::units;
-using Device = DefaultDevice;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real,DefaultDevice>> get_test_repo(const Int num_cols, const Int num_levs);
+std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs);
 std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
 ekat::ParameterList                                  get_om_params(const Int casenum);
 // ekat::ParameterList                                  get_in_params(const std::string type);
@@ -39,7 +38,7 @@ TEST_CASE("restart","io")
 
   // First set up a field manager and grids manager to interact with the output functions
   std::shared_ptr<UserProvidedGridsManager>            grid_man   = get_test_gm(io_comm,num_cols,num_levs);
-  std::shared_ptr<FieldRepository<Real,DefaultDevice>> field_repo = get_test_repo(num_cols,num_levs);
+  std::shared_ptr<FieldRepository<Real>> field_repo = get_test_repo(num_cols,num_levs);
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
@@ -81,10 +80,10 @@ TEST_CASE("restart","io")
   grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real,DefaultDevice>> get_test_repo(const Int num_cols, const Int num_levs)
+std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs)
 {
   // Create a repo
-  std::shared_ptr<FieldRepository<Real,DefaultDevice>>  repo = std::make_shared<FieldRepository<Real,DefaultDevice>>();
+  std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
   // Create some fields for this repo
   std::vector<FieldTag> tag_h  = {FieldTag::Column};
   std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};

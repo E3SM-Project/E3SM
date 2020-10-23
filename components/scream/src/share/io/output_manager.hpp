@@ -68,7 +68,6 @@ class OutputManager
 {
 public:
   using output_type = AtmosphereOutput;
-  using device_type = DefaultDevice; 
 
   OutputManager () = default;
   virtual ~OutputManager () = default;
@@ -82,7 +81,7 @@ public:
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
-  void set_repo(const std::shared_ptr<const FieldRepository<Real,device_type>>& repo) { m_device_field_repo = repo; repo_set=true;}
+  void set_repo(const std::shared_ptr<const FieldRepository<Real>>& repo) { m_device_field_repo = repo; repo_set=true;}
   void make_restart_param_list(ekat::ParameterList& params);
 
 protected:
@@ -90,7 +89,7 @@ protected:
   ekat::Comm                           atm_comm;
   ekat::Comm                           pio_comm; 
   ekat::ParameterList                  m_params;
-  std::shared_ptr<const FieldRepository<Real,device_type>> m_device_field_repo;
+  std::shared_ptr<const FieldRepository<Real>> m_device_field_repo;
   std::shared_ptr<const GridsManager>  m_grids_manager;
 
   bool                                 param_set = false;

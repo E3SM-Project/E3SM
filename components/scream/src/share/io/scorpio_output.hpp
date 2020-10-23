@@ -19,6 +19,64 @@
 #include "share/field/field_identifier.hpp"
 
 #include "share/grid/grids_manager.hpp"
+
+/*  The AtmosphereOutput class handles an output stream in SCREAM.
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager, see output_manager.hpp
+ *
+ *  Similar to the typical AtmosphereProcess, output streams have a init, run and finalize routines.
+ *  These routines are called during the respective steps of the AD call, i.e. ad.init(), ad.run() and ad.finalize()/
+ *
+ *  Each AtmosphereOutput instance handles one output stream.
+ *
+ *  At construction time ALL output instances require
+ *  1. an EKAT comm group and
+ *  2. a EKAT parameter list
+ *  3. a shared pointer to the field repository
+ *  4. a shared pointer to the grids manager
+ * 
+ *  The EKAT parameter list must contain all of the top level output control information and follows the format:
+ *  ------
+ *  FILENAME: STRING
+ *  AVERAGING TYPE: STRING
+ *  GRID: STRING                   (optional)
+ *  FREQUENCY:
+ *    OUT_N: INT
+ *    OUT_OPTION: STRING
+ *    OUT_MAX_STEPS: INT
+ *  FIELDS:
+ *    Number of Fields: INT
+ *    field 1: STRING
+ *    ...
+ *    field N: STRING
+ *  restart_hist_N: INT            (optional)
+ *  restart_hist_OPTION: STRING    (optional)
+ *  RESTART FILE: BOOL             (optional)
+ *  -----
+ *  where,
+ *  FILENAME is a string of the filename suffix.  TODO: change this to a casename associated with the whole run.
+ *  AVERAGING TYPE is a string that describes which type of output, current options are:
+ *    instant - no averaging, output each snap as is.
+ *    average - average of the field over some interval described in frequency section.
+ *    min     - minimum value of the field over some time interval
+ *    max     - maximum value of the field over some time interval
+ *  GRID is a string describing which grid to write on, currently the only option is the default Physics.
+ *  FREQUENCY is a subsection that controls the frequency parameters of output.
+ *    OUT_N is an integer of the frequency of output given the units from OUT_OPTION
+ *    OUT_OPTION is a string for the units of output frequency, examples would be "Steps", "Months", "Years", "Hours", etc.
+ *    OUT_MAX_STEPS is an integer of the maximum number of steps that can exist on a single file (controls files getting too big).
+ *  FIELDS is a subsection that lists all the fields in this output stream.
+ *    Number of Fields is an integer that specifies the number of fields in this output stream.
+ *    field 1,...,field N is a list of each field in the output stream by name in field manager.
+ *  restart_hist_N is an optional integer parameter that specifies the frequenct of restart history writes.
+ *  restart_hist_OPTION is an optional string parameter for the units of restart history output.
+ *  RESTART FILE is an optional boolean parameter that specifies if this output stream is a restart output, which is treated differently.
+ *
+ *  Usage of this class is to create an output file, write data to the file and close the file.
+ *  This class keeps a running copy of data for all output fields locally to be used for the different averaging flags.
+ * --------------------------------------------------------------------------------
+ *  (2020-10-21) Aaron S. Donahue (LLNL)
+ */
+
 /* There are a number of things that need to be cleaned up - in no particular order -
  *--1) Gather dimension data from grid manager or field repo.  We may need to use field repo since grid manager
  *     is unaware of say the number of components, for example.  --DONE--
@@ -27,8 +85,8 @@
  *     each value in a view, in order if flattened.  --DONE--
  *  4) Handle MPI communication to allow for PIO_STRIDE (i.e. fewer pio ranks than total ranks).
  *  5) Make it so that all dimensions that are registered are automatically registered as variables and the values written (only once, not with time).  Probably need this information from the grid manager(?)
- *  6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.  #3
- * 6a) Also need restart history, in case you stop mid-out frequency and need to pick it up in the next run.
+ *--6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.  #3
+ *-6a) Also need restart history, in case you stop mid-out frequency and need to pick it up in the next run.
  *--7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?  --DONE--
  *--8) Create average, min, max and instantaneous options for output.  --DONE--
  *  9) Assure that IO is compatible with PACKing of variables.
@@ -37,11 +95,15 @@
  * 12) Better handling of output frequency.  Need to a) gather time info from driver and b) parse that info for frequency units.
  * 13) Expand compatability of IO class to handle Dynamics grids.  This will require a different approach to "set_dofs"
  *-14) Hook up the AD for the unit test.  --DONE--
- * 15) SCORPIO in stand-alone build.
+ *-15) SCORPIO in stand-alone build.
  * 16) When dynamics is ready, write output from a dynamics run.
  * 17) Remove the F90 layer and call PIO C routines directly.
  * 18) Add option to restart to write a restart at finalization, maybe if OUT_N = -1
- * 19) take advantage of shared pointers field_repo and gridsmanager to streamline init, run and finalize interface.
+ *-19) take advantage of shared pointers field_repo and gridsmanager to streamline init, run and finalize interface.
+ * 20) Create a single IO Master class with AtmosphereOutput and AtmosphereInput as sub-classes.
+ * 21) Output averaging types could be individual instances of the same class providing flexibility for future types to be incorporated.  See Jeff's work on field property tests for example.
+ * 22) Currently the restart history frequency is set to the restart frequency.  Should maybe fix this so that if the restart history field is included in the parameter list for the output stream than that value is taken instead of the restart frequency values.
+ * 23) Should restart output just be a sub-class of the AtmosphereOutput class?
  */
 
 namespace scream
@@ -50,17 +112,16 @@ namespace scream
 class AtmosphereOutput 
 {
 public:
-  using device_type    = DefaultDevice; // may need to template class on this
   using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
   using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
   using view_type      = typename KokkosTypes<HostDevice>::template view<value_type*>;
-  using field_type     = Field<value_type, device_type>;
+  using field_type     = Field<value_type>;
 
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
-                   const std::shared_ptr<const FieldRepository<Real,device_type>>& repo,
+                   const std::shared_ptr<const FieldRepository<Real>>& repo,
                    const std::shared_ptr<const GridsManager>& gm)
   {
     m_comm       = comm;
@@ -71,6 +132,7 @@ public:
 
   // Main Functions
   void init();
+  // Allow run to be called with a timestamp input (typical runs) and a floating point value (used for unit tests)
   void run(const Real time);
   void run(const util::TimeStamp& time);
   void finalize();
@@ -88,36 +150,41 @@ protected:
   void new_file(const std::string filename);
   void run_impl(const Real time, const std::string time_str);  // Actual run routine called by outward facing "run"
   // Internal variables
-  ekat::ParameterList m_params;
-  ekat::Comm          m_comm;
-  std::shared_ptr<const FieldRepository<Real,device_type>> m_field_repo;
-  std::shared_ptr<const GridsManager>                      m_gm;
+  ekat::ParameterList                          m_params;
+  ekat::Comm                                   m_comm;
+  std::shared_ptr<const FieldRepository<Real>> m_field_repo;
+  std::shared_ptr<const GridsManager>          m_gm;
   
+  // Main output control data
   std::string m_casename;
   std::string m_avg_type;
   std::string m_grid_name;
-
+  // Frequency of output control
   Int m_out_max_steps;
   Int m_out_frequency;
   std::string m_out_units;
-
+  // How individual columns are distributed across MPI Ranks
   Int m_total_dofs;
   Int m_local_dofs;
-
+  // Restart history control
   Int m_restart_hist_n;
   std::string m_restart_hist_option;
-
+  // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::map<std::string,field_type>       m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
   dofs_list_type                         m_gids;
-  std::map<std::string,view_type>        m_view;
-  std::map<std::string,view_type>        m_view_copy;
+  // Local and global views of each field to be used for "averaging" output and writing to file.
+  std::map<std::string,view_type>        m_view_global;
+  std::map<std::string,view_type>        m_view_local;
 
+  // Manage when files are open and closed, and what type of file I am writing.
   bool m_is_init = false;
   bool m_is_restart_hist = false;  //TODO:  If instead we rely on the timestamp to determine how many steps are represented in the averaging value, or maybe filename, we won't need this.
   bool m_is_restart = false;
 
+  // Helper map to monitor an output stream's status.  Most used fields are Snaps and Avg Count which are
+  // used to monitor if a new file is needed and if output should be written according to the frequency settings.
   std::map<std::string,Int> m_status = {
                                   {"Init",          0},  // Records the number of files this output stream has managed
                                   {"Run",           0},  // Total number of times "Run" has been called
@@ -137,18 +204,19 @@ inline void AtmosphereOutput::init()
   using namespace scream::scorpio;
 
   // Parse the parameters that controls this output instance.
+  // See the comments at the top for more details.
   m_casename        = m_params.get<std::string>("FILENAME");
   m_avg_type        = m_params.get<std::string>("AVERAGING TYPE");
-  m_grid_name       = m_params.get<std::string>("GRID");
+  m_grid_name       = m_params.get<std::string>("GRID","Physics");  // optional, default to Physics.
   auto& freq_params = m_params.sublist("FREQUENCY");
   m_out_max_steps   = freq_params.get<Int>("OUT_MAX_STEPS");
   m_out_frequency   = freq_params.get<Int>("OUT_N");
   m_out_units       = freq_params.get<std::string>("OUT_OPTION");
-  m_restart_hist_n  = m_params.get<Int>("restart_hist_N");
-  m_restart_hist_option = m_params.get<std::string>("restart_hist_OPTION");
-  if (m_params.isParameter("RESTART FILE")) {m_is_restart = m_params.get<bool>("RESTART FILE");}
+  m_restart_hist_n  = m_params.get<Int>("restart_hist_N",0);  // optional, default to 0 for no output
+  m_restart_hist_option = m_params.get<std::string>("restart_hist_OPTION","NONE"); // optional, default to NONE
+  m_is_restart = m_params.get<bool>("RESTART FILE",false);  // optional, default to false
 
-  // Gather data from grid manager:
+  // Gather data from grid manager:  In particular the global ids for columns assigned to this MPI rank
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with output grid! scorpio_output.hpp class only supports output on a Physics grid for now.\n");
   auto gids_dev = m_gm->get_grid(m_grid_name)->get_dofs_gids();
   m_gids = Kokkos::create_mirror_view( gids_dev );
@@ -163,26 +231,31 @@ inline void AtmosphereOutput::init()
   auto& var_params = m_params.sublist("FIELDS");
   for (int var_i=0; var_i<var_params.get<Int>("Number of Fields");++var_i)
   {
-    /* Determine the variable name */
+    // Determine the variable name 
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
-    /* Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid */
+    // Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid 
     add_identifier(var_name);
   }
 
+  // Now that the fields have been gathered register the local and global views which will be used to determine output data to be written.
   register_views();
 
 } // init
 /* ---------------------------------------------------------- */
+/* Overload the run routine to accept a TimeStamp or floating point for the input time */
 inline void AtmosphereOutput::run(const util::TimeStamp& time)
 {
+  // In case it is needed for the output filename, parse the current timesnap into an appropriate string
   std::string time_str = time.to_string();
   std::replace( time_str.begin(), time_str.end(), ' ', '.');
   time_str.erase(std::remove( time_str.begin(), time_str.end(), ':'), time_str.end());
+  // Pass the time in seconds and as a string to the run routine.
   run_impl(time.get_seconds(),time_str);
 }
 /*-----*/
 inline void AtmosphereOutput::run(const Real time)
 {
+  // In case it is needed for the output filename, parse the current timesnap into an appropriate string
   // Convert time in seconds to a DD-HHMMSS string:
   const int ss = static_cast<int>(time);
   const int h =  ss / 3600;
@@ -190,7 +263,7 @@ inline void AtmosphereOutput::run(const Real time)
   const int s = (ss % 3600) % 60;
   const std::string zero = "00";
   std::string time_str = (h==0 ? zero : std::to_string(h)) + (m==0 ? zero : std::to_string(m)) + (s==0 ? zero : std::to_string(s));
-  //
+  // Pass the time in seconds and as a string to the run routine.
   run_impl(time,time_str);
 }
 /*-----*/
@@ -217,11 +290,13 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   // suffix, (.nc) is typical, (.r.nc) is a restart and (.rhist.nc) is a restart history file.
 
   // Check to see if output is expected and what kind.
-  bool is_typical = (m_status["Avg Count"] == m_out_frequency);
-  bool is_rhist   = (m_status["Avg Count"] == m_restart_hist_n) and !is_typical;
+  bool is_typical = (m_status["Avg Count"] == m_out_frequency);  // It is time to write output data.
+  bool is_rhist   = (m_status["Avg Count"] == m_restart_hist_n) and !is_typical;  // It is time to write a restart history file.
   bool is_write = is_typical or is_rhist; // General flag for if output is written
   // Preamble to writing output this step
   std::string filename = m_casename+"."+m_avg_type+"."+m_out_units+"_x"+std::to_string(m_out_frequency)+"."+time_str;
+  // Typical out can still be restart output if this output stream is for a restart file.  If it is a restart file it has a different suffix
+  // and the filename needs to be added to the rpointer.atm file.
   if (m_is_restart) 
   { 
     filename+=".r";
@@ -229,6 +304,7 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
     rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
     rpointer << filename + ".nc" << std::endl;
   }
+  // If the output written will be to a restart history file than make sure the suffix is correct.
   if (is_rhist)
   { 
     filename+=".rhist"; 
@@ -243,7 +319,7 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   {
     // If we closed the file in the last write because we reached max steps, or this is a restart history file,
     // we need to create a new file for writing.
-    new_file(filename);
+    if( !is_typical or !m_is_init ) { new_file(filename) };
     if( !m_is_init and is_typical ) { m_is_init=true; }
 
     pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
@@ -255,17 +331,17 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   {
     // Get all the info for this field.
     auto name   = fmap.first;
-    auto g_view = m_view.at(name); 
+    auto g_view = m_view_global.at(name); 
     Int  f_len  = fmap.second.get_header().get_identifier().get_layout().size();
     view_type l_view;
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type == "Instant")
     {
-      l_view = m_view.at(name);
+      l_view = m_view_global.at(name);
     }
     else // output type uses multiple steps.
     {
-      l_view = m_view_copy.at(name);
+      l_view = m_view_local.at(name);
       // Update local view given the averaging type.  TODO make this a switch statement?
       if (m_avg_type == "Average")
       {
@@ -370,12 +446,12 @@ inline void AtmosphereOutput::register_views()
     // If the "averaging type" is instant then just need a ptr to the view.
     auto view_d = fmap.second.get_view();
     auto view_h = Kokkos::create_mirror_view( view_d );
-    m_view.emplace(name,view_h);
+    m_view_global.emplace(name,view_h);
     if (m_avg_type != "Instant") {
     // If anything other than instant we need a local copy that can be updated.
       view_type view_copy_d("",view_d.extent(0));
       auto view_copy = Kokkos::create_mirror_view( view_copy_d );
-      m_view_copy.emplace(name,view_copy);
+      m_view_local.emplace(name,view_copy);
     }
   }
 }

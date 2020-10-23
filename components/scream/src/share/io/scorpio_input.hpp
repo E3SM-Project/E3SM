@@ -41,7 +41,8 @@
  *  At construction time All input instances require
  *  1. an EKAT comm group and
  *  2. a EKAT parameter list
- *  3. a pointer to the field repository
+ *  3. a shared pointer to the field repository
+ *  4. a shared pointer to the grids manager
  *  The parameter list contains all of the essential data regarding
  *  the input file name and the set of variables to be read.  The parameter list can be
  *  created localling in the process needing input, see src/share/io/tests/ for examples of
@@ -83,16 +84,15 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using device_type    = DefaultDevice; // may need to template class on this
   using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
   using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
-  using view_type      = typename KokkosTypes<device_type>::template view<value_type*>;
+  using view_type      = typename KokkosTypes<DefaultDevice>::template view<value_type*>;
 
   virtual ~AtmosphereInput () = default;
 
   // Constructor
   AtmosphereInput(const ekat::Comm& comm, const ekat::ParameterList& params,
-                  const std::shared_ptr<const FieldRepository<Real,device_type>>& repo,
+                  const std::shared_ptr<const FieldRepository<Real>>& repo,
                   const std::shared_ptr<const GridsManager>& gm)
   {
     m_comm       = comm;
@@ -118,7 +118,7 @@ protected:
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
-  std::shared_ptr<const FieldRepository<Real,device_type>> m_field_repo;
+  std::shared_ptr<const FieldRepository<Real>> m_field_repo;
   std::shared_ptr<const GridsManager>                      m_gm;
   
   std::string m_filename;

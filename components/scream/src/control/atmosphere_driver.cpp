@@ -162,7 +162,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     m_output_manager.set_params(out_params);
     m_output_manager.set_comm(atm_comm);
     m_output_manager.set_grids(m_grids_manager);
-    m_output_manager.set_repo(m_device_field_repo);
+    m_output_manager.set_repo(m_field_repo);
     // If not true then m_output_manager.init() won't do anything, leaving no_output flag as true and skipping output throughout simulation.
   }
   m_output_manager.init();
@@ -194,7 +194,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   // Finalize output streams, make sure files are closed
   m_output_manager.finalize();
 
-  m_device_field_repo->clean_up();
+  m_field_repo->clean_up();
 #ifdef SCREAM_DEBUG
   m_bkp_field_repo.clean_up();
 #endif
