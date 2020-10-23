@@ -698,7 +698,7 @@ end subroutine check_energy_save_local_te
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,3)   
+    real(r8) :: te(pcols,begchunk:endchunk,5)   
                                          ! total energy of input/output states (copy)
     real(r8) :: te_glob(3)               ! global means of total energy
     real(r8), pointer :: teout(:)
@@ -718,11 +718,15 @@ end subroutine check_energy_save_local_te
        te(:ncol,lchnk,2) = teout(1:ncol)
        ! surface pressure for heating rate
        te(:ncol,lchnk,3) = state(lchnk)%pint(:ncol,pver+1)
+
+       te(:ncol,lchnk,4) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,5) = state(lchnk)%delta_te_flux(:ncol)
+
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 3)
+    call gmean(te, te_glob, 5)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
@@ -736,6 +740,7 @@ end subroutine check_energy_save_local_te
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
+          write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep, tediff, teflux", nstep, te_glob(4), te_glob(5)
        end if
     else
        heat_glob = 0._r8

@@ -65,6 +65,11 @@ module physics_types
           psetcols=0,           &! --             -- max number of columns set - if subcols = pcols*psubcols, else = pcols
           ncol=0                 ! --             -- sum of nsubcol for all ngrdcols - number of active columns
      real(r8), dimension(:), allocatable         :: &
+          te_before_physstep, &
+          delta_te, & !te after physics - te before physics
+          delta_te_flux !restom - ressurf
+
+     real(r8), dimension(:), allocatable         :: &
           lat,     &! latitude (radians)
           lon,     &! longitude (radians)
           ps,      &! surface pressure
@@ -2002,6 +2007,15 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   !----------------------------------
 
+  allocate(state%te_before_physstep(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%delta_te(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%delta_te_flux(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+
+
+
   allocate(state%lat(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lat')
   
@@ -2107,6 +2121,12 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%cid(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cid')
 
+!in what order cam_runs are called?
+  state%te_before_physstep(:)=-1.0
+  state%delta_te(:)=-1.0
+  state%delta_te_flux(:)=-1.0
+  
+
   state%lat(:) = inf
   state%lon(:) = inf
   state%ulat(:) = inf
@@ -2152,6 +2172,12 @@ subroutine physics_state_dealloc(state)
 
   type(physics_state), intent(inout) :: state
   integer                            :: ierr = 0
+
+  deallocate(state%te_before_physstep, stat=ierr)
+  deallocate(state%delta_te, stat=ierr)
+  deallocate(state%delta_te_flux, stat=ierr)
+
+
 
   deallocate(state%lat, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%lat')

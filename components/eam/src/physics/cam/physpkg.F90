@@ -1581,6 +1581,15 @@ end if ! l_tracer_aero
 
     call t_stopf('tphysac_init')
 
+
+!!!!!!!!!!!!!! save TE1 here
+!not sure whether to call this here, is state%te_cur ok?
+    call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+
+    state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+
+
+
 if (l_tracer_aero) then
     !===================================================
     ! Source/sink terms for advected tracers.
@@ -2860,6 +2869,21 @@ end if ! l_rad
     call t_startf('cam_export')
     call cam_export (state,cam_out,pbuf)
     call t_stopf('cam_export')
+
+
+!!!! now after cam_export      cam_out%precc ,       cam_out%precl are ready -- liquid+ice
+!!!! and cam_out%precsc, cam_out%precsl -- only ice
+
+!!!! compute net energy budget here
+!!!! expected TE2-TE1 = restom - ressurf
+
+    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+    state%delta_te_flux(1:ncol) = &
+          ( fsnt(1:ncol) - flnt(1:ncol) ) &
+        - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
+            -        (latvap+latice)*cam_in%cflx(:ncol,1) &
+            + 1000.0*latice         *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
 
     ! Write export state to history file
     call t_startf('diag_export')
