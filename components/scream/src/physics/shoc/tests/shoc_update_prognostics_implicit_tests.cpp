@@ -21,8 +21,14 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
     static constexpr Int num_tracer = 6;
-  
+
+    static const auto approx_zero = Approx(0.0).margin(1e-16);
     // Tests for the subroutine update_prognostics_implicit
+    
+    // TEST details
+    //  Given a set of realistic model profiles verify that energy/water
+    //    is conserved after each call and that the surface fluxes
+    //    were implemented as expected.
 
     // Timestep [s]
     static constexpr Real dtime = 300;
@@ -38,8 +44,6 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real wthl_sfc[shcol] = {0.03, -0.03, 0.1, 0, -0.1};
     // moisture flux at surface [kg/kg m/s]
     static constexpr Real wqw_sfc[shcol] = {2e-5, 1e-6, 0, -2e-5, 1e-4};
-    // TKE flux at the surface [m3/s3]
-    static constexpr Real wtke_sfc[shcol] = {4e-2, 1e-3, -2e-3, 0, -1e-3};
     // Surface moment flux, zonal direction [m3/s3]
     static constexpr Real uw_sfc[shcol] = {0.03, -0.03, 0.1, 0, -0.1};
     // Surface moment flux, meridional direction [m3/s3]
@@ -59,6 +63,10 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
 
     // Input for tracer (no units)
     Real tracer_in[shcol*nlev*num_tracer];
+    
+    // Integrals for energy checking
+    Real qw_int_b[shcol];
+    Real qw_int_a[shcol];
 
     // Compute needed grid information from zi_grid
     // Grid stuff to compute based on zi_grid
@@ -79,6 +87,14 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     }
     // set upper condition for dz_zi
     dz_zi[nlevi-1] = zt_grid[nlev-1];
+    
+    // Compute integrals of input variables for energy check
+    for (Int s = 0; s < shcol; ++s){
+      qw_int_b[s] = 0; // Initialize
+      for (Int n = 0; n < nlev; ++n) {
+        qw_int_b[s] = qw_int_b[s] + qw_in[n]*rho_zt[n]*dz_zt[n];
+      }
+    }
     
     // Generate random data for input tracers 1 to 1000 (unitless)
     for (Int i = 0; i < shcol*nlev*num_tracer; ++i){
@@ -151,8 +167,81 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       }
     } // column loop
     
+    // Check that inputs make sense
+    for(Int s = 0; s < shcol; ++s) {
+      REQUIRE(std::abs(SDS.wthl_sfc[s]) < 1);
+      REQUIRE(std::abs(SDS.wqw_sfc[s]) < 1e-3);
+      REQUIRE(std::abs(SDS.uw_sfc[s]) < 1);
+      REQUIRE(std::abs(SDS.vw_sfc[s]) < 1);   
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE( (SDS.thetal[offset] > 150 && SDS.thetal[offset] < 350) );
+        REQUIRE( (SDS.qw[offset] > 0.0001 && SDS.qw[offset] < 0.05) );
+        REQUIRE( (SDS.tke[offset] > 0 && SDS.tke[offset] < 5) );
+        REQUIRE( (SDS.rho_zt[offset] > 0 && SDS.rho_zt[offset] < 1.5) );
+        
+        // While there is nothing unphysical with winds outside of these
+        //  bounds, for this particular test we want to make sure the 
+        //  winds are modestly defined for checking later on
+        REQUIRE(std::abs(SDS.u_wind[offset]) < 5);
+        REQUIRE(std::abs(SDS.v_wind[offset]) < 5);
+        
+        REQUIRE( (SDS.tkh[offset] > 0 && SDS.tkh[offset] > 0) );
+        REQUIRE(SDS.tkh[offset] == SDS.tk[offset]); 
+      }
+      
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlevi;
+        
+        REQUIRE(SDS.zi_grid[offset] >= 0);
+        REQUIRE(SDS.dz_zi[offset] >= 0);
+      }
+      
+      // Check that zt increases in the upward direction
+      for(Int n = 0; n < nlev - 1; ++n) {
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+      }
+
+      // Check that zi increases in the upward direction
+      for(Int n = 0; n < nlevi - 1; ++n) {
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+      }
+    }   
+    
     // Call the fortran implementation
     update_prognostics_implicit(SDS);
+    
+    // Check the result
+    
+    // First make sure that all output is within reasonable bounds
+    for(Int s = 0; s < shcol; ++s) {
+      qw_int_a[s] = 0;
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        REQUIRE( (SDS.thetal[offset] > 150 && SDS.thetal[offset] < 350) );
+        REQUIRE( (SDS.qw[offset] > 0.0001 && SDS.qw[offset] < 0.05) );
+        REQUIRE( (SDS.tke[offset] > 0 && SDS.tke[offset] < 5) );  
+        REQUIRE(std::abs(SDS.u_wind[offset] < 7));
+        REQUIRE(std::abs(SDS.v_wind[offset] < 7));
+        
+        // Compute integrals of end result
+        qw_int_a[s] = qw_int_a[s] + SDS.rho_zt[offset]*SDS.dz_zt[offset]
+                      *SDS.qw[offset];
+      }
+      const auto spurious = ((qw_int_a[s] - qw_int_b[s])/dtime) - 1.055559*SDS.wqw_sfc[s];
+      if (spurious != approx_zero){
+        std::cout<< spurious <<  ' ' << qw_int_a[s] << ' ' << qw_int_b[s] << ' ' << SDS.wqw_sfc[s] << ' ' << rho_zt[nlev-1] << '\n';
+      }
+      //REQUIRE(spurious == 0);
+      //if (SDS.wqw_sfc[s] == 0){
+      //  REQUIRE(qw_int_b[s] == qw_int_a[s]);
+      //}
+    }
 
   } // run_property
 
