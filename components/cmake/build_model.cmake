@@ -109,11 +109,16 @@ function(build_model COMP_CLASS COMP_NAME)
     if (USE_RRTMGPXX)
       message(STATUS "Building RRTMGPXX")
       # Build rrtmgpxx as a library
-      set(RRTMGPXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../cam/src/physics/rrtmgp/external/cpp)
-      set(RRTMGPXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/rrtmgpxx)
-      add_subdirectory(${RRTMGPXX_HOME} ${RRTMGPXX_BIN})
-      # Add samxx F90 files to the main E3SM build
-      #set(SOURCES ${SOURCES} cmake/atm/../../cam/src/physics/crm/rrtmgpxx/cpp_interface_mod.F90)
+      set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgpxx)
+      add_subdirectory(
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp
+          ${RRTMGPXX_BIN})
+      # Add files to the main E3SM build
+      #set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/rrtmgpxx/cpp_interface_mod.F90)
+      set(SOURCES ${SOURCES} 
+          cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgpxx_interface.F90
+          cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgpxx_interface.cpp
+      )
     endif()
   endif()
 
@@ -259,7 +264,7 @@ function(build_model COMP_CLASS COMP_NAME)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
       endif()
       if (USE_RRTMGPXX)
-        target_link_libraries(${TARGET_NAME} rrtmgp)
+          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp)
       endif()
     endif()
     if (USE_KOKKOS)
