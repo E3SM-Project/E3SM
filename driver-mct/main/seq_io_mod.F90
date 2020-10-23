@@ -168,7 +168,7 @@ contains
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
 
-    call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom) 
+    call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom)
 
     if (.not. pio_file_is_open(cpl_io_file(lfile_ind))) then
        ! filename not open
@@ -479,7 +479,7 @@ contains
     if (present(ny)) then
        if (ny /= 0) lny = ny
     endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then 
+    if (lnx*lny /= ng .and. .not. lcolumn) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
        call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
     endif
@@ -633,7 +633,7 @@ contains
 
     lwhead = .true.
     lwdata = .true.
-    lcolumn = .false. 
+    lcolumn = .false.
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     if (present(scolumn)) lcolumn = scolumn
@@ -674,7 +674,7 @@ contains
     if (present(ny)) then
        if (ny /= 0) lny = ny
     endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then 
+    if (lnx*lny /= ng .and. .not. lcolumn) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
        call shr_sys_abort(subname//' ERROR: grid2d size not consistent ')
     endif
@@ -810,7 +810,7 @@ contains
     logical          ,optional,intent(in) :: tavg      ! is this a tavg
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
     integer          ,optional,intent(in) :: file_ind
-    logical          ,optional,intent(in) :: scolumn    ! single column model flag 
+    logical          ,optional,intent(in) :: scolumn    ! single column model flag
 
     !EOP
 
@@ -862,7 +862,7 @@ contains
 
     lwhead = .true.
     lwdata = .true.
-    lcolumn = .false. 
+    lcolumn = .false.
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     if (present(scolumn)) lcolumn = scolumn
@@ -1438,7 +1438,7 @@ contains
     integer(in) :: dimid2(2)
     type(var_desc_t) :: varid
     logical :: lwhead, lwdata
-    integer :: start(4),count(4)
+    integer :: start(2),count(2)
     character(len=shr_cal_calMaxLen) :: lcalendar
     real(r8) :: time_val_1d(1)
     integer :: lfile_ind
@@ -1485,21 +1485,23 @@ contains
 
     if (lwdata) then
        start = 1
-       count = 1
+       count = 0
        if (present(nt)) then
           start(1) = nt
        endif
+       count(1) = 1
        time_val_1d(1) = time_val
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
        rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
        if (present(tbnds)) then
           rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
           start = 1
-          count = 1
+          count = 0
           if (present(nt)) then
              start(2) = nt
           endif
           count(1) = 2
+          count(2) = 1
           rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,tbnds)
        endif
 
