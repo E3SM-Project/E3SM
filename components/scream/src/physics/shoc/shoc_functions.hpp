@@ -332,6 +332,36 @@ struct Functions
     const uview_1d<Spack>&       thetal_zi,
     const uview_1d<Spack>&       w3);
 
+  KOKKOS_FUNCTION
+  static void shoc_assumed_pdf(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const uview_1d<const Spack>& thetal,
+    const uview_1d<const Spack>& qw,
+    const uview_1d<const Spack>& w_field,
+    const uview_1d<const Spack>& thl_sec,
+    const uview_1d<const Spack>& qw_sec,
+    const uview_1d<const Spack>& wthl_sec,
+    const uview_1d<const Spack>& w_sec,
+    const uview_1d<const Spack>& wqw_sec,
+    const uview_1d<const Spack>& qwthl_sec,
+    const uview_1d<const Spack>& w3,
+    const uview_1d<const Spack>& pres,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<Spack>&       wthl_sec_zt,
+    const uview_1d<Spack>&       wqw_sec_zt,
+    const uview_1d<Spack>&       w3_zt,
+    const uview_1d<Spack>&       thl_sec_zt,
+    const uview_1d<Spack>&       qwthl_sec_zt,
+    const uview_1d<Spack>&       qw_sec_zt,
+    const uview_1d<Spack>&       shoc_cldfrac,
+    const uview_1d<Spack>&       shoc_ql,
+    const uview_1d<Spack>&       wqls,
+    const uview_1d<Spack>&       wthv_sec,
+    const uview_1d<Spack>&       shoc_ql2);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -367,6 +397,7 @@ struct Functions
 # include "shoc_compute_shoc_vapor_impl.hpp"
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
+# include "shoc_assumed_pdf_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif
