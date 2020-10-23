@@ -2352,8 +2352,8 @@ end if
     !
 
 
-#undef CONVOLD
-#ifndef CONVOLD
+#undef NEWCONV
+#ifdef NEWCONV
 
 !!!!OG compute te without cp term before
     call check_energy_save_local_te(state, tend, "convect_deep", nstep, ztodt, teloc1)
