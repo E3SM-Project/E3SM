@@ -951,6 +951,11 @@ module EcosystemDynBeTRMod
              cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
      call t_stopf('PhosphorusOcclusion')
 
+     call t_startf('NitrogenLeaching')
+     call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+     call t_startf('NitrogenLeaching')
+
      call t_startf('PhosphorusLeaching')
      call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
             waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)

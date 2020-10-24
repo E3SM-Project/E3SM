@@ -484,11 +484,11 @@ module ColumnDataType
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
 
-    real(r8), pointer :: qflx_surf_irrig      (:)   => null() ! col real surface irrigation flux (mm H2O/s) 
-    real(r8), pointer :: qflx_grnd_irrig      (:)   => null() ! col real groundwater irrigation flux (mm H2O/s) 
+    real(r8), pointer :: qflx_surf_irrig      (:)   => null() ! col real surface irrigation flux (mm H2O/s)
+    real(r8), pointer :: qflx_grnd_irrig      (:)   => null() ! col real groundwater irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_irrig           (:)   => null() ! col irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
-    real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation 
+    real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation
 
     real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
@@ -5283,7 +5283,7 @@ contains
     allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = nan
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = nan
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = nan
-    
+
 
     !VSFM variables
     ncells = endc - begc + 1
@@ -5333,7 +5333,7 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
-		 
+
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
          avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &
@@ -5441,7 +5441,7 @@ contains
     this%qflx_surf_irrig(begc:endc) = 0._r8
     this%qflx_grnd_irrig(begc:endc) = 0._r8
     this%qflx_over_supply(begc:endc) = 0._r8
-    ! needed for CNNLeaching 
+    ! needed for CNNLeaching
     this%qflx_runoff_betr(begc:endc) = 0._r8
     ! needed for CNNLeaching
     do c = begc, endc
@@ -9020,6 +9020,7 @@ contains
     ! !DESCRIPTION:
     ! Column-level nitrogen summary calculations
     !
+    use ALMbetrNLMod           , only : do_betr_bgc_type
     ! !ARGUMENTS:
     class(column_nitrogen_flux)            :: this
     type(bounds_type)      , intent(in)    :: bounds
@@ -9117,7 +9118,7 @@ contains
                      this%f_n2o_denit(c) + &
                      this%f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
 
-                if ( .not. is_active_betr_bgc) then
+                if ( .not. is_active_betr_bgc .or. do_betr_bgc_type('type1_bgc')) then
                 ! leaching/runoff flux
                   this%smin_no3_leached(c) = &
                         this%smin_no3_leached(c) + &
@@ -10256,13 +10257,13 @@ contains
     this%sminp_runoff(begc:endc) = spval
     call hist_addfld1d (fname='SMINP_RUNOFF', units='gP/m^2/s', &
          avgflag='A', long_name='runoff P flux', &
-         ptr_col=this%sminp_runoff, default='active')   
+         ptr_col=this%sminp_runoff, default='active')
 
    this%som_p_runoff(begc:endc) = spval
    call hist_addfld1d (fname='SOM_P_RUNOFF', units='gP/m^2/s', &
             avgflag='A', long_name='soil organic P pool loss to runoff', &
             ptr_col=this%som_p_runoff)
- 
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_pf
     !-----------------------------------------------------------------------
@@ -10608,6 +10609,7 @@ contains
   subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)
     !
     ! !ARGUMENTS:
+    use ALMbetrNLMod           , only : do_betr_bgc_type
     class (column_phosphorus_flux) :: this
     type(bounds_type) , intent(in) :: bounds
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
@@ -10683,7 +10685,7 @@ contains
                this%secondp_to_occlp_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
-    if ( .not. is_active_betr_bgc) then
+    if ( .not. is_active_betr_bgc .or. do_betr_bgc_type('type1_bgc')) then
       ! vertically integrate leaching flux
       do j = 1, nlevdecomp
         do fc = 1,num_soilc
