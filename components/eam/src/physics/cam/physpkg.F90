@@ -1588,6 +1588,13 @@ end if ! l_tracer_aero
 
     state%te_before_physstep(:ncol)=state%te_cur(:ncol)
 
+#if 0
+!remove all fluxes for now
+   cam_in%shf(1:ncol) = 0.0
+   cam_in%wsx(1:ncol) = 0.0
+   cam_in%wsy(1:ncol) = 0.0
+   cam_in%cflx(1:ncol,:) = 0.0
+#endif  
 
 
 if (l_tracer_aero) then
@@ -2351,8 +2358,10 @@ end if
     ! are zeroed here for input to the moist convection routine
     !
 
+    call t_startf ('convect_deep_tend')
 
 #undef NEWCONV
+!#define NEWCONV
 #ifdef NEWCONV
 
 !!!!OG compute te without cp term before
@@ -2361,7 +2370,6 @@ end if
 !call physics_state_copy(state,state_in)
 !icol = phys_debug_col(state%lchnk)
 
-    call t_startf ('convect_deep_tend')
     call convect_deep_tend(  &
          cmfmc,      cmfcme,             &
          dlf,        pflx,    zdu,       &
@@ -2592,6 +2600,7 @@ end if
              ! =====================================================  
  
 #undef NEWCLUBB
+!#define NEWCLUBB
 #ifdef NEWCLUBB
 !!!!OG compute te without cp term before
     call check_energy_save_local_te(state, tend, "clubb", nstep, ztodt, teloc1)
@@ -2672,7 +2681,13 @@ call physics_finish_update(state, ptend, ztodt, tend)
                 !  need 
                 !    to account for it in the energy checker
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol)
+                
+#define REMOVEDET
+#ifndef REMOVEDET
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
+#else
+                flx_heat(:ncol) = cam_in%shf(:ncol) 
+#endif
 
                 ! Unfortunately, physics_update does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
@@ -2684,9 +2699,18 @@ call physics_finish_update(state, ptend, ztodt, tend)
                 !    because that is 
                 !      input for microphysics              
                 call physics_update(state, ptend, ztodt, tend)
+
+
+#ifndef REMOVEDET
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt,&
                      cam_in%cflx(:,1)/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps,flx_heat/cld_macmic_num_steps)
+#else
+                call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt,&
+                     cam_in%cflx(:,1)/cld_macmic_num_steps,flx_cnd/cld_macmic_num_steps,&
+                     zero,flx_heat/cld_macmic_num_steps)
+#endif
+
 
 #endif
           endif

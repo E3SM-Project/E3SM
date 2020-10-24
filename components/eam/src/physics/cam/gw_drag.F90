@@ -900,6 +900,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 !!!!!! OG redefine ptend%s to conserve TE
 !!!!!! gw only uses ptend%u,v, no heat flx
 #undef NEWGW
+!#define NEWGW
 #ifndef NEWGW
 
 !!! old code
