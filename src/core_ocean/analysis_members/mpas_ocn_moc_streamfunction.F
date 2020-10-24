@@ -125,7 +125,7 @@ contains
       integer :: currentRegion, i, iCell
 
       !! region arrays/variables
-      character (len=ShortStrKIND), dimension(:), pointer :: regionGroupNames
+      character (len=StrKIND), dimension(:), pointer :: regionGroupNames
       integer, dimension(:, :), pointer :: regionCellMasks, regionsInGroup
       integer, dimension(:), pointer ::  nRegionsInGroup
       integer, pointer :: nRegions, nRegionGroups, maxRegionsInGroup, nCellsSolve
