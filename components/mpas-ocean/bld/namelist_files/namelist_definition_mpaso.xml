@@ -5132,22 +5132,6 @@ Valid values: Any positive integer value less than or equal to nMocStreamfunctio
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_mocStreamfunction_vertical_velocity_value" type="char*1024"
-	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
-The vertical velocity variable used for the computation of the MOC Streamfunction.
-
-Valid values: Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool).
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_mocStreamfunction_normal_velocity_value" type="char*1024"
-	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
-The normal velocity variable used for the computation of the MOC Streamfunction.
-
-Valid values: Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool).
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_mocStreamfunction_region_group" type="char*1024"
 	category="AM_mocStreamfunction" group="AM_mocStreamfunction">
 The name of the region group, for which the moc should be computed in addition to the global MOC.
