@@ -260,265 +260,15 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    ! accumulation to aitken, we can do that using this mapping
    !-------------------------------------------------------------------------------
 
-   !call mapping_ait_accum_species()
+
    ! Only find the mapping if atleast one of the do_aitacc_transfer_default is true
    if (any(do_aitacc_transfer_default(:))) then
-
-      !Go through the radiation list and find "aitken<-->accumulation" mapping for each list
-      do ilist = 0, npair_csizxf
-         if(do_aitacc_transfer_default(ilist)) then
-            icnt = 0
-            imode_ait = modefrm_csizxf(ilist) !aitken  mode of this list
-            imode_acc = modetoo_csizxf(ilist) !accumulation mode of this list
-
-            !--------------------------------------------------------------------------------------
-            !find aerosol *number* indices mapping between aitken and accumulation modes in this list
-            !--------------------------------------------------------------------------------------
-
-            !For aitken mode
-            call rad_cnst_get_info(ilist, imode_ait, num_name=num_name_ait)
-            call cnst_get_ind(num_name_ait, ind_ait)
-
-            !For accumulation mode
-            call rad_cnst_get_info(ilist, imode_acc, num_name=num_name_acc)
-            call cnst_get_ind(num_name_acc, ind_acc)
-
-            icnt = icnt + 1
-            lspecfrma_csizxf(icnt,ilist) = ind_ait
-            lspectooa_csizxf(icnt,ilist) = ind_acc
-
-            !index for cloudborne species (qqcw_get_field array) is same as interstitial species
-            lspecfrmc_csizxf(icnt,ilist) = ind_ait
-            lspectooc_csizxf(icnt,ilist) = ind_acc
-
-            write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-            write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
-
-            write(103,*)'New:',ilist, ind_ait, ind_acc
-            !find number of species in the aitken mode of this ilist
-            call rad_cnst_get_info(ilist, imode_ait, nspec = nspec_ait) !output:nspec_ait
-            !find number of species in the accumulation mode of this list
-            call rad_cnst_get_info(ilist, imode_acc, nspec = nspec_acc) !output:nspec_acc
-
-            !loop through speices of aitken mode and find corresponding species in the accumulation mode
-            do ispec_ait = 1, nspec_ait
-               !find specie name
-               call rad_cnst_get_info(ilist, imode_ait, ispec_ait,spec_name=spec_name_ait) !output:spec_name_ait
-
-               !extract constituent name from the specie name (e.g for soa_a1, constituent name would be "soa")
-               spec_cnst_name_ait  = extract_cnst_name(spec_name_ait)
-
-               !Now find this specie index in the "to" mode
-
-               !loop through speices of the "to" mode
-               do ispec_acc = 1, nspec_acc
-                  !find species name
-                  call rad_cnst_get_info(ilist, imode_acc, ispec_acc,spec_name=spec_name_acc) !output:spec_name_acc
-
-                  !extract constituent name from the specie name (e.g for soa_a1, constituent name would be "soa")
-                  spec_cnst_name_acc  = extract_cnst_name(spec_name_acc)
-
-                  !find if specie in acc mode is same as ait or not
-                  if(trim(spec_cnst_name_acc) == trim(spec_cnst_name_ait)) then
-                     !if there is a match, find indices of species in cnst array
-                     call cnst_get_ind(spec_name_ait, ind_ait)
-                     call cnst_get_ind(spec_name_acc, ind_acc)
-
-                     icnt = icnt + 1
-                     lspecfrma_csizxf(icnt,ilist) = ind_ait
-                     lspectooa_csizxf(icnt,ilist) = ind_acc
-
-                     !index for cloudborne species (qqcw_get_field array) is same as interstitial species
-                     lspecfrmc_csizxf(icnt,ilist) = ind_ait
-                     lspectooc_csizxf(icnt,ilist) = ind_acc
-                     write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-                     write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
-                  endif
-               enddo !ispec_acc
-            enddo!ispec_ait
-            nspecfrm_csizxf(ilist) = icnt
-         endif!do_aitacc_transfer_default
-      enddo!ilist
+      call mapping_ait_accum_species()
    endif !any(do_aitacc_transfer_default)
-
-
    !--------------------------------------------------------------------------------
    ! Define history fields for number-adjust source-sink for all modes
    ! NOTE: This is only done for prognostic radiation list (ilist = 0)
    !--------------------------------------------------------------------------------
-#ifdef BALLI
-ballllllllllllllllllll
-   do_aitacc_transfer_if_block1: &
-        if ( do_aitacc_transfer_default(0) ) then
-   !
-   !   compute pointers for aitken <--> accum mode transfer
-   !	(a2 <--> a1 transfer)
-   !   transfers include number_a, number_c, mass_a, mass_c
-   !
-   !BALLI -----npair_csizxf = 1
-   !modefrm_csizxf(1) = nait
-   !modetoo_csizxf(1) = nacc
-
-!
-!   define species involved in each transfer pairing
-!
-aa_ipair: do ipair = 1, 1!npair_csizxf
-
-      mfrm = modefrm_csizxf(ipair)
-      mtoo = modetoo_csizxf(ipair)
-      if (mfrm < 10) then
-          nchfrmskip = 1
-      else if (mfrm < 100) then
-          nchfrmskip = 2
-      else
-          nchfrmskip = 3
-      end if
-      if (mtoo < 10) then
-          nchtooskip = 1
-      else if (mtoo < 100) then
-          nchtooskip = 2
-      else
-          nchtooskip = 3
-      end if
-      nspec = 0
-
-aa_iqfrm: do iqfrm = -1, nspec_amode(mfrm)
-
-         if (iqfrm == -1) then
-            lsfrma = numptr_amode(mfrm)
-            lstooa = numptr_amode(mtoo)
-            lsfrmc = numptrcw_amode(mfrm)
-            lstooc = numptrcw_amode(mtoo)
-         else if (iqfrm == 0) then
-!   bypass transfer of aerosol water due to calcsize transfer
-            cycle aa_iqfrm
-         else
-            lsfrma = lmassptr_amode(iqfrm,mfrm)
-            lsfrmc = lmassptrcw_amode(iqfrm,mfrm)
-            lstooa = 0
-            lstooc = 0
-         end if
-
-         if ((lsfrma < 1) .or. (lsfrma > pcnst)) then
-            write(iulog,9100) mfrm, iqfrm, lsfrma
-            call endrun( 'modal_aero_calcsize_init error aa' )
-         end if
-         if ((lsfrmc < 1) .or. (lsfrmc > pcnst)) then
-            write(iulog,9102) mfrm, iqfrm, lsfrmc
-            call endrun( 'modal_aero_calcsize_init error bb' )
-         end if
-
-         if (iqfrm > 0) then
-            nchfrma = len( trim( cnst_name(lsfrma) ) ) - nchfrmskip
-            write(102,*)'BALLI:',nchfrma, cnst_name(lsfrma),lsfrma, nchfrmskip
-
-! find "too" species having same cnst_name as the "frm" species
-! (except for last 1/2/3 characters which are the mode index)
-            do iqtoo = 1, nspec_amode(mtoo)
-               lstooa = lmassptr_amode(iqtoo,mtoo)
-               nchtooa = len( trim( cnst_name(lstooa) ) ) - nchtooskip
-               if (cnst_name(lsfrma)(1:nchfrma) == cnst_name(lstooa)(1:nchtooa)) then
-               ! interstitial names match, so check cloudborne names too
-                   nchfrmc = len( trim( cnst_name_cw(lsfrmc) ) ) - nchfrmskip
-                   lstooc = lmassptrcw_amode(iqtoo,mtoo)
-                   nchtooc = len( trim( cnst_name_cw(lstooc) ) ) - nchtooskip
-                   if (cnst_name_cw(lsfrmc)(1:nchfrmc) /= &
-                       cnst_name_cw(lstooc)(1:nchtooc)) lstooc = 0
-                   exit
-               else
-                   lstooa = 0
-               end if
-            end do
-         end if ! (iqfrm > 0)
-
-         if ((lstooc < 1) .or. (lstooc > pcnst)) lstooc = 0
-         if ((lstooa < 1) .or. (lstooa > pcnst)) lstooa = 0
-         if (lstooa == 0) then
-            write(iulog,9104) mfrm, iqfrm, lsfrma, iqtoo, lstooa
-            call endrun( 'modal_aero_calcsize_init error cc' )
-         end if
-         if ((lstooc == 0) .and. (iqfrm /= 0)) then
-            write(iulog,9104) mfrm, iqfrm, lsfrmc, iqtoo, lstooc
-            call endrun( 'modal_aero_calcsize_init error dd' )
-         end if
-
-         nspec = nspec + 1
-         lspecfrma_csizxf(nspec,ipair) = lsfrma
-         lspectooa_csizxf(nspec,ipair) = lstooa
-         lspecfrmc_csizxf(nspec,ipair) = lsfrmc
-         lspectooc_csizxf(nspec,ipair) = lstooc
-         write(103,*)'DEF1:',lspecfrma_csizxf(nspec,ipair),lspectooa_csizxf(nspec,ipair),nspec,ipair
-         write(103,*)'DEF2:',lspecfrmc_csizxf(nspec,ipair),lspectooc_csizxf(nspec,ipair),nspec,ipair
-      end do aa_iqfrm
-
-      nspecfrm_csizxf(ipair) = nspec
-      end do aa_ipair
-
-9100  format( / '*** subr. modal_aero_calcsize_init' /   &
-         'lspecfrma out of range' /   &
-         'modefrm, ispecfrm, lspecfrma =', 3i6 / )
-9102  format( / '*** subr. modal_aero_calcsize_init' /   &
-         'lspecfrmc out of range' /   &
-         'modefrm, ispecfrm, lspecfrmc =', 3i6 / )
-9104  format( / '*** subr. modal_aero_calcsize_init' /   &
-         'lspectooa out of range' /   &
-         'modefrm, ispecfrm, lspecfrma, ispectoo, lspectooa =', 5i6 / )
-9106  format( / '*** subr. modal_aero_calcsize_init' /   &
-         'lspectooc out of range' /   &
-         'modefrm, ispecfrm, lspecfrmc, ispectoo, lspectooc =', 5i6 / )
-
-!
-!   output results
-!
-      if ( masterproc ) then
-         !call write_to_logfile(do_adjust_default,do_aitacc_transfer_default, &
-         !     npair_csizxf, modefrm_csizxf, modetoo_csizxf, lspecfrma_csizxf, &
-         !     lspectooa_csizxf, lspecfrmc_csizxf, lspectooc_csizxf, )
-
-      write(iulog,9310) do_adjust_default, do_aitacc_transfer_default
-
-      do ipair = 1, npair_csizxf
-      mfrm = modefrm_csizxf(ipair)
-      mtoo = modetoo_csizxf(ipair)
-      write(iulog,9320) ipair, mfrm, mtoo
-
-      do iq = 1, nspecfrm_csizxf(ipair)
-         lsfrma = lspecfrma_csizxf(iq,ipair)
-         lstooa = lspectooa_csizxf(iq,ipair)
-         lsfrmc = lspecfrmc_csizxf(iq,ipair)
-         lstooc = lspectooc_csizxf(iq,ipair)
-         if (lstooa .gt. 0) then
-            write(iulog,9330) lsfrma, cnst_name(lsfrma),   &
-                               lstooa, cnst_name(lstooa)
-         else
-            write(iulog,9340) lsfrma, cnst_name(lsfrma)
-         end if
-         if (lstooc .gt. 0) then
-            write(iulog,9330) lsfrmc, cnst_name_cw(lsfrmc),   &
-                               lstooc, cnst_name_cw(lstooc)
-         else if (lsfrmc .gt. 0) then
-            write(iulog,9340) lsfrmc, cnst_name_cw(lsfrmc)
-         else
-            write(iulog,9350)
-         end if
-      end do ! iq
-
-      end do ! ipair
-      write(iulog,*)
-
-      end if ! ( masterproc )
-
-
-      else ! do_aitacc_transfer_if_block1
-
-         !npair_csizxf = 0
-      if ( masterproc ) then
-         write(iulog,9310) do_adjust_default, do_aitacc_transfer_default
-         write(iulog,9320) 0, 0, 0
-      end if
-
-      end if do_aitacc_transfer_if_block1
-#endif
 9310  format( / 'subr. modal_aero_calcsize_init' / &
          'do_adjust_default, do_aitacc_transfer_default = ', 2l10 )
 9320  format( 'pair', i3, 5x, 'mode', i3, ' ---> mode', i3 )
@@ -654,6 +404,87 @@ do_aitacc_transfer_if_block2: &
 #endif
 
 end subroutine modal_aero_calcsize_init
+
+subroutine mapping_ait_accum_species()
+
+  !local variables
+  integer :: ilist, icnt, imode_ait, imode_acc, ind_ait, ind_acc
+  integer :: nspec_ait, nspec_acc, ispec_ait, ispec_acc
+  character(len=32) :: num_name_ait, num_name_acc
+  character(len=32) :: spec_name_ait, spec_name_acc
+  character(len=32) :: spec_cnst_name_ait, spec_cnst_name_acc
+
+  !Go through the radiation list and find "aitken<-->accumulation" mapping for each list
+  do ilist = 0, npair_csizxf
+     if(do_aitacc_transfer_default(ilist)) then
+        icnt = 0
+        imode_ait = modefrm_csizxf(ilist) !aitken  mode of this list
+        imode_acc = modetoo_csizxf(ilist) !accumulation mode of this list
+
+        !--------------------------------------------------------------------------------------
+        !find aerosol *number* indices mapping between aitken and accumulation modes in this list
+        !--------------------------------------------------------------------------------------
+
+        !For aitken mode
+        call rad_cnst_get_info(ilist, imode_ait, num_name=num_name_ait)
+        call cnst_get_ind(num_name_ait, ind_ait)
+
+        !For accumulation mode
+        call rad_cnst_get_info(ilist, imode_acc, num_name=num_name_acc)
+        call cnst_get_ind(num_name_acc, ind_acc)
+
+        icnt = icnt + 1
+        lspecfrma_csizxf(icnt,ilist) = ind_ait
+        lspectooa_csizxf(icnt,ilist) = ind_acc
+
+        !index for cloudborne species (qqcw_get_field array) is same as interstitial species
+        lspecfrmc_csizxf(icnt,ilist) = ind_ait
+        lspectooc_csizxf(icnt,ilist) = ind_acc
+
+        !find number of species in the aitken mode of this ilist
+        call rad_cnst_get_info(ilist, imode_ait, nspec = nspec_ait) !output:nspec_ait
+        !find number of species in the accumulation mode of this list
+        call rad_cnst_get_info(ilist, imode_acc, nspec = nspec_acc) !output:nspec_acc
+
+        !loop through speices of aitken mode and find corresponding species in the accumulation mode
+        do ispec_ait = 1, nspec_ait
+           !find specie name
+           call rad_cnst_get_info(ilist, imode_ait, ispec_ait,spec_name=spec_name_ait) !output:spec_name_ait
+
+           !extract constituent name from the specie name (e.g for soa_a1, constituent name would be "soa")
+           spec_cnst_name_ait  = extract_cnst_name(spec_name_ait)
+
+           !Now find this specie index in the "to" mode
+
+           !loop through speices of the "to" mode
+           do ispec_acc = 1, nspec_acc
+              !find species name
+              call rad_cnst_get_info(ilist, imode_acc, ispec_acc,spec_name=spec_name_acc) !output:spec_name_acc
+
+              !extract constituent name from the specie name (e.g for soa_a1, constituent name would be "soa")
+              spec_cnst_name_acc  = extract_cnst_name(spec_name_acc)
+
+              !find if specie in acc mode is same as ait or not
+              if(trim(spec_cnst_name_acc) == trim(spec_cnst_name_ait)) then
+                 !if there is a match, find indices of species in cnst array
+                 call cnst_get_ind(spec_name_ait, ind_ait)
+                 call cnst_get_ind(spec_name_acc, ind_acc)
+
+                 icnt = icnt + 1
+                 lspecfrma_csizxf(icnt,ilist) = ind_ait
+                 lspectooa_csizxf(icnt,ilist) = ind_acc
+
+                 !index for cloudborne species (qqcw_get_field array) is same as interstitial species
+                 lspecfrmc_csizxf(icnt,ilist) = ind_ait
+                 lspectooc_csizxf(icnt,ilist) = ind_acc
+              endif
+           enddo !ispec_acc
+        enddo!ispec_ait
+        nspecfrm_csizxf(ilist) = icnt
+     endif!do_aitacc_transfer_default
+  enddo!ilist
+
+end subroutine mapping_ait_accum_species
 
 
 function extract_cnst_name(spec_name) result(spec_cnst_name)
