@@ -92,8 +92,8 @@ real(r8), parameter :: third = 1.0_r8/3.0_r8
 !integer, parameter :: npair_csizxf = 1 !N_DIAG
 integer, parameter :: npair_csizxf = N_DIAG
 
-logical :: do_adjust_default                        !flag to turn on/off  aerosol size adjustment process
-logical :: do_aitacc_transfer_default(0:npair_csizxf) !BALLI-change this   !flag to turn on/off  aerosol aitken<->accumulation transfer process
+logical :: do_adjust_allowed                        !flag to turn on/off  aerosol size adjustment process
+logical :: do_aitacc_transfer_allowed(0:npair_csizxf) !BALLI-change this   !flag to turn on/off  aerosol aitken<->accumulation transfer process
 
 !--------------------------------------------------------------------------------
 !Naming convention:
@@ -158,7 +158,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !-----------------------------------------------------------------------
    !
    ! Purpose:
-   !    set do_adjust_default and do_aitacc_transfer_default flags
+   !    set do_adjust_allowed and do_aitacc_transfer_allowed flags
    !    create history fields for column tendencies associated with
    !       modal_aero_calcsize
    !
@@ -171,12 +171,9 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
    ! local
    integer  :: ipair, iq, iqfrm, iqtoo, ilist, nmodes, iacc, iait
-   integer  :: nspec_ait, nspec_acc, imode_ait, imode_acc, ispec_acc, ispec_ait
-   integer  :: aer_type, ind_ait, ind_acc, icnt
+   integer  :: aer_type
    integer  :: lsfrm, lstoo, lsfrma, lsfrmc, lstooa, lstooc, lunout
-   integer  :: mfrm, mtoo
    integer  :: n, nacc, nait, nspec
-   integer  :: nchfrma, nchfrmc, nchfrmskip, nchtooa, nchtooc, nchtooskip
    logical  :: history_aerosol
    logical  :: history_verbose
    logical  :: accum_exists, aitken_exists
@@ -185,12 +182,6 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    character(len=fieldname_len+3) :: fieldname
    character(128)                 :: long_name
    character(8)                   :: unit
-   character(len=32)              :: spec_name_ait, spec_name_acc
-   character(len=32)              :: spec_name_ait_cw, spec_name_acc_cw
-   character(len=32)              :: spec_cnst_name_acc, spec_cnst_name_ait
-   character(len=32)              :: num_name_acc, num_name_ait
-   character(len=32)              :: num_name_acc_cw, num_name_ait_cw
-   character(len=32)              :: mass_name_ait_cw, mass_name_acc_cw
    !-----------------------------------------------------------------------
 
    call phys_getopts(history_aerosol_out=history_aerosol, &
@@ -211,14 +202,14 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    enddo
 
 #ifndef MODAL_AERO
-   do_adjust_default          = .false.
-   do_aitacc_transfer_default = .false.
+   do_adjust_allowed          = .false.
+   do_aitacc_transfer_allowed = .false.
 #else
-   !  do_adjust_default allows aerosol size  adjustment to be turned on/off
-   do_adjust_default = .true.
+   !  do_adjust_allowed allows aerosol size  adjustment to be turned on/off
+   do_adjust_allowed = .true.
 
    !------------------------------------------------------------------------------------------
-   !  "do_aitacc_transfer_default" allows aitken <--> accum mode transfer to be turned on/off
+   !  "do_aitacc_transfer_allowed" allows aitken <--> accum mode transfer to be turned on/off
    !  NOTE: it can only be true when aitken & accum modes are both present
    !      and have prognosed number and diagnosed surface/sigmag
    !------------------------------------------------------------------------------------------
@@ -228,7 +219,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    nait = modeptr_aitken !mode number of accumulation mode
    nacc = modeptr_accum  !mode number of aitken mode
 
-   !Go through the radiation list and decide on do_aitacc_transfer_default value(true/false)
+   !Go through the radiation list and decide on do_aitacc_transfer_allowed value(true/false)
    do ilist = 0, npair_csizxf
 
       !find out accumulation and aitken modes in the radiation list
@@ -240,17 +231,17 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
       accum_exists  = ( iacc > 0)
       aitken_exists = ( iait > 0)
 
-      do_aitacc_transfer_default(ilist)=.false.
+      do_aitacc_transfer_allowed(ilist)=.false.
       if(accum_exists .and. aitken_exists .and. iacc .ne. iait) then
-         do_aitacc_transfer_default(ilist)=.true.
+         do_aitacc_transfer_allowed(ilist)=.true.
          modefrm_csizxf(ilist) = iait
          modetoo_csizxf(ilist) = nacc
       endif
    enddo
 
-   !if num mixing ratio is set *not* set to be prognosed, turn aitken<->accumm transfer off for all radiation lists
-   if (mprognum_amode(nait) <= 0) do_aitacc_transfer_default(:) = .false.
-   if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_default(:) = .false.
+   !if num mixing ratio is set *not* to be prognosed, turn aitken<->accumm transfer off for all radiation lists
+   if (mprognum_amode(nait) <= 0) do_aitacc_transfer_allowed(:) = .false.
+   if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_allowed(:) = .false.
 
    !-------------------------------------------------------------------------------
    !Find mapping between the corresponding species of aitken and accumulation nodes
@@ -260,17 +251,19 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    ! accumulation to aitken, we can do that using this mapping
    !-------------------------------------------------------------------------------
 
-
-   ! Only find the mapping if atleast one of the do_aitacc_transfer_default is true
-   if (any(do_aitacc_transfer_default(:))) then
+   ! Only find the mapping if atleast one of the do_aitacc_transfer_allowed is true
+   if (any(do_aitacc_transfer_allowed(:))) then
       call mapping_ait_accum_species()
-   endif !any(do_aitacc_transfer_default)
+   endif
+   !BALLI: write maping in the log file
+   !BALLI: change logic for do_aitacc_transfer_allowed and adjust_allowed so that we error out if it is not allowed
+
    !--------------------------------------------------------------------------------
    ! Define history fields for number-adjust source-sink for all modes
    ! NOTE: This is only done for prognostic radiation list (ilist = 0)
    !--------------------------------------------------------------------------------
 9310  format( / 'subr. modal_aero_calcsize_init' / &
-         'do_adjust_default, do_aitacc_transfer_default = ', 2l10 )
+         'do_adjust_allowed, do_aitacc_transfer_allowed = ', 2l10 )
 9320  format( 'pair', i3, 5x, 'mode', i3, ' ---> mode', i3 )
 9330  format( 5x, 'spec', i3, '=', a, ' ---> spec', i3, '=', a )
 9340  format( 5x, 'spec', i3, '=', a, ' ---> LOSS' )
@@ -280,7 +273,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
 !  define history fields for number-adjust source-sink for all modes
 do_adjust_if_block2: &
-      if ( do_adjust_default ) then
+      if ( do_adjust_allowed ) then
 
    do n = 1, ntot_amode
       if (mprognum_amode(n) <= 0) cycle
@@ -314,7 +307,7 @@ do_adjust_if_block2: &
 
 !  define history fields for aitken-accum transfer
 do_aitacc_transfer_if_block2: &
-      if ( do_aitacc_transfer_default(0) ) then
+      if ( do_aitacc_transfer_allowed(0) ) then
 
 ! check that calcsize transfer ipair=1 is aitken-->accum
       ipair = 1
@@ -405,7 +398,16 @@ do_aitacc_transfer_if_block2: &
 
 end subroutine modal_aero_calcsize_init
 
+
 subroutine mapping_ait_accum_species()
+
+  !----------------------------------------------------------------------
+  ! Find mapping of species between aitken and accumulation modes
+  !
+  ! For example, soa may exist in accumulation and aitken modes. Here were are
+  ! finding mapping between their indices so that if we need to move soa from
+  ! accumulation to aitken, we can do that using this mapping
+  !----------------------------------------------------------------------
 
   !local variables
   integer :: ilist, icnt, imode_ait, imode_acc, ind_ait, ind_acc
@@ -416,8 +418,8 @@ subroutine mapping_ait_accum_species()
 
   !Go through the radiation list and find "aitken<-->accumulation" mapping for each list
   do ilist = 0, npair_csizxf
-     if(do_aitacc_transfer_default(ilist)) then
-        icnt = 0
+     if(do_aitacc_transfer_allowed(ilist)) then
+        icnt = 0 ! start the counter
         imode_ait = modefrm_csizxf(ilist) !aitken  mode of this list
         imode_acc = modetoo_csizxf(ilist) !accumulation mode of this list
 
@@ -445,6 +447,10 @@ subroutine mapping_ait_accum_species()
         call rad_cnst_get_info(ilist, imode_ait, nspec = nspec_ait) !output:nspec_ait
         !find number of species in the accumulation mode of this list
         call rad_cnst_get_info(ilist, imode_acc, nspec = nspec_acc) !output:nspec_acc
+
+        !--------------------------------------------------------------------------------------
+        !find aerosol *mass* indices mapping between aitken and accumulation modes in this list
+        !--------------------------------------------------------------------------------------
 
         !loop through speices of aitken mode and find corresponding species in the accumulation mode
         do ispec_ait = 1, nspec_ait
@@ -481,7 +487,7 @@ subroutine mapping_ait_accum_species()
            enddo !ispec_acc
         enddo!ispec_ait
         nspecfrm_csizxf(ilist) = icnt
-     endif!do_aitacc_transfer_default
+     endif!do_aitacc_transfer_allowed
   enddo!ilist
 
 end subroutine mapping_ait_accum_species
@@ -633,11 +639,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    if(present(update_mmr_in)) update_mmr = update_mmr_in
 
    !For adjusting aerosol sizes
-   do_adjust = do_adjust_default
+   do_adjust = do_adjust_allowed
    if (present(do_adjust_in)) do_adjust = do_adjust_in
 
    !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
-   do_aitacc_transfer = do_aitacc_transfer_default(1)
+   do_aitacc_transfer = do_aitacc_transfer_allowed(1)
    if (present(do_aitacc_transfer_in))  do_aitacc_transfer = do_aitacc_transfer_in
 
    !Set list_idx_local and other sanity checks
