@@ -4,6 +4,9 @@
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_repository.hpp"
+#include "share/field/field_positivity_check.hpp"
+#include "share/field/field_within_interval_check.hpp"
+#include "share/field/field_monotonicity_check.hpp"
 
 #include "ekat/ekat_pack.hpp"
 
@@ -237,6 +240,146 @@ TEST_CASE("field_repo", "") {
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_3"));
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_4"));
   REQUIRE (ekat::contains(repo.get_field_groups().at("group_6"),"Field_4"));
+}
+
+TEST_CASE("field_property_check", "") {
+
+  using namespace scream;
+  using namespace ekat::units;
+
+  using Device = DefaultDevice;
+
+  std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
+  std::vector<int> dims = {2, 3, 12};
+
+  FieldIdentifier fid ("field_1", tags, m/s);
+  fid.set_dimensions(dims);
+
+  // Check positivity.
+  SECTION ("field_positivity_check") {
+    Field<Real> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
+    REQUIRE(not positivity_check->can_repair());
+    f1.add_property_check(positivity_check);
+    f1.allocate_view();
+
+    // Assign positive values to the field and make sure it passes our test for
+    // positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = i+1;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign non-positive values to the field and make sure it fails the check.
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = -i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+    }
+  }
+
+  // Check positivity with repairs.
+  SECTION ("field_positivity_check_with_repairs") {
+    Field<Real> f1(fid);
+    auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >(1);
+    REQUIRE(positivity_check->can_repair());
+    f1.add_property_check(positivity_check);
+    f1.allocate_view();
+
+    // Assign non-positive values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = -i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+      iter->repair(f1);
+      REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check that the values of a field lie within an interval.
+  SECTION ("field_within_interval_check") {
+    Field<Real> f1(fid);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0, 100);
+    REQUIRE(interval_check->can_repair());
+    f1.add_property_check(interval_check);
+    f1.allocate_view();
+
+    // Assign positive values to the field and make sure it passes our test for
+    // positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign non-positive values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = -i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+      iter->repair(f1);
+      REQUIRE(iter->check(f1));
+    }
+  }
+
+  // Check monotonicity.
+  SECTION ("field_monotonicity_check") {
+    Field<Real> f1(fid);
+    auto mono_check = std::make_shared<FieldMonotonicityCheck<Real> >();
+    REQUIRE(not mono_check->can_repair());
+    f1.add_property_check(mono_check);
+    f1.allocate_view();
+
+    // Assign monotonically-increasing values to the field and make sure it
+    // passes our test for positivity.
+    auto f1_view = f1.get_view();
+    auto host_view = Kokkos::create_mirror_view(f1_view);
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = i+1;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Assign monotonically-decreasing values to the field and make sure it
+    // also passes the check.
+    for (int i = 0; i < host_view.extent(0); ++i) {
+      host_view(i) = -i;
+    }
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(iter->check(f1));
+    }
+
+    // Write a positive value to the middle of the array that causes the
+    // monotonicity check to fail.
+    host_view(host_view.extent(0)/2) = 1;
+    Kokkos::deep_copy(f1_view, host_view);
+    for (auto iter = f1.property_check_begin(); iter != f1.property_check_end(); iter++) {
+      REQUIRE(not iter->check(f1));
+      REQUIRE_THROWS(iter->repair(f1)); // we can't repair it, either
+    }
+  }
 }
 
 } // anonymous namespace
