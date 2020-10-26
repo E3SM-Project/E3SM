@@ -123,8 +123,6 @@ subroutine crm_history_init(species_class)
 #ifdef MAML
    call addfld('CRM_SHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc sensible heat flux')
    call addfld('CRM_LHF  ',dims_crm_2D, 'I', 'W/m2',     'CRM Sfc latent heat flux'  )
-   call addfld('CRM_SNOW ',dims_crm_2D, 'I', 'm/s',      'CRM Snow Rate'             )
-   call addfld('CRM_PCP  ',dims_crm_2D, 'I', 'm/s',      'CRM Precipitation Rate'    )
 #endif
 
    ! Aerosol optical depth
@@ -519,10 +517,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
 
 #ifdef MAML
    ! Lower boundary fluxes
-   call outfld('CRM_SHF ', cam_in%shf,         pcols, lchnk )
-   call outfld('CRM_LHF ', cam_in%lhf,         pcols, lchnk )
-   call outfld('CRM_SNOW', crm_output%crm_pcp, pcols, lchnk )
-   call outfld('CRM_PCP',  crm_output%crm_snw, pcols, lchnk )
+   call outfld('CRM_SHF ', cam_in%shf_mi,         pcols, lchnk )
+   call outfld('CRM_LHF ', cam_in%lhf_mi,         pcols, lchnk )
 #endif
 
 #ifdef m2005

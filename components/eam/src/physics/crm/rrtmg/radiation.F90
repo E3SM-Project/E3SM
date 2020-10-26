@@ -442,6 +442,7 @@ end function radiation_nextsw_cday
     logical :: use_MMF                      ! MMF flag
     character(len=16) :: MMF_microphysics_scheme  ! MMF microphysics scheme
 
+    logical :: use_MAML                      ! MAML flag
     !variables for pergro_mods
     character (len=250) :: errstr
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
@@ -455,6 +456,7 @@ end function radiation_nextsw_cday
     call init_rad_data() ! initialize output fields for offline driver
 
     call phys_getopts( use_MMF_out                 = use_MMF                 )
+    call phys_getopts( use_MAML_out                 = use_MAML                 )
     call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
     call phys_getopts( microp_scheme_out           = microp_scheme           )
 
@@ -938,7 +940,7 @@ end function radiation_nextsw_cday
     use radconstants,         only: idx_sw_diag
 
     use crm_physics,          only: m2005_effradius
-    
+    use maml_module,          only: cam_out_rad_avg_mi
 #ifdef MODAL_AERO
     use modal_aero_data,       only: ntot_amode
 #endif
@@ -1166,14 +1168,35 @@ end function radiation_nextsw_cday
     logical :: last_column
     integer :: ii,jj,m
 #ifdef MAML
-    !define local cam_out fluxes for each CRM column  
-    real(r8) lwup_loc 
+    !temporary storage for computed radiation fluxes at surface
+    real(r8) :: lwup_loc
     real(r8) :: sols_loc(pcols)
     real(r8) :: soll_loc(pcols)
     real(r8) :: solsd_loc(pcols)
     real(r8) :: solld_loc(pcols)
-    real(r8) :: fsns_loc
     real(r8) :: flwds_loc(pcols)
+    !CRM radiation column level radiation fluxes at surface                                                                        
+    ! Output from radiation calculation. Passed over to the cam surface
+    ! interface (cam_out)
+    ! to cam_out
+    real(r8) :: sols_col(pcols,crm_nx_rad, crm_ny_rad)
+    real(r8) :: soll_col(pcols,crm_nx_rad,crm_ny_rad)
+    real(r8) :: solsd_col(pcols,crm_nx_rad,crm_ny_rad)
+    real(r8) :: solld_col(pcols,crm_nx_rad,crm_ny_rad)
+    real(r8) :: flwds_col(pcols,crm_nx_rad,crm_ny_rad)
+    real(r8) :: asdir_glb(pcols)
+
+    ! Input for radiation calculation
+    real(r8) :: crm_nx_rad_fac, crm_ny_rad_fac, tmpfac  ! needed for the reduced rad. computation
+    ! if num_inst_atm > 1 (currently num_inst_atm should be equal to crm_nx &&
+    ! crm_ny_rad = crm_ny = 1)
+    !Input for radiation model from cam_in needs to be packed/averaged for the
+    ! reduced radiation column method (when crm_nx .ne. crm_nx_rad)
+    real(r8) :: asdir_col(pcols, crm_nx_rad, crm_ny_rad)
+    real(r8) :: asdif_col(pcols, crm_nx_rad, crm_ny_rad)
+    real(r8) :: aldir_col(pcols, crm_nx_rad, crm_ny_rad)                                                                          
+    real(r8) :: aldif_col(pcols, crm_nx_rad, crm_ny_rad)
+    real(r8) :: lwup_col(pcols, crm_nx_rad, crm_ny_rad)
 #endif
 
     integer :: ixcldliq, ixcldice
@@ -1547,6 +1570,43 @@ end function radiation_nextsw_cday
         call cldefr( lchnk, ncol, landfrac, state%t, rel, rei, state%ps, state%pmid, landm, icefrac, snowh )
       end if
 
+      ! prepare surface albedos for the reduced radiation method by averaging
+      ! over column groups
+      ![lee1046 MAML] Packing and Unpacking for the CRM radiation column level can be
+      !avoided when num_inst_atm = crm_nx_rad (TBD)
+      if(use_MMF .and. use_MAML) then
+         ! only works for the multi-instance MMF functionality
+         aldir_col = 0. ; aldif_col = 0.
+         asdir_col = 0. ; asdif_col = 0.
+         crm_nx_rad_fac = real(crm_nx_rad,r8)/real(crm_nx,r8)
+         crm_ny_rad_fac = real(crm_ny_rad,r8)/real(crm_ny,r8)
+         tmpfac         = crm_nx_rad_fac * crm_ny_rad_fac
+
+         do jj=1,crm_ny
+           do ii=1,num_inst_atm
+             do icol = 1 , ncol
+               i_rad = (ii-1) / (num_inst_atm/crm_nx_rad) + 1
+               j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
+
+               aldir_col(icol,i_rad,j_rad) = aldir_col(icol,i_rad,j_rad) + cam_in%aldir_mi(icol,ii)
+               aldif_col(icol,i_rad,j_rad) = aldif_col(icol,i_rad,j_rad) + cam_in%aldif_mi(icol,ii)
+               asdir_col(icol,i_rad,j_rad) = asdir_col(icol,i_rad,j_rad) + cam_in%asdir_mi(icol,ii)
+               asdif_col(icol,i_rad,j_rad) = asdif_col(icol,i_rad,j_rad) + cam_in%asdif_mi(icol,ii)
+             end do ! icol = 1, ncol
+           end do ! ii = 1, num_inst_atm
+         end do ! jj = 1, crm_ny
+         aldir_col = aldir_col * tmpfac
+         aldif_col = aldif_col * tmpfac
+         asdir_col = asdir_col * tmpfac
+         asdif_col = asdif_col * tmpfac
+      else ! if(use_SPCAM . and. use_MAML)
+         aldir_col(1:ncol,:,:) = cam_in%aldir(1:ncol)
+         aldif_col(1:ncol,:,:) = cam_in%aldif(1:ncol)
+         asdir_col(1:ncol,:,:) = cam_in%asdir(1:ncol)
+         asdif_col(1:ncol,:,:) = cam_in%asdif(1:ncol)
+      end if
+
+
       ! Start loop over CRM columns; the strategy here is to loop over each CRM
       ! column and separately call the radiative transfer codes with optical
       ! properties calculated from CRM fields for each of those columns. Note
@@ -1778,13 +1838,10 @@ end function radiation_nextsw_cday
           ! Calculate interface temperatures (following method
           ! used in radtpl for the longwave), using surface upward flux and
           ! stebol constant in mks units
+          ! [lee1046] tint doesn't seem to be used in radiation. Can be deleted.
           do i = 1,ncol
             tint(i,1) = state%t(i,1)
-#ifdef MAML
-            tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i,ii)/stebol))
-#else
             tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-#endif
             do k = 2,pver
                dy = (state%lnpint(i,k) - state%lnpmid(i,k)) / (state%lnpmid(i,k-1) - state%lnpmid(i,k))
                tint(i,k) = state%t(i,k) - dy * (state%t(i,k) - state%t(i,k-1))
@@ -1822,21 +1879,12 @@ end function radiation_nextsw_cday
                      state%pmid,   cldfprime,                                                &
                      aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
                      eccf,         coszrs,       solin,        sfac,                         &
-#ifdef MAML
-                     cam_in%asdir(:ncol,ii), cam_in%asdif(:ncol,ii), cam_in%aldir(:ncol,ii), cam_in%aldif(:ncol,ii), &
-#else
-                     cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
-#endif
+                     asdir_col(1:ncol,ii,jj),  asdif_col(1:ncol,ii,jj),                  &
+                     aldir_col(1:ncol,ii,jj),  aldif_col(1:ncol,ii,jj),                  &
                      qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
                      fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
-#ifdef MAML
                      fsnsc,        fsdsc,        fsds,         sols_loc, soll_loc,   &
-                     solsd_loc, solld_loc ,fns,          fcns,                               &
-#else
-                     fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
-                     cam_out%solsd,cam_out%solld,fns,          fcns,                         &
-#endif
-
+                     solsd_loc,       solld_loc,fns,          fcns,                         &
                      Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
                      su,           sd,                                                       &
                      E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
@@ -1871,17 +1919,10 @@ end function radiation_nextsw_cday
                         fsntoa_m  (i, icall) = fsntoa_m  (i, icall)+fsntoa  (i)*factor_xy
                         fsutoa_m  (i, icall) = fsutoa_m  (i, icall)+fsutoa  (i)*factor_xy
                         fsntoac_m (i, icall) = fsntoac_m (i, icall)+fsntoac (i)*factor_xy
-#ifdef MAML
                         sols_m    (i, icall) = sols_m    (i, icall)+sols_loc(i)*factor_xy
                         soll_m    (i, icall) = soll_m    (i, icall)+soll_loc(i)*factor_xy
                         solsd_m   (i, icall) = solsd_m   (i, icall)+solsd_loc(i)*factor_xy
                         solld_m   (i, icall) = solld_m   (i, icall)+solld_loc(i)*factor_xy
-#else
-                        sols_m    (i, icall) = sols_m    (i, icall)+cam_out%sols (i)*factor_xy
-                        soll_m    (i, icall) = soll_m    (i, icall)+cam_out%soll (i)*factor_xy
-                        solsd_m   (i, icall) = solsd_m   (i, icall)+cam_out%solsd(i)*factor_xy
-                        solld_m   (i, icall) = solld_m   (i, icall)+cam_out%solld(i)*factor_xy
-#endif
                         fsn200_m  (i, icall) = fsn200_m  (i, icall)+fsn200 (i)*factor_xy
                         fsn200c_m (i, icall) = fsn200c_m (i, icall)+fsn200c(i)*factor_xy
                         if (spectralflux) then
@@ -1896,13 +1937,14 @@ end function radiation_nextsw_cday
                          crm_fsntc (i,ii,jj) = fsntc(i)
                          crm_fsns  (i,ii,jj) = fsns(i)
                          crm_fsnsc (i,ii,jj) = fsnsc(i)
-#ifdef MAML
-                         cam_out%netsw(i,ii) = fsns(i)
-                         cam_out%sols(i,ii) = sols_loc(i)
-                         cam_out%soll(i,ii) = soll_loc(i)
-                         cam_out%solsd(i,ii) = solsd_loc(i)
-                         cam_out%solld(i,ii) = solld_loc(i)
-#endif
+                         
+                         ![lee1046 MAML]: when *_col are passed down to cam_out, the
+                         !values are 'unpacked' for crm_nx, crm_ny dimensions
+                         sols_col (i,ii,jj) = sols_loc(i)
+                         soll_col (i,ii,jj) = soll_loc(i)
+                         solsd_col(i,ii,jj) = solsd_loc(i)
+                         solld_col(i,ii,jj) = solld_loc(i)
+
                          crm_aodvis(i,ii,jj) = sum(aer_tau(i, :, idx_sw_diag))
                          crm_aod400(i,ii,jj) = sum(aer_tau(i, :, idx_sw_diag+1))
                          crm_aod700(i,ii,jj) = sum(aer_tau(i, :, idx_sw_diag-1))
@@ -1955,17 +1997,10 @@ end function radiation_nextsw_cday
                         fsntoa(i)=fsntoa_m(i, icall)
                         fsutoa(i)=fsutoa_m(i, icall)
                         fsntoac(i)=fsntoac_m(i, icall)
-#ifdef MAML
                         sols_loc(i)   =sols_m(i, icall)
                         soll_loc(i)   =soll_m(i, icall)
                         solsd_loc(i)   =solsd_m(i, icall)
                         solld_loc(i)   =solld_m(i, icall)
-#else
-                        cam_out%sols(i)   =sols_m(i, icall)
-                        cam_out%soll(i)   =soll_m(i, icall)
-                        cam_out%solsd(i)   =solsd_m(i, icall)
-                        cam_out%solld(i)   =solld_m(i, icall)
-#endif
                         fsn200(i)  = fsn200_m(i, icall)
                         fsn200c(i) = fsn200c_m(i, icall)
                         if (spectralflux) then
@@ -1997,17 +2032,10 @@ end function radiation_nextsw_cday
                   call outfld('FSNTOA'//diag(icall),fsntoa,pcols,lchnk)
                   call outfld('FSUTOA'//diag(icall),fsutoa,pcols,lchnk)
                   call outfld('FSNTOAC'//diag(icall),fsntoac,pcols,lchnk)
-#ifdef MAML
                    call outfld('SOLS'//diag(icall),sols_loc  ,pcols,lchnk)
                    call outfld('SOLL'//diag(icall),soll_loc  ,pcols,lchnk)
                    call outfld('SOLSD'//diag(icall),solsd_loc ,pcols,lchnk)
                    call outfld('SOLLD'//diag(icall),solld_loc ,pcols,lchnk)
-#else
-                   call outfld('SOLS'//diag(icall),cam_out%sols  ,pcols,lchnk)
-                   call outfld('SOLL'//diag(icall),cam_out%soll  ,pcols,lchnk)
-                   call outfld('SOLSD'//diag(icall),cam_out%solsd ,pcols,lchnk)
-                   call outfld('SOLLD'//diag(icall),cam_out%solld ,pcols,lchnk)
-#endif
                   call outfld('FSN200'//diag(icall),fsn200,pcols,lchnk)
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
@@ -2173,11 +2201,7 @@ end function radiation_nextsw_cday
                          lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
                          state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
                          qrl,          qrlc,                                                       &
-#ifdef MAML
                          flns,         flnt,         flnsc,           flntc,        flwds_loc,     &
-#else
-                         flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
-#endif
                          flut,         flutc,        fnl,             fcnl,         fldsc,         &
                          clm_seed,     lu,           ld                                            )
                 call t_stopf ('rad_rrtmg_lw')
@@ -2189,11 +2213,7 @@ end function radiation_nextsw_cday
                   flnt(:) = 0._r8
                   flnsc(:) = 0._r8
                   flntc(:) = 0._r8
-#ifdef MAML
-                  cam_out%flwds(:,ii) = 0._r8
-#else
-                  cam_out%flwds(:) = 0._r8
-#endif
+                  flwds_loc(:) = 0._r8
                   flut(:) = 0._r8
                   flutc(:) = 0._r8
                   fnl(:,:) = 0._r8
@@ -2221,11 +2241,7 @@ end function radiation_nextsw_cday
                     flns_m   (i, icall) = flns_m   (i, icall)+flns(i)          *factor_xy
                     flnsc_m  (i, icall) = flnsc_m  (i, icall)+flnsc(i)         *factor_xy
                     fldsc_m  (i, icall) = fldsc_m  (i, icall)+fldsc(i)         *factor_xy
-#ifdef MAML
                     flwds_m  (i, icall) = flwds_m  (i, icall)+flwds_loc(i) *factor_xy
-#else
-                    flwds_m  (i, icall) = flwds_m  (i, icall)+cam_out%flwds(i) *factor_xy
-#endif
                     fln200_m (i, icall) = fln200_m (i, icall)+fln200(i)        *factor_xy
                     fln200c_m(i, icall) = fln200c_m(i, icall)+fln200c(i)       *factor_xy
                     if (spectralflux) then
@@ -2240,9 +2256,7 @@ end function radiation_nextsw_cday
                       crm_flntc(i,ii,jj) = flntc(i)
                       crm_flns (i,ii,jj) = flns(i)
                       crm_flnsc(i,ii,jj) = flnsc(i)
-#ifdef MAML
-                      cam_out%flwds(i,ii) = flwds_loc(i)
-#endif
+                      flwds_col(i,ii,jj) = flwds_loc(i)
                       do m=1,crm_nz
                          k = pver-m+1
                          qrl_crm(:ncol,ii,jj,m) = qrl(:ncol,k) / cpair
@@ -2266,11 +2280,7 @@ end function radiation_nextsw_cday
                       flns (i) = flns_m (i, icall)
                       flnsc(i) = flnsc_m(i, icall)
                       fldsc(i) = fldsc_m(i, icall)
-#ifdef MAML
                       flwds_loc(i) = flwds_m(i, icall)
-#else
-                      cam_out%flwds(i) = flwds_m(i, icall)
-#endif
                       fln200 (i) = fln200_m (i, icall)
                       fln200c(i) = fln200c_m(i, icall)
                       if (spectralflux) then
@@ -2298,11 +2308,7 @@ end function radiation_nextsw_cday
                   call outfld('LWCF'//diag(icall),lwcf  ,pcols,lchnk)
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
-#ifdef MAML
                   call outfld('FLDS'//diag(icall),flwds_loc ,pcols,lchnk)
-#else
-                  call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
-#endif
                 end if
                 if (use_MMF .and. last_column ) then
                   if(icall.eq.0) then  ! the climate call
@@ -2321,6 +2327,27 @@ end function radiation_nextsw_cday
           end if  !dolw
         end do ! ii = 1,crm_nx_rad
       end do ! jj = 1,crm_nx_rad
+      
+      ![lee1046, MAML] Unpack sols_co, soll_col, solsd_col, solld_col, flwds_col to be
+      !CRM-level. Currently, Multi-instance MMF only works with 2D CRMs,
+      !therefore crm_nx = num_inst_atm and crm_ny = 1. If not, the run holts at
+      !'crm_main' step.
+
+      do jj = 1, crm_ny
+         do ii = 1, crm_nx
+            do icol = 1, ncol
+               i_rad = (ii-1) / (crm_nx/crm_nx_rad) + 1
+               j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
+               cam_out%sols_mi(icol,ii) = sols_col(icol,i_rad_,j_rad)
+               cam_out%soll_mi(icol,ii) = soll_col(icol,i_rad_,j_rad)
+               cam_out%solsd_mi(icol,ii) = solsd_col(icol,i_rad,j_rad)
+               cam_out%solld_mi(icol,ii) = solld_col(icol,i_rad,j_rad)
+               cam_out%flwds_mi(icol,ii) = flwds_col(icol,i_rad,j_rad)
+            end do! icol = 1,ncol
+         end do ! ii = 1,crm_nx
+      end do ! jj = 1, crm_ny
+      ! Average cam_out%[X]_mi across the num_inst_atm
+      call cam_out_rad_avg_mi(cam_out)
 
       ! Restore pbuf and state to values as input to this routine before we
       ! modified them in-place to populate with CRM column values
@@ -2365,16 +2392,7 @@ end function radiation_nextsw_cday
       if ( dohirs .and. (mod(nstep-1,ihirsfq) .eq. 0) ) then
 
           do i= 1, ncol
-#ifdef MAML
-             lwup_loc =0._r8
-             do ii =1, crm_nx
-                lwup_loc = lwup_loc + cam_in%lwup(i,ii)
-             end do
-             lwup_loc = lwup_loc/crm_nx
-             ts(i) = sqrt(sqrt(lwup_loc/stebol))
-#else
              ts(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-#endif
              ! Set oro (land/sea flag) for compatibility with landfrac/icefrac/ocnfrac
              ! oro=0 (sea or ice); oro=1 (land)
              if (landfrac(i).ge.0.001) then

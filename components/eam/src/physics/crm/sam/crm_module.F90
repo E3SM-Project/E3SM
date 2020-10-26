@@ -115,8 +115,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     integer         :: kx
     real(crm_rknd)  :: qsat, omg, rh_tmp
     real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
-    real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
+    real(crm_rknd), allocatable  :: z0_loc(:,:,:),ustar(:,:,:), bflx(:,:,:) ! for MAML
+    real(crm_rknd), allocatable  :: wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
+    integer       , parameter :: YESV = YES3D
+#ifdef MAML
+    YESV = 1 ! for MAML do not zero out the meridional component of wind
+#endif     
 
     ! These should all be inputs
     integer         :: iseed             ! seed for random perturbation
@@ -199,8 +204,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( dd_crm (ncrms,plev)   )
   allocate( mui_crm(ncrms,plev+1) )
   allocate( mdi_crm(ncrms,plev+1) )
-  allocate( ustar(ncrms) )
-  allocate( bflx(ncrms) )
+  allocate( z0_loc(ncrms,nx,ny) )
+  allocate( ustar(ncrms,nx,ny) )
+  allocate( bflx(ncrms,nx,ny) )
   allocate( wnd(ncrms) )
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
@@ -226,6 +232,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call prefetch( dd_crm   ) 
   call prefetch( mui_crm  ) 
   call prefetch( mdi_crm  ) 
+  call prefetch( z0_loc    ) 
   call prefetch( ustar    ) 
   call prefetch( bflx     ) 
   call prefetch( wnd      ) 
@@ -366,12 +373,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       do i = 1 , nx
         do icrm = 1 , ncrms
           u   (icrm,i,j,k) = crm_state_u_wind     (icrm,i,j,k)
-#ifdef MAML
-          !open the crm v component
-          v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)
-#else       
-          v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)*YES3D
-#endif
+          v   (icrm,i,j,k) = crm_state_v_wind     (icrm,i,j,k)*YESV
           w   (icrm,i,j,k) = crm_state_w_wind     (icrm,i,j,k)
           tabs(icrm,i,j,k) = crm_state_temperature(icrm,i,j,k)
 #if defined(MMF_ESMT)
@@ -391,12 +393,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         do i=1,nx
           do icrm=1,ncrms
             u(icrm,i,j,k) = min( umax, max(-umax,u(icrm,i,j,k)) )
-#ifdef MAML
             !open the crm v component
-            v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) ) 
-#else     
-            v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) )*YES3D
-#endif
+            v(icrm,i,j,k) = min( umax, max(-umax,v(icrm,i,j,k)) )*YESV
           enddo
         enddo
       enddo
@@ -543,12 +541,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       tke0 (icrm,k) = tke0 (icrm,k) * factor_xy
       l = plev-k+1
       uln  (icrm,l) = min( umax, max(-umax,crm_input%ul(icrm,l)) )
-#ifdef MAML
       !open the crm v component
-      vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )
-#else
-      vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )*YES3D
-#endif
+      vln  (icrm,l) = min( umax, max(-umax,crm_input%vl(icrm,l)) )*YESV
       ttend(icrm,k) = (crm_input%tl(icrm,l)+gamaz(icrm,k)- fac_cond*(crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l))-fac_fus*crm_input%qiil(icrm,l)-t00(icrm,k))*idt_gl
       qtend(icrm,k) = (crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)-q0(icrm,k))*idt_gl
       utend(icrm,k) = (uln(icrm,l)-u0(icrm,k))*idt_gl
@@ -572,6 +566,41 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     crm_output%prectend (icrm)=colprec (icrm)
     crm_output%precstend(icrm)=colprecs(icrm)
   enddo
+  
+  ! estimate roughness length assuming logarithmic profile of velocity near the surface:
+  ![lee1046] ustar, z0_loc are computed CRM-resoltuion for MAML
+  ! For non-MAML cases, bflx(icrm, i, j) = bflx(icrm, 1, 1)
+  ! this may be removed and let crm_surface.f90 can take care [NEED TO CHECK]
+  $acc parallel loop collapse(3) async(asyncid)
+  do j = 1, ny
+    do i = 1, nx
+      do icrm = 1, ncrms
+        bflx  (icrm,i,j) = crm_input%bflxls(icrm,i,j)
+        ustar (icrm,i,j) = sqrt(crm_input%tau00(icrm,i,j)/rho(icrm,1))
+#ifdef MAML
+        z0_loc(icrm,i,j) = z0_est(z(icrm,1),bflx(icrm,i,j),wnd(icrm),ustar(icrm,i,j))
+        z0_loc(icrm,i,j) = max(real(0.00001,crm_rknd),min(real(1.,crm_rknd),z0_loc(icrm,i,j)))
+#else
+        z0_loc(icrm,i,j) = z0(icrm)
+#endif        
+      end do ! icrm = 1, ncrms
+    end do ! i = 1, nx
+  end do ! j = 1, ny 
+
+#if defined( MMF_CRM_SFC_FLUX ) || defined (MAML)
+  !$acc parallel loop collapse(3) async(asyncid)
+  do j = 1, ny
+    do i = 1, nx
+      do icrm = 1, ncrms
+        !fluxbu(icrm,i,j) = crm_input%fluxu00(icrm,i,j)/rhow(1)
+        !fluxbv(icrm,i,j) = crm_input%fluxv00(icrm,i,j)/rhow(1)
+        fluxbt  (icrm,i,j) = crm_input%fluxt00(icrm,i,j)/rhow(1)
+        fluxbq  (icrm,i,j) = crm_input%fluxq00(icrm,i,j)/rhow(1)
+        t_sfc_xy(icrm,i,j) = crm_input%ts(icrm,i,j)
+      end do ! icrm = 1, ncrms
+    end do ! i = 1,nx
+  end do ! j = 1, ny  
+#endif /* MMF_CRM_SFC_FLUX */
 
 !---------------------------------------------------
 #ifdef m2005
@@ -677,10 +706,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     end if
   enddo
 
-#ifdef MAML
-  if(crm_nx_rad.NE.crm_nx .or. crm_ny_rad.NE.crm_ny) then 
-     write(0,*) "crm_nx_rad and crm_ny_rad have to be equal to crm_nx and crm_ny in the MAML configuration"
-     call endrun('crm main')
+#ifdef MAML  
+  !--------------------------
+  ! sanity check for MAML
+  if(num_inst_atm.ne.crm_nx .or. crm_ny.ne.1) then
+    write(0,*) "For MMF-MAML, CRM must be 2D (crm_ny=1) and a number of instances for LAND, ATM and ICE &
+                must be equal to crm_nx"
+    call endrun('crm main')
   end if
 #endif
 
@@ -781,7 +813,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       !-----------------------------------------------
       !     surface fluxes:
-      if (dosurface) call crm_surface(ncrms,bflx)
+      if (dosurface) call crm_surface(ncrms,bflx,z0_loc)
 
       !-----------------------------------------------------------
       !  SGS physics:
@@ -1432,9 +1464,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* m2005 */
 
 #ifdef MAML
+<<<<<<< HEAD
         ! output CRM precip and snow to pass down individual CLM instances
         crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.D0      ! mm/s --> m/s
         crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.D0     ! mm/s --> m/s
+=======
+        ! output CRM precip and snow to pass down individual ELM instances
+        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.      ! mm/s --> m/s
+        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.     ! mm/s --> m/s
+>>>>>>> 2way MAML: direct communication between ELM and CRM atmosphere
 #endif
 
         if(precsfc(icrm,i,j).gt.10.D0/86400.D0) then

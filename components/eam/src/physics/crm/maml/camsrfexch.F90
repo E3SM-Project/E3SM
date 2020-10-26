@@ -15,9 +15,8 @@ module camsrfexch
   use infnan,        only: posinf, assignment(=)
   use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
-#ifdef MAML
   use seq_comm_mct, only : num_inst_atm
-#endif
+  use maml_module,  only: cam_out_avg_mi_all
   implicit none
 
 !----------------------------------------------------------------------- 
@@ -45,45 +44,30 @@ module camsrfexch
   type cam_out_t 
      integer  :: lchnk               ! chunk index
      integer  :: ncol                ! number of columns in chunk
-#ifdef MAML
-     real(r8), allocatable :: tbot(:,:)     ! bot level temperature
-     real(r8), allocatable :: zbot(:,:)     ! bot level height above surface
-     real(r8), allocatable :: ubot(:,:)     ! bot level u wind
-     real(r8), allocatable :: vbot(:,:)     ! bot level v wind
-     real(r8), allocatable :: qbot(:,:,:)   ! bot level specific humidity
-     real(r8), allocatable :: pbot(:,:)     ! bot level pressure
-     real(r8), allocatable :: rho(:,:)      ! bot level density	
-     real(r8), allocatable :: netsw(:,:)    !	
-     real(r8), allocatable :: flwds(:,:)    ! 
-     real(r8), allocatable :: precsc(:,:)   !
-     real(r8), allocatable :: precsl(:,:)   !
-     real(r8), allocatable :: precc(:,:)    ! 
-     real(r8), allocatable :: precl(:,:)    ! 
-     real(r8), allocatable :: soll(:,:)     ! 
-     real(r8), allocatable :: sols(:,:)     ! 
-     real(r8), allocatable :: solld(:,:)    !
-     real(r8), allocatable :: solsd(:,:)    !
-     real(r8), allocatable :: thbot(:,:)    ! 
-#else
-     real(r8), allocatable :: tbot(:)       ! bot level temperature
-     real(r8), allocatable :: zbot(:)       ! bot level height above surface
-     real(r8), allocatable :: ubot(:)       ! bot level u wind
-     real(r8), allocatable :: vbot(:)       ! bot level v wind
-     real(r8), allocatable :: qbot(:,:)     ! bot level specific humidity
-     real(r8), allocatable :: pbot(:)       ! bot level pressure
-     real(r8), allocatable :: rho(:)        ! bot level density	
-     real(r8), allocatable :: netsw(:)      !	
-     real(r8), allocatable :: flwds(:)      ! 
-     real(r8), allocatable :: precsc(:)     !
-     real(r8), allocatable :: precsl(:)     !
-     real(r8), allocatable :: precc(:)      ! 
-     real(r8), allocatable :: precl(:)      ! 
-     real(r8), allocatable :: soll(:)       ! 
-     real(r8), allocatable :: sols(:)       ! 
-     real(r8), allocatable :: solld(:)      !
-     real(r8), allocatable :: solsd(:)      !
-     real(r8), allocatable :: thbot(:)      ! 
-#endif
+     
+     ! surface interface fields beteen ATM and LND/ICE components have an added
+     ! dimension (num_inst_atm) for MMF-MAML configuration 
+     real(r8), allocatable :: tbot_mi(:,:)     ! bot level temperature
+     real(r8), allocatable :: thbot_mi(:,:)    ! bot level potential temperature
+     real(r8), allocatable :: ubot_mi(:,:)     ! bot level u wind
+     real(r8), allocatable :: vbot_mi(:,:)     ! bot level v wind
+     real(r8), allocatable :: qbot_mi(:,:,:)   ! bot level specific humidity
+     real(r8), allocatable :: rho_mi(:,:)      ! bot level density	
+     real(r8), allocatable :: precsc_mi(:,:)   ! convective snow rate 
+     real(r8), allocatable :: precsl_mi(:,:)   ! large scale snow rate
+     real(r8), allocatable :: precc_mi(:,:)    ! convective precip. rate
+     real(r8), allocatable :: precl_mi(:,:)    ! large-scale precip.rate
+     real(r8), allocatable :: soll_mi(:,:)     ! near-IR, direct, down
+     real(r8), allocatable :: sols_mi(:,:)     ! visible, direct, down
+     real(r8), allocatable :: solld_mi(:,:)    ! near-IR, diffuse, down
+     real(r8), allocatable :: solsd_mi(:,:)    ! visible, diffuse, down
+     real(r8), allocatable :: netsw_mi(:,:)    ! surface solar, net absorbed	
+     real(r8), allocatable :: flwds_mi(:,:)    ! longwave, down
+
+     real(r8), allocatable :: precsc(:) ! convective snow rate 
+     real(r8), allocatable :: precsl(:) ! large scale snow rate
+     real(r8), allocatable :: precc(:)  ! convective precip. rate
+     real(r8), allocatable :: precl(:)  ! large-scale precip.rate
      real(r8), allocatable :: co2prog(:)    ! prognostic co2
      real(r8), allocatable :: co2diag(:)    ! diagnostic co2
      real(r8), allocatable :: psl(:)
@@ -110,31 +94,34 @@ module camsrfexch
   type cam_in_t    
      integer  :: lchnk                   ! chunk index
      integer  :: ncol                    ! number of active columns
-#ifdef MAML
-     !modifying the CLM-input vars to reflect the added CRM columns
-     real(r8), allocatable :: asdir(:,:)      ! albedo: shortwave, direct
-     real(r8), allocatable :: asdif(:,:)      ! albedo: shortwave, diffuse
-     real(r8), allocatable :: aldir(:,:)      ! albedo: longwave, direct
-     real(r8), allocatable :: aldif(:,:)      ! albedo: longwave, diffuse
-     real(r8), allocatable :: lwup(:,:)       ! longwave up radiative flux
-     real(r8), allocatable :: lhf(:,:)        ! latent heat flux
-     real(r8), allocatable :: shf(:,:)        ! sensible heat flux
-     real(r8), allocatable :: wsx(:,:)        ! surface u-stress (N)
-     real(r8), allocatable :: wsy(:,:)        ! surface v-stress (N)
-     real(r8), allocatable :: snowhland(:,:)  ! snow depth (liquid water equivalent) over land
-     !modifying the CLM-input vars to reflect the added CRM columns
-#else
-     real(r8), allocatable :: asdir(:)        ! albedo: shortwave, direct
-     real(r8), allocatable :: asdif(:)        ! albedo: shortwave, diffuse
-     real(r8), allocatable :: aldir(:)        ! albedo: longwave, direct
-     real(r8), allocatable :: aldif(:)        ! albedo: longwave, diffuse
-     real(r8), allocatable :: lwup(:)         ! longwave up radiative flux
-     real(r8), allocatable :: lhf(:)          ! latent heat flux
-     real(r8), allocatable :: shf(:)          ! sensible heat flux
-     real(r8), allocatable :: wsx(:)          ! surface u-stress (N)
-     real(r8), allocatable :: wsy(:)          ! surface v-stress (N)
-     real(r8), allocatable :: snowhland(:)    ! snow depth (liquid water equivalent) over land
-#endif
+
+     ! surface interface fields beteen ATM and LND/ICE components have an added
+     ! dimension (num_inst_atm) for MMF-MAML configuration 
+     real(r8), allocatable :: asdir_mi(:,:)      ! albedo: shortwave, direct
+     real(r8), allocatable :: asdif_mi(:,:)      ! albedo: shortwave, diffuse
+     real(r8), allocatable :: aldir_mi(:,:)      ! albedo: longwave, direct
+     real(r8), allocatable :: aldif_mi(:,:)      ! albedo: longwave, diffuse
+     real(r8), allocatable :: lwup_mi(:,:)       ! longwave up radiative flux
+     real(r8), allocatable :: lhf_mi(:,:)        ! latent heat flux
+     real(r8), allocatable :: cflx1_mi(:,:)        ! water vapor constituent flux 
+     real(r8), allocatable :: shf_mi(:,:)        ! sensible heat flux
+     real(r8), allocatable :: wsx_mi(:,:)        ! surface u-stress (N)
+     real(r8), allocatable :: wsy_mi(:,:)        ! surface v-stress (N)
+     real(r8), allocatable :: snowhland_mi(:,:)  ! snow depth (liquid water equivalent) over land
+     real(r8), allocatable :: ts_mi(:,:)       ! surface temperature for MMF-MAML configuration
+     
+     ! Average across the instances for cam output
+     real(r8), allocatable :: asdir(:)    ! albedo: shortwave, direct
+     real(r8), allocatable :: asdif(:)      ! albedo: shortwave, diffuse
+     real(r8), allocatable :: aldir(:)      ! albedo: longwave, direct
+     real(r8), allocatable :: aldif(:)    ! albedo: longwave, diffuse
+     real(r8), allocatable :: lwup(:)    ! longwave up radiative flux
+     real(r8), allocatable :: lhf(:)        ! latent heat flux
+     real(r8), allocatable :: shf(:)        ! sensible heat flux
+     real(r8), allocatable :: wsx(:)        ! surface u-stress (N)
+     real(r8), allocatable :: wsy(:)        ! surface v-stress (N)
+     real(r8), allocatable :: snowhland(:)  ! snow depth (liquid water equivalent) over land
+     
      real(r8), allocatable :: tref(:)         ! ref height surface air temp
      real(r8), allocatable :: qref(:)         ! ref height specific humidity 
      real(r8), allocatable :: u10(:)          ! 10m wind speed
@@ -214,37 +201,42 @@ CONTAINS
        nullify(cam_in(c)%meganflx)
     enddo  
     do c = begchunk,endchunk 
-#ifdef MAML
-       allocate (cam_in(c)%asdir(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdir')
+       allocate (cam_in(c)%asdir_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdir_mi')
 
-       allocate (cam_in(c)%asdif(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdif')
+       allocate (cam_in(c)%asdif_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdif_mi')
 
-       allocate (cam_in(c)%aldir(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldir')
+       allocate (cam_in(c)%aldir_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldir_mi')
 
-       allocate (cam_in(c)%aldif(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldif')
+       allocate (cam_in(c)%aldif_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldif_mi')
 
-       allocate (cam_in(c)%lwup(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lwup')
+       allocate (cam_in(c)%lwup_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lwup_mi')
 
-       allocate (cam_in(c)%lhf(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lhf')
+       allocate (cam_in(c)%lhf_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lhf_mi')
+       
+       allocate (cam_in(c)%cflx1_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error cflx1_mi')
 
-       allocate (cam_in(c)%shf(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error shf')
+       allocate (cam_in(c)%shf_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error shf_mi')
 
-       allocate (cam_in(c)%wsx(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsx')
+       allocate (cam_in(c)%wsx_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsx_mi')
 
-       allocate (cam_in(c)%wsy(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsy')
+       allocate (cam_in(c)%wsy_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsy_mi')
 
-       allocate (cam_in(c)%snowhland(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error snowhland')
-#else
+       allocate (cam_in(c)%snowhland_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error snowhland_mi')
+       
+       allocate (cam_in(c)%ts_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ts_mi')
+       
        allocate (cam_in(c)%asdir(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdir')
 
@@ -256,7 +248,7 @@ CONTAINS
 
        allocate (cam_in(c)%aldif(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldif')
-
+       
        allocate (cam_in(c)%lwup(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lwup')
 
@@ -274,8 +266,7 @@ CONTAINS
 
        allocate (cam_in(c)%snowhland(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error snowhland')
-#endif
-
+       
        allocate (cam_in(c)%tref(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error tref')
 
@@ -358,18 +349,18 @@ CONTAINS
     do c = begchunk,endchunk
        cam_in(c)%lchnk = c
        cam_in(c)%ncol  = get_ncols_p(c)
-#ifdef MAML
-       cam_in(c)%asdir    (:,:) = 0._r8
-       cam_in(c)%asdif    (:,:) = 0._r8
-       cam_in(c)%aldir    (:,:) = 0._r8
-       cam_in(c)%aldif    (:,:) = 0._r8
-       cam_in(c)%lwup     (:,:) = 0._r8
-       cam_in(c)%lhf      (:,:) = 0._r8
-       cam_in(c)%shf      (:,:) = 0._r8
-       cam_in(c)%wsx      (:,:) = 0._r8
-       cam_in(c)%wsy      (:,:) = 0._r8
-       cam_in(c)%snowhland(:,:) = 0._r8
-#else
+       cam_in(c)%asdir_mi    (:,:) = 0._r8
+       cam_in(c)%asdif_mi    (:,:) = 0._r8
+       cam_in(c)%aldir_mi    (:,:) = 0._r8
+       cam_in(c)%aldif_mi    (:,:) = 0._r8
+       cam_in(c)%lwup_mi     (:,:) = 0._r8
+       cam_in(c)%lhf_mi      (:,:) = 0._r8
+       cam_in(c)%cflx1_mi    (:,:) = 0._r8
+       cam_in(c)%shf_mi      (:,:) = 0._r8
+       cam_in(c)%wsx_mi      (:,:) = 0._r8
+       cam_in(c)%wsy_mi      (:,:) = 0._r8
+       cam_in(c)%snowhland_mi(:,:) = 0._r8
+       cam_in(c)%ts_mi       (:,:) = 0._r8
        cam_in(c)%asdir    (:) = 0._r8
        cam_in(c)%asdif    (:) = 0._r8
        cam_in(c)%aldir    (:) = 0._r8
@@ -380,7 +371,6 @@ CONTAINS
        cam_in(c)%wsx      (:) = 0._r8
        cam_in(c)%wsy      (:) = 0._r8
        cam_in(c)%snowhland(:) = 0._r8
-#endif
        cam_in(c)%tref     (:) = 0._r8
        cam_in(c)%qref     (:) = 0._r8
        cam_in(c)%u10      (:) = 0._r8
@@ -459,61 +449,54 @@ CONTAINS
     end if
 
     do c = begchunk,endchunk 
-#ifdef MAML
-       allocate (cam_out(c)%tbot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot')
+       allocate (cam_out(c)%tbot_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot_mi')
 
-       allocate (cam_out(c)%zbot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error zbot')
+       allocate (cam_out(c)%ubot_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ubot_mi')
 
-       allocate (cam_out(c)%ubot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ubot')
+       allocate (cam_out(c)%vbot_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error vbot_mi')
 
-       allocate (cam_out(c)%vbot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error vbot')
+       allocate (cam_out(c)%qbot_mi(pcols,pcnst,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error qbot_mi')
 
-       allocate (cam_out(c)%qbot(pcols,pcnst,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error qbot')
+       allocate (cam_out(c)%rho_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error rho_mi')
 
-       allocate (cam_out(c)%pbot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error pbot')
+       allocate (cam_out(c)%netsw_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error netsw_mi')
 
-       allocate (cam_out(c)%rho(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error rho')
+       allocate (cam_out(c)%flwds_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds_mi')
 
-       allocate (cam_out(c)%netsw(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error netsw')
+       allocate (cam_out(c)%precsc_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsc_mi')
 
-       allocate (cam_out(c)%flwds(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds')
+       allocate (cam_out(c)%precsl_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsl_mi')
 
-       allocate (cam_out(c)%precsc(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsc')
+       allocate (cam_out(c)%precc_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precc_mi')
 
-       allocate (cam_out(c)%precsl(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsl')
+       allocate (cam_out(c)%precl_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precl_mi')
 
-       allocate (cam_out(c)%precc(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precc')
+       allocate (cam_out(c)%soll_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error soll_mi')
 
-       allocate (cam_out(c)%precl(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precl')
+       allocate (cam_out(c)%sols_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error sols_mi')
 
-       allocate (cam_out(c)%soll(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error soll')
+       allocate (cam_out(c)%solld_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solld_mi')
 
-       allocate (cam_out(c)%sols(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error sols')
+       allocate (cam_out(c)%solsd_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solsd_mi')
 
-       allocate (cam_out(c)%solld(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solld')
-
-       allocate (cam_out(c)%solsd(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solsd')
-
-       allocate (cam_out(c)%thbot(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot')
-#else
+       allocate (cam_out(c)%thbot_mi(pcols,num_inst_atm), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot_mi')
+       
        allocate (cam_out(c)%tbot(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot')
 
@@ -540,7 +523,7 @@ CONTAINS
 
        allocate (cam_out(c)%flwds(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds')
-
+       
        allocate (cam_out(c)%precsc(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsc')
 
@@ -567,8 +550,7 @@ CONTAINS
 
        allocate (cam_out(c)%thbot(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot')
-#endif
-
+       
        allocate (cam_out(c)%co2prog(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error co2prog')
 
@@ -624,26 +606,23 @@ CONTAINS
     do c = begchunk,endchunk
        cam_out(c)%lchnk       = c
        cam_out(c)%ncol        = get_ncols_p(c)
-#ifdef MAML
-       cam_out(c)%thbot(:,:)    = 0._r8
-       cam_out(c)%tbot(:,:)     = 0._r8
-       cam_out(c)%zbot(:,:)     = 0._r8
-       cam_out(c)%ubot(:,:)     = 0._r8
-       cam_out(c)%vbot(:,:)     = 0._r8
-       cam_out(c)%qbot(:,:,:)   = 0._r8
-       cam_out(c)%pbot(:,:)     = 0._r8
-       cam_out(c)%rho(:,:)      = 0._r8
-       cam_out(c)%precsc(:,:)   = 0._r8
-       cam_out(c)%precsl(:,:)   = 0._r8
-       cam_out(c)%precc(:,:)    = 0._r8
-       cam_out(c)%precl(:,:)    = 0._r8
-       cam_out(c)%soll(:,:)     = 0._r8
-       cam_out(c)%sols(:,:)     = 0._r8
-       cam_out(c)%solld(:,:)    = 0._r8
-       cam_out(c)%solsd(:,:)    = 0._r8
-       cam_out(c)%flwds(:,:)    = 0._r8
-       cam_out(c)%netsw(:,:)    = 0._r8
-#else
+       cam_out(c)%thbot_mi(:,:)    = 0._r8
+       cam_out(c)%tbot_mi(:,:)     = 0._r8
+       cam_out(c)%ubot_mi(:,:)     = 0._r8
+       cam_out(c)%vbot_mi(:,:)     = 0._r8
+       cam_out(c)%qbot_mi(:,:,:)   = 0._r8
+       cam_out(c)%rho_mi(:,:)      = 0._r8
+       cam_out(c)%precsc_mi(:,:)   = 0._r8
+       cam_out(c)%precsl_mi(:,:)   = 0._r8
+       cam_out(c)%precc_mi(:,:)    = 0._r8
+       cam_out(c)%precl_mi(:,:)    = 0._r8
+       cam_out(c)%soll_mi(:,:)     = 0._r8
+       cam_out(c)%sols_mi(:,:)     = 0._r8
+       cam_out(c)%solld_mi(:,:)    = 0._r8
+       cam_out(c)%solsd_mi(:,:)    = 0._r8
+       cam_out(c)%flwds_mi(:,:)    = 0._r8
+       cam_out(c)%netsw_mi(:,:)    = 0._r8
+       cam_out(c)%thbot(:)    = 0._r8
        cam_out(c)%tbot(:)     = 0._r8
        cam_out(c)%zbot(:)     = 0._r8
        cam_out(c)%ubot(:)     = 0._r8
@@ -651,8 +630,6 @@ CONTAINS
        cam_out(c)%qbot(:,:)   = 0._r8
        cam_out(c)%pbot(:)     = 0._r8
        cam_out(c)%rho(:)      = 0._r8
-       cam_out(c)%netsw(:)    = 0._r8
-       cam_out(c)%flwds(:)    = 0._r8
        cam_out(c)%precsc(:)   = 0._r8
        cam_out(c)%precsl(:)   = 0._r8
        cam_out(c)%precc(:)    = 0._r8
@@ -661,8 +638,8 @@ CONTAINS
        cam_out(c)%sols(:)     = 0._r8
        cam_out(c)%solld(:)    = 0._r8
        cam_out(c)%solsd(:)    = 0._r8
-       cam_out(c)%thbot(:)    = 0._r8
-#endif
+       cam_out(c)%flwds(:)    = 0._r8
+       cam_out(c)%netsw(:)    = 0._r8
        cam_out(c)%co2prog(:)  = 0._r8
        cam_out(c)%co2diag(:)  = 0._r8
        cam_out(c)%psl(:)      = 0._r8
@@ -690,6 +667,22 @@ CONTAINS
 
     if(associated(cam_out)) then
        do c = begchunk,endchunk
+          deallocate(cam_out(c)%tbot_mi)
+          deallocate(cam_out(c)%ubot_mi)
+          deallocate(cam_out(c)%vbot_mi)
+          deallocate(cam_out(c)%qbot_mi)
+          deallocate(cam_out(c)%rho_mi)
+          deallocate(cam_out(c)%netsw_mi)
+          deallocate(cam_out(c)%flwds_mi)
+          deallocate(cam_out(c)%precsc_mi)
+          deallocate(cam_out(c)%precsl_mi)
+          deallocate(cam_out(c)%precc_mi)
+          deallocate(cam_out(c)%precl_mi)
+          deallocate(cam_out(c)%soll_mi)
+          deallocate(cam_out(c)%sols_mi)
+          deallocate(cam_out(c)%solld_mi)
+          deallocate(cam_out(c)%solsd_mi)
+          deallocate(cam_out(c)%thbot_mi)
           deallocate(cam_out(c)%tbot)
           deallocate(cam_out(c)%zbot)
           deallocate(cam_out(c)%ubot)
@@ -737,6 +730,17 @@ CONTAINS
 
     if(associated(cam_in)) then
        do c=begchunk,endchunk
+          deallocate(cam_in(c)%asdir_mi)
+          deallocate(cam_in(c)%asdif_mi)
+          deallocate(cam_in(c)%aldir_mi)
+          deallocate(cam_in(c)%aldif_mi)
+          deallocate(cam_in(c)%lwup_mi)
+          deallocate(cam_in(c)%lhf_mi)
+          deallocate(cam_in(c)%cflx1_mi)
+          deallocate(cam_in(c)%shf_mi)
+          deallocate(cam_in(c)%wsx_mi)
+          deallocate(cam_in(c)%wsy_mi)
+          deallocate(cam_in(c)%snowhland_mi)
           deallocate(cam_in(c)%asdir)
           deallocate(cam_in(c)%asdif)
           deallocate(cam_in(c)%aldir)
@@ -750,6 +754,7 @@ CONTAINS
           deallocate(cam_in(c)%qref)
           deallocate(cam_in(c)%u10)
           deallocate(cam_in(c)%ts)
+          deallocate(cam_in(c)%tsmi)
           deallocate(cam_in(c)%sst)
           deallocate(cam_in(c)%snowhland)
           deallocate(cam_in(c)%snowhice)
@@ -822,6 +827,7 @@ subroutine cam_export(state,cam_out,pbuf)
    use constituents,     only: pcnst
    use cam_control_mod,  only: rair
    use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
+   use phys_control,     only: phys_getopts
    implicit none
 
    !------------------------------Arguments--------------------------------
@@ -843,9 +849,20 @@ subroutine cam_export(state,cam_out,pbuf)
    integer :: prec_sed_idx,snow_sed_idx,prec_pcw_idx,snow_pcw_idx
    integer :: vmag_gust_idx
    real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
-#ifdef MAML
-   !CRM-level variables 
-   integer :: j
+    
+
+   real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
+   real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
+   real(r8), pointer :: prec_sh(:)                 ! total precipitation   from Hack convection
+   real(r8), pointer :: snow_sh(:)                 ! snow from   Hack   convection
+   real(r8), pointer :: prec_sed(:)                ! total precipitation   from ZM convection
+   real(r8), pointer :: snow_sed(:)                ! snow from ZM   convection
+   real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
+   real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
+   real(r8), pointer :: vmag_gust(:)
+
+   ! Variables defined below are for MMF-MAML
+   integer :: j             ! Multi-instance index
    integer :: crm_t_idx
    integer :: crm_qv_idx
    integer :: crm_u_idx
@@ -860,18 +877,7 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: crm_pcp(:,:,:)
    real(r8), pointer :: crm_snw(:,:,:)
    real(r8), pointer :: crm_angle(:)
-#endif
-
-
-   real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
-   real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
-   real(r8), pointer :: prec_sh(:)                 ! total precipitation   from Hack convection
-   real(r8), pointer :: snow_sh(:)                 ! snow from   Hack   convection
-   real(r8), pointer :: prec_sed(:)                ! total precipitation   from ZM convection
-   real(r8), pointer :: snow_sed(:)                ! snow from ZM   convection
-   real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
-   real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
-   real(r8), pointer :: vmag_gust(:)
+   logical :: use_MAML
 
    !-----------------------------------------------------------------------
 
@@ -888,16 +894,6 @@ subroutine cam_export(state,cam_out,pbuf)
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
    vmag_gust_idx = pbuf_get_index('vmag_gust')
 
-#ifdef MAML
-   crm_t_idx    = pbuf_get_index('CRM_T')
-   crm_qv_idx   = pbuf_get_index('CRM_QV_RAD')
-   crm_u_idx    = pbuf_get_index('CRM_U')
-   crm_v_idx    = pbuf_get_index('CRM_V')
-   crm_pcp_idx  = pbuf_get_index('CRM_PCP')
-   crm_snw_idx  = pbuf_get_index('CRM_SNW')
-   crm_angle_idx = pbuf_get_index('CRM_ANGLE')
-#endif
-
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
    call pbuf_get_field(pbuf, prec_sh_idx, prec_sh)
@@ -908,134 +904,98 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
-#ifdef MAML
-   call pbuf_get_field(pbuf, crm_t_idx   , crm_t)
-   call pbuf_get_field(pbuf, crm_qv_idx  , crm_qv)
-   call pbuf_get_field(pbuf, crm_u_idx  , crm_u)
-   call pbuf_get_field(pbuf, crm_v_idx  , crm_v)
-   call pbuf_get_field(pbuf, crm_pcp_idx ,crm_pcp)
-   call pbuf_get_field(pbuf, crm_snw_idx ,crm_snw)
-   call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
-#endif
-
-#ifdef MAML
-   do j= 1, num_inst_atm
-      do i=1,ncol
-         !crm_t is dimensioned (pcols,crm_nx,crm_ny,crm_nz)
-         cam_out%tbot(i,j) = crm_t(i,j,1,1)
-
-         !use the crm temperature, I don't see a crm-specific exner function anywhere
-         cam_out%thbot(i,j) = crm_t(i,j,1,1) * state%exner(i,pver)
-
-         !I think we're just passing in the large-scale grid value for pressure...
-         cam_out%pbot(i,j)  = state%pmid(i,pver)
-
-         !only using constituent 1 (pcnst=1)
-         cam_out%qbot(i,1,j) = crm_qv(i,j,1,1)
-
-         !density uses large-scale (CAM) pressure, local (CRM) temperature
-         cam_out%rho(i,j) = cam_out%pbot(i,j)/(rair*cam_out%tbot(i,j))
-
-         !zm will use large-scalel (CAM) value
-         cam_out%zbot(i,j)  = state%zm(i,pver)
-
-         ! u and v will use CRM value (must transform because of CRM orientation)
-         cam_out%ubot(i,j) = crm_u(i,j,1,1) * cos(crm_angle(i)) - crm_v(i,j,1,1) * sin(crm_angle(i))
-         cam_out%vbot(i,j) = crm_v(i,j,1,1) * cos(crm_angle(i)) + crm_u(i,j,1,1) * sin(crm_angle(i))
-      end do
-      psm1(i,lchnk)    = state%ps(i)
-      srfrpdel(i,lchnk)= state%rpdel(i,pver)
-   end do
+   call phys_getopts(use_MAML_out  = use_MAML)
+   if(.not.use_MAML) then
+      ! for default MMF, without MAML
    
-   cam_out%co2diag(:ncol) = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
-   if (co2_transport()) then
-      do i=1,ncol
-         cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
-      end do
-   end if
-   do m = 2, pcnst
-     do i = 1, ncol
-      do j= 1, num_inst_atm
-         cam_out%qbot(i,m,j) = state%q(i,pver,m)
-      end do
-     end do
-   end do
+      !PMA adds gustiness to surface scheme c20181128
 
-   !
-   ! Precipation and snow rates from shallow convection, deep convection and stratiform processes.
-   ! Compute total convective and stratiform precipitation and snow rates
-   !
-   do i=1,ncol
-      prcsnw(i,lchnk) =0._r8
+      do i=1,ncol
+         umb(i)           = state%u(i,pver)
+         vmb(i)           = state%v(i,pver)
+         vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+         cam_out%tbot(i)  = state%t(i,pver)
+         cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
+         cam_out%zbot(i)  = state%zm(i,pver)
+         cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+         cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+         cam_out%pbot(i)  = state%pmid(i,pver)
+         cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
+         psm1(i,lchnk)    = state%ps(i)
+         srfrpdel(i,lchnk)= state%rpdel(i,pver)
+      end do
+      do m = 1, pcnst
+        do i = 1, ncol
+           cam_out%qbot(i,m) = state%q(i,pver,m) 
+        end do
+      end do
+
+      cam_out%co2diag(:ncol) = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
+      if (co2_transport()) then
+         do i=1,ncol
+            cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
+         end do
+      end if
+      !
+      ! Precipation and snow rates from shallow convection, deep convection and stratiform processes.
+      ! Compute total convective and stratiform precipitation and snow rates
+      !
+      do i=1,ncol
+         cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
+         cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
+         cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
+         cam_out%precsl(i) = snow_sed(i) + snow_pcw(i)
+
+         ! jrm These checks should not be necessary if they exist in the parameterizations
+         if (cam_out%precc(i) .lt.0._r8) cam_out%precc(i)=0._r8
+         if (cam_out%precl(i) .lt.0._r8) cam_out%precl(i)=0._r8
+         if (cam_out%precsc(i).lt.0._r8) cam_out%precsc(i)=0._r8
+         if (cam_out%precsl(i).lt.0._r8) cam_out%precsl(i)=0._r8
+         if (cam_out%precsc(i).gt.cam_out%precc(i)) cam_out%precsc(i)=cam_out%precc(i)
+         if (cam_out%precsl(i).gt.cam_out%precl(i)) cam_out%precsl(i)=cam_out%precl(i)
+         ! end jrm
+      end do
+   else   
+      ! for MMF-MAML, surfaces are coupled to CRM atmosphere 
+      crm_t_idx     = pbuf_get_index('CRM_T')
+      crm_qv_idx    = pbuf_get_index('CRM_QV_RAD')
+      crm_u_idx     = pbuf_get_index('CRM_U')
+      crm_v_idx     = pbuf_get_index('CRM_V')
+      crm_pcp_idx   = pbuf_get_index('CRM_PCP')
+      crm_snw_idx   = pbuf_get_index('CRM_SNW')
+      crm_angle_idx = pbuf_get_index('CRM_ANGLE')
+
+      call pbuf_get_field(pbuf, crm_t_idx    , crm_t)
+      call pbuf_get_field(pbuf, crm_qv_idx   , crm_qv)
+      call pbuf_get_field(pbuf, crm_u_idx    , crm_u)
+      call pbuf_get_field(pbuf, crm_v_idx    , crm_v)
+      call pbuf_get_field(pbuf, crm_pcp_idx  , crm_pcp)
+      call pbuf_get_field(pbuf, crm_snw_idx  , crm_snw)
+      call pbuf_get_field(pbuf, crm_angle_idx, crm_angle)
+      
+      cam_out%precl_mi (1:ncol,1:num_inst_atm) = 0._r8     ! large-scale precip set to zero
+      cam_out%precsl_mi(1:ncol,1:num_inst_atm) = 0._r8     ! large-scale precip set to zero
+
       do j=1,num_inst_atm
-         !note assumes that crm_ny =1, crm_nx = num_inst_atm, so if crm_ny is not
-         !equal to 1, the index of crm_pcp and crm_snw should be changed.
+         cam_out%tbot_mi  (1:ncol,j)   = crm_t(1:ncol,j,1,1)
+         cam_out%qbot_mi  (1:ncol,1,j) = crm_qv(1:ncol,j,1,1)
+         ! u and v will use CRM value (must transform because of CRM orientation)
+         cam_out%ubot_mi  (1:ncol,j)   = crm_u(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) - crm_v(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
+         cam_out%vbot_mi  (1:ncol,j)   = crm_v(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) + crm_u(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
+         cam_out%precc_mi (1:ncol,j)   = crm_pcp(1:ncol,j,1)  
+         cam_out%precsc_mi(1:ncol,j)   = crm_snw(1:ncol,j,1)
+         cam_out%thbot_mi (1:ncol,j)   = cam_out%tbot_mi(1:ncol,j) * state%exner(1:ncol,pver) ! potential temperature
+         cam_out%rho_mi   (1:ncol,j)   = cam_out%pbot(1:ncol)/(rair*cam_out%tbot_mi(1:ncol,j))  ! air density
+      end do 
 
-         cam_out%precc(i,j) = crm_pcp(i,j,1)  ! CRM precip
-         cam_out%precl(i,j) = 0._r8     ! large-scale precip set to zero
-
-         cam_out%precsc(i,j) = crm_snw(i,j,1) ! CRM snow
-         cam_out%precsl(i,j) = 0._r8     ! large-scale snow set to zero
-
-         !because we don't have mutiple instance for slab ocean model, we just take the average   
-         prcsnw(i,lchnk) = prcsnw(i,lchnk)+ cam_out%precsc(i,j) + cam_out%precsl(i,j)
-      end do
-      prcsnw(i,lchnk) = prcsnw(i,lchnk)/num_inst_atm 
-   end do
-
-#else   
-!PMA adds gustiness to surface scheme c20181128
-
-   do i=1,ncol
-      umb(i)           = state%u(i,pver)
-      vmb(i)           = state%v(i,pver)
-      vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))            
-      cam_out%tbot(i)  = state%t(i,pver)
-      cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
-      cam_out%zbot(i)  = state%zm(i,pver)
-      cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
-      cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
-      cam_out%pbot(i)  = state%pmid(i,pver)
-      cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
-      psm1(i,lchnk)    = state%ps(i)
-      srfrpdel(i,lchnk)= state%rpdel(i,pver)
-   end do
-   
-   cam_out%co2diag(:ncol) = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
-   if (co2_transport()) then
-      do i=1,ncol
-         cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
-      end do
-   end if
-
-   do m = 1, pcnst
-     do i = 1, ncol
-        cam_out%qbot(i,m) = state%q(i,pver,m) 
-     end do
-   end do
-
+      ! Average cam_out%[X]_mi across num_inst_atm and pass it to cam_out%[X]
+      ! Data transfer between surface and CAM atmosphere will be done by cam_out%[X]
+      ! Data transfer between surface and CRM atmosphere will be done by cam_out%[X]_mi
+      call cam_out_avg_mi_all( cam_out )  
+   end if ! .not.use_MAML
    !
-   ! Precipation and snow rates from shallow convection, deep convection and stratiform processes.
-   ! Compute total convective and stratiform precipitation and snow rates
-   !
-   do i=1,ncol
-      cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
-      cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
-      cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
-      cam_out%precsl(i) = snow_sed(i) + snow_pcw(i)
-
-      if (cam_out%precc(i) .lt.0._r8) cam_out%precc(i)=0._r8
-      if (cam_out%precl(i) .lt.0._r8) cam_out%precl(i)=0._r8
-      if (cam_out%precsc(i).lt.0._r8) cam_out%precsc(i)=0._r8
-      if (cam_out%precsl(i).lt.0._r8) cam_out%precsl(i)=0._r8
-      if (cam_out%precsc(i).gt.cam_out%precc(i)) cam_out%precsc(i)=cam_out%precc(i)
-      if (cam_out%precsl(i).gt.cam_out%precl(i)) cam_out%precsl(i)=cam_out%precl(i)
-   end do
-
    ! total snowfall rate: needed by slab ocean model
-   prcsnw(:ncol,lchnk) = cam_out%precsc(:ncol) + cam_out%precsl(:ncol)   
-#endif  !MAML
-
+   prcsnw(:ncol,lchnk) = cam_out%precsc(:ncol) + cam_out%precsl(:ncol)
 end subroutine cam_export
 
 end module camsrfexch

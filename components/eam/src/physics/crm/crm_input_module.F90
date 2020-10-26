@@ -23,13 +23,14 @@ module crm_input_module
       real(crm_rknd), allocatable :: ul(:,:)             ! Global grid u (m/s)
       real(crm_rknd), allocatable :: vl(:,:)             ! Global grid v (m/s)
       real(crm_rknd), allocatable :: ocnfrac(:)          ! area fraction of the ocean
-      real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
+      real(crm_rknd), allocatable :: tau00  (:,:,:)          ! large-scale surface stress (N/m2)
       real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
-      real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
-      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
-      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
+      real(crm_rknd), allocatable :: bflxls (:,:,:)          ! large-scale surface buoyancy flux (K m/s)
+      real(crm_rknd), allocatable :: ts (:,:,:)          ! surface temperature
+      real(crm_rknd), allocatable :: fluxu00(:,:,:)          ! surface momenent fluxes [N/m2]
+      real(crm_rknd), allocatable :: fluxv00(:,:,:)          ! surface momenent fluxes [N/m2]
+      real(crm_rknd), allocatable :: fluxt00(:,:,:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
+      real(crm_rknd), allocatable :: fluxq00(:,:,:)          ! surface latent heat fluxes [ kg/(m2 s)]
 
 #if defined( m2005 ) && defined( MODAL_AERO )
       real(crm_rknd), allocatable :: naermod (:,:,:)     ! Aerosol number concentration [/m3]
@@ -52,6 +53,8 @@ contains
    !------------------------------------------------------------------------------------------------
    ! Type-bound procedures for crm_input_type
    subroutine crm_input_initialize(this, ncrms, nlev)
+      use grid, only: nx, ny
+      
       class(crm_input_type), intent(inout) :: this
       integer, intent(in) :: ncrms, nlev
       
@@ -69,13 +72,15 @@ contains
       if (.not. allocated(this%ul))       allocate(this%ul(ncrms,nlev))
       if (.not. allocated(this%vl))       allocate(this%vl(ncrms,nlev))
       if (.not. allocated(this%ocnfrac))  allocate(this%ocnfrac(ncrms))
-      if (.not. allocated(this%tau00))    allocate(this%tau00(ncrms))
       if (.not. allocated(this%wndls))    allocate(this%wndls(ncrms))
-      if (.not. allocated(this%bflxls))   allocate(this%bflxls(ncrms))
-      if (.not. allocated(this%fluxu00))  allocate(this%fluxu00(ncrms))
-      if (.not. allocated(this%fluxv00))  allocate(this%fluxv00(ncrms))
-      if (.not. allocated(this%fluxt00))  allocate(this%fluxt00(ncrms))
-      if (.not. allocated(this%fluxq00))  allocate(this%fluxq00(ncrms))
+      ! for MAML
+      if (.not. allocated(this%tau00))    allocate(this%tau00(ncrms,nx,ny))
+      if (.not. allocated(this%bflxls))   allocate(this%bflxls(ncrms,nx,ny))
+      if (.not. allocated(this%ts))   allocate(this%ts(ncrms,nx,ny))
+      if (.not. allocated(this%fluxu00))  allocate(this%fluxu00(ncrms,nx,ny))
+      if (.not. allocated(this%fluxv00))  allocate(this%fluxv00(ncrms,nx,ny))
+      if (.not. allocated(this%fluxt00))  allocate(this%fluxt00(ncrms,nx,ny))
+      if (.not. allocated(this%fluxq00))  allocate(this%fluxq00(ncrms,nx,ny))
 
       call prefetch(this%zmid)
       call prefetch(this%zint)
@@ -94,6 +99,7 @@ contains
       call prefetch(this%tau00)
       call prefetch(this%wndls)
       call prefetch(this%bflxls)
+      call prefetch(this%ts)
       call prefetch(this%fluxu00)
       call prefetch(this%fluxv00)
       call prefetch(this%fluxt00)
@@ -131,6 +137,7 @@ contains
       this%tau00   = 0
       this%wndls   = 0
       this%bflxls  = 0
+      this%ts  = 0
       this%fluxu00 = 0
       this%fluxv00 = 0
       this%fluxt00 = 0
@@ -168,6 +175,7 @@ contains
       deallocate(this%tau00)
       deallocate(this%wndls)
       deallocate(this%bflxls)
+      deallocate(this%ts)
       deallocate(this%fluxu00)
       deallocate(this%fluxv00)
       deallocate(this%fluxt00)
