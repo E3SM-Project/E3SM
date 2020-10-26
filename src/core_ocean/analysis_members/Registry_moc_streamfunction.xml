@@ -31,14 +31,6 @@
 			description="Number of bins in South-to-North direction used for moc streamfunction calculation."
 			possible_values="Any positive integer value less than or equal to nMocStreamfunctionBins."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_vertical_velocity_value" type="character" default_value="vertVelocityTop" units="unitless"
-			description="The vertical velocity variable used for the computation of the MOC Streamfunction."
-			possible_values="Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool)."
-		/>
-		<nml_option name="config_AM_mocStreamfunction_normal_velocity_value" type="character" default_value="normalVelocity" units="unitless"
-			description="The normal velocity variable used for the computation of the MOC Streamfunction."
-			possible_values="Either of 'vertVelocityTop', 'vertTransportVelocityTop' or 'vertGMBolusVelocityTop' (all from diagnostics pool)."
-		/>
 		<nml_option name="config_AM_mocStreamfunction_region_group" type="character" default_value="all" units="unitless"
 			description="The name of the region group, for which the moc should be computed in addition to the global MOC."
 			possible_values="Either of '', 'all' or any valid region group name."
@@ -66,6 +58,12 @@
 		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
+		<var name="mocStreamvalLatAndDepthGM" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Gent McWilliams Bolus Velocity"
+		/>
+		<var name="mocStreamvalLatAndDepthRegionGM" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
+			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Gent McWilliams Bolus Velocity"
+		/>
 		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
@@ -88,6 +86,8 @@
 			<var name="xtime"/>
 			<var name="mocStreamvalLatAndDepth"/>
 			<var name="mocStreamvalLatAndDepthRegion"/>
+			<var name="mocStreamvalLatAndDepthGM"/>
+			<var name="mocStreamvalLatAndDepthRegionGM"/>
 			<var name="binBoundaryMocStreamfunction"/>
 			<var name="refBottomDepth"/>
 
