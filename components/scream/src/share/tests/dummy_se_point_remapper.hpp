@@ -1,5 +1,5 @@
-#ifndef SCREAM_DUMMY_SE_GRID_REMAPPER_HPP
-#define SCREAM_DUMMY_SE_GRID_REMAPPER_HPP
+#ifndef SCREAM_DUMMY_SE_POINT_REMAPPER_HPP
+#define SCREAM_DUMMY_SE_POINT_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
 
@@ -22,7 +22,7 @@ namespace scream
  */
 
 template<typename RealType>
-class DummySEGridRemapper : public AbstractRemapper<RealType>
+class DummySEPointRemapper : public AbstractRemapper<RealType>
 {
 public:
   using base_type       = AbstractRemapper<RealType>;
@@ -31,21 +31,21 @@ public:
   using layout_type     = typename base_type::layout_type;
   using grid_ptr_type   = typename base_type::grid_ptr_type;
 
-  DummySEGridRemapper (const grid_ptr_type node_based, const grid_ptr_type cell_based)
-   : base_type(node_based, cell_based)
+  DummySEPointRemapper (const grid_ptr_type point_grid, const grid_ptr_type se_grid)
+   : base_type(point_grid,se_grid)
   {
-    EKAT_REQUIRE_MSG(node_based->type()==GridType::SE_NodeBased,
-                       "Error in DummySEGridRemapper! Invalid input node based grid.\n");
-    EKAT_REQUIRE_MSG(cell_based->type()==GridType::SE_CellBased,
-                       "Error in DummySEGridRemapper! Invalid input cell based grid.\n");
+    EKAT_REQUIRE_MSG(se_grid->type()==GridType::SE,
+                       "Error in DummySEPointRemapper! Invalid input se grid.\n");
+    EKAT_REQUIRE_MSG(point_grid->type()==GridType::Point,
+                       "Error in DummySEPointRemapper! Invalid input point grid.\n");
   }
 
-  ~DummySEGridRemapper () = default;
+  ~DummySEPointRemapper () = default;
 
   FieldLayout create_src_layout (const FieldLayout& tgt) const override {
     using namespace ShortFieldTagsNames;
-    auto nele = tgt.dim(0);
-    auto ncol = 6*nele*nele*9+2;
+    auto ncol = this->get_src_grid()->get_native_dof_layout().dim(0);
+
     if (tgt.rank()==3) {
       FieldLayout src({COL},{ncol});
       return src;
@@ -63,8 +63,7 @@ public:
   }
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
-    auto ncol = src.dim(0);
-    auto nele = static_cast<int>(std::sqrt((ncol-2) / 54));
+    auto nele = this->get_tgt_grid()->get_native_dof_layout().dim(0);
     if (src.rank()==1) {
       FieldLayout tgt({EL,GP,GP},{nele,4,4});
       return tgt;
@@ -135,4 +134,4 @@ protected:
 
 } // namespace scream
 
-#endif // SCREAM_DUMMY_SE_GRID_REMAPPER_HPP
+#endif // SCREAM_DUMMY_SE_POINT_REMAPPER_HPP

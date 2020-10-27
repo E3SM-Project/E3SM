@@ -4,14 +4,12 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/grid/se_grid.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/remap/inverse_remapper.hpp"
-#include "share/tests/dummy_se_grid_remapper.hpp"
+#include "share/tests/dummy_se_point_remapper.hpp"
 
 namespace scream {
-
-static constexpr auto SEDyn  = GridType::SE_CellBased;
-static constexpr auto SEPhys = GridType::SE_NodeBased;
 
 template<AtmosphereProcessType PType>
 class DummyProcess : public scream::AtmosphereProcess {
@@ -195,6 +193,8 @@ setup_upgm (const int ne) {
   const int nvl = 128;
   const int ncols = 6*ne*ne*9 + 2;
 
+  ekat::Comm comm(MPI_COMM_WORLD);
+
   // Note: our test does not use actual dof info, but we need to set these
   //       views in the SEGrid's, so that the num local dofs is set
   SEGrid::dofs_list_type dyn_dofs("",nelem*np*np);
@@ -205,15 +205,14 @@ setup_upgm (const int ne) {
 
   // Greate a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid  = std::make_shared<SEGrid>(e2str(SEDyn), SEDyn, nelem,np,nvl);
-  auto dummy_phys_grid = std::make_shared<SEGrid>(e2str(SEPhys),SEPhys,nelem,np,nvl);
+  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",nelem,np,nvl);
+  auto dummy_phys_grid = std::make_shared<PointGrid>(create_point_grid("Physics",ncols,nvl,comm));
   dummy_dyn_grid->set_dofs(dyn_dofs,dyn_dofs_map);
-  dummy_phys_grid->set_dofs(phys_dofs,phys_dofs_map);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());
 
-  using dummy_remapper = DummySEGridRemapper<Real>;
+  using dummy_remapper = DummySEPointRemapper<Real>;
   using inverse_remapper = InverseRemapper<Real>;
   auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
@@ -240,7 +239,7 @@ TEST_CASE("process_factory", "") {
 
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", e2str(SEDyn));
+  p0.set<std::string>("Grid Name", "Dynamics");
 
   auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "Group");
@@ -249,11 +248,11 @@ TEST_CASE("process_factory", "") {
 
   auto& p1_0 = p1.sublist("Process 0");
   p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", e2str(SEPhys));
+  p1_0.set<std::string>("Grid Name", "Physics");
 
   auto& p1_1 = p1.sublist("Process 1");
   p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", e2str(SEPhys));
+  p1_1.set<std::string>("Grid Name", "Physics");
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
@@ -300,7 +299,7 @@ TEST_CASE("atm_proc_dag", "") {
 
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", e2str(GridType::SE_CellBased));
+  p0.set<std::string>("Grid Name", "Dynamics");
 
   auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "Group");
@@ -309,11 +308,11 @@ TEST_CASE("atm_proc_dag", "") {
 
   auto& p1_0 = p1.sublist("Process 0");
   p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_0.set<std::string>("Grid Name", "Physics");
 
   auto& p1_1 = p1.sublist("Process 1");
   p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_1.set<std::string>("Grid Name", "Physics");
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
