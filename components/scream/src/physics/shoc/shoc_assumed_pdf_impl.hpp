@@ -293,7 +293,6 @@ void Functions<S,D>::shoc_assumed_pdf(
         qn2.set(!equal && std_s2 != 0 && C2 != 0, s2*C2+(std_s2/sqrt2pi)*ekat::exp(-sp(0.5)*ekat::square(s2/std_s2)));
         qn2.set(!equal && std_s2 == 0 && s2 > 0, s2);
         ql2 = ekat::min(qn2, qw1_2);
-
       }
 
       // Compute SGS cloud fraction
