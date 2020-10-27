@@ -69,7 +69,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const Scalar basetemp = C::basetemp;
   const Scalar epsterm = rair/rv;
 
-  // Interpolate many variables from interface grid to themo grid
+  // Interpolate many variables from interface grid to thermo grid
   linear_interp(team,zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,largeneg);
   linear_interp(team,zi_grid,zt_grid,thl_sec,thl_sec_zt,nlevi,nlev,0);
   linear_interp(team,zi_grid,zt_grid,wthl_sec,wthl_sec_zt,nlevi,nlev,largeneg);
@@ -199,13 +199,13 @@ void Functions<S,D>::shoc_assumed_pdf(
       sqrtqw2_2.set(condition, ekat::sqrt(qw2_2));
     }
 
-    // Convert from tilda variables to "real" variables
+    // Convert from tilde variables to "real" variables
      w1_1 *= sqrtw2;
      w1_1 += w_first;
      w1_2 *= sqrtw2;
      w1_2 += w_first;
 
-     // Find within-plume correlations. MAYBE NOT TESTED.
+     // Find within-plume correlations.
       Spack r_qwthl_1(0);
       {
         const Spack testvar = a*sqrtqw2_1*sqrtthl2_1 + (1 - a)*sqrtqw2_2*sqrtthl2_2;

@@ -2175,12 +2175,12 @@ subroutine shoc_assumed_pdf(&
          qw2_2,sqrtqw2_1,sqrtqw2_2)    ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
+      !  CONVERT FROM TILDE VARIABLES TO "REAL" VARIABLES
 
-      call shoc_assumed_pdf_tilda_to_real(&
+      call shoc_assumed_pdf_tilde_to_real(&
          w_first,sqrtw2,& ! Input
          w1_1)            ! Output
-      call shoc_assumed_pdf_tilda_to_real(&
+      call shoc_assumed_pdf_tilde_to_real(&
          w_first,sqrtw2,& ! Input
          w1_2)            ! Output
 
@@ -2492,12 +2492,12 @@ subroutine shoc_assumed_pdf_qw_parameters(&
 
 end subroutine shoc_assumed_pdf_qw_parameters
 
-subroutine shoc_assumed_pdf_tilda_to_real(&
+subroutine shoc_assumed_pdf_tilde_to_real(&
   w_first,sqrtw2,& ! intent-in
   w1)              ! intent-out
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
+  !  CONVERT FROM TILDE VARIABLES TO "REAL" VARIABLES
   implicit none
 
   ! intent-ins
@@ -2509,7 +2509,7 @@ subroutine shoc_assumed_pdf_tilda_to_real(&
 
   w1 = w1 * sqrtw2 + w_first
 
-end subroutine shoc_assumed_pdf_tilda_to_real
+end subroutine shoc_assumed_pdf_tilde_to_real
 
 subroutine shoc_assumed_pdf_inplume_correlations(&
   sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,&              ! Input
