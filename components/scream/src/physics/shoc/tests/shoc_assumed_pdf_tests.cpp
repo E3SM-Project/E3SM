@@ -407,7 +407,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     // Generate random input data
     for (auto& d : SDS_f90) {
-      d.randomize({ {d.thetal, {100, 500}} });
+      d.randomize({ {d.thetal, {500, 700}} });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
