@@ -427,10 +427,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       shoc_assumed_pdf(d);
     }
 
-    int counter = 0;
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      std::cout << std::endl << "run" << ++counter << std::endl;
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
       shoc_assumed_pdf_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.w_field,
