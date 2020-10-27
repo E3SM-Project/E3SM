@@ -180,7 +180,7 @@ void shoc_assumed_pdf_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *qw,
                         Real *shoc_cldfrac, Real *shoc_ql, Real *wqls,
                         Real *wthv_sec, Real *shoc_ql2);
 
-void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
+void shoc_assumed_pdf_tilde_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
                                       Real *Skew_w, Real *w1_1, Real *w1_2,
@@ -610,10 +610,10 @@ void shoc_assumed_pdf(SHOCAssumedpdfData &d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
-void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
+void shoc_assumed_pdf_tilde_to_real(SHOCPDFtildeData &d)
 {
   shoc_init(1, true);
-  shoc_assumed_pdf_tilda_to_real_c(d.w_first, d.sqrtw2, &d.w1);
+  shoc_assumed_pdf_tilde_to_real_c(d.w_first, d.sqrtw2, &d.w1);
 }
 
 void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)
@@ -2028,6 +2028,105 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {w3_d};
   ekat::device_to_host<int,1>({w3}, shcol, nlevi, inout_views, true);
+}
+
+void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
+                        Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
+                        Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
+                        Real* shoc_cldfrac, Real* shoc_ql, Real* wqls, Real* wthv_sec, Real* shoc_ql2)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 18;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<int, num_arrays> dim1_sizes = {shcol, shcol, shcol, shcol, shcol, shcol,
+                                               shcol, shcol, shcol, shcol, shcol, shcol,
+                                               shcol, shcol, shcol, shcol, shcol, shcol};
+  Kokkos::Array<int, num_arrays> dim2_sizes = {nlev,  nlev,  nlevi, nlevi, nlevi, nlev,
+                                               nlevi, nlevi, nlevi, nlev,  nlev,  nlev,
+                                               nlevi, nlev,  nlev,  nlev,  nlev,  nlev};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {thetal,  qw,           thl_sec, qw_sec,  wthl_sec, w_sec,
+                                                      wqw_sec, qwthl_sec,    w3,      w_field, pres,     zt_grid,
+                                                      zi_grid, shoc_cldfrac, shoc_ql, wqls,    wthv_sec, shoc_ql2};
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // Inputs/Outputs
+  view_2d
+    thetal_d(temp_d[0]),
+    qw_d(temp_d[1]),
+    thl_sec_d(temp_d[2]),
+    qw_sec_d(temp_d[3]),
+    wthl_sec_d(temp_d[4]),
+    w_sec_d(temp_d[5]),
+    wqw_sec_d(temp_d[6]),
+    qwthl_sec_d(temp_d[7]),
+    w3_d(temp_d[8]),
+    w_field_d(temp_d[9]),
+    pres_d(temp_d[10]),
+    zt_grid_d(temp_d[11]),
+    zi_grid_d(temp_d[12]),
+    shoc_cldfrac_d(temp_d[13]),
+    shoc_ql_d(temp_d[14]),
+    wqls_d(temp_d[15]),
+    wthv_sec_d(temp_d[16]),
+    shoc_ql2_d(temp_d[17]);
+
+  // Local variables on thermo grid
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  view_2d
+    wthl_sec_zt_d("wthl_sec_zt", shcol, nk_pack),
+    wqw_sec_zt_d("wqw_sec_zt", shcol, nk_pack),
+    w3_zt_d("w3_zt", shcol, nk_pack),
+    thl_sec_zt_d("thl_sec_zt", shcol, nk_pack),
+    qwthl_sec_zt_d("qwthl_sec", shcol, nk_pack),
+    qw_sec_zt_d("qw_sec_zt", shcol, nk_pack);
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto thetal_s = ekat::subview(thetal_d, i);
+    const auto qw_s = ekat::subview(qw_d, i);
+    const auto thl_sec_s = ekat::subview(thl_sec_d, i);
+    const auto qw_sec_s = ekat::subview(qw_sec_d, i);
+    const auto wthl_sec_s = ekat::subview(wthl_sec_d, i);
+    const auto w_sec_s = ekat::subview(w_sec_d, i);
+    const auto wqw_sec_s = ekat::subview(wqw_sec_d, i);
+    const auto qwthl_sec_s = ekat::subview(qwthl_sec_d, i);
+    const auto w3_s = ekat::subview(w3_d, i);
+    const auto w_field_s = ekat::subview(w_field_d, i);
+    const auto pres_s = ekat::subview(pres_d, i);
+    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
+    const auto zi_grid_s = ekat::subview(zi_grid_d, i);
+    const auto shoc_cldfrac_s = ekat::subview(shoc_cldfrac_d, i);
+    const auto shoc_ql_s = ekat::subview(shoc_ql_d, i);
+    const auto wqls_s = ekat::subview(wqls_d, i);
+    const auto wthv_sec_s = ekat::subview(wthv_sec_d, i);
+    const auto shoc_ql2_s = ekat::subview(shoc_ql2_d, i);
+    const auto wthl_sec_zt_s = ekat::subview(wthl_sec_zt_d, i);
+    const auto wqw_sec_zt_s = ekat::subview(wqw_sec_zt_d, i);
+    const auto w3_zt_s = ekat::subview(w3_zt_d, i);
+    const auto thl_sec_zt_s = ekat::subview(thl_sec_zt_d, i);
+    const auto qwthl_sec_zt_s = ekat::subview(qwthl_sec_zt_d, i);
+    const auto qw_sec_zt_s = ekat::subview(qw_sec_zt_d, i);
+
+    SHF::shoc_assumed_pdf(team, nlev, nlevi, thetal_s, qw_s, w_field_s, thl_sec_s, qw_sec_s, wthl_sec_s, w_sec_s,
+                          wqw_sec_s, qwthl_sec_s, w3_s, pres_s, zt_grid_s, zi_grid_s,
+                          wthl_sec_zt_s, wqw_sec_zt_s, w3_zt_s, thl_sec_zt_s, qwthl_sec_zt_s, qw_sec_zt_s,
+                          shoc_cldfrac_s, shoc_ql_s, wqls_s, wthv_sec_s, shoc_ql2_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 5> out_views = {shoc_cldfrac_d, shoc_ql_d, wqls_d, wthv_sec_d, shoc_ql2_d};
+  ekat::device_to_host<int, 5>({shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2}, {shcol}, {nlev}, out_views, true);
 }
 
 } // namespace shoc

@@ -92,7 +92,7 @@ struct UnitWrap {
     struct TestShocCompDiagThird;
     struct TestShocDiagThird;
     struct TestShocLinearInt;
-    struct TestShocPdfTildatoReal;
+    struct TestShocPdfTildetoReal;
     struct TestShocVVParameters;
     struct TestShocThlParameters;
     struct TestShocQwParameters;

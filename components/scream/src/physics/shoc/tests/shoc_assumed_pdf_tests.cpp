@@ -395,9 +395,62 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    SHOCAssumedpdfData SDS_f90[] = {
+      //              shcol, nlev, nlevi
+      SHOCAssumedpdfData(10, 71, 72),
+      SHOCAssumedpdfData(10, 12, 13),
+      SHOCAssumedpdfData(7,  16, 17),
+      SHOCAssumedpdfData(2, 7, 8),
+    };
 
+  static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCAssumedpdfData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize({ {d.thetal, {500, 700}} });
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCAssumedpdfData SDS_cxx[] = {
+      SHOCAssumedpdfData(SDS_f90[0]),
+      SHOCAssumedpdfData(SDS_f90[1]),
+      SHOCAssumedpdfData(SDS_f90[2]),
+      SHOCAssumedpdfData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      shoc_assumed_pdf(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      shoc_assumed_pdf_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.w_field,
+                         d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec,
+                         d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid,
+                         d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCAssumedpdfData& d_f90 = SDS_f90[i];
+      SHOCAssumedpdfData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
+        REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
+        REQUIRE(d_f90.wqls[k] == d_cxx.wqls[k]);
+        REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
+        REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+      }
+    }
+  }
 };
 
 }  // namespace unit_test
@@ -418,7 +471,6 @@ TEST_CASE("shoc_assumed_pdf_bfb", "shoc")
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
 
   TestStruct::run_bfb();
-
 }
 
 } // namespace

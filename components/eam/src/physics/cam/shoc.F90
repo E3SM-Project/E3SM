@@ -2010,6 +2010,10 @@ subroutine shoc_assumed_pdf(&
   !  TKE equation.  This code follows the appendix of
   !  Larson et al. (2002) for Analytic Double Gaussian 1
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: shoc_assumed_pdf_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -2087,6 +2091,20 @@ subroutine shoc_assumed_pdf(&
   real(rtype) :: qwthl_sec_zt(shcol,nlev)
   real(rtype) :: qw_sec_zt(shcol,nlev)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call shoc_assumed_pdf_f(&
+       shcol,nlev,nlevi, &                ! Input
+       thetal,qw,w_field,thl_sec,qw_sec,& ! Input
+       wthl_sec,w_sec, &                  ! Input
+       wqw_sec,qwthl_sec,w3,pres, &       ! Input
+       zt_grid,zi_grid,&                  ! Input
+       shoc_cldfrac,shoc_ql,&             ! Output
+       wqls,wthv_sec,shoc_ql2)            ! Output
+    return
+  endif
+#endif
+
   epsterm=rgas/rv
 
   thl_tol=1.e-2_rtype
@@ -2157,12 +2175,12 @@ subroutine shoc_assumed_pdf(&
          qw2_2,sqrtqw2_1,sqrtqw2_2)    ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
+      !  CONVERT FROM TILDE VARIABLES TO "REAL" VARIABLES
 
-      call shoc_assumed_pdf_tilda_to_real(&
+      call shoc_assumed_pdf_tilde_to_real(&
          w_first,sqrtw2,& ! Input
          w1_1)            ! Output
-      call shoc_assumed_pdf_tilda_to_real(&
+      call shoc_assumed_pdf_tilde_to_real(&
          w_first,sqrtw2,& ! Input
          w1_2)            ! Output
 
@@ -2456,7 +2474,7 @@ subroutine shoc_assumed_pdf_qw_parameters(&
     else
       Skew_qw=((1.2_rtype*Skew_w)/0.2_rtype)*(tsign-0.2_rtype)
     endif
-     qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*bfb_square(qw1_1)-(1._rtype-a)*bfb_square(qw1_2)) &
+    qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*bfb_square(qw1_1)-(1._rtype-a)*bfb_square(qw1_2)) &
       -(Skew_qw-a*bfb_cube(qw1_1)-(1._rtype-a)*bfb_cube(qw1_2)))/ &
       (3._rtype*a*(qw1_2-qw1_1))))*qwsec
 
@@ -2474,12 +2492,12 @@ subroutine shoc_assumed_pdf_qw_parameters(&
 
 end subroutine shoc_assumed_pdf_qw_parameters
 
-subroutine shoc_assumed_pdf_tilda_to_real(&
+subroutine shoc_assumed_pdf_tilde_to_real(&
   w_first,sqrtw2,& ! intent-in
   w1)              ! intent-out
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
+  !  CONVERT FROM TILDE VARIABLES TO "REAL" VARIABLES
   implicit none
 
   ! intent-ins
@@ -2491,7 +2509,7 @@ subroutine shoc_assumed_pdf_tilda_to_real(&
 
   w1 = w1 * sqrtw2 + w_first
 
-end subroutine shoc_assumed_pdf_tilda_to_real
+end subroutine shoc_assumed_pdf_tilde_to_real
 
 subroutine shoc_assumed_pdf_inplume_correlations(&
   sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,&              ! Input

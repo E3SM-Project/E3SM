@@ -20,12 +20,12 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
+struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
 
   static void run_property()
   {
     // Property tests for the SHOC function
-    //  shoc_assumed_pdf_tilda_to_real
+    //  shoc_assumed_pdf_tilde_to_real
 
     // TEST ONE
     // If variance of vertical velocity is zero then
@@ -39,7 +39,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     Real w1 = 0.1;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFtildaData SDS;
+    SHOCPDFtildeData SDS;
 
     // Fill the test data
     SDS.w_first = w_first;
@@ -47,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     SDS.w1 = w1;
 
     // Call the fortran implementation
-    shoc_assumed_pdf_tilda_to_real(SDS);
+    shoc_assumed_pdf_tilde_to_real(SDS);
 
     // Check the test, verify that vertical velocity is equal
     //  to the grid mean value
@@ -84,7 +84,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
       REQUIRE(SDS.sqrtw2 >= 0.0);
 
       // Call the fortran implementation
-      shoc_assumed_pdf_tilda_to_real(SDS);
+      shoc_assumed_pdf_tilde_to_real(SDS);
 
       // Make sure test value is greater than
       //  previous iteration
@@ -108,16 +108,16 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
 
 namespace {
 
-TEST_CASE("shoc_pdf_tildatoreal_property", "shoc")
+TEST_CASE("shoc_pdf_tildetoreal_property", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildatoReal;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_tildatoreal_bfb", "shoc")
+TEST_CASE("shoc_pdf_tildetoreal_bfb", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildatoReal;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_bfb();
 }
