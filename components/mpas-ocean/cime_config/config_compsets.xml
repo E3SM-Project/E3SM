@@ -37,6 +37,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-CPLHIST</alias>
+    <lname>2000_DATM%CPLHIST_SLND_MPASSI_MPASO%DATMFORCED_DROF%IAF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA</alias>
     <lname>2000_DATM%JRA_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA_SGLC_SWAV</lname>
   </compset>
