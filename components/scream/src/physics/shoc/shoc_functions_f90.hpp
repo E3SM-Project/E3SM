@@ -566,15 +566,15 @@ struct SHOCSecondMomentSrfData : public PhysicsTestData {
 //Create data structure to hold data for diag_third_shoc_moments
 struct SHOCDiagThirdMomData : public PhysicsTestData {
   // Inputs
-  Real *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *tke;
+  Real *w_sec, *thl_sec, *wthl_sec, *tke;
   Real *dz_zt, *dz_zi, *zt_grid, *zi_grid, *isotropy, *brunt;
-  Real *thetal, *wthv_sec;
+  Real *thetal;
 
   // Output
   Real *w3;
 
   SHOCDiagThirdMomData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&w_sec, &tke, &dz_zt, &zt_grid, &brunt, &thetal, &wthv_sec, &isotropy}, {&thl_sec, &wthl_sec, &qw_sec, &qwthl_sec, &zi_grid, &dz_zi, &w3}) {}
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&w_sec, &tke, &dz_zt, &zt_grid, &brunt, &thetal, &isotropy}, {&thl_sec, &wthl_sec, &zi_grid, &dz_zi, &w3}) {}
 
   SHOC_NO_SCALAR(SHOCDiagThirdMomData, 3);
 };//SHOCDiagThirdMomData
@@ -626,8 +626,8 @@ struct SHOCAssumedpdfData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCAssumedpdfData, 3);
 };//SHOCAssumedpdfData
 
-//Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
-struct SHOCPDFtildaData
+//Create data structure to hold data for shoc_assumed_pdf_tilde_to_real
+struct SHOCPDFtildeData
 {
   // inputs
   Real w_first, sqrtw2;
@@ -893,7 +893,7 @@ void linear_interp                                  (SHOCLinearInterpData &d);
 void diag_third_shoc_moments                        (SHOCDiagThirdMomData &d);
 void compute_diag_third_shoc_moment                 (SHOCCompThirdMomData &d);
 void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
-void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
+void shoc_assumed_pdf_tilde_to_real                 (SHOCPDFtildeData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);
 void shoc_assumed_pdf_qw_parameters                 (SHOCPDFqwparamData &d);
@@ -971,6 +971,15 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
                          Real* host_dse);
 void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
 void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind);
+void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real* thl_sec,
+                               Real* wthl_sec, Real* isotropy, Real* brunt, Real* thetal,
+                               Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,
+                               Real* w3);
+void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
+                        Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
+                        Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
+                        Real* shoc_cldfrac, Real* shoc_ql, Real* wqls, Real* wthv_sec, Real* shoc_ql2);
+
 } // end _f function decls
 
 }  // namespace shoc

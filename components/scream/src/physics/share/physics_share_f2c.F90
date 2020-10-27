@@ -112,6 +112,16 @@ interface
     real(kind=c_real)            :: cxx_tanh
   end function cxx_tanh
 
+  function cxx_erf(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: input
+
+    ! return
+    real(kind=c_real) :: cxx_erf
+  end function cxx_erf
+
 end interface
 
 end module physics_share_f2c

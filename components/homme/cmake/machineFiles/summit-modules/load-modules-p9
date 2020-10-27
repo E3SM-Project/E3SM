@@ -1,0 +1,21 @@
+
+#
+
+
+module purge
+
+module load gcc/6.4.0 netlib-lapack/3.6.1
+module load cmake/3.11.3
+module load spectrum-mpi/10.3.1.2-20200121
+module load netcdf/4.6.2 netcdf-fortran/4.4.4
+module load hdf5/1.10.3
+
+
+#restore default PAMI vars
+export PAMI_ENABLE_STRIPING=0
+export PAMI_IBV_ADAPTER_AFFINITY=1
+unset PAMI_IBV_DEVICE_NAME
+unset PAMI_IBV_DEVICE_NAME_1
+
+
+

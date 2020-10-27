@@ -9,9 +9,6 @@
 
 #include "ErrorDefs.hpp"
 
-#include "RemapFunctor.hpp"
-
-#include "Elements.hpp"
 #include "KernelVariables.hpp"
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
@@ -177,7 +174,8 @@ struct PpmFixedMeans : public PpmBoundaryConditions {
 };
 
 // Piecewise Parabolic Method stencil
-template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
+template <typename boundaries>
+struct PpmVertRemap : public VertRemapAlg {
   static_assert(std::is_base_of<PpmBoundaryConditions, boundaries>::value,
                 "PpmVertRemap requires a valid PPM "
                 "boundary condition");
@@ -190,12 +188,12 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
       , m_ppmdx("ppmdx", num_elems)
       , m_z2("z2", num_elems)
       , m_kid("kid", num_elems)
-      , m_ao("a0", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_mass_o("mass_o",get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_dma("dma", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_ai("ai", get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
-      , m_parabola_coeffs("Coefficients for the interpolating parabola",
-            get_num_concurrent_teams<ExecSpace>(num_elems * num_remap))
+      , m_ppm_tu(get_default_team_policy<ExecSpace>(num_elems * num_remap))
+      , m_ao("a0", m_ppm_tu.get_num_ws_slots())
+      , m_mass_o("mass_o",m_ppm_tu.get_num_ws_slots())
+      , m_dma("dma", m_ppm_tu.get_num_ws_slots())
+      , m_ai("ai", m_ppm_tu.get_num_ws_slots())
+      , m_parabola_coeffs("Coefficients for the interpolating parabola", m_ppm_tu.get_num_ws_slots())
   {
     // Nothing to do here
   }
@@ -285,7 +283,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
   template <typename ExecSpaceType = ExecSpace>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<!Homme::OnGpu<ExecSpaceType>::value, void>::type
-  compute_remap(KernelVariables &kv,
+  compute_remap(KernelVariables &/* kv */,
       ExecViewUnmanaged<const int[NUM_PHYSICAL_LEV]> k_id,
       ExecViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> integral_bounds,
       ExecViewUnmanaged<const Real[3][NUM_PHYSICAL_LEV]> parabola_coeffs,
@@ -345,7 +343,6 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
       const Real x2_cur_lev = integral_bounds(k);
 
       const int kk_cur_lev = k_id(k);
-      assert(kk_cur_lev + 1 >= k);
       assert(kk_cur_lev < parabola_coeffs.extent_int(1));
 
       const Real mass_2 = compute_mass(
@@ -515,7 +512,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
 
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,
-          [=](const int &level, Real &accumulator, const bool last) {
+          [&](const int &level, Real &accumulator, const bool last) {
             if (last) {
               pt_pio(level) = accumulator;
             }
@@ -525,7 +522,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
           });
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,
-          [=](const int &level, Real &accumulator, const bool last) {
+          [&](const int &level, Real &accumulator, const bool last) {
             if (last) {
               pt_pin(level) = accumulator;
             }
@@ -673,6 +670,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
   ExecViewManaged<Real * [NP][NP][NUM_PHYSICAL_LEV]>  m_z2;
   ExecViewManaged<int * [NP][NP][NUM_PHYSICAL_LEV]>   m_kid;
 
+  TeamUtils<ExecSpace> m_ppm_tu;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::AO_PHYSICAL_LEV]> m_ao;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::MASS_O_PHYSICAL_LEV]> m_mass_o;
   ExecViewManaged<Real * [NP][NP][_ppm_consts::DMA_PHYSICAL_LEV]> m_dma;

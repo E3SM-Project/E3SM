@@ -342,6 +342,7 @@ end subroutine shoc_energy_fixer_f
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: qw, ql
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: qv
   end subroutine compute_shoc_vapor_f
+
   subroutine update_prognostics_implicit_f(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind) bind(C)
     use iso_c_binding
 
@@ -354,6 +355,28 @@ end subroutine shoc_energy_fixer_f
     real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: thetal, qw, tke, u_wind, v_wind
     real(kind=c_real) , intent(inout), dimension(shcol, nlev, num_tracer) :: tracer
   end subroutine update_prognostics_implicit_f
+
+subroutine diag_third_shoc_moments_f(shcol, nlev, nlevi, w_sec, thl_sec, wthl_sec, isotropy, brunt,&
+                                     thetal, tke, dz_zt, dz_zi, zt_grid, zi_grid, w3) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+  real(kind=c_real) , intent(in), dimension(shcol, nlev) :: w_sec, isotropy, brunt, thetal, tke, dz_zt, zt_grid
+  real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: thl_sec, wthl_sec, dz_zi, zi_grid
+  real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: w3
+end subroutine diag_third_shoc_moments_f
+
+subroutine shoc_assumed_pdf_f(shcol, nlev, nlevi, thetal, qw, w_field, thl_sec, qw_sec,&
+                              wthl_sec, w_sec, wqw_sec, qwthl_sec, w3, pres, zt_grid,&
+                              zi_grid, shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+  real(kind=c_real) , intent(in), dimension(shcol, nlev) :: thetal, qw, w_field, w_sec, pres, zt_grid
+  real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, w3, zi_grid
+  real(kind=c_real) , intent(out), dimension(shcol, nlev) :: shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2
+end subroutine shoc_assumed_pdf_f
+
 end interface
 
 end module shoc_iso_f

@@ -24,7 +24,7 @@ namespace Homme
 {
 
 // Forward declaration
-class BuffersManager;
+class MpiBuffersManager;
 
 /*
  * BoundaryExchange: a class to handle the pack/exchange/unpack process
@@ -64,8 +64,8 @@ class BuffersManager;
  *    and sets up all the internal structure to prepare for calls to
  *    exchange(). This method MUST be called BEFORE any call to exchange.
  *
- * This class relies on the BuffersManager (BM) class for the handling of the buffers.
- * See BuffersManager header for more info on that. As explained above,
+ * This class relies on the MpiBuffersManager (BM) class for the handling of the buffers.
+ * See MpiBuffersManager header for more info on that. As explained above,
  * you may have different BE objects, which are however never used at the
  * same time. Therefore, it makes sense to reuse the same BM for all of them.
  * For this reason, the BM can serve multiple 'customers'. The BE and BM
@@ -91,7 +91,7 @@ class BoundaryExchange
 public:
 
   BoundaryExchange();
-  BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<BuffersManager> buffers_manager);
+  BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<MpiBuffersManager> buffers_manager);
 
   // Thou shall not copy this class
   BoundaryExchange(const BoundaryExchange&) = delete;
@@ -103,10 +103,10 @@ public:
   void set_connectivity (std::shared_ptr<Connectivity> connectivity);
 
   // Set the buffers manager (registration must not be completed)
-  void set_buffers_manager (std::shared_ptr<BuffersManager> buffers_manager);
+  void set_buffers_manager (std::shared_ptr<MpiBuffersManager> buffers_manager);
 
   // These number refers to *scalar* fields. A 2-vector field counts as 2 fields.
-  void set_num_fields (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields);
+  void set_num_fields (const int num_1d_fields, const int num_2d_fields, const int num_3d_fields, const int num_3d_int_fields = 0);
 
   // Clean up MPI stuff and registered fields (but leaves connectivity and buffers manager)
   void clean_up ();
@@ -115,31 +115,63 @@ public:
   bool is_registration_started   () const { return m_registration_started;   }
   bool is_registration_completed () const { return m_registration_completed; }
 
-  // Note: num_dims is the # of dimensions to exchange, while start_dim is the first to exchange
-  // Note: in case of tensors, the outer dimension MUST be sliced, while the inner dimension can be fully exchanged
+  // Notes:
+  // - the first runtime dimension (if present) is always the number of elements
+  // - num_dims is the # of dimensions to exchange
+  // - start_dim is the first to exchange
+  // - in case of tensors (more than 1 rank between the element dim and the first NP),
+  //   the outer dimension MUST be sliced, while the inner dimension can be fully exchanged
+
+  // 2d fields (no vertical level dimension)
   template<typename... Properties>
   void register_field (ExecView<Real*[NP][NP], Properties...> field);
-  template<int DIM, typename... Properties>
-  void register_field (ExecView<Real*[DIM][NP][NP], Properties...> field, int num_dims, int start_dim);
   template<typename... Properties>
   void register_field (ExecView<Real**[NP][NP], Properties...> field, int num_dims, int start_dim);
   template<typename... Properties>
   void register_field (ExecView<Real***[NP][NP], Properties...> field, int idim_out, int num_dims, int start_dim);
-
-
   template<int DIM, typename... Properties>
-  void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim);
+  void register_field (ExecView<Real*[DIM][NP][NP], Properties...> field, int num_dims, int start_dim);
+
+  // 3d fields (with vertical level dimension at the end)
   template<typename... Properties>
   void register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim);
-  template <typename... Properties>
-  void register_field(ExecView<Scalar[NP][NP][NUM_LEV], Properties...> field, int ie, int iq);
   template<int OUTER_DIM, int DIM, typename... Properties>
   void register_field (ExecView<Scalar*[OUTER_DIM][DIM][NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim);
   template<typename... Properties>
   void register_field (ExecView<Scalar***[NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim);
 
-  template<typename... Properties>
-  void register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Properties...> field);
+  // Handle both NUM_LEV and NUM_LEV_P
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field (ExecView<Scalar*[NP][NP][NUM_LEV_IN], Properties...> field) {
+    register_field_impl<NUM_LEV_IN,Properties...>(field);
+  }
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV_IN], Properties...> field, int num_dims, int start_dim) {
+    register_field_impl<NUM_LEV_IN,DIM,Properties...>(field,num_dims,start_dim);
+  }
+
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                                ExecView<Scalar*[NP][NP][NUM_LEV], Properties...>
+                               >::type field);
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                                ExecView<Scalar*[NP][NP][NUM_LEV_P], Properties...>
+                               >::type field);
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                               >::type field,
+        int num_dims, int start_dim);
+  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  void register_field_impl (
+        typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                               >::type field,
+        int num_dims, int start_dim);
 
   // This registration method should be used for the exchange of min/max fields
   template<int DIM, typename... Properties>
@@ -159,6 +191,7 @@ public:
   int get_num_1d_fields () const { return m_num_1d_fields; }
   int get_num_2d_fields () const { return m_num_2d_fields; }
   int get_num_3d_fields () const { return m_num_3d_fields; }
+  int get_num_3d_int_fields () const { return m_num_3d_int_fields; }
 
   template<typename ptr_type, typename raw_type>
   struct Pointer {
@@ -189,8 +222,8 @@ private:
 
   short int m_exchange_type;
 
-  // Make BuffersManager a friend, so it can call the method underneath
-  friend class BuffersManager;
+  // Make MpiBuffersManager a friend, so it can call the method underneath
+  friend class MpiBuffersManager;
   void clear_buffer_views_and_requests ();
 
   void build_buffer_views_and_requests ();
@@ -205,11 +238,12 @@ private:
   ExecViewManaged<ExecViewManaged<Scalar[2][NUM_LEV]>**>            m_1d_fields;
   ExecViewManaged<ExecViewManaged<Real[NP][NP]>**>                  m_2d_fields;
   ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV]>**>       m_3d_fields;
+  ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV_P]>**>     m_3d_int_fields;
 
   // This class contains all the buffers to be stuffed in the buffers views, and used in pack/unpack,
   // as well as the mpi buffers used in MPI calls (which are the same as the former if MPIMemSpace=ExecMemSpace),
   // and the blackhole buffers (used for missing connections)
-  std::shared_ptr<BuffersManager> m_buffers_manager;
+  std::shared_ptr<MpiBuffersManager> m_buffers_manager;
 
   // These views can look quite complicated. Basically, we want something like
   // send_buffer(ielem, ifield, iedge) to point to the right area of one of the
@@ -227,10 +261,17 @@ private:
   ExecViewManaged<ExecViewUnmanaged<Scalar*[NUM_LEV]>**[NUM_CONNECTIONS]>    m_send_3d_buffers;
   ExecViewManaged<ExecViewUnmanaged<Scalar*[NUM_LEV]>**[NUM_CONNECTIONS]>    m_recv_3d_buffers;
 
+  // TODO: optimize: you only need to pack/unpack the first entry of the NUM_LEV_P-th pack.
+  //       This is because, if NUM_LEV!=NUM_LEV_P, then the NUM_LEV_P-th pack contains
+  //       only one meaningful value (the rest is garbage, most likely nan's).
+  ExecViewManaged<ExecViewUnmanaged<Scalar*[NUM_LEV_P]>**[NUM_CONNECTIONS]>  m_send_3d_int_buffers;
+  ExecViewManaged<ExecViewUnmanaged<Scalar*[NUM_LEV_P]>**[NUM_CONNECTIONS]>  m_recv_3d_int_buffers;
+
   // The number of registered fields
   int         m_num_1d_fields;    // Without counting the 2x factor due to min/max fields
   int         m_num_2d_fields;
   int         m_num_3d_fields;
+  int         m_num_3d_int_fields;
 
   // The following flags are used to ensure that a bad user does not call setup/cleanup/registration
   // methods of this class in an order that generate errors. And if he/she does, we try to avoid errors.
@@ -255,25 +296,28 @@ public: // This is semantically private but must be public for nvcc.
 
 // ============================ REGISTER METHODS ========================= //
 
-template <typename... Properties>
-void BoundaryExchange::register_field(
-    ExecView<Scalar[NP][NP][NUM_LEV], Properties...> field, int ie, int iq) {
+// --- 2d fields --- //
+
+template<typename... Properties>
+void BoundaryExchange::register_field (ExecView<Real*[NP][NP], Properties...> field)
+{
   using Kokkos::ALL;
 
   // Sanity checks
-  assert(m_registration_started && !m_registration_completed);
-  assert(0 < ie < m_3d_fields.extent_int(0));
-  assert(0 < iq < m_3d_fields.extent_int(1));
-  assert(m_num_1d_fields == 0);
+  assert (m_registration_started && !m_registration_completed);
+  assert (m_num_2d_fields+1<=m_2d_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
 
   {
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int) {
-      l_3d_fields(ie, iq) = field;
+    auto l_num_2d_fields = m_num_2d_fields;
+    auto l_2d_fields = m_2d_fields;
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()),
+                         KOKKOS_LAMBDA(const int ie){
+      l_2d_fields(ie, l_num_2d_fields) = Kokkos::subview(field, ie, ALL, ALL);
     });
   }
-  // Temporary hack
-  m_num_3d_fields = iq + 1;
+
+  ++m_num_2d_fields;
 }
 
 template<int DIM, typename... Properties>
@@ -349,29 +393,7 @@ void BoundaryExchange::register_field (ExecView<Real***[NP][NP], Properties...> 
   m_num_2d_fields += num_dims;
 }
 
-template<int DIM, typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim)
-{
-  using Kokkos::ALL;
-
-  // Sanity checks
-  assert (m_registration_started && !m_registration_completed);
-  assert (num_dims>0 && start_dim>=0 && DIM>0);
-  assert (start_dim+num_dims<=DIM);
-  assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
-  assert (m_num_1d_fields==0);
-
-  {
-    auto l_num_3d_fields = m_num_3d_fields;
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
-                         KOKKOS_LAMBDA(const int ie, const int idim){
-        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
-    });
-  }
-
-  m_num_3d_fields += num_dims;
-}
+// --- 3d NUM_LEV fields --- //
 
 template<typename... Properties>
 void BoundaryExchange::register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim)
@@ -445,30 +467,11 @@ void BoundaryExchange::register_field (ExecView<Scalar***[NP][NP][NUM_LEV], Prop
   m_num_3d_fields += num_dims;
 }
 
-template<typename... Properties>
-void BoundaryExchange::register_field (ExecView<Real*[NP][NP], Properties...> field)
-{
-  using Kokkos::ALL;
-
-  // Sanity checks
-  assert (m_registration_started && !m_registration_completed);
-  assert (m_num_2d_fields+1<=m_2d_fields.extent_int(1));
-  assert (m_num_1d_fields==0);
-
-  {
-    auto l_num_2d_fields = m_num_2d_fields;
-    auto l_2d_fields = m_2d_fields;
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()),
-                         KOKKOS_LAMBDA(const int ie){
-      l_2d_fields(ie, l_num_2d_fields) = Kokkos::subview(field, ie, ALL, ALL);
-    });
-  }
-
-  ++m_num_2d_fields;
-}
-
-template<typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Properties...> field)
+template<int NUM_LEV_IN, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                            ExecView<Scalar*[NP][NP][NUM_LEV], Properties...>
+                           >::type field)
 {
   using Kokkos::ALL;
 
@@ -488,6 +491,89 @@ void BoundaryExchange::register_field (ExecView<Scalar*[NP][NP][NUM_LEV], Proper
 
   ++m_num_3d_fields;
 }
+
+template<int NUM_LEV_IN,typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                            ExecView<Scalar*[NP][NP][NUM_LEV_P], Properties...>
+                                            >::type field)
+{
+  using Kokkos::ALL;
+
+  // Sanity checks
+  assert (m_registration_started && !m_registration_completed);
+  assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
+
+  {
+    auto l_num_3d_int_fields = m_num_3d_int_fields;
+    auto l_3d_int_fields = m_3d_int_fields;
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()),
+                         KOKKOS_LAMBDA(const int ie){
+      l_3d_int_fields(ie, l_num_3d_int_fields) = Kokkos::subview(field, ie, ALL, ALL, ALL);
+    });
+  }
+
+  ++m_num_3d_int_fields;
+}
+
+template<int NUM_LEV_IN, int DIM, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV,
+                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                           >::type field,
+    int num_dims, int start_dim)
+{
+  using Kokkos::ALL;
+
+  // Sanity checks
+  assert (m_registration_started && !m_registration_completed);
+  assert (num_dims>0 && start_dim>=0 && DIM>0);
+  assert (start_dim+num_dims<=DIM);
+  assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
+
+  {
+    auto l_num_3d_fields = m_num_3d_fields;
+    auto l_3d_fields = m_3d_fields;
+    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
+                         KOKKOS_LAMBDA(const int ie, const int idim){
+        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
+    });
+  }
+
+  m_num_3d_fields += num_dims;
+}
+
+template<int NUM_LEV_IN, int DIM, typename... Properties>
+void BoundaryExchange::register_field_impl (
+    typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
+                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                           >::type field,
+    int num_dims, int start_dim)
+{
+  using Kokkos::ALL;
+
+  // Sanity checks
+  assert (m_registration_started && !m_registration_completed);
+  assert (num_dims>0 && start_dim>=0 && DIM>0);
+  assert (start_dim+num_dims<=DIM);
+  assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
+  assert (m_num_1d_fields==0);
+
+  {
+    auto l_num_3d_int_fields = m_num_3d_int_fields;
+    auto l_3d_int_fields = m_3d_int_fields;
+    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
+                         KOKKOS_LAMBDA(const int ie, const int idim){
+      l_3d_int_fields(ie, l_num_3d_int_fields) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
+    });
+  }
+
+  ++m_num_3d_int_fields;
+}
+
+// --- min-max fields --- //
 
 template<int DIM, typename... Properties>
 void BoundaryExchange::register_min_max_fields (ExecView<Scalar*[DIM][2][NUM_LEV], Properties...> field_min_max, int num_dims, int start_dim)

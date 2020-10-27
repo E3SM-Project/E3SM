@@ -45,10 +45,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     static constexpr Real w_sec[nlev] = {0.2, 0.3, 0.5, 0.3, 0.1};
     // Define potential temperature second moment [K2]
     static constexpr Real thl_sec[nlevi] = {0.5, 0.9, 1.2, 0.8, 0.4, 0.3};
-    // Define second moment total water second moment [kg^2/kg^2]
-    static constexpr Real qw_sec[nlevi] = {1e-7, 3e-7, 2e-7, 1.4e-6, 5e-7, 4e-7};
-    // Define covarance of thetal and qw [K kg/kg]
-    static constexpr Real qwthl_sec[nlevi] = {1e-3, 3e-3, 2e-3, 1.4e-3, 5e-3, 4e-3};
     // Define vertical flux of temperature [K m/s]
     static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04, -0.01, 0.01, 0.03};
     // Define the heights on the zi grid [m]
@@ -59,8 +55,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     static constexpr Real brunt[nlev] = {4e-5, 3e-5, 2e-5, 2e-5, -1e-5};
     // Define the potential temperature on zi grid [K]
     static constexpr Real thetal[nlev] = {330, 320, 310, 300, 305};
-    // Define the buoyancy flux on zi grid [K m/s]
-    static constexpr Real wthv_sec[nlev] = {0.002, 0.03, 0.04, 0.02, 0.04};
 
     // Define TKE [m2/s2], compute from w_sec
     Real tke[nlev];
@@ -106,7 +100,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         SDS.isotropy[offset] = isotropy[n];
         SDS.brunt[offset] = brunt[n];
         SDS.thetal[offset] = thetal[n];
-        SDS.wthv_sec[offset] = wthv_sec[n];
       }
 
       // Fill in test data on zi_grid.
@@ -116,8 +109,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         SDS.dz_zi[offset] = dz_zi[n];
         SDS.zi_grid[offset] = zi_grid[n];
         SDS.thl_sec[offset] = thl_sec[n];
-        SDS.qw_sec[offset] = qw_sec[n];
-        SDS.qwthl_sec[offset] = qwthl_sec[n];
         SDS.wthl_sec[offset] = wthl_sec[n];
 
       }
@@ -147,7 +138,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         REQUIRE(SDS.dz_zi[offset] >= 0);
         REQUIRE(SDS.zi_grid[offset] >= 0);
         REQUIRE(SDS.thl_sec[offset] >= 0);
-        REQUIRE(SDS.qw_sec[offset] >= 0);
       }
     }
 
@@ -213,7 +203,57 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCDiagThirdMomData SDS_f90[] = {
+      //               shcol, nlev, nlevi
+      SHOCDiagThirdMomData(10, 71, 72),
+      SHOCDiagThirdMomData(10, 12, 13),
+      SHOCDiagThirdMomData(7,  16, 17),
+      SHOCDiagThirdMomData(2, 7, 8),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCDiagThirdMomData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize({{d.thetal, {300, 301}}});
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCDiagThirdMomData SDS_cxx[] = {
+      SHOCDiagThirdMomData(SDS_f90[0]),
+      SHOCDiagThirdMomData(SDS_f90[1]),
+      SHOCDiagThirdMomData(SDS_f90[2]),
+      SHOCDiagThirdMomData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      diag_third_shoc_moments(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      diag_third_shoc_moments_f(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,
+                                d.wthl_sec,d.isotropy,d.brunt,d.thetal,
+                                d.tke,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
+                                d.w3);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCDiagThirdMomData& d_f90 = SDS_f90[i];
+      SHOCDiagThirdMomData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+        REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+      }
+    }
   }
 };
 

@@ -863,9 +863,9 @@ contains
  end subroutine shoc_diag_second_moments_srf_c
 
   subroutine diag_third_shoc_moments_c(&
-                             shcol, nlev, nlevi, w_sec, thl_sec, qw_sec, &
-                             qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
-                             tke, wthv_sec, dz_zt, dz_zi, &
+                             shcol, nlev, nlevi, w_sec, thl_sec, &
+                             wthl_sec, isotropy, brunt, thetal, &
+                             tke, dz_zt, dz_zi, &
                              zt_grid, zi_grid, w3) bind(C)
   use shoc, only: diag_third_shoc_moments
 
@@ -874,14 +874,11 @@ contains
     integer(kind=c_int), intent(in), value :: nlevi
     real(kind=c_real), intent(in) :: w_sec(shcol,nlev)
     real(kind=c_real), intent(in) :: thl_sec(shcol,nlevi)
-    real(kind=c_real), intent(in) :: qw_sec(shcol,nlevi)
-    real(kind=c_real), intent(in) :: qwthl_sec(shcol,nlevi)
     real(kind=c_real), intent(in) :: wthl_sec(shcol,nlevi)
     real(kind=c_real), intent(in) :: isotropy(shcol,nlev)
     real(kind=c_real), intent(in) :: brunt(shcol,nlev)
     real(kind=c_real), intent(in) :: thetal(shcol,nlev)
     real(kind=c_real), intent(in) :: tke(shcol,nlev)
-    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
     real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
     real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
@@ -890,9 +887,9 @@ contains
     real(kind=c_real), intent(out) :: w3(shcol,nlevi)
 
     call diag_third_shoc_moments(&
-                     shcol, nlev, nlevi, w_sec, thl_sec, qw_sec, &
-                     qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
-                     tke, wthv_sec, dz_zt, dz_zi, zt_grid, zi_grid, w3)
+                     shcol, nlev, nlevi, w_sec, thl_sec, &
+                     wthl_sec, isotropy, brunt, thetal, &
+                     tke, dz_zt, dz_zi, zt_grid, zi_grid, w3)
 
   end subroutine diag_third_shoc_moments_c
 
@@ -977,17 +974,17 @@ contains
 
   end subroutine shoc_assumed_pdf_c
 
-  subroutine shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1) bind (C)
-    use shoc, only: shoc_assumed_pdf_tilda_to_real
+  subroutine shoc_assumed_pdf_tilde_to_real_c(w_first, sqrtw2, w1) bind (C)
+    use shoc, only: shoc_assumed_pdf_tilde_to_real
 
     real(kind=c_real), intent(in), value :: w_first
     real(kind=c_real), intent(in), value :: sqrtw2
 
     real(kind=c_real), intent(inout) :: w1
 
-    call shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1)
+    call shoc_assumed_pdf_tilde_to_real(w_first, sqrtw2, w1)
 
-  end subroutine shoc_assumed_pdf_tilda_to_real_c
+  end subroutine shoc_assumed_pdf_tilde_to_real_c
 
   subroutine shoc_assumed_pdf_vv_parameters_c(w_first,w_sec,w3var,&
                                               Skew_w,w1_1,w1_2,w2_1,w2_2,a) bind (C)
@@ -1320,6 +1317,7 @@ contains
 
     call compute_shoc_vapor(shcol, nlev, qw, ql, qv)
   end subroutine compute_shoc_vapor_c
+
   subroutine update_prognostics_implicit_c(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind) bind(C)
     use shoc, only : update_prognostics_implicit
 
@@ -1334,4 +1332,6 @@ contains
 
     call update_prognostics_implicit(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind)
   end subroutine update_prognostics_implicit_c
+
 end module shoc_iso_c
+
