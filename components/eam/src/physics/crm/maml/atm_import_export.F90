@@ -83,7 +83,21 @@ contains
              cam_in(c)%ts       (i) =  x2a(index_x2a_Sx_t,     ig)  
              ! copy cam_in%[X] to cam_in%[X]_mi for MMF with non-MAML
              ! in MMF simulations, cam_in%[X]_mi are copied to crm_input variables in crm_physics.F90
-             call cam_in_copy_mi (cam_in(c),c, overwrite_flds)
+             ![TODO]call cam_in_copy_mi (cam_in(c),c, overwrite_flds)
+             ! for non-MAML, num_inst_atm =  1 
+             if(overwrite_flds) then
+                ! first timestep of the restart run, lhf, shf and cflx(:,1) are not overwritten 
+                cam_in(c)%lhf_mi(i,1) = cam_in(c)%lhf(i)
+                cam_in(c)%shf_mi(i,1) = cam_in(c)%shf(i)
+                cam_in(c)%cflx1_mi(i,1) = cam_in(c)%cflx(i,1)
+             end if  
+             cam_in(c)%wsx_mi(i,1) = cam_in(c)%wsx(i)
+             cam_in(c)%wsy_mi(i,1) = cam_in(c)%wsy(i)
+             cam_in(c)%snowhland_mi(i,1) = cam_in(c)%snowhland(i)
+             cam_in(c)%asdir_mi(i,1) = cam_in(c)%asdir(i)
+             cam_in(c)%aldir_mi(i,1) = cam_in(c)%aldir(i)
+             cam_in(c)%asdif_mi(i,1) = cam_in(c)%asdif(i)
+             cam_in(c)%aldif_mi(i,1) = cam_in(c)%aldif(i)
           else  
              ! For MMF-MAML
              ! Modified for MAML
@@ -221,14 +235,14 @@ contains
        if (is_first_step()) then
           do c=begchunk, endchunk
              ncols = get_ncols_p(c)
-             cam_in(c)%lwup(1:ncols,1) = shr_const_stebol*(cam_in(c)%ts(1:ncols)**4)
+             cam_in(c)%lwup_mi(1:ncols,1) = shr_const_stebol*(cam_in(c)%ts_mi(1:ncols,1)**4)
              if(num_inst_atm.gt.1) then ! multi-instance cases, i.e. MAML   
                 do j=2,num_inst_atm
-                   cam_in(c)%lwup(1:ncols,j) = cam_in(c)%lwup(1:ncols,1)
-                   cam_in(c)%asdir(1:ncols,j) = cam_in(c)%asdir(1:ncols,1)
-                   cam_in(c)%aldir(1:ncols,j) = cam_in(c)%aldir(1:ncols,1)
-                   cam_in(c)%asdif(1:ncols,j) = cam_in(c)%asdif(1:ncols,1)
-                   cam_in(c)%aldif(1:ncols,j) = cam_in(c)%aldif(1:ncols,1)
+                   cam_in(c)%lwup_mi(1:ncols,j) = cam_in(c)%lwup_mi(1:ncols,1)
+                   cam_in(c)%asdir_mi(1:ncols,j) = cam_in(c)%asdir_mi(1:ncols,1)
+                   cam_in(c)%aldir_mi(1:ncols,j) = cam_in(c)%aldir_mi(1:ncols,1)
+                   cam_in(c)%asdif_mi(1:ncols,j) = cam_in(c)%asdif_mi(1:ncols,1)
+                   cam_in(c)%aldif_mi(1:ncols,j) = cam_in(c)%aldif_mi(1:ncols,1)
                 end do
              end if   
           end do
@@ -240,7 +254,9 @@ contains
     ! For MMF-MAML configuration, cam_in fields that are specific to the
     ! multi-instance functionality are averaged across the instances.
     !
-    call cam_in_avg_mi_all(cam_in)
+    do c = begchunk, endchunk
+      call cam_in_avg_mi_all(cam_in(c))
+    end do! c  
 
   end subroutine atm_import
 
@@ -287,7 +303,7 @@ contains
           a2x(index_a2x_Faxa_rainl,ig) = (cam_out(c)%precl_mi(i,inst_index)-cam_out(c)%precsl_mi(i,inst_index))*1000._r8
           a2x(index_a2x_Faxa_snowc,ig) = cam_out(c)%precsc_mi(i,inst_index)*1000._r8
           a2x(index_a2x_Faxa_snowl,ig) = cam_out(c)%precsl_mi(i,inst_index)*1000._r8
-          a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i,inst_index)
+          a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)    ! netsw is not land model input. TODO need to check if ice model uses it as a model input
           a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds_mi(i,inst_index)
           a2x(index_a2x_Faxa_swndr,ig) = cam_out(c)%soll_mi(i,inst_index)
           a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols_mi(i,inst_index)

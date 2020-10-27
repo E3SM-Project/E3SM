@@ -83,7 +83,7 @@ subroutine crm_physics_register()
    !----------------------------------------------------------------------------
    ! local variables
    integer idx
-   logical           :: use_ECPP
+   logical           :: use_ECPP, use_MAML
    character(len=16) :: MMF_microphysics_scheme
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
@@ -324,6 +324,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use iso_c_binding, only: c_bool
    use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
    use spmd_utils,          only: masterproc
+   use seq_comm_mct, only : num_inst_atm
 
    real(r8),                        intent(in   ) :: ztodt            ! global model time increment
    type(physics_state),             intent(in   ) :: state            ! Global model state 

@@ -14,9 +14,9 @@ use shr_kind_mod,  only: r8 => shr_kind_r8
 !
   public cam_in_avg_mi_all ! Method to average surface interface fields(cam_in)  across instances, do the operation over all X_mi variables
   public cam_in_avg_mi     ! Method to average surface interface fields(cam_in)  across instances, do it for the specific X_mi variable
-  public cam_out_avg_mi    ! Method to average surface interface fields(cam_out) across instances
+!  public cam_out_avg_mi    ! Method to average surface interface fields(cam_out) across instances
   public cam_out_rad_avg_mi    ! Method to average surface interface fields(cam_out) across instances
-  public cam_in_copy_mi    
+! public cam_in_copy_mi    
 CONTAINS
 
 subroutine cam_in_avg_mi_all(cam_in)
@@ -58,7 +58,7 @@ subroutine cam_in_avg_mi_all(cam_in)
     do i = 1,ncol
       do j = 1,num_inst_atm
           cam_in%lhf(i)    = cam_in%lhf(i)+cam_in%lhf_mi(i,j)*avgfac
-          cam_in%cflx(i,1) = cam_in%cflx(i)+cam_in%cflx1_mi(i,j)*avgfac
+          cam_in%cflx(i,1) = cam_in%cflx(i,1)+cam_in%cflx1_mi(i,j)*avgfac
           cam_in%shf(i)    = cam_in%shf(i)+cam_in%shf_mi(i,j)*avgfac
           cam_in%wsx(i)    = cam_in%wsx(i)+cam_in%wsx_mi(i,j)*avgfac
           cam_in%wsy(i)    = cam_in%wsy(i)+cam_in%wsy_mi(i,j)*avgfac
@@ -82,7 +82,7 @@ subroutine cam_in_avg_mi(cam_in_X, cam_in_X_mi, ncol)
 !
 ! Input arguments
 !
-   integer,   parameter, intent(in)     :: ncol
+   integer,   intent(in)     :: ncol
    real(r8),  intent(inout) :: cam_in_X(ncol)
    real(r8),  intent(inout) :: cam_in_X_mi(ncol, num_inst_atm)
 
@@ -105,45 +105,45 @@ subroutine cam_in_avg_mi(cam_in_X, cam_in_X_mi, ncol)
    end do! i = 1, ncol
 end subroutine cam_in_avg_mi
 
-subroutine cam_in_copy_mi(cam_in,ichnk,overwrite)
+!subroutine cam_in_copy_mi(cam_in,ichnk,overwrite)
 
 !----------------------------------------------------------------------- 
 ! Purpose: This is used for MMF configuration without MAML
 ! This subroutine copies cam_in%[X] to cam_in%[X]_mi after the data is transfered from surface through the coupler
 ! This is done because crm_input reads in cam_in%[X]_mi. For non-MAML, num_inst_atm = 1. 
 !----------------------------------------------------------------------- 
-   use camsrfexch,   only: cam_in_t
-   use phys_grid ,   only: get_ncols_p
+!   use camsrfexch,   only: cam_in_t
+!   use phys_grid ,   only: get_ncols_p
 !-----------------------------------------------------------------------
 !
 ! Input arguments
 !
-   logical,         intent(in)    :: overwrite
-   integer,         intent(in)    :: ichnk
-   type(cam_in_t),  intent(inout) :: cam_in
+!   logical,         intent(in)    :: overwrite
+!   integer,         intent(in)    :: ichnk
+!   type(cam_in_t),  intent(inout) :: cam_in
 
 !
 !  Local Space
 !
-   integer :: ncol
-   ncol = cam_in%ncol
+!   integer :: ncol
+!   ncol = cam_in%ncol
 
    ! for non-MAML, num_inst_atm =  1 
-   if(overwrite) then
-     ! first timestep of the restart run, lhf, shf and cflx(:,1) are not overwritten 
-     cam_in(ichnk)%lhf_mi(1:ncol,1) = cam_in%lhf(1:ncol)
-     cam_in(ichnk)%shf_mi(1:ncol,1) = cam_in%shf(1:ncol)
-     cam_in(ichnk)%cflx_mi(1:ncol,1,1) = cam_in%cflx(1:ncol,1)
-   end if  
-     cam_in(ichnk)%wsx_mi(1:ncol,1) = cam_in%wsx(1:ncol)
-     cam_in(ichnk)%wsy_mi(1:ncol,1) = cam_in%wsy(1:ncol)
-     cam_in(ichnk)%snowhland_mi(1:ncol,1) = cam_in%snowhland(1:ncol)
-     cam_in(ichnk)%asdir_mi(1:ncol,1) = cam_in%asdir(1:ncol)
-     cam_in(ichnk)%aldir_mi(1:ncol,1) = cam_in%aldir(1:ncol)
-     cam_in(ichnk)%asdif_mi(1:ncol,1) = cam_in%asdif(1:ncol)
-     cam_in(ichnk)%aldif_mi(1:ncol,1) = cam_in%aldif(1:ncol)
+!   if(overwrite) then
+!     ! first timestep of the restart run, lhf, shf and cflx(:,1) are not overwritten 
+!     cam_in(ichnk)%lhf_mi(1:ncol,1) = cam_in(ichnk)%lhf(1:ncol)
+!     cam_in(ichnk)%shf_mi(1:ncol,1) = cam_in(ichnk)%shf(1:ncol)
+!     cam_in(ichnk)%cflx_mi(1:ncol,1,1) = cam_in(ichnk)%cflx(1:ncol,1)
+!   end if  
+!     cam_in(ichnk)%wsx_mi(1:ncol,1) = cam_in(ichnk)%wsx(1:ncol)
+!     cam_in(ichnk)%wsy_mi(1:ncol,1) = cam_in(ichnk)%wsy(1:ncol)
+!     cam_in(ichnk)%snowhland_mi(1:ncol,1) = cam_in(ichnk)%snowhland(1:ncol)
+!     cam_in(ichnk)%asdir_mi(1:ncol,1) = cam_in(ichnk)%asdir(1:ncol)
+!     cam_in(ichnk)%aldir_mi(1:ncol,1) = cam_in(ichnk)%aldir(1:ncol)
+!     cam_in(ichnk)%asdif_mi(1:ncol,1) = cam_in(ichnk)%asdif(1:ncol)
+!     cam_in(ichnk)%aldif_mi(1:ncol,1) = cam_in(ichnk)%aldif(1:ncol)
 
-end subroutine cam_in_copy_mi
+!end subroutine cam_in_copy_mi
 
 subroutine cam_out_avg_mi(cam_out)
 
@@ -165,12 +165,12 @@ subroutine cam_out_avg_mi(cam_out)
    integer  i, j 
 !-----------------------------------------------------------------------
 !
-    ncol  = cam_in%ncol
+    ncol  = cam_out%ncol
     avgfac = 1._r8/real(num_inst_atm,r8)
     ! Initialize again.
     cam_out%tbot = 0.
     cam_out%precsc = 0.
-    cam_out%prescsl = 0.
+    cam_out%precsl = 0.
     cam_out%precc = 0.
     cam_out%precl = 0.
 
@@ -178,7 +178,7 @@ subroutine cam_out_avg_mi(cam_out)
     do i = 1,ncol
       do j = 1,num_inst_atm
           cam_out%tbot(i)  = cam_out%tbot(i)+cam_out%tbot_mi(i,j)*avgfac
-          cam_out%precsc(i) = cam_out%precsd(i)+cam_out%precsc_mi(i,j)*avgfac
+          cam_out%precsc(i) = cam_out%precsc(i)+cam_out%precsc_mi(i,j)*avgfac
           cam_out%precsl(i)= cam_out%precsl(i)+cam_out%precsl_mi(i,j)*avgfac
           cam_out%precc(i) = cam_out%precc(i)+cam_out%precc_mi(i,j)*avgfac
           cam_out%precl(i) = cam_out%precl(i)+cam_out%precl_mi(i,j)*avgfac
@@ -206,7 +206,7 @@ subroutine cam_out_rad_avg_mi(cam_out)
    integer  i, j 
 !-----------------------------------------------------------------------
 !
-    ncol  = cam_in%ncol
+    ncol  = cam_out%ncol
     avgfac = 1._r8/real(num_inst_atm,r8)
     ! Initialize again.
     cam_out%sols = 0.
@@ -219,11 +219,11 @@ subroutine cam_out_rad_avg_mi(cam_out)
     do i = 1,ncol
       do j = 1,num_inst_atm
           cam_out%sols(i)  = cam_out%sols(i)+cam_out%sols_mi(i,j)*avgfac
-          cam_out%soll(i) = cam_out%precsd(i)+cam_out%soll_mi(i,j)*avgfac
+          cam_out%soll(i) = cam_out%soll(i)+cam_out%soll_mi(i,j)*avgfac
           cam_out%solld(i)= cam_out%solld(i)+cam_out%solld_mi(i,j)*avgfac
           cam_out%solsd(i) = cam_out%solsd(i)+cam_out%solsd_mi(i,j)*avgfac
           cam_out%flwds(i) = cam_out%flwds(i)+cam_out%flwds_mi(i,j)*avgfac
       end do
    end do! i = 1, ncol
-end subroutine cam_out_avg_mi
-
+end subroutine cam_out_rad_avg_mi
+end module maml_module

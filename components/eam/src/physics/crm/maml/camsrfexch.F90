@@ -16,7 +16,6 @@ module camsrfexch
   use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
   use seq_comm_mct, only : num_inst_atm
-  use maml_module,  only: cam_out_avg_mi_all
   implicit none
 
 !----------------------------------------------------------------------- 
@@ -61,13 +60,27 @@ module camsrfexch
      real(r8), allocatable :: sols_mi(:,:)     ! visible, direct, down
      real(r8), allocatable :: solld_mi(:,:)    ! near-IR, diffuse, down
      real(r8), allocatable :: solsd_mi(:,:)    ! visible, diffuse, down
-     real(r8), allocatable :: netsw_mi(:,:)    ! surface solar, net absorbed	
      real(r8), allocatable :: flwds_mi(:,:)    ! longwave, down
 
-     real(r8), allocatable :: precsc(:) ! convective snow rate 
-     real(r8), allocatable :: precsl(:) ! large scale snow rate
-     real(r8), allocatable :: precc(:)  ! convective precip. rate
-     real(r8), allocatable :: precl(:)  ! large-scale precip.rate
+     real(r8), allocatable :: tbot(:)     ! bot level temperature
+     real(r8), allocatable :: thbot(:)    ! bot level potential temperature
+     real(r8), allocatable :: ubot(:)     ! bot level u wind
+     real(r8), allocatable :: vbot(:)     ! bot level v wind
+     real(r8), allocatable :: qbot(:,:)   ! bot level specific humidity
+     real(r8), allocatable :: rho(:)      ! bot level density	
+     real(r8), allocatable :: zbot(:)      ! bot level height above surface	
+     real(r8), allocatable :: pbot(:)      ! bot level pressure
+     real(r8), allocatable :: precsc(:)   ! convective snow rate 
+     real(r8), allocatable :: precsl(:)   ! large scale snow rate
+     real(r8), allocatable :: precc(:)    ! convective precip. rate
+     real(r8), allocatable :: precl(:)    ! large-scale precip.rate
+     real(r8), allocatable :: soll(:)     ! near-IR, direct, down
+     real(r8), allocatable :: sols(:)     ! visible, direct, down
+     real(r8), allocatable :: solld(:)    ! near-IR, diffuse, down
+     real(r8), allocatable :: solsd(:)    ! visible, diffuse, down
+     real(r8), allocatable :: netsw(:)    ! surface solar, net absorbed	
+     real(r8), allocatable :: flwds(:)    ! longwave, down
+     
      real(r8), allocatable :: co2prog(:)    ! prognostic co2
      real(r8), allocatable :: co2diag(:)    ! diagnostic co2
      real(r8), allocatable :: psl(:)
@@ -464,9 +477,6 @@ CONTAINS
        allocate (cam_out(c)%rho_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error rho_mi')
 
-       allocate (cam_out(c)%netsw_mi(pcols,num_inst_atm), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error netsw_mi')
-
        allocate (cam_out(c)%flwds_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds_mi')
 
@@ -497,9 +507,6 @@ CONTAINS
        allocate (cam_out(c)%thbot_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot_mi')
        
-       allocate (cam_out(c)%tbot(pcols), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot')
-
        allocate (cam_out(c)%zbot(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error zbot')
 
@@ -621,7 +628,6 @@ CONTAINS
        cam_out(c)%solld_mi(:,:)    = 0._r8
        cam_out(c)%solsd_mi(:,:)    = 0._r8
        cam_out(c)%flwds_mi(:,:)    = 0._r8
-       cam_out(c)%netsw_mi(:,:)    = 0._r8
        cam_out(c)%thbot(:)    = 0._r8
        cam_out(c)%tbot(:)     = 0._r8
        cam_out(c)%zbot(:)     = 0._r8
@@ -672,7 +678,6 @@ CONTAINS
           deallocate(cam_out(c)%vbot_mi)
           deallocate(cam_out(c)%qbot_mi)
           deallocate(cam_out(c)%rho_mi)
-          deallocate(cam_out(c)%netsw_mi)
           deallocate(cam_out(c)%flwds_mi)
           deallocate(cam_out(c)%precsc_mi)
           deallocate(cam_out(c)%precsl_mi)
@@ -741,6 +746,7 @@ CONTAINS
           deallocate(cam_in(c)%wsx_mi)
           deallocate(cam_in(c)%wsy_mi)
           deallocate(cam_in(c)%snowhland_mi)
+          deallocate(cam_in(c)%ts_mi)
           deallocate(cam_in(c)%asdir)
           deallocate(cam_in(c)%asdif)
           deallocate(cam_in(c)%aldir)
@@ -754,7 +760,6 @@ CONTAINS
           deallocate(cam_in(c)%qref)
           deallocate(cam_in(c)%u10)
           deallocate(cam_in(c)%ts)
-          deallocate(cam_in(c)%tsmi)
           deallocate(cam_in(c)%sst)
           deallocate(cam_in(c)%snowhland)
           deallocate(cam_in(c)%snowhice)
@@ -828,6 +833,7 @@ subroutine cam_export(state,cam_out,pbuf)
    use cam_control_mod,  only: rair
    use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
    use phys_control,     only: phys_getopts
+   !use maml_module,      only: cam_out_avg_mi
    implicit none
 
    !------------------------------Arguments--------------------------------
@@ -878,6 +884,7 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: crm_snw(:,:,:)
    real(r8), pointer :: crm_angle(:)
    logical :: use_MAML
+   real(r8) :: avgfac
 
    !-----------------------------------------------------------------------
 
@@ -991,7 +998,25 @@ subroutine cam_export(state,cam_out,pbuf)
       ! Average cam_out%[X]_mi across num_inst_atm and pass it to cam_out%[X]
       ! Data transfer between surface and CAM atmosphere will be done by cam_out%[X]
       ! Data transfer between surface and CRM atmosphere will be done by cam_out%[X]_mi
-      call cam_out_avg_mi_all( cam_out )  
+      ! TODO: call cam_out_avg_mi( cam_out )  
+      avgfac = 1._r8/real(num_inst_atm,r8)
+      ! Initialize again just to be sure
+      cam_out%tbot = 0.
+      cam_out%precsc = 0.
+      cam_out%precsl = 0.
+      cam_out%precc = 0.
+      cam_out%precl = 0.
+
+      ! for non-MAML, num_inst_atm = avgfac = 1 
+      do i = 1,ncol
+         do j = 1,num_inst_atm
+            cam_out%tbot(i)  = cam_out%tbot(i)+cam_out%tbot_mi(i,j)*avgfac
+            cam_out%precsc(i) = cam_out%precsc(i)+cam_out%precsc_mi(i,j)*avgfac
+            cam_out%precsl(i)= cam_out%precsl(i)+cam_out%precsl_mi(i,j)*avgfac
+            cam_out%precc(i) = cam_out%precc(i)+cam_out%precc_mi(i,j)*avgfac
+            cam_out%precl(i) = cam_out%precl(i)+cam_out%precl_mi(i,j)*avgfac
+         end do
+      end do! i = 1, ncol
    end if ! .not.use_MAML
    !
    ! total snowfall rate: needed by slab ocean model

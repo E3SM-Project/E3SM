@@ -375,6 +375,7 @@ contains
     integer :: ixcldliq              ! cloud liquid water index
     integer :: icol
     integer :: ncol
+    integer :: j
 
     ! surface albedoes weighted by (positive cosine zenith angle)
     real(r8):: coszrs_pos(pcols)    ! = max(coszrs,0)
@@ -404,10 +405,10 @@ contains
     do icol = 1, ncol
        coszrs_pos(icol)  = max(coszen(icol),0._r8)
        do j= 1, num_inst_atm
-          asdir_pos(icol,j) = cam_in%asdir(icol,j) * coszrs_pos(icol)
-          asdif_pos(icol,j) = cam_in%asdif(icol,j) * coszrs_pos(icol)
-          aldir_pos(icol,j) = cam_in%aldir(icol,j) * coszrs_pos(icol)
-          aldif_pos(icol,j) = cam_in%aldif(icol,j) * coszrs_pos(icol)
+          asdir_pos(icol,j) = cam_in%asdir_mi(icol,j) * coszrs_pos(icol)
+          asdif_pos(icol,j) = cam_in%asdif_mi(icol,j) * coszrs_pos(icol)
+          aldir_pos(icol,j) = cam_in%aldir_mi(icol,j) * coszrs_pos(icol)
+          aldif_pos(icol,j) = cam_in%aldif_mi(icol,j) * coszrs_pos(icol)
        enddo
     enddo
     call outfld(snowh_fldn,  cam_in%snowhland_mi, pcols, lchnk)

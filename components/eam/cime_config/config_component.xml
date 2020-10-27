@@ -378,8 +378,8 @@
     <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%MMF[12X]-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <!-- MAML uses this for setting NINST, NINST_LAYOUT -->
-    <value compset="EAM%MMF[12]-MAML">$SRCROOT/components/eam/cime_config/usermods_dirs/maml</value>
+    <!-- MAML uses this for setting NINST, NINST_LAYOUT 
+    <value compset="EAM%MMF[12]-MAML">$SRCROOT/components/eam/cime_config/usermods_dirs/maml</value> -->
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>

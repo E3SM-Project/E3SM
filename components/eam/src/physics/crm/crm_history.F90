@@ -378,6 +378,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    use ppgrid,                 only: pcols, pver, pverp
    use physconst,              only: cpair
    use cam_history,            only: outfld
+   use camsrfexch,             only: cam_in_t
    
    !----------------------------------------------------------------------------
    ! interface variables
@@ -408,6 +409,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    logical :: use_ECPP
    character(len=16) :: MMF_microphysics_scheme
 
+   type(cam_in_t) :: cam_in           ! atm input from coupler 
    !----------------------------------------------------------------------------
 
    call cnst_get_ind('CLDLIQ', ixcldliq)

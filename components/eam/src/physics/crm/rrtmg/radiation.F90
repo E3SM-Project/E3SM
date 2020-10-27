@@ -440,9 +440,9 @@ end function radiation_nextsw_cday
     integer :: dtime                        ! time step
 
     logical :: use_MMF                      ! MMF flag
-    character(len=16) :: MMF_microphysics_scheme  ! MMF microphysics scheme
-
     logical :: use_MAML                      ! MAML flag
+    character(len=16) :: MMF_microphysics_scheme  ! MMF microphysics scheme
+    
     !variables for pergro_mods
     character (len=250) :: errstr
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
@@ -861,7 +861,8 @@ end function radiation_nextsw_cday
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, is_cmip6_volc)
+       fsds, net_flx, is_cmip6_volc, dt, &
+       clear_rh)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -948,6 +949,7 @@ end function radiation_nextsw_cday
     use orbit,                only: zenith
     use output_aerocom_aie,   only: do_aerocom_ind3
     use pkg_cldoptics,        only: cldefr  ! for sam1mom microphysics
+    use seq_comm_mct,         only: num_inst_atm
 
 
     ! Arguments
@@ -956,6 +958,10 @@ end function radiation_nextsw_cday
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
+    real(r8),  intent(in)   :: dt               ! time step(s) - needed for aerosol optics call
+
+    real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity
+                                                               ! that gets passed to modal_aero_wateruptake_dr
 #ifdef MODAL_AERO
 #endif
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
@@ -972,7 +978,7 @@ end function radiation_nextsw_cday
     type(physics_buffer_desc), pointer      :: pbuf(:)
     type(cam_out_t),     intent(inout)      :: cam_out
     type(cam_in_t),      intent(in)         :: cam_in
-
+    
     ! Local variables
 
     type(physics_state), target :: statein_copy
@@ -1166,10 +1172,9 @@ end function radiation_nextsw_cday
     real(r8) qrlc_m(pcols,pver, 0:N_DIAG)
     logical :: first_column
     logical :: last_column
-    integer :: ii,jj,m
+    integer :: ii,jj,m, icol, i_rad,j_rad
 #ifdef MAML
     !temporary storage for computed radiation fluxes at surface
-    real(r8) :: lwup_loc
     real(r8) :: sols_loc(pcols)
     real(r8) :: soll_loc(pcols)
     real(r8) :: solsd_loc(pcols)
@@ -1184,7 +1189,6 @@ end function radiation_nextsw_cday
     real(r8) :: solsd_col(pcols,crm_nx_rad,crm_ny_rad)
     real(r8) :: solld_col(pcols,crm_nx_rad,crm_ny_rad)
     real(r8) :: flwds_col(pcols,crm_nx_rad,crm_ny_rad)
-    real(r8) :: asdir_glb(pcols)
 
     ! Input for radiation calculation
     real(r8) :: crm_nx_rad_fac, crm_ny_rad_fac, tmpfac  ! needed for the reduced rad. computation
@@ -1192,12 +1196,11 @@ end function radiation_nextsw_cday
     ! crm_ny_rad = crm_ny = 1)
     !Input for radiation model from cam_in needs to be packed/averaged for the
     ! reduced radiation column method (when crm_nx .ne. crm_nx_rad)
+#endif
     real(r8) :: asdir_col(pcols, crm_nx_rad, crm_ny_rad)
     real(r8) :: asdif_col(pcols, crm_nx_rad, crm_ny_rad)
-    real(r8) :: aldir_col(pcols, crm_nx_rad, crm_ny_rad)                                                                          
+    real(r8) :: aldir_col(pcols, crm_nx_rad, crm_ny_rad)
     real(r8) :: aldif_col(pcols, crm_nx_rad, crm_ny_rad)
-    real(r8) :: lwup_col(pcols, crm_nx_rad, crm_ny_rad)
-#endif
 
     integer :: ixcldliq, ixcldice
     integer :: i_iciwp, i_iclwp, i_icswp
@@ -1279,6 +1282,7 @@ end function radiation_nextsw_cday
 
     logical :: active_calls(0:N_DIAG)
     logical :: use_MMF
+    logical :: use_MAML                      ! MAML flag
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
 
@@ -1295,6 +1299,7 @@ end function radiation_nextsw_cday
 !----------------------------------------------------------------------
   
     call phys_getopts( use_MMF_out           = use_MMF )
+    call phys_getopts( use_MAML_out           = use_MAML )
     call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
     first_column = .false.
     last_column  = .false.
@@ -1600,10 +1605,14 @@ end function radiation_nextsw_cday
          asdir_col = asdir_col * tmpfac
          asdif_col = asdif_col * tmpfac
       else ! if(use_SPCAM . and. use_MAML)
-         aldir_col(1:ncol,:,:) = cam_in%aldir(1:ncol)
-         aldif_col(1:ncol,:,:) = cam_in%aldif(1:ncol)
-         asdir_col(1:ncol,:,:) = cam_in%asdir(1:ncol)
-         asdif_col(1:ncol,:,:) = cam_in%asdif(1:ncol)
+         do i_rad = 1, crm_nx_rad
+            do j_rad = 1, crm_ny_rad
+               aldir_col(1:ncol,i_rad,j_rad) = cam_in%aldir(1:ncol)
+               aldif_col(1:ncol,i_rad,j_rad) = cam_in%aldif(1:ncol)
+               asdir_col(1:ncol,i_rad,j_rad) = cam_in%asdir(1:ncol)
+               asdif_col(1:ncol,i_rad,j_rad) = cam_in%asdif(1:ncol)
+            end do ! j_rad
+         end do ! i_rad   
       end if
 
 
@@ -1869,7 +1878,7 @@ end function radiation_nextsw_cday
                 call rrtmg_state_update( state, pbuf, icall, r_state )
 
                 ! Calculate the aerosol optical properties
-                call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
+                call aer_rad_props_sw( icall, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                        aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
                 ! Run the shortwave radiation driver
@@ -2173,7 +2182,8 @@ end function radiation_nextsw_cday
             ! Convert upward longwave flux units to CGS
            do i=1,ncol
 #ifdef MAML
-              lwupcgs(i) = cam_in%lwup(i,ii)*1000._r8
+              ! lwupcgs doesn't get used anywhere, can be deleted.
+              lwupcgs(i) = cam_in%lwup_mi(i,ii)*1000._r8
 #else
               lwupcgs(i) = cam_in%lwup(i)*1000._r8
 #endif
@@ -2194,7 +2204,7 @@ end function radiation_nextsw_cday
                 call rrtmg_state_update( state, pbuf, icall, r_state)
 
                 ! Calculate aerosol optical properties
-                call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
+                call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf,  aer_lw_abs)
                     
                 call t_startf ('rad_rrtmg_lw')
                 call rad_rrtmg_lw( &
@@ -2338,8 +2348,8 @@ end function radiation_nextsw_cday
             do icol = 1, ncol
                i_rad = (ii-1) / (crm_nx/crm_nx_rad) + 1
                j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
-               cam_out%sols_mi(icol,ii) = sols_col(icol,i_rad_,j_rad)
-               cam_out%soll_mi(icol,ii) = soll_col(icol,i_rad_,j_rad)
+               cam_out%sols_mi (icol,ii)  = sols_col(icol,i_rad,j_rad)
+               cam_out%soll_mi (icol,ii)  = soll_col(icol,i_rad,j_rad)
                cam_out%solsd_mi(icol,ii) = solsd_col(icol,i_rad,j_rad)
                cam_out%solld_mi(icol,ii) = solld_col(icol,i_rad,j_rad)
                cam_out%flwds_mi(icol,ii) = flwds_col(icol,i_rad,j_rad)

@@ -134,8 +134,8 @@ module crm_output_module
 
 #ifdef MAML
       ! MAML variables
-      real(crm_rknd), allocatable :: crm_pcp(ncrms,crm_nx,crm_ny) ! CRM precip rate for MAML (m/s)
-      real(crm_rknd), allocatable :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate for MAML (m/s)
+      real(crm_rknd), allocatable :: crm_pcp(:,:,:) ! CRM precip rate for MAML (m/s)
+      real(crm_rknd), allocatable :: crm_snw(:,:,:) ! CRM snow rate for MAML (m/s)
 #endif
 
    end type crm_output_type

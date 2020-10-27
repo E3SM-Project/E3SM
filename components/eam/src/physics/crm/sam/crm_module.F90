@@ -73,7 +73,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #ifndef MMF_STANDALONE
     use cam_abortutils        , only: endrun
 #endif
-
+#ifdef MAML
+    use seq_comm_mct, only : num_inst_atm
+#endif    
     implicit none
 
     !-----------------------------------------------------------------------------------------------
@@ -106,6 +108,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8),       parameter :: wmin = 2.                      ! minimum up/downdraft velocity for stat
     real(crm_rknd), parameter :: cwp_threshold = 0.001D0          ! threshold for cloud condensate for shaded fraction calculation
     integer,        parameter :: perturb_seed_scale = 1000      ! scaling value for setperturb() seed value (seed = gcol * perturb_seed_scale)
+#ifdef MAML
+    integer,        parameter :: YESV = 1
+#else    
+    integer,        parameter :: YESV = YES3D
+#endif
     real(r8)        :: crm_run_time                             ! length of CRM integration
     real(r8)        :: icrm_run_time                            ! = 1 / crm_run_time
     real(r8)        :: factor_xy, factor_xyt, idt_gl
@@ -118,10 +125,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), allocatable  :: z0_loc(:,:,:),ustar(:,:,:), bflx(:,:,:) ! for MAML
     real(crm_rknd), allocatable  :: wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
-    integer       , parameter :: YESV = YES3D
-#ifdef MAML
-    YESV = 1 ! for MAML do not zero out the meridional component of wind
-#endif     
 
     ! These should all be inputs
     integer         :: iseed             ! seed for random perturbation
@@ -272,7 +275,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_accel_ceaseflag = .false.
 
 !-----------------------------------------------
-
   dostatis  = .false.    ! no statistics are collected.
   idt_gl    = 1._r8/dt_gl
   ptop      = plev-nzm+1
@@ -289,7 +291,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_rad%ns = 0.0
 #endif /* m2005 */
   do icrm = 1 , ncrms
-    bflx(icrm) = crm_input%bflxls(icrm)
     wnd (icrm) = crm_input%wndls (icrm)
   enddo
 
@@ -571,7 +572,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   ![lee1046] ustar, z0_loc are computed CRM-resoltuion for MAML
   ! For non-MAML cases, bflx(icrm, i, j) = bflx(icrm, 1, 1)
   ! this may be removed and let crm_surface.f90 can take care [NEED TO CHECK]
-  $acc parallel loop collapse(3) async(asyncid)
+  !$acc parallel loop collapse(3) async(asyncid)
   do j = 1, ny
     do i = 1, nx
       do icrm = 1, ncrms
@@ -594,9 +595,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       do icrm = 1, ncrms
         !fluxbu(icrm,i,j) = crm_input%fluxu00(icrm,i,j)/rhow(1)
         !fluxbv(icrm,i,j) = crm_input%fluxv00(icrm,i,j)/rhow(1)
-        fluxbt  (icrm,i,j) = crm_input%fluxt00(icrm,i,j)/rhow(1)
-        fluxbq  (icrm,i,j) = crm_input%fluxq00(icrm,i,j)/rhow(1)
-        t_sfc_xy(icrm,i,j) = crm_input%ts(icrm,i,j)
+        fluxbt  (icrm,i,j) = crm_input%fluxt00(icrm,i,j)/rhow(icrm,1)
+        fluxbq  (icrm,i,j) = crm_input%fluxq00(icrm,i,j)/rhow(icrm,1)
       end do ! icrm = 1, ncrms
     end do ! i = 1,nx
   end do ! j = 1, ny  
