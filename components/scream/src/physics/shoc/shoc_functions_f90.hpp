@@ -626,8 +626,8 @@ struct SHOCAssumedpdfData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCAssumedpdfData, 3);
 };//SHOCAssumedpdfData
 
-//Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
-struct SHOCPDFtildaData
+//Create data structure to hold data for shoc_assumed_pdf_tilde_to_real
+struct SHOCPDFtildeData
 {
   // inputs
   Real w_first, sqrtw2;
@@ -893,7 +893,7 @@ void linear_interp                                  (SHOCLinearInterpData &d);
 void diag_third_shoc_moments                        (SHOCDiagThirdMomData &d);
 void compute_diag_third_shoc_moment                 (SHOCCompThirdMomData &d);
 void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
-void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
+void shoc_assumed_pdf_tilde_to_real                 (SHOCPDFtildeData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);
 void shoc_assumed_pdf_qw_parameters                 (SHOCPDFqwparamData &d);

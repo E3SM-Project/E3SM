@@ -180,7 +180,7 @@ void shoc_assumed_pdf_c(Int shcol, Int nlev, Int nlevi, Real *thetal, Real *qw,
                         Real *shoc_cldfrac, Real *shoc_ql, Real *wqls,
                         Real *wthv_sec, Real *shoc_ql2);
 
-void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
+void shoc_assumed_pdf_tilde_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
                                       Real *Skew_w, Real *w1_1, Real *w1_2,
@@ -610,10 +610,10 @@ void shoc_assumed_pdf(SHOCAssumedpdfData &d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
-void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
+void shoc_assumed_pdf_tilde_to_real(SHOCPDFtildeData &d)
 {
   shoc_init(1, true);
-  shoc_assumed_pdf_tilda_to_real_c(d.w_first, d.sqrtw2, &d.w1);
+  shoc_assumed_pdf_tilde_to_real_c(d.w_first, d.sqrtw2, &d.w1);
 }
 
 void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)

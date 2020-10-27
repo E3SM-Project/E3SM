@@ -974,17 +974,17 @@ contains
 
   end subroutine shoc_assumed_pdf_c
 
-  subroutine shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1) bind (C)
-    use shoc, only: shoc_assumed_pdf_tilda_to_real
+  subroutine shoc_assumed_pdf_tilde_to_real_c(w_first, sqrtw2, w1) bind (C)
+    use shoc, only: shoc_assumed_pdf_tilde_to_real
 
     real(kind=c_real), intent(in), value :: w_first
     real(kind=c_real), intent(in), value :: sqrtw2
 
     real(kind=c_real), intent(inout) :: w1
 
-    call shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1)
+    call shoc_assumed_pdf_tilde_to_real(w_first, sqrtw2, w1)
 
-  end subroutine shoc_assumed_pdf_tilda_to_real_c
+  end subroutine shoc_assumed_pdf_tilde_to_real_c
 
   subroutine shoc_assumed_pdf_vv_parameters_c(w_first,w_sec,w3var,&
                                               Skew_w,w1_1,w1_2,w2_1,w2_2,a) bind (C)
