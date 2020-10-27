@@ -16,16 +16,12 @@ void Functions<S,D>::check_length_scale_shoc_length(
   const uview_1d<Spack>& shoc_mix)
 {
   const auto minlen = scream::shoc::Constants<Real>::minlen;
-  const auto maxlen = scream::shoc::Constants<Real>::maxlen;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-    // Ensure shoc_mix is in the interval [minval, maxval]
-    shoc_mix(k).set(maxlen < shoc_mix(k), maxlen);
-    shoc_mix(k).set(minlen > shoc_mix(k), minlen);
-
-    const auto tmp_val = sqrt(host_dx*host_dy);
-    shoc_mix(k).set(tmp_val < shoc_mix(k), tmp_val);
+    // Ensure shoc_mix is in the interval [minval, sqrt(host_dx*host_dy)]
+    shoc_mix(k) = ekat::min(std::sqrt(host_dx*host_dy),
+                            ekat::max(minlen, shoc_mix(k)));
   });
 }
 

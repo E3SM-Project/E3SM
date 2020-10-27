@@ -18,8 +18,7 @@ void Functions<S,D>::compute_conv_time_shoc_length(
   Scalar&       conv_vel,
   Scalar&       tscale)
 {
-  const Scalar tmp_val = (conv_vel > 0 ? conv_vel : 0);
-  conv_vel = std::pow(tmp_val, C::THIRD);
+  conv_vel = std::pow(ekat::impl::max(conv_vel, sp(0)), C::THIRD);
 
   if (conv_vel > 0) {
       tscale = pblh/conv_vel;

@@ -40,7 +40,7 @@ void Functions<S,D>::shoc_diag_obklen(
   const Scalar ustar_val = std::sqrt(uw_sfc*uw_sfc + vw_sfc*vw_sfc);
 
   // Outputs
-  ustar = (ustar_min > ustar_val ? ustar_min : ustar_val);
+  ustar = ekat::impl::max(ustar_min, ustar_val);
   kbfs = wthl_sfc + eps*th_sfc*wqw_sfc;
   obklen = -thv_sfc*(ustar*ustar*ustar)/(ggr*vk*(kbfs + sign_val));
 }

@@ -25,18 +25,13 @@ void Functions<S,D>
   const auto vk = C::Karman;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-    Spack tkes(ekat::sqrt(tke(k)));
+    const Spack tkes = ekat::sqrt(tke(k));
+    const Spack brunt2 = ekat::max(0, brunt(k));
 
-    Spack brunt2(0);
-    brunt2.set(brunt(k) >= 0, brunt(k));
-
-    Spack return_val(maxlen);
-    Spack comp_val(sp(2.8284)*(ekat::sqrt(1/((1/(tscale*tkes*vk*zt_grid(k)))
-                                            +(1/(tscale*tkes*l_inf))
-                                            +sp(0.01)*(brunt2/tke(k)))))/length_fac);
-    return_val.set(return_val > comp_val, comp_val);
-
-    shoc_mix(k) = return_val;
+    shoc_mix(k) = ekat::min(maxlen,
+                            sp(2.8284)*(ekat::sqrt(1/((1/(tscale*tkes*vk*zt_grid(k)))
+                            + (1/(tscale*tkes*l_inf))
+                            + sp(0.01)*(brunt2/tke(k)))))/length_fac);
   });
 }
 
