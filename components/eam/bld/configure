@@ -2586,6 +2586,10 @@ sub write_filepath
         if (defined $opts{'use_ECPP'}) {
             print $fh "$camsrcdir/eam/src/physics/crm/ecpp\n";
         }
+        
+        if (defined $opts{'use_MAML'}) {
+            print $fh "$camsrcdir/eam/src/physics/crm/maml\n";
+        }
 
         my $crm = $cfg_ref->get('crm');
         if ($crm eq 'sam') {

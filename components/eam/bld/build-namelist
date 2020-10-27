@@ -3626,6 +3626,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');
 add_default($nl, 'use_MMF');
+add_default($nl, 'use_MAML');
 add_default($nl, 'use_ECPP');
 
 # MMF CRM mean-state acceleration

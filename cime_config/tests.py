@@ -201,6 +201,7 @@ _TESTS = {
             "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.MAML",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
