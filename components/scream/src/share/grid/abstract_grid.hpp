@@ -57,9 +57,14 @@ public:
 
   virtual int get_num_vertical_levels () const = 0;
 
-  // Dofs gids utilities
+  // The number of dofs on this MPI rank
   virtual int get_num_local_dofs () const = 0;
+
+  // Get a 1d view containing the dof gids
   virtual const dofs_list_type& get_dofs_gids () const = 0;
+
+  // Get a 2d view, where (i,j) entry contains the j-th coordinate of
+  // the i-th dof in the native dof layout.
   virtual lid_to_idx_map_type get_lid_to_idx_map () const = 0;
 };
 

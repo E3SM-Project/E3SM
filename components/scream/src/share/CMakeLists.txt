@@ -9,7 +9,7 @@ set(SHARE_SRC
   field/field_layout.cpp
   field/field_tracking.cpp
   grid/se_grid.cpp
-  grid/simple_grid.cpp
+  grid/point_grid.cpp
   util/scream_test_session.cpp
   util/scream_time_stamp.cpp
 )
