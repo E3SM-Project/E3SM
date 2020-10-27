@@ -20,18 +20,18 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
-    static constexpr Int num_tracer = 6;
+    static constexpr Int num_tracer = 3;
 
     // Tests for the subroutine update_prognostics_implicit
-    
+
     // TEST details
     //  Given a set of realistic model profiles verify that energy/water
-    //    is conserved after each call and that the surface fluxes
-    //    were implemented as expected.
+    //    and tracers are conserved and that output falls within
+    //    reasonable bounds.
 
     // Timestep [s]
     static constexpr Real dtime = 300;
- 
+
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {900, 500, 150, 90, 50, 0};
     // Define the eddy vicosity for heat and momentum [m2/s]
@@ -47,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real uw_sfc[shcol] = {0.03, -0.03, 0.1, 0, -0.1};
     // Surface moment flux, meridional direction [m3/s3]
     static constexpr Real vw_sfc[shcol] = {-0.01, -0.01, 0.3, 0, -0.3};
-    
+
     // IN/OUT variables, PROFILES
     // Define the liquid water potential temperature [K]
     static constexpr Real thetal_in[nlev] = {310, 307, 302, 302, 303};
@@ -59,7 +59,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real v_wind_in[nlev] = {-2, -2, 1, 3, 0};
     // Define the TKE [m2/s2]
     static constexpr Real tke_in[nlev] = {0.2, 0.3, 0.5, 0.4, 0.1};
-    
+
     // establish reasonable bounds for checking input/output
     static constexpr Real thl_lbound = 200; // [K]
     static constexpr Real thl_ubound = 350; // [K]
@@ -70,19 +70,22 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real rho_lbound = 0; // [kg/m3]
     static constexpr Real rho_ubound = 1.5; // [kg/m3]
     static constexpr Real wind_bounds = 5; // [m/s]
-    
+
     // establish spurious threshold bounds
     static const auto qwspur_thresh = Approx(0.0).margin(1e-16);
-    static const auto thlspur_thresh = Approx(0.0).margin(1e-12); 
-       
+    static const auto thlspur_thresh = Approx(0.0).margin(1e-12);
+    static const auto trcspur_thresh = Approx(0.0).margin(1e-12);
+
     // Input for tracer (no units)
-    Real tracer_in[shcol*nlev*num_tracer];
-    
-    // Integrals for energy checking
+    Real tracer_in[shcol][nlev][num_tracer];
+
+    // Define Integrals for energy/water conservation checking
     Real qw_int_b[shcol];
     Real qw_int_a[shcol];
     Real thl_int_b[shcol];
     Real thl_int_a[shcol];
+    Real trc_int_b[shcol][num_tracer];
+    Real trc_int_a[shcol][num_tracer];
 
     // Compute needed grid information from zi_grid
     // Grid stuff to compute based on zi_grid
@@ -103,18 +106,23 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     }
     // set upper condition for dz_zi
     dz_zi[nlevi-1] = zt_grid[nlev-1];
-    
-    // Generate random data for input tracers 1 to 1000 (unitless)
-    for (Int i = 0; i < shcol*nlev*num_tracer; ++i){
-      tracer_in[i] = rand()% 1000 + 1;
+
+    // Load up tracer input array with random data
+    //  ranging from values of 1 to 1000 (unitless)
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        for (Int t = 0; t < num_tracer; ++t){
+          tracer_in[s][n][t] = rand()%1000 + 1;
+        }
+      }
     }
-   
+
     // Initialize data structure for bridging to F90
     UpdatePrognosticsImplicitData SDS(shcol,nlev,nlevi,num_tracer,dtime);
     // Note to validate this test we need to call the linear interp function
     //  to get the value of rho on zi grid at surface
     SHOCLinearInterpData SDSL(shcol,nlev,nlevi,0);
-    
+
     // Test that the inputs are reasonable
     REQUIRE(SDS.shcol == shcol);
     REQUIRE(SDS.nlev == nlev);
@@ -124,98 +132,97 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     REQUIRE(nlev > 1);
     REQUIRE(nlevi == nlev+1);
     REQUIRE(num_tracer > 1);
-    
+
     // Fill in test data, first for column only input
-    for(Int s = 0; s < shcol; ++s) {    
+    for(Int s = 0; s < shcol; ++s) {
       SDS.uw_sfc[s] = uw_sfc[s];
       SDS.vw_sfc[s] = vw_sfc[s];
       SDS.wthl_sfc[s] = wthl_sfc[s];
       SDS.wqw_sfc[s] = wqw_sfc[s];
-      
+
+      // Fill in tracer fluxes with random data from -10 to 10 (unitless)
       for (Int t = 0; t < num_tracer; ++t){
         const auto offset = t + s * num_tracer;
-        // If first column feed in zero surface fluxes for all tracers
-        if (s == 0){
-          SDS.wtracer_sfc[offset] = 0;
-        }
-        // Else feed tracer flux random data from -10 to 10 (unitless)
-        else{
           SDS.wtracer_sfc[offset] = rand()%20 + (-10);
-        }
       }
-      
+
       // Fill in data on the nlev grid
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-        
+
         // TKH and TK get the same values on purpose
         SDS.tkh[offset] = tkh[n];
         SDS.tk[offset] = tkh[n];
-        
+
         SDS.rho_zt[offset] = rho_zt[n];
         SDS.dz_zt[offset] = dz_zt[n];
         SDS.zt_grid[offset] = zt_grid[n];
-        
+
         SDSL.y1[offset] = rho_zt[n];
         SDSL.x1[offset] = zt_grid[n];
-        
+
         // Prognostic input/output variables
         SDS.thetal[offset] = thetal_in[n];
         SDS.qw[offset] = qw_in[n];
         SDS.u_wind[offset] = u_wind_in[n];
         SDS.v_wind[offset] = v_wind_in[n];
         SDS.tke[offset] = tke_in[n];
+
+        for (Int t = 0; t < num_tracer; t++){
+          const auto t_offset = t + offset * num_tracer;
+          SDS.tracer[t_offset] = tracer_in[s][n][t];
+        }
       }
-      
+
       // Fill in data on the nlevi grid
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-         
+
         SDS.zi_grid[offset] = zi_grid[n];
         SDS.dz_zi[offset] = dz_zi[n];
-        
+
         SDSL.x2[offset] = zi_grid[n];
       }
-      
-      // Fill in tracer data
-      for (Int i = 0; i < shcol*nlev*num_tracer; ++i){
-        SDS.tracer[i] = tracer_in[i];
-      }
+
     } // column loop
-    
+
     // Check that inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(std::abs(SDS.wthl_sfc[s]) < 1);
       REQUIRE(std::abs(SDS.wqw_sfc[s]) < 1e-3);
       REQUIRE(std::abs(SDS.uw_sfc[s]) < 1);
-      REQUIRE(std::abs(SDS.vw_sfc[s]) < 1);   
+      REQUIRE(std::abs(SDS.vw_sfc[s]) < 1);
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-        
+
+        // Make sure inputs fall within reasonable bounds
         REQUIRE(SDS.dz_zt[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] > 0);
         REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
         REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
         REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
         REQUIRE( (SDS.rho_zt[offset] > rho_lbound && SDS.rho_zt[offset] < rho_ubound) );
-        
+
         // While there is nothing unphysical with winds outside of these
-        //  bounds, for this particular test we want to make sure the 
-        //  winds are modestly defined for checking later on
+        //  bounds, for this particular test we want to make sure the
+        //  winds are modestly defined for checking later on.
         REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds);
         REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds);
-        
+
         REQUIRE( (SDS.tkh[offset] > 0 && SDS.tkh[offset] > 0) );
-        REQUIRE(SDS.tkh[offset] == SDS.tk[offset]); 
+        // For this case we assume diffusivity of heat equals the
+        //  diffusivity of momentum.
+        REQUIRE(SDS.tkh[offset] == SDS.tk[offset]);
       }
-      
+
+      // Make sure height arrays on zi grid are physical
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlevi;
-        
+
         REQUIRE(SDS.zi_grid[offset] >= 0);
         REQUIRE(SDS.dz_zi[offset] >= 0);
       }
-      
+
       // Check that zt increases in the upward direction
       for(Int n = 0; n < nlev - 1; ++n) {
         const auto offset = n + s * nlev;
@@ -228,62 +235,101 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
         REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
     }
-    
+
     // Compute integrals of input variables for energy check
     for (Int s = 0; s < shcol; ++s){
       qw_int_b[s] = 0; // Initialize
       thl_int_b[s] = 0; // Initialize
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
+        // Total water input integral
         qw_int_b[s] = qw_int_b[s] + SDS.qw[offset]*SDS.rho_zt[offset]
                                   *SDS.dz_zt[offset];
+        // Potential temperature input integral
         thl_int_b[s] = thl_int_b[s] + SDS.thetal[offset]
                                   *SDS.rho_zt[offset]*SDS.dz_zt[offset];
+
+        // Tracer input integrals
+        for (Int t = 0; t < num_tracer; ++t){
+          if (n == 0){
+            trc_int_b[s][t] = 0;
+          }
+          const auto t_offset = t + offset * num_tracer;
+          trc_int_b[s][t] = trc_int_b[s][t] + SDS.tracer[t_offset]*
+                             SDS.rho_zt[offset]*SDS.dz_zt[offset];
+        }
       }
-    }    
-    
+    }
+
     // Call the fortran implementation
     update_prognostics_implicit(SDS);
     // Call linear interp to get rho value at surface for checking
     linear_interp(SDSL);
-    
+
     // Check the result
-    
-    // First make sure that all output is within reasonable bounds
+
+    // First make sure that all output is within reasonable bounds and
+    //  compute integrals of the outputs
     for(Int s = 0; s < shcol; ++s) {
       qw_int_a[s] = 0;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
+
+        // Make sure all output is reasonable
         REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
         REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
-        REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );  
+        REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
+        // Increase wind bounds by 2 m/s to allow for surface flux effects
         REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds+2));
         REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds+2));
-        
+
         // Compute integrals of end result
+        // Output total water integral
         qw_int_a[s] = qw_int_a[s] + SDS.rho_zt[offset]*SDS.dz_zt[offset]
                       *SDS.qw[offset];
+        // Output potential temperature integral
         thl_int_a[s] = thl_int_a[s] + SDS.rho_zt[offset]*SDS.dz_zt[offset]
                       *SDS.thetal[offset];
+
+        // Output tracer integral
+        for (Int t = 0; t < num_tracer; ++t){
+          if (n == 0){
+            trc_int_a[s][t] = 0;
+          }
+          const auto t_offset = t + offset * num_tracer;
+          trc_int_a[s][t] = trc_int_a[s][t] + SDS.tracer[t_offset]*
+                             SDS.rho_zt[offset]*SDS.dz_zt[offset];
+        }
       }
+
       // Get surface value of rho on zi grid
       Real rho_zi_srf;
       const auto offset_srf = (nlevi-1) + s * nlevi;
       rho_zi_srf = SDSL.y2[offset_srf];
-      
+
       // Calculate the spurious source for total water
-      auto spurious = (qw_int_a[s] - qw_int_b[s])/dtime 
+      auto spurious = (qw_int_a[s] - qw_int_b[s])/dtime
                    - rho_zi_srf*SDS.wqw_sfc[s];
-                   
+
       // Spurious source should be sufficiently small for water conservation
       REQUIRE(spurious == qwspur_thresh);
-      
+
       // Calculate the spurious source for thetal
       spurious = (thl_int_a[s] - thl_int_b[s])/dtime
                    - rho_zi_srf*SDS.wthl_sfc[s];
-                                 
+
       // Spurious source should be sufficiently small for energy conservation
       REQUIRE(spurious == thlspur_thresh);
+
+      // Check that tracers were conserved during vertical transport
+      for (Int t = 0; t < num_tracer; ++t){
+        const auto t_offset = t + s * num_tracer;
+        // Calculate spurious source
+        spurious = (trc_int_a[s][t] - trc_int_b[s][t])/dtime
+                  - rho_zi_srf*SDS.wtracer_sfc[t_offset];
+        // Spurious source should be sufficiently small
+        REQUIRE(spurious == trcspur_thresh);
+      }
 
     }
 
