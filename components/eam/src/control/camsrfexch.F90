@@ -754,6 +754,9 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
       cam_out%precsl(i) = snow_sed(i) + snow_pcw(i)
 
+
+!!! OG conservation issue?
+
       ! jrm These checks should not be necessary if they exist in the parameterizations
       if (cam_out%precc(i) .lt.0._r8) cam_out%precc(i)=0._r8
       if (cam_out%precl(i) .lt.0._r8) cam_out%precl(i)=0._r8
