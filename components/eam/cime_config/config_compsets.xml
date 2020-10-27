@@ -636,19 +636,19 @@
 
     <entry id="SSTICE_DATA_FILENAME">
       <values>
-        <value compset="_EAM%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c200505.nc</value>
-        <value compset="_EAM%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c200505.nc</value>
-        <value compset="_EAM%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c200505.nc</value>
-        <value compset="_EAM%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c200505.nc</value>
+        <value compset="_EAM%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c201013.nc</value>
+        <value compset="_EAM%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c201013.nc</value>
+        <value compset="_EAM%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c201013.nc</value>
+        <value compset="_EAM%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c201013.nc</value>
       </values>
     </entry> 
 
     <entry id="SSTICE_GRID_FILENAME">
       <values>
-        <value compset="_EAM%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.200505.nc</value>
-        <value compset="_EAM%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.200505.nc</value>
-        <value compset="_EAM%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.200505.nc</value>
-        <value compset="_EAM%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.200505.nc</value>
+        <value compset="_EAM%SCREAM-HR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.201027.nc</value>
+        <value compset="_EAM%SCREAM-LR-DYAMOND1">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.201027.nc</value>
+        <value compset="_EAM%SCREAM-HR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.201027.nc</value>
+        <value compset="_EAM%SCREAM-LR-DYAMOND2">$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.201027.nc</value>
       </values>
     </entry> 
 
