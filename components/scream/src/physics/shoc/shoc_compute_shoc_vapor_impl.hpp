@@ -9,14 +9,25 @@ namespace shoc {
 /*
  * Implementation of shoc compute_shoc_vapor. Clients should NOT
  * #include this file, but include shoc_functions.hpp instead.
+ *
+ * This function computes water vapor
+ * based on SHOC's prognostic total water mixing ratio
+ * and diagnostic cloud water mixing ratio.
  */
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::compute_shoc_vapor(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& ql, const uview_1d<Spack>& qv)
+void Functions<S,D>::compute_shoc_vapor(
+  const MemberType&            team,
+  const Int&                   nlev,
+  const uview_1d<const Spack>& qw,
+  const uview_1d<const Spack>& ql,
+  const uview_1d<Spack>&       qv)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+    qv(k) = qw(k) - ql(k);
+  });
 }
 
 } // namespace shoc

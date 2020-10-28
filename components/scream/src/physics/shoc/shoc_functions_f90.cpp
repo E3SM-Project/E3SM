@@ -1940,7 +1940,45 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
 
 void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
 {
-  // TODO
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 3;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<int, num_arrays> dim1_sizes = {shcol, shcol, shcol};
+  Kokkos::Array<int, num_arrays> dim2_sizes = {nlev,  nlev,  nlev};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {qw,  ql, qv};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // Inputs/Outputs
+  view_2d
+    qw_d(temp_d[0]),
+    ql_d(temp_d[1]),
+    qv_d(temp_d[2]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto qw_s = ekat::subview(qw_d, i);
+    const auto ql_s = ekat::subview(ql_d, i);
+    const auto qv_s = ekat::subview(qv_d, i);
+
+    SHF::compute_shoc_vapor(team, nlev, qw_s, ql_s, qv_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> out_views = {qv_d};
+  ekat::device_to_host<int, 1>({qv}, {shcol}, {nlev}, out_views, true);
 }
 
 void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind)

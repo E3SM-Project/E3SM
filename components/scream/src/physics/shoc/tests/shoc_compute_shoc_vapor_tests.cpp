@@ -88,7 +88,11 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
   static void run_bfb()
   {
     ComputeShocVaporData f90_data[] = {
-      // TODO
+      //              shcol, nlev
+      ComputeShocVaporData(10, 71),
+      ComputeShocVaporData(10, 12),
+      ComputeShocVaporData(7,  16),
+      ComputeShocVaporData(2,   7),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
@@ -101,7 +105,10 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     ComputeShocVaporData cxx_data[] = {
-      // TODO
+      ComputeShocVaporData(f90_data[0]),
+      ComputeShocVaporData(f90_data[1]),
+      ComputeShocVaporData(f90_data[2]),
+      ComputeShocVaporData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -126,10 +133,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
       for (Int k = 0; k < d_f90.total1x2(); ++k) {
         REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
       }
-
     }
   } // run_bfb
-
 };
 
 } // namespace unit_test
