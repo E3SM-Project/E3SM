@@ -3473,6 +3473,7 @@ module ocn_time_integration_si
             call mpas_dmpar_sum_real(dminfo,local_area_sum,total_area_sum)
       
             area_mean = dsqrt(total_area_sum / total_num_cells)
+            ncpus = domain % dminfo % nprocs
             mean_num_cells = total_num_cells/ncpus
    
             ! Tolerance for main iteration
@@ -3593,7 +3594,7 @@ module ocn_time_integration_si
       integer,           dimension(:)  , pointer :: globalCellId
 
       real (kind=RKIND) :: temp1,temp2
-      integer :: local_num_cells,total_num_cells
+      integer :: local_num_cells,total_num_cells,ncpus
       integer :: local_start,local_end,nCellsA2,nCellsA3,nPrecMatPacked,info,itmp1
 
       dminfo = domain % dminfo
@@ -3639,6 +3640,7 @@ module ocn_time_integration_si
 
          if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
               trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
+            ncpus = domain % dminfo % nprocs
             itmp1 = int(total_num_cells/ncpus)
             if ( itmp1 > 3000 ) then
                call mpas_log_write('      nCells per core is larger than 3000.')
