@@ -70,13 +70,14 @@ module ocn_time_integration_si
    character (len=*), parameter :: finalBtrGroupName = 'finalBtrFields'
 
    ! Global variables for the semi-implicit time stepper ---------------
-   real (kind=RKIND), allocatable,dimension(:,:) :: prec_ivmat,tavg
+   real (kind=RKIND), allocatable,dimension(:,:) :: tavg
+   real (kind=RKIND), allocatable,dimension(:)   :: prec_ivmat
    real (kind=RKIND), allocatable,dimension(:)   :: dt_si
    real (kind=RKIND), allocatable,dimension(:)   :: R1_alpha1s_g_dts
    real (kind=RKIND), allocatable,dimension(:)   :: R1_alpha1s_g_dt
    real (kind=RKIND) :: total_num_cells,mean_num_cells
    real (kind=RKIND) :: R1_alpha1_g,alpha1,alpha2,crit_main
-   integer :: nPrecVec, si_opt
+   integer :: nPrecVec, si_opt, si_ismf
 
    contains
 
@@ -813,7 +814,7 @@ module ocn_time_integration_si
                   sshEdgeCur = 0.5_RKIND * (sshCur(cell1) + sshCur(cell2))
 
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumCur = sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumCur = si_ismf * sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
 
                   ! nabla (ssh^0)
                   sshDiffCur = (  sshCur(cell2) -   sshCur(cell1)) / dcEdge(iEdge)
@@ -873,18 +874,18 @@ module ocn_time_integration_si
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_r0(1:nPrecVec),1,0.0_RKIND,CGvec_rh0(1:nPrecVec),1)
 #endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_r0(1:nPrecVec),1,0.0_RKIND,CGvec_rh0(1:nPrecVec),1)
 #endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning 
-               CGvec_rh0(1:nPrecVec) = CGvec_r0(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+               CGvec_rh0(1:nPrecVec) = CGvec_r0(1:nPrecVec) * prec_ivmat(1:nPrecVec)
 
             elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                ! No preconditioning 
@@ -955,7 +956,7 @@ module ocn_time_integration_si
                   sshEdgeCur = 0.5_RKIND * (sshCur(cell1) + sshCur(cell2))
    
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumCur = sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumCur = si_ismf * sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
    
                   ! nabla (ssh^0)
                   sshDiffCur = (CGvec_rh0(cell2)- CGvec_rh0(cell1)) / dcEdge(iEdge)
@@ -1010,18 +1011,18 @@ module ocn_time_integration_si
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w0(1:nPrecVec),1,0.0_RKIND,CGvec_wh0(1:nPrecVec),1)
 #endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w0(1:nPrecVec),1,0.0_RKIND,CGvec_wh0(1:nPrecVec),1)
 #endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning 
-               CGvec_wh0(1:nPrecVec) = CGvec_w0(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+               CGvec_wh0(1:nPrecVec) = CGvec_w0(1:nPrecVec) * prec_ivmat(1:nPrecVec)
  
             elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                ! No preconditioning 
@@ -1092,7 +1093,7 @@ module ocn_time_integration_si
                   sshEdgeCur = 0.5_RKIND * (sshCur(cell1) + sshCur(cell2))
    
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumCur = sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumCur = si_ismf * sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
    
                   ! nabla (ssh^0)
                   sshDiffCur = (CGvec_wh0(cell2)- CGvec_wh0(cell1)) / dcEdge(iEdge)
@@ -1254,18 +1255,18 @@ module ocn_time_integration_si
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_z1(1:nPrecVec),1,0.0_RKIND,CGvec_zh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_z1(1:nPrecVec),1,0.0_RKIND,CGvec_zh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
-                  CGvec_zh1(1:nPrecVec) = CGvec_z1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+                  CGvec_zh1(1:nPrecVec) = CGvec_z1(1:nPrecVec) * prec_ivmat(1:nPrecVec)
    
                elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                   ! No preconditioning 
@@ -1337,7 +1338,7 @@ module ocn_time_integration_si
                      sshEdgeLag = 0.5_RKIND * (sshCur(cell1) + sshCur(cell2))
      
                      ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                     thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
      
                      ! nabla (ssh^0)
                      sshDiffNew = (CGvec_zh1(cell2)-CGvec_zh1(cell1)) / dcEdge(iEdge)
@@ -1437,17 +1438,17 @@ module ocn_time_integration_si
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w1(1:nPrecVec),1,0.0_RKIND,CGvec_wh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w1(1:nPrecVec),1,0.0_RKIND,CGvec_wh1(1:nPrecVec),1)
 #endif
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
-                  CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+                  CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec)
    
                elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                   ! No preconditioning 
@@ -1531,7 +1532,7 @@ module ocn_time_integration_si
                      sshEdgeLag = 0.5_RKIND * (sshCur(cell1) + sshCur(cell2))
      
                      ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                     thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
      
                      ! nabla (ssh^0)
                      sshDiffNew = (CGvec_wh1(cell2)-CGvec_wh1(cell1)) / dcEdge(iEdge)
@@ -1724,9 +1725,9 @@ module ocn_time_integration_si
                   sshEdgeMid = alpha1 * sshEdgeLag + alpha2 * sshEdgeCur
    
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumCur = sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
-                  thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
-                  thicknessSumMid = sshEdgeMid + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumCur = si_ismf * sshEdgeCur + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumMid = si_ismf * sshEdgeMid + min(bottomDepth(cell1), bottomDepth(cell2))
    
                   ! nabla (ssh^0)
                   sshDiffCur = (sshCur(cell2)-sshCur(cell1)) / dcEdge(iEdge)
@@ -1788,18 +1789,18 @@ module ocn_time_integration_si
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_r0(1:nPrecVec),1,0.0_RKIND,CGvec_rh0(1:nPrecVec),1)
 #endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_r0(1:nPrecVec),1,0.0_RKIND,CGvec_rh0(1:nPrecVec),1)
 #endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning
-               CGvec_rh0(1:nPrecVec) = CGvec_r0(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+               CGvec_rh0(1:nPrecVec) = CGvec_r0(1:nPrecVec) * prec_ivmat(1:nPrecVec)
 
             elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                ! No preconditioning
@@ -1870,7 +1871,7 @@ module ocn_time_integration_si
                   sshEdgeLag = 0.5_RKIND * (sshNew(cell1) + sshNew(cell2))
  
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
  
                   ! nabla (ssh^0)
                   sshDiffLag = (CGvec_rh0(cell2)- CGvec_rh0(cell1)) / dcEdge(iEdge)
@@ -1926,18 +1927,18 @@ module ocn_time_integration_si
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w0(1:nPrecVec),1,0.0_RKIND,CGvec_wh0(1:nPrecVec),1)
 #endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-               call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+               call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w0(1:nPrecVec),1,0.0_RKIND,CGvec_wh0(1:nPrecVec),1)
 #endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning
-               CGvec_wh0(1:nPrecVec) = CGvec_w0(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+               CGvec_wh0(1:nPrecVec) = CGvec_w0(1:nPrecVec) * prec_ivmat(1:nPrecVec)
  
             elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                ! No preconditioning
@@ -2006,7 +2007,7 @@ module ocn_time_integration_si
                   sshEdgeLag = 0.5_RKIND * (sshNew(cell1) + sshNew(cell2))
    
                   ! method 1, matches method 0 without pbcs, works with pbcs.
-                  thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                  thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
    
                   ! nabla (ssh^0)
                   sshDiffCur = (CGvec_wh0(cell2)- CGvec_wh0(cell1)) / dcEdge(iEdge)
@@ -2174,18 +2175,18 @@ module ocn_time_integration_si
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_z1(1:nPrecVec),1,0.0_RKIND,CGvec_zh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_z1(1:nPrecVec),1,0.0_RKIND,CGvec_zh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
-                  CGvec_zh1(1:nPrecVec) = CGvec_z1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+                  CGvec_zh1(1:nPrecVec) = CGvec_z1(1:nPrecVec) * prec_ivmat(1:nPrecVec)
    
                elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                   ! No preconditioning 
@@ -2257,7 +2258,7 @@ module ocn_time_integration_si
                      sshEdgeLag = 0.5_RKIND * (sshNew(cell1) + sshNew(cell2))
       
                      ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                     thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
       
                      ! nabla (ssh^0)
                      sshDiffNew = (CGvec_zh1(cell2)-CGvec_zh1(cell1)) / dcEdge(iEdge)
@@ -2354,17 +2355,17 @@ module ocn_time_integration_si
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w1(1:nPrecVec),1,0.0_RKIND,CGvec_wh1(1:nPrecVec),1)
 #endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
 #ifdef USE_LAPACK
-                  call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+                  call DSPMV('U',nPrecVec,1.0_RKIND,prec_ivmat,CGvec_w1(1:nPrecVec),1,0.0_RKIND,CGvec_wh1(1:nPrecVec),1)
 #endif
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
-                  CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
+                  CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec)
    
                elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
                   ! No preconditioning 
@@ -2447,7 +2448,7 @@ module ocn_time_integration_si
                      sshEdgeLag = 0.5_RKIND * (sshNew(cell1) + sshNew(cell2))
    
                      ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSumLag = sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
+                     thicknessSumLag = si_ismf * sshEdgeLag + min(bottomDepth(cell1), bottomDepth(cell2))
    
                      ! nabla (ssh^0)
                      sshDiffNew = (CGvec_wh1(cell2)-CGvec_wh1(cell1)) / dcEdge(iEdge)
@@ -2596,7 +2597,6 @@ module ocn_time_integration_si
 !           if ( split_implicit_step == 2 ) then
 !           call mpas_log_write( 'Iteration $i', intArgs=(/ iter /) )
 !           endif
-
 
             block => block % next
          end do  ! block
@@ -3318,16 +3318,17 @@ module ocn_time_integration_si
       integer :: i, iCell, iEdge, iVertex, k
       type (block_type), pointer :: block
 
-      type (mpas_pool_type), pointer :: statePool, meshPool, tracersPool
+      type (mpas_pool_type), pointer :: statePool, meshPool, tracersPool, diagnosticsPool
       type (dm_info) :: dminfo
 
       integer :: iTracer, cell, cell1, cell2
-      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:), pointer :: maxLevelEdgeTop,maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND) :: normalThicknessFluxSum, layerThicknessSum, layerThicknessEdge1
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, normalBarotropicVelocity
+      real (kind=RKIND), dimension(:), pointer :: sshCur,bottomDepth
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness,zTop
       real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity, normalVelocity
       integer, pointer :: nVertLevels, nCells, nEdges
       character (len=StrKIND), pointer :: config_time_integrator, config_btr_dt, config_dt
@@ -3341,7 +3342,7 @@ module ocn_time_integration_si
       integer :: iErr
 
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
-      real (kind=RKIND) :: local_num_cells,sum1,total_area_sum,local_area_sum,tmp1,area_mean
+      real (kind=RKIND) :: local_num_cells,sum1,total_area_sum,local_area_sum,tmp1,tmp2,area_mean
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer :: ncpus,ihh,imm,iss,isum1,isum2,mpi_ierr
 
@@ -3370,7 +3371,6 @@ module ocn_time_integration_si
       call mpas_log_write( 'The semi-implicit time integration is configured')
       call mpas_log_write( '*******************************************************************************')
 
-      if ( .not. config_do_restart ) then
          ! Initialize z-level mesh variables from h, read in from input file.
          block => domain % blocklist
          do while (associated(block))
@@ -3379,6 +3379,7 @@ module ocn_time_integration_si
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
             call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
             call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -3394,12 +3395,16 @@ module ocn_time_integration_si
             call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
             call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
             call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
             call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+            call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+            call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
+
+            if ( .not. config_do_restart ) then
 
             ! Compute barotropic velocity at first timestep
             ! This is only done upon start-up.
-            if (trim(config_time_integrator) == 'semi_implicit') then
-
                if (config_filter_btr_mode) then
                   do iCell = 1, nCells
                      layerThickness(1,iCell) = refBottomDepth(1)
@@ -3454,83 +3459,93 @@ module ocn_time_integration_si
 
                endif
 
+            endif ! .not. config_do_restart
+
+            ! Compute the root mean square of areaCell
+            local_num_cells = nCellsArray(1)
+            call mpas_dmpar_sum_real(dminfo,local_num_cells,total_num_cells)
+  
+            local_area_sum = 0.0_RKIND
+            do iCell = 1,nCellsArray(1)
+              local_area_sum = local_area_sum + areaCell(iCell)**2.0
+            end do
+   
+            call mpas_dmpar_sum_real(dminfo,local_area_sum,total_area_sum)
+      
+            area_mean = dsqrt(total_area_sum / total_num_cells)
+            mean_num_cells = total_num_cells/ncpus
+   
+            ! Tolerance for main iteration
+            crit_main  = config_btr_si_tolerance * area_mean
+   
+            ! Impliciness parameters
+            alpha1=0.50_RKIND
+            alpha2=0.50_RKIND
+   
+            ! DT for si
+            allocate(tavg(2,config_n_ts_iter))
+            allocate(dt_si(config_n_ts_iter))
+            allocate(R1_alpha1s_g_dts(config_n_ts_iter))
+            allocate(R1_alpha1s_g_dt(config_n_ts_iter))
+   
+            read(config_dt(1:2),*) ihh
+            read(config_dt(4:5),*) imm
+            read(config_dt(7:8),*) iss
+   
+            tmp1 = ihh * 3600.0_RKIND + imm * 60.0_RKIND + iss
+   
+            if ( tmp1 > 3600.0_RKIND .or. config_n_ts_iter == 1 ) then
+               dt_si(1) = tmp1 * 2.0_RKIND
+               dt_si(2) = tmp1 * 2.0_RKIND
+               si_opt = 1
+            else
+               dt_si(1) = tmp1
+               dt_si(2) = tmp1
+               si_opt = 2
             endif
+   
+            R1_alpha1s_g_dts(1) = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * (dt_si(1)**2.0_RKIND))
+            R1_alpha1s_g_dt(1)  = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * dt_si(1))
+            tavg(1,1)=0.50_RKIND
+            tavg(2,1)=0.50_RKIND
+   
+            R1_alpha1s_g_dts(2) = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * (dt_si(2)**2.0_RKIND))
+            R1_alpha1s_g_dt(2)  = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * dt_si(2))
+            tavg(1,2)=0.50_RKIND
+            tavg(2,2)=0.50_RKIND
+   
+            R1_alpha1_g = 1.0_RKIND/(gravity*alpha1)
+   
+
+            ! Detection of ISMF (Temporariliy implemented. This will be revised in next SI version)
+            ! Compute ssh first
+            do iCell = 1, nCells
+               k = maxLevelCell(iCell)
+               zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
+    
+               do k = maxLevelCell(iCell)-1, 1, -1
+                  zTop(k,iCell) = zTop(k+1,iCell) + layerThickness(k  ,iCell)
+               end do
+    
+               ! copy zTop(1,iCell) into sea-surface height array
+               sshCur(iCell) = zTop(1,iCell)
+            end do
+
+            tmp1 = minval(sshCur)
+            call mpas_dmpar_min_real(dminfo, tmp1,tmp2 )
+      
+            si_ismf = 1
+            if ( tmp2 < -10.d0 ) then
+               si_ismf = 0
+            endif
+
+         ! Reinitialize ssh and zTop
+         sshCur(:) = 0.0
+         zTop(:,:) = 0.0
 
          block => block % next
          end do
     
-      end if
-
-
-      if (trim(config_time_integrator) == 'semi_implicit') then
-
-         ! Compute the root mean square of areaCell
-         block => domain % blocklist
-         do while (associated(block))
-
-            call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
-
-            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-   
-              local_num_cells = nCellsArray(1)
-              call mpas_dmpar_sum_real(dminfo,local_num_cells,total_num_cells)
-   
-              local_area_sum = 0.0_RKIND
-              do iCell = 1,nCellsArray(1)
-                local_area_sum = local_area_sum + areaCell(iCell)**2.0
-              end do
-   
-         block => block % next
-         end do
-   
-         call mpas_dmpar_sum_real(dminfo,local_area_sum,total_area_sum)
-   
-         area_mean = dsqrt(total_area_sum / total_num_cells)
-         mean_num_cells = total_num_cells/ncpus
-
-         ! Tolerance for main iteration
-         crit_main  = config_btr_si_tolerance * area_mean
-
-         ! Impliciness parameters
-         alpha1=0.50_RKIND
-         alpha2=0.50_RKIND
-
-         ! DT for si
-         allocate(tavg(2,config_n_ts_iter))
-         allocate(dt_si(config_n_ts_iter))
-         allocate(R1_alpha1s_g_dts(config_n_ts_iter))
-         allocate(R1_alpha1s_g_dt(config_n_ts_iter))
-
-         read(config_dt(1:2),*) ihh
-         read(config_dt(4:5),*) imm
-         read(config_dt(7:8),*) iss
-
-         tmp1 = ihh * 3600.0_RKIND + imm * 60.0_RKIND + iss
-
-         if ( tmp1 > 3600.0_RKIND .or. config_n_ts_iter == 1 ) then
-            dt_si(1) = tmp1 * 2.0_RKIND
-            dt_si(2) = tmp1 * 2.0_RKIND
-            si_opt = 1
-         else
-            dt_si(1) = tmp1
-            dt_si(2) = tmp1
-            si_opt = 2
-         endif
-
-         R1_alpha1s_g_dts(1) = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * (dt_si(1)**2.0_RKIND))
-         R1_alpha1s_g_dt(1)  = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * dt_si(1))
-         tavg(1,1)=0.50_RKIND
-         tavg(2,1)=0.50_RKIND
-
-         R1_alpha1s_g_dts(2) = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * (dt_si(2)**2.0_RKIND))
-         R1_alpha1s_g_dt(2)  = 1.0_RKIND/((alpha1**2.0_RKIND) * gravity * dt_si(2))
-         tavg(1,2)=0.50_RKIND
-         tavg(2,2)=0.50_RKIND
-
-         R1_alpha1_g = 1.0_RKIND/(gravity*alpha1)
-
-      end if ! config_time_integrator
    end subroutine ocn_time_integration_si_init!}}}
 
 !***********************************************************************
@@ -3579,7 +3594,7 @@ module ocn_time_integration_si
 
       real (kind=RKIND) :: temp1,temp2
       integer :: local_num_cells,total_num_cells
-      integer :: local_start,local_end,nCellsA2,nCellsA3
+      integer :: local_start,local_end,nCellsA2,nCellsA3,nPrecMatPacked,info,itmp1
 
       dminfo = domain % dminfo
 
@@ -3622,14 +3637,25 @@ module ocn_time_integration_si
          local_num_cells = nCellsArray(1)
          call mpas_dmpar_sum_int(dminfo,local_num_cells,total_num_cells)
 
+         if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
+              trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
+            itmp1 = int(total_num_cells/ncpus)
+            if ( itmp1 > 3000 ) then
+               call mpas_log_write('      nCells per core is larger than 3000.')
+               call mpas_log_write('      Because of memory and computational efficiency,')
+               call mpas_log_write('      the preconditioner is configured as jacobi.')
+               config_btr_si_preconditioner = 'jacobi'
+            endif
+         endif
 
          ! Restricted Additive Schwarz preconditioner ---------------------------------------------!
          if ( trim(config_btr_si_preconditioner) == 'ras' ) then
  
             nPrecVec = nCellsA3
-  
-            allocate(prec_ivmat(1:nPrecVec,1:nPrecVec))
-                     prec_ivmat(:,:) = 0.0_RKIND
+            nPrecMatPacked = (nPrecVec*(nPrecVec+1))/2
+
+            allocate(prec_ivmat(1:nPrecMatPacked))
+                     prec_ivmat(:) = 0.0_RKIND
   
             do iCell = 1, nPrecVec
   
@@ -3644,36 +3670,46 @@ module ocn_time_integration_si
     
                   !-------------------------------------------------------------------------------!
                   if ( globalCellId(cell1) > 0 .and. globalCellId(cell1) < total_num_cells+1 ) then
-                     if ( cell1 <= nPrecVec) then
-                        prec_ivmat(iCell,cell1) = prec_ivmat(iCell,cell1) + fluxAx
+                     if ( cell1 >= iCell .and. cell1 <= nPrecVec) then
+                        prec_ivmat(iCell+((cell1-1)*cell1)/2) = prec_ivmat(iCell+((cell1-1)*cell1)/2) + fluxAx
                      endif
                   endif
     
                   if ( globalCellId(cell2) > 0 .and. globalCellId(cell2) < total_num_cells+1 ) then
-                     if ( cell2 <= nPrecVec) then
-                        prec_ivmat(iCell,cell2) = prec_ivmat(iCell,cell2) - fluxAx
+                     if ( cell2 >= iCell .and. cell2 <= nPrecVec) then
+                        prec_ivmat(iCell+((cell2-1)*cell2)/2) = prec_ivmat(iCell+((cell2-1)*cell2)/2) - fluxAx
                      endif
                   endif
                   !-------------------------------------------------------------------------------!
    
                end do ! i
   
-               prec_ivmat(iCell,iCell) = prec_ivmat(iCell,iCell) - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
+               prec_ivmat(iCell+((iCell-1)*iCell)/2) = prec_ivmat(iCell+((iCell-1)*iCell)/2)  &
+                                                     - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
   
             end do ! iCell
   
-           ! Preconditioning matrix inversion
-            call inverse(nPrecVec,prec_ivmat)
-  
+            ! Inverse
+              ! 1. Cholesky factorization of a real symmetric positive definite matirx A
+            prec_ivmat(:) = -prec_ivmat(:)
+#ifdef USE_LAPACK
+            call DPPTRF('U',nPrecVec,prec_ivmat,info)
+#endif
+              ! 2. Inverse of a real symmetric positive definite matrix A using the Cholesky factorization
+#ifdef USE_LAPACK
+            call DPPTRI('U',nPrecVec,prec_ivmat,info)
+#endif
+            prec_ivmat(:) = -prec_ivmat(:)
 
          ! Block-Jacobi preconditioner ------------------------------------------------------------!
          elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
  
             nPrecVec = nCells ! length of preconditioning vector
+            nPrecMatPacked = (nPrecVec*(nPrecVec+1))/2
   
-            allocate(prec_ivmat(1:nPrecVec,1:nPrecVec))
-                     prec_ivmat(:,:) = 0.0_RKIND
-  
+            allocate(prec_ivmat(1:nPrecMatPacked))
+                     prec_ivmat(:) = 0.0_RKIND
+
             do iCell = 1, nPrecVec
   
                do i = 1, nEdgesOnCell(iCell)
@@ -3687,34 +3723,42 @@ module ocn_time_integration_si
     
                   !-------------------------------------------------------------------------------!
                   if ( globalCellId(cell1) > 0 .and. globalCellId(cell1) < total_num_cells+1 ) then
-                     if ( cell1 <= nPrecVec) then
-                        prec_ivmat(iCell,cell1) = prec_ivmat(iCell,cell1) + fluxAx
+                     if ( cell1 >= iCell .and. cell1 <= nPrecVec) then
+                        prec_ivmat(iCell+((cell1-1)*cell1)/2) = prec_ivmat(iCell+((cell1-1)*cell1)/2) + fluxAx
                      endif
                   endif
     
                   if ( globalCellId(cell2) > 0 .and. globalCellId(cell2) < total_num_cells+1 ) then
-                     if ( cell2 <= nPrecVec) then
-                        prec_ivmat(iCell,cell2) = prec_ivmat(iCell,cell2) - fluxAx
+                     if ( cell2 >= iCell .and. cell2 <= nPrecVec) then
+                        prec_ivmat(iCell+((cell2-1)*cell2)/2) = prec_ivmat(iCell+((cell2-1)*cell2)/2) - fluxAx
                      endif
                   endif
                   !-------------------------------------------------------------------------------!
                end do ! i
    
-               prec_ivmat(iCell,iCell) = prec_ivmat(iCell,iCell) - (4.0_RKIND/(gravity*dt**2.0))*areaCell(iCell)
-  
+               prec_ivmat(iCell+((iCell-1)*iCell)/2) = prec_ivmat(iCell+((iCell-1)*iCell)/2)  &
+                                                     - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
             end do ! iCell
-  
-            ! Preconditioning matrix inversion
-            call inverse(nPrecVec,prec_ivmat)
- 
+
+            ! Inverse
+              ! 1. Cholesky factorization of a real symmetric positive definite matirx A
+            prec_ivmat(:) = -prec_ivmat(:)
+#ifdef USE_LAPACK
+            call DPPTRF('U',nPrecVec,prec_ivmat,info)
+#endif
+              ! 2. Inverse of a real symmetric positive definite matrix A using the Cholesky factorization
+#ifdef USE_LAPACK
+            call DPPTRI('U',nPrecVec,prec_ivmat,info)
+#endif
+            prec_ivmat(:) = -prec_ivmat(:)
 
          ! Jacobi preconditioner ------------------------------------------------------------------!
          else if ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
  
             nPrecVec = nCells ! length of preconditioning vector
     
-            allocate(prec_ivmat(1:nPrecVec,1))
-                     prec_ivmat(:,:) = 0.0_RKIND
+            allocate(prec_ivmat(1:nPrecVec))
+                     prec_ivmat(:) = 0.0_RKIND
     
             do iCell = 1, nPrecVec
   
@@ -3730,16 +3774,16 @@ module ocn_time_integration_si
                   fluxAx = edgeSignOnCell(i,iCell)*dvEdge(iEdge)*thicknessSum / dcEdge(iEdge)
   
                   if (cell1 == iCell) then
-                     prec_ivmat(iCell,1) = prec_ivmat(iCell,1) + fluxAx  ! reversed sign
+                     prec_ivmat(iCell) = prec_ivmat(iCell) + fluxAx  ! reversed sign
                   elseif ( cell2 == iCell) then
-                     prec_ivmat(iCell,1) = prec_ivmat(iCell,1) - fluxAx  ! reversed sign
+                     prec_ivmat(iCell) = prec_ivmat(iCell) - fluxAx  ! reversed sign
                   endif
                   !-------------------------------------------------------------------------!
                end do ! i
   
-               temp1 = prec_ivmat(iCell,1) - (4.0_RKIND/(gravity*dt**2.0))*areaCell(iCell)
+               temp1 = prec_ivmat(iCell) - (4.0_RKIND/(gravity*dt**2.0))*areaCell(iCell)
   
-               prec_ivmat(iCell,1) = 1.0_RKIND / temp1
+               prec_ivmat(iCell) = 1.0_RKIND / temp1
   
             end do ! iCell
    
@@ -3749,8 +3793,8 @@ module ocn_time_integration_si
  
             nPrecVec = nCells ! length of preconditioning vector
  
-            allocate(prec_ivmat(1,1))
-            prec_ivmat(:,:) = 1.0_RKIND ! This array is not used only for 'none'.
+            allocate(prec_ivmat(1))
+            prec_ivmat(:) = 1.0_RKIND ! This array is not used only for 'none'.
  
          else
  
@@ -3765,48 +3809,5 @@ module ocn_time_integration_si
    end subroutine ocn_time_integrator_si_preconditioner !}}}
 
 end module ocn_time_integration_si
-
-!***********************************************************************
-!
-!  routine inverse
-!
-!> \brief   Inverte a square matrix using the LAPACK
-!> \author  Hyun-Gyu Kang (Oak Ridge National Laboratory)
-!> \date    September 2019
-!> \details
-!>  This routine inverts a square matrix.
-!>  Matrix (A) is destroyed and changed to its inversion.
-!
-!----------------------------------------------------------------------
-subroutine inverse (n,Ainv) !{{{
-    implicit none
-    real(kind=8),dimension(n,n) :: Ainv
-    real(kind=8),dimension(n)   :: work
-    integer     ,dimension(n)   :: ipiv
-    integer                     :: n,info,i,j
-
-    ! (-) sign for positivie definite matrix
-    Ainv = -Ainv
-
-    ! DPOTRF computes the Cholesky factorizaton of a symmetric positive
-    ! defnitie matrix.
-#ifdef USE_LAPACK
-    call DPOTRF('U',n,Ainv,n,info)
-!   call DGETRF(n,n,Ainv,n,ipiv,info) ! For unsymmetric matrix
-#endif
-
-    if (info.lt.0) stop 'ERROR in inverse routine: Matrix is numerically singular!'
-    if (info.gt.0) stop 'ERROR in inverse routine: Matrix is not positive definite!'
-
-    ! DPOTRI computes the inverse of a symmetric positive definite matrix,
-    ! using the Cholesky factorization computed by DPOTRF
-#ifdef USE_LAPACK
-    call DPOTRI('U',n,Ainv,n,info)
-!   call DGETRI(n,Ainv,n,ipiv,work,n,info) ! For unsymmetric matrix
-#endif
-
-    Ainv = -Ainv ! (-) sign to restore a matrix sign
-    if (info.ne.0) stop 'ERROR in inverse routine: Matrix inversion failed!'
-end subroutine inverse !}}}
 
 ! vim: foldmethod=marker
