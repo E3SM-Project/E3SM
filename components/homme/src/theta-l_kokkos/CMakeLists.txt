@@ -44,6 +44,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${THETA_SHARE_DIR}/imex_mod.F90
     ${TARGET_DIR}/element_state.F90
     ${TARGET_DIR}/prim_driver_mod.F90
+    ${TARGET_DIR}/theta_f2c_mod.F90
   )
 
   SET (SRC_SHARE_F90
