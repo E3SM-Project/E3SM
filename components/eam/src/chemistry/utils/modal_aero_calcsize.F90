@@ -594,6 +594,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
+   character(len = 1000) :: err_msg
    real(r8) :: deltatinv                     ! 1/deltat
    real(r8) :: dgncur_c(pcols,pver,ntot_amode)
    real(r8) :: dqqcwdt(pcols,pver,pcnst)     ! cloudborne TMR tendency array
@@ -641,14 +642,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    update_mmr = .true. !update mmr for both interstitial and cloud borne aerosols
    if(present(update_mmr_in)) update_mmr = update_mmr_in
 
-   !For adjusting aerosol sizes
-   do_adjust = do_adjust_allowed
-   if (present(do_adjust_in)) do_adjust = do_adjust_in
-
-   !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
-   do_aitacc_transfer = do_aitacc_transfer_allowed(1)
-   if (present(do_aitacc_transfer_in))  do_aitacc_transfer = do_aitacc_transfer_in
-
    !Set list_idx_local and other sanity checks
    list_idx_local  = 0
    if(present(list_idx_in)) then
@@ -659,6 +652,32 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
+
+
+   !For adjusting aerosol sizes
+   do_adjust = do_adjust_allowed
+   if (present(do_adjust_in)) then
+      if(do_adjust_in .and. .not.do_adjust_allowed) then
+         write(err_msg,*)'Cannot adjust aerosol size if size adjustment is not allowed', &
+              ' do_adjust_allowed is:',do_adjust_allowed,' and do_adjust_in is:',do_adjust_in,errmsg(__FILE__,__LINE__)
+         call endrun(trim(err_msg))
+      endif
+      do_adjust = do_adjust_in
+   endif
+
+   !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
+   do_aitacc_transfer = do_aitacc_transfer_allowed(list_idx_local)
+   if (present(do_aitacc_transfer_in)) then
+      if(do_aitacc_transfer_in .and. .not.do_aitacc_transfer_allowed(list_idx_local)) then
+         write(err_msg,*)'Cannot transfer species between modes if transfer is not allowed for radiation', &
+              ' list:', list_idx_local,' do_aitacc_transfer_allowed is:',do_aitacc_transfer_allowed(list_idx_local), &
+              ' and do_aitacc_transfer_in is:',do_aitacc_transfer_in, errmsg(__FILE__,__LINE__)
+         call endrun(trim(err_msg))
+      endif
+      do_aitacc_transfer = do_aitacc_transfer_in
+   endif
+
+
 
    !Set tendency variable based on the presence of ptend
    if(update_mmr) then
