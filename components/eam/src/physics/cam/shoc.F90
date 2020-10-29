@@ -576,6 +576,10 @@ subroutine compute_shoc_vapor( &
   !   based on SHOC's prognostic total water mixing ratio
   !   and diagnostic cloud water mixing ratio.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shoc_vapor_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -594,6 +598,13 @@ subroutine compute_shoc_vapor( &
 
 ! LOCAL VARIABLES
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_shoc_vapor_f(shcol,nlev,qw,ql,qv)
+     return
+  endif
+#endif
 
   do k = 1, nlev
     do i = 1, shcol
