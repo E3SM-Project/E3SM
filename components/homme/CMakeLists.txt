@@ -12,15 +12,17 @@ IF (NOT DEFINED PROJECT_NAME)
   SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
-  # Build executables/tests
-  SET (HOMME_BUILD_EXECS TRUE)
+  # By default, build executables/tests, and do not build 'library-style' targets
+  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." ON)
+  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." OFF)
 ELSE ()
   # Manually enable languages, in case they were not enabled by host project
   ENABLE_LANGUAGE(C)
   ENABLE_LANGUAGE(Fortran)
 
-  # Do not build executables/tests
-  SET (HOMME_BUILD_EXECS FALSE)
+  # By default, do not build executables/tests, and build 'library-style' targets
+  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." OFF)
+  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." ON)
 ENDIF ()
 
 INCLUDE(FortranCInterface)

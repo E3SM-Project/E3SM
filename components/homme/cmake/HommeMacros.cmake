@@ -175,6 +175,96 @@ macro(createTestExec execName execType macroNP macroNC
 
 endmacro(createTestExec)
 
+# Create a library instead of an executable, so Homme can be used by
+# another cmake project as a dycore library
+macro(createExecLib libName execType libSrcs inclDirs macroNP
+                    macroPLEV macroWITH_ENERGY macroQSIZE_D)
+
+  # Set the include directories
+  SET(modulesDir "${CMAKE_CURRENT_BINARY_DIR}/${libName}_modules")
+
+  MESSAGE(STATUS "Building ${libName} library derived from ${execType} with:")
+  MESSAGE(STATUS "  NP = ${macroNP}")
+  MESSAGE(STATUS "  PLEV = ${macroPLEV}")
+  MESSAGE(STATUS "  QSIZE_D = ${macroQSIZE_D}")
+  MESSAGE(STATUS "  ENERGY = ${macroWITH_ENERGY}")
+
+  # Set the variable to the macro variables
+  SET(NUM_POINTS ${macroNP})
+  SET(NUM_PLEV ${macroPLEV})
+
+  IF (${macroWITH_ENERGY})
+    SET(ENERGY_DIAGNOSTICS TRUE)
+  ELSE()
+    SET(ENERGY_DIAGNOSTICS)
+  ENDIF ()
+
+  IF (${macroQSIZE_D})
+    SET(QSIZE_D ${macroQSIZE_D})
+  ELSE()
+    SET(QSIZE_D)
+  ENDIF ()
+
+  # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in)
+  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
+  SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+  # First configure the file (which formats the file as C)
+  HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
+
+  ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+
+  ADD_LIBRARY(${libName} ${libSrcs})
+  TARGET_INCLUDE_DIRECTORIES (${libName} PUBLIC ${inclDirs} ${modulesDir} ${CMAKE_CURRENT_BINARY_DIR})
+  SET_TARGET_PROPERTIES(${libName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
+  SET_TARGET_PROPERTIES(${libName} PROPERTIES LINKER_LANGUAGE Fortran)
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+  ENDIF()
+
+
+  IF (CXXLIB_SUPPORTED_CACHE)
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${libName} -cxxlib)
+  ENDIF ()
+
+  STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
+  IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
+    TARGET_LINK_LIBRARIES(${libName} ittnotify)
+  ENDIF ()
+
+  TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+  IF (HOMME_USE_KOKKOS)
+    TARGET_LINK_LIBRARIES(${libName} kokkos)
+  ENDIF ()
+
+  IF (NOT HOMME_USE_MKL)
+    IF (NOT HOMME_FIND_BLASLAPACK)
+      TARGET_LINK_LIBRARIES(${libName} lapack blas)
+    ENDIF()
+  ENDIF()
+
+  IF (HAVE_EXTRAE)
+    TARGET_LINK_LIBRARIES(${libName} ${Extrae_LIBRARY})
+  ENDIF ()
+
+  IF (HOMME_USE_TRILINOS)
+    TARGET_LINK_LIBRARIES(${libName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+  ENDIF()
+
+  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
+    TARGET_LINK_LIBRARIES(${libName} sundials_farkode)
+    TARGET_LINK_LIBRARIES(${libName} sundials_arkode)
+    TARGET_LINK_LIBRARIES(${libName} sundials_nvecserial)
+    TARGET_LINK_LIBRARIES(${libName} sundials_fnvecserial)
+  ENDIF ()
+
+  INSTALL(TARGETS ${libName} RUNTIME DESTINATION tests)
+
+endmacro(createExecLib)
+
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
   FOREACH (singleFile ${NAMELIST_FILES})
