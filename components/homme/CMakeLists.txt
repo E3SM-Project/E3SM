@@ -222,9 +222,16 @@ ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
 
-  IF(${HOMME_FIND_BLASLAPACK})
+  IF(HOMME_FIND_BLASLAPACK)
     FIND_PACKAGE(BLAS REQUIRED)
     FIND_PACKAGE(LAPACK REQUIRED)
+
+    # Set libraries in cache, so they are accessible also from outside the Homme project.
+    # That's the case if the host project adds the homme subdir from folder foo/bar1, but
+    # then calls createExecLib from foo/bar2 (non cache variables would not survive outside bar1)
+    # Note: an alternative would be to wrap them in a cmake target, but that's more complicated.
+    SET (BLAS_LIBRARIES "${BLAS_LIBRARIES}" CACHE INTERNAL "")
+    SET (LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" CACHE INTERNAL "")
   ELSE()
     SET(HOMME_FIND_BLASLAPACK FALSE)
   ENDIF()
