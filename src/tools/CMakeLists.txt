@@ -1,9 +1,18 @@
 
 if (DEFINED ENV{MPAS_TOOL_DIR})
   message(STATUS "*** Using MPAS tools from $ENV{MPAS_TOOL_DIR} ***")
-  file(COPY $ENV{MPAS_TOOL_DIR}/input_gen/namelist_gen DESTINATION .)
-  file(COPY $ENV{MPAS_TOOL_DIR}/input_gen/streams_gen  DESTINATION .)
-  file(COPY $ENV{MPAS_TOOL_DIR}/registry/parse         DESTINATION .)
+  add_custom_target(namelist_gen)
+  add_custom_command(
+    TARGET namelist_gen PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $ENV{MPAS_TOOL_DIR}/input_gen/namelist_gen ${CMAKE_CURRENT_BINARY_DIR}/namelist_gen)
+  add_custom_target(streams_gen)
+  add_custom_command(
+    TARGET streams_gen PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $ENV{MPAS_TOOL_DIR}/input_gen/streams_gen ${CMAKE_CURRENT_BINARY_DIR}/streams_gen)
+  add_custom_target(parse)
+  add_custom_command(
+    TARGET parse PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $ENV{MPAS_TOOL_DIR}/input_gen/parse ${CMAKE_CURRENT_BINARY_DIR}/parse)
 else()
   message(STATUS "*** Building MPAS tools from source ***")
   # Make build tools, need to be compiled with serial compiler.
