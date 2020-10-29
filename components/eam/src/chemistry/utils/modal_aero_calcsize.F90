@@ -362,7 +362,7 @@ ballllllllllllllllllll
 !
 !   define species involved in each transfer pairing
 !
-aa_ipair: do ipair = 1, 1!npair_csizxf
+aa_ipair: do ipair = 0, 0!npair_csizxf
 
       mfrm = modefrm_csizxf(ipair)
       mtoo = modetoo_csizxf(ipair)
@@ -477,7 +477,7 @@ aa_iqfrm: do iqfrm = -1, nspec_amode(mfrm)
 
       write(iulog,9310) do_adjust_default, do_aitacc_transfer_default
 
-      do ipair = 1, npair_csizxf
+      do ipair = 0, npair_csizxf
       mfrm = modefrm_csizxf(ipair)
       mtoo = modetoo_csizxf(ipair)
       write(iulog,9320) ipair, mfrm, mtoo
@@ -567,7 +567,7 @@ do_aitacc_transfer_if_block2: &
       if ( do_aitacc_transfer_default(0) ) then
 
 ! check that calcsize transfer ipair=1 is aitken-->accum
-      ipair = 1
+      ipair = 0
       if ((modefrm_csizxf(ipair) .ne. nait) .or.   &
           (modetoo_csizxf(ipair) .ne. nacc)) then
          write( iulog, '(//2a//)' )   &
@@ -806,7 +806,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    if (present(do_adjust_in)) do_adjust = do_adjust_in
 
    !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
-   do_aitacc_transfer = do_aitacc_transfer_default(1)
+   do_aitacc_transfer = do_aitacc_transfer_default(0)
    if (present(do_aitacc_transfer_in))  do_aitacc_transfer = do_aitacc_transfer_in
 
    !Set list_idx_local and other sanity checks
