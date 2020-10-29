@@ -291,10 +291,10 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
             lspecfrmc_csizxf(icnt,ilist) = ind_ait
             lspectooc_csizxf(icnt,ilist) = ind_acc
 
-            write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-            write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
+            !write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
+            !write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
 
-            write(103,*)'New:',ilist, ind_ait, ind_acc
+            !write(103,*)'New:',ilist, ind_ait, ind_acc
             !find number of species in the aitken mode of this ilist
             call rad_cnst_get_info(ilist, imode_ait, nspec = nspec_ait) !output:nspec_ait
             !find number of species in the accumulation mode of this list
@@ -331,8 +331,8 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
                      !index for cloudborne species (qqcw_get_field array) is same as interstitial species
                      lspecfrmc_csizxf(icnt,ilist) = ind_ait
                      lspectooc_csizxf(icnt,ilist) = ind_acc
-                     write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-                     write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
+                     !write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
+                     !write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
                   endif
                enddo !ispec_acc
             enddo!ispec_ait
@@ -1411,9 +1411,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
 
   !local
   integer  :: imode, jmode, aer_type, jsrflx, icol, klev, iq
-  integer  :: lsfrm, lstoo, ispec, idx, n_use, m_use, nb, mb
-  integer  :: ixfer_ait2acc, ixfer_acc2ait
-  integer  :: nait, nacc, idx_cw
+  integer  :: lsfrm, lstoo, ispec_acc, idx, n_use, m_use, nb, mb
+  integer  :: ixfer_ait2acc, ixfer_acc2ait, mam_ait, mam_acc
+  integer  :: iait, iacc, idx_cw, nspec_acc
   integer, save  :: idiagaa = 1
   real(r8) :: num_a, drv_a, num_c, drv_c
   real(r8) :: num_a_acc, num_c_acc
@@ -1423,16 +1423,15 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   real(r8) :: num_t0, num_t_noxf
   real(r8) :: duma, cmn_factor       ! work variables
   real(r8) :: xfercoef
-  real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
-  real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
-  real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
+  real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfertend, xfertend_num(2,2)
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
   real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
-  logical  :: update_mmr, noxf_acc2ait(ntot_aspectype)
+  logical  :: update_mmr, noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
 
-  character(len=32) :: spec_name
+  character(len=32)  :: spec_name
+  character(len=800) :: err_msg
 
   !BALLI- KLUDE REMOVE IT
   if(list_idx>0) return
@@ -1443,22 +1442,42 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   if (npair_csizxf .le. 0)call endrun('npair_csizxf <= 0'//errmsg(__FILE__,__LINE__))
 
   ! check that calcsize transfer ipair=1 is aitken-->accum
-  nait = modeptr_aitken !aitken mode number
-  nacc = modeptr_accum  !accumulation mode number
+  mam_ait = modeptr_aitken !aitken mode number in this mam package
+  mam_acc = modeptr_accum  !accumulation mode number in this mam package
 
-  if ((modefrm_csizxf(ipair) .ne. nait) .or.   &
-       (modetoo_csizxf(ipair) .ne. nacc)) call endrun('modefrm/too_csizxf(1) are wrong'//errmsg(__FILE__,__LINE__))
+  !find out accumulation and aitken modes in the radiation list
+  iacc = rad_cnst_get_mode_idx(list_idx, modename_amode(mam_acc))
+  iait = rad_cnst_get_mode_idx(list_idx, modename_amode(mam_ait))
+
+  !find out if aitken or accumulation modes exist in the radiation list
+  !(a positive value means that the mode exists)
+  accum_exists  = ( iacc > 0)
+  aitken_exists = ( iait > 0)
+
+  if(.not.(accum_exists .and. aitken_exists)) then
+     write(err_msg,*)'Accumulation or the Aitken mode do not exist in list:', &
+          list_idx,', Accu mode:',iacc,', Aitken mode:',iait,', a negative mode is', &
+          ' the non-existent mode ',errmsg(__FILE__,__LINE__)
+     call endrun(trim(err_msg))
+  endif
+
+  if (modefrm_csizxf(list_idx) .ne. iait .or.modetoo_csizxf(list_idx) .ne. iacc) then
+     write(err_msg,*)'modefrm/too_csizxf are wrong for radiation list:',list_idx,' ',errmsg(__FILE__,__LINE__)
+     call endrun(trim(err_msg))
+  endif
 
   ! set dotend() for species that will be transferred
-  do iq = 1, nspecfrm_csizxf(ipair)
-     lsfrm = lspecfrma_csizxf(iq,ipair)
-     lstoo = lspectooa_csizxf(iq,ipair)
+  ! for both mass and number
+  do iq = 1, nspecfrm_csizxf(list_idx)
+     lsfrm = lspecfrma_csizxf(iq,list_idx)
+     lstoo = lspectooa_csizxf(iq,list_idx)
      if ((lsfrm > 0) .and. (lstoo > 0)) then
         if(update_mmr)dotend(lsfrm) = .true.
         if(update_mmr)dotend(lstoo) = .true.
      end if
-     lsfrm = lspecfrmc_csizxf(iq,ipair)
-     lstoo = lspectooc_csizxf(iq,ipair)
+     !for cloud borne aerosols
+     lsfrm = lspecfrmc_csizxf(iq,list_idx)
+     lstoo = lspectooc_csizxf(iq,list_idx)
      if ((lsfrm > 0) .and. (lstoo > 0)) then
         if(update_mmr)dotendqqcw(lsfrm) = .true.
         if(update_mmr)dotendqqcw(lstoo) = .true.
@@ -1466,61 +1485,43 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   end do
 
   ! identify accum species cannot be transferred to aitken mode
+  !
+  !balli- is this a bug, why can't we transfer species which exists in both modes????
+
   noxf_acc2ait(:) = .true.
-  do ispec = 1, nspec_amode(nacc)
-     idx = lmassptr_amode(ispec,nacc)
-     do iq = 1, nspecfrm_csizxf(ipair)
-        if (lspectooa_csizxf(iq,ipair) == idx) then
-           noxf_acc2ait(ispec) = .false.
+
+  !Get # of species in accumulation mode
+  call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc) !output:nspec_acc
+
+  do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (not number)
+     call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
+     call cnst_get_ind(spec_name, idx)
+     !write(102,*)'acc:',ispec_acc,nspec_acc, idx, trim(spec_name)
+     do iq = 1, nspecfrm_csizxf(list_idx) !Go through all mapped species (and number) for the accumulation mode
+        !write(102,*)'acc__:',iq,lspectooa_csizxf(iq,list_idx),nspecfrm_csizxf(list_idx)
+        if (lspectooa_csizxf(iq,list_idx) == idx) then !compare idx with mapped species in the accumulation mode
+           noxf_acc2ait(ispec_acc) = .false.
+           !write(102,*)'no trn acc:',ispec_acc,nspec_amode(iacc), idx, cnst_name(idx),iq, nspecfrm_csizxf(list_idx)
         end if
      end do
   end do
 
+
   ! v2nzz is voltonumb at the "geometrically-defined" mid-point
   ! between the aitken and accum modes
-  v2nzz = sqrt(voltonumb_amode(nait)*voltonumb_amode(nacc))
+  v2nzz = sqrt(voltonumb_amode(iait)*voltonumb_amode(iacc))
 
   ! loop over columns and levels
   do  klev = top_lev, pver
      do  icol = 1, ncol
 
         pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz
-        xfertend_num(:,:) = 0.0_r8
 
-        ! compute aitken --> accum transfer rates
-        ixfer_ait2acc = 0
-        xfercoef_num_ait2acc = 0.0_r8
-        xfercoef_vol_ait2acc = 0.0_r8
 
-        drv_t = drv_a_aitsv(icol,klev) + drv_c_aitsv(icol,klev)
-        num_t = num_a_aitsv(icol,klev) + num_c_aitsv(icol,klev)
-        if (drv_t > 0.0_r8) then
-           if (num_t < drv_t*v2nzz) then
-              ixfer_ait2acc = 1
-              if (num_t < drv_t*voltonumb_amode(nacc)) then
-                 xferfrac_num_ait2acc = 1.0_r8
-                 xferfrac_vol_ait2acc = 1.0_r8
-              else
-                 xferfrac_vol_ait2acc = ((num_t/drv_t) - v2nzz)/   &
-                      (voltonumb_amode(nacc) - v2nzz)
-                 xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
-                      (drv_t*voltonumb_amode(nacc)/num_t)
-                 if ((xferfrac_num_ait2acc <= 0.0_r8) .or.   &
-                      (xferfrac_vol_ait2acc <= 0.0_r8)) then
-                    xferfrac_num_ait2acc = 0.0_r8
-                    xferfrac_vol_ait2acc = 0.0_r8
-                 else if ((xferfrac_num_ait2acc >= 1.0_r8) .or.   &
-                      (xferfrac_vol_ait2acc >= 1.0_r8)) then
-                    xferfrac_num_ait2acc = 1.0_r8
-                    xferfrac_vol_ait2acc = 1.0_r8
-                 end if
-              end if
-              xfercoef_num_ait2acc = xferfrac_num_ait2acc*tadjinv
-              xfercoef_vol_ait2acc = xferfrac_vol_ait2acc*tadjinv
-              xfertend_num(1,1) = num_a_aitsv(icol,klev)*xfercoef_num_ait2acc
-              xfertend_num(1,2) = num_c_aitsv(icol,klev)*xfercoef_num_ait2acc
-           end if
-        end if
+        call compute_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv(icol,klev),   & !input
+             drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), & !input
+             ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)   !output
+
 
         ! compute accum --> aitken transfer rates
         ! accum may have some species (seasalt, dust, poa, lll) that are
@@ -1528,67 +1529,13 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
         ! so first divide the accum drv & num into not-transferred (noxf) species
         !    and transferred species, and use the transferred-species
         !    portion in what follows
-        ixfer_acc2ait = 0
-        xfercoef_num_acc2ait = 0.0_r8
-        xfercoef_vol_acc2ait = 0.0_r8
 
-        drv_t = drv_a_accsv(icol,klev) + drv_c_accsv(icol,klev)
-        num_t = num_a_accsv(icol,klev) + num_c_accsv(icol,klev)
-        drv_a_noxf = 0.0_r8
-        drv_c_noxf = 0.0_r8
-        if (drv_t > 0.0_r8) then
-           if (num_t > drv_t*v2nzz) then
-              do ispec = 1, nspec_amode(nacc)
+        call compute_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2nzz, & !input
+             tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),  & !input
+             num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait,            & !input
+             drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,             & !output
+             xfercoef_vol_acc2ait, xfertend_num)                                        !output
 
-                 if ( noxf_acc2ait(ispec) ) then
-                    ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
-                    dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(ispec,nacc))
-                    idx = lmassptr_amode(ispec,nacc)
-                    call rad_cnst_get_aer_mmr(list_idx, nacc, ispec, 'a', state, pbuf, specmmr) !get mmr
-                    drv_a_noxf = drv_a_noxf    &
-                         + max(0.0_r8,specmmr(icol,klev))*dummwdens
-                    fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec,nacc),lchnk)
-                    drv_c_noxf = drv_c_noxf + max(0.0_r8,fldcw(icol,klev))*dummwdens
-                 end if
-              end do
-              drv_t_noxf = drv_a_noxf + drv_c_noxf
-              num_t_noxf = drv_t_noxf*voltonumblo_amode(nacc)
-              num_t0 = num_t
-              num_t = max( 0.0_r8, num_t - num_t_noxf )
-              drv_t = max( 0.0_r8, drv_t - drv_t_noxf )
-           end if
-        end if
-
-        if (drv_t > 0.0_r8) then
-           if (num_t > drv_t*v2nzz) then
-              ixfer_acc2ait = 1
-              if (num_t > drv_t*voltonumb_amode(nait)) then
-                 xferfrac_num_acc2ait = 1.0_r8
-                 xferfrac_vol_acc2ait = 1.0_r8
-              else
-                 xferfrac_vol_acc2ait = ((num_t/drv_t) - v2nzz)/   &
-                      (voltonumb_amode(nait) - v2nzz)
-                 xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
-                      (drv_t*voltonumb_amode(nait)/num_t)
-                 if ((xferfrac_num_acc2ait <= 0.0_r8) .or.   &
-                      (xferfrac_vol_acc2ait <= 0.0_r8)) then
-                    xferfrac_num_acc2ait = 0.0_r8
-                    xferfrac_vol_acc2ait = 0.0_r8
-                 else if ((xferfrac_num_acc2ait >= 1.0_r8) .or.   &
-                      (xferfrac_vol_acc2ait >= 1.0_r8)) then
-                    xferfrac_num_acc2ait = 1.0_r8
-                    xferfrac_vol_acc2ait = 1.0_r8
-                 end if
-              end if
-              duma = 1.0e-37_r8
-              xferfrac_num_acc2ait = xferfrac_num_acc2ait*   &
-                   num_t/max( duma, num_t0 )
-              xfercoef_num_acc2ait = xferfrac_num_acc2ait*tadjinv
-              xfercoef_vol_acc2ait = xferfrac_vol_acc2ait*tadjinv
-              xfertend_num(2,1) = num_a_accsv(icol,klev)*xfercoef_num_acc2ait
-              xfertend_num(2,2) = num_c_accsv(icol,klev)*xfercoef_num_acc2ait
-           end if
-        end if
 
         ! jump to end-of-loop if no transfer is needed at current icol,klev
         if (ixfer_ait2acc+ixfer_acc2ait > 0) then
@@ -1596,8 +1543,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            ! compute new dgncur & v2ncur for aitken & accum modes
            !
            ! currently inactive
-           do imode = nait, nacc, (nacc-nait)
-              if (imode .eq. nait) then
+           do imode = iait, iacc, (iacc-iait)
+              if (imode .eq. iait) then
                  duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat
                  num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma )
                  num_a_acc = max( 0.0_r8, num_a_accsv(icol,klev) + duma )
@@ -1663,23 +1610,23 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            if ( masterproc ) then
               if (idiagaa > 0) then
                  do jmode = 1, 2
-                    do iq = 1, nspecfrm_csizxf(ipair)
+                    do iq = 1, nspecfrm_csizxf(list_idx)
                        do aer_type = 1, 2
                           if (jmode .eq. 1) then
                              if (aer_type .eq. inter_aero) then
-                                lsfrm = lspecfrma_csizxf(iq,ipair)
-                                lstoo = lspectooa_csizxf(iq,ipair)
+                                lsfrm = lspecfrma_csizxf(iq,list_idx)
+                                lstoo = lspectooa_csizxf(iq,list_idx)
                              else
-                                lsfrm = lspecfrmc_csizxf(iq,ipair)
-                                lstoo = lspectooc_csizxf(iq,ipair)
+                                lsfrm = lspecfrmc_csizxf(iq,list_idx)
+                                lstoo = lspectooc_csizxf(iq,list_idx)
                              end if
                           else
                              if (aer_type .eq. inter_aero) then
-                                lsfrm = lspectooa_csizxf(iq,ipair)
-                                lstoo = lspecfrma_csizxf(iq,ipair)
+                                lsfrm = lspectooa_csizxf(iq,list_idx)
+                                lstoo = lspecfrma_csizxf(iq,list_idx)
                              else
-                                lsfrm = lspectooc_csizxf(iq,ipair)
-                                lstoo = lspecfrmc_csizxf(iq,ipair)
+                                lsfrm = lspectooc_csizxf(iq,list_idx)
+                                lstoo = lspecfrmc_csizxf(iq,list_idx)
                              end if
                           end if
                           write( iulog, '(a,3i3,2i4)' ) 'calcsize jmode,iq,aer_type, lsfrm,lstoo',   &
@@ -1704,7 +1651,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                     xfercoef = xfercoef_vol_acc2ait
                  end if
 
-                 do  iq = 1, nspecfrm_csizxf(ipair)
+                 do  iq = 1, nspecfrm_csizxf(list_idx)
 
                     ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
                     do  aer_type = 1, 2
@@ -1715,19 +1662,19 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                        ! for jmode=2, want lsfrm=accum  species,  lstoo=aitken species
                        if (jmode .eq. 1) then
                           if (aer_type .eq. inter_aero) then
-                             lsfrm = lspecfrma_csizxf(iq,ipair)
-                             lstoo = lspectooa_csizxf(iq,ipair)
+                             lsfrm = lspecfrma_csizxf(iq,list_idx)
+                             lstoo = lspectooa_csizxf(iq,list_idx)
                           else
-                             lsfrm = lspecfrmc_csizxf(iq,ipair)
-                             lstoo = lspectooc_csizxf(iq,ipair)
+                             lsfrm = lspecfrmc_csizxf(iq,list_idx)
+                             lstoo = lspectooc_csizxf(iq,list_idx)
                           end if
                        else
                           if (aer_type .eq. inter_aero) then
-                             lsfrm = lspectooa_csizxf(iq,ipair)
-                             lstoo = lspecfrma_csizxf(iq,ipair)
+                             lsfrm = lspectooa_csizxf(iq,list_idx)
+                             lstoo = lspecfrma_csizxf(iq,list_idx)
                           else
-                             lsfrm = lspectooc_csizxf(iq,ipair)
-                             lstoo = lspecfrmc_csizxf(iq,ipair)
+                             lsfrm = lspectooc_csizxf(iq,list_idx)
+                             lstoo = lspecfrmc_csizxf(iq,list_idx)
                           end if
                        end if
 
@@ -1759,12 +1706,179 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
               end if
            end do !jmode
 
-        end if
+        end if !ixfer_ait2acc+ixfer_acc2ait > 0
      end do !ncol
   end do !pver
 
   return
 end subroutine aitken_accum_exchange
+
+!---------------------------------------------------------------------------------------------
+
+subroutine compute_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
+     drv_c_aitsv, num_a_aitsv, num_c_aitsv, &
+     ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)
+
+  !------------------------------------------------------------
+  ! Purpose: Computes transfer from aitken to accumulation mode
+  !
+  ! Author: Richard Easter (Refactored by Balwinder Singh)
+  !------------------------------------------------------------
+
+  !intent ins
+  integer,  intent(in) :: iacc
+  real(r8), intent(in) :: v2nzz
+  real(r8), intent(in) :: tadjinv
+  real(r8), intent(in) :: drv_a_aitsv, drv_c_aitsv
+  real(r8), intent(in) :: num_a_aitsv, num_c_aitsv
+
+  !intent outs
+  integer,  intent(inout) :: ixfer_ait2acc
+  real(r8), intent(inout) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
+  real(r8), intent(inout) :: xfertend_num(2,2)
+
+  !local
+  real(r8) :: drv_t, num_t
+  real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
+
+  !initialize
+  ixfer_ait2acc        = 0
+  xfercoef_num_ait2acc = 0.0_r8
+  xfercoef_vol_ait2acc = 0.0_r8
+  xfertend_num(:,:)    = 0.0_r8
+
+  ! compute aitken --> accum transfer rates
+
+  drv_t = drv_a_aitsv + drv_c_aitsv
+  num_t = num_a_aitsv + num_c_aitsv
+  if (drv_t > 0.0_r8) then
+     if (num_t < drv_t*v2nzz) then
+        ixfer_ait2acc = 1
+        if (num_t < drv_t*voltonumb_amode(iacc)) then
+           xferfrac_num_ait2acc = 1.0_r8
+           xferfrac_vol_ait2acc = 1.0_r8
+        else
+           xferfrac_vol_ait2acc = ((num_t/drv_t) - v2nzz)/   &
+                (voltonumb_amode(iacc) - v2nzz)
+           xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
+                (drv_t*voltonumb_amode(iacc)/num_t)
+           if ((xferfrac_num_ait2acc <= 0.0_r8) .or.   &
+                (xferfrac_vol_ait2acc <= 0.0_r8)) then
+              xferfrac_num_ait2acc = 0.0_r8
+              xferfrac_vol_ait2acc = 0.0_r8
+           else if ((xferfrac_num_ait2acc >= 1.0_r8) .or.   &
+                (xferfrac_vol_ait2acc >= 1.0_r8)) then
+              xferfrac_num_ait2acc = 1.0_r8
+              xferfrac_vol_ait2acc = 1.0_r8
+           end if
+        end if
+        xfercoef_num_ait2acc = xferfrac_num_ait2acc*tadjinv
+        xfercoef_vol_ait2acc = xferfrac_vol_ait2acc*tadjinv
+        xfertend_num(1,1) = num_a_aitsv*xfercoef_num_ait2acc
+        xfertend_num(1,2) = num_c_aitsv*xfercoef_num_ait2acc
+     end if
+  end if
+
+end subroutine compute_ait_acc_transfer
+
+!---------------------------------------------------------------------------------------------
+
+subroutine compute_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchnk,     &
+     v2nzz, tadjinv, state, pbuf, drv_a_accsv, drv_c_accsv, num_a_accsv,      &
+     num_c_accsv, noxf_acc2ait,                                  &
+     drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait, &
+     xfercoef_vol_acc2ait, xfertend_num)
+
+  !intent -ins
+  integer,  intent(in) :: iait, iacc, icol, klev, list_idx, lchnk
+  real(r8), intent(in) :: v2nzz
+  real(r8), intent(in) :: tadjinv
+  real(r8), intent(in) :: drv_a_accsv, drv_c_accsv, num_a_accsv, num_c_accsv
+  logical,  intent(in) :: noxf_acc2ait(:)
+
+  type(physics_state), intent(in)    :: state       ! Physics state variables
+  type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
+
+  !intent - outs
+  integer,  intent(inout) :: ixfer_acc2ait
+  real(r8), intent(inout) :: drv_a_noxf, drv_c_noxf
+  real(r8), intent(inout) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
+  real(r8), intent(inout) :: xfertend_num(2,2)
+
+  !local
+  integer  :: ispec_acc, idx
+  real(r8) :: drv_t, num_t, drv_t_noxf, num_t0
+  real(r8) :: num_t_noxf
+  real(r8) :: dummwdens
+  real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait, duma
+  real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
+  real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+
+
+  ixfer_acc2ait = 0
+  xfercoef_num_acc2ait = 0.0_r8
+  xfercoef_vol_acc2ait = 0.0_r8
+
+  drv_t = drv_a_accsv + drv_c_accsv
+  num_t = num_a_accsv + num_c_accsv
+  drv_a_noxf = 0.0_r8
+  drv_c_noxf = 0.0_r8
+  if (drv_t > 0.0_r8) then
+     if (num_t > drv_t*v2nzz) then
+        do ispec_acc = 1, nspec_amode(iacc) !BALLI, get nspec from rad cnst
+
+           if ( noxf_acc2ait(ispec_acc) ) then
+              ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
+              dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(ispec_acc,iacc)) !BALLI- see if we need to use rad cnst
+              idx = lmassptr_amode(ispec_acc,iacc)  ! BALLI use rad_cnst
+              !write(103,*)'notr:',idx,cnst_name(idx)
+              call rad_cnst_get_aer_mmr(list_idx, iacc, ispec_acc, 'a', state, pbuf, specmmr) !get mmr
+              drv_a_noxf = drv_a_noxf    &
+                   + max(0.0_r8,specmmr(icol,klev))*dummwdens
+              fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(ispec_acc,iacc),lchnk) !balli do we need to use rad_cnst??
+              drv_c_noxf = drv_c_noxf + max(0.0_r8,fldcw(icol,klev))*dummwdens
+           end if
+        end do
+        drv_t_noxf = drv_a_noxf + drv_c_noxf
+        num_t_noxf = drv_t_noxf*voltonumblo_amode(iacc)
+        num_t0 = num_t
+        num_t = max( 0.0_r8, num_t - num_t_noxf )
+        drv_t = max( 0.0_r8, drv_t - drv_t_noxf )
+     end if
+  end if
+
+  if (drv_t > 0.0_r8) then
+     if (num_t > drv_t*v2nzz) then
+        ixfer_acc2ait = 1
+        if (num_t > drv_t*voltonumb_amode(iait)) then
+           xferfrac_num_acc2ait = 1.0_r8
+           xferfrac_vol_acc2ait = 1.0_r8
+        else
+           xferfrac_vol_acc2ait = ((num_t/drv_t) - v2nzz)/   &
+                (voltonumb_amode(iait) - v2nzz)
+           xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
+                (drv_t*voltonumb_amode(iait)/num_t)
+           if ((xferfrac_num_acc2ait <= 0.0_r8) .or.   &
+                (xferfrac_vol_acc2ait <= 0.0_r8)) then
+              xferfrac_num_acc2ait = 0.0_r8
+              xferfrac_vol_acc2ait = 0.0_r8
+           else if ((xferfrac_num_acc2ait >= 1.0_r8) .or.   &
+                (xferfrac_vol_acc2ait >= 1.0_r8)) then
+              xferfrac_num_acc2ait = 1.0_r8
+              xferfrac_vol_acc2ait = 1.0_r8
+           end if
+        end if
+        duma = 1.0e-37_r8
+        xferfrac_num_acc2ait = xferfrac_num_acc2ait*   &
+             num_t/max( duma, num_t0 )
+        xfercoef_num_acc2ait = xferfrac_num_acc2ait*tadjinv
+        xfercoef_vol_acc2ait = xferfrac_vol_acc2ait*tadjinv
+        xfertend_num(2,1) = num_a_accsv*xfercoef_num_acc2ait
+        xfertend_num(2,2) = num_c_accsv*xfercoef_num_acc2ait
+     end if
+  end if
+
+end subroutine compute_acc_ait_transfer
 
 !---------------------------------------------------------------------------------------------
 
