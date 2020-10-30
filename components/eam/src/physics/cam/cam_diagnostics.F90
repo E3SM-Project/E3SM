@@ -2465,8 +2465,8 @@ end subroutine diag_phys_tend_writeout
       real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations [K]
       real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K}
 
-      ! heights needed for diagnostic [m]
-      real(r8) :: zs(pcols), zf(pcols,pverp), z(pcols,pver)
+      ! height with respect to sea level [m]
+      real(r8) :: z_sl(pcols,pver)
 
       real(r8) :: tp(pcols,pver)   ! parcel temperature [K]
       real(r8) :: qstp(pcols,pver) ! saturation mixing ratio of parcel [kg/kg]
@@ -2499,23 +2499,18 @@ end subroutine diag_phys_tend_writeout
 
       rgravit = 1._r8/gravit
 
-   !  Determine indicee of PBL height, first set up required height arrays
-      do i = 1, ncol
-         zs(i) = phis(i)*rgravit
-         zf(i,pver+1) = zi(i,pver+1) + zs(i)
-      end do
-
+   !  Compute midpoint height above sea level, needed for MSE computation
       do k = 1,pver
          do i = 1, ncol
-            z(i,k) = zm(i,k) + zs(i)
-            zf(i,k) = zi(i,k) + zs(i)
+            z_sl(i,k) = zm(i,k) + phis(i)*rgravit
          end do
       end do
 
-   !  Now actually find indicee of PBL height
+   !  Find indicee of PBL height, using mid point and interface heights
+   !    from surface.
       do k = pver -1, 1, -1
         do i = 1, ncol
-          if (abs(z(i,k)-zs(i)-pblh(i)) < (zf(i,k)-zf(i,k+1))*0.5_r8) pblt(i) = k
+          if (abs(zm(i,k)-pblh(i)) < (zi(i,k)-zi(i,k+1))*0.5_r8) pblt(i) = k
         end do
       end do
 
@@ -2553,7 +2548,7 @@ end subroutine diag_phys_tend_writeout
    !
       do k = pver,1,-1
          do i = 1,ncol
-            hmn(i) = cpair*t(i,k) + gravit*z(i,k) + latvap*q(i,k)
+            hmn(i) = cpair*t(i,k) + gravit*z_sl(i,k) + latvap*q(i,k)
             if (k >= pblt(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k
