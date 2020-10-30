@@ -40,13 +40,14 @@ IF (${HOMME_BUILD_EXECS})
   ENDIF()
 ENDIF()
 
-#option to build without pio and any netcdf in homme (no mesh runs either),
-#by default is not on.
-IF(NOT DEFINED BUILD_HOMME_WITHOUT_PIOLIBRARY)
-  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
-ENDIF()
+# Option to build without pio and any netcdf in homme (no mesh runs either)
+# The default is not on (meaning HAVE pio support) if we build any exec.
+IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY OFF CACHE BOOL "")
+ELSE ()
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
+ENDIF ()
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
-  ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
 ENDIF()
 
