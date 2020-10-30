@@ -2524,16 +2524,13 @@ end subroutine diag_phys_tend_writeout
       tp(:ncol,:) = t(:ncol,:)
       qstp(:ncol,:) = q(:ncol,:)
 
-   !!! RBN - Initialize tv and buoy for output.
-   !!! tv=tv : tpv=tpv : qstp=q : buoy=0.
+   ! Initialize virtual temperature and buoyancy
       tv(:ncol,:) = t(:ncol,:) *(1._r8+1.608_r8*q(:ncol,:))/ (1._r8+q(:ncol,:))
       tpv(:ncol,:) = tv(:ncol,:)
       buoy(:ncol,:) = 0._r8
 
-   !
    ! set "launching" level(mx) to be at maximum moist static energy.
-   ! search for this level stops at planetary boundary layer top.
-   !
+   !   search for this level stops at planetary boundary layer top.
       do k = pver,1,-1
          do i = 1,ncol
             hmn(i) = cpair*t(i,k) + gravit*z_sl(i,k) + latvap*q(i,k)
@@ -2638,7 +2635,9 @@ end subroutine diag_phys_tend_writeout
    ! determine equilibrim level (EL)
       do k = 2,pver
          do i = 1,ncol
+            ! must reside above the LCL
             if (k < lcl(i)) then
+               ! should be level where buoyancy becomes negative
                if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
                   lel(i) = k
                end if
@@ -2654,7 +2653,9 @@ end subroutine diag_phys_tend_writeout
    ! determine the LFC
       do k = 2, pver
          do i = 1, ncol
+           ! must reside above LCL and below EL
            if (k < lcl(i) .and. k > lel(i)) then
+              ! should be the level where buoyancy becomes positive
               if (buoy(i,k+1) < 0._r8 .and. buoy(i,k) >= 0._r8) then
                  lfc(i) = k
               end if
@@ -2662,7 +2663,7 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
-   ! calculate convective available potential energy (cape), buoyancy
+   ! calculate convective available potential energy (CAPE), buoyancy
    !  integrated from LFC to the EL
       do k = 1,pver
          do i = 1,ncol
@@ -2673,7 +2674,7 @@ end subroutine diag_phys_tend_writeout
       end do
 
    ! Compute CIN based on information of levels computed above, which
-   !  is the buoyancy integrated from surface to the LFC
+   !  is the negative buoyancy integrated from surface to the LFC
       do k = 1, pver
         do i = 1, ncol
            if (k > lfc(i)) then
