@@ -2742,7 +2742,6 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input demand -not included-  = ',nt,budget_global(br_qdem,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
           if (output_all_budget_terms) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
@@ -3232,6 +3231,12 @@ contains
      ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%frac, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read frac ',minval(Tunit%frac),maxval(Tunit%frac)
+     call shr_sys_flush(iulog)
+     
+     allocate(TUnit%domainfrac(begr:endr))
+     ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
+     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
+     if (masterproc) write(iulog,FORMR) trim(subname),' read domainfrac ',minval(Tunit%domainfrac),maxval(Tunit%domainfrac)
      call shr_sys_flush(iulog)
 
      ! read fdir, convert to mask

@@ -865,6 +865,8 @@ contains
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
     write(iulog,*) '    use_crop = ', use_crop
+    write(iulog,*) '    irrigate = ', irrigate
+    write(iulog,*) '    two-way irrigation = ', tw_irr
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
     write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    use_vancouver = ', use_vancouver

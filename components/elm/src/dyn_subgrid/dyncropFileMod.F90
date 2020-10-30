@@ -16,7 +16,7 @@ module dyncropFileMod
   use clm_varcon            , only : grlnd, namec
   use abortutils            , only : endrun
   use spmdMod               , only : masterproc, mpicom
-  use LandunitType          , only : lun_pp                
+  use LandunitType          , only : lun_pp
   use ColumnType            , only : col_pp
   use VegetationType        , only : veg_pp
   !
@@ -43,7 +43,6 @@ module dyncropFileMod
   !---------------------------------------------------------------------------
 
 contains
-  
   !-----------------------------------------------------------------------
   subroutine dyncrop_init(bounds, dyncrop_filename)
     !
@@ -64,10 +63,8 @@ contains
     integer :: num_points     ! number of spatial points
     integer :: wtcft_shape(2) ! shape of the wtcft data
     integer :: fertcft_shape(2) ! shape of the fertcft data
-    
     character(len=*), parameter :: subname = 'dyncrop_init'
     !-----------------------------------------------------------------------
-    
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     if (masterproc) then
@@ -81,7 +78,6 @@ contains
     ! prescribed ahead of time.
     dyncrop_file = dyn_file_type(dyncrop_filename, YEAR_POSITION_START_OF_TIMESTEP)
     call check_dim(dyncrop_file, 'cft', cft_size)
-    
     ! read data PCT_CROP and PCT_CFT corresponding to correct year
     !
     ! Note: if you want to change transient crops so that they are interpolated, rather
@@ -119,7 +115,7 @@ contains
     ! Note that crop cover currently jumps to its new value at the start of the year.
     ! However, as mentioned above, this behavior can be changed to time interpolation
     ! simply by making wtcrop and wtcft dyn_var_time_interp_type variables rather than
-    ! dyn_var_time_uninterp_type. 
+    ! dyn_var_time_uninterp_type.
     !
     ! !USES:
     use CropType          , only : crop_type
@@ -139,7 +135,6 @@ contains
     real(r8), allocatable :: wtcft_cur(:,:) ! current cft weights
     real(r8), allocatable :: fertcft_cur(:,:) ! current cft fertilizer
     logical , allocatable :: col_set(:)     ! whether we have set the weight for each column
-    
     character(len=*), parameter :: subname = 'dyncrop_interp'
     !-----------------------------------------------------------------------
 
@@ -180,17 +175,15 @@ contains
 
           ! The following assumes there is a single CFT on each crop column. The
           ! error-check with col_set helps ensure this is the case.
-          
           if (col_set(c)) then
              write(iulog,*) subname//' ERROR: attempt to set a column that has already been set.'
              write(iulog,*) 'This may happen if there are multiple crops on a single column.'
              call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
-          
           col_pp%wtlunit(c) = wtcft_cur(g,m)
-          if (use_crop) then                  
+          if (use_crop) then
             crop_inst%fertnitro_patch(p) = fertcft_cur(g,m)
-          end if   
+          end if
           col_set(c) = .true.
        end if
     end do
