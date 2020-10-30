@@ -312,14 +312,14 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
                    - rho_zi_srf*SDS.wqw_sfc[s];
 
       // Spurious source should be sufficiently small for water conservation
-//      REQUIRE(spurious == qwspur_thresh);
+      REQUIRE(spurious == qwspur_thresh);
 
       // Calculate the spurious source for thetal
       spurious = (thl_int_a[s] - thl_int_b[s])/dtime
                    - rho_zi_srf*SDS.wthl_sfc[s];
 
       // Spurious source should be sufficiently small for energy conservation
-//      REQUIRE(spurious == thlspur_thresh);
+      REQUIRE(spurious == thlspur_thresh);
 
       // Check that tracers were conserved during vertical transport
       for (Int t = 0; t < num_tracer; ++t){
