@@ -19,9 +19,7 @@ module restart_physics
                                 pio_put_var, pio_get_var
   use cospsimulator_intr, only: docosp
   use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num
-#ifdef MAML
   use seq_comm_mct,       only : num_inst_atm
-#endif
 
   implicit none
   private

@@ -39,7 +39,6 @@ contains
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use elm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
-    !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
@@ -1082,6 +1081,13 @@ contains
        forc_snowc                                    = x2l(index_x2l_Faxa_snowc,i)   ! mm/s
        forc_snowl                                    = x2l(index_x2l_Faxa_snowl,i)   ! mm/s
 
+       !! Jungmin
+       if(masterproc) then
+          write(iulog,'("lnd_import: forc_solsxy=",F7.3," flwdsxy=",F7.3," i=",I3," g=",I3," index_x2l_Faxa_swvdr=",I3)') &
+                                     x2l(index_x2l_Faxa_swvdr,i),x2l(index_x2l_Faxa_lwdn,i),i,g,index_x2l_Faxa_swvdr
+       end if   
+       !! Jungmin
+
        ! atmosphere coupling, for prognostic/prescribed aerosols
        atm2lnd_vars%forc_aer_grc(g,1)  =  x2l(index_x2l_Faxa_bcphidry,i)
        atm2lnd_vars%forc_aer_grc(g,2)  =  x2l(index_x2l_Faxa_bcphodry,i)
@@ -1136,6 +1142,12 @@ contains
          ! derived flux forcings
          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
                               top_af%solai(topo,2) + top_af%solai(topo,1)
+         !! Jungmin
+         if(masterproc) then
+            write(iulog,'("lnd_import: topounit: solad=",F7.3," lwrad=",F7.3," topo=",I3," i=",I3)') &
+                         top_af%solad(topo,1),top_af%lwrad(topo),topo,i
+         end if
+         !! Jungmin
        end do
          
 #endif
@@ -1317,6 +1329,9 @@ contains
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
+    !! Jungmin
+    use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
+    !! Jungmin
     !
     ! !ARGUMENTS:
     implicit none
@@ -1346,6 +1361,12 @@ contains
        l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
        l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
        l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
+       !! Jungmin
+       if(masterproc) then
+          write(iulog,'("lnd_export:avsdr=",F7.5," anidr=",F7.5," avsdf=",F7.5," anidf=",F7.5," i=",I3," g=",I3)') &
+          l2x(index_l2x_Sl_avsdr,i),l2x(index_l2x_Sl_anidr,i),l2x(index_l2x_Sl_avsdf,i),l2x(index_l2x_Sl_anidf,i),i,g
+       end if
+       !! Jungmin
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)

@@ -4,7 +4,9 @@ module  maml_module
 !----------------------------------------------------------------------
 
 use seq_comm_mct, only : num_inst_atm
-use shr_kind_mod,  only: r8 => shr_kind_r8
+use shr_kind_mod, only: r8 => shr_kind_r8
+use spmd_utils,   only: masterproc
+use cam_logfile,  only: iulog
 !----------------------------------------------------------------------- 
 ! PRIVATE: Make default data and interfaces private
 !----------------------------------------------------------------------- 
@@ -223,7 +225,14 @@ subroutine cam_out_rad_avg_mi(cam_out)
           cam_out%solld(i)= cam_out%solld(i)+cam_out%solld_mi(i,j)*avgfac
           cam_out%solsd(i) = cam_out%solsd(i)+cam_out%solsd_mi(i,j)*avgfac
           cam_out%flwds(i) = cam_out%flwds(i)+cam_out%flwds_mi(i,j)*avgfac
-      end do
+          !! Jungmin
+          if(masterproc) then
+             write(iulog,'("cam_out_rad_avg_mi: icol=",I3," j=",I3," cam_out%sols(icol)=",F7.3," cam_out%sols_mi(icol,j)=",F7.3," avgfac=",F5.4)') &
+                                                i,j,cam_out%sols(i),cam_out%sols_mi(i,j),avgfac
+             write(iulog,'("cam_out_rad_avg_mi: icol=",I3," j=",I3," cam_out%flwds(icol)=",F7.3," cam_out%flwds_mi(icol,j)=",F7.3," avgfac=",F5.4)') &
+                                                i,j,cam_out%flwds(i),cam_out%flwds_mi(i,j),avgfac
+          end if
+      end do ! j = 1, num_inst_atm
    end do! i = 1, ncol
 end subroutine cam_out_rad_avg_mi
 end module maml_module

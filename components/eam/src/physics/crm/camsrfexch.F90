@@ -16,6 +16,9 @@ module camsrfexch
   use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
   use seq_comm_mct, only : num_inst_atm
+  !! Jungmin
+  use spmd_utils,         only: masterproc
+  !! Jungmin
   implicit none
 
 !----------------------------------------------------------------------- 
@@ -453,7 +456,9 @@ CONTAINS
     integer :: c            ! chunk index
     integer :: ierror       ! Error code
     !----------------------------------------------------------------------- 
-
+    !! Jungmin
+    if(masterproc) write(iulog,*) 'atm2hub_alloc: num_inst_atm:',num_inst_atm
+    !! Jungmin
     if ( .not. phys_grid_initialized() ) call endrun( "ATM2HUB_ALLOC error: phys_grid not called yet" )
     allocate (cam_out(begchunk:endchunk), stat=ierror)
     if ( ierror /= 0 )then
@@ -464,7 +469,7 @@ CONTAINS
     do c = begchunk,endchunk 
        allocate (cam_out(c)%tbot_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot_mi')
-
+       
        allocate (cam_out(c)%ubot_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ubot_mi')
 
@@ -507,6 +512,9 @@ CONTAINS
        allocate (cam_out(c)%thbot_mi(pcols,num_inst_atm), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot_mi')
        
+       allocate (cam_out(c)%tbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot')
+
        allocate (cam_out(c)%zbot(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error zbot')
 
@@ -530,7 +538,7 @@ CONTAINS
 
        allocate (cam_out(c)%flwds(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds')
-       
+
        allocate (cam_out(c)%precsc(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsc')
 
@@ -542,7 +550,7 @@ CONTAINS
 
        allocate (cam_out(c)%precl(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precl')
-
+       
        allocate (cam_out(c)%soll(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error soll')
 
@@ -812,7 +820,7 @@ CONTAINS
 
 !======================================================================
 
-subroutine cam_export(state,cam_out,pbuf)
+subroutine cam_export(state,cam_out,cam_in,pbuf)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -842,6 +850,7 @@ subroutine cam_export(state,cam_out,pbuf)
    !
    type(physics_state),  intent(in)    :: state
    type (cam_out_t),     intent(inout) :: cam_out
+   type (cam_in_t),     intent(in) :: cam_in
    type(physics_buffer_desc), pointer  :: pbuf(:)
 
    !
@@ -885,8 +894,9 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: crm_angle(:)
    logical :: use_MAML
    real(r8) :: avgfac
-
+   integer :: iter_max(10)
    !-----------------------------------------------------------------------
+   iter_max = 10
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -930,7 +940,7 @@ subroutine cam_export(state,cam_out,pbuf)
          cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
          psm1(i,lchnk)    = state%ps(i)
          srfrpdel(i,lchnk)= state%rpdel(i,pver)
-      end do
+       end do
       do m = 1, pcnst
         do i = 1, ncol
            cam_out%qbot(i,m) = state%q(i,pver,m) 
@@ -962,6 +972,37 @@ subroutine cam_export(state,cam_out,pbuf)
          if (cam_out%precsl(i).gt.cam_out%precl(i)) cam_out%precsl(i)=cam_out%precl(i)
          ! end jrm
       end do
+      ! Even if use_MAML=false, cam_out%[X]_mi are still used as a interface between CRM atmosphere and land surface. 
+      ! therefore, copy all manually
+      do i = 1, ncol
+         cam_out%tbot_mi(i,:) = cam_out%tbot(i)
+         cam_out%tbot_mi(i,:) = cam_out%tbot(i)
+         cam_out%ubot_mi(i,:) = cam_out%ubot(i)
+         cam_out%vbot_mi(i,:) = cam_out%vbot(i)
+         do m = 1,pcnst
+            cam_out%qbot_mi(i,m,:) = cam_out%qbot(i,m)
+         end do
+         cam_out%rho_mi(i,:) = cam_out%rho(i)
+         cam_out%precsc_mi(i,:) = cam_out%precsc(i)
+         cam_out%precsl_mi(i,:) = cam_out%precsl(i)
+         cam_out%precc_mi(i,:) = cam_out%precc(i)
+         cam_out%precl_mi(i,:) = cam_out%precl(i)
+         
+         !! Jungmin
+         !if(masterproc) then
+         !   write(iulog,*) 'i:',i,'landfrac:',cam_in%landfrac(i)
+         !   write(iulog,*),"cam_export:",i,' cam_out%tbot:',cam_out%tbot(i),'cam_out%tbot_mi:', (cam_out%tbot_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%ubot:',cam_out%ubot(i),'cam_out%ubot_mi:', (cam_out%ubot_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%vbot:',cam_out%vbot(i),'cam_out%vbot_mi:', (cam_out%vbot_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%rho:',cam_out%rho(i),'cam_out%rho_mi:', (cam_out%rho_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%precsc:',cam_out%precsc(i),'cam_out%precsc_mi:', (cam_out%precsc_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%precsl:',cam_out%precsl(i),'cam_out%precsl_mi:', (cam_out%precsl_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%precc:',cam_out%precc(i),'cam_out%precc_mi:', (cam_out%precc_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%precl:',cam_out%precl(i),'cam_out%precl_mi:', (cam_out%precl_mi(i,j),j=1,num_inst_atm)
+         !   write(iulog,*),"cam_export:",i,' cam_out%qbot1:',cam_out%qbot(i,1),'cam_out%qbot1_mi:', (cam_out%qbot_mi(i,1,j),j=1,num_inst_atm)
+         !end if
+         !! Jungmin
+      end do! i = 1, ncol   
    else   
       ! for MMF-MAML, surfaces are coupled to CRM atmosphere 
       crm_t_idx     = pbuf_get_index('CRM_T')
@@ -1007,11 +1048,16 @@ subroutine cam_export(state,cam_out,pbuf)
       cam_out%precc = 0.
       cam_out%precl = 0.
 
-      ! for non-MAML, num_inst_atm = avgfac = 1 
+      ! for non-MAML, num_inst_atm = avgfac = 1
+      print*,'cam_export()'
+      print*,'num_inst_atm:', num_inst_atm
       do i = 1,ncol
          do j = 1,num_inst_atm
+            print*,'i:',i,'j:',j,'tbot_mi:',cam_out%tbot_mi(i,j),'avgfac:',avgfac
             cam_out%tbot(i)  = cam_out%tbot(i)+cam_out%tbot_mi(i,j)*avgfac
+            print*,'i:',i,'j:',j,'precsc_mi:',cam_out%precsc_mi(i,j),'avgfac:',avgfac
             cam_out%precsc(i) = cam_out%precsc(i)+cam_out%precsc_mi(i,j)*avgfac
+            print*,'i:',i,'j:',j,'precsl_mi:',cam_out%precsl_mi(i,j),'avgfac:',avgfac
             cam_out%precsl(i)= cam_out%precsl(i)+cam_out%precsl_mi(i,j)*avgfac
             cam_out%precc(i) = cam_out%precc(i)+cam_out%precc_mi(i,j)*avgfac
             cam_out%precl(i) = cam_out%precl(i)+cam_out%precl_mi(i,j)*avgfac

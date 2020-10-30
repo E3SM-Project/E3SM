@@ -1173,19 +1173,19 @@ end function radiation_nextsw_cday
     logical :: first_column
     logical :: last_column
     integer :: ii,jj,m, icol, i_rad,j_rad
-#ifdef MAML
+    
     !temporary storage for computed radiation fluxes at surface
     real(r8) :: sols_loc(pcols)
     real(r8) :: soll_loc(pcols)
     real(r8) :: solsd_loc(pcols)
     real(r8) :: solld_loc(pcols)
     real(r8) :: flwds_loc(pcols)
+    
     !CRM radiation column level radiation fluxes at surface                                                                        
     ! Output from radiation calculation. Passed over to the cam surface
-    ! interface (cam_out)
-    ! to cam_out
-    real(r8) :: sols_col(pcols,crm_nx_rad, crm_ny_rad)
-    real(r8) :: soll_col(pcols,crm_nx_rad,crm_ny_rad)
+    ! interface (cam_out) after Unpacking
+    real(r8) :: sols_col (pcols,crm_nx_rad,crm_ny_rad)
+    real(r8) :: soll_col (pcols,crm_nx_rad,crm_ny_rad)
     real(r8) :: solsd_col(pcols,crm_nx_rad,crm_ny_rad)
     real(r8) :: solld_col(pcols,crm_nx_rad,crm_ny_rad)
     real(r8) :: flwds_col(pcols,crm_nx_rad,crm_ny_rad)
@@ -1196,7 +1196,6 @@ end function radiation_nextsw_cday
     ! crm_ny_rad = crm_ny = 1)
     !Input for radiation model from cam_in needs to be packed/averaged for the
     ! reduced radiation column method (when crm_nx .ne. crm_nx_rad)
-#endif
     real(r8) :: asdir_col(pcols, crm_nx_rad, crm_ny_rad)
     real(r8) :: asdif_col(pcols, crm_nx_rad, crm_ny_rad)
     real(r8) :: aldir_col(pcols, crm_nx_rad, crm_ny_rad)
@@ -1581,6 +1580,7 @@ end function radiation_nextsw_cday
       !avoided when num_inst_atm = crm_nx_rad (TBD)
       if(use_MMF .and. use_MAML) then
          ! only works for the multi-instance MMF functionality
+         ! TODO: check if the packing method works for non-MAML case too
          aldir_col = 0. ; aldif_col = 0.
          asdir_col = 0. ; asdif_col = 0.
          crm_nx_rad_fac = real(crm_nx_rad,r8)/real(crm_nx,r8)
@@ -1604,6 +1604,7 @@ end function radiation_nextsw_cday
          aldif_col = aldif_col * tmpfac
          asdir_col = asdir_col * tmpfac
          asdif_col = asdif_col * tmpfac
+
       else ! if(use_SPCAM . and. use_MAML)
          do i_rad = 1, crm_nx_rad
             do j_rad = 1, crm_ny_rad
@@ -1611,11 +1612,18 @@ end function radiation_nextsw_cday
                aldif_col(1:ncol,i_rad,j_rad) = cam_in%aldif(1:ncol)
                asdir_col(1:ncol,i_rad,j_rad) = cam_in%asdir(1:ncol)
                asdif_col(1:ncol,i_rad,j_rad) = cam_in%asdif(1:ncol)
+               !! Jungmin
+               if(masterproc) then
+                  do ii = 1,ncol
+                     write(iulog,'("RADIATION.F90: num_inst_atm=",I3," c=",I3," crm_nx_rad=",I3," crm_ny_rad=",I3," i_rad=",I3," j_rad=",I3," icol=",I3,&
+                                   " aldir_col(icol,i_rad,j_rad)=",F6.5," cam_in%aldir(icol)=",F6.5," cam_in%aldir_mi(icol,:)=",F6.5)') &
+                                   num_inst_atm,cam_in%lchnk,crm_nx_rad,crm_ny_rad,i_rad,j_rad,ii,aldir_col(ii,i_rad,j_rad),cam_in%aldir(ii),cam_in%aldir_mi(ii,:)
+                  end do !ii
+               end if   
+               !! Jungmin
             end do ! j_rad
          end do ! i_rad   
       end if
-
-
       ! Start loop over CRM columns; the strategy here is to loop over each CRM
       ! column and separately call the radiative transfer codes with optical
       ! properties calculated from CRM fields for each of those columns. Note
@@ -1892,14 +1900,22 @@ end function radiation_nextsw_cday
                      aldir_col(1:ncol,ii,jj),  aldif_col(1:ncol,ii,jj),                  &
                      qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
                      fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
-                     fsnsc,        fsdsc,        fsds,         sols_loc, soll_loc,   &
-                     solsd_loc,       solld_loc,fns,          fcns,                         &
+                     fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
+                     cam_out%solsd,cam_out%solld,fns,          fcns,                         &
                      Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
                      su,           sd,                                                       &
                      E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                      old_convert = .false.)
                 call t_stopf ('rad_rrtmg_sw')
-                   
+                !! Jungmin
+                if(masterproc) then
+                  do i = 1,ncol
+                     write(iulog,'("after rad_rrtmg_sw: icall=",I3," icol=",I3," ii=",I3," jj=",I3," cam_out%sols(i)=",F7.3)') &
+                                 icall,i, ii, jj, cam_out%sols(i)
+                  end do ! i
+                end if
+                !! Jungmin
+
                 ! Output net fluxes at 200 mb
                 call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
                 call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fns, fsn200)
@@ -1928,10 +1944,10 @@ end function radiation_nextsw_cday
                         fsntoa_m  (i, icall) = fsntoa_m  (i, icall)+fsntoa  (i)*factor_xy
                         fsutoa_m  (i, icall) = fsutoa_m  (i, icall)+fsutoa  (i)*factor_xy
                         fsntoac_m (i, icall) = fsntoac_m (i, icall)+fsntoac (i)*factor_xy
-                        sols_m    (i, icall) = sols_m    (i, icall)+sols_loc(i)*factor_xy
-                        soll_m    (i, icall) = soll_m    (i, icall)+soll_loc(i)*factor_xy
-                        solsd_m   (i, icall) = solsd_m   (i, icall)+solsd_loc(i)*factor_xy
-                        solld_m   (i, icall) = solld_m   (i, icall)+solld_loc(i)*factor_xy
+                        sols_m    (i, icall) = sols_m    (i, icall)+cam_out%sols(i)*factor_xy
+                        soll_m    (i, icall) = soll_m    (i, icall)+cam_out%soll(i)*factor_xy
+                        solsd_m   (i, icall) = solsd_m   (i, icall)+cam_out%solsd(i)*factor_xy
+                        solld_m   (i, icall) = solld_m   (i, icall)+cam_out%solld(i)*factor_xy
                         fsn200_m  (i, icall) = fsn200_m  (i, icall)+fsn200 (i)*factor_xy
                         fsn200c_m (i, icall) = fsn200c_m (i, icall)+fsn200c(i)*factor_xy
                         if (spectralflux) then
@@ -1949,10 +1965,10 @@ end function radiation_nextsw_cday
                          
                          ![lee1046 MAML]: when *_col are passed down to cam_out, the
                          !values are 'unpacked' for crm_nx, crm_ny dimensions
-                         sols_col (i,ii,jj) = sols_loc(i)
-                         soll_col (i,ii,jj) = soll_loc(i)
-                         solsd_col(i,ii,jj) = solsd_loc(i)
-                         solld_col(i,ii,jj) = solld_loc(i)
+                         sols_col (i,ii,jj) = cam_out%sols(i)
+                         soll_col (i,ii,jj) = cam_out%soll(i)
+                         solsd_col(i,ii,jj) = cam_out%solsd(i)
+                         solld_col(i,ii,jj) = cam_out%solld(i)
 
                          crm_aodvis(i,ii,jj) = sum(aer_tau(i, :, idx_sw_diag))
                          crm_aod400(i,ii,jj) = sum(aer_tau(i, :, idx_sw_diag+1))
@@ -2006,10 +2022,12 @@ end function radiation_nextsw_cday
                         fsntoa(i)=fsntoa_m(i, icall)
                         fsutoa(i)=fsutoa_m(i, icall)
                         fsntoac(i)=fsntoac_m(i, icall)
-                        sols_loc(i)   =sols_m(i, icall)
-                        soll_loc(i)   =soll_m(i, icall)
-                        solsd_loc(i)   =solsd_m(i, icall)
-                        solld_loc(i)   =solld_m(i, icall)
+                        !Grid-mean averages from the CRM level radiation fluxes are the same regardless of use_MAML = true/false
+                        cam_out%sols(i) = sols_m(i, icall)
+                        cam_out%soll(i) = soll_m(i, icall)
+                        cam_out%solsd(i) = solsd_m(i, icall)
+                        cam_out%solld(i) = solld_m(i, icall)
+                        
                         fsn200(i)  = fsn200_m(i, icall)
                         fsn200c(i) = fsn200c_m(i, icall)
                         if (spectralflux) then
@@ -2041,10 +2059,10 @@ end function radiation_nextsw_cday
                   call outfld('FSNTOA'//diag(icall),fsntoa,pcols,lchnk)
                   call outfld('FSUTOA'//diag(icall),fsutoa,pcols,lchnk)
                   call outfld('FSNTOAC'//diag(icall),fsntoac,pcols,lchnk)
-                   call outfld('SOLS'//diag(icall),sols_loc  ,pcols,lchnk)
-                   call outfld('SOLL'//diag(icall),soll_loc  ,pcols,lchnk)
-                   call outfld('SOLSD'//diag(icall),solsd_loc ,pcols,lchnk)
-                   call outfld('SOLLD'//diag(icall),solld_loc ,pcols,lchnk)
+                   call outfld('SOLS'//diag(icall),cam_out%sols,pcols,lchnk)
+                   call outfld('SOLL'//diag(icall),cam_out%soll,pcols,lchnk)
+                   call outfld('SOLSD'//diag(icall),cam_out%solsd,pcols,lchnk)
+                   call outfld('SOLLD'//diag(icall),cam_out%solld,pcols,lchnk)
                   call outfld('FSN200'//diag(icall),fsn200,pcols,lchnk)
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
@@ -2211,11 +2229,18 @@ end function radiation_nextsw_cday
                          lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
                          state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
                          qrl,          qrlc,                                                       &
-                         flns,         flnt,         flnsc,           flntc,        flwds_loc,     &
+                         flns,         flnt,         flnsc,           flntc,        cam_out%flwds,     &
                          flut,         flutc,        fnl,             fcnl,         fldsc,         &
                          clm_seed,     lu,           ld                                            )
                 call t_stopf ('rad_rrtmg_lw')
-
+                !! Jungmin
+                if(masterproc) then
+                  do i = 1,ncol
+                     write(iulog,'("after rad_rrtmg_lw: icall=",I3," icol=",I3," ii=",I3," jj=",I3,"cam_out%flwds(i)=",F7.3," lwrad_off=",L)') &
+                                 icall,i, ii, jj, cam_out%flwds(i), lwrad_off
+                  end do ! i
+                end if
+                !! Jungmin
                 if (lwrad_off) then
                   qrl(:,:) = 0._r8
                   qrlc(:,:) = 0._r8
@@ -2251,7 +2276,7 @@ end function radiation_nextsw_cday
                     flns_m   (i, icall) = flns_m   (i, icall)+flns(i)          *factor_xy
                     flnsc_m  (i, icall) = flnsc_m  (i, icall)+flnsc(i)         *factor_xy
                     fldsc_m  (i, icall) = fldsc_m  (i, icall)+fldsc(i)         *factor_xy
-                    flwds_m  (i, icall) = flwds_m  (i, icall)+flwds_loc(i) *factor_xy
+                    flwds_m  (i, icall) = flwds_m  (i, icall)+cam_out%flwds(i)     *factor_xy
                     fln200_m (i, icall) = fln200_m (i, icall)+fln200(i)        *factor_xy
                     fln200c_m(i, icall) = fln200c_m(i, icall)+fln200c(i)       *factor_xy
                     if (spectralflux) then
@@ -2266,7 +2291,7 @@ end function radiation_nextsw_cday
                       crm_flntc(i,ii,jj) = flntc(i)
                       crm_flns (i,ii,jj) = flns(i)
                       crm_flnsc(i,ii,jj) = flnsc(i)
-                      flwds_col(i,ii,jj) = flwds_loc(i)
+                      flwds_col(i,ii,jj) = cam_out%flwds(i)
                       do m=1,crm_nz
                          k = pver-m+1
                          qrl_crm(:ncol,ii,jj,m) = qrl(:ncol,k) / cpair
@@ -2290,7 +2315,7 @@ end function radiation_nextsw_cday
                       flns (i) = flns_m (i, icall)
                       flnsc(i) = flnsc_m(i, icall)
                       fldsc(i) = fldsc_m(i, icall)
-                      flwds_loc(i) = flwds_m(i, icall)
+                      cam_out%flwds(i) = flwds_m(i, icall)
                       fln200 (i) = fln200_m (i, icall)
                       fln200c(i) = fln200c_m(i, icall)
                       if (spectralflux) then
@@ -2318,7 +2343,7 @@ end function radiation_nextsw_cday
                   call outfld('LWCF'//diag(icall),lwcf  ,pcols,lchnk)
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
-                  call outfld('FLDS'//diag(icall),flwds_loc ,pcols,lchnk)
+                  call outfld('FLDS'//diag(icall),cam_out%flwds,pcols,lchnk)
                 end if
                 if (use_MMF .and. last_column ) then
                   if(icall.eq.0) then  ! the climate call
@@ -2338,27 +2363,50 @@ end function radiation_nextsw_cday
         end do ! ii = 1,crm_nx_rad
       end do ! jj = 1,crm_nx_rad
       
-      ![lee1046, MAML] Unpack sols_co, soll_col, solsd_col, solld_col, flwds_col to be
-      !CRM-level. Currently, Multi-instance MMF only works with 2D CRMs,
+      ![lee1046, MAML] Unpack sols_col, soll_col, solsd_col, solld_col, flwds_col 
+      !Currently, Multi-instance MMF only works with 2D CRMs,
       !therefore crm_nx = num_inst_atm and crm_ny = 1. If not, the run holts at
       !'crm_main' step.
-
-      do jj = 1, crm_ny
-         do ii = 1, crm_nx
-            do icol = 1, ncol
-               i_rad = (ii-1) / (crm_nx/crm_nx_rad) + 1
-               j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
-               cam_out%sols_mi (icol,ii)  = sols_col(icol,i_rad,j_rad)
-               cam_out%soll_mi (icol,ii)  = soll_col(icol,i_rad,j_rad)
-               cam_out%solsd_mi(icol,ii) = solsd_col(icol,i_rad,j_rad)
-               cam_out%solld_mi(icol,ii) = solld_col(icol,i_rad,j_rad)
-               cam_out%flwds_mi(icol,ii) = flwds_col(icol,i_rad,j_rad)
-            end do! icol = 1,ncol
-         end do ! ii = 1,crm_nx
-      end do ! jj = 1, crm_ny
-      ! Average cam_out%[X]_mi across the num_inst_atm
-      call cam_out_rad_avg_mi(cam_out)
-
+      if(.not.use_MAML) then
+         ! cam_out%[X] is just copied over to cam_out%[X]_mi
+         do icol = 1, ncol
+            cam_out%sols_mi(icol,:) = cam_out%sols(icol)
+            cam_out%soll_mi(icol,:) = cam_out%soll(icol)
+            cam_out%solsd_mi(icol,:) = cam_out%solsd(icol)
+            cam_out%solld_mi(icol,:) = cam_out%solld(icol)
+            cam_out%flwds_mi(icol,:) = cam_out%flwds(icol)
+         !! Jungmin
+         if(masterproc) then
+            write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%sols(icol)=",F7.3," cam_out%sols_mi(icol,:)=",F7.3)') &
+                           cam_out%lchnk,icol,cam_out%sols(icol),cam_out%sols_mi(icol,:)
+            write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%flwds(icol)=",F7.3," cam_out%flwds_mi(icol,:)=",F7.3)') &
+                           cam_out%lchnk,icol,cam_out%flwds(icol),cam_out%flwds_mi(icol,:)
+         end if
+         !! Jungmin
+         end do ! icol
+      else   
+         do jj = 1, crm_ny
+            do ii = 1,num_inst_atm 
+               do icol = 1, ncol
+                  i_rad = (ii-1) / (crm_nx/crm_nx_rad) + 1
+                  j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
+                  cam_out%sols_mi (icol,ii)  = sols_col(icol,i_rad,j_rad)
+                  cam_out%soll_mi (icol,ii)  = soll_col(icol,i_rad,j_rad)
+                  cam_out%solsd_mi(icol,ii) = solsd_col(icol,i_rad,j_rad)
+                  cam_out%solld_mi(icol,ii) = solld_col(icol,i_rad,j_rad)
+                  cam_out%flwds_mi(icol,ii) = flwds_col(icol,i_rad,j_rad)
+         
+                  !! Jungmin
+                  if(masterproc) then
+                     write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," ii=",I3," jj=",I3," i_rad=",I3," j_rad=",I3," cam_out%flwds_mi(icol,ii)=",F7.3," flwds_col(icol,i_rad,j_rad)=",F7.3)') & 
+                     cam_out%lchnk,icol,ii,jj,i_rad,j_rad,cam_out%flwds_mi(icol,ii),flwds_col(icol,i_rad,j_rad)
+                  end if
+                  !! Jungmin
+               end do! icol = 1,ncol
+            end do ! ii = 1,crm_nx
+         end do ! jj = 1, crm_ny
+      end if
+      
       ! Restore pbuf and state to values as input to this routine before we
       ! modified them in-place to populate with CRM column values
       if (use_MMF) then 
