@@ -829,107 +829,14 @@
 !
  if (trim(config_maxsnowalbedo_data) == 'MODIS') then
 
+    geog_sub_path = 'maxsnowalb_modis/'
+
     call mpas_log_write('Using MODIS 0.05-deg data for maximum snow albedo')
     if (supersample_fac > 1) then
        call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
     end if
 
-    nx = 1206
-    ny = 1206
-    nz = 1
-    isigned  = 1
-    endian   = 0
-    wordsize = 2
-    scalefactor = 0.01
-    msgval = real(-999.0,kind=R4KIND)*real(0.01,kind=R4KIND)
-    fillval = 0.0
-    allocate(rarray(nx,ny,nz))
-    allocate(nhs(nCells))
-    nhs(:) = 0
     snoalb(:) = 0.0
-
-    rarray_ptr = c_loc(rarray)
-
-    start_lat = 90.0 - 0.05 * 0.5 / supersample_fac
-    start_lon = -180.0 + 0.05 * 0.5 / supersample_fac
-    geog_sub_path = 'maxsnowalb_modis/'
-
-    do jTileStart = 1,02401,ny-6
-       jTileEnd = jTileStart + ny - 1 - 6
-
-       do iTileStart=1,06001,nx-6
-          iTileEnd = iTileStart + nx - 1 - 6
-          write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
-                       iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-          call mpas_log_write(trim(fname))
-          call mpas_f_to_c_string(fname, c_fname)
-
-          call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            wordsize,istatus)
-          call init_atm_check_read_error(istatus, fname)
-          rarray(:,:,:) = rarray(:,:,:) * scalefactor
-
-          iPoint = 1
-          do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
-          do i=supersample_fac * 3 + 1, supersample_fac * (nx-3)
-             ii = (i - 1) / supersample_fac + 1
-             jj = (j - 1) / supersample_fac + 1
-
-             lat_pt = start_lat - (supersample_fac*(jTileStart-1) + j - (supersample_fac*3+1)) * 0.05 / supersample_fac
-             lon_pt = start_lon + (supersample_fac*(iTileStart-1) + i - (supersample_fac*3+1)) * 0.05 / supersample_fac
-             lat_pt = lat_pt * PI / 180.0
-             lon_pt = lon_pt * PI / 180.0
-
-             iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                   nEdgesOnCell,cellsOnCell, &
-                                   latCell,lonCell)
-             if (rarray(ii,jj,1) /= msgval) then
-
-                !
-                ! This field only matters for land cells, and for all but the outermost boundary cells,
-                ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
-                ! cell would be nearest)
-                !
-                if (landmask(iPoint) == 1 .and. bdyMaskCell(iPoint) < nBdyLayers) then
-                   snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
-                   nhs(iPoint) = nhs(iPoint) + 1
-
-                ! For outermost land cells, additional work is needed to verify that the pixel
-                ! actually lies within the nearest cell
-                else if (landmask(iPoint) == 1) then
-                   zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-                   xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-                   yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
-
-                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                               nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
-                      snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
-                      nhs(iPoint) = nhs(iPoint) + 1
-                   end if
-                end if
-             end if
-          end do
-          end do
-
-       end do
-    end do
-
-    do iCell = 1,nCells
-       !
-       ! Mismatches in land mask can lead to MPAS land points with no maximum snow albedo.
-       ! Ideally, we would perform a search for nearby valid albedos, but for now using
-       ! the fill value will at least allow the model to run. In general, the number of cells
-       ! to be treated in this way tends to be a very small fraction of the total number of cells.
-       !
-       if (nhs(iCell) == 0) then
-          snoalb(iCell) = fillval
-       else
-          snoalb(iCell) = snoalb(iCell) / real(nhs(iCell))
-       end if
-       snoalb(iCell) = 0.01_RKIND * snoalb(iCell)        ! Convert from percent to fraction
-    end do
-    deallocate(rarray)
-    deallocate(nhs)
 
  else if (trim(config_maxsnowalbedo_data) == 'NCEP') then
 
