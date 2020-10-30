@@ -4,7 +4,7 @@
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
 
-#include "../../algorithms/src/Kokkos_Random.hpp"
+#include "Kokkos_Random.hpp"
 
 #include <chrono>
 #include <cassert>
