@@ -2635,7 +2635,7 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
-    ! determine equilibrim level
+   ! determine equilibrim level (EL)
       do k = 2,pver
          do i = 1,ncol
             if (k < lcl(i)) then
@@ -2646,27 +2646,43 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
-   ! calculate convective available potential energy (cape).
+   ! initialize the level of free convection (LFC) to be LCL
+      do i = 1, ncol
+        lfc(i) = lcl(i)
+      end do
+
+   ! determine the LFC
+      do k = 2, pver
+         do i = 1, ncol
+           if (k < lcl(i) .and. k > lel(i)) then
+              if (buoy(i,k+1) < 0._r8 .and. buoy(i,k) >= 0._r8) then
+                 lfc(i) = k
+              end if
+           end if
+         end do
+      end do
+
+   ! calculate convective available potential energy (cape), buoyancy
+   !  integrated from LFC to the EL
       do k = 1,pver
          do i = 1,ncol
-            if (k <= mx(i) .and. k > lel(i)) then
+            if (k <= lfc(i) .and. k > lel(i)) then
                cape(i) = cape(i) + rair*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
             end if
          end do
       end do
 
    ! Compute CIN based on information of levels computed above, which
-   !  is the buoyancy integrated from surface to the lauching level
+   !  is the buoyancy integrated from surface to the LFC
       do k = 1, pver
         do i = 1, ncol
-           if (k > lcl(i)) then
+           if (k > lfc(i)) then
              cin(i) = cin(i) + rair*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
            endif
         end do
       end do
-   !
+
    ! put lower bound on cape and cin for diagnostic purposes.
-   !
       do i = 1,ncol
          cape(i) = max(cape(i), 0._r8)
          cin(i) = max(cin(i), 0._r8)
