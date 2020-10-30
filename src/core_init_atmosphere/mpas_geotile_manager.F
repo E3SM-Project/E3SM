@@ -274,8 +274,8 @@ module mpas_geotile_manager
         ! Calculate the total number of pixels in x dir
         ! NOTE: This calculation assumes that a dataset is a global dataset and may
         ! not work correctly for non-global datasets
-        mgr % pixel_nx = nint(360.0_RKIND / dx)
-        mgr % pixel_ny = nint(180.0_RKIND / dy)
+        mgr % pixel_nx = nint(360.0_RKIND / abs(dx))
+        mgr % pixel_ny = nint(180.0_RKIND / abs(dy))
 
         ! Calculate the number of tiles in the x, y directions
         ! NOTE: This calculation assumes that a dataset is a global dataset and may
