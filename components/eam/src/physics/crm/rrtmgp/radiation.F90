@@ -1178,6 +1178,9 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
+      ! Temporary variable for heating rate output
+      real(r8) :: hr(pcols,pver)
+
       ! Options for MMF/SP
       logical :: use_MMF
       character(len=16) :: MMF_microphysics_scheme
@@ -1893,6 +1896,16 @@ contains
                         fsns, fsnt, flns, flnt, &
                         cam_in%asdir, net_flux)
       call t_stopf('radheat_tend')
+
+      ! Compute heating rate for dtheta/dt
+      call t_startf ('rad_heating_rate')
+      do ilay = 1, pver
+         do icol = 1, ncol
+            hr(icol,ilay) = (qrs(icol,ilay) + qrl(icol,ilay)) / cpair * (1.e5_r8 / state%pmid(icol,ilay))**cappa
+         end do
+      end do
+      call t_stopf ('rad_heating_rate')
+      call outfld('HR', hr(1:ncol,:), ncol, state%lchnk)
 
       ! convert radiative heating rates to Q*dp to carry across timesteps
       ! for energy conservation

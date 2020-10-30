@@ -21,6 +21,7 @@ module radiation
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
       get_sw_spectral_midpoints, get_lw_spectral_midpoints, &
       rrtmg_to_rrtmgp_swbands
+   use physconst, only: cpair, cappa
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -1150,6 +1151,9 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
+      ! Temporary variable for heating rate output
+      real(r8) :: hr(pcols,pver)
+
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
       real(r8), dimension(nswbands,pcols) :: albedo_dir, albedo_dif
@@ -1488,6 +1492,16 @@ contains
                         fsns, fsnt, flns, flnt, &
                         cam_in%asdir, net_flux)
       call t_stopf('radheat_tend')
+
+      ! Compute heating rate for dtheta/dt
+      call t_startf ('rad_heating_rate')
+      do ilay = 1, pver
+         do icol = 1, ncol
+            hr(icol,ilay) = (qrs(icol,ilay) + qrl(icol,ilay)) / cpair * (1.e5_r8 / state%pmid(icol,ilay))**cappa
+         end do
+      end do
+      call t_stopf ('rad_heating_rate')
+      call outfld('HR', hr(1:ncol,:), ncol, state%lchnk)
 
       ! convert radiative heating rates to Q*dp for energy conservation
       if (conserve_energy) then
