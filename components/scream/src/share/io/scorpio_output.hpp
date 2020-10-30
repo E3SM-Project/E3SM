@@ -173,7 +173,7 @@ protected:
   std::map<std::string,field_type>       m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  dofs_list_type                         m_gids;
+  typename dofs_list_type::HostMirror    m_gids;
   // Local and global views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_type>        m_view_global;
   std::map<std::string,view_type>        m_view_local;
@@ -319,7 +319,7 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   {
     // If we closed the file in the last write because we reached max steps, or this is a restart history file,
     // we need to create a new file for writing.
-    if( !is_typical or !m_is_init ) { new_file(filename) };
+    if( !is_typical or !m_is_init ) { new_file(filename); }
     if( !m_is_init and is_typical ) { m_is_init=true; }
 
     pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
@@ -331,13 +331,15 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   {
     // Get all the info for this field.
     auto name   = fmap.first;
-    auto g_view = m_view_global.at(name); 
+    auto view_d = fmap.second.get_view();
+    auto g_view = Kokkos::create_mirror_view( view_d );
+    Kokkos::deep_copy(g_view, view_d);
     Int  f_len  = fmap.second.get_header().get_identifier().get_layout().size();
     view_type l_view;
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type == "Instant")
     {
-      l_view = m_view_global.at(name);
+      l_view = g_view; 
     }
     else // output type uses multiple steps.
     {
@@ -446,11 +448,12 @@ inline void AtmosphereOutput::register_views()
     // If the "averaging type" is instant then just need a ptr to the view.
     auto view_d = fmap.second.get_view();
     auto view_h = Kokkos::create_mirror_view( view_d );
-    m_view_global.emplace(name,view_h);
+    Kokkos::deep_copy(view_h, view_d);
     if (m_avg_type != "Instant") {
-    // If anything other than instant we need a local copy that can be updated.
+      // If anything other than instant we need a local copy that can be updated.
       view_type view_copy_d("",view_d.extent(0));
       auto view_copy = Kokkos::create_mirror_view( view_copy_d );
+      Kokkos::deep_copy(view_copy, view_d);
       m_view_local.emplace(name,view_copy);
     }
   }

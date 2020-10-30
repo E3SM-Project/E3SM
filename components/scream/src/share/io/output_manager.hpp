@@ -85,12 +85,12 @@ public:
   void make_restart_param_list(ekat::ParameterList& params);
 
 protected:
-  std::vector<output_type>             m_output_streams;
-  ekat::Comm                           atm_comm;
-  ekat::Comm                           pio_comm; 
-  ekat::ParameterList                  m_params;
+  std::vector<std::shared_ptr<output_type>>    m_output_streams;
+  ekat::Comm                                   atm_comm;
+  ekat::Comm                                   pio_comm; 
+  ekat::ParameterList                          m_params;
   std::shared_ptr<const FieldRepository<Real>> m_device_field_repo;
-  std::shared_ptr<const GridsManager>  m_grids_manager;
+  std::shared_ptr<const GridsManager>          m_grids_manager;
 
   bool                                 param_set = false;
   bool                                 gm_set    = false;
@@ -104,8 +104,8 @@ protected:
  * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
 inline void OutputManager::new_output(const ekat::ParameterList& params)
 {
-  output_type output_instance(pio_comm,params,m_device_field_repo,m_grids_manager);
-  output_instance.init();
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager);
+  output_instance->init();
   m_output_streams.push_back(output_instance);
 }
 /*===============================================================================================*/
@@ -174,7 +174,7 @@ inline void OutputManager::run(util::TimeStamp& current_ts)
 {
   for (auto& it : m_output_streams)
   {
-    it.run(current_ts);
+    it->run(current_ts);
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -182,7 +182,7 @@ inline void OutputManager::run(Real current_ts)
 {
   for (auto& it : m_output_streams)
   {
-    it.run(current_ts);
+    it->run(current_ts);
   }
 }
 /*===============================================================================================*/
@@ -190,7 +190,8 @@ inline void OutputManager::finalize()
 {
   for (auto& it : m_output_streams)
   {
-    it.finalize();
+    it->finalize();
+    it = nullptr;
   }
 }
 /*===============================================================================================*/

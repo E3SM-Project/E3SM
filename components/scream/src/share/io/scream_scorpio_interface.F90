@@ -166,8 +166,11 @@ module scream_scorpio_interface
   type(pio_file_list_t), pointer :: pio_file_list_bottom
 !----------------------------------------------------------------------
   type, public :: pio_atm_file_t
-        !> @brief Output filename.
+        !> @brief Filename.
         character(len=max_chars) :: filename = ""
+
+        !> @brief Purpose (in/out).
+        character(len=max_chars) :: purpose = ""
 
         !> @brief Contains data identifying the file.
         type(file_desc_t)     :: pioFileDesc
@@ -977,11 +980,13 @@ contains
     ! Create and initialize the new pio file:
     pio_file%filename = trim(filename)
     pio_file%isopen = .true.
+    pio_file%numRecs = 0
     if (purpose == 1) then  ! Will be used for output.  Set numrecs to zero and create the new file.
-      pio_file%numRecs = 0
       call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
+      pio_file%purpose = "output"
     elseif (purpose == 2) then ! Will be used for input, just open it
       call eam_pio_openfile(pio_file%pioFileDesc,trim(pio_file%filename))
+      pio_file%purpose = "input"
     else
       call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
     end if

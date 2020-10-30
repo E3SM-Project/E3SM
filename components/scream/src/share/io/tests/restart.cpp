@@ -25,7 +25,7 @@ using input_type = AtmosphereInput;
 std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs);
 std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
 ekat::ParameterList                                  get_om_params(const Int casenum);
-// ekat::ParameterList                                  get_in_params(const std::string type);
+ekat::ParameterList                                  get_in_params(const std::string type);
 
 
 TEST_CASE("restart","io")
@@ -53,7 +53,7 @@ TEST_CASE("restart","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  Int max_steps = 15;
+  Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)
   {
@@ -74,6 +74,33 @@ TEST_CASE("restart","io")
   m_output_manager.finalize();
 
   // At this point we should have produced 2 files, a restart and a restart history file.
+//  OutputManager m_output_manager_res;
+//  m_output_manager_res.set_params(output_params);
+//  m_output_manager_res.set_comm(io_comm);
+//  m_output_manager_res.set_grids(grid_man);
+//  m_output_manager_res.set_repo(field_repo);
+//  m_output_manager_res.init();
+//  auto res_params = get_in_params("Restart");
+//  input_type ins_input(io_comm,res_params,field_repo,grid_man);
+//  ins_input.pull_input();
+//  // Finish the last 5 steps
+//  for (Int ii=0;ii<5;++ii)
+//  {
+//    auto& out_fields = field_repo->get_field_groups().at("output");
+//    for (auto it : out_fields)
+//    {
+//      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
+//      auto f_host = Kokkos::create_mirror_view( f_dev );
+//      for (size_t jj=0;jj<f_host.size();++jj)
+//      {
+//        f_host(jj) += dt;
+//      }
+//      Kokkos::deep_copy(f_dev,f_host);
+//    }
+//    time += dt;
+//    m_output_manager_res.run(time);
+//  }
+//  m_output_manager_res.finalize();
   
   // Finalize everything
   scorpio::eam_pio_finalize();
@@ -172,18 +199,19 @@ ekat::ParameterList get_om_params(const Int casenum)
   return om_params;  
 }
 /*===================================================================================================================*/
-// ekat::ParameterList get_in_params(const std::string type)
-// {
-//   ekat::ParameterList in_params("Input Parameters");
-//   in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
-//   in_params.set<std::string>("GRID","Physics");
-//   auto& f_list = in_params.sublist("FIELDS");
-//   f_list.set<Int>("Number of Fields",3);
-//   for (int ii=1;ii<=3+1;++ii)
-//   {
-//     f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
-//   }
-//   return in_params;
-// }
+ekat::ParameterList get_in_params(const std::string type)
+{
+  ekat::ParameterList in_params("Input Parameters");
+  in_params.set<std::string>("FILENAME","scorpio_restart_test.Instant.Steps_x5.0000-01-01.000015.r.nc"); // change to get filename from rpointer file.
+  in_params.set<std::string>("GRID","Physics");
+  auto& f_list = in_params.sublist("FIELDS");
+  f_list.set<Int>("Number of Fields",2);
+  for (int ii=1;ii<=2+1;++ii)
+  {
+    f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
+  }
+  //f_list.set<std::string>("field 3","time");
+  return in_params;
+}
 /*===================================================================================================================*/
 } // undefined namespace

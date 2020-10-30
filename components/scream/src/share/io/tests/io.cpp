@@ -35,8 +35,8 @@ TEST_CASE("input_output_basic","io")
   Int num_levs = 3;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager>            grid_man   = get_test_gm(io_comm,num_cols,num_levs);
-  std::shared_ptr<FieldRepository<Real>> field_repo = get_test_repo(num_cols,num_levs);
+  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_cols,num_levs);
+  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_cols,num_levs);
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
@@ -60,12 +60,12 @@ TEST_CASE("input_output_basic","io")
     {
       auto f_dev  = field_repo->get_field(it,"Physics").get_view();
       auto f_host = Kokkos::create_mirror_view( f_dev );
+      Kokkos::deep_copy(f_host,f_dev);
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
       }
       Kokkos::deep_copy(f_dev,f_host);
-      
     }
     time += dt;
     m_output_manager.run(time);
@@ -80,46 +80,90 @@ TEST_CASE("input_output_basic","io")
   auto avg_params = get_in_params("Average");
   auto min_params = get_in_params("Min");
   auto max_params = get_in_params("Max");
+  Real tol = pow(10,-8);
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_repo,grid_man);
   ins_input.pull_input();
   auto f1_dev = field_repo->get_field("field_1","Physics").get_view();
   auto f2_dev = field_repo->get_field("field_2","Physics").get_view();
   auto f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
+  auto f1_hst = Kokkos::create_mirror_view( f1_dev );
+  auto f2_hst = Kokkos::create_mirror_view( f2_dev );
+  auto f3_hst = Kokkos::create_mirror_view( f3_dev );
+  Kokkos::deep_copy( f1_hst, f1_dev );
+  Kokkos::deep_copy( f2_hst, f2_dev );
+  Kokkos::deep_copy( f3_hst, f3_dev );
   for (int ii=0;ii<num_cols;++ii)
   {
-    REQUIRE(f1_dev(ii)==max_steps*dt+ii);
+    REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj)
     {
-      REQUIRE(f3_dev(ii,jj)==ii+max_steps*dt + (jj+1)/10.);
+      REQUIRE(std::abs(f3_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj)
   {
-    REQUIRE(f2_dev(jj)==max_steps*dt + (jj+1)/10.);
+    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.))<tol);
   }
   // Check average output
-  Real tol = pow(10,-8);
   input_type avg_input(io_comm,avg_params,field_repo,grid_man);
   avg_input.pull_input();
-  f1_dev = field_repo->get_field("field_1","Physics").get_view();
-  f2_dev = field_repo->get_field("field_2","Physics").get_view();
-  f3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
+  Kokkos::deep_copy( f1_hst, f1_dev );
+  Kokkos::deep_copy( f2_hst, f2_dev );
+  Kokkos::deep_copy( f3_hst, f3_dev );
   Real avg_val;
   for (int ii=0;ii<num_cols;++ii)
   {
-    avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this csae
-    REQUIRE(std::abs(f1_dev(ii)-avg_val)<tol);
+    avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
+    REQUIRE(std::abs(f1_hst(ii)-avg_val)<tol);
     for (int jj=0;jj<num_levs;++jj)
     {
       avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.+ii;  //note x0=(jj+1)/10+ii in this case.
-      REQUIRE(std::abs(f3_dev(ii,jj)-avg_val)<tol);
+      REQUIRE(std::abs(f3_hst(ii,jj)-avg_val)<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj)
   {
     avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.;  //note x0=(jj+1)/10 in this case.
-    REQUIRE(std::abs(f2_dev(jj)-avg_val)<tol);
+    REQUIRE(std::abs(f2_hst(jj)-avg_val)<tol);
+  }
+  // Check max output
+  // The max should be equivalent to the instantaneous because this function is monotonically increasing.
+  input_type max_input(io_comm,max_params,field_repo,grid_man);
+  max_input.pull_input();
+  Kokkos::deep_copy( f1_hst, f1_dev );
+  Kokkos::deep_copy( f2_hst, f2_dev );
+  Kokkos::deep_copy( f3_hst, f3_dev );
+  for (int ii=0;ii<num_cols;++ii)
+  {
+    REQUIRE(f1_hst(ii)==max_steps*dt+ii);
+    for (int jj=0;jj<num_levs;++jj)
+    {
+      REQUIRE(f3_hst(ii,jj)==ii+max_steps*dt + (jj+1)/10.);
+    }
+  }
+  for (int jj=0;jj<num_levs;++jj)
+  {
+    REQUIRE(f2_hst(jj)==max_steps*dt + (jj+1)/10.);
+  }
+  // Check min output
+  // The min should be equivalent to the first step because this function is monotonically increasing.
+  input_type min_input(io_comm,min_params,field_repo,grid_man);
+  min_input.pull_input();
+  Kokkos::deep_copy( f1_hst, f1_dev );
+  Kokkos::deep_copy( f2_hst, f2_dev );
+  Kokkos::deep_copy( f3_hst, f3_dev );
+  for (int ii=0;ii<num_cols;++ii)
+  {
+    REQUIRE(f1_hst(ii)==ii);
+    for (int jj=0;jj<num_levs;++jj)
+    {
+      REQUIRE(f3_hst(ii,jj)==ii + (jj+1)/10.);
+    }
+  }
+  for (int jj=0;jj<num_levs;++jj)
+  {
+    REQUIRE(f2_hst(jj)==(jj+1)/10.);
   }
     
   
@@ -225,7 +269,6 @@ ekat::ParameterList get_om_params(const Int casenum)
 ekat::ParameterList get_in_params(const std::string type)
 {
   ekat::ParameterList in_params("Input Parameters");
-//  in_params.set<std::string>("FILENAME","io_output_test_"+type+"_0.nc");
   in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");

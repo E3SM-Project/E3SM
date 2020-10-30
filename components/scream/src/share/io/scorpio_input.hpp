@@ -128,7 +128,7 @@ protected:
   std::map<std::string,FieldIdentifier>  m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
-  dofs_list_type                         m_gids;
+  typename dofs_list_type::HostMirror    m_gids;
 
   bool m_is_init = false;
 
@@ -206,7 +206,7 @@ inline void AtmosphereInput::run()
     auto fid    = f_map.second;
     auto l_view_dev = m_field_repo->get_field(fid).get_view();
     auto l_view_host = Kokkos::create_mirror_view( l_view_dev );
-    grid_read_data_array(m_filename,name,m_dofs.at(name),l_view_dev.data());
+    grid_read_data_array(m_filename,name,m_dofs.at(name),l_view_host.data());
     Kokkos::deep_copy(l_view_dev,l_view_host);
   }
 
@@ -305,14 +305,12 @@ inline void AtmosphereInput::set_degrees_of_freedom()
     n_dim_len = dof_len/num_cols;
     // Given dof_len and n_dim_len it should be possible to create an integer array of "global input indices" for this
     // field and this rank. For every column (i.e. gid) the PIO indices would be (gid * n_dim_len),...,( (gid+1)*n_dim_len - 1).
-    std::vector<Int> var_dof(dof_len);
-    Int dof_it = 0;
+    std::vector<Int> var_dof;
     for (size_t ii=0;ii<m_gids.size();++ii)
     {
       for (int jj=0;jj<n_dim_len;++jj)
       {
-        var_dof[dof_it] =  m_gids(ii)*n_dim_len + jj;
-        ++dof_it;
+        var_dof.push_back(m_gids(ii)*n_dim_len + jj);
       }
     }
     set_dof(m_filename,name,dof_len,var_dof.data());
