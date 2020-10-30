@@ -92,8 +92,8 @@ real(r8), parameter :: third = 1.0_r8/3.0_r8
 !integer, parameter :: npair_csizxf = 1 !N_DIAG
 integer, parameter :: npair_csizxf = N_DIAG
 
-logical :: do_adjust_default                        !flag to turn on/off  aerosol size adjustment process
-logical :: do_aitacc_transfer_default(0:npair_csizxf) !BALLI-change this   !flag to turn on/off  aerosol aitken<->accumulation transfer process
+logical :: do_adjust_allowed                        !flag to turn on/off  aerosol size adjustment process
+logical :: do_aitacc_transfer_allowed(0:npair_csizxf) !BALLI-change this   !flag to turn on/off  aerosol aitken<->accumulation transfer process
 
 !--------------------------------------------------------------------------------
 !Naming convention:
@@ -158,7 +158,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !-----------------------------------------------------------------------
    !
    ! Purpose:
-   !    set do_adjust_default and do_aitacc_transfer_default flags
+   !    set do_adjust_allowed and do_aitacc_transfer_allowed flags
    !    create history fields for column tendencies associated with
    !       modal_aero_calcsize
    !
@@ -211,14 +211,14 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    enddo
 
 #ifndef MODAL_AERO
-   do_adjust_default          = .false.
-   do_aitacc_transfer_default = .false.
+   do_adjust_allowed          = .false.
+   do_aitacc_transfer_allowed = .false.
 #else
-   !  do_adjust_default allows aerosol size  adjustment to be turned on/off
-   do_adjust_default = .true.
+   !  do_adjust_allowed allows aerosol size  adjustment to be turned on/off
+   do_adjust_allowed = .true.
 
    !------------------------------------------------------------------------------------------
-   !  "do_aitacc_transfer_default" allows aitken <--> accum mode transfer to be turned on/off
+   !  "do_aitacc_transfer_allowed" allows aitken <--> accum mode transfer to be turned on/off
    !  NOTE: it can only be true when aitken & accum modes are both present
    !      and have prognosed number and diagnosed surface/sigmag
    !------------------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    nait = modeptr_aitken !mode number of accumulation mode
    nacc = modeptr_accum  !mode number of aitken mode
 
-   !Go through the radiation list and decide on do_aitacc_transfer_default value(true/false)
+   !Go through the radiation list and decide on do_aitacc_transfer_allowed value(true/false)
    do ilist = 0, npair_csizxf
 
       !find out accumulation and aitken modes in the radiation list
@@ -240,17 +240,17 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
       accum_exists  = ( iacc > 0)
       aitken_exists = ( iait > 0)
 
-      do_aitacc_transfer_default(ilist)=.false.
+      do_aitacc_transfer_allowed(ilist)=.false.
       if(accum_exists .and. aitken_exists .and. iacc .ne. iait) then
-         do_aitacc_transfer_default(ilist)=.true.
+         do_aitacc_transfer_allowed(ilist)=.true.
          modefrm_csizxf(ilist) = iait
          modetoo_csizxf(ilist) = nacc
       endif
    enddo
 
-   !if num mixing ratio is set *not* set to be prognosed, turn aitken<->accumm transfer off for all radiation lists
-   if (mprognum_amode(nait) <= 0) do_aitacc_transfer_default(:) = .false.
-   if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_default(:) = .false.
+   !if num mixing ratio is set *not* to be prognosed, turn aitken<->accumm transfer off for all radiation lists
+   if (mprognum_amode(nait) <= 0) do_aitacc_transfer_allowed(:) = .false.
+   if (mprognum_amode(nacc) <= 0) do_aitacc_transfer_allowed(:) = .false.
 
    !-------------------------------------------------------------------------------
    !Find mapping between the corresponding species of aitken and accumulation nodes
@@ -261,12 +261,12 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !-------------------------------------------------------------------------------
 
 
-   ! Only find the mapping if atleast one of the do_aitacc_transfer_default is true
-   if (any(do_aitacc_transfer_default(:))) then
+   ! Only find the mapping if atleast one of the do_aitacc_transfer_allowed is true
+   if (any(do_aitacc_transfer_allowed(:))) then
 
       !Go through the radiation list and find "aitken<-->accumulation" mapping for each list
       do ilist = 0, npair_csizxf
-         if(do_aitacc_transfer_default(ilist)) then
+         if(do_aitacc_transfer_allowed(ilist)) then
             icnt = 0
             imode_ait = modefrm_csizxf(ilist) !aitken  mode of this list
             imode_acc = modetoo_csizxf(ilist) !accumulation mode of this list
@@ -337,15 +337,15 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
                enddo !ispec_acc
             enddo!ispec_ait
             nspecfrm_csizxf(ilist) = icnt
-         endif!do_aitacc_transfer_default
+         endif!do_aitacc_transfer_allowed
       enddo!ilist
-   endif !any(do_aitacc_transfer_default)
+   endif !any(do_aitacc_transfer_allowed)
    !--------------------------------------------------------------------------------
    ! Define history fields for number-adjust source-sink for all modes
    ! NOTE: This is only done for prognostic radiation list (ilist = 0)
    !--------------------------------------------------------------------------------
 9310  format( / 'subr. modal_aero_calcsize_init' / &
-         'do_adjust_default, do_aitacc_transfer_default = ', 2l10 )
+         'do_adjust_allowed, do_aitacc_transfer_allowed = ', 2l10 )
 9320  format( 'pair', i3, 5x, 'mode', i3, ' ---> mode', i3 )
 9330  format( 5x, 'spec', i3, '=', a, ' ---> spec', i3, '=', a )
 9340  format( 5x, 'spec', i3, '=', a, ' ---> LOSS' )
@@ -355,7 +355,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
 !  define history fields for number-adjust source-sink for all modes
 do_adjust_if_block2: &
-      if ( do_adjust_default ) then
+      if ( do_adjust_allowed ) then
 
    do n = 1, ntot_amode
       if (mprognum_amode(n) <= 0) cycle
@@ -389,7 +389,7 @@ do_adjust_if_block2: &
 
 !  define history fields for aitken-accum transfer
 do_aitacc_transfer_if_block2: &
-      if ( do_aitacc_transfer_default(0) ) then
+      if ( do_aitacc_transfer_allowed(0) ) then
 
 ! check that calcsize transfer ipair=1 is aitken-->accum
       ipair = 0
@@ -579,6 +579,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
+   character(len = 1000) :: err_msg
    real(r8) :: deltatinv                     ! 1/deltat
    real(r8) :: dgncur_c(pcols,pver,ntot_amode)
    real(r8) :: dqqcwdt(pcols,pver,pcnst)     ! cloudborne TMR tendency array
@@ -626,14 +627,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    update_mmr = .true. !update mmr for both interstitial and cloud borne aerosols
    if(present(update_mmr_in)) update_mmr = update_mmr_in
 
-   !For adjusting aerosol sizes
-   do_adjust = do_adjust_default
-   if (present(do_adjust_in)) do_adjust = do_adjust_in
-
-   !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
-   do_aitacc_transfer = do_aitacc_transfer_default(0)
-   if (present(do_aitacc_transfer_in))  do_aitacc_transfer = do_aitacc_transfer_in
-
    !Set list_idx_local and other sanity checks
    list_idx_local  = 0
    if(present(list_idx_in)) then
@@ -644,6 +637,33 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
+
+
+   !For adjusting aerosol sizes
+   do_adjust = do_adjust_allowed
+   if (present(do_adjust_in)) then
+      if(do_adjust_in .and. .not.do_adjust_allowed) then
+         write(err_msg,*)'Cannot adjust aerosol size if size adjustment is not allowed', &
+              ' do_adjust_allowed is:',do_adjust_allowed,' and do_adjust_in is:',do_adjust_in, &
+              ';',errmsg(__FILE__,__LINE__)
+         call endrun(trim(err_msg))
+      endif
+      do_adjust = do_adjust_in
+   endif
+
+   !For transerfering aerosols between modes (Aitkem<-->Accumulation) based on their new size
+   do_aitacc_transfer = do_aitacc_transfer_allowed(list_idx_local)
+   if (present(do_aitacc_transfer_in)) then
+      if(do_aitacc_transfer_in .and. .not.do_aitacc_transfer_allowed(list_idx_local)) then
+         write(err_msg,*)'Cannot transfer species between modes if transfer is not allowed for radiation', &
+              ' list:', list_idx_local,' do_aitacc_transfer_allowed is:',do_aitacc_transfer_allowed(list_idx_local), &
+              ' and do_aitacc_transfer_in is:',do_aitacc_transfer_in,';', errmsg(__FILE__,__LINE__)
+         call endrun(trim(err_msg))
+      endif
+      do_aitacc_transfer = do_aitacc_transfer_in
+   endif
+
+
 
    !Set tendency variable based on the presence of ptend
    if(update_mmr) then
@@ -1543,64 +1563,39 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            ! compute new dgncur & v2ncur for aitken & accum modes
            !
            ! currently inactive
-           do imode = iait, iacc, (iacc-iait)
-              if (imode .eq. iait) then
-                 duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat
-                 num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma )
-                 num_a_acc = max( 0.0_r8, num_a_accsv(icol,klev) + duma )
-                 duma = (drv_a_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
-                      (drv_a_accsv(icol,klev)-drv_a_noxf)*xfercoef_vol_acc2ait)*deltat
-                 drv_a     = max( 0.0_r8, drv_a_aitsv(icol,klev) - duma )
-                 drv_a_acc = max( 0.0_r8, drv_a_accsv(icol,klev) + duma )
-                 duma = (xfertend_num(1,2) - xfertend_num(2,2))*deltat
-                 num_c     = max( 0.0_r8, num_c_aitsv(icol,klev) - duma )
-                 num_c_acc = max( 0.0_r8, num_c_accsv(icol,klev) + duma )
-                 duma = (drv_c_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
-                      (drv_c_accsv(icol,klev)-drv_c_noxf)*xfercoef_vol_acc2ait)*deltat
-                 drv_c     = max( 0.0_r8, drv_c_aitsv(icol,klev) - duma )
-                 drv_c_acc = max( 0.0_r8, drv_c_accsv(icol,klev) + duma )
-              else
-                 num_a = num_a_acc
-                 drv_a = drv_a_acc
-                 num_c = num_c_acc
-                 drv_c = drv_c_acc
-              end if
+           imode = iait
+           duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat
+           num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma )
+           num_a_acc = max( 0.0_r8, num_a_accsv(icol,klev) + duma )
+           duma = (drv_a_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
+                (drv_a_accsv(icol,klev)-drv_a_noxf)*xfercoef_vol_acc2ait)*deltat
+           drv_a     = max( 0.0_r8, drv_a_aitsv(icol,klev) - duma )
+           drv_a_acc = max( 0.0_r8, drv_a_accsv(icol,klev) + duma )
+           duma = (xfertend_num(1,2) - xfertend_num(2,2))*deltat
+           num_c     = max( 0.0_r8, num_c_aitsv(icol,klev) - duma )
+           num_c_acc = max( 0.0_r8, num_c_accsv(icol,klev) + duma )
+           duma = (drv_c_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
+                (drv_c_accsv(icol,klev)-drv_c_noxf)*xfercoef_vol_acc2ait)*deltat
+           drv_c     = max( 0.0_r8, drv_c_aitsv(icol,klev) - duma )
+           drv_c_acc = max( 0.0_r8, drv_c_accsv(icol,klev) + duma )
 
-              cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
+           call compute_new_sz_after_transfer(imode, drv_a, num_a, &
+                dgncur_a(icol,klev,imode), v2ncur_a(icol,klev,imode))
 
-              if (drv_a > 0.0_r8) then
-                 if (num_a <= drv_a*voltonumbhi_amode(imode)) then
-                    dgncur_a(icol,klev,imode) = dgnumhi_amode(imode)
-                    v2ncur_a(icol,klev,imode) = voltonumbhi_amode(imode)
-                 else if (num_a >= drv_a*voltonumblo_amode(imode)) then
-                    dgncur_a(icol,klev,imode) = dgnumlo_amode(imode)
-                    v2ncur_a(icol,klev,imode) = voltonumblo_amode(imode)
-                 else
-                    dgncur_a(icol,klev,imode) = (drv_a/(cmn_factor*num_a))**third
-                    v2ncur_a(icol,klev,imode) = num_a/drv_a
-                 end if
-              else
-                 dgncur_a(icol,klev,imode) = dgnum_amode(imode)
-                 v2ncur_a(icol,klev,imode) = voltonumb_amode(imode)
-              end if
+           call compute_new_sz_after_transfer(imode, drv_c, num_c, &
+                dgncur_c(icol,klev,imode), v2ncur_c(icol,klev,imode))
 
-              if (drv_c > 0.0_r8) then
-                 if (num_c <= drv_c*voltonumbhi_amode(imode)) then
-                    dgncur_c(icol,klev,imode) = dgnumhi_amode(imode)
-                    v2ncur_c(icol,klev,imode) = voltonumbhi_amode(imode)
-                 else if (num_c >= drv_c*voltonumblo_amode(imode)) then
-                    dgncur_c(icol,klev,imode) = dgnumlo_amode(imode)
-                    v2ncur_c(icol,klev,imode) = voltonumblo_amode(imode)
-                 else
-                    dgncur_c(icol,klev,imode) = (drv_c/(cmn_factor*num_c))**third
-                    v2ncur_c(icol,klev,imode) = num_c/drv_c
-                 end if
-              else
-                 dgncur_c(icol,klev,imode) = dgnum_amode(imode)
-                 v2ncur_c(icol,klev,imode) = voltonumb_amode(imode)
-              end if
+           imode = iacc
+           num_a = num_a_acc
+           drv_a = drv_a_acc
+           num_c = num_c_acc
+           drv_c = drv_c_acc
 
-           end do
+           call compute_new_sz_after_transfer(imode, drv_a, num_a, &
+                dgncur_a(icol,klev,imode), v2ncur_a(icol,klev,imode))
+
+           call compute_new_sz_after_transfer(imode, drv_c, num_c, &
+                dgncur_c(icol,klev,imode), v2ncur_c(icol,klev,imode))
 
 
            !
@@ -1879,6 +1874,42 @@ subroutine compute_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchnk,   
   end if
 
 end subroutine compute_acc_ait_transfer
+
+
+subroutine compute_new_sz_after_transfer(imode, drv, num, &
+              dgncur, v2ncur)
+
+implicit none
+
+!intent-ins
+integer,  intent(in) :: imode
+real(r8), intent(in) :: drv, num
+
+!intent-outs
+real(r8), intent(inout) :: dgncur, v2ncur
+
+!local
+real(r8) :: cmn_factor
+
+cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
+
+if (drv > 0.0_r8) then
+   if (num <= drv*voltonumbhi_amode(imode)) then
+      dgncur = dgnumhi_amode(imode)
+      v2ncur = voltonumbhi_amode(imode)
+   else if (num >= drv*voltonumblo_amode(imode)) then
+      dgncur = dgnumlo_amode(imode)
+      v2ncur = voltonumblo_amode(imode)
+   else
+      dgncur = (drv/(cmn_factor*num))**third
+      v2ncur = num/drv
+   end if
+else
+   dgncur = dgnum_amode(imode)
+   v2ncur = voltonumb_amode(imode)
+end if
+
+end subroutine compute_new_sz_after_transfer
 
 !---------------------------------------------------------------------------------------------
 
