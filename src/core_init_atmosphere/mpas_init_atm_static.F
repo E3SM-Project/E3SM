@@ -836,7 +836,44 @@
        call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
     end if
 
+    ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when initializing the interpolation of snow albedo (snoalb)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
+
     snoalb(:) = 0.0
+
+    do iCell = 1, nCells
+
+       tile => null()
+       ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+       if (ierr /= 0 .or. .not. associated(tile)) then
+           call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+       end if
+
+       if (tile % is_processed) then
+           cycle
+       end if
+
+       tile % is_processed = .True.
+
+       ierr = mgr % push_tile(tile)
+       if (ierr /= 0) then
+           call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+       end if
+    end do
+
+    do while(.not. mgr % is_stack_empty())
+       tile => mgr % pop_tile()
+       call mpas_log_write('Processing tile: '//trim(tile % fname))
+    end do
+
+    ierr = mgr % finalize()
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when finalizing the interpolation of snow albedo (snoalb)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
  else if (trim(config_maxsnowalbedo_data) == 'NCEP') then
 
