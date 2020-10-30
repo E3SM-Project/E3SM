@@ -2691,6 +2691,7 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
+        print $fh "$camsrcdir/homme/src/preqx_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
     }
@@ -2806,7 +2807,7 @@ sub write_cppdefs
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
-	print $fh " -DUSE_KOKKOS_KERNELS "
+        print $fh " -DKOKKOS_TARGET "
     }
 
     print $fh "\n";
