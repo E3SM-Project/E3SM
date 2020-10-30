@@ -1562,7 +1562,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            !
            ! compute new dgncur & v2ncur for aitken & accum modes
            !
-           ! currently inactive
+           ! currently inactive (??? BSINGH: Not sure what this comment refers to...)
            imode = iait
            duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat
            num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma )
@@ -1634,43 +1634,68 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            idiagaa = -1
 
            ! jmode=1 does aitken-->accum; jmode=2 does accum-->aitken
-           do  jmode = 1, 2
 
-              if ((jmode .eq. 1 .and. ixfer_ait2acc > 0) .or. &
-                   (jmode .eq. 2 .and. ixfer_acc2ait > 0)) then
 
-                 jsrflx = jmode+2
-                 if (jmode .eq. 1) then
-                    xfercoef = xfercoef_vol_ait2acc
-                 else
-                    xfercoef = xfercoef_vol_acc2ait
-                 end if
+           if(ixfer_ait2acc > 0) then
+              jmode = 1
+              jsrflx = jmode+2
+              xfercoef = xfercoef_vol_ait2acc
 
-                 do  iq = 1, nspecfrm_csizxf(list_idx)
+              do  iq = 1, nspecfrm_csizxf(list_idx)
+                 ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
+                 do  aer_type = 1, 2
+                    if (aer_type .eq. inter_aero) then
+                       lsfrm = lspecfrma_csizxf(iq,list_idx)
+                       lstoo = lspectooa_csizxf(iq,list_idx)
+                    else
+                       lsfrm = lspecfrmc_csizxf(iq,list_idx)
+                       lstoo = lspectooc_csizxf(iq,list_idx)
+                    end if
+                    if ((lsfrm > 0) .and. (lstoo > 0)) then
+                       if (aer_type .eq. inter_aero) then
+                          if (iq .eq. 1) then
+                             xfertend = xfertend_num(jmode,aer_type)
+                          else
+                             xfertend = max(0.0_r8,state_q(icol,klev,lsfrm))*xfercoef
+                          end if
+                          if(update_mmr)dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
+                          if(update_mmr)dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
+                       else
+                          if (iq .eq. 1) then
+                             xfertend = xfertend_num(jmode,aer_type)
+                          else
+                             fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
+                             xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
+                          end if
+                          dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
+                          dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
+                       end if
+                       qsrflx(icol,lsfrm,jsrflx,aer_type) = qsrflx(icol,lsfrm,jsrflx,aer_type) - xfertend*pdel_fac
+                       qsrflx(icol,lstoo,jsrflx,aer_type) = qsrflx(icol,lstoo,jsrflx,aer_type) + xfertend*pdel_fac
+                    end if
+                 enddo
+              enddo
 
-                    ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
+           endif
+
+           if(ixfer_acc2ait > 0) then
+              jmode = 2
+              jsrflx = jmode+2
+              xfercoef = xfercoef_vol_acc2ait
+              do  iq = 1, nspecfrm_csizxf(list_idx)
+                 ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
                     do  aer_type = 1, 2
 
                        ! the lspecfrma_csizxf (and lspecfrmc_csizxf) are aitken species
                        ! the lspectooa_csizxf (and lspectooc_csizxf) are accum  species
                        ! for jmode=1, want lsfrm=aitken species, lstoo=accum  species
                        ! for jmode=2, want lsfrm=accum  species,  lstoo=aitken species
-                       if (jmode .eq. 1) then
-                          if (aer_type .eq. inter_aero) then
-                             lsfrm = lspecfrma_csizxf(iq,list_idx)
-                             lstoo = lspectooa_csizxf(iq,list_idx)
-                          else
-                             lsfrm = lspecfrmc_csizxf(iq,list_idx)
-                             lstoo = lspectooc_csizxf(iq,list_idx)
-                          end if
+                       if (aer_type .eq. inter_aero) then
+                          lsfrm = lspectooa_csizxf(iq,list_idx)
+                          lstoo = lspecfrma_csizxf(iq,list_idx)
                        else
-                          if (aer_type .eq. inter_aero) then
-                             lsfrm = lspectooa_csizxf(iq,list_idx)
-                             lstoo = lspecfrma_csizxf(iq,list_idx)
-                          else
-                             lsfrm = lspectooc_csizxf(iq,list_idx)
-                             lstoo = lspecfrmc_csizxf(iq,list_idx)
-                          end if
+                          lsfrm = lspectooc_csizxf(iq,list_idx)
+                          lstoo = lspecfrmc_csizxf(iq,list_idx)
                        end if
 
                        if ((lsfrm > 0) .and. (lstoo > 0)) then
@@ -1696,10 +1721,15 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
                           qsrflx(icol,lstoo,jsrflx,aer_type) = qsrflx(icol,lstoo,jsrflx,aer_type) + xfertend*pdel_fac
                        end if
 
-                    end do !aer_type
-                 end do !nspecfrm_csizxf
-              end if
-           end do !jmode
+
+
+                    enddo
+                 enddo
+
+              endif
+
+
+
 
         end if !ixfer_ait2acc+ixfer_acc2ait > 0
      end do !ncol
