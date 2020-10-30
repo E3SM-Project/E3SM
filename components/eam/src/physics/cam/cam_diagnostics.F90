@@ -2455,15 +2455,11 @@ end subroutine diag_phys_tend_writeout
    !
    !--------------------------Local Variables------------------------------
    !
-      ! number of "potential CAPEs" to consider in the CAPE calculation
-      ! For this diagnostic set to the standard of 1
-      integer, parameter :: num_cin = 1
 
-      real(r8) capeten(pcols,num_cin) ! provisional value of cape
       real(r8) tv(pcols,pver)       ! virtual temperature [K]
       real(r8) tpv(pcols,pver)      ! virtual temperature of parcel [K]
       real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations [K]
-      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K}
+      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K]
 
       ! height with respect to sea level [m]
       real(r8) :: z_sl(pcols,pver)
@@ -2473,6 +2469,7 @@ end subroutine diag_phys_tend_writeout
       real(r8) :: tl(pcols)        ! parcel temperature at lcl [K]
 
       integer lcl(pcols)        ! level of lifting condensation level
+      integer lfc(pcols)        ! level of free convection
       integer lel(pcols)        ! level of equilibrium level
       integer lon(pcols)        ! level of onset of deep convection
       integer mx(pcols)         ! level of max moist static energy
@@ -2482,7 +2479,6 @@ end subroutine diag_phys_tend_writeout
       real(r8) :: a1(pcols), a2(pcols), estp(pcols), pl(pcols)
       real(r8) :: plexp(pcols), hmax(pcols), hmn(pcols), y(pcols)
       integer :: knt(pcols)
-      integer :: lelten(pcols,num_cin)
 
       real(r8) :: e, tiedke_add, rgravit
 
@@ -2512,14 +2508,6 @@ end subroutine diag_phys_tend_writeout
         do i = 1, ncol
           if (abs(zm(i,k)-pblh(i)) < (zi(i,k)-zi(i,k+1))*0.5_r8) pblt(i) = k
         end do
-      end do
-
-   !  Initialize provisional variables
-      do n = 1,num_cin
-         do i = 1,ncol
-            lelten(i,n) = pver
-            capeten(i,n) = 0._r8
-         end do
       end do
 
    !  Initialize variables
@@ -2647,36 +2635,22 @@ end subroutine diag_phys_tend_writeout
          end do
       end do
 
+    ! determine equilibrim level
       do k = 2,pver
          do i = 1,ncol
             if (k < lcl(i)) then
                if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
-                  knt(i) = min(num_cin,knt(i) + 1)
-                  lelten(i,knt(i)) = k
+                  lel(i) = k
                end if
             end if
          end do
       end do
 
    ! calculate convective available potential energy (cape).
-      do n = 1,num_cin
-         do k = 1,pver
-            do i = 1,ncol
-               if (k <= mx(i) .and. k > lelten(i,n)) then
-                  capeten(i,n) = capeten(i,n) + rair*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
-               end if
-            end do
-         end do
-      end do
-
-   ! find maximum cape from all possible tentative capes from
-   ! one sounding,
-   ! and use it as the final cape, april 26, 1995
-      do n = 1,num_cin
+      do k = 1,pver
          do i = 1,ncol
-            if (capeten(i,n) > cape(i)) then
-               cape(i) = capeten(i,n)
-               lel(i) = lelten(i,n)
+            if (k <= mx(i) .and. k > lel(i)) then
+               cape(i) = cape(i) + rair*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
             end if
          end do
       end do
