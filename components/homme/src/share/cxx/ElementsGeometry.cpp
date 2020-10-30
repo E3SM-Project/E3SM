@@ -51,10 +51,33 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
 }
 
 void ElementsGeometry::
+set_phis (const int ie, CF90Ptr& phis) {
+  // Check geometry was inited
+  assert (m_num_elems>0);
+
+  // Check input
+  assert (ie>=0 && ie<m_num_elems);
+
+  using ScalarView    = ExecViewUnmanaged<Real [NP][NP]>;
+  using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
+
+  ScalarViewF90           h_phis_f90 (phis);
+  ScalarView::HostMirror  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
+
+  for (int igp = 0; igp < NP; ++igp) {
+    for (int jgp = 0; jgp < NP; ++jgp) {
+      h_phis (igp, jgp) = h_phis_f90 (igp,jgp);
+    }
+  }
+
+  Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
+}
+
+void ElementsGeometry::
 set_elem_data (const int ie,
                CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                CF90Ptr& spheremp, CF90Ptr& rspheremp,
-               CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
+               CF90Ptr& metdet, CF90Ptr& metinv,
                CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv) {
   // Check geometry was inited
   assert (m_num_elems>0);
@@ -74,7 +97,6 @@ set_elem_data (const int ie,
   ScalarView::HostMirror h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
   ScalarView::HostMirror h_spheremp  = Kokkos::create_mirror_view(Homme::subview(m_spheremp,ie));
   ScalarView::HostMirror h_rspheremp = Kokkos::create_mirror_view(Homme::subview(m_rspheremp,ie));
-  ScalarView::HostMirror h_phis      = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
   TensorView::HostMirror h_metinv    = Kokkos::create_mirror_view(Homme::subview(m_metinv,ie));
   TensorView::HostMirror h_d         = Kokkos::create_mirror_view(Homme::subview(m_d,ie));
   TensorView::HostMirror h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
@@ -90,7 +112,6 @@ set_elem_data (const int ie,
   ScalarViewF90 h_metdet_f90       (metdet);
   ScalarViewF90 h_spheremp_f90     (spheremp);
   ScalarViewF90 h_rspheremp_f90    (rspheremp);
-  ScalarViewF90 h_phis_f90         (phis);
   TensorViewF90 h_metinv_f90       (metinv);
   TensorViewF90 h_d_f90            (D);
   TensorViewF90 h_dinv_f90         (Dinv);
@@ -104,7 +125,6 @@ set_elem_data (const int ie,
       h_spheremp  (igp, jgp) = h_spheremp_f90  (igp,jgp);
       h_rspheremp (igp, jgp) = h_rspheremp_f90 (igp,jgp);
       h_metdet    (igp, jgp) = h_metdet_f90    (igp,jgp);
-      h_phis      (igp, jgp) = h_phis_f90      (igp,jgp);
     }
   }
 
@@ -147,7 +167,6 @@ set_elem_data (const int ie,
   Kokkos::deep_copy(Homme::subview(m_metdet,ie), h_metdet);
   Kokkos::deep_copy(Homme::subview(m_spheremp,ie), h_spheremp);
   Kokkos::deep_copy(Homme::subview(m_rspheremp,ie), h_rspheremp);
-  Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
   Kokkos::deep_copy(Homme::subview(m_d,ie), h_d);
   Kokkos::deep_copy(Homme::subview(m_dinv,ie), h_dinv);
   if( !consthv ) {
