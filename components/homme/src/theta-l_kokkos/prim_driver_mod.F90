@@ -328,7 +328,9 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
+#ifndef SCREAM
     use theta_f2c_mod,  only : push_forcing_to_c
+#endif
     !
     ! Inputs
     !
@@ -366,10 +368,14 @@ contains
       compute_diagnostics = .false.
     endif
 
+#ifndef SCREAM
+    ! Scream already computes all forcing using the same pointers
+    ! stored in Hommexx, so the forcing is already up to date
     call t_startf('push_to_cxx')
     call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                            elem_derived_FPHI, elem_derived_FQ)
     call t_stopf('push_to_cxx')
+#endif
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
