@@ -41,6 +41,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${TARGET_DIR}/model_init_mod.F90
     ${TARGET_DIR}/prim_advection_mod.F90
     ${TARGET_DIR}/prim_driver_mod.F90
+    ${TARGET_DIR}/preqx_f2c_mod.F90
     ${TARGET_DIR}/viscosity_mod.F90
     ${PREQX_SHARE_DIR}/element_ops.F90
     ${PREQX_SHARE_DIR}/prim_advance_mod.F90
