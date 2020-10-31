@@ -583,16 +583,16 @@ contains
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
-                  'Total gridbox cloud visible optical depth', &
+                  'Total gridbox cloud visible (550 nm) optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
       call addfld('TOT_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', &
-                  'Total in-cloud visible optical depth', &
+                  'Total in-cloud visible (550 nm) optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
       call addfld('LIQ_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', &
-                  'Liquid in-cloud visible optical depth', &
+                  'Liquid in-cloud visible (550 nm) optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
       call addfld('ICE_ICLD_VISTAU', (/ 'lev' /), 'A',  '1', &
-                  'Ice in-cloud visible optical depth', &
+                  'Ice in-cloud visible (550 nm) optical depth', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
       call add_default('TOT_CLD_VISTAU',  1, ' ')
@@ -809,7 +809,7 @@ contains
          end if
       end do
 
-      call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud 10.5 micron emissivity')
+      call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave (10.5 micron) emissivity')
 
       ! Add default fields for single column mode
       if (single_column.and.scm_crm_mode) then
