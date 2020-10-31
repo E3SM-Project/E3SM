@@ -1319,10 +1319,11 @@ end subroutine diag_conv_tend_ini
     if (moist_physics) then
 
        ! Relative humidity
+       call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &
+            tem2(:ncol,:), ftem(:ncol,:))
+       ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
+
        if (hist_fld_active('RELHUM')) then
-          call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &
-               tem2(:ncol,:), ftem(:ncol,:))
-          ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
           call outfld ('RELHUM  ',ftem    ,pcols   ,lchnk     )
        end if
 
