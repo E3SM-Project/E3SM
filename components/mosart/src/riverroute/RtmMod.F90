@@ -3267,6 +3267,13 @@ contains
         else
            call shr_sys_abort(subname//' Tunit mask error')
         endif
+        
+        if (Tunit%domainfrac(n) == 0) then
+          Tunit%domainfrac(n) = 1
+        elseif (Tunit%domainfrac(n) < 0) then
+          write(iulog,*) subname,' ERROR domain frac < 0',n,Tunit%domainfrac(n)
+          call shr_sys_abort(subname//' Tunit domainfrac error')
+        endif
      enddo
 
      allocate(TUnit%ID0(begr:endr))  
