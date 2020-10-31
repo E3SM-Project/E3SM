@@ -60,7 +60,6 @@ interface
   subroutine init_elements_2d_c (ie, D_ptr, Dinv_ptr, elem_fcor_ptr,      &
                                  elem_spheremp_ptr, elem_rspheremp_ptr,   &
                                  elem_metdet_ptr, elem_metinv_ptr,        &
-                                 phis_ptr, gradphis_ptr,                  &
                                  tensorvisc_ptr, vec_sph2cart_ptr) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     !
@@ -70,9 +69,18 @@ interface
     type (c_ptr) , intent(in) :: D_ptr, Dinv_ptr, elem_fcor_ptr
     type (c_ptr) , intent(in) :: elem_spheremp_ptr, elem_rspheremp_ptr
     type (c_ptr) , intent(in) :: elem_metdet_ptr, elem_metinv_ptr
-    type (c_ptr) , intent(in) :: phis_ptr, gradphis_ptr
     type (c_ptr) , intent(in) :: tensorvisc_ptr, vec_sph2cart_ptr
   end subroutine init_elements_2d_c
+
+  ! Copies geopotential from f90 arrays to C++ views
+  subroutine init_geopotential_c (ie, phis_ptr, gradphis_ptr) bind(c)
+    use iso_c_binding, only: c_int, c_ptr
+    !
+    ! Inputs
+    !
+    integer (kind=c_int), intent(in) :: ie
+    type (c_ptr) , intent(in) :: phis_ptr, gradphis_ptr
+  end subroutine init_geopotential_c
 
   ! Initializes C++ diagnostics arrays with ptrs provided from f90
   subroutine init_diagnostics_c (elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, &

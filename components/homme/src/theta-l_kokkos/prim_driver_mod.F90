@@ -17,6 +17,7 @@ module prim_driver_mod
   public :: prim_run_subcycle
   public :: prim_init_elements_views
   public :: prim_init_grid_views
+  public :: prim_init_geopotential_views
   public :: prim_init_state_views
   public :: prim_init_ref_states_views
   public :: prim_init_diags_views
@@ -133,7 +134,6 @@ contains
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
     type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
     type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr
-    type (c_ptr) :: elem_state_phis_ptr, elem_gradphis_ptr
     type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
 
     integer :: ie
@@ -147,8 +147,6 @@ contains
     elem_metinv_ptr       = c_loc(elem_metinv)
     elem_tensorvisc_ptr   = c_loc(elem_tensorvisc)
     elem_vec_sph2cart_ptr = c_loc(elem_vec_sph2cart)
-    elem_state_phis_ptr   = c_loc(elem_state_phis)
-    elem_gradphis_ptr     = c_loc(elem_gradphis)
 
     do ie=1,nelemd
       elem_D            = elem(ie)%D
@@ -158,18 +156,43 @@ contains
       elem_rspheremp    = elem(ie)%rspheremp
       elem_metdet       = elem(ie)%metdet
       elem_metinv       = elem(ie)%metinv
-      elem_state_phis   = elem(ie)%state%phis
-      elem_gradphis     = elem(ie)%derived%gradphis
       elem_tensorvisc   = elem(ie)%tensorVisc
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       call init_elements_2d_c (ie-1,                                      &
                                elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr,  &
                                elem_spheremp_ptr, elem_rspheremp_ptr,     &
                                elem_metdet_ptr, elem_metinv_ptr,          &
-                               elem_state_phis_ptr, elem_gradphis_ptr,    &
                                elem_tensorvisc_ptr, elem_vec_sph2cart_ptr)
     enddo
   end subroutine prim_init_grid_views
+
+  subroutine prim_init_geopotential_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use theta_f2c_mod, only : init_geopotential_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis
+    real (kind=real_kind), target, dimension(np,np,2)       :: elem_gradphis
+
+    type (c_ptr) :: elem_state_phis_ptr, elem_gradphis_ptr
+
+    integer :: ie
+
+    elem_state_phis_ptr   = c_loc(elem_state_phis)
+    elem_gradphis_ptr     = c_loc(elem_gradphis)
+
+    do ie=1,nelemd
+      elem_state_phis   = elem(ie)%state%phis
+      elem_gradphis     = elem(ie)%derived%gradphis
+      call init_geopotential_c (ie-1, elem_state_phis_ptr, elem_gradphis_ptr)
+    enddo
+  end subroutine prim_init_geopotential_views
 
   subroutine prim_init_state_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
@@ -262,6 +285,9 @@ contains
 
     ! Initialize the grid-related views in C++
     call prim_init_grid_views (elem)
+
+    ! Initialize phis/gradphis views in C++
+    call prim_init_geopotential_views (elem)
 
     ! Initialize the 3d states views in C++
     call prim_init_state_views (elem)
