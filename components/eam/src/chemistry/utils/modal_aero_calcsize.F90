@@ -1413,7 +1413,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: deltat
   real(r8), intent(in) :: pdel(:,:)
-  real(r8), intent(in) :: state_q(:,:,:)
+  real(r8), intent(in) :: state_q(:,:,:) !balli, we should not use state_q
   real(r8), intent(in) :: drv_a_aitsv(:,:), num_a_aitsv(:,:)
   real(r8), intent(in) :: drv_a_accsv(:,:), num_a_accsv(:,:)
   real(r8), intent(in) :: drv_c_aitsv(:,:), num_c_aitsv(:,:)
@@ -1638,64 +1638,12 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, ipair, tadjinv, &
            ! jmode=1 does aitken-->accum; jmode=2 does accum-->aitken
 
            if(ixfer_ait2acc > 0) then
-              jmode = 1
-              jsrflx = jmode+2
-              xfercoef = xfercoef_vol_ait2acc
-
-              iq = 1 !iq = 1 is for num_* species
-
-              !interstiatial species
-              lsfrm = lspecfrma_csizxf(iq,list_idx)
-              lstoo = lspectooa_csizxf(iq,list_idx)
-
-              if((lsfrm > 0) .and. (lstoo > 0)) then
-                 xfertend = xfertend_num(jmode,inter_aero)
-                 if(update_mmr)dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
-                 if(update_mmr)dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
-                 qsrflx(icol,lsfrm,jsrflx,inter_aero) = qsrflx(icol,lsfrm,jsrflx,inter_aero) - xfertend*pdel_fac
-                 qsrflx(icol,lstoo,jsrflx,inter_aero) = qsrflx(icol,lstoo,jsrflx,inter_aero) + xfertend*pdel_fac
+              if(update_mmr) then
+                 jmode = 1
+                 call update_tends_flx(icol, klev, jmode, list_idx, lchnk , lspecfrma_csizxf, lspectooa_csizxf, &
+                      lspecfrmc_csizxf, lspectooc_csizxf, xfertend_num, xfercoef_vol_ait2acc, state_q, pbuf, & !BALLI we should not use state_q
+                      pdel_fac, dqdt, dqqcwdt, qsrflx)
               endif
-
-
-              do iq = 2, nspecfrm_csizxf(list_idx)
-                 lsfrm = lspecfrma_csizxf(iq,list_idx)
-                 lstoo = lspectooa_csizxf(iq,list_idx)
-                 if((lsfrm > 0) .and. (lstoo > 0)) then
-                    xfertend = max(0.0_r8,state_q(icol,klev,lsfrm))*xfercoef
-                    if(update_mmr)dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
-                    if(update_mmr)dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
-                    qsrflx(icol,lsfrm,jsrflx,inter_aero) = qsrflx(icol,lsfrm,jsrflx,inter_aero) - xfertend*pdel_fac
-                    qsrflx(icol,lstoo,jsrflx,inter_aero) = qsrflx(icol,lstoo,jsrflx,inter_aero) + xfertend*pdel_fac
-                 endif
-              enddo
-
-
-              !cloud borne apecies
-              iq = 1 !number species
-              lsfrm = lspecfrmc_csizxf(iq,list_idx)
-              lstoo = lspectooc_csizxf(iq,list_idx)
-
-              if((lsfrm > 0) .and. (lstoo > 0)) then
-                 xfertend = xfertend_num(jmode, cld_brn_aero)
-                 dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
-                 dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
-                 qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) = qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) - xfertend*pdel_fac
-                 qsrflx(icol,lstoo,jsrflx,cld_brn_aero) = qsrflx(icol,lstoo,jsrflx,cld_brn_aero) + xfertend*pdel_fac
-              endif
-
-              !mass species
-              do iq = 2, nspecfrm_csizxf(list_idx)
-                 lsfrm = lspecfrmc_csizxf(iq,list_idx)
-                 lstoo = lspectooc_csizxf(iq,list_idx)
-                 if((lsfrm > 0) .and. (lstoo > 0)) then
-                    fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
-                    xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
-                    dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
-                    dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
-                    qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) = qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) - xfertend*pdel_fac
-                    qsrflx(icol,lstoo,jsrflx,cld_brn_aero) = qsrflx(icol,lstoo,jsrflx,cld_brn_aero) + xfertend*pdel_fac
-                 end if
-              enddo
            endif
 
            if(ixfer_acc2ait > 0) then
@@ -1970,41 +1918,92 @@ end if
 end subroutine compute_new_sz_after_transfer
 
 
-!subroutine balli(jmode, lsfrm, lstoo, aer_type, iq, update_mmr, &
-!     xfertend_num, state_q, pbuf, lchnk,  &
-!     dqdt)
+subroutine update_tends_flx(icol, klev, jmode, list_idx, lchnk , lspecfrma, lspectooa, &
+     lspecfrmc, lspectooc, xfertend_num, xfercoef, state_q, pbuf, & !BALLI we should not use state_q
+     pdel_fac, dqdt, dqqcwdt, qsrflx)
 
-!subroutine balli(update_mmr, xfertend,dqdt,lsfrm, lstoo)
+  implicit none
+
+  !intent - ins
+  integer,  intent(in) :: icol, klev, jmode, list_idx, lchnk
+  integer,  intent(in) :: lspecfrma(maxspec_csizxf, 0:maxpair_csizxf)
+  integer,  intent(in) :: lspectooa(maxspec_csizxf, 0:maxpair_csizxf)
+  integer,  intent(in) :: lspecfrmc(maxspec_csizxf, 0:maxpair_csizxf)
+  integer,  intent(in) :: lspectooc(maxspec_csizxf, 0:maxpair_csizxf)
+
+  real(r8), intent(in) :: xfertend_num(2,2)
+  real(r8), intent(in) :: xfercoef
+  real(r8), intent(in) :: state_q(:,:,:)
+  real(r8), intent(in) :: pdel_fac
+
+  type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
+
+  !intent -inout
+  real(r8), intent(inout) :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
+
+  !local
+  integer  :: iq, lsfrm, lstoo, jsrflx
+  real(r8) :: xfertend
+  real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+
+  jsrflx = jmode + 2
+
+  iq = 1 !iq = 1 is for num_* species
+
+  !interstiatial species
+  lsfrm = lspecfrma(iq,list_idx)
+  lstoo = lspectooa(iq,list_idx)
+
+  if((lsfrm > 0) .and. (lstoo > 0)) then
+     xfertend = xfertend_num(jmode,inter_aero)
+     dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
+     dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
+     qsrflx(icol,lsfrm,jsrflx,inter_aero) = qsrflx(icol,lsfrm,jsrflx,inter_aero) - xfertend*pdel_fac
+     qsrflx(icol,lstoo,jsrflx,inter_aero) = qsrflx(icol,lstoo,jsrflx,inter_aero) + xfertend*pdel_fac
+  endif
 
 
-!  if()
+  do iq = 2, nspecfrm_csizxf(list_idx)
+     lsfrm = lspecfrma_csizxf(iq,list_idx)
+     lstoo = lspectooa_csizxf(iq,list_idx)
+     if((lsfrm > 0) .and. (lstoo > 0)) then
+        xfertend = max(0.0_r8,state_q(icol,klev,lsfrm))*xfercoef
+        dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
+        dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
+        qsrflx(icol,lsfrm,jsrflx,inter_aero) = qsrflx(icol,lsfrm,jsrflx,inter_aero) - xfertend*pdel_fac
+        qsrflx(icol,lstoo,jsrflx,inter_aero) = qsrflx(icol,lstoo,jsrflx,inter_aero) + xfertend*pdel_fac
+     endif
+  enddo
 
-!!!!!!!!!!!
-!
-!  if ((lsfrm > 0) .and. (lstoo > 0)) then
-!     if (aer_type .eq. inter_aero) then
-!        if (iq .eq. 1) then
-!           xfertend = xfertend_num(jmode,aer_type)
-!        else
-!           xfertend = max(0.0_r8,state_q(icol,klev,lsfrm))*xfercoef
-!        end if
-!        if(update_mmr)dqdt(icol,klev,lsfrm) = dqdt(icol,klev,lsfrm) - xfertend
-!        if(update_mmr)dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
-!     else
-!        if (iq .eq. 1) then
-!           xfertend = xfertend_num(jmode,aer_type)
-!        else
-!           fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
-!           xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
-!        end if
-!        dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
-!        dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
-!     end if
-!     qsrflx(icol,lsfrm,jsrflx,aer_type) = qsrflx(icol,lsfrm,jsrflx,aer_type) - xfertend*pdel_fac
-!     qsrflx(icol,lstoo,jsrflx,aer_type) = qsrflx(icol,lstoo,jsrflx,aer_type) + xfertend*pdel_fac
-!  end if
 
-!end subroutine balli
+  !cloud borne apecies
+  iq = 1 !number species
+  lsfrm = lspecfrmc_csizxf(iq,list_idx)
+  lstoo = lspectooc_csizxf(iq,list_idx)
+
+  if((lsfrm > 0) .and. (lstoo > 0)) then
+     xfertend = xfertend_num(jmode, cld_brn_aero)
+     dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
+     dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
+     qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) = qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) - xfertend*pdel_fac
+     qsrflx(icol,lstoo,jsrflx,cld_brn_aero) = qsrflx(icol,lstoo,jsrflx,cld_brn_aero) + xfertend*pdel_fac
+  endif
+
+  !mass species
+  do iq = 2, nspecfrm_csizxf(list_idx)
+     lsfrm = lspecfrmc_csizxf(iq,list_idx)
+     lstoo = lspectooc_csizxf(iq,list_idx)
+     if((lsfrm > 0) .and. (lstoo > 0)) then
+        fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
+        xfertend = max(0.0_r8,fldcw(icol,klev))*xfercoef
+        dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
+        dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
+        qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) = qsrflx(icol,lsfrm,jsrflx,cld_brn_aero) - xfertend*pdel_fac
+        qsrflx(icol,lstoo,jsrflx,cld_brn_aero) = qsrflx(icol,lstoo,jsrflx,cld_brn_aero) + xfertend*pdel_fac
+     end if
+  enddo
+
+end subroutine update_tends_flx
 
 !---------------------------------------------------------------------------------------------
 
