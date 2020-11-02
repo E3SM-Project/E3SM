@@ -72,9 +72,9 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real wind_bounds = 5; // [m/s]
 
     // establish spurious threshold bounds
-    static const auto qwspur_thresh = Approx(0.0).margin(1e-14);
-    static const auto thlspur_thresh = Approx(0.0).margin(1e-9);
-    static const auto trcspur_thresh = Approx(0.0).margin(1e-9);
+    static const auto qwspur_thresh = Approx(0.0).margin(1e-4);
+    static const auto thlspur_thresh = Approx(0.0).margin(1e-4);
+    static const auto trcspur_thresh = Approx(0.0).margin(1e-4);
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
