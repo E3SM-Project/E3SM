@@ -771,7 +771,7 @@ contains
     integer n
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities, iMOAB_CreateElements
+         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
@@ -883,6 +883,10 @@ contains
           call endrun('Error: fail to set area tag ')
 
         deallocate(moabconn)
+        ! use merge vertices new imoab method to fix cells
+        ierr = iMOAB_MergeVertices(mlnid)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to fix vertices in land mesh ')
 
     else ! old point cloud mesh
         allocate(moab_vert_coords(lsz*dims))
