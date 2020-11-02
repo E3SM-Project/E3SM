@@ -261,11 +261,11 @@ int main (int argc, char** argv) {
       "Options:\n"
       "  -g              Generate baseline file. Default False.\n"
       "  -f              Use fortran impls instead of c++. Default False.\n"
-      "  -t <tol>        Tolerance for relative error. Default 0.\n";
-      "  -s <steps>      Number of timesteps. Default=6.\n";
-      "  -i <cols>       Number of columns. Default=6.\n";
+      "  -t <tol>        Tolerance for relative error. Default 0.\n"
+      "  -s <steps>      Number of timesteps. Default=6.\n"
+      "  -i <cols>       Number of columns. Default=6.\n"
       "  -r <repeat>     Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
-      "  -p <predict_nc>  yes|no|both. Default=both.\n";
+      "  -p <predict_nc>  yes|no|both. Default=both.\n"
       "  -c <prescribed_ccn> yes|no|both. Default=both.\n";
     return 1;
   }
