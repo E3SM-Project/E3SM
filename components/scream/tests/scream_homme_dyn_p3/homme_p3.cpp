@@ -3,13 +3,8 @@
 #include "control/atmosphere_driver.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
-#include "dynamics/homme/scream_homme_interface.hpp"
-#include "share/scream_parse_yaml_file.hpp"
-
-// Hommexx includes
-#include "Context.hpp"
-#include "SimulationParams.hpp"
-#include "Types.hpp"
+#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
 
 // P3 includes
 #include "physics/p3/atmosphere_microphysics.hpp"
@@ -24,7 +19,7 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   // Load ad parameter list
   std::cout << "Loading parameter list ... ";
   std::string fname = "input.yaml";
-  ParameterList ad_params("Atmosphere Driver");
+  ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
   std::cout << "done!\n";
 
@@ -43,7 +38,7 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
 
   // Create a comm
   std::cout << "Create atm comm ... ";
-  Comm atm_comm (MPI_COMM_WORLD);
+  ekat::Comm atm_comm (MPI_COMM_WORLD);
   std::cout << "done!\n";
 
   // Create the driver
@@ -51,15 +46,13 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   AtmosphereDriver ad;
 
   // Init, run, and finalize
-  util::TimeStamp time (0,0,0);
+  util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
   std::cout << "done!\n";
 
   // Have to wait till now to get homme's parameters, cause it only gets init-ed during the driver initialization
-  const auto& sp = Homme::Context::singleton().get_simulation_params();
-  const int nmax = get_homme_param_value<int>("nmax");
   const int num_dyn_iters = 10; //nmax / (sp.qsplit*sp.rsplit);
-  const double dt = get_homme_param_value<Real>("dt");
+  const double dt = get_homme_param<Real>("dt");
 
   std::cout << "Beginning time loop ...\n";
   for (int i=0; i<num_dyn_iters; ++i) {

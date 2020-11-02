@@ -5,8 +5,10 @@ Debug:
 
 Atmosphere Processes:
   Number of Entries: 2
+  Schedule Type: Sequential
   Process 0:
     Process Name: Dynamics
+    Grid: SE Dynamics
   Process 1:
     Process Name: P3
     Grid: SE Physics

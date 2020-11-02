@@ -7,6 +7,7 @@ Atmosphere Processes:
   Number of Entries: 1
   Process 0:
     Process Name: Dynamics
+    Initialize Inputs: true
 
 Grids Manager:
   Type: Dynamics Driven
