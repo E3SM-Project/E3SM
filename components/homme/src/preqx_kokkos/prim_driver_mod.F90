@@ -41,11 +41,11 @@ contains
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
 
-    ! Init the kokkos views
-    call prim_init_elements_views (elem)
-
     ! Init the kokkos functors (and their bounday exchanges)
     call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
