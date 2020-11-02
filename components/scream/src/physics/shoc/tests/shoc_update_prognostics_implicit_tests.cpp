@@ -72,9 +72,9 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real wind_bounds = 5; // [m/s]
 
     // establish spurious threshold bounds
-    static const auto qwspur_thresh = Approx(0.0).margin(1e-12);
-    static const auto thlspur_thresh = Approx(0.0).margin(1e-12);
-    static const auto trcspur_thresh = Approx(0.0).margin(1e-12);
+    static const auto qwspur_thresh = Approx(0.0).margin(1e-16);
+    static const auto thlspur_thresh = Approx(0.0).margin(1e-11);
+    static const auto trcspur_thresh = Approx(0.0).margin(1e-11);
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
@@ -272,6 +272,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     //  compute integrals of the outputs
     for(Int s = 0; s < shcol; ++s) {
       qw_int_a[s] = 0;
+      thl_int_a[s] = 0;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -303,12 +304,12 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       }
 
       // Get surface value of rho on zi grid
-      Real rho_zi_srf;
+      Real rho_zi_srf, spurious;
       const auto offset_srf = (nlevi-1) + s * nlevi;
       rho_zi_srf = SDSL.y2[offset_srf];
 
       // Calculate the spurious source for total water
-      auto spurious = (qw_int_a[s] - qw_int_b[s])/dtime
+      spurious = (qw_int_a[s] - qw_int_b[s])/dtime
                    - rho_zi_srf*SDS.wqw_sfc[s];
 
       // Spurious source should be sufficiently small for water conservation
