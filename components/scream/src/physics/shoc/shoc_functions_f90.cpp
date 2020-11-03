@@ -2167,5 +2167,91 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
   ekat::device_to_host<int, 5>({shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2}, {shcol}, {nlev}, out_views, true);
 }
 
+void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 3;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<int, num_arrays> dim1_sizes = {shcol, shcol, shcol};
+  Kokkos::Array<int, num_arrays> dim2_sizes = {nlevi, nlevi, nlevi};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {rho_zi,  dz_zi, tmpi};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // Inputs/Outputs
+  view_2d
+    rho_zi_d(temp_d[0]),
+    dz_zi_d(temp_d[1]),
+    tmpi_d(temp_d[2]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlevi);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto rho_zi_s = ekat::subview(rho_zi_d, i);
+    const auto dz_zi_s = ekat::subview(dz_zi_d, i);
+    const auto tmpi_s = ekat::subview(tmpi_d, i);
+
+    SHF::compute_tmpi(team, nlevi, dtime, rho_zi_s, dz_zi_s, tmpi_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> out_views = {tmpi_d};
+  ekat::device_to_host<int, 1>({tmpi}, {shcol}, {nlevi}, out_views, true);
+}
+
+void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 3;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<int, num_arrays> dim1_sizes = {shcol, shcol, shcol};
+  Kokkos::Array<int, num_arrays> dim2_sizes = {nlev,  nlev,  nlev};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {rho_zt,  dz_zt, rdp_zt};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  // Inputs/Outputs
+  view_2d
+    rho_zt_d(temp_d[0]),
+    dz_zt_d(temp_d[1]),
+    rdp_zt_d(temp_d[2]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto rho_zt_s = ekat::subview(rho_zt_d, i);
+    const auto dz_zt_s = ekat::subview(dz_zt_d, i);
+    const auto rdp_zt_s = ekat::subview(rdp_zt_d, i);
+
+    SHF::dp_inverse(team, nlev, rho_zt_s, dz_zt_s, rdp_zt_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> out_views = {rdp_zt_d};
+  ekat::device_to_host<int, 1>({rdp_zt}, {shcol}, {nlev}, out_views, true);
+}
+
 } // namespace shoc
 } // namespace scream

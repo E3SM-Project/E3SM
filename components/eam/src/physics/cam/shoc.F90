@@ -759,6 +759,10 @@ end subroutine update_prognostics_implicit
 
 subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_tmpi_f
+#endif
+
   !intent-ins
   integer,     intent(in) :: nlevi, shcol
   !time step [s]
@@ -774,6 +778,13 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
   !local vars
   integer :: i, k
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_tmpi_f(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
+     return
+  endif
+#endif
+
   tmpi(:,1) = 0._rtype
   ! eqn: tmpi = dt*(g*rho)**2/dp, where dp = g*rho*dz, therefore tmpi = dt*g*rho/dz
   do k = 2, nlevi
@@ -785,6 +796,10 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 end subroutine compute_tmpi
 
 subroutine dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: dp_inverse_f
+#endif
 
   !intent-ins
   integer,     intent(in) :: nlev, shcol
@@ -798,6 +813,13 @@ subroutine dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
 
   !local vars
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call dp_inverse_f(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+     return
+  endif
+#endif
 
   do k = 1, nlev
     do i = 1, shcol

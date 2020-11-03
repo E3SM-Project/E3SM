@@ -97,7 +97,53 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCDpinverseData f90_data[] = {
+      //            shcol, nlev
+      SHOCDpinverseData(10, 71),
+      SHOCDpinverseData(10, 12),
+      SHOCDpinverseData(7,  16),
+      SHOCDpinverseData(2,   7)
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCDpinverseData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCDpinverseData cxx_data[] = {
+      SHOCDpinverseData(f90_data[0]),
+      SHOCDpinverseData(f90_data[1]),
+      SHOCDpinverseData(f90_data[2]),
+      SHOCDpinverseData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      dp_inverse(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      dp_inverse_f(d.nlev(), d.shcol(), d.rho_zt, d.dz_zt, d.rdp_zt);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCDpinverseData& d_f90 = f90_data[i];
+      SHOCDpinverseData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.rdp_zt[k] == d_cxx.rdp_zt[k]);
+      }
+    }
   }
 };
 
