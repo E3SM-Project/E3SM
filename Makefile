@@ -1,4 +1,4 @@
-MODEL_FORMULATION = 
+MODEL_FORMULATION =
 
 ifneq "${MPAS_SHELL}" ""
         SHELL = ${MPAS_SHELL}
@@ -507,9 +507,9 @@ llvm:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-CPPINCLUDES = 
-FCINCLUDES = 
-LIBS = 
+CPPINCLUDES =
+FCINCLUDES =
+LIBS =
 
 #
 # If user has indicated a PIO2 library, define USE_PIO2 pre-processor macro
@@ -544,9 +544,15 @@ endif
 # Depending on PIO version, libraries may be libpio.a, or libpiof.a and libpioc.a
 # Keep open the possibility of shared libraries in future with, e.g., .so suffix
 #
+# Check if libpio.* exists and link -lpio if so, but we make an exception for
+# libpio.settings (a file added in PIO2), which is not a library to link
 ifneq ($(wildcard $(PIO_LIB)/libpio\.*), )
-	LIBS += -lpio
+	# Makefiles don't support "and" operators so we have nested "if" instead
+	ifneq "$(wildcard $(PIO_LIB)/libpio\.*)" "$(PIO_LIB)/libpio.settings"
+		LIBS += -lpio
+	endif
 endif
+
 ifneq ($(wildcard $(PIO_LIB)/libpiof\.*), )
 	LIBS += -lpiof
 endif
