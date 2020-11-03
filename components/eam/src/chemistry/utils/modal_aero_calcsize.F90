@@ -225,7 +225,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !      and have prognosed number and diagnosed surface/sigmag
    !------------------------------------------------------------------------------------------
 
-   !find out mode index for accumu and aitken modes in the prognostic radiation list (rad_climate)
+   !find out mode index for accum and aitken modes in the prognostic radiation list (rad_climate)
    !These are used to get strings stored for these modes in modename_amode array
    nait = modeptr_aitken !mode number of accumulation mode
    nacc = modeptr_accum  !mode number of aitken mode
@@ -293,10 +293,9 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
             lspecfrmc_csizxf(icnt,ilist) = ind_ait
             lspectooc_csizxf(icnt,ilist) = ind_acc
 
-            !write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-            !write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
-
-            !write(103,*)'New:',ilist, ind_ait, ind_acc
+            !--------------------------------------------------------------------------------------
+            !find aerosol *mass* indices mapping between aitken and accumulation modes in this list
+            !--------------------------------------------------------------------------------------
             !find number of species in the aitken mode of this ilist
             call rad_cnst_get_info(ilist, imode_ait, nspec = nspec_ait) !output:nspec_ait
             !find number of species in the accumulation mode of this list
@@ -333,26 +332,23 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
                      !index for cloudborne species (qqcw_get_field array) is same as interstitial species
                      lspecfrmc_csizxf(icnt,ilist) = ind_ait
                      lspectooc_csizxf(icnt,ilist) = ind_acc
-                     !write(103,*)'NEW1:',lspecfrma_csizxf(icnt,ilist),lspectooa_csizxf(icnt,ilist),icnt,ilist
-                     !write(103,*)'NEW2:',lspecfrmc_csizxf(icnt,ilist),lspectooc_csizxf(icnt,ilist),icnt,ilist
                   endif
                enddo !ispec_acc
             enddo!ispec_ait
-            nspecfrm_csizxf(ilist) = icnt
+            nspecfrm_csizxf(ilist) = icnt !count total number of matching species in each list
          endif!do_aitacc_transfer_allowed
       enddo!ilist
    endif !any(do_aitacc_transfer_allowed)
+
    !--------------------------------------------------------------------------------
    ! Define history fields for number-adjust source-sink for all modes
    ! NOTE: This is only done for prognostic radiation list (ilist = 0)
    !--------------------------------------------------------------------------------
-9310  format( / 'subr. modal_aero_calcsize_init' / &
-         'do_adjust_allowed, do_aitacc_transfer_allowed = ', 2l10 )
+9310  format( / 'subr. modal_aero_calcsize_init' / 'do_adjust_allowed, do_aitacc_transfer_allowed = ', 2l10 )
 9320  format( 'pair', i3, 5x, 'mode', i3, ' ---> mode', i3 )
 9330  format( 5x, 'spec', i3, '=', a, ' ---> spec', i3, '=', a )
 9340  format( 5x, 'spec', i3, '=', a, ' ---> LOSS' )
 9350  format( 5x, 'no corresponding activated species' )
-
 
 
 !  define history fields for number-adjust source-sink for all modes
@@ -389,17 +385,15 @@ do_adjust_if_block2: &
    end do   ! n = ...
 
 
-!  define history fields for aitken-accum transfer
+!  define history fields for aitken-accum transfer [Only for list_idx = 0 (radiation climate list)]
+ilist = 0
 do_aitacc_transfer_if_block2: &
-      if ( do_aitacc_transfer_allowed(0) ) then
+      if ( do_aitacc_transfer_allowed(ilist) ) then
 
 ! check that calcsize transfer ilist=0 ("radiation_climate" list) is aitken-->accum
-      ilist = 0
       if ((modefrm_csizxf(ilist) .ne. nait) .or.   &
           (modetoo_csizxf(ilist) .ne. nacc)) then
-         write( iulog, '(//2a//)' )   &
-            '*** modal_aero_calcaersize_init error -- ',   &
-            'modefrm/too_csizxf(1) are wrong'
+         write( iulog, '(//2a//)' ) '*** modal_aero_calcaersize_init error -- modefrm/too_csizxf(1) are wrong'
          call endrun( 'modal_aero_calcaersize_init error' )
       end if
 
@@ -636,6 +630,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       if (.not. present(dgnumdry_m)) &
            call endrun('list_idx_in is present but dgnumdry_m pointer is missing'//errmsg(__FILE__,__LINE__))
       dgncur_a => dgnumdry_m(:,:,:)
+
+      !update_mmr should be true ONLY for list_idx = 0
+      if(list_idx_local > 0 .and. update_mmr) then
+         call endrun('update_mmr should be FLASE for list_idx>0'//errmsg(__FILE__,__LINE__))
+      endif
    else
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
@@ -664,8 +663,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       endif
       do_aitacc_transfer = do_aitacc_transfer_in
    endif
-
-
 
    !Set tendency variable based on the presence of ptend
    if(update_mmr) then
@@ -734,8 +731,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
 
 
       ! do size adjustment based on computed dry diameter values
-      call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
-           do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,                  & !input
+      call size_adjustment(list_idx_local, top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, & !input
+           dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
            dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
            drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
            num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
@@ -857,7 +854,7 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   !
   !Called by: modal_aero_calcsize_sub
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
   implicit none
 
@@ -898,7 +895,7 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   !Called by: modal_aero_calcsize_sub
   !Calls    : rad_cnst_get_aer_mmr, rad_cnst_get_aer_props
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -921,7 +918,7 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   real(r8) :: specdens  !specie density
   real(r8) :: dummwdens !density inverse
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
-  !real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+  real(r8), pointer :: specmmr_cld(:,:)  !specie mmr (cloud borne)
 
   character(len=32) :: spec_name
 
@@ -930,33 +927,23 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   do ispec = 1, nspec
      ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
 
-     !Get mmr and density for a specie
-     call rad_cnst_get_aer_mmr(list_idx_in, imode, ispec, 'a', state, pbuf, specmmr) !get mmr
-     call rad_cnst_get_aer_props(list_idx_in, imode, ispec, density_aer=specdens)    !get density
+     !Get mmr for the interstitial specie
+     call rad_cnst_get_aer_mmr(list_idx_in, imode, ispec, 'a', state, pbuf, specmmr)
+     !Get mmr for the cloud borne species
+     call rad_cnst_get_aer_mmr(list_idx_in, imode, ispec, 'c', state, pbuf, specmmr_cld)
+
+     !get density of the aerosol specie
+     call rad_cnst_get_aer_props(list_idx_in, imode, ispec, density_aer=specdens)
      dummwdens = 1.0_r8 / specdens !inverse of density
 
      !compute dry volume as a function of space (i,k)
      do klev = top_lev, pver
         do icol = 1, ncol
            dryvol_a(icol,klev) = dryvol_a(icol,klev) + max(0.0_r8,specmmr(icol,klev))*dummwdens
+           dryvol_c(icol,klev) = dryvol_c(icol,klev) + max(0.0_r8,specmmr_cld(icol,klev))*dummwdens
         end do
      end do
 
-     !For radiation diagnostic calls, some species might be missing. We accomodate that by
-     !first getting the specie name and then finding its index from cnst_name array.
-     !Cloud borne specie index extracted below corresponds to the interstitial specie above
-     !This index is exactly the same as pbuf index for that specie
-     call rad_cnst_get_info(list_idx_in, imode, ispec,spec_name=spec_name)
-     call cnst_get_ind(spec_name, idx_cw)
-
-     !fldcw => qqcw_get_field(pbuf,idx_cw,lchnk)
-     call rad_cnst_get_aer_mmr(list_idx_in, imode, ispec, 'c', state, pbuf, specmmr) !get mmr
-     do klev = top_lev, pver
-        do icol = 1, ncol
-           dryvol_c(icol,klev) = dryvol_c(icol,klev)    &
-                + max(0.0_r8,specmmr(icol,klev))*dummwdens
-        end do
-     end do
   end do ! nspec loop
 
   return
@@ -964,8 +951,8 @@ end subroutine compute_dry_volume
 
 !---------------------------------------------------------------------------------------------
 
-subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, &
-     do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf, &
+subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, & !input
+     dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
      dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &
      drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, &
      num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv, &
@@ -977,12 +964,13 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
   !Called by: modal_aero_calcsize_sub
   !Calls    : compute_dgn_vol_limits, adjust_num_sizes, update_dgn_voltonum
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
   implicit none
 
   !inputs
+  integer,  intent(in) :: list_idx
   integer,  intent(in) :: top_lev, pver !for model level loop
   integer,  intent(in) :: ncol          !# of columns
   integer,  intent(in) :: lchnk
@@ -1013,7 +1001,7 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
 
   !local
   integer :: klev, icol
-  integer :: num_mode_idx, num_cldbrn_mode_idx, nait, nacc
+  integer :: num_mode_idx, num_cldbrn_mode_idx, mam_ait, mam_acc, nait, nacc
   real(r8) :: v2nyy, v2nxx                  ! voltonumblo/hi of current mode
   real(r8) :: v2nyyrl, v2nxxrl              ! relaxed voltonumblo/hi
   real(r8) :: dgnyy, dgnxx                  ! dgnumlo/hi of current mode
@@ -1024,11 +1012,17 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
   real(r8), pointer :: fldcw(:,:)           !specie mmr (cloud borne)
 
   !find state q array number mode indices for interstitial and cloud borne aerosols
+  !Both num_mode_idx and num_cldbrn_mode_idx should be exactly same and should be same
+  !for both prognostic and diagnostic radiation lists
   num_mode_idx        = numptr_amode(imode)
   num_cldbrn_mode_idx = numptrcw_amode(imode)
 
-  nait = modeptr_aitken !aitken mode number
-  nacc = modeptr_accum  !accumulation mode number
+  mam_ait = modeptr_aitken !aitken mode number in this mam package
+  mam_acc = modeptr_accum  !accumulation mode number in this mam package
+
+  !find out accumulation and aitken modes in the radiation list
+  nacc = rad_cnst_get_mode_idx(list_idx, modename_amode(mam_acc))
+  nait = rad_cnst_get_mode_idx(list_idx, modename_amode(mam_ait))
 
   !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
   call compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
@@ -1049,7 +1043,7 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
         drv_a  = dryvol_a(icol,klev)
 
         !NOTE: number mixing ratios are always present for diagnostic
-        !calls, so it is okay to use "state" instead of rad_cnst calls
+        !calls, so it is okay to use "state_q" instead of rad_cnst calls
         num_a0 = state_q(icol,klev,num_mode_idx)
         num_a  = max( 0.0_r8, num_a0 )
         drv_c  = dryvol_c(icol,klev)
@@ -1145,7 +1139,7 @@ subroutine compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !inpu
   !Called by: size_adjustment
   !Calls    : None
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
 implicit none
@@ -1212,7 +1206,7 @@ subroutine adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &
   !Called by: size_adjustment
   !Calls    : None
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -1347,7 +1341,7 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, aer_type, gravit, cmn
   !Called by: size_adjustment
   !Calls    : None
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -1452,7 +1446,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
   real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfertend, xfertend_num(2,2)
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
-  real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
   logical  :: update_mmr, noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
 
   character(len=32)  :: spec_name
@@ -1506,23 +1499,26 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
      end if
   end do
 
-  ! identify accum species cannot be transferred to aitken mode
+  !------------------------------------------------------------------------
+  ! Identify accum species cannot be transferred to aitken mode
   !
+  ! Accumulation mode have more species than Aitken mode. Therefore, there
+  ! will be some species which cannot be transferred from accumulation to
+  ! Aitken mode as they don't exist in the Aitken mode
+  !------------------------------------------------------------------------
 
-  noxf_acc2ait(:) = .true.
+  noxf_acc2ait(:) = .true. ! let us assume we are going to move all species
 
+  !Now compute species which cannot be transfered
   !Get # of species in accumulation mode
   call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc) !output:nspec_acc
 
   do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (not number)
      call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
      call cnst_get_ind(spec_name, idx)
-     !write(102,*)'acc:',ispec_acc,nspec_acc, idx, trim(spec_name)
      do iq = 1, nspecfrm_csizxf(list_idx) !Go through all mapped species (and number) for the accumulation mode
-        !write(102,*)'acc__:',iq,lspectooa_csizxf(iq,list_idx),nspecfrm_csizxf(list_idx)
         if (lspectooa_csizxf(iq,list_idx) == idx) then !compare idx with mapped species in the accumulation mode
-           noxf_acc2ait(ispec_acc) = .false.
-           !write(102,*)'no trn acc:',ispec_acc,nspec_amode(iacc), idx, cnst_name(idx),iq, nspecfrm_csizxf(list_idx)
+           noxf_acc2ait(ispec_acc) = .false. ! species which cannot be tranferred
         end if
      end do
   end do
@@ -1544,13 +1540,15 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
              ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)   !output
 
 
+        !----------------------------------------------------------------------------------------
         ! compute accum --> aitken transfer rates
-        ! accum may have some species (seasalt, dust, poa, lll) that are
+        !
+        ! accum may have some species (seasalt, dust, poa etc.) that are
         !    not in aitken mode
         ! so first divide the accum drv & num into not-transferred (noxf) species
         !    and transferred species, and use the transferred-species
         !    portion in what follows
-
+        !----------------------------------------------------------------------------------------
         call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2nzz, & !input
              tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),  & !input
              num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait,            & !input
@@ -1601,12 +1599,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
            call compute_new_sz_after_transfer(iacc, drv_c, num_c, &
                 dgncur_c(icol,klev,iacc), v2ncur_c(icol,klev,iacc))
 
-           !
-           ! compute tendency amounts for aitken <--> accum transfer
-           !
-
+           !Printout just once in hte log file (idiagaa is set to negaitive after this if condition)
            if ( masterproc ) then
-              if (idiagaa > 0) then
+              if (idiagaa > 0 .and. list_idx == 0) then
                  do jmode = 1, 2
                     do iq = 1, nspecfrm_csizxf(list_idx)
                        do aer_type = 1, 2
@@ -1634,17 +1629,16 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
                  end do
               end if
            end if
-           idiagaa = -1
+           if(list_idx == 0)idiagaa = -1
+
+           !------------------------------------------------------------------
+           ! compute tendency amounts for aitken <--> accum transfer
+           !------------------------------------------------------------------
 
            !ASSUMPTION: "update_mmr" will only be true for the prognostic radiation list(i.e. list_idx=0, "radiation_climate")
            !If list_idx=0, it is okay to get specie mmr from state_q array. Therefore, state_q is used in update_tends_flx calls
            !below
            if(update_mmr) then
-              !check if list_idx > 0
-              if(list_idx > 0) then
-                 write(err_msg,*)'updating mmrs is not supported for list_idx>0, current list_idx is:',list_idx,' ',errmsg(__FILE__,__LINE__)
-                 call endrun(trim(err_msg))
-              endif
               ! jmode=1 does aitken-->accum
               if(ixfer_ait2acc > 0) then
                  jmode = 1
@@ -1785,7 +1779,7 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
         do ispec_acc = 1, nspec_acc
 
            if ( noxf_acc2ait(ispec_acc) ) then
-              call rad_cnst_get_aer_props(list_idx, iacc, ispec_acc, density_aer=specdens)    !get density  
+              call rad_cnst_get_aer_props(list_idx, iacc, ispec_acc, density_aer=specdens)    !get density
               ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
               dummwdens = 1.0_r8 / specdens
               call rad_cnst_get_aer_mmr(list_idx, iacc, ispec_acc, 'a', state, pbuf, specmmr) !get mmr
@@ -1901,6 +1895,15 @@ subroutine update_tends_flx(icol, klev, jmode, list_idx, lchnk , frm_spec_a, to_
   real(r8) :: xfertend
   real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
 
+  character(len=800) :: err_msg
+
+  !check if list_idx > 0
+  !This subroutine should ONLY be called for list_idx=0 as we are using state_q for specie mmr
+  if(list_idx > 0) then
+     write(err_msg,*)'updating mmrs is not supported for list_idx>0, current list_idx is:',list_idx,' ',errmsg(__FILE__,__LINE__)
+     call endrun(trim(err_msg))
+  endif
+
   jsrflx = jmode + 2
 
   !interstiatial species
@@ -1981,7 +1984,7 @@ subroutine update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, d
   !Called by: modal_aero_calcsize_sub
   !Calls    : None
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -2029,7 +2032,7 @@ subroutine output_flds(name, idx, lchnk, aer_type, qsrflx)
   !Called by: modal_aero_calcsize_sub
   !Calls    : outfld
   !
-  !Author: Balwinder Singh based on the code by Richard Easter (RCE)
+  !Author: Richard Easter (Refactored by Balwinder Singh)
   !-----------------------------------------------------------------------------
   implicit none
 
