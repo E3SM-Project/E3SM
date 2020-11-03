@@ -81,12 +81,15 @@
 namespace scream
 {
 
+  using field_type      = Field<Real>;
+  using header_type     = typename field_type::header_type;
+  using identifier_type = typename header_type::identifier_type;
+
 class AtmosphereInput 
 {
 public:
-  using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
   using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
-  using view_type      = typename KokkosTypes<DefaultDevice>::template view<value_type*>;
+  using view_type      = typename KokkosTypes<DefaultDevice>::view_1d<Real>;
 
   virtual ~AtmosphereInput () = default;
 
@@ -103,8 +106,9 @@ public:
 
   // Main Functions
   void pull_input();
+  void pull_input(const std::string name, view_type view_out);
   void init();
-  void run();
+  view_type run(const std::string name);
   void finalize();
 
   // Helper Functions
@@ -112,9 +116,10 @@ public:
 
 protected:
   // Internal functions
-  void add_identifier(const std::string name);
+  void register_dimensions(const std::string name);
   void register_variables();
   void set_degrees_of_freedom();
+  void register_views();
   // Internal variables
   ekat::ParameterList m_params;
   ekat::Comm          m_comm;
@@ -125,25 +130,47 @@ protected:
   std::string m_avg_type;
   std::string m_grid_name;
 
-  std::map<std::string,FieldIdentifier>  m_fields;
+  std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
   typename dofs_list_type::HostMirror    m_gids;
+  std::map<std::string,view_type>        m_view_local;
 
-  bool m_is_init = false;
+  bool m_is_init  = false;
+  bool m_is_rhist = false;
 
 private:
 
 }; // Class AtmosphereInput
 
 // ====================== IMPLEMENTATION ===================== //
+inline void AtmosphereInput::pull_input(const std::string name, view_type view_out)
+{
+/*  Run through the sequence of opening the file, reading input and then closing the file.  
+ *  Overloaded case to deal with just one output and to not put output into field repo.
+ *  This is an inefficient way to handle this special case because the same file would need
+ *  to be opened and closed multiple times if there is more than one variable.  TODO: Make this
+ *  a lot more efficient, most likely will need to overhaul the "pull_input" paradigm.
+ */
+  auto l_view = run(name);
+  Kokkos::deep_copy(view_out,l_view);
+} 
+/* ---------------------------------------------------------- */
 inline void AtmosphereInput::pull_input()
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  */
   init();
-  run();
+  for (auto const& name : m_fields)
+  {
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    // Get all the info for this field.
+    auto l_view_dev = fmap.get_view();
+    auto l_view = run(name);
+    Kokkos::deep_copy(l_view_dev,l_view);
+  }
   finalize();
 } 
+/* ---------------------------------------------------------- */
 inline void AtmosphereInput::init() 
 {
 /* 
@@ -158,6 +185,12 @@ inline void AtmosphereInput::init()
 
   // Parse the parameters that controls this input instance.
   m_grid_name       = m_params.get<std::string>("GRID");
+
+  // If this is RHIST type make sure its noted
+  if (m_params.isParameter("RHIST"))
+  {
+    m_is_rhist = m_params.get<bool>("RHIST");
+  }
 
   // Gather data from grid manager:
   EKAT_REQUIRE_MSG(m_grid_name=="Physics","Error with input grid! scorpio_input.hpp class only supports input on a Physics grid for now.\n");
@@ -176,9 +209,13 @@ inline void AtmosphereInput::init()
   {
     /* Determine the variable name */
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
-    /* Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid */
-    add_identifier(var_name);
+    m_fields.push_back(var_name);
+    /* Check that all dimensions for this variable are set to be registered */
+    register_dimensions(var_name);
   }
+
+  // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
+  register_views();
 
   // Register new netCDF file for input.
   register_infile(m_filename);
@@ -192,23 +229,15 @@ inline void AtmosphereInput::init()
 
 } // init
 /* ---------------------------------------------------------- */
-inline void AtmosphereInput::run()
+inline AtmosphereInput::view_type AtmosphereInput::run(const std::string name)
 {
-/* Replace data in the field repo with data in from the input file for all fields designated as input */
+/* Load data from the input file */
   using namespace scream;
   using namespace scream::scorpio;
 
-  // Begin reading all fields and replacing values in field manager
-  for (auto const& f_map : m_fields)
-  {
-    // Get all the info for this field.
-    auto name   = f_map.first;
-    auto fid    = f_map.second;
-    auto l_view_dev = m_field_repo->get_field(fid).get_view();
-    auto l_view_host = Kokkos::create_mirror_view( l_view_dev );
+    view_type l_view_host = m_view_local.at(name);
     grid_read_data_array(m_filename,name,m_dofs.at(name),l_view_host.data());
-    Kokkos::deep_copy(l_view_dev,l_view_host);
-  }
+    return l_view_host;
 
 } // run
 /* ---------------------------------------------------------- */
@@ -220,16 +249,15 @@ inline void AtmosphereInput::finalize()
   eam_pio_closefile(m_filename);
 } // finalize
 /* ---------------------------------------------------------- */
-inline void AtmosphereInput::add_identifier(const std::string name)
+inline void AtmosphereInput::register_dimensions(const std::string name)
 {
 /* 
- * add_identifier routine adds a new field identifier to the local map of fields that will be used by this class for IO.
+ * Checks that the dimensions associated with a specific variable will be registered with IO file.
  * INPUT:
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
   auto f = m_field_repo->get_field(name, m_grid_name);
   auto fid = f.get_header().get_identifier();
-  m_fields.emplace(name,fid);
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
@@ -244,7 +272,7 @@ inline void AtmosphereInput::add_identifier(const std::string name)
         "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
     }
   }
-} // add_identifier
+} // register_dimensions
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::register_variables()
 {
@@ -256,10 +284,10 @@ inline void AtmosphereInput::register_variables()
   using namespace scream::scorpio;
 
   // Cycle through all fields and register.
-  for (auto it : m_fields)
+  for (auto const& name : m_fields)
   {
-    auto  name = it.first;
-    auto& fid  = it.second;
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = fmap.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
@@ -271,7 +299,31 @@ inline void AtmosphereInput::register_variables()
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire fromt he netCDF the dimensions for each variable.
   }
+  if (m_is_rhist) { get_variable(m_filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
 } // register_variables
+/* ---------------------------------------------------------- */
+inline void AtmosphereInput::register_views()
+{
+  using namespace scream;
+  using namespace scream::scorpio;
+
+  // Cycle through all fields and register.
+  for (auto const& name : m_fields)
+  {
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    // If the "averaging type" is instant then just need a ptr to the view.
+    auto view_d = fmap.get_view();
+    // Create a local copy of view to be stored by output stream.
+    auto view_copy = Kokkos::create_mirror_view( view_d );
+    Kokkos::deep_copy(view_copy, view_d);
+    m_view_local.emplace(name,view_copy);
+  }
+  if (m_is_rhist)
+  {
+    view_type l_view("",1);
+    m_view_local.emplace("avg_count",l_view);
+  }
+}
 /* ---------------------------------------------------------- */
 inline void AtmosphereInput::set_degrees_of_freedom()
 {
@@ -282,10 +334,10 @@ inline void AtmosphereInput::set_degrees_of_freedom()
   using namespace scream;
   using namespace scream::scorpio;
   // Cycle through all fields and set dof.
-  for (auto it : m_fields)
+  for (auto const& name : m_fields)
   {
-    auto  name = it.first;
-    auto& fid  = it.second;
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = fmap.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.
@@ -315,6 +367,12 @@ inline void AtmosphereInput::set_degrees_of_freedom()
     }
     set_dof(m_filename,name,dof_len,var_dof.data());
     m_dofs.emplace(std::make_pair(name,dof_len));
+  }
+  if (m_is_rhist)
+  {
+    Int var_dof[1] = {0};
+    set_dof(m_filename,"avg_count",1,var_dof);
+    m_dofs.emplace(std::make_pair("avg_count",1));
   }
   /* TODO: 
    * Adjust DOF to accomodate packing for fields 

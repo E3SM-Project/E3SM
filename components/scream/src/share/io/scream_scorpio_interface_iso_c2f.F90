@@ -200,6 +200,12 @@ contains
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
+  subroutine count_pio_atm_file_c2f() bind(c)
+    use scream_scorpio_interface, only : count_pio_atm_file
+
+    call count_pio_atm_file()
+  end subroutine count_pio_atm_file_c2f
+!=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
   ! Purpose: To convert a c_string pointer to the proper fortran string format.
     type(c_ptr), intent(in) :: c_string_ptr

@@ -83,7 +83,8 @@ module scream_scorpio_interface
             grid_write_data_array,  & ! Write gridded data to a pio managed netCDF file
             grid_read_data_array,   & ! Read gridded data from a pio managed netCDF file
             eam_sync_piofile,       & ! Syncronize the piofile, to be done after all output is written during a single timestep
-            eam_update_time           ! Update the timestamp (i.e. time variable) for a given pio netCDF file
+            eam_update_time,        & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
+            count_pio_atm_file        ! Diagnostic to count how many files are still open
  
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -713,7 +714,7 @@ contains
     type(pio_file_list_t), pointer :: curr => NULL()
 
     if (retVal .ne. PIO_NOERR) then
-      write(*,'(I8,2x,A100)') retVal,trim(errMsg)
+      write(*,'(I8,2x,A200)') retVal,trim(errMsg)
       ! Kill run
       call eam_pio_finalize() 
       call finalize_scream_session()
@@ -912,8 +913,8 @@ contains
   end subroutine get_var
 !=====================================================================!
   ! Diagnostic routine to determine how many pio files are currently open:
-  subroutine count_pio_atm_file(total_count)
-    integer, intent(out) :: total_count
+  subroutine count_pio_atm_file()
+    integer :: total_count
 
     type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
 
@@ -921,11 +922,15 @@ contains
     curr => pio_file_list_top
     do while (associated(curr))
       if (associated(curr%pio_file)) then
-        if (curr%pio_file%isopen) total_count = total_count+1
+        if (curr%pio_file%isopen) then 
+          total_count = total_count+1
+          write(*,*) "File: ", trim(curr%pio_file%filename), " is open"
+        end if
       end if
       prev => curr
       curr => prev%next
     end do
+    write(*,*) "Total number of files open: ", total_count
   end subroutine count_pio_atm_file
 !=====================================================================!
   ! Lookup pointer for pio file based on filename.

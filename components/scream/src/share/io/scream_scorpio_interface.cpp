@@ -38,6 +38,7 @@ extern "C" {
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
 
+  void count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
@@ -202,6 +203,12 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   grid_write_data_array_c2f_int_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
 
 };
+/* ----------------------------------------------------------------- */
+void count_pio_atm_file() {
+
+  count_pio_atm_file_c2f();
+
+}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio

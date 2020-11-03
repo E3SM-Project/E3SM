@@ -1,4 +1,6 @@
 #include <catch2/catch.hpp>
+#include <iostream>
+#include <fstream> 
 
 #include "scream_config.h"
 #include "share/scream_types.hpp"
@@ -22,23 +24,27 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs);
-std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
-ekat::ParameterList                                  get_om_params(const Int casenum);
-ekat::ParameterList                                  get_in_params(const std::string type);
-
+std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_cols, const Int num_levs);
+std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
+ekat::ParameterList                       get_om_params(const Int casenum);
+ekat::ParameterList                       get_in_params(const std::string type);
+void                                      Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols, const Int num_levs);
 
 TEST_CASE("restart","io")
 {
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
-  Int num_cols = 1;
+  Int num_cols = 2;
   Int num_levs = 2;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager>            grid_man   = get_test_gm(io_comm,num_cols,num_levs);
-  std::shared_ptr<FieldRepository<Real>> field_repo = get_test_repo(num_cols,num_levs);
+  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_cols,num_levs);
+  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_cols,num_levs);
+
+  // Initialize the pio_subsystem for this test:
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
@@ -53,15 +59,16 @@ TEST_CASE("restart","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
+  auto& out_fields = field_repo->get_field_groups().at("output");
   Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)
   {
-    auto& out_fields = field_repo->get_field_groups().at("output");
     for (auto it : out_fields)
     {
       auto f_dev  = field_repo->get_field(it,"Physics").get_view();
       auto f_host = Kokkos::create_mirror_view( f_dev );
+      Kokkos::deep_copy(f_host,f_dev);
       for (size_t jj=0;jj<f_host.size();++jj)
       {
         f_host(jj) += dt;
@@ -74,33 +81,85 @@ TEST_CASE("restart","io")
   m_output_manager.finalize();
 
   // At this point we should have produced 2 files, a restart and a restart history file.
-//  OutputManager m_output_manager_res;
-//  m_output_manager_res.set_params(output_params);
-//  m_output_manager_res.set_comm(io_comm);
-//  m_output_manager_res.set_grids(grid_man);
-//  m_output_manager_res.set_repo(field_repo);
-//  m_output_manager_res.init();
-//  auto res_params = get_in_params("Restart");
-//  input_type ins_input(io_comm,res_params,field_repo,grid_man);
-//  ins_input.pull_input();
-//  // Finish the last 5 steps
-//  for (Int ii=0;ii<5;++ii)
-//  {
-//    auto& out_fields = field_repo->get_field_groups().at("output");
-//    for (auto it : out_fields)
-//    {
-//      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
-//      auto f_host = Kokkos::create_mirror_view( f_dev );
-//      for (size_t jj=0;jj<f_host.size();++jj)
-//      {
-//        f_host(jj) += dt;
-//      }
-//      Kokkos::deep_copy(f_dev,f_host);
-//    }
-//    time += dt;
-//    m_output_manager_res.run(time);
-//  }
-//  m_output_manager_res.finalize();
+  util::TimeStamp time_res (0,0,0,15);
+  OutputManager m_output_manager_res;
+  m_output_manager_res.set_params(output_params);
+  m_output_manager_res.set_comm(io_comm);
+  m_output_manager_res.set_grids(grid_man);
+  m_output_manager_res.set_repo(field_repo);
+  m_output_manager_res.set_runtype_restart(true);
+  m_output_manager_res.init();
+  auto res_params = get_in_params("Restart");
+  // reinit fields
+  Initialize_field_repo(*field_repo,num_cols,num_levs);
+  // grab restart data
+  input_type ins_input(io_comm,res_params,field_repo,grid_man);
+  ins_input.pull_input();
+  // Note, that only field_1 and field_2 were marked for restart.  Check to make sure values
+  // in the field manager reflect those fields as restarted from 15 and field_3 as being
+  // freshly restarted:
+  auto field1_dev = field_repo->get_field("field_1","Physics").get_view();
+  auto field2_dev = field_repo->get_field("field_2","Physics").get_view();
+  auto field3_dev = field_repo->get_field("field_3","Physics").get_reshaped_view<Real**>();
+  auto field1_hst = Kokkos::create_mirror_view( field1_dev );
+  auto field2_hst = Kokkos::create_mirror_view( field2_dev );
+  auto field3_hst = Kokkos::create_mirror_view( field3_dev );
+  Kokkos::deep_copy(field1_hst,field1_dev);
+  Kokkos::deep_copy(field2_hst,field2_dev);
+  Kokkos::deep_copy(field3_hst,field3_dev);
+  for (Int ii=0;ii<num_cols;++ii)
+  {
+    REQUIRE(field1_hst(ii)==15+ii);
+    for (Int jj=0;jj<num_levs;++jj)
+    {
+      REQUIRE(field2_hst(jj)   ==(jj+1)/10.+15);
+      REQUIRE(field3_hst(ii,jj)==(jj+1)/10.+ii);  //Note, field 3 is not restarted, so doesn't have the +15
+    }
+  }
+  // Finish the last 5 steps
+  for (Int ii=0;ii<5;++ii)
+  {
+    for (auto it : out_fields)
+    {
+      auto f_dev  = field_repo->get_field(it,"Physics").get_view();
+      auto f_host = Kokkos::create_mirror_view( f_dev );
+      Kokkos::deep_copy( f_host, f_dev );
+      for (size_t jj=0;jj<f_host.size();++jj)
+      {
+        f_host(jj) += dt;
+      }
+      Kokkos::deep_copy(f_dev,f_host);
+    }
+    time_res += dt;
+    m_output_manager_res.run(time_res);
+  }
+  m_output_manager_res.finalize();
+  
+  // We have now finished running a restart that should have loaded a restart history mid-way through averaging.  The
+  // final output should be stored in a file: io_output_restest.Average.Steps_x10.0000-01-01.000020.nc
+  // and reflect averaged values over the last 10 steps for fields 1 and 2 which were restarted and field 3 which started
+  // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
+  // the restart history file, but was re-initialized and run for the last 5 steps.
+  auto avg_params = get_in_params("Final");
+  input_type avg_input(io_comm,avg_params,field_repo,grid_man);
+  avg_input.pull_input();
+  Kokkos::deep_copy(field1_hst,field1_dev);
+  Kokkos::deep_copy(field2_hst,field2_dev);
+  Kokkos::deep_copy(field3_hst,field3_dev);
+  Real avg_val;
+  Real tol = pow(10,-8);
+  for (Int ii=0;ii<num_cols;++ii)
+  {
+    avg_val = (20+11)/2.+ii;
+    REQUIRE(std::abs(field1_hst(ii)-avg_val)<tol);
+    for (Int jj=0;jj<num_levs;++jj)
+    {
+      avg_val = (20+11)/2.+(jj+1)/10.0;
+      REQUIRE(std::abs(field2_hst(jj)-avg_val)<tol);
+      avg_val = (15+11)/4. + (5+1)/4. + ii + (jj+1)/10.;
+      REQUIRE(std::abs(field3_hst(ii,jj)-avg_val)<tol);
+    }
+  }
   
   // Finalize everything
   scorpio::eam_pio_finalize();
@@ -139,12 +198,24 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   repo->registration_ends();
 
   // Initialize these fields
-  auto f1_dev = repo->get_field(fid1).get_view(); 
-  auto f2_dev = repo->get_field(fid2).get_view(); 
-  auto f3_dev = repo->get_field(fid3).get_reshaped_view<Real**>();
+  Initialize_field_repo(*repo,num_cols,num_levs);
+
+  return repo;
+}
+/*===================================================================================================================*/
+void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols, const Int num_levs)
+{
+
+  // Initialize these fields
+  auto f1_dev = repo.get_field("field_1","Physics").get_view();
+  auto f2_dev = repo.get_field("field_2","Physics").get_view();
+  auto f3_dev = repo.get_field("field_3","Physics").get_reshaped_view<Real**>();
   auto f1_hst = Kokkos::create_mirror_view( f1_dev );
   auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
   auto f3_hst = Kokkos::create_mirror_view( f3_dev );
+  Kokkos::deep_copy(f1_hst, f1_dev );
+  Kokkos::deep_copy(f2_hst, f2_dev );
+  Kokkos::deep_copy(f3_hst, f3_dev );
   for (int ii=0;ii<num_cols;++ii)
   {
     f1_hst(ii) = ii;
@@ -158,7 +229,6 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   Kokkos::deep_copy(f2_dev,f2_hst);
   Kokkos::deep_copy(f3_dev,f3_hst);
 
-  return repo;
 }
 /*===================================================================================================================*/
 std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs)
@@ -202,15 +272,40 @@ ekat::ParameterList get_om_params(const Int casenum)
 ekat::ParameterList get_in_params(const std::string type)
 {
   ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","scorpio_restart_test.Instant.Steps_x5.0000-01-01.000015.r.nc"); // change to get filename from rpointer file.
-  in_params.set<std::string>("GRID","Physics");
-  auto& f_list = in_params.sublist("FIELDS");
-  f_list.set<Int>("Number of Fields",2);
-  for (int ii=1;ii<=2+1;++ii)
+  std::string filename;
+  if (type=="Restart")
   {
-    f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
+    std::ifstream rpointer_file;
+    rpointer_file.open("rpointer.atm");
+    bool found = false;
+    while (rpointer_file >> filename)
+    {
+      if (filename.find(".r.") != std::string::npos)
+      {
+        found = true;
+        break;
+      }
+    }
+    EKAT_REQUIRE_MSG(found,"ERROR! rpointer.atm file does not contain a restart file."); 
+  
+    auto& f_list = in_params.sublist("FIELDS");
+    f_list.set<Int>("Number of Fields",2);
+    for (int ii=1;ii<=2+1;++ii)
+    {
+      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
+    }
+  } else if (type=="Final")
+  {
+    filename = "io_output_restest.Average.Steps_x10.0000-01-01.000020.nc";
+    auto& f_list = in_params.sublist("FIELDS");
+    f_list.set<Int>("Number of Fields",3);
+    for (int ii=1;ii<=3+1;++ii)
+    {
+      f_list.set<std::string>("field "+std::to_string(ii),"field_"+std::to_string(ii));
+    }
   }
-  //f_list.set<std::string>("field 3","time");
+  in_params.set<std::string>("FILENAME",filename);
+  in_params.set<std::string>("GRID","Physics");
   return in_params;
 }
 /*===================================================================================================================*/

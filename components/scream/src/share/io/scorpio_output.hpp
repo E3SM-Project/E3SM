@@ -12,6 +12,7 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/scorpio_input.hpp"
 
 #include "share/field/field_repository.hpp"
 #include "share/field/field_header.hpp"
@@ -104,6 +105,7 @@
  * 21) Output averaging types could be individual instances of the same class providing flexibility for future types to be incorporated.  See Jeff's work on field property tests for example.
  * 22) Currently the restart history frequency is set to the restart frequency.  Should maybe fix this so that if the restart history field is included in the parameter list for the output stream than that value is taken instead of the restart frequency values.
  * 23) Should restart output just be a sub-class of the AtmosphereOutput class?
+ * 24) For restart runs the timestamp should be set by the restart input.
  */
 
 namespace scream
@@ -112,10 +114,9 @@ namespace scream
 class AtmosphereOutput 
 {
 public:
-  using value_type     = Real;          // Right not hard-coded to only Real type variables.  TODO: make this more general?
   using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
-  using view_type      = typename KokkosTypes<HostDevice>::template view<value_type*>;
-  using field_type     = Field<value_type>;
+  using view_type      = typename KokkosTypes<HostDevice>::view_1d<Real>;
+  using input_type     = AtmosphereInput;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -128,6 +129,19 @@ public:
     m_params     = params;
     m_field_repo = repo;
     m_gm         = gm;
+    m_read_restart_hist = false;
+  }
+  // Constructor
+  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
+                   const std::shared_ptr<const FieldRepository<Real>>& repo,
+                   const std::shared_ptr<const GridsManager>& gm,
+                   const bool read_restart_hist)
+  {
+    m_comm       = comm;
+    m_params     = params;
+    m_field_repo = repo;
+    m_gm         = gm;
+    m_read_restart_hist = read_restart_hist;
   }
 
   // Main Functions
@@ -143,12 +157,13 @@ public:
 
 protected:
   // Internal functions
-  void add_identifier(const std::string name);
+  void register_dimensions(const std::string name);
   void register_variables(const std::string filename);
   void set_degrees_of_freedom(const std::string filename);
   void register_views();
   void new_file(const std::string filename);
   void run_impl(const Real time, const std::string time_str);  // Actual run routine called by outward facing "run"
+  void set_restart_hist_read( const bool bval ) { m_read_restart_hist = bval; }
   // Internal variables
   ekat::ParameterList                          m_params;
   ekat::Comm                                   m_comm;
@@ -170,18 +185,18 @@ protected:
   Int m_restart_hist_n;
   std::string m_restart_hist_option;
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::map<std::string,field_type>       m_fields;
+  std::vector<std::string>               m_fields;
   std::map<std::string,Int>              m_dofs;
   std::map<std::string,Int>              m_dims;
   typename dofs_list_type::HostMirror    m_gids;
-  // Local and global views of each field to be used for "averaging" output and writing to file.
-  std::map<std::string,view_type>        m_view_global;
+  // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_type>        m_view_local;
 
   // Manage when files are open and closed, and what type of file I am writing.
   bool m_is_init = false;
   bool m_is_restart_hist = false;  //TODO:  If instead we rely on the timestamp to determine how many steps are represented in the averaging value, or maybe filename, we won't need this.
   bool m_is_restart = false;
+  bool m_read_restart_hist = false;
 
   // Helper map to monitor an output stream's status.  Most used fields are Snaps and Avg Count which are
   // used to monitor if a new file is needed and if output should be written according to the frequency settings.
@@ -233,12 +248,60 @@ inline void AtmosphereOutput::init()
   {
     // Determine the variable name 
     std::string var_name = var_params.get<std::string>(ekat::strint("field",var_i+1));
-    // Find the <FieldIdentifier,Field> pair that corresponds with this variable name on the appropriate grid 
-    add_identifier(var_name);
+    m_fields.push_back(var_name);
+    /* Check that all dimensions for this variable are set to be registered */
+    register_dimensions(var_name);
   }
 
-  // Now that the fields have been gathered register the local and global views which will be used to determine output data to be written.
+  // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
+
+  // If this is a restart run that requires a restart history file read input here:
+  if (m_read_restart_hist)
+  {
+    std::ifstream rpointer_file;
+    rpointer_file.open("rpointer.atm");
+    std::string filename;
+    bool found = false;
+    std::string testname = m_casename+"."+m_avg_type+"."+m_out_units+"_x"+std::to_string(m_out_frequency);
+    while (rpointer_file >> filename)
+    {
+      if (filename.find(testname) != std::string::npos)
+      {
+        found = true;
+        break;
+      }
+    }
+    if ( not found )
+    {
+      printf("Warning! No restart history file found in rpointer file for %s, using current values in field repo\n",m_casename.c_str());
+    }
+    // Register rhist file as input and copy data to local views
+    ekat::ParameterList res_params("Input Parameters");
+    res_params.set<std::string>("FILENAME",filename);
+    res_params.set<std::string>("GRID","Physics");
+    res_params.set<bool>("RHIST",true);
+    auto& f_list = res_params.sublist("FIELDS");
+    Int fcnt = 1;
+    f_list.set<Int>("Number of Fields",m_fields.size());
+    for (auto name : m_fields)
+    {
+      f_list.set<std::string>("field "+std::to_string(fcnt),name);
+      fcnt+=1;
+    }
+    input_type rhist_in(m_comm,res_params,m_field_repo,m_gm);
+    rhist_in.init();
+    for (auto name : m_fields)
+    {
+      auto l_view = m_view_local.at(name);
+      rhist_in.pull_input(name,l_view);
+    }
+    view_type avg_count("",1);
+    rhist_in.pull_input("avg_count",avg_count);
+    auto avg_count_data = avg_count.data();
+    m_status["Avg Count"] = avg_count(0);
+    rhist_in.finalize();
+  }
 
 } // init
 /* ---------------------------------------------------------- */
@@ -294,32 +357,40 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   bool is_rhist   = (m_status["Avg Count"] == m_restart_hist_n) and !is_typical;  // It is time to write a restart history file.
   bool is_write = is_typical or is_rhist; // General flag for if output is written
   // Preamble to writing output this step
-  std::string filename = m_casename+"."+m_avg_type+"."+m_out_units+"_x"+std::to_string(m_out_frequency)+"."+time_str;
-  // Typical out can still be restart output if this output stream is for a restart file.  If it is a restart file it has a different suffix
-  // and the filename needs to be added to the rpointer.atm file.
-  if (m_is_restart) 
-  { 
-    filename+=".r";
-    std::ofstream rpointer;
-    rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
-    rpointer << filename + ".nc" << std::endl;
-  }
-  // If the output written will be to a restart history file than make sure the suffix is correct.
-  if (is_rhist)
-  { 
-    filename+=".rhist"; 
-    std::ofstream rpointer;
-    rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
-    rpointer << filename + ".nc" << std::endl;
-    m_is_restart_hist = true;
-  }
-  filename += ".nc";
-  //
-  if (is_write) 
+  std::string filename;
+  if (is_write)
   {
+    filename = m_casename+"."+m_avg_type+"."+m_out_units+"_x"+std::to_string(m_out_frequency)+"."+time_str;
+    // Typical out can still be restart output if this output stream is for a restart file.  If it is a restart file it has a different suffix
+    // and the filename needs to be added to the rpointer.atm file.
+    if (m_is_restart) 
+    { 
+      filename+=".r";
+      std::ofstream rpointer;
+      rpointer.open("rpointer.atm",std::ofstream::out | std::ofstream::trunc);  // Open rpointer file and clear contents
+      rpointer << filename + ".nc" << std::endl;
+    }
+    // If the output written will be to a restart history file than make sure the suffix is correct.
+    if (is_rhist)
+    { 
+      filename+=".rhist"; 
+      std::ofstream rpointer;
+      rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append the restart hist file information
+      rpointer << filename + ".nc" << std::endl;
+      m_is_restart_hist = true;
+    }
+    filename += ".nc";
     // If we closed the file in the last write because we reached max steps, or this is a restart history file,
     // we need to create a new file for writing.
-    if( !is_typical or !m_is_init ) { new_file(filename); }
+    if( !is_typical or !m_is_init ) 
+    { 
+      new_file(filename);
+      if (is_rhist) 
+      { 
+        std::array<Real,1> avg_cnt = { (Real) m_status["Avg Count"] };
+        grid_write_data_array(filename,"avg_count",avg_cnt.size(),avg_cnt.data());
+      }
+    }
     if( !m_is_init and is_typical ) { m_is_init=true; }
 
     pio_update_time(filename,time); // Universal scorpio command to set the timelevel for this snap.
@@ -327,23 +398,22 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
   }
 
   // Take care of updating and possibly writing fields.
-  for (auto const& fmap : m_fields)
+  for (auto const& name : m_fields)
   {
     // Get all the info for this field.
-    auto name   = fmap.first;
-    auto view_d = fmap.second.get_view();
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto view_d = fmap.get_view();
     auto g_view = Kokkos::create_mirror_view( view_d );
     Kokkos::deep_copy(g_view, view_d);
-    Int  f_len  = fmap.second.get_header().get_identifier().get_layout().size();
-    view_type l_view;
+    Int  f_len  = fmap.get_header().get_identifier().get_layout().size();
+    auto l_view = m_view_local.at(name);
     // The next two operations do not need to happen if the frequency of output is instantaneous.
     if (m_avg_type == "Instant")
     {
-      l_view = g_view; 
+      Kokkos::deep_copy(l_view, g_view);
     }
     else // output type uses multiple steps.
     {
-      l_view = m_view_local.at(name);
       // Update local view given the averaging type.  TODO make this a switch statement?
       if (m_avg_type == "Average")
       {
@@ -392,8 +462,7 @@ inline void AtmosphereOutput::run_impl(const Real time, const std::string time_s
 
 } // run
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::
-finalize() 
+inline void AtmosphereOutput::finalize() 
 {
   using namespace scream;
   using namespace scream::scorpio;
@@ -405,21 +474,19 @@ finalize()
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::check_status()
 {
-  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d)\n",
-                   m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"]);
+  printf("IO Status for Rank %5d, File - %.40s: (Init: %2d), (Run: %5d), (Finalize: %2d), (Avg. Count: %2d), (Snaps: %2d)\n",
+                   m_comm.rank(),m_casename.c_str(),m_status["Init"],m_status["Run"],m_status["Finalize"],m_status["Avg Count"],m_status["Snaps"]);
 } // check_status
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::add_identifier(const std::string name)
+inline void AtmosphereOutput::register_dimensions(const std::string name)
 {
 /* 
- * add_identifier routine adds a new field identifier to the local map of fields that will be used by this class for IO.
+ * Checks that the dimensions associated with a specific variable will be registered with IO file.
  * INPUT:
  *   field_repo: is a pointer to the field_repository for this simulation.
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
-  auto f = m_field_repo->get_field(name, m_grid_name);
-  auto fid = f.get_header().get_identifier();
-  m_fields.emplace(name,f);
+  auto fid = m_field_repo->get_field(name, m_grid_name).get_header().get_identifier();
   // check to see if all the dims for this field are already set to be registered.
   for (int ii=0; ii<fid.get_layout().rank(); ++ii)
   {
@@ -434,7 +501,7 @@ inline void AtmosphereOutput::add_identifier(const std::string name)
         "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
     }
   }
-} // add_identifier
+} // register_dimensions
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::register_views()
 {
@@ -442,20 +509,16 @@ inline void AtmosphereOutput::register_views()
   using namespace scream::scorpio;
 
   // Cycle through all fields and register.
-  for (auto fmap : m_fields)
+  for (auto const& name : m_fields)
   {
-    auto  name = fmap.first;
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
     // If the "averaging type" is instant then just need a ptr to the view.
-    auto view_d = fmap.second.get_view();
-    auto view_h = Kokkos::create_mirror_view( view_d );
-    Kokkos::deep_copy(view_h, view_d);
-    if (m_avg_type != "Instant") {
-      // If anything other than instant we need a local copy that can be updated.
-      view_type view_copy_d("",view_d.extent(0));
-      auto view_copy = Kokkos::create_mirror_view( view_copy_d );
-      Kokkos::deep_copy(view_copy, view_d);
-      m_view_local.emplace(name,view_copy);
-    }
+    auto view_d = fmap.get_view();
+    // Create a local copy of view to be stored by output stream.
+    view_type view_copy_d("",view_d.extent(0));
+    auto view_copy = Kokkos::create_mirror_view( view_copy_d );
+    Kokkos::deep_copy(view_copy, view_d);
+    m_view_local.emplace(name,view_copy);
   }
 }
 /* ---------------------------------------------------------- */
@@ -465,10 +528,10 @@ inline void AtmosphereOutput::register_variables(const std::string filename)
   using namespace scream::scorpio;
 
   // Cycle through all fields and register.
-  for (auto fmap : m_fields)
+  for (auto const& name : m_fields)
   {
-    auto  name = fmap.first;
-    auto& fid  = fmap.second.get_header().get_identifier();
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = fmap.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
@@ -483,7 +546,7 @@ inline void AtmosphereOutput::register_variables(const std::string filename)
   }
   // Finish by registering time as a variable.  TODO: Should this really be something registered during the reg. dimensions step? 
   register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
-  if (m_is_restart_hist) { register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_INT, "cnt"); }
+  if (m_is_restart_hist) { register_variable(filename,"avg_count","avg_count",1,{"cnt"}, PIO_REAL, "cnt"); }
 } // register_variables
 /* ---------------------------------------------------------- */
 inline void AtmosphereOutput::set_degrees_of_freedom(const std::string filename)
@@ -492,10 +555,10 @@ inline void AtmosphereOutput::set_degrees_of_freedom(const std::string filename)
   using namespace scream::scorpio;
 
   // Cycle through all fields and set dof.
-  for (auto fmap : m_fields)
+  for (auto const& name : m_fields)
   {
-    auto  name = fmap.first;
-    auto& fid  = fmap.second.get_header().get_identifier();
+    auto fmap = m_field_repo->get_field(name, m_grid_name);
+    auto& fid  = fmap.get_header().get_identifier();
     // bool has_cols = true;
     Int dof_len, n_dim_len, num_cols;
     // Total number of values represented by this rank for this field is given by the field_layout size.

@@ -66,6 +66,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Int* hbuf);
 
+  void count_pio_atm_file();
 } // namespace scorpio
 } // namespace scream
 

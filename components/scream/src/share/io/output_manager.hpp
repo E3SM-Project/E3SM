@@ -69,8 +69,38 @@ class OutputManager
 public:
   using output_type = AtmosphereOutput;
 
-  OutputManager () = default;
+  // Destructor
   virtual ~OutputManager () = default;
+  // Constructors
+  OutputManager() = default;
+
+  OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
+                 const std::shared_ptr<const FieldRepository<Real>>& repo,
+                 const std::shared_ptr<const GridsManager>& gm,
+                 const bool runtype_restart)
+  {
+    atm_comm            = comm;
+    m_params            = params;
+    param_set           = true;
+    m_device_field_repo = repo;
+    repo_set            = true;
+    m_grids_manager     = gm;
+    gm_set              = true;
+    m_runtype_restart   = runtype_restart;
+  }
+
+  OutputManager( const ekat::Comm& comm, const ekat::ParameterList& params,
+                 const std::shared_ptr<const FieldRepository<Real>>& repo,
+                 const std::shared_ptr<const GridsManager>& gm)
+  {
+    atm_comm            = comm;
+    m_params            = params;
+    param_set           = true;
+    m_device_field_repo = repo;
+    repo_set            = true;
+    m_grids_manager     = gm;
+    gm_set              = true;
+  }
 
   void init();
   void run(util::TimeStamp& current_ts);
@@ -78,10 +108,12 @@ public:
   void finalize();
 
   void new_output(const ekat::ParameterList& params);
+  void new_output(const ekat::ParameterList& params,const bool runtype_restart);
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
   void set_repo(const std::shared_ptr<const FieldRepository<Real>>& repo) { m_device_field_repo = repo; repo_set=true;}
+  void set_runtype_restart(const bool bval) { m_runtype_restart = bval; }
   void make_restart_param_list(ekat::ParameterList& params);
 
 protected:
@@ -95,6 +127,7 @@ protected:
   bool                                 param_set = false;
   bool                                 gm_set    = false;
   bool                                 repo_set  = false;
+  bool                        m_runtype_restart  = false;
 
 }; // class OutputManager
 /*===============================================================================================*/
@@ -104,7 +137,14 @@ protected:
  * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
 inline void OutputManager::new_output(const ekat::ParameterList& params)
 {
-  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager);
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager,m_runtype_restart);
+  output_instance->init();
+  m_output_streams.push_back(output_instance);
+}
+/* --------------------------------------------------------------------- */
+inline void OutputManager::new_output(const ekat::ParameterList& params, const bool runtype_restart)
+{
+  auto output_instance = std::make_shared<output_type>(pio_comm,params,m_device_field_repo,m_grids_manager,runtype_restart);
   output_instance->init();
   m_output_streams.push_back(output_instance);
 }
@@ -126,8 +166,8 @@ inline void OutputManager::init()
   // auto pio_comm = atm_comm;  // TODO, EKAT should have a comm_split option (.split(comm_color));
   // PIO requires a subsystem to begin.  TODO, the component coupler actually inits the subsystem for the ATM,
   // int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
-  MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+//  MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+//  eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   
   // Check for restart output:
   // Restarts are a special kind of output that have unique characteristics.  The following constructs the EKAT
@@ -148,7 +188,7 @@ inline void OutputManager::init()
   {
     auto& out_params = m_params.sublist("Restart Control");
     make_restart_param_list(out_params);
-    new_output(out_params);
+    new_output(out_params,false);
     // Gather restart frequency info for restart history files
     auto& freq_params = out_params.sublist("FREQUENCY");
     restart_hist_N = freq_params.get<Int>("OUT_N");

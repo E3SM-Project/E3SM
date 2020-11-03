@@ -34,6 +34,10 @@ TEST_CASE("input_output_basic","io")
   Int num_cols = 2;
   Int num_levs = 3;
 
+  // Initialize the pio_subsystem for this test:
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+
   // First set up a field manager and grids manager to interact with the output functions
   std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_cols,num_levs);
   std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_cols,num_levs);
@@ -51,11 +55,11 @@ TEST_CASE("input_output_basic","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
+  auto& out_fields = field_repo->get_field_groups().at("output");
   Int max_steps = 10;
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)
   {
-    auto& out_fields = field_repo->get_field_groups().at("output");
     for (auto it : out_fields)
     {
       auto f_dev  = field_repo->get_field(it,"Physics").get_view();
@@ -165,8 +169,6 @@ TEST_CASE("input_output_basic","io")
   {
     REQUIRE(f2_hst(jj)==(jj+1)/10.);
   }
-    
-  
    
   scorpio::eam_pio_finalize();
   (*grid_man).clean_up();
@@ -212,6 +214,9 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   auto f1_hst = Kokkos::create_mirror_view( f1_dev );
   auto f2_hst = Kokkos::create_mirror_view( f2_dev ); 
   auto f3_hst = Kokkos::create_mirror_view( f3_dev );
+  Kokkos::deep_copy( f1_hst, f1_dev );
+  Kokkos::deep_copy( f2_hst, f2_dev );
+  Kokkos::deep_copy( f3_hst, f3_dev );
   for (int ii=0;ii<num_cols;++ii)
   {
     f1_hst(ii) = ii;
