@@ -21,8 +21,11 @@ cmake_policy(SET CMP0057 NEW)
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
 # Turn on timing
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
-set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "${CMAKE_COMMAND} -E time")
+set(E3SM_ENABLE_TIMING FALSE CACHE BOOL "Turn on build timings")
+if (E3SM_ENABLE_TIMING)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "${CMAKE_COMMAND} -E time")
+endif()
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
