@@ -71,10 +71,11 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real rho_ubound = 1.5; // [kg/m3]
     static constexpr Real wind_bounds = 5; // [m/s]
 
+    static constexpr Real thresh_check = 1e-10;
     // establish spurious threshold bounds
-    static const auto qwspur_thresh = Approx(0.0).margin(1e-6);
-    static const auto thlspur_thresh = Approx(0.0).margin(1e-6);
-    static const auto trcspur_thresh = Approx(0.0).margin(1e-4);
+//    static const auto qwspur_thresh = Approx(0.0).margin(1e-4);
+//    static const auto thlspur_thresh = Approx(0.0).margin(1e-4);
+//    static const auto trcspur_thresh = Approx(0.0).margin(1e-4);
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
@@ -313,14 +314,14 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
                    - rho_zi_srf*SDS.wqw_sfc[s];
 
       // Spurious source should be sufficiently small for water conservation
-      REQUIRE(spurious == qwspur_thresh);
+      REQUIRE(std::abs(spurious) < thresh_check);
 
       // Calculate the spurious source for thetal
       spurious = (thl_int_a[s] - thl_int_b[s])/dtime
                    - rho_zi_srf*SDS.wthl_sfc[s];
 
       // Spurious source should be sufficiently small for energy conservation
-      REQUIRE(spurious == thlspur_thresh);
+      REQUIRE(std::abs(spurious) < thresh_check);
 
       // Check that tracers were conserved during vertical transport
       for (Int t = 0; t < num_tracer; ++t){
@@ -329,7 +330,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
         spurious = (trc_int_a[s][t] - trc_int_b[s][t])/dtime
                    - rho_zi_srf*SDS.wtracer_sfc[t_offset];
         // Spurious source should be sufficiently small
-//        REQUIRE(spurious == trcspur_thresh);
+        REQUIRE(std::abs(spurious) < thresh_check);
       }
 
     }
