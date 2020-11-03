@@ -1,0 +1,5 @@
+<driver_script name="run.py">
+	<case name="files_for_e3sm">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating ocean and sea-ice initial conditions and supporting files for E3SM" post_message=" - Complete"/>
+	</case>
+</driver_script>
