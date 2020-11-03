@@ -705,8 +705,11 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-       rtmCTL%qdem(n,nliq) = fptr(index_x2r_Flrl_demand,n2) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
-
+       if (wrmflag) then
+        rtmCTL%qdem(n,nliq) = fptr(index_x2r_Flrl_demand,n2) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
+       else
+        rtmCTL%qdem(n,nliq) = 0.0_r8
+       endif
        rtmCTL%qsur(n,nfrz) = fptr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8

@@ -3233,12 +3233,14 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read frac ',minval(Tunit%frac),maxval(Tunit%frac)
      call shr_sys_flush(iulog)
      
-     allocate(TUnit%domainfrac(begr:endr))
-     ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read domainfrac ',minval(Tunit%domainfrac),maxval(Tunit%domainfrac)
-     call shr_sys_flush(iulog)
-
+     if (wrmflag) then
+       allocate(TUnit%domainfrac(begr:endr))
+       ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
+       call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
+       if (masterproc) write(iulog,FORMR) trim(subname),' read domainfrac ',minval(Tunit%domainfrac),maxval(Tunit%domainfrac)
+       call shr_sys_flush(iulog)
+     endif
+     
      ! read fdir, convert to mask
      ! fdir <0 ocean, 0=outlet, >0 land
      ! tunit mask is 0=ocean, 1=land, 2=outlet for mosart calcs
@@ -3267,13 +3269,15 @@ contains
         else
            call shr_sys_abort(subname//' Tunit mask error')
         endif
-        
+       
+       if (wrmflag) then       
         if (Tunit%domainfrac(n) == 0) then
           Tunit%domainfrac(n) = 1
         elseif (Tunit%domainfrac(n) < 0) then
           write(iulog,*) subname,' ERROR domain frac < 0',n,Tunit%domainfrac(n)
           call shr_sys_abort(subname//' Tunit domainfrac error')
         endif
+       endif
      enddo
 
      allocate(TUnit%ID0(begr:endr))  
