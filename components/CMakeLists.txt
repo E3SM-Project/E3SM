@@ -20,6 +20,10 @@ cmake_policy(SET CMP0057 NEW)
 # we can still access ${CASEROOT}/Macros.cmake
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
+# Turn on timing
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "${CMAKE_COMMAND} -E time")
+
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
 # However, we do *not* want to pollut the environment with other
