@@ -921,7 +921,7 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   real(r8) :: specdens  !specie density
   real(r8) :: dummwdens !density inverse
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
-  real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+  !real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
 
   character(len=32) :: spec_name
 
@@ -949,11 +949,12 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
      call rad_cnst_get_info(list_idx_in, imode, ispec,spec_name=spec_name)
      call cnst_get_ind(spec_name, idx_cw)
 
-     fldcw => qqcw_get_field(pbuf,idx_cw,lchnk)
+     !fldcw => qqcw_get_field(pbuf,idx_cw,lchnk)
+     call rad_cnst_get_aer_mmr(list_idx_in, imode, ispec, 'c', state, pbuf, specmmr) !get mmr
      do klev = top_lev, pver
         do icol = 1, ncol
            dryvol_c(icol,klev) = dryvol_c(icol,klev)    &
-                + max(0.0_r8,fldcw(icol,klev))*dummwdens
+                + max(0.0_r8,specmmr(icol,klev))*dummwdens
         end do
      end do
   end do ! nspec loop
