@@ -72,9 +72,9 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real wind_bounds = 5; // [m/s]
 
     // establish spurious threshold bounds
-    static const auto qwspur_thresh = Approx(0.0).margin(1e-4);
-    static const auto thlspur_thresh = Approx(0.0).margin(1e-4);
-    static const auto trcspur_thresh = Approx(0.0).margin(1e-4);
+    static const auto qwspur_thresh = Approx(0.0).margin(1e-15);
+    static const auto thlspur_thresh = Approx(0.0).margin(1e-10);
+    static const auto trcspur_thresh = Approx(0.0).margin(1e-15);
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
@@ -112,7 +112,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
         for (Int t = 0; t < num_tracer; ++t){
-          tracer_in[s][n][t] = rand()%1000 + 1;
+          tracer_in[s][n][t] = (rand()%100 + 1)/1000.;
         }
       }
     }
@@ -143,7 +143,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       // Fill in tracer fluxes with random data from -10 to 10 (unitless)
       for (Int t = 0; t < num_tracer; ++t){
         const auto offset = t + s * num_tracer;
-          SDS.wtracer_sfc[offset] = rand()%20 + (-10);
+          SDS.wtracer_sfc[offset] = (rand()%20 + -10)/1000.;
       }
 
       // Fill in data on the nlev grid
