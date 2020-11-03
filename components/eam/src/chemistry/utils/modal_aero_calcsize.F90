@@ -8,7 +8,7 @@ use physconst,        only: pi, rhoh2o, gravit
 
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state, physics_ptend
-use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
+use physics_buffer,   only: physics_buffer_desc, pbuf_get_field
 
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
@@ -42,16 +42,10 @@ use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, lmas
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
 !BSINGH: THINGS TO DO (TODO):
-!1. In compute_dry_volume, find out if two nested do loops for _a and _c can be combined
-!2. State_q should not be used to get mass mmr as some species may be missing in the diagnostic calls.
-!   Use radiation calls to get mmrs
-!3. fldcw, qqcw_get_field index should correspond to the interstitial species
-!   as some species might be missing in the diagnostic calls
-!4. ipair should be used for diagnostic calls as well
-!5. Find out if we can remove the "if (masterproc)" from the subroutines called during time stepping
-!6. cloud borne and interstitial species processes can be combined and refactored into one subroutine.(aitken_accum_exchange)
-!7. init and register routine should be re-worked/streamlined to remove redundant logics
-!8. improve update_mmr logic in refactored subroutines
+!1. Find out if we can remove the "if (masterproc)" from the subroutines called during time stepping
+!2. cloud borne and interstitial species processes can be combined and refactored into one subroutine.(aitken_accum_exchange)
+!3. init and register routine should be re-worked/streamlined to remove redundant logics
+!4. improve update_mmr logic in refactored subroutines
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
 
@@ -343,6 +337,9 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    !--------------------------------------------------------------------------------
    ! Define history fields for number-adjust source-sink for all modes
    ! NOTE: This is only done for prognostic radiation list (ilist = 0)
+   !
+   ! BSINGH: Did not modify the following code, it should be refactored
+   ! by removing the do-loops
    !--------------------------------------------------------------------------------
 9310  format( / 'subr. modal_aero_calcsize_init' / 'do_adjust_allowed, do_aitacc_transfer_allowed = ', 2l10 )
 9320  format( 'pair', i3, 5x, 'mode', i3, ' ---> mode', i3 )
@@ -507,7 +504,7 @@ end function extract_cnst_name
 
 !===============================================================================
 
-subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
+subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    do_aitacc_transfer_in, list_idx_in, update_mmr_in, dgnumdry_m, caller)
 
   implicit none
@@ -530,9 +527,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
    ! arguments
    type(physics_state), target, intent(in)    :: state       ! Physics state variables
    type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
+   real(r8),                    intent(in)    :: deltat      ! model time-step size (s)
    type(physics_ptend), target, optional, intent(inout) :: ptend       ! indivdual parameterization tendencies
-
-   real(r8), intent(in) :: deltat      ! model time-step size (s)
 
    logical,  optional, intent(in) :: do_adjust_in
    logical,  optional, intent(in) :: do_aitacc_transfer_in
@@ -666,7 +662,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
 
    !Set tendency variable based on the presence of ptend
    if(update_mmr) then
-      if(.not. present(ptend)) call endrun('ptend should be present if update_mmr is true'//errmsg(__FILE__,__LINE__))
+      if(.not. present(ptend)) then
+         write(err_msg,*)'ptend should be present if update_mmr is true (update_mmr ', &
+              ' is true by default); '//errmsg(__FILE__,__LINE__)
+         call endrun(trim(err_msg))
+      endif
       dotend => ptend%lq
       dqdt   => ptend%q
       dotendqqcw(:)   = .false.
@@ -677,10 +677,10 @@ subroutine modal_aero_calcsize_sub(state, pbuf, deltat, ptend, do_adjust_in, &
       qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
-   if(present(caller)) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
+   !if(present(caller) .and. masterproc) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
 
    pdel     => state%pdel !Only required if update_mmr = .true.
-   state_q  => state%q    !BSINGH - it is okay to use it for num mmr but not for specie mmr (as diagnostic call may miss some species)
+   state_q  => state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed

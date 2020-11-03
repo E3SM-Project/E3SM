@@ -249,7 +249,6 @@ subroutine rad_cnst_readnl(nlfile)
 
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
-   use shr_log_mod ,    only: errmsg => shr_log_errmsg
    use mpishorthand
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -360,9 +359,6 @@ subroutine rad_cnst_readnl(nlfile)
    do i = 0, N_DIAG
       if (active_calls(i)) then
          if (i > 0) then
-            !Temporarily block radiation diagnostic calls until we place a fix for these calls
-            call endrun('Radiation diagnostic calls are temporarily not supported,' // &
-                 ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
             write(suffix, fmt = '(i2.2)') i
          else
             suffix='  '
