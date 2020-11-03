@@ -107,13 +107,14 @@ TEST_CASE("restart","io")
   Kokkos::deep_copy(field1_hst,field1_dev);
   Kokkos::deep_copy(field2_hst,field2_dev);
   Kokkos::deep_copy(field3_hst,field3_dev);
+  Real tol = pow(10,-6);
   for (Int ii=0;ii<num_cols;++ii)
   {
-    REQUIRE(field1_hst(ii)==15+ii);
+    REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
     for (Int jj=0;jj<num_levs;++jj)
     {
-      REQUIRE(field2_hst(jj)   ==(jj+1)/10.+15);
-      REQUIRE(field3_hst(ii,jj)==(jj+1)/10.+ii);  //Note, field 3 is not restarted, so doesn't have the +15
+      REQUIRE(std::abs(field2_hst(jj)   -((jj+1)/10.+15))<tol);
+      REQUIRE(std::abs(field3_hst(ii,jj)-((jj+1)/10.+ii))<tol);  //Note, field 3 is not restarted, so doesn't have the +15
     }
   }
   // Finish the last 5 steps
@@ -147,7 +148,6 @@ TEST_CASE("restart","io")
   Kokkos::deep_copy(field2_hst,field2_dev);
   Kokkos::deep_copy(field3_hst,field3_dev);
   Real avg_val;
-  Real tol = pow(10,-8);
   for (Int ii=0;ii<num_cols;++ii)
   {
     avg_val = (20+11)/2.+ii;

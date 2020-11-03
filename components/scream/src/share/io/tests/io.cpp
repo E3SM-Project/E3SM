@@ -84,7 +84,7 @@ TEST_CASE("input_output_basic","io")
   auto avg_params = get_in_params("Average");
   auto min_params = get_in_params("Min");
   auto max_params = get_in_params("Max");
-  Real tol = pow(10,-8);
+  Real tol = pow(10,-6);
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_repo,grid_man);
   ins_input.pull_input();
@@ -140,15 +140,15 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f3_hst, f3_dev );
   for (int ii=0;ii<num_cols;++ii)
   {
-    REQUIRE(f1_hst(ii)==max_steps*dt+ii);
+    REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj)
     {
-      REQUIRE(f3_hst(ii,jj)==ii+max_steps*dt + (jj+1)/10.);
+      REQUIRE(std::abs(f3_hst(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj)
   {
-    REQUIRE(f2_hst(jj)==max_steps*dt + (jj+1)/10.);
+    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.)<tol));
   }
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
@@ -159,15 +159,15 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f3_hst, f3_dev );
   for (int ii=0;ii<num_cols;++ii)
   {
-    REQUIRE(f1_hst(ii)==ii);
+    REQUIRE(std::abs(f1_hst(ii)-ii)<tol);
     for (int jj=0;jj<num_levs;++jj)
     {
-      REQUIRE(f3_hst(ii,jj)==ii + (jj+1)/10.);
+      REQUIRE(std::abs(f3_hst(ii,jj)-(ii + (jj+1)/10.))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj)
   {
-    REQUIRE(f2_hst(jj)==(jj+1)/10.);
+    REQUIRE(std::abs(f2_hst(jj)-((jj+1)/10.))<tol);
   }
    
   scorpio::eam_pio_finalize();
