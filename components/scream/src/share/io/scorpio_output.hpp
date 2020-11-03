@@ -515,8 +515,8 @@ inline void AtmosphereOutput::register_views()
     // If the "averaging type" is instant then just need a ptr to the view.
     auto view_d = fmap.get_view();
     // Create a local copy of view to be stored by output stream.
-    view_type view_copy_d("",view_d.extent(0));
-    auto view_copy = Kokkos::create_mirror_view( view_copy_d );
+    auto view_copy_h = Kokkos::create_mirror_view( view_d );
+    view_type view_copy("",view_copy_h.extent(0));
     Kokkos::deep_copy(view_copy, view_d);
     m_view_local.emplace(name,view_copy);
   }

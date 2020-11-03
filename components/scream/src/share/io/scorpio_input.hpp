@@ -88,8 +88,8 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using dofs_list_type = KokkosTypes<DefaultDevice>::view_1d<long>;
-  using view_type      = typename KokkosTypes<DefaultDevice>::view_1d<Real>;
+  using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
+  using view_type      = typename KokkosTypes<HostDevice>::view_1d<Real>;
 
   virtual ~AtmosphereInput () = default;
 
@@ -313,8 +313,9 @@ inline void AtmosphereInput::register_views()
     auto fmap = m_field_repo->get_field(name, m_grid_name);
     // If the "averaging type" is instant then just need a ptr to the view.
     auto view_d = fmap.get_view();
-    // Create a local copy of view to be stored by output stream.
-    auto view_copy = Kokkos::create_mirror_view( view_d );
+    // Create a local copy of view to be stored by input stream.
+    auto view_copy_h = Kokkos::create_mirror_view( view_d );
+    view_type view_copy("",view_copy_h.extent(0));
     Kokkos::deep_copy(view_copy, view_d);
     m_view_local.emplace(name,view_copy);
   }
