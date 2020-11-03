@@ -12,21 +12,14 @@ namespace scream
  * Possible choices, and their meaning:
  *
  *  - Undefined: a placeholder to spot uninitialized stuff
- *  - SE_CellBased and SE_NodeBased: the dofs are the gauss points (GP) of a Spectral Element mesh.
- *    The two differ based on how dofs are indexed:
- *      - CellBased: a typical dof is indexed as (ie, igp, jgp). Each rank is guaranteed to own a
- *                   full element. Dofs on element edges/corners are repeated across elements.
- *      - NodeBased: a typical dof is indexed simply with its local id. Dofs are unique across
- *                   elements, which implies ranks may own only some of the GPs inside some elements.
- *  - MeshFree: the dof a simply a range of gids, and there's no assumed connection between any
- *              two dofs. The typical indexing is the same as a NodeBased (local id).
+ *  - SE: the dofs are the gauss points (GP) of a Spectral Element mesh.
+ *  - Point: the dofs are simply a range of gids, and there's no assumed connection between dofs.
  */
 
 enum class GridType {
   Undefined,
-  SE_NodeBased,
-  SE_CellBased,
-  MeshFree
+  SE,         // Spectral Element
+  Point       // Mesh-free set of points
 };
 
 inline std::string e2str (const GridType type) {
@@ -35,14 +28,11 @@ inline std::string e2str (const GridType type) {
     case GridType::Undefined:
       str = "Undefined";
       break;
-    case GridType::SE_NodeBased:
-      str = "SE Physics";
+    case GridType::SE:
+      str = "SE";
       break;
-    case GridType::SE_CellBased:
-      str = "SE Dynamics";
-      break;
-    case GridType::MeshFree:
-      str = "Mesh Free";
+    case GridType::Point:
+      str = "Point";
       break;
     default:
       str = "INVALID";

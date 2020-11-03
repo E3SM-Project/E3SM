@@ -12,10 +12,7 @@ class SEGrid : public AbstractGrid
 {
 public:
 
-  using elgpgp_to_lid_map_type = kokkos_types::view<int***>; // (elem, igp, jgp) -> int
-
   SEGrid (const std::string& grid_name,
-          const GridType type,
           const int num_local_elements,
           const int num_gauss_pts,
           const int num_vertical_levels);
@@ -23,7 +20,7 @@ public:
   virtual ~SEGrid () = default;
 
   // Grid description utilities
-  GridType type () const override { return m_type; }
+  GridType type () const override { return GridType::SE; }
   const std::string& name () const override { return m_grid_name; }
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
@@ -37,17 +34,13 @@ public:
   const dofs_list_type& get_dofs_gids () const override { return m_dofs_gids; }
   lid_to_idx_map_type get_lid_to_idx_map () const override { return m_lid_to_idx; }
 
-  // Methods specific to SEGrid
-  void create_elgpgp_to_lid_map ();
-  elgpgp_to_lid_map_type get_idx_to_lid_map () const { return m_elgpgp_to_lid; }
+  // Set the dofs gids as well as their coordinates (ie,igp,jgp) in the grid
   void set_dofs (const dofs_list_type&      dofs,
                  const lid_to_idx_map_type& lid_to_elgpgp);
-
 protected:
 
-  // Description variables
+  // Grid name
   const std::string         m_grid_name;
-  const GridType            m_type;
 
   // Counters
   int                       m_num_local_elem;
@@ -58,8 +51,16 @@ protected:
   // Dofs info variables
   dofs_list_type            m_dofs_gids;
   lid_to_idx_map_type       m_lid_to_idx;
-  elgpgp_to_lid_map_type    m_elgpgp_to_lid;
 };
+
+inline FieldLayout
+SEGrid::get_native_dof_layout () const
+{
+  using namespace ShortFieldTagsNames;
+
+  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
+}
+
 
 } // namespace scream
 

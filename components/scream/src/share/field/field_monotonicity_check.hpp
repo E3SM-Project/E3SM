@@ -24,7 +24,7 @@ public:
     auto view = field.get_view();
     RealType sign;
     Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA(Int i, RealType& s) {
-      if ((i > 0) && (i < view.extent(0)-1)) {
+      if ((i > 0) && (i < view.extent_int(0)-1)) {
         auto diff1 = view(i) - view(i-1);
         auto diff2 = view(i+1) - view(i);
         s *= (diff1 * diff2 > 0) ? (diff1 * diff2) : 0;
@@ -39,7 +39,7 @@ public:
     return false;
   }
 
-  void repair(Field<RealType>& field) const override {
+  void repair(Field<RealType>& /* field */) const override {
     EKAT_REQUIRE_MSG(false, "Cannot repair a non-monotonic field!");
   }
 };

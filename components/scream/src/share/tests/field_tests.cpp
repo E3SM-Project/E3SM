@@ -247,8 +247,6 @@ TEST_CASE("field_property_check", "") {
   using namespace scream;
   using namespace ekat::units;
 
-  using Device = DefaultDevice;
-
   std::vector<FieldTag> tags = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::VerticalLevel};
   std::vector<int> dims = {2, 3, 12};
 
@@ -267,7 +265,7 @@ TEST_CASE("field_property_check", "") {
     // positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = i+1;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -276,7 +274,7 @@ TEST_CASE("field_property_check", "") {
     }
 
     // Assign non-positive values to the field and make sure it fails the check.
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = -i;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -297,7 +295,7 @@ TEST_CASE("field_property_check", "") {
     // and then repair the field so it passes.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = -i;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -320,7 +318,7 @@ TEST_CASE("field_property_check", "") {
     // positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = i;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -330,7 +328,7 @@ TEST_CASE("field_property_check", "") {
 
     // Assign non-positive values to the field, make sure it fails the check,
     // and then repair the field so it passes.
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = -i;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -353,7 +351,7 @@ TEST_CASE("field_property_check", "") {
     // passes our test for positivity.
     auto f1_view = f1.get_view();
     auto host_view = Kokkos::create_mirror_view(f1_view);
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = i+1;
     }
     Kokkos::deep_copy(f1_view, host_view);
@@ -363,7 +361,7 @@ TEST_CASE("field_property_check", "") {
 
     // Assign monotonically-decreasing values to the field and make sure it
     // also passes the check.
-    for (int i = 0; i < host_view.extent(0); ++i) {
+    for (int i = 0; i < host_view.extent_int(0); ++i) {
       host_view(i) = -i;
     }
     Kokkos::deep_copy(f1_view, host_view);

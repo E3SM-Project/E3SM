@@ -1,6 +1,6 @@
 #include "physics/share/physics_only_grids_manager.hpp"
 
-#include "share/grid/simple_grid.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 
 namespace scream {
@@ -36,7 +36,7 @@ void PhysicsOnlyGridsManager::build_grid (const std::string& grid_name) {
   const int num_global_cols = phys_only_gm_params.get<int>("Number of global columns");
   const int num_vertical_lev = phys_only_gm_params.get<int>("Number of vertical levels");
 
-  auto grid = std::make_shared<SimpleGrid>("Physics",num_global_cols,num_vertical_lev,m_comm);
+  auto grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_global_cols,num_vertical_lev,m_comm));
   m_grids["Physics Only"] = m_grids["Physics"] = grid;
 
   if (grid_name==m_params.get<std::string>("Reference Grid")) {
