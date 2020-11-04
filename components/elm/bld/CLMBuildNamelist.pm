@@ -1006,7 +1006,7 @@ sub setup_cmdl_bgc {
     }
 
     # If the variable has already been set use it, if not set to the value defined by the bgc_mode
-    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp" );
+    my @list  = (  "use_lch4", "use_nitrif_denitrif", "use_vertsoilc", "use_century_decomp", "use_snicar_ad" );
     my $ndiff = 0;
     foreach my $var ( @list ) {
        if ( ! defined($nl->get_value($var))  ) {
@@ -1018,6 +1018,9 @@ sub setup_cmdl_bgc {
           $nl_flags->{$var} = $nl->get_value($var);
        }
        if ($var eq "use_vertsoilc") {
+          $nl_flags->{$var} = ".true.";
+       }
+		 if ($var eq "use_snicar_ad") {
           $nl_flags->{$var} = ".true.";
        }
        $val = $nl_flags->{$var};
@@ -1543,9 +1546,6 @@ sub setup_cmdl_irrigation {
                   "both irrigation and crop can NOT be on.\n");
     }
   } else {
-    if ( $nl_flags->{'irrig'} =~ /$TRUE/i && $nl_flags->{'use_crop'} =~ /$FALSE/i ) {
-      fatal_error("The -irrig=.true. option requires -crop");
-    }
     if ( defined($nl->get_value("irrigate")) && $nl->get_value("irrigate") ne $nl_flags->{'irrig'} ) {
       my $irrigate = $nl->get_value("irrigate");
       fatal_error("The namelist value 'irrigate=$irrigate' contradicts the command line option '-irrig=$val'");
@@ -2142,11 +2142,6 @@ sub setup_logic_irrigate {
     if ( $nl_flags->{'use_crop'} eq ".true." ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'irrigate', 'val'=>$nl_flags->{'irrig'});
     }
-    elsif ( defined($nl->get_value('irrigate')) ) {
-      if ($nl->get_value('irrigate') =~ /$TRUE/i ) {
-        fatal_error("irrigate TRUE needs crop TRUE but it is not\n");
-      }
-    }
     $nl_flags->{'irrigate'} = lc($nl->get_value('irrigate'));
   }
 }
@@ -2477,6 +2472,7 @@ sub setup_logic_demand {
     $settings{'use_lch4'}            = $nl_flags->{'use_lch4'};
     $settings{'use_nitrif_denitrif'} = $nl_flags->{'use_nitrif_denitrif'};
     $settings{'use_vertsoilc'}       = $nl_flags->{'use_vertsoilc'};
+	 $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
     $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
     $settings{'use_crop'}            = $nl_flags->{'use_crop'};
   }
@@ -2595,6 +2591,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+						  'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
@@ -2621,6 +2618,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+						  'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
@@ -2647,6 +2645,7 @@ sub setup_logic_initial_conditions {
                     'use_cn'=>$nl_flags->{'use_cn'}, 'use_cndv'=>$nl_flags->{'use_cndv'},
                     'use_nitrif_denitrif'=>$nl_flags->{'use_nitrif_denitrif'},
                     'use_vertsoilc'=>$nl_flags->{'use_vertsoilc'},
+						  'use_snicar_ad'=>$nl_flags->{'use_snicar_ad'},
                     'use_century_decomp'=>$nl_flags->{'use_century_decomp'},
                     'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
                     'more_vertlayers'=>$nl_flags->{'more_vert'},
@@ -3055,8 +3054,6 @@ sub setup_logic_nitrogen_deposition {
   # Nitrogen deposition for bgc=CN,FATES
   #
 
-  verbose_message("BGC MODE: $nl_flags->{'bgc_mode'}");
-  
   if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'}, 
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
