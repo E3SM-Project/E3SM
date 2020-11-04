@@ -67,12 +67,17 @@ public:
 
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
+
+  const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
+
+  // Inspect the atm dag, ensuring all dependencies are met
+  void inspect_atm_dag ();
+
 protected:
 
   void register_groups ();
   void init_surface_coupling ();
   void init_atm_inputs ();
-  void inspect_atm_dag ();
 #ifdef SCREAM_DEBUG
   void create_bkp_field_repo ();
 #endif

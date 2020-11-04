@@ -252,9 +252,7 @@ void AtmosphereDriver::register_groups () {
 void AtmosphereDriver::init_surface_coupling () {
 #if defined(SCREAM_CIME_BUILD)
   // If this is a CIME build, we need to prepare the surface coupling
-  m_surface_coupling = std::make_shared<SurfaceCoupling>();
-
-  // Add atm required surface fluxes here
+  m_surface_coupling = std::make_shared<SurfaceCoupling>(m_grids_manager->get_reference_grid());
 #endif
 }
 
@@ -304,14 +302,28 @@ void AtmosphereDriver::init_atm_inputs () {
 
 void AtmosphereDriver::inspect_atm_dag () {
 
-  // First, process the dag
+  if (m_surface_coupling && m_surface_coupling->get_repo_state()!=RepoState::Closed) {
+    std::cout << "[Atm Driver]: atm dag skipped, since surface coupling (SC) not yet completed.\n"
+              << "              Make sure you call 'inspect_atm_dag' after SC setup is completed.\n";
+  }
+
   AtmProcDAG dag;
+
+  // First, add all atm processes
   dag.create_dag(*m_atm_process_group,m_field_repo);
 
+  // Then, add all field initializers (if any)
   for (const auto& it : m_field_initializers) {
     dag.add_field_initializer(*it.lock());
   }
 
+  // Then, add all surface coupling dependencies, if any
+  if (m_surface_coupling) {
+    dag.add_surface_coupling(m_surface_coupling->get_import_fids(),
+                             m_surface_coupling->get_export_fids());
+  }
+
+  // Finally, we can proceed with checking the dag
   auto& deb_pl = m_atm_params.sublist("Debug");
   if (dag.has_unmet_dependencies()) {
     const int err_verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",int(AtmProcDAG::VERB_MAX));

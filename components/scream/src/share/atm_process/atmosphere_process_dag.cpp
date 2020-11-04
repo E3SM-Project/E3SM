@@ -98,6 +98,53 @@ void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
   update_unmet_deps();
 }
 
+void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
+                                       const std::set<FieldIdentifier>& exports)
+{
+  EKAT_REQUIRE_MSG (m_nodes.size()>0,
+    "Error! You need to create the dag before adding field initializers.\n");
+
+  // Process all imports
+  m_nodes.push_back(Node());
+  auto& atm_imp = m_nodes.back();
+  atm_imp.id = m_nodes.size()-1;
+  atm_imp.name = "Atm Import";
+  m_unmet_deps[atm_imp.id].clear();
+  for (const auto& f : imports) {
+    auto fid = add_fid(f);
+
+    // Add the fid to the list of 'computed' fields
+    atm_imp.computed.insert(fid);
+
+    // Now, remove the unmet dependency (if any)
+    for (auto& it : m_unmet_deps) {
+      // Erase the unmet dependency (if any)
+      int erased = it.second.erase(fid);
+
+      if (erased==1) {
+        // Establish parent-child relationship
+        atm_imp.children.push_back(it.first);
+      }
+    }
+  }
+
+  // Process all exports
+  m_nodes.push_back(Node());
+  auto& atm_exp = m_nodes.back();
+  atm_exp.id = m_nodes.size()-1;
+  atm_exp.name = "Atm Export";
+  m_unmet_deps[atm_exp.id].clear();
+  for (const auto& f : exports) {
+    auto fid = add_fid(f);
+
+    // Add the fid to the list of 'computed' fields
+    atm_exp.required.insert(fid);
+  }
+
+  // We need to re-check whether there are unmet deps
+  update_unmet_deps();
+}
+
 void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const {
 
   if (verbosity<=0) {
