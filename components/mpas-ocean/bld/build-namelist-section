@@ -939,8 +939,6 @@ add_default($nl, 'config_AM_mocStreamfunction_write_on_startup');
 add_default($nl, 'config_AM_mocStreamfunction_min_bin');
 add_default($nl, 'config_AM_mocStreamfunction_max_bin');
 add_default($nl, 'config_AM_mocStreamfunction_num_bins');
-add_default($nl, 'config_AM_mocStreamfunction_vertical_velocity_value');
-add_default($nl, 'config_AM_mocStreamfunction_normal_velocity_value');
 add_default($nl, 'config_AM_mocStreamfunction_region_group');
 add_default($nl, 'config_AM_mocStreamfunction_transect_group');
 

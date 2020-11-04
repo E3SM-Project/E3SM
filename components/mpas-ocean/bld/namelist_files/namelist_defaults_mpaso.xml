@@ -889,8 +889,6 @@
 <config_AM_mocStreamfunction_min_bin>-1.0e34</config_AM_mocStreamfunction_min_bin>
 <config_AM_mocStreamfunction_max_bin>-1.0e34</config_AM_mocStreamfunction_max_bin>
 <config_AM_mocStreamfunction_num_bins>180</config_AM_mocStreamfunction_num_bins>
-<config_AM_mocStreamfunction_vertical_velocity_value>'vertVelocityTop'</config_AM_mocStreamfunction_vertical_velocity_value>
-<config_AM_mocStreamfunction_normal_velocity_value>'normalVelocity'</config_AM_mocStreamfunction_normal_velocity_value>
 <config_AM_mocStreamfunction_region_group>'all'</config_AM_mocStreamfunction_region_group>
 <config_AM_mocStreamfunction_transect_group>'all'</config_AM_mocStreamfunction_transect_group>
 

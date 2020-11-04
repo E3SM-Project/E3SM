@@ -91,7 +91,7 @@ tracer_idx = parse_tracer_index(atm_fn, tracer_name)
 print('Tracer {} has index {}'.format(tracer_name, tracer_idx))
 d = gather_mass_data(atm_fn, tracer_idx)
 good = (conservative('dry M', d['day'], d['dryM'], 1e-11, True) and
-        conservative('tracer {}'.format(tracer_idx), d['day'], d['qmass'], 1e-13, True))
+        conservative('tracer {}'.format(tracer_idx), d['day'], d['qmass'], 2e-13, True))
 
 if good:
     print('PASS')

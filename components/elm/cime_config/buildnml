@@ -182,6 +182,10 @@ def buildnml(case, caseroot, compname):
         if mask_grid != "reg":
             sysmod += " -mask {}".format(mask_grid)
 
+        # check if the case still attempts to use user_nl_clm, stop proceeding if detected
+        if os.path.exists(os.path.join(caseroot, "user_nl_clm")):
+           sys.exit("\n *** STOP: It appears you are still using user_nl_clm, please change it to user_nl_elm. ***\n")
+
         # TODO: clm/bld/build-namelist needs to be converted to python
         run_cmd_no_fail(sysmod, from_dir=elmconf_dir)
 

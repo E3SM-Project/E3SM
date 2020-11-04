@@ -574,7 +574,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for clm's cppdefs in cesm
+my $cpp_filename     = 'CIME_cppdefs';         # name of output file for clm's cppdefs in cesm
 
 # Write the filepath file for cesm.
 write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>0 );

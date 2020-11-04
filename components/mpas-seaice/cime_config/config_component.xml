@@ -67,6 +67,19 @@
         <desc>Option to enable BGC in MPASSI</desc>
  </entry>
 
+  <entry id="MPASSI_PROGNOSTIC_MODE">
+        <type>char</type>
+        <valid_values>full,prescribed</valid_values>
+        <default_value>full</default_value>
+        <values>
+           <value compset="MPASSI_">full</value>
+           <value compset="_MPASSI%PRES">prescribed</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to enable prescribed ice mode in MPASSI</desc>
+  </entry>
+
   <description>
     <desc compset="_MPASSI">MPAS seaice:</desc>
   </description>

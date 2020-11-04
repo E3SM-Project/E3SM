@@ -90,10 +90,21 @@ add_default($nl, 'config_calculate_coriolis');
 # Namelist group: use_sections #
 ################################
 
+if ($prognostic_mode eq 'prescribed') {
+        add_default($nl, 'config_use_dynamics', 'val'=>".false");
+} else {
+        add_default($nl, 'config_use_dynamics');
+}
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
 add_default($nl, 'config_use_column_package');
+if ($prognostic_mode eq 'prescribed') {
+        add_default($nl, 'config_use_prescribed_ice', 'val'=>".true.");
+} else {
+        add_default($nl, 'config_use_prescribed_ice');
+}
+add_default($nl, 'config_use_prescribed_ice_forcing');
 
 ###########################
 # Namelist group: forcing #
@@ -422,6 +433,53 @@ add_default($nl, 'config_use_data_icebergs');
 ###############################
 
 add_default($nl, 'config_check_state');
+
+##################################
+# Namelist group: prescribed_ice #
+##################################
+
+if ($prognostic_mode eq 'prescribed') {
+        if ($SSTICE_GRID_FILENAME eq 'UNSET') {
+                die "SSTICE_GRID_FILENAME must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_DATA_FILENAME eq 'UNSET') {
+                die "SSTICE_DATA_FILENAME must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_ALIGN eq '-999') {
+                die "SSTICE_YEAR_ALIGN must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_START eq '-999') {
+                die "SSTICE_YEAR_START must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_END eq '-999') {
+                die "SSTICE_YEAR_END must be set for MPAS-Seaice prescribed mode \n";
+        }
+        my $stream_domxvarname;
+        my $stream_domyvarname;
+        if ($SSTICE_STREAM eq 'CAMDATA') {
+                $stream_domxvarname = "xc";
+                $stream_domyvarname = "yc";
+        } elsif ($SSTICE_STREAM eq 'WRFDATA') {
+                $stream_domxvarname = "xc";
+                $stream_domyvarname = "yc";
+        } else {
+                $stream_domxvarname = "lon";
+                $stream_domyvarname = "lat";
+        }
+        add_default($nl, 'config_prescribed_ice_stream_year_first' , 'val'=>"$SSTICE_YEAR_START");
+        add_default($nl, 'config_prescribed_ice_stream_year_last'  , 'val'=>"$SSTICE_YEAR_END");
+        add_default($nl, 'config_prescribed_ice_model_year_align'  , 'val'=>"$SSTICE_YEAR_ALIGN");
+        add_default($nl, 'config_prescribed_ice_stream_fldvarname' , 'val'=>"ice_cov");
+        add_default($nl, 'config_prescribed_ice_stream_fldfilename', 'val'=>"$SSTICE_DATA_FILENAME");
+        add_default($nl, 'config_prescribed_ice_stream_domtvarname', 'val'=>"time");
+        add_default($nl, 'config_prescribed_ice_stream_domxvarname', 'val'=>"$stream_domxvarname");
+        add_default($nl, 'config_prescribed_ice_stream_domyvarname', 'val'=>"$stream_domyvarname");
+        add_default($nl, 'config_prescribed_ice_stream_domareaname', 'val'=>"area");
+        add_default($nl, 'config_prescribed_ice_stream_dommaskname', 'val'=>"mask");
+        add_default($nl, 'config_prescribed_ice_stream_domfilename', 'val'=>"$SSTICE_GRID_FILENAME");
+        add_default($nl, 'config_prescribed_ice_stream_mapread'    , 'val'=>'NOT_SET');
+        add_default($nl, 'config_prescribed_ice_stream_fill'       , 'val'=>'.false.');
+}
 
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
