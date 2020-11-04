@@ -189,7 +189,7 @@ void pre_timeloop() {
   });
   // for (int j=0; j<ny+1; j++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(ny*YES3D +1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
+  parallel_for( SimpleBounds<2>(ny+1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
     fcory(j,icrm) = fcor(icrm);
   });
   // for (int j=0; j<ny; j++) {

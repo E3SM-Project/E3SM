@@ -24,8 +24,8 @@ contains
     !============================================================================
     !     L O C A L   C O N S T A N T S                                         |
     !============================================================================
-    REAL(crm_rknd),PARAMETER:: REARTH = 6369.0 ! radius of the Earth (km)
-    REAL(crm_rknd),PARAMETER:: GMR = 34.163195 ! gas constant
+    REAL(crm_rknd),PARAMETER:: REARTH = 6369.0D0 ! radius of the Earth (km)
+    REAL(crm_rknd),PARAMETER:: GMR = 34.163195D0 ! gas constant
     INTEGER,PARAMETER:: NTAB=8! number of entries in the defining tables
     !============================================================================
     !     L O C A L   V A R I A B L E S                                         |
@@ -38,11 +38,11 @@ contains
     !============================================================================
     !     L O C A L   A R R A Y S   ( 1 9 7 6   S T D.  A T M O S P H E R E )   |
     !============================================================================
-    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: htab= (/0.0, 11.0, 20.0, 32.0, 47.0, 51.0, 71.0,84.852/)
-    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: ttab=  (/288.15, 216.65, 216.65, 228.65, 270.65, 270.65, 214.65, 186.946/)
-    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: ptab=  (/1.0, 2.233611e-1, &
-    5.403295e-2, 8.5666784e-3, 1.0945601e-3, 6.6063531e-4, 3.9046834e-5, 3.68501e-6/)
-    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: gtab=  (/-6.5, 0.0, 1.0, 2.8, 0.0, -2.8, -2.0, 0.0/)
+    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: htab= (/0.0D0, 11.0D0, 20.0D0, 32.0D0, 47.0D0, 51.0D0, 71.0D0,84.852D0/)
+    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: ttab=  (/288.15D0, 216.65D0, 216.65D0, 228.65D0, 270.65D0, 270.65D0, 214.65D0, 186.946D0/)
+    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: ptab=  (/1.0D0, 2.233611D-1, &
+    5.403295D-2, 8.5666784D-3, 1.0945601D-3, 6.6063531D-4, 3.9046834D-5, 3.68501D-6/)
+    REAL(crm_rknd),DIMENSION(NTAB),PARAMETER:: gtab=  (/-6.5D0, 0.0D0, 1.0D0, 2.8D0, 0.0D0, -2.8D0, -2.0D0, 0.0D0/)
     !----------------------------------------------------------------------------
     h=alt*REARTH/(alt+REARTH)! convert geometric to geopotential altitude
 

@@ -173,7 +173,6 @@ extern int  nmovieend                ;
 extern bool isInitialized_scamiopdata;
 extern bool wgls_holds_omega         ;
 
-extern real epsv            ;
 extern bool dosubsidence    ;
 extern real ug              ;
 extern real vg              ;
