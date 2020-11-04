@@ -30,8 +30,7 @@ module histFileMod
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
-  use PRTGenericMod     , only : nelements_fates  => num_elements
-
+  use PRTGenericMod          , only : nelements_fates  => num_elements
 
   !
   implicit none
@@ -450,7 +449,7 @@ contains
     !-----------------------------------------------------------------------
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Initializing clm2 history files'
+       write(iulog,*)  trim(subname),' Initializing elm history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -497,7 +496,7 @@ contains
     end do
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Successfully initialized clm2 history files'
+       write(iulog,*)  trim(subname),' Successfully initialized elm history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -1799,9 +1798,7 @@ contains
           call shr_sys_flush(iulog)
        end if
        call ncd_pio_createfile(lnfid, trim(locfnh(t)), avoid_pnetcdf=avoid_pnetcdf)
-       call ncd_putatt(lnfid, ncd_global, 'title', 'CLM History file information' )
-       call ncd_putatt(lnfid, ncd_global, 'comment', &
-          "NOTE: None of the variables are weighted by land fraction!" )
+       call ncd_putatt(lnfid, ncd_global, 'title', 'ELM History file information' )
     else
        if (masterproc) then
           write(iulog,*) trim(subname),' : Opening netcdf rhtape ', &
@@ -1810,7 +1807,7 @@ contains
        end if
        call ncd_pio_createfile(lnfid, trim(locfnhr(t)), avoid_pnetcdf=avoid_pnetcdf)
        call ncd_putatt(lnfid, ncd_global, 'title', &
-          'CLM Restart History information, required to continue a simulation' )
+          'ELM Restart History information, required to continue a simulation' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
                        "This entire file NOT needed for startup or branch simulations")
     end if
@@ -1819,20 +1816,20 @@ contains
     ! about the data set. Global attributes are information about the
     ! data set as a whole, as opposed to a single variable
 
-    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
+    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
+    call ncd_putatt(lnfid, ncd_global, 'git_version' , trim(version))
     call getdatetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
-    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
-    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
-    call ncd_putatt(lnfid, ncd_global, 'version' , trim(version))
-
-    str = &
-    '$Id: histFileMod.F90 42903 2012-12-21 15:32:10Z muszala $'
-    call ncd_putatt(lnfid, ncd_global, 'revision_id', trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'case_title', trim(ctitle))
-    call ncd_putatt(lnfid, ncd_global, 'case_id', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'institution_id', 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'contact', &
+          'e3sm-data-support@listserv.llnl.gov')
+    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'comment', &
+          "NOTE: None of the variables are weighted by land fraction!" )
     str = get_filename(fsurdat)
     call ncd_putatt(lnfid, ncd_global, 'Surface_dataset', trim(str))
     if (finidat == ' ') then
@@ -3512,7 +3509,7 @@ contains
 
           ! Create the restart history filename and open it
           write(hnum,'(i1.1)') t-1
-          locfnhr(t) = "./" // trim(caseid) //".clm2"// trim(inst_suffix) &
+          locfnhr(t) = "./" // trim(caseid) //".elm"// trim(inst_suffix) &
                         // ".rh" // hnum //"."// trim(rdate) //".nc"
 
           call htape_create( t, histrest=.true. )
@@ -4256,7 +4253,7 @@ contains
       write(cdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr,mon,day,sec
    endif
    write(hist_index,'(i1.1)') hist_file - 1
-   set_hist_filename = "./"//trim(caseid)//".clm2"//trim(inst_suffix)//&
+   set_hist_filename = "./"//trim(caseid)//".elm"//trim(inst_suffix)//&
                        ".h"//hist_index//"."//trim(cdate)//".nc"
 
   end function set_hist_filename
