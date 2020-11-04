@@ -25,22 +25,20 @@ OR
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run all tests on current machine \033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/test-all-scream $(which mpicxx) -m melvin
+    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin
 
     \033[1;32m# Run all tests on current machine with custom flags\033[0m
     > cd $scream_repo/components/scream
-    > ./scripts/test-all-scream $(which mpicxx) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument("cxx", help="C++ compiler")
-
-    parser.add_argument("-k", "--kokkos", help="Kokkos installation to use. Default is to build our own.")
+    parser.add_argument("-cxx","--cxx-compiler", help="C++ compiler", default=None)
+    parser.add_argument("-f90","--f90-compiler", help="F90 compiler", default=None)
 
     parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
-
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Launch the different build types stacks in parallel")
 
@@ -53,12 +51,12 @@ OR
     parser.add_argument("--baseline-dir", default=None,
         help="Use baselines from the given directory, skip baseline creation.")
 
-    parser.add_argument("-m", "--machine",
-        help="Provide machine name. This is required for internal kokkos builds and dashboard submission")
+    parser.add_argument("-m", "--machine", required=True,
+        help="Provide machine name. This is *always* required")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
 
-    parser.add_argument("--keep-tree", action="store_true",
+    parser.add_argument("-k", "--keep-tree", action="store_true",
         help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
 
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],

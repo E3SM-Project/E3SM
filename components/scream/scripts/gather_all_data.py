@@ -52,9 +52,8 @@ class GatherAllData(object):
 
         # Compute kokkos location
         if self._kokkos:
+            expect (self._scream_docs, "Error! Scream runs do not allow to specify a user-provided kokkos installation.")
             kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
-        else:
-            kokkos_loc = pathlib.Path(scream_repo.parent.parent, "externals", "kokkos")
 
         local_cmd = self._run
         # Do magic replacements here
