@@ -312,6 +312,7 @@ contains
                veg_ns, &
                phosphorusstate_vars,phosphorusflux_vars, veg_ps)
 
+          ! Transfer root/seed litter C/N/P to decomposer pools
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
 

@@ -303,7 +303,7 @@ Set to 0 to keep fire off. Set to 1 to turn on fates spitfire module (only relev
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
-       group="clm_inparm" valid_values="1">
+       group="clm_inparm" valid_values="1,2">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
@@ -629,10 +629,10 @@ Toggle to turn on calculation of SNow and Ice Aerosol Radiation model (SNICAR) r
 </entry>
 
 <entry id="use_snicar_ad" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".true.">
+       group="clm_inparm" valid_values="" value=".false.">
 Toggle to turn on SNICAR_AD snow shortwave algorithms
 The same snow shortwave algorithm can be turned on for sea-ice simulation
-with config_use_snicar_ad in mpas-seaice namelist
+with config_use_snicar_ad in mpas-seaic namelist
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
@@ -1263,14 +1263,14 @@ Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for
 
 <entry id="rcp" type="real" category="default_settings"
        group="default_settings"  
-       valid_values="-999.9,1-1.9,1-2.6,4-3.4,5-3.4OS,2-4.5,4-6.0,3-7.0,5-8.5,2.6,4.5,6,8.5">
+       valid_values="-999.9,2.6,4.5,6,8.5">
 Representative concentration pathway for future scenarios [radiative forcing at peak or 2100 in W/m^2]
 -999.9 means do NOT use a future scenario, just use historical data.
 </entry> 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30,oEC60to30v3,oEC60to30wLI,oEC60to30v3wLI,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,mp120v1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10,oRRS30to10v3,oRRS30to10wLI,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2">
 Land mask description
 </entry> 
 
@@ -1313,8 +1313,8 @@ Description of the use case selected.
 Command line arguement for turning on CN spinup mode.
 </entry>
 
-<entry id="bgc_mode" type="char*4" category="default_settings"
-       group="default_settings" valid_values="sp,cn,bgc,ed" >
+<entry id="bgc_mode" type="char*5" category="default_settings"
+       group="default_settings" valid_values="sp,cn,bgc,fates" >
 Command line arguement for biogeochemistry mode for CLM4.5
    sp  = Satellitte Phenology
    cn  = Carbon Nitrogen model
