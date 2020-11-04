@@ -23,7 +23,6 @@ SPECIES
   HNO4
   PAN -> CH3CO3NO2
   CO
-  CH4
   C2H6
   C3H8
   C2H4
@@ -79,7 +78,7 @@ SPECIES
  End Solution
 
  Fixed
-   M, N2, O2, H2O, H2
+   M, N2, O2, H2O, H2, CH4
  End Fixed
 
  Col-int
@@ -93,7 +92,7 @@ End SPECIES
 Solution Classes
 
  Explicit
-   CO, CH4, C2H6, C3H8, CH3COCH3
+   CO, C2H6, C3H8, CH3COCH3
    E90, O3LNZ
  End Explicit
 
