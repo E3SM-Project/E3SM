@@ -93,7 +93,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     type(crm_rad_type), target,intent(inout) :: crm_rad
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
     type(crm_output_type), target, intent(inout) :: crm_output
-    real(r8), dimension(ncrms,nz), intent(  out) :: crm_clear_rh
+    real(r8), dimension(ncrms,nzm), intent(  out) :: crm_clear_rh
     real(crm_rknd), intent(in) :: latitude0(:)
     real(crm_rknd), intent(in) :: longitude0(:)
     integer       , intent(in) :: igstep
@@ -209,7 +209,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
   allocate( colprecs(ncrms) )
-  allocate( crm_clear_rh_cnt(ncrms,nz) )
+  allocate( crm_clear_rh_cnt(ncrms,nzm) )
 
   call prefetch( t00      )
   call prefetch( tln      )
@@ -406,6 +406,14 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
   endif
+  
+  DEBUG(crm_clear_rh);
+  DEBUG(crm_clear_rh_cnt);
+  DEBUG(u);
+  DEBUG(v);
+  DEBUG(w);
+  DEBUG(tabs);
+  abort();
 
   ! Populate microphysics array from crm_state
   !$acc parallel loop collapse(4) async(asyncid)
