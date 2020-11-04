@@ -129,10 +129,12 @@
  integer (kind=I8KIND), dimension(:), pointer :: ter_integer
  real (kind=RKIND), dimension(:), pointer :: soiltemp
  real (kind=RKIND), dimension(:), pointer :: snoalb
+ integer (kind=I8KIND), dimension(:), pointer :: snoalb_integer
  real (kind=RKIND), dimension(:), pointer :: shdmin, shdmax
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
  real (kind=RKIND) :: msgval, fillval
+ real (kind=RKIND), pointer :: missing_value
  integer, pointer :: category_min, category_max
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
@@ -150,6 +152,7 @@
  type (mpas_geotile_type), pointer :: tile
 
  real (kind=RKIND) :: tval
+ integer (kind=I8KIND) :: i8val
  integer, pointer :: tile_bdr
  integer, pointer :: tile_nx, tile_ny
 
@@ -842,32 +845,133 @@
                             messageType=MPAS_LOG_CRIT)
     endif
 
+    call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+    call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+    call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+    call mpas_pool_get_config(mgr % pool, 'missing_value', missing_value)
+    call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor_ptr)
+    scalefactor = scalefactor_ptr
+
+    allocate(nhs(nCells))
+    allocate(snoalb_integer(nCells))
+    snoalb_integer(:) = 0
     snoalb(:) = 0.0
+    nhs(:) = 0
+    fillval = 0.0
 
     do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            tile => null()
+            ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+            if (ierr /= 0 .or. .not. associated(tile)) then
+                call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+            end if
 
-       tile => null()
-       ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
-       if (ierr /= 0 .or. .not. associated(tile)) then
-           call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
-       end if
+            ierr = mgr % push_tile(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
 
-       if (tile % is_processed) then
-           cycle
-       end if
+        do while (.not. mgr % is_stack_empty())
+            tile => mgr % pop_tile()
 
-       tile % is_processed = .True.
+            if (tile % is_processed) then
+                cycle
+            end if
 
-       ierr = mgr % push_tile(tile)
-       if (ierr /= 0) then
-           call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
-       end if
+            call mpas_log_write('Processing tile: '//trim(tile % fname))
+
+            all_pixels_mapped_to_halo_cells = .true.
+
+            do j = supersample_fac * tile_bdr + 1, supersample_fac * (tile_ny + tile_bdr), 1
+                do i = supersample_fac * tile_bdr + 1, supersample_fac * (tile_nx + tile_bdr), 1
+
+                    ii = (i - 1) / supersample_fac + 1
+                    jj = (j - 1) / supersample_fac + 1
+
+                    i8val = int(tile % tile(ii, jj, 1), kind=I8KIND)
+
+                    call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt, supersample_fac)
+                    call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                    call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                    if (bdyMaskCell(res % id) < nBdyLayers) then
+                        !
+                        ! This field only matters for land cells, and for all but the outermost boundary cells,
+                        ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+                        ! cell would be nearest).
+                        !
+                        ! Since values in i8val are not yet scaled, we can compare them to missing_value, which
+                        ! also is not scaled, without scaling either value
+                        if (landmask(res % id) == 1 .and. i8val /= int(missing_value, kind=I8KIND)) then
+                            snoalb_integer(res % id) = snoalb_integer(res % id) + i8val
+                            nhs(res % id) = nhs(res % id) + 1
+                        end if
+
+                        !
+                        ! When a pixel maps to a non-land cell or is a missing value, the values are not accumulated
+                        ! above; however, these pixels may still reside in an owned cell, in which case we will still need
+                        ! to push the tile's neighbors onto the stack for processing.
+                        !
+                        if (res % id <= nCellsSolve) then
+                            all_pixels_mapped_to_halo_cells = .false.
+                        end if
+                    ! For outermost cells, additional work is needed to verify that the pixel
+                    ! actually lies within the nearest cell
+                    else
+                        if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                          nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                            ! Since values in i8val are not yet scaled, we can compare them to missing_value, which
+                            ! also is not scaled, without scaling either value
+                            if (landmask(res % id) == 1 .and. i8val /= int(missing_value, kind=I8KIND)) then
+                                snoalb_integer(res % id) = snoalb_integer(res % id) + i8val
+                                nhs(res % id) = nhs(res % id) + 1
+                            end if
+
+                            !
+                            ! When a pixel maps to a non-land cell or is a missing value, the values are not accumulated
+                            ! above; however, these pixels may still reside in an owned cell, in which case we will still need
+                            ! to push the tile's neighbors onto the stack for processing.
+                            !
+                            if (res % id <= nCellsSolve) then
+                                all_pixels_mapped_to_halo_cells = .false.
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+
+            tile % is_processed = .true.
+
+            if (.not. all_pixels_mapped_to_halo_cells) then
+                ierr = mgr % push_neighbors(tile)
+                if (ierr /= 0) then
+                    call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+                end if
+            end if
+        end do
     end do
 
-    do while(.not. mgr % is_stack_empty())
-       tile => mgr % pop_tile()
-       call mpas_log_write('Processing tile: '//trim(tile % fname))
+    do iCell = 1, nCells
+        !
+        ! Mismatches in land mask can lead to MPAS land points with no maximum snow albedo.
+        ! Ideally, we would perform a search for nearby valid albedos, but for now using
+        ! the fill value will at least allow the model to run. In general, the number of cells
+        ! to be treated in this way tends to be a very small fraction of the total number of cells.
+        !
+        if (nhs(iCell) == 0) then
+            snoalb(iCell) = fillval
+        else
+            snoalb(iCell) = real(snoalb_integer(iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+            snoalb(iCell) = snoalb(iCell) * scalefactor
+            snoalb(iCell) = 0.01_RKIND * snoalb(iCell) ! Convert from percent to fraction
+        endif
     end do
+
+    deallocate(nhs)
+    deallocate(snoalb_integer)
 
     ierr = mgr % finalize()
     if (ierr /= 0) then
