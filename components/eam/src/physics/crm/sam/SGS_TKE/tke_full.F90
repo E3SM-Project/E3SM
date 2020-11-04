@@ -97,14 +97,14 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   !-----------------------------------------------------------------------
   !-----------------------------------------------------------------------
 
-  tk_min_value = 0.05
-  tk_min_depth = 500.
+  tk_min_value = 0.05D0
+  tk_min_depth = 500.D0
 
-  Cs  = 0.15
-  Ck  = 0.1
-  Ce  = Ck**3/Cs**4
-  Ces = Ce/0.7*3.0
-  Pr  = 1.
+  Cs  = 0.15D0
+  Ck  = 0.1D0
+  Ce  = Ck**3.D0/Cs**4.D0
+  Ces = Ce/0.7D0*3.0D0
+  Pr  = 1.D0
 
   if(RUN3D) then
     call shear_prod3D(ncrms,def2)
@@ -117,10 +117,10 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   do j = 1 , ny
     do i = 1 , nx
       do icrm = 1 , ncrms
-        a_prod_bu_vert(icrm,i,j,0) = 0
-        buoy_sgs_vert(icrm,i,j,0) = 0
-        a_prod_bu_vert(icrm,i,j,nzm) = 0
-        buoy_sgs_vert(icrm,i,j,nzm) = 0
+        a_prod_bu_vert(icrm,i,j,0) = 0.D0
+        buoy_sgs_vert(icrm,i,j,0) = 0.D0
+        a_prod_bu_vert(icrm,i,j,nzm) = 0.D0
+        buoy_sgs_vert(icrm,i,j,nzm) = 0.D0
       enddo
     enddo
   enddo
@@ -144,22 +144,22 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           end if
           !!! first compute subgrid buoyancy flux at interface above this level.
           !!! average betdz to w-levels
-          betdz = 0.5*(bet(icrm,kc)+bet(icrm,kb))/dz(icrm)/adzw(icrm,k+1)
+          betdz = 0.5D0*(bet(icrm,kc)+bet(icrm,kb))/dz(icrm)/adzw(icrm,k+1)
 
           !!! compute temperature of mixture between two grid levels if all cloud
           !!!   were evaporated and sublimated
           tabs_interface = &
-               0.5*( tabs(icrm,i,j,kc) + fac_cond*qcl(icrm,i,j,kc) + fac_sub*qci(icrm,i,j,kc) &
-                   + tabs(icrm,i,j,kb) + fac_cond*qcl(icrm,i,j,kb) + fac_sub*qci(icrm,i,j,kb) )
+               0.5D0*( tabs(icrm,i,j,kc) + fac_cond*qcl(icrm,i,j,kc) + fac_sub*qci(icrm,i,j,kc) &
+                     + tabs(icrm,i,j,kb) + fac_cond*qcl(icrm,i,j,kb) + fac_sub*qci(icrm,i,j,kb) )
 
           !!! similarly for water vapor if all cloud evaporated/sublimated
           qtot_interface = &
-               0.5*( qv(icrm,i,j,kc) + qcl(icrm,i,j,kc) + qci(icrm,i,j,kc) &
-                   + qv(icrm,i,j,kb) + qcl(icrm,i,j,kb) + qci(icrm,i,j,kb) )
+               0.5D0*( qv(icrm,i,j,kc) + qcl(icrm,i,j,kc) + qci(icrm,i,j,kc) &
+                     + qv(icrm,i,j,kb) + qcl(icrm,i,j,kb) + qci(icrm,i,j,kb) )
 
-          qp_interface = 0.5*( qpl(icrm,i,j,kc) + qpi(icrm,i,j,kc) + qpl(icrm,i,j,kb) + qpi(icrm,i,j,kb) )
+          qp_interface = 0.5D0*( qpl(icrm,i,j,kc) + qpi(icrm,i,j,kc) + qpl(icrm,i,j,kb) + qpi(icrm,i,j,kb) )
 
-          bbb = 1.+epsv*qtot_interface - qp_interface
+          bbb = 1.D0+epsv*qtot_interface - qp_interface
           buoy_sgs=betdz*( bbb*(t(icrm,i,j,kc)-t(icrm,i,j,kb)) &
                +epsv*tabs_interface* &
                (qv(icrm,i,j,kc)+qcl(icrm,i,j,kc)+qci(icrm,i,j,kc)-qv(icrm,i,j,kb)-qcl(icrm,i,j,kb)-qci(icrm,i,j,kb)) &
@@ -167,7 +167,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
                +(bbb*fac_sub -tabs_interface)*(qpi(icrm,i,j,kc)-qpi(icrm,i,j,kb)) )
 
           buoy_sgs_vert(icrm,i,j,k) = buoy_sgs
-          a_prod_bu_vert(icrm,i,j,k) = -0.5*(tkh(icrm,i,j,kc)+tkh(icrm,i,j,kb)+0.002)*buoy_sgs
+          a_prod_bu_vert(icrm,i,j,k) = -0.5D0*(tkh(icrm,i,j,kc)+tkh(icrm,i,j,kb)+0.002D0)*buoy_sgs
 
           !-----------------------------------------------------------------------
           ! now go back and check for cloud
@@ -176,59 +176,59 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           !!! if there's any cloud in the grid cells above or below, check to see if
           !!! the mixture between the two levels is also cloudy
           qctot = qcl(icrm,i,j,kc)+qci(icrm,i,j,kc)+qcl(icrm,i,j,kb)+qci(icrm,i,j,kb)
-          if(qctot .gt. 0.) then
+          if(qctot .gt. 0.D0) then
 
             !!! figure out the fraction of condensate that's liquid
-            omn = (qcl(icrm,i,j,kc)+qcl(icrm,i,j,kb))/(qctot+1.e-20)
+            omn = (qcl(icrm,i,j,kc)+qcl(icrm,i,j,kb))/(qctot+1.D-20)
 
             !!! compute temperature of mixture between two grid levels
             !!! if all cloud were evaporated and sublimated
             tabs_interface = &
-                 0.5*( tabs(icrm,i,j,kc) + fac_cond*qcl(icrm,i,j,kc) + fac_sub*qci(icrm,i,j,kc) &
-                     + tabs(icrm,i,j,kb) + fac_cond*qcl(icrm,i,j,kb) + fac_sub*qci(icrm,i,j,kb) )
+                 0.5D0*( tabs(icrm,i,j,kc) + fac_cond*qcl(icrm,i,j,kc) + fac_sub*qci(icrm,i,j,kc) &
+                       + tabs(icrm,i,j,kb) + fac_cond*qcl(icrm,i,j,kb) + fac_sub*qci(icrm,i,j,kb) )
 
             !!! similarly for total water (vapor + cloud) mixing ratio
             qtot_interface = &
-                 0.5*( qv(icrm,i,j,kc) + qcl(icrm,i,j,kc) + qci(icrm,i,j,kc) &
-                     + qv(icrm,i,j,kb) + qcl(icrm,i,j,kb) + qci(icrm,i,j,kb) )
+                 0.5D0*( qv(icrm,i,j,kc) + qcl(icrm,i,j,kc) + qci(icrm,i,j,kc) &
+                       + qv(icrm,i,j,kb) + qcl(icrm,i,j,kb) + qci(icrm,i,j,kb) )
 
             !!! compute saturation mixing ratio at this temperature
-            qsat_check =      omn*qsatw_crm(tabs_interface,presi(icrm,k+1)) &
-                        +(1.-omn)*qsati_crm(tabs_interface,presi(icrm,k+1))
+            qsat_check =       omn *qsatw_crm(tabs_interface,presi(icrm,k+1)) &
+                        +(1.D0-omn)*qsati_crm(tabs_interface,presi(icrm,k+1))
 
             !!! check to see if the total water exceeds this saturation mixing ratio.
             !!! if so, apply the cloudy relations for subgrid buoyancy flux
             if(qtot_interface.gt.qsat_check) then
               !!! apply cloudy relations for buoyancy flux, use the liquid-ice breakdown computed above.
-              lstarn = fac_cond+(1.-omn)*fac_fus
+              lstarn = fac_cond+(1.D0-omn)*fac_fus
               !!! use the average values of T from the two levels to compute qsat, dqsat
               !!! and the multipliers for the subgrid buoyancy fluxes.  Note that the
               !!! interface is halfway between neighboring levels, so that the potential
               !!! energy cancels out.  This is approximate and neglects the effects of
               !!! evaporation/condensation with mixing.  Hopefully good enough.
-              tabs_interface = 0.5*( tabs(icrm,i,j,kc) + tabs(icrm,i,j,kb) )
+              tabs_interface = 0.5D0*( tabs(icrm,i,j,kc) + tabs(icrm,i,j,kb) )
 
-              qp_interface = 0.5*( qpl(icrm,i,j,kc) + qpi(icrm,i,j,kc) + qpl(icrm,i,j,kb) + qpi(icrm,i,j,kb) )
+              qp_interface = 0.5D0*( qpl(icrm,i,j,kc) + qpi(icrm,i,j,kc) + qpl(icrm,i,j,kb) + qpi(icrm,i,j,kb) )
 
-              dqsat =     omn*dtqsatw_crm(tabs_interface,presi(icrm,k+1)) + &
-                     (1.-omn)*dtqsati_crm(tabs_interface,presi(icrm,k+1))
-              qsatt =       omn*qsatw_crm(tabs_interface,presi(icrm,k+1)) + &
-                       (1.-omn)*qsati_crm(tabs_interface,presi(icrm,k+1))
+              dqsat =      omn *dtqsatw_crm(tabs_interface,presi(icrm,k+1)) + &
+                     (1.D0-omn)*dtqsati_crm(tabs_interface,presi(icrm,k+1))
+              qsatt =        omn *qsatw_crm(tabs_interface,presi(icrm,k+1)) + &
+                       (1.D0-omn)*qsati_crm(tabs_interface,presi(icrm,k+1))
 
               !!! condensate loading term
-              bbb = 1. + epsv*qsatt &
+              bbb = 1.D0 + epsv*qsatt &
                    + qsatt - qtot_interface - qp_interface &
-                   +1.61*tabs_interface*dqsat
-              bbb = bbb / (1.+lstarn*dqsat)
+                   +1.61D0*tabs_interface*dqsat
+              bbb = bbb / (1.D0+lstarn*dqsat)
 
               buoy_sgs = betdz*(bbb*(t(icrm,i,j,kc)-t(icrm,i,j,kb)) &
-                   +(bbb*lstarn - (1.+lstarn*dqsat)*tabs_interface)* &
+                   +(bbb*lstarn - (1.D0+lstarn*dqsat)*tabs_interface)* &
                    (qv(icrm,i,j,kc)+qcl(icrm,i,j,kc)+qci(icrm,i,j,kc)-qv(icrm,i,j,kb)-qcl(icrm,i,j,kb)-qci(icrm,i,j,kb)) &
-                   + ( bbb*fac_cond-(1.+fac_cond*dqsat)*tabs(icrm,i,j,k) ) * ( qpl(icrm,i,j,kc)-qpl(icrm,i,j,kb) )  &
-                   + ( bbb*fac_sub -(1.+fac_sub *dqsat)*tabs(icrm,i,j,k) ) * ( qpi(icrm,i,j,kc)-qpi(icrm,i,j,kb) ) )
+                   + ( bbb*fac_cond-(1.D0+fac_cond*dqsat)*tabs(icrm,i,j,k) ) * ( qpl(icrm,i,j,kc)-qpl(icrm,i,j,kb) )  &
+                   + ( bbb*fac_sub -(1.D0+fac_sub *dqsat)*tabs(icrm,i,j,k) ) * ( qpi(icrm,i,j,kc)-qpi(icrm,i,j,kb) ) )
 
               buoy_sgs_vert(icrm,i,j,k) = buoy_sgs
-              a_prod_bu_vert(icrm,i,j,k) = -0.5*(tkh(icrm,i,j,kc)+tkh(icrm,i,j,kb)+0.002)*buoy_sgs
+              a_prod_bu_vert(icrm,i,j,k) = -0.5D0*(tkh(icrm,i,j,kc)+tkh(icrm,i,j,kb)+0.002D0)*buoy_sgs
             end if ! if saturated at interface
           end if ! if either layer is cloudy
         end do ! i
@@ -239,10 +239,10 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1,nzm-1
     do icrm = 1 , ncrms
-      tkelediss(icrm,k)  = 0.
-      tkesbdiss(icrm,k)  = 0.
-      tkesbshear(icrm,k) = 0.
-      tkesbbuoy(icrm,k)  = 0.
+      tkelediss(icrm,k)  = 0.D0
+      tkesbdiss(icrm,k)  = 0.D0
+      tkesbshear(icrm,k) = 0.D0
+      tkesbbuoy(icrm,k)  = 0.D0
     enddo
   enddo
 
@@ -252,42 +252,42 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       do i = 1,nx
         do icrm = 1 , ncrms
           grd = dz(icrm)*adz(icrm,k)
-          Ce1 = Ce/0.7*0.19
-          Ce2 = Ce/0.7*0.51
+          Ce1 = Ce/0.7D0*0.19D0
+          Ce2 = Ce/0.7D0*0.51D0
           !!! compute correction factors for eddy visc/cond not to acceed 3D stability
-          cx = dx**2/dt/grdf_x(icrm,k)
-          cy = dy**2/dt/grdf_y(icrm,k)
-          cz = (dz(icrm)*min(adzw(icrm,k),adzw(icrm,k+1)))**2/dt/grdf_z(icrm,k)
+          cx = dx**2.D0/dt/grdf_x(icrm,k)
+          cy = dy**2.D0/dt/grdf_y(icrm,k)
+          cz = (dz(icrm)*min(adzw(icrm,k),adzw(icrm,k+1)))**2.D0/dt/grdf_z(icrm,k)
           !!! maximum value of eddy visc/cond
-          tkmax = 0.09/(1./cx+1./cy+1./cz)
-          buoy_sgs = 0.5*( buoy_sgs_vert(icrm,i,j,k-1) + buoy_sgs_vert(icrm,i,j,k) )
+          tkmax = 0.09D0/(1.D0/cx+1.D0/cy+1.D0/cz)
+          buoy_sgs = 0.5D0*( buoy_sgs_vert(icrm,i,j,k-1) + buoy_sgs_vert(icrm,i,j,k) )
           if(buoy_sgs.le.0.) then
             smix = grd
           else
-            smix = min(grd,max(0.1*grd, sqrt(0.76*tk(icrm,i,j,k)/Ck/sqrt(buoy_sgs+1.e-10))))
+            smix = min(grd,max(0.1D0*grd, sqrt(0.76D0*tk(icrm,i,j,k)/Ck/sqrt(buoy_sgs+1.D-10))))
           end if
           ratio = smix/grd
           Cee = Ce1+Ce2*ratio
           if(dosmagor) then
             tk(icrm,i,j,k) = sqrt(Ck**3/Cee*max(0._crm_rknd,def2(icrm,i,j,k)-Pr*buoy_sgs))*smix**2
             tke(icrm,i,j,k) = (tk(icrm,i,j,k)/(Ck*smix))**2
-            a_prod_sh = (tk(icrm,i,j,k)+0.001)*def2(icrm,i,j,k)
+            a_prod_sh = (tk(icrm,i,j,k)+0.001D0)*def2(icrm,i,j,k)
             ! a_prod_bu=-(tk(icrm,i,j,k)+0.001)*Pr*buoy_sgs
-            a_prod_bu = 0.5*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
+            a_prod_bu = 0.5D0*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
             a_diss = a_prod_sh+a_prod_bu
           else
             tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k))
-            a_prod_sh = (tk(icrm,i,j,k)+0.001)*def2(icrm,i,j,k)
-            a_prod_bu = 0.5*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
+            a_prod_sh = (tk(icrm,i,j,k)+0.001D0)*def2(icrm,i,j,k)
+            a_prod_bu = 0.5D0*( a_prod_bu_vert(icrm,i,j,k-1) + a_prod_bu_vert(icrm,i,j,k) )
             !!! cap the diss rate (useful for large time steps)
-            a_diss = min(tke(icrm,i,j,k)/(4.*dt),Cee/smix*tke(icrm,i,j,k)**1.5)
+            a_diss = min(tke(icrm,i,j,k)/(4.D0*dt),Cee/smix*tke(icrm,i,j,k)**1.5D0)
             tke(icrm,i,j,k) = max(real(0.,crm_rknd),tke(icrm,i,j,k)+dtn*(max(0._crm_rknd,a_prod_sh+a_prod_bu)-a_diss))
             tk(icrm,i,j,k)  = Ck*smix*sqrt(tke(icrm,i,j,k))
           end if
           tk(icrm,i,j,k)  = min(tk(icrm,i,j,k),tkmax)
           tkh(icrm,i,j,k) = Pr*tk(icrm,i,j,k)
 
-          tmp = a_prod_sh/float(nx*ny)
+          tmp = a_prod_sh/dble(nx*ny)
           !$acc atomic update
           tkelediss(icrm,k)  = tkelediss(icrm,k) - tmp
           !$acc atomic update

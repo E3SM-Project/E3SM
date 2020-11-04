@@ -38,12 +38,6 @@ extern "C" void setparm() {
   dosmagor = true;
   advect_sgs = !dosmagor;
 
-  if (dosmoke) {
-    epsv=0.0;
-  } else {
-    epsv=0.61;
-  }
-
   if (navgmom_x < 0 || navgmom_y < 0) {
     nstatmom        = 1;
     nstatmomstart    = 99999999;

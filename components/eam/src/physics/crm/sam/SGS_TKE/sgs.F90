@@ -232,7 +232,7 @@ CONTAINS
         do j=1,ny
           do i=1,nx
             if(k.le.4.and..not.dosmagor) then
-              sgs_field(icrm,i,j,k,1)=0.04*(5-k)
+              sgs_field(icrm,i,j,k,1)=0.04D0*(5-k)
             endif
           end do
         end do
@@ -243,7 +243,7 @@ CONTAINS
       do k=1,nzm
         do j=1,ny
           do i=1,nx
-            if(q0(icrm,k).gt.6.e-3.and..not.dosmagor) then
+            if(q0(icrm,k).gt.6.D-3.and..not.dosmagor) then
               sgs_field(icrm,i,j,k,1)=1.
             endif
           end do
@@ -257,7 +257,7 @@ CONTAINS
       do k=1,nzm
         do j=1,ny
           do i=1,nx
-            if(q0(icrm,k).gt.0.5e-3.and..not.dosmagor) then
+            if(q0(icrm,k).gt.0.5D-3.and..not.dosmagor) then
               sgs_field(icrm,i,j,k,1)=1.
             endif
           end do
@@ -270,8 +270,8 @@ CONTAINS
       do k=1,nzm
         do j=1,ny
           do i=1,nx
-            if(z(icrm,k).le.150..and..not.dosmagor) then
-              sgs_field(icrm,i,j,k,1)=0.15*(1.-z(icrm,k)/150.)
+            if(z(icrm,k).le.150.D0.and..not.dosmagor) then
+              sgs_field(icrm,i,j,k,1)=0.15D0*(1.D0-z(icrm,k)/150.D0)
             endif
           end do
         end do
@@ -283,8 +283,8 @@ CONTAINS
       do k=1,nzm
         do j=1,ny
           do i=1,nx
-            if(z(icrm,k).le.3000..and..not.dosmagor) then
-              sgs_field(icrm,i,j,k,1)=1.-z(icrm,k)/3000.
+            if(z(icrm,k).le.3000.D0.and..not.dosmagor) then
+              sgs_field(icrm,i,j,k,1)=1.D0-z(icrm,k)/3000.D0
             endif
           end do
         end do
@@ -296,7 +296,7 @@ CONTAINS
       do k=1,nzm
         do j=1,ny
           do i=1,nx
-            if(q0(icrm,k).gt.6.e-3.and..not.dosmagor) then
+            if(q0(icrm,k).gt.6.D-3.and..not.dosmagor) then
               sgs_field(icrm,i,j,k,1)=1.
             endif
           end do
@@ -348,9 +348,9 @@ CONTAINS
     !$acc parallel loop collapse(2) reduction(max:cfl) async(asyncid)
     do k=1,nzm
       do icrm = 1 , ncrms
-        tmp = max( 0.5*tkhmax(icrm,k)*grdf_z(icrm,k)*dt/(dz(icrm)*adzw(icrm,k))**2  , &
-                   0.5*tkhmax(icrm,k)*grdf_x(icrm,k)*dt/dx**2  , &
-                   YES3D*0.5*tkhmax(icrm,k)*grdf_y(icrm,k)*dt/dy**2  )
+        tmp = max( 0.5D0*tkhmax(icrm,k)*grdf_z(icrm,k)*dt/(dz(icrm)*adzw(icrm,k))**2  , &
+                   0.5D0*tkhmax(icrm,k)*grdf_x(icrm,k)*dt/dx**2  , &
+                   YES3D*0.5D0*tkhmax(icrm,k)*grdf_y(icrm,k)*dt/dy**2  )
         cfl = max( cfl , tmp )
       end do
     end do
