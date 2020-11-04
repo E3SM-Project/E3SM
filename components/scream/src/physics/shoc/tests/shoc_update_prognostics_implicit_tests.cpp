@@ -72,10 +72,6 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real wind_bounds = 5; // [m/s]
 
     static constexpr Real thresh_check = 1e-10;
-    // establish spurious threshold bounds
-//    static const auto qwspur_thresh = Approx(0.0).margin(1e-4);
-//    static const auto thlspur_thresh = Approx(0.0).margin(1e-4);
-//    static const auto trcspur_thresh = Approx(0.0).margin(1e-4);
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
@@ -113,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
         for (Int t = 0; t < num_tracer; ++t){
-          tracer_in[s][n][t] = (rand()%100 + 1)/1000.;
+          tracer_in[s][n][t] = (rand()%100 + 1)/1.;
         }
       }
     }
@@ -144,7 +140,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
       // Fill in tracer fluxes with random data from -10 to 10 (unitless)
       for (Int t = 0; t < num_tracer; ++t){
         const auto offset = t + s * num_tracer;
-          SDS.wtracer_sfc[offset] = (rand()%20 + -10)/1000.;
+          SDS.wtracer_sfc[offset] = (rand()%20 + -10)/1.;
       }
 
       // Fill in data on the nlev grid
@@ -314,14 +310,14 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
                    - rho_zi_srf*SDS.wqw_sfc[s];
 
       // Spurious source should be sufficiently small for water conservation
-      REQUIRE(std::abs(spurious) < thresh_check);
+      REQUIRE(std::abs(spurious/qw_int_a[s]) < thresh_check);
 
       // Calculate the spurious source for thetal
       spurious = (thl_int_a[s] - thl_int_b[s])/dtime
                    - rho_zi_srf*SDS.wthl_sfc[s];
 
       // Spurious source should be sufficiently small for energy conservation
-      REQUIRE(std::abs(spurious) < thresh_check);
+      REQUIRE(std::abs(spurious/thl_int_a[s]) < thresh_check);
 
       // Check that tracers were conserved during vertical transport
       for (Int t = 0; t < num_tracer; ++t){
@@ -330,7 +326,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
         spurious = (trc_int_a[s][t] - trc_int_b[s][t])/dtime
                    - rho_zi_srf*SDS.wtracer_sfc[t_offset];
         // Spurious source should be sufficiently small
-        REQUIRE(std::abs(spurious) < thresh_check);
+        REQUIRE(std::abs(spurious/trc_int_a[s][t]) < thresh_check);
       }
 
     }
