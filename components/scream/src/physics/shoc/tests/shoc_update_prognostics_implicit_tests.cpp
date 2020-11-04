@@ -71,7 +71,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     static constexpr Real rho_ubound = 1.5; // [kg/m3]
     static constexpr Real wind_bounds = 5; // [m/s]
 
-    static constexpr Real thresh_check = 1e-5;
+    static constexpr Real thresh_check = 1e-4;
 
     // Input for tracer (no units)
     Real tracer_in[shcol][nlev][num_tracer];
