@@ -22,6 +22,10 @@ template <class T>
 void DEBUG_LOG(T var) {
   std::cout << var.myname << ": " << std::setprecision(16) << std::scientific << yakl::intrinsics::count(var) << std::endl;
 }
+template <class T>
+void DEBUG_SCALAR(T var) {
+  std::cout << std::setprecision(16) << std::scientific << var << std::endl;
+}
 
 typedef double real;
 
