@@ -22,6 +22,11 @@ list(APPEND CMAKE_MODULE_PATH
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
+if (SCREAM_CIME_BUILD)
+  list(APPEND CMAKE_MODULE_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
+endif ()
+
 include(EkatMpiUtils)
 
 # We should avoid cxx bindings in mpi; they are already deprecated,
