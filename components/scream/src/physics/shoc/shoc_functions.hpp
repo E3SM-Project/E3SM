@@ -367,6 +367,23 @@ struct Functions
     const uview_1d<Spack>&       wthv_sec,
     const uview_1d<Spack>&       shoc_ql2);
 
+  KOKKOS_FUNCTION
+  static void compute_tmpi(
+    const MemberType&            team,
+    const Int&                   nlevi,
+    const Scalar&                dtime,
+    const uview_1d<const Spack>& rho_zi,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<Spack>&       tmpi);
+
+  KOKKOS_FUNCTION
+  static void dp_inverse(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& rho_zt,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<Spack>&       rdp_zt);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -403,6 +420,8 @@ struct Functions
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
+# include "shoc_compute_tmpi_impl.hpp"
+# include "shoc_dp_inverse_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif

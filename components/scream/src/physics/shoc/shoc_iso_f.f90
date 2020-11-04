@@ -377,6 +377,28 @@ subroutine shoc_assumed_pdf_f(shcol, nlev, nlevi, thetal, qw, w_field, thl_sec, 
   real(kind=c_real) , intent(out), dimension(shcol, nlev) :: shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2
 end subroutine shoc_assumed_pdf_f
 
+subroutine compute_tmpi_f(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: nlevi
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in), value :: dtime
+  real(kind=c_real), intent(in) :: rho_zi(shcol,nlevi)
+  real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+
+  real(kind=c_real), intent(out) :: tmpi(shcol,nlevi)
+end subroutine compute_tmpi_f
+
+subroutine dp_inverse_f(nlev, shcol, rho_zt, dz_zt, rdp_zt) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: nlev
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+  real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+  real(kind=c_real), intent(out) :: rdp_zt(shcol,nlev)
+end subroutine dp_inverse_f
+
 end interface
 
 end module shoc_iso_f
