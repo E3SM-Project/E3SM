@@ -858,8 +858,9 @@ end function radiation_nextsw_cday
   subroutine radiation_tend( state, ptend,pbuf, &
        cam_out, cam_in, &
        landfrac,landm,icefrac,snowh, &
-       fsns,    fsnt, flns,    flnt,  &
-       fsds, net_flx, is_cmip6_volc)
+       fsns,    fsnt, flns,    flnt, &
+       fsds, net_flx, is_cmip6_volc, &
+       dt, clear_rh)
 
     !----------------------------------------------------------------------- 
     ! 
@@ -954,6 +955,9 @@ end function radiation_nextsw_cday
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
+    real(r8), intent(in)    :: dt               ! time step(sec) needed for aerosol optics call
+    real(r8), optional, intent(in)    :: clear_rh(pcols,pver)     ! optional clear air relative humidity
+    
 #ifdef MODAL_AERO
 #endif
     real(r8), intent(inout) :: fsns(pcols)      ! Surface solar absorbed flux
@@ -1812,7 +1816,7 @@ end function radiation_nextsw_cday
                 call rrtmg_state_update( state, pbuf, icall, r_state )
 
                 ! Calculate the aerosol optical properties
-                call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
+                call aer_rad_props_sw( icall, dt, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                        aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
 
                 ! Run the shortwave radiation driver
@@ -2166,7 +2170,7 @@ end function radiation_nextsw_cday
                 call rrtmg_state_update( state, pbuf, icall, r_state)
 
                 ! Calculate aerosol optical properties
-                call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
+                call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf,  aer_lw_abs)
                     
                 call t_startf ('rad_rrtmg_lw')
                 call rad_rrtmg_lw( &
