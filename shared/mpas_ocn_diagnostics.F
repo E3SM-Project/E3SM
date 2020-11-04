@@ -221,27 +221,23 @@ contains
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
-      if ( full_compute ) then
+      call ocn_diagnostic_solve_vortVel(relativeVorticity, &
+             layerThicknessEdge, normalVelocity, normalTransportVelocity, &
+             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
+             vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
+             kineticEnergyCell, tangentialVelocity)
 
-         call ocn_diagnostic_solve_vortVel(relativeVorticity, &
-                layerThicknessEdge, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-                vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-                kineticEnergyCell, tangentialVelocity)
+      !
+      ! Compute kinetic energy
+      !
+      if ( ke_vertex_flag == 1 ) then
+         call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
+      end if
 
-         !
-         ! Compute kinetic energy
-         !
-         if ( ke_vertex_flag == 1 ) then
-            call ocn_diagnostic_solve_kineticEnergy(normalVelocity, kineticEnergyCell)
-         end if
-
-         call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
-                   layerThickness, relativeVorticity, &
-                   normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
-                   normalizedRelativeVorticityCell)
-
-      end if    ! full_compute
+      call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
+                layerThickness, relativeVorticity, &
+                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                normalizedRelativeVorticityCell)
 
       !
       ! equation of state
