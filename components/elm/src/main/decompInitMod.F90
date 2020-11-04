@@ -1325,96 +1325,31 @@ contains
     ! Determine the total number of grid cells
     call MPI_Allreduce(ncells_loc, ncells_tot, 1, MPIU_INTEGER, MPI_SUM, mpicom, ierr)
 
-    ! Create a Dual matrix.
-    call MatCreateAIJ(mpicom , & ! comm
-         ncells_loc          , & ! m
-         PETSC_DECIDE        , & ! n
-         PETSC_DETERMINE     , & ! M
-         ncells_tot          , & ! N
-         maxEdges            , & ! d_nz
-         PETSC_NULL_INTEGER  , & ! d_nnz
-         maxEdges            , & ! o_nz
-         PETSC_NULL_INTEGER  , & ! o_nnz
-         Dual_aij            , & ! Mat
-         ierr);CHKERRQ(ierr)
-
-    !
-    ! If cell_1 and cell_2 are neighbors, then set:
-    !
-    !  Dual_aij(cell_1, cell_2) = 1
-    !  Dual_aij(cell_2, cell_1) = 1
-    !
+    ! Set up the adjacency matrix from the 'cellsOnCell' data read from file
+    num_rows = ncells_loc
+    count = 0
     do icell = 1, ncells_loc
        do iedge = 1, maxEdges
-
           if (cellsOnCell(iedge, icell) > 0) then
-
-             call MatSetValue(Dual_aij        , &
-                  icell+cell_id_offset-1      , &
-                  cellsOnCell(iedge, icell)-1 , &
-                  1.d0                        , &
-                  INSERT_VALUES               , &
-                  ierr);CHKERRQ(ierr)
-
-             call MatSetValue(Dual_aij        , &
-                  cellsOnCell(iedge, icell)-1 , &
-                  icell+cell_id_offset-1      , &
-                  1.d0                        , &
-                  INSERT_VALUES               , &
-                  ierr);CHKERRQ(ierr)
+             count = count + 1
           end if
        end do
     end do
 
-    call MatAssemblyBegin( Dual_aij,MAT_FINAL_ASSEMBLY,ierr);CHKERRQ(ierr)
-    call MatAssemblyEnd(   Dual_aij,MAT_FINAL_ASSEMBLY,ierr);CHKERRQ(ierr)
-
-    !
-    ! Create sparse matrix representing an adjacency list from Dual matrix
-    !
-
-    if ( npes > 1 ) then
-
-       call MatMPIAIJGetLocalMat(Dual_aij , &
-            MAT_INITIAL_MATRIX            , &
-            Dual_aij_loc                  , &
-            ierr);CHKERRQ(ierr)
-
-       call MatGetRowIJF90(Dual_aij_loc   , &
-            0                             , &
-            PETSC_FALSE                   , &
-            PETSC_FALSE                   , &
-            num_rows                      , &
-            i_index                       , &
-            j_index                       , &
-            success                       , &
-            ierr);CHKERRQ(ierr)
-    else
-
-       call MatGetRowIJF90(Dual_aij       , &
-            0                             , &
-            PETSC_FALSE                   , &
-            PETSC_FALSE                   , &
-            num_rows                      , &
-            i_index                       , &
-            j_index                       , &
-            success                       , &
-            ierr);CHKERRQ(ierr)
-    endif
-
-    count = 0
-    do icell = 1,num_rows
-       istart   = i_index(icell)
-       iend     = i_index(icell + 1) - 1
-       num_cols = iend - istart + 1
-       count    = count + num_cols
-    enddo
-
     allocate (local_conn         (count      ))
     allocate (local_conn_offsets (num_rows+1 ))
 
-    local_conn_offsets (1:num_rows+1) = i_index (1:num_rows+1)
-    local_conn         (1:count)      = j_index (1:count     )
+    local_conn_offsets(1) = 0
+    count = 0
+    do icell = 1, ncells_loc
+       do iedge = 1, maxEdges
+          if (cellsOnCell(iedge, icell) > 0) then
+             count = count + 1
+             local_conn(count) = cellsOnCell(iedge,icell) - 1
+          end if
+       end do
+       local_conn_offsets(icell+1) = count
+    end do
 
     call MatCreateMPIAdj(mpicom , &
          ncells_loc             , &
@@ -1424,29 +1359,6 @@ contains
          PETSC_NULL_INTEGER     , &
          Dual_mat               , &
          ierr); CHKERRQ(ierr)
-
-    if ( npes > 1 ) then
-       call MatRestoreRowIJF90(Dual_aij_loc , &
-            0                               , &
-            PETSC_FALSE                     , &
-            PETSC_FALSE                     , &
-            num_rows                        , &
-            i_index                         , &
-            j_index                         , &
-            success                         , &
-            ierr);CHKERRQ(ierr)
-    else
-       call MatGetRowIJF90(Dual_aij , &
-            0                       , &
-            PETSC_FALSE             , &
-            PETSC_FALSE             , &
-            num_rows                , &
-            i_index                 , &
-            j_index                 , &
-            success                 , &
-            ierr);CHKERRQ(ierr)
-    endif
-    call MatDestroy(Dual_aij,ierr);CHKERRQ(ierr)
 
     !
     ! Use graph partitioning to decompose the mesh
