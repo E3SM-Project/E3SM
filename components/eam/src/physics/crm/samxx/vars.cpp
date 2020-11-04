@@ -132,7 +132,7 @@ void allocate() {
   utend            = real2d( "utend           "                        , nzm    , ncrms ); 
   vtend            = real2d( "vtend           "                        , nzm    , ncrms ); 
   sstxy            = real3d( "sstxy           "           , dimy_sstxy , nxp1   , ncrms ); 
-  fcory            = real2d( "fcory           "                        , nyp1   , ncrms ); 
+  fcory            = real2d( "fcory           "                        , ny+1   , ncrms ); 
   fcorzy           = real2d( "fcorzy          "                        , ny     , ncrms ); 
   latitude         = real3d( "latitude        "           , ny         , nx     , ncrms ); 
   longitude        = real3d( "longitude       "           , ny         , nx     , ncrms ); 
@@ -1700,7 +1700,6 @@ int  nmovieend                ;
 bool isInitialized_scamiopdata;
 bool wgls_holds_omega         ;
 
-real epsv            ;
 bool dosubsidence    ;
 real ug              ;
 real vg              ;

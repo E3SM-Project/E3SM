@@ -38,8 +38,8 @@ contains
 
     call bound_duvdt(ncrms)
 
-    rdx=1./dx
-    rdy=1./dy
+    rdx=1.D0/dx
+    rdy=1.D0/dy
     btat=bt/at
     ctat=ct/at
 
