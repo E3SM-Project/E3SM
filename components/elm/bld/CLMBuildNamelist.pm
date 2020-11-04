@@ -794,7 +794,7 @@ sub setup_cmdl_fates_mode {
       my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys", 
 		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "fates_inventory_ctrl_filename","use_fates_logging",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking");
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
