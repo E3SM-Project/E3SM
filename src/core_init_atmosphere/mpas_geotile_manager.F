@@ -682,16 +682,22 @@ module mpas_geotile_manager
     !
     !  public subroutine mpas_geotile_mgr_tile_to_latlon => tile_to_latlon
     !
-    !> \brief   Translate a tile indices to latitude and longitude,
+    !> \brief   Find the latitude, longitude location of a tile's pixels
     !> \author  Miles A. Curry
     !> \date    02/20/2020
     !> \details
-    !> Given a tile, translate the relative tile coordinates, i, j, of that
-    !> tile to a latitude and longitude coordinate. Upon success, lat, lon
-    !> will be in the range of -1/2 * pi to 1/2 * pi and 0 to 2.0 * pi, respectively.
+    !> Given a tile, translate the pixel coordinates, i, j to a corresponding latitude
+    !> and longitude coordinate.
+    !>
+    !> If supersample_fac is present each pixel will be subdivided into supersample_fac ^ 2
+    !> sub-pixels. If supersample_fac is greater than 1, then the calling code will need
+    !> to pass in supersampled i and j coordinates.
+    !>
+    !> Upon success, lat, lon will be in the range  of -1/2 * pi to 1/2 * pi and 0 to
+    !> 2.0 * pi, respectively.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_geotile_mgr_tile_to_latlon(mgr, tile, j, i, lat, lon)
+    subroutine mpas_geotile_mgr_tile_to_latlon(mgr, tile, j, i, lat, lon, supersample_fac)
 
         implicit none
 
@@ -701,15 +707,23 @@ module mpas_geotile_manager
         integer, value :: i
         real (kind=RKIND), intent(out) :: lat
         real (kind=RKIND), intent(out) :: lon
+        integer, optional, intent(in) :: supersample_fac
 
         integer, pointer :: tile_bdr
         real (kind=RKIND), pointer :: known_lon
         real (kind=RKIND), pointer :: known_lat
         real (kind=RKIND), pointer :: dx
         real (kind=RKIND), pointer :: dy
+        integer :: supersample_lcl
         integer :: ierr
 
         ierr = 0
+
+        if (present(supersample_fac)) then
+            supersample_lcl = supersample_fac
+        else
+            supersample_lcl = 1
+        end if
 
         call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
         call mpas_pool_get_config(mgr % pool, 'known_lat', known_lat)
@@ -717,8 +731,10 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'dx', dx)
         call mpas_pool_get_config(mgr % pool, 'dy', dy)
 
-        lat = real((j - (tile_bdr + 1) + tile % y - 1), kind=RKIND) * dy + known_lat
-        lon = real((i - (tile_bdr + 1) + tile % x - 1), kind=RKIND) * dx + known_lon
+        lat = known_lat + real(j - (supersample_lcl * tile_bdr + 1) + (supersample_lcl * (tile % y - 1)), kind=RKIND) * dy &
+                               / supersample_lcl
+        lon = known_lon + real(i - (supersample_lcl * tile_bdr + 1) + (supersample_lcl * (tile % x - 1)), kind=RKIND) * dx &
+                              / supersample_lcl
 
         call deg2Rad(lat)
         call deg2Rad(lon)
