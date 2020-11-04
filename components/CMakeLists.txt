@@ -23,8 +23,8 @@ set (CASEROOT "" CACHE STRING "The case root directory.")
 # Turn on timing
 set(E3SM_ENABLE_TIMING FALSE CACHE BOOL "Turn on build timings")
 if (E3SM_ENABLE_TIMING)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "${CMAKE_COMMAND} -E time")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "/usr/bin/time --format '%C %E' ")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "/usr/bin/time --format '%C %E' ")
 endif()
 
 # We need to set the compilers *before* calling `project`.
@@ -75,7 +75,9 @@ build_mpas_models()
 
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
+if (NOT E3SM_ENABLE_TIMING)
+  set(CMAKE_VERBOSE_MAKEFILE TRUE)
+endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
