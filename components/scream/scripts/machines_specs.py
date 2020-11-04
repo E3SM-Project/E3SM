@@ -22,7 +22,7 @@ MACHINE_METADATA = {
                   24,
                   24,
                   ""),
-    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH"],
+    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3 python/3.7.3"],
                  ["mpicxx","mpifort"],
                   "srun",
                   48,
