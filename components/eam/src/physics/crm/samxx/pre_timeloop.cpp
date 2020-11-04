@@ -287,6 +287,14 @@ void pre_timeloop() {
       v(k,j+offy_v,i+offx_v,icrm) = min( UMAX, max(-UMAX,v(k,j+offy_v,i+offx_v,icrm)) )*YES3D;
     }
   });
+  
+  DEBUG(crm_clear_rh);
+  DEBUG(crm_clear_rh_cnt);
+  DEBUG(u);
+  DEBUG(v);
+  DEBUG(w);
+  DEBUG(tabs);
+  abort();
 
   // Populate microphysics array from crm_state
   // for (int k=0; k<nzm; k++) {
