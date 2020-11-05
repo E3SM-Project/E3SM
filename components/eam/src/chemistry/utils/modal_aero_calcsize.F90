@@ -24,15 +24,9 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 
 #ifdef MODAL_AERO
 
-! These are the variables needed for the diagnostic calculation of dry radius
 use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
-
-
-! These variables are needed for the prognostic calculations to exchange mass
-! between modes
 use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
-     modeptr_accum, modeptr_aitken, ntot_aspectype, &
-     voltonumb_amode, cnst_name_cw
+     modeptr_accum, modeptr_aitken, ntot_aspectype, cnst_name_cw
 
 #endif
 !---------------------------------------------------------------------------------------------------------
@@ -41,7 +35,7 @@ use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
 !1. Find out if we can remove the "if (masterproc)" from the subroutines called during time stepping
 !2. cloud borne and interstitial species processes can be combined and refactored into one subroutine.(aitken_accum_exchange)
 !3. init and register routine should be re-worked/streamlined to remove redundant logics
-!4. improve update_mmr logic in refactored subroutines
+!4. improve update_mmr logic in the refactored subroutines
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
 
@@ -49,7 +43,7 @@ implicit none
 private
 save
 
-public modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
+public :: modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
 
 
@@ -144,8 +138,8 @@ end subroutine modal_aero_calcsize_reg
 !===============================================================================
 
 subroutine modal_aero_calcsize_init( pbuf2d, species_class)
-   use time_manager,  only: is_first_step
-   use physics_buffer,only: pbuf_set_field
+   use time_manager,   only: is_first_step
+   use physics_buffer, only: pbuf_set_field
 
    !-----------------------------------------------------------------------
    !
@@ -162,13 +156,11 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    integer, intent(in) :: species_class(:)
 
    ! local
-   integer  :: iq, iqfrm, iqtoo, ilist, nmodes, iacc, iait
+   integer  :: iq, ilist, iacc, iait, imode, icnst
    integer  :: nspec_ait, nspec_acc, imode_ait, imode_acc, ispec_acc, ispec_ait
    integer  :: aer_type, ind_ait, ind_acc, icnt
-   integer  :: lsfrm, lstoo, lsfrma, lsfrmc, lstooa, lstooc, lunout
-   integer  :: mfrm, mtoo
-   integer  :: n, nacc, nait, nspec
-   integer  :: nchfrma, nchfrmc, nchfrmskip, nchtooa, nchtooc, nchtooskip
+   integer  :: lsfrm, lstoo
+   integer  :: nacc, nait
    logical  :: history_aerosol
    logical  :: history_verbose
    logical  :: accum_exists, aitken_exists
@@ -348,14 +340,14 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 do_adjust_if_block2: &
       if ( do_adjust_allowed ) then
 
-   do n = 1, ntot_amode
-      if (mprognum_amode(n) <= 0) cycle
+   do imode = 1, ntot_amode
+      if (mprognum_amode(imode) <= 0) cycle
 
       do aer_type = 1, 2
          if (aer_type == inter_aero) then
-            tmpnamea = cnst_name(numptr_amode(n))
+            tmpnamea = cnst_name(numptr_amode(imode))
          else
-            tmpnamea = cnst_name_cw(numptrcw_amode(n))
+            tmpnamea = cnst_name_cw(numptrcw_amode(imode))
          end if
          unit = '#/m2/s'
          fieldname = trim(tmpnamea) // '_sfcsiz1'
@@ -459,8 +451,8 @@ do_aitacc_transfer_if_block2: &
 
       if ( masterproc ) then
          write(iulog,'(/a)') 'l, species_class, name'
-         do n = 1, pcnst
-            write(iulog,'(2i4,2x,a)') n, species_class(n), cnst_name(n)
+         do icnst = 1, pcnst
+            write(iulog,'(2i4,2x,a)') icnst, species_class(icnst), cnst_name(icnst)
          end do
       end if
    if ( masterproc ) write(iulog,'(a)') 'modal_aero_calcsize_init ALL DONE'
@@ -559,7 +551,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
-   integer  :: iq, nspec, imode, klev, icol, idx
+   integer  :: nspec, imode, klev, icol, idx, iq
    integer  :: nmodes, num_idx
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
@@ -1435,7 +1427,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
 
   !local
   integer  :: imode, jmode, aer_type, jsrflx, icol, klev, iq
-  integer  :: lsfrm, lstoo, ispec_acc, idx, n_use, m_use, nb, mb
+  integer  :: lsfrm, lstoo, ispec_acc, idx
   integer  :: ixfer_ait2acc, ixfer_acc2ait, mam_ait, mam_acc
   integer  :: iait, iacc, idx_cw, nspec_acc
   integer, save  :: idiagaa = 1
@@ -1445,7 +1437,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
   real(r8) :: v2nzz, pdel_fac, num_t, drv_t
   real(r8) :: drv_a_noxf, drv_c_noxf, drv_t_noxf, dummwdens
   real(r8) :: num_t0, num_t_noxf
-  real(r8) :: duma, cmn_factor       ! work variables
+  real(r8) :: duma, cmn_factor, dgnum, sigmag, voltonumb_ait, voltonumb_acc
   real(r8) :: xfercoef
   real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
   real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
@@ -1531,7 +1523,14 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
 
   ! v2nzz is voltonumb at the "geometrically-defined" mid-point
   ! between the aitken and accum modes
-  v2nzz = sqrt(voltonumb_amode(iait)*voltonumb_amode(iacc))
+
+  call rad_cnst_get_mode_props(list_idx, iait, dgnum=dgnum, sigmag=sigmag)
+  voltonumb_ait   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+
+  call rad_cnst_get_mode_props(list_idx, iacc, dgnum=dgnum, sigmag=sigmag)
+  voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+
+  v2nzz = sqrt(voltonumb_ait*voltonumb_acc)
 
   ! loop over columns and levels
   do  klev = top_lev, pver
@@ -1540,9 +1539,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
         pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz
 
         !Compute aitken->accumulation transfer
-        call compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv(icol,klev),   & !input
-             drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), & !input
-             ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)   !output
+        call compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv(icol,klev),             & !input
+             drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), voltonumb_acc, & !input
+             ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)                  !output
 
 
         !----------------------------------------------------------------------------------------
@@ -1555,10 +1554,10 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
         !    portion in what follows
         !----------------------------------------------------------------------------------------
         call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2nzz, & !input
-             tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),  & !input
-             num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait,            & !input
-             drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,             & !output
-             xfercoef_vol_acc2ait, xfertend_num)                                        !output
+             tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),       & !input
+             num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait, voltonumb_ait,  & !input
+             drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,                  & !output
+             xfercoef_vol_acc2ait, xfertend_num)                                             !output
 
 
         ! jump to end-of-loop if no transfer is needed at current icol,klev
@@ -1673,7 +1672,7 @@ end subroutine aitken_accum_exchange
 !---------------------------------------------------------------------------------------------
 
 subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
-     drv_c_aitsv, num_a_aitsv, num_c_aitsv, &
+     drv_c_aitsv, num_a_aitsv, num_c_aitsv,  voltonumb_acc, &
      ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)
 
   !------------------------------------------------------------
@@ -1687,7 +1686,7 @@ subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
   real(r8), intent(in) :: v2nzz
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: drv_a_aitsv, drv_c_aitsv
-  real(r8), intent(in) :: num_a_aitsv, num_c_aitsv
+  real(r8), intent(in) :: num_a_aitsv, num_c_aitsv, voltonumb_acc
 
   !intent outs
   integer,  intent(inout) :: ixfer_ait2acc
@@ -1711,14 +1710,14 @@ subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
   if (drv_t > 0.0_r8) then
      if (num_t < drv_t*v2nzz) then
         ixfer_ait2acc = 1
-        if (num_t < drv_t*voltonumb_amode(iacc)) then
+        if (num_t < drv_t*voltonumb_acc) then
            xferfrac_num_ait2acc = 1.0_r8
            xferfrac_vol_ait2acc = 1.0_r8
         else
            xferfrac_vol_ait2acc = ((num_t/drv_t) - v2nzz)/   &
-                (voltonumb_amode(iacc) - v2nzz)
+                (voltonumb_acc - v2nzz)
            xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
-                (drv_t*voltonumb_amode(iacc)/num_t)
+                (drv_t*voltonumb_acc/num_t)
            if ((xferfrac_num_ait2acc <= 0.0_r8) .or.   &
                 (xferfrac_vol_ait2acc <= 0.0_r8)) then
               xferfrac_num_ait2acc = 0.0_r8
@@ -1742,7 +1741,7 @@ end subroutine compute_coef_ait_acc_transfer
 
 subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchnk,     &
      v2nzz, tadjinv, state, pbuf, drv_a_accsv, drv_c_accsv, num_a_accsv,      &
-     num_c_accsv, noxf_acc2ait,                                  &
+     num_c_accsv, noxf_acc2ait, voltonumb_ait,                                &
      drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait, &
      xfercoef_vol_acc2ait, xfertend_num)
 
@@ -1750,7 +1749,8 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   integer,  intent(in) :: iait, iacc, icol, klev, list_idx, lchnk
   real(r8), intent(in) :: v2nzz
   real(r8), intent(in) :: tadjinv
-  real(r8), intent(in) :: drv_a_accsv, drv_c_accsv, num_a_accsv, num_c_accsv
+  real(r8), intent(in) :: drv_a_accsv, drv_c_accsv
+  real(r8), intent(in) :: num_a_accsv, num_c_accsv, voltonumb_ait
   logical,  intent(in) :: noxf_acc2ait(:)
 
   type(physics_state), intent(in)    :: state       ! Physics state variables
@@ -1810,14 +1810,14 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   if (drv_t > 0.0_r8) then
      if (num_t > drv_t*v2nzz) then
         ixfer_acc2ait = 1
-        if (num_t > drv_t*voltonumb_amode(iait)) then
+        if (num_t > drv_t*voltonumb_ait) then
            xferfrac_num_acc2ait = 1.0_r8
            xferfrac_vol_acc2ait = 1.0_r8
         else
            xferfrac_vol_acc2ait = ((num_t/drv_t) - v2nzz)/   &
-                (voltonumb_amode(iait) - v2nzz)
+                (voltonumb_ait - v2nzz)
            xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
-                (drv_t*voltonumb_amode(iait)/num_t)
+                (drv_t*voltonumb_ait/num_t)
            if ((xferfrac_num_acc2ait <= 0.0_r8) .or.   &
                 (xferfrac_vol_acc2ait <= 0.0_r8)) then
               xferfrac_num_acc2ait = 0.0_r8
@@ -1877,7 +1877,7 @@ if (drv > 0.0_r8) then
    end if
 else
    dgncur = dgnum
-   v2ncur = voltonumb_amode(imode)
+   v2ncur = voltonumb
 end if
 
 end subroutine compute_new_sz_after_transfer
