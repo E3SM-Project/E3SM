@@ -844,7 +844,7 @@ return
 end subroutine modal_aero_calcsize_sub
 
 !---------------------------------------------------------------------------------------------
-
+#ifdef MODAL_AERO
 subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
      dgncur, v2ncur, dryvol )                                       !output
 
@@ -2054,6 +2054,8 @@ subroutine output_flds(name, idx, lchnk, aer_type, qsrflx)
   return
 end subroutine output_flds
 
+#endif
+
 !---------------------------------------------------------------------------------------------
 
 subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
@@ -2108,7 +2110,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-   if (list_idx /= 0) then
+   if (present(list_idx_in)) then
       if (.not. present(dgnum_m)) then
          call endrun('modal_aero_calcsize_diag called for'// &
                      'diagnostic list but dgnum_m pointer not present')
@@ -2121,7 +2123,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    do n = 1, nmodes
 
-      if (list_idx == 0) then
+      if (.not.present(dgnum_m)) then
          call pbuf_get_field(pbuf, dgnum_idx, dgncur_a, start=(/1,1,n/), kount=(/pcols,pver,1/))
       else
          dgncur_a => dgnum_m(:,:,n)

@@ -621,14 +621,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       endif
       ! diagnostic aerosol size calculations
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      if (present(clear_rh)) then
-         ! clear_rh provides alternate estimate non-cloudy relative humidity
-         call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, clear_rh_in=clear_rh)
-      else
-         call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m)
-      endif
+      ! clear_rh provides alternate estimate non-cloudy relative humidity
+      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+           qaerwat_m, clear_rh_in=clear_rh)
    else
       !For prognostic aerosols
       call modal_aero_calcsize_sub(state, dt, pbuf, list_idx_in=list_idx, update_mmr_in = .false., &
@@ -1304,14 +1299,9 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
       endif
       ! diagnostic aerosol size calculations
       call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      if (present(clear_rh)) then
-         ! clear_rh provides alternate estimate non-cloudy relative humidity
-         call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, clear_rh_in=clear_rh)
-      else
-         call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m)
-      endif
+      ! clear_rh provides alternate estimate non-cloudy relative humidity
+      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+           qaerwat_m, clear_rh_in=clear_rh)
    else
       !For prognostic aerosols
       call modal_aero_calcsize_sub(state, dt, pbuf, list_idx_in=list_idx, update_mmr_in = .false., &
