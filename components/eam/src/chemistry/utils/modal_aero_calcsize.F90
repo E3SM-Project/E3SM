@@ -25,9 +25,7 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 #ifdef MODAL_AERO
 
 ! These are the variables needed for the diagnostic calculation of dry radius
-use modal_aero_data, only: ntot_amode, numptr_amode, voltonumbhi_amode, voltonumblo_amode,&
-     dgnum_amode, dgnumhi_amode, dgnumlo_amode, &
-     modename_amode
+use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
 
 
 ! These variables are needed for the prognostic calculations to exchange mass
@@ -703,12 +701,12 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !Initialize all parameters to the default values for the mode
       !----------------------------------------------------------------------
       !interstitial
-      call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
-           dgncur_a, v2ncur_a, dryvol_a)                               !output
+      call set_initial_sz_and_volumes(list_idx_local, top_lev, pver, ncol, imode, & !input
+           dgncur_a, v2ncur_a, dryvol_a)                                            !output
 
       !cloud borne
-      call set_initial_sz_and_volumes(top_lev, pver, ncol, imode,    & !input
-           dgncur_c, v2ncur_c, dryvol_c)                               !output
+      call set_initial_sz_and_volumes(list_idx_local, top_lev, pver, ncol, imode, & !input
+           dgncur_c, v2ncur_c, dryvol_c)                                            !output
 
       !----------------------------------------------------------------------
       !Find # of species in this mode
@@ -843,7 +841,7 @@ end subroutine modal_aero_calcsize_sub
 
 !---------------------------------------------------------------------------------------------
 #ifdef MODAL_AERO
-subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
+subroutine set_initial_sz_and_volumes(list_idx, top_lev, pver, ncol, imode, & !input
      dgncur, v2ncur, dryvol )                                       !output
 
   !-----------------------------------------------------------------------------
@@ -857,7 +855,7 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   implicit none
 
   !inputs
-  integer, intent(in) :: top_lev, pver !for model level loop
+  integer, intent(in) :: list_idx, top_lev, pver !for model level loop
   integer, intent(in) :: ncol          !# of columns
   integer, intent(in) :: imode         !mode index
 
@@ -867,13 +865,17 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
   real(r8), intent(out) :: dryvol(:,:)   !dry volume
 
   !local variables
-  integer :: icol, klev
+  integer  :: icol, klev
+  real(r8) :: dgnum, sigmag, voltonumb
+
+  call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, sigmag=sigmag)
+  voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
 
   do klev = top_lev, pver
      do icol = 1, ncol
-        dgncur(icol,klev,imode) = dgnum_amode(imode)     !diameter
-        v2ncur(icol,klev,imode) = voltonumb_amode(imode) !volume to number
-        dryvol(icol,klev)       = 0.0_r8                 !initialize dry vol
+        dgncur(icol,klev,imode) = dgnum     !diameter
+        v2ncur(icol,klev,imode) = voltonumb !volume to number
+        dryvol(icol,klev)       = 0.0_r8    !initialize dry vol
      end do
   end do
 
@@ -1006,7 +1008,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   real(r8) :: drv_a, drv_c                  ! dry volume (cm3/mol_air)
   real(r8) :: num_a0, num_c0                ! initial number (#/mol_air)
   real(r8) :: num_a, num_c                  ! working number (#/mol_air)
-  real(r8) :: sigmag, cmn_factor
+  real(r8) :: sigmag, cmn_factor, dgnumlo, dgnumhi
   real(r8), pointer :: fldcw(:,:)           !specie mmr (cloud borne)
 
   !find state q array number mode indices for interstitial and cloud borne aerosols
@@ -1023,7 +1025,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   nait = rad_cnst_get_mode_idx(list_idx, modename_amode(mam_ait))
 
   !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
-  call compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
+  call compute_dgn_vol_limits(list_idx, imode, nait, nacc, do_aitacc_transfer, & !input
        v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
 
   !set tendency logicals to true if we need to update mmr
@@ -1037,7 +1039,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
 
   !Compute a common factor for size computations
-  call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
+  call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag, dgnumhi=dgnumhi, dgnumlo=dgnumlo)
   cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 
   do  klev = top_lev, pver
@@ -1088,7 +1090,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
            !for cloud borne aerosols
            call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
-                v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
+                v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
                 dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
         else
            call update_dgn_voltonum(icol, klev, imode, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
@@ -1097,7 +1099,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
            !for cloud borne aerosols
            call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
-                v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
+                v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
                 dgncur_c, v2ncur_c)
         endif
 
@@ -1129,7 +1131,7 @@ end subroutine size_adjustment
 
 !---------------------------------------------------------------------------------------------
 
-subroutine compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
+subroutine compute_dgn_vol_limits(list_idx, imode, nait, nacc, do_aitacc_transfer, & !input
            v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
 
   !-----------------------------------------------------------------------------
@@ -1145,7 +1147,7 @@ subroutine compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !inpu
 implicit none
 
 !inputs
-integer,  intent(in) :: imode
+integer,  intent(in) :: list_idx, imode
 integer,  intent(in) :: nait, nacc
 logical,  intent(in) :: do_aitacc_transfer
 
@@ -1160,24 +1162,24 @@ real(r8), intent(out) :: dgnyy
 !local
 real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
                                               !i.e. dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3
+real(r8) :: dgnumlo, dgnumhi, sigmag
 
 
-!v2nxx = voltonumbhi_amode is proportional to dgnumhi**(-3),
+call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
+
+!v2nxx = voltonumbhi is proportional to dgnumhi**(-3),
 !        and produces the minimum allowed number for a given volume
-      !voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*alnsg**2) )
-      !voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*alnsg**2) )
-!call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
-v2nxx   = voltonumbhi_amode(imode)
+v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*log(sigmag)**2) )
 
-!v2nyy = voltonumblo_amode is proportional to dgnumlo**(-3),
+!v2nyy = voltonumblo is proportional to dgnumlo**(-3),
 !        and produces the maximum allowed number for a given volume
-v2nyy   = voltonumblo_amode(imode)
+v2nyy   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
 
 !v2nxxrl and v2nyyrl are their "relaxed" equivalents.
 v2nxxrl = v2nxx/relax_factor
 v2nyyrl = v2nyy*relax_factor
-dgnxx   = dgnumhi_amode(imode)
-dgnyy   = dgnumlo_amode(imode)
+dgnxx   = dgnumhi
+dgnyy   = dgnumlo
 
 if ( do_aitacc_transfer ) then
    !for n=nait, divide v2nxx by 1.0e6 to effectively turn off the
@@ -1764,7 +1766,7 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   integer  :: ispec_acc, idx, nspec_acc
   real(r8) :: drv_t, num_t, drv_t_noxf, num_t0
   real(r8) :: num_t_noxf
-  real(r8) :: dummwdens, specdens
+  real(r8) :: dummwdens, specdens, dgnumlo, sigmag, voltonumblo
   real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait, duma
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
 
@@ -1793,7 +1795,12 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
            end if
         end do
         drv_t_noxf = drv_a_noxf + drv_c_noxf
-        num_t_noxf = drv_t_noxf*voltonumblo_amode(iacc)
+
+        !Compute voltonumlo
+        call rad_cnst_get_mode_props(list_idx, iacc, dgnumlo=dgnumlo, sigmag=sigmag)
+        voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
+
+        num_t_noxf = drv_t_noxf*voltonumblo
         num_t0 = num_t
         num_t = max( 0.0_r8, num_t - num_t_noxf )
         drv_t = max( 0.0_r8, drv_t - drv_t_noxf )
@@ -1847,25 +1854,29 @@ real(r8), intent(in) :: drv, num
 real(r8), intent(inout) :: dgncur, v2ncur
 
 !local
-real(r8) :: cmn_factor, sigmag
+real(r8) :: cmn_factor, sigmag, dgnum, dgnumlo, dgnumhi, voltonumb, voltonumbhi, voltonumblo
 
 !Compute a common factor for size computations
-call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
+call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 
+voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*log(sigmag)**2) )
+voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
+voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+
 if (drv > 0.0_r8) then
-   if (num <= drv*voltonumbhi_amode(imode)) then
-      dgncur = dgnumhi_amode(imode)
-      v2ncur = voltonumbhi_amode(imode)
-   else if (num >= drv*voltonumblo_amode(imode)) then
-      dgncur = dgnumlo_amode(imode)
-      v2ncur = voltonumblo_amode(imode)
+   if (num <= drv*voltonumbhi) then
+      dgncur = dgnumhi
+      v2ncur = voltonumbhi
+   else if (num >= drv*voltonumblo) then
+      dgncur = dgnumlo
+      v2ncur = voltonumblo
    else
       dgncur = (drv/(cmn_factor*num))**third
       v2ncur = num/drv
    end if
 else
-   dgncur = dgnum_amode(imode)
+   dgncur = dgnum
    v2ncur = voltonumb_amode(imode)
 end if
 
