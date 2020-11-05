@@ -13,72 +13,73 @@
 
 from utils import expect, get_cpu_core_count, run_cmd_no_fail
 import os
+import pathlib
 
 MACHINE_METADATA = {
     "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "",
                   24,
                   24,
                   ""),
-    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH"],
-                  "$(which mpicxx)",
+    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3 python/3.7.3"],
+                 ["mpicxx","mpifort"],
                   "srun",
                   48,
                   48,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
     "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "bsub -I -q rhel7W",
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "mappy"   : (["module purge", "module load sems-env sems-python/3.5.2 sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "",
                   48,
                   48,
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "bsub -Ip",
                   44,
                   4,
                   ""),
     "quartz" : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "salloc --partition=pdebug",
                   36,
                   36,
                   ""),
     "syrah"  : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "salloc --partition=pdebug",
                   16,
                   16,
                   ""),
     "summit" : (["module purge", "module load cmake/3.15.2 gcc/6.4.0 spectrum-mpi/10.3.0.1-20190611 cuda/10.1.168 python/3.6.6-anaconda3-5.3.0"],
-                "$(which mpicxx)",
+                ["mpicxx","mpifort"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 44,
                 6,
                 ""),
     "cori"   : (["eval $(../../cime/scripts/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
-                "$(which CC)",
+                ["CC","ftn"],
                 "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
                 68,
                 68,
                 ""),
     "compy"   : (["module purge", "module load cmake/3.11.4 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
-                  "$(which mpicxx)",
+                 ["mpicxx","mpifort"],
                   "",
                   40,
                   40,
                   ""),
 
-    "linux-generic" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
-    "linux-generic-debug" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
-    "linux-generic-serial" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic" : ([],["mpicxx","mpifort"],"", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic-debug" : ([],["mpicxx","mpifort"],"", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic-serial" : ([],["mpicxx","mpifort"],"", get_cpu_core_count(), get_cpu_core_count(),""),
 }
 
 ###############################################################################
@@ -101,7 +102,15 @@ def get_mach_cxx_compiler (machine):
 
     expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
-    return MACHINE_METADATA[machine][1]
+    return MACHINE_METADATA[machine][1][0]
+
+###############################################################################
+def get_mach_f90_compiler (machine):
+###############################################################################
+
+    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+
+    return MACHINE_METADATA[machine][1][1]
 
 ###############################################################################
 def get_mach_batch_command (machine):

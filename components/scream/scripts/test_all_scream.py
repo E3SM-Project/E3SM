@@ -3,7 +3,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-                           get_mach_baseline_root_dir, setup_mach_env
+                           get_mach_baseline_root_dir, setup_mach_env, \
+                           get_mach_cxx_compiler, get_mach_f90_compiler
 
 check_minimum_python_version(3, 4)
 
@@ -17,15 +18,15 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
-                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+    def __init__(self, cxx_compiler, f90_compiler, submit=False, parallel=False, fast_fail=False,
+                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
-        self._cxx                     = cxx
-        self._kokkos                  = kokkos
+        self._cxx_compiler            = cxx_compiler
+        self._f90_compiler            = f90_compiler
         self._submit                  = submit
         self._parallel                = parallel
         self._fast_fail               = fast_fail
@@ -89,12 +90,22 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        if not self._kokkos:
-            expect(self._machine, "If no kokkos provided, must provide machine name for internal kokkos build")
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
         print_last_commit(git_ref=self._original_branch)
+
+        ############################################
+        #    Deduce compilers if needed/possible   #
+        ############################################
+
+        if self._cxx_compiler is None:
+            self._cxx_compiler = get_mach_cxx_compiler(self._machine)
+        if self._f90_compiler is None:
+            self._f90_compiler = get_mach_f90_compiler(self._machine)
+
+        self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
+        self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
 
         ###################################
         #      Compute baseline info      #
@@ -302,12 +313,9 @@ class TestAllScream(object):
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
-        if self._kokkos:
-            kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
-        else:
-            kokkos_cmake = "-C {}".format(self.get_machine_file())
-
-        result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
+        result  = "{}-C {}".format("" if for_ctest else "cmake ", self.get_machine_file())
+        result += " -DCMAKE_CXX_COMPILER={}".format(self._cxx_compiler)
+        result += " -DCMAKE_Fortran_COMPILER={}".format(self._f90_compiler)
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 

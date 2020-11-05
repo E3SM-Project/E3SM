@@ -2,7 +2,7 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_batch_command, get_mach_testing_resources
+from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_batch_command, get_mach_testing_resources
 
 ###############################################################################
 class GatherAllData(object):
@@ -23,9 +23,10 @@ class GatherAllData(object):
     ###########################################################################
     def formulate_command(self, machine):
     ###########################################################################
-        env_setup = get_mach_env_setup_command(machine)
-        compiler  = get_mach_cxx_compiler(machine)
-        batch     = get_mach_batch_command(machine)
+        env_setup    = get_mach_env_setup_command(machine)
+        cxx_compiler = get_mach_cxx_compiler(machine)
+        f90_compiler = get_mach_f90_compiler(machine)
+        batch        = get_mach_batch_command(machine)
 
         env_setup.append("CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine)))
         env_setup_str = " && ".join(env_setup)
@@ -50,17 +51,20 @@ class GatherAllData(object):
 
         repo = scream_docs_repo if self._scream_docs else scream_repo
 
-        # Compute kokkos location
-        if self._kokkos:
-            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
-        else:
-            kokkos_loc = pathlib.Path(scream_repo.parent.parent, "externals", "kokkos")
-
+        # Compute kokkos location. scream itself won't allow this, and test-all-scream will error out,
+        # but one can use gather-all-data for plenty of other apps, so we need to support this here.
         local_cmd = self._run
+        if self._kokkos:
+            # Note: kokkos_loc can use other magic strings, like $cxx_compiler, or $machine
+            kokkos_loc = self._kokkos
+        else:
+            kokkos_loc = pathlib.Path(scream_repo.parent.parent, "externals", "ekat", "extern", "kokkos")
+
         # Do magic replacements here
         local_cmd = local_cmd.\
-            replace("$compiler", compiler).\
             replace("$kokkos", str(kokkos_loc)).\
+            replace("$cxx_compiler", cxx_compiler).\
+            replace("$f90_compiler", f90_compiler).\
             replace("$machine", machine).\
             replace("$scream_docs", str(scream_docs_repo)).\
             replace("$scream", str(scream_repo))

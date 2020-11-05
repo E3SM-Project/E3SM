@@ -38,13 +38,13 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Test scream on all platforms \033[0m
-    > {0} './scripts/test-all-scream $compiler -m $machine'
+    > {0} './scripts/test-all-scream --cxx-compiler $cxx_compiler --f90-compiler $f90_compiler -m $machine'
 
     \033[1;32m# Do correctness testing locally for SCREAM (expects ./scream and ./scream-docs) \033[0m
-    > {0} './scripts/test-all-scream $compiler -m $machine' -l -m $machine
+    > {0} './scripts/test-all-scream --cxx-compiler $cxx_compiler --f90-compiler $f90_compiler -m $machine' -l -m $machine
 
     \033[1;32m# Do correctness testing for scream-docs micro apps \033[0m
-    > {0} './test-all $compiler $kokkos' -o
+    > {0} './test-all $cxx_compiler $kokkos' -o
 
     \033[1;32m# Do a scaling performance test for lin-interp on blake \033[0m
     > {0} '$scream/scripts/perf-analysis ncol:8000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=$kokkos --test=lin-interp/li_ref --test=lin-interp/li_kokkos --test=lin-interp/li_vect -s ncol:2:128000' -m blake -o
@@ -54,7 +54,7 @@ OR
     )
 
     parser.add_argument("run", help="What to run on the machine, cwd for the command will be root-dir. "
-                        "Supported magic strings: $compiler $kokkos $machine $scream_docs $scream")
+                        "Supported magic strings: $cxx_compiler $f90_compiler $kokkos $machine $scream_docs $scream")
 
     parser.add_argument("-c", "--commit", help="Commit to test. Default is current HEAD.")
 
@@ -67,8 +67,8 @@ OR
                         help="Run tests on local machine, only using this script to manage env and batch submission.")
 
     parser.add_argument("-k", "--kokkos", help="Use to select specific kokkos installation. "
-                        "Default will be scream-repo/externals/kokkos. "
-                        "Supported magic strings: $machine $compiler")
+                        "Only supported for scream-docs runs. "
+                        "Supported magic strings: $machine $cxx_compiler")
 
     parser.add_argument("-r", "--root-dir",
                         help="The root directory of the scream src you want to test. "
