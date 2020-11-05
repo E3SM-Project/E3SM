@@ -30,21 +30,21 @@ void Functions<S,D>::diag_second_moments(const MemberType& team, const Int& nlev
   //  u, v, TKE, and tracers are computed here as well as the
   //  correlation of qw and thetal.
 
-  const auto thl2tune = sp(1);
+  const auto thl2tune = 1;
 
   // moisture variance
-  const auto qw2tune = sp(1);
+  const auto qw2tune = 1;
 
   // temp moisture covariance
-  const auto qwthl2tune = sp(1);
+  const auto qwthl2tune = 1;
 
   // vertical velocity variance
-  const auto w2tune = sp(1);
+  const auto w2tune = 1;
 
   // Interpolate some variables from the midpoint grid to the interface grid
-  linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, sp(0));
-  linear_interp(team, zt_grid, zi_grid, tkh,      tkh_zi,      nlev, nlevi, sp(0));
-  linear_interp(team, zt_grid, zi_grid, tk,       tk_zi,       nlev, nlevi, sp(0)); 
+  linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, 0);
+  linear_interp(team, zt_grid, zi_grid, tkh,      tkh_zi,      nlev, nlevi, 0);
+  linear_interp(team, zt_grid, zi_grid, tk,       tk_zi,       nlev, nlevi, 0); 
 
   // Vertical velocity variance is assumed to be propotional to the TKE
   const Int nlev_pack = ekat::npack<Spack>(nlev);
