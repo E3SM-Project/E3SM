@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# script for running E3SM-MMF simulations using the 2020 INICTE allocation (CLI115)
+# script for running E3SM-MMF benchmark simulations using the 2020 INICTE allocation (CLI115)
 # Branch for this campaign: https://github.com/E3SM-Project/E3SM/tree/whannah/incite-2020
 #---------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------
@@ -12,46 +12,71 @@ src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC1/'
 
 ### flags to control config/build/submit sections
 # clean        = True
-# newcase      = True
-# config       = True
-# build        = True
+newcase      = True
+config       = True
+build        = True
 submit       = True
-continue_run = True
+# continue_run = True
 
 ### run duration and resubmission (remember to set continue_run)
-stop_opt,stop_n,resub = 'ndays',73*3,6
-# stop_opt,stop_n,resub = 'ndays',10,1
+stop_opt,stop_n,resub = 'ndays',1,0
 
 ### same settings for all runs
 compset = 'F-MMFXX'
-arch    = 'GNUGPU'
 ne,npg  = 45,2
 grid    = f'ne{ne}pg{npg}_r05_oECv3'
+# grid    = f'ne{ne}pg{npg}_ne{ne}pg{npg}'
 crm_dx  = 3200 
 crm_dt  = 10
 rad_nx  = 2
 
 ### time stamps for distinguishing different settings
-# timestamp = '20200930' # star with rad_nx/ny=4
-# timestamp = '20201002' # reduced rad columns to rad_nx/ny=2
-timestamp = '20201006' # after rebase with master to bring in EAM name changes
-# timestamp = '20201016' # restart to reproduce restart issues
+# timestamp = '20201012' # same config as larger INCITE runs, task_per_node=84
+timestamp = '20201013' # change to 1 day run, task_per_node=84
+# timestamp = '20201014' # change CPU task_per_node=48 (also fix how other component tasks are set)
+# timestamp = '20201015' # change CPU task_per_node=12
 
-### common parts of the case name
-case_list = ['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32']
+### case specifics
+# arch='GNUCPU'
+# arch='GNUGPU'
 
-### specific case names and task/node settings
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32','MOMFB',timestamp] )
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32',timestamp] )
-num_nodes= 150; task_per_node=48; case = '.'.join(case_list+[timestamp] )
+### CPU
+arch='GNUCPU'
+num_nodes = 578
+# num_nodes = 290
+# num_nodes = 145
+# num_nodes = 73
+
+##GPU
+# arch='GNUGPU'
+# num_nodes = 1013
+# num_nodes = 507
+# num_nodes = 254
+# num_nodes = 127
+# num_nodes = 64
+
+
+# num_nodes = 32
+# num_nodes = 16
+# num_nodes = 8
+# num_nodes = 4
+# num_nodes = 2
+# num_nodes = 1
+
+### specify full case name
+case_list_common = ['INCITE2020','BENCHMARK',arch,grid,compset,'NLEV_50','CRMNX_32']
+# case_list = case_list_common+['CRMNY_32','MOMFB']
+case_list = case_list_common+['CRMNY_32']
+# case_list = case_list_common # 2D
+
+case='.'.join(case_list+[f'NN_{num_nodes}',timestamp] )
 
 # Impose wall limits for Summits
 # if num_nodes>=  1: walltime =  '2:00'
 # if num_nodes>= 46: walltime =  '6:00'
 # if num_nodes>= 92: walltime = '12:00'
 # if num_nodes>=922: walltime = '24:00'
-walltime = '2:00'
-# walltime = '12:00'
+walltime = '6:00'
 
 ### add these modifiers to enable debug mode or state variable checks
 # case += '.debug-on'
@@ -66,8 +91,9 @@ for p in params:
       if p[1]!='72': init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}.nc'
 
 ### specify land initial condition file
-land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
-land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
+if ne==45:
+   land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
+   land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
 #---------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------
 print('\n  case : '+case+'\n')
@@ -99,7 +125,7 @@ def run_cmd(cmd,suppress_output=False,execute=True):
 if newcase :
    cmd = src_dir+'cime/scripts/create_newcase --case '+case_dir+case
    cmd = cmd + ' --compset '+compset+' --res '+grid
-   cmd = cmd + ' --pecount '+str(num_nodes*task_per_node)+'x1 '
+   # cmd = cmd + ' --pecount '+str(num_nodes*task_per_node)+'x1 '
    if arch=='GNUCPU': cmd = cmd + ' -compiler gnu    '
    if arch=='GNUGPU': cmd = cmd + ' -compiler gnugpu '
    run_cmd(cmd)
@@ -156,19 +182,15 @@ if config :
       run_cmd(cmd)
    #-------------------------------------------------------
    # Set tasks and threads
-   if arch == 'GNUGPU':
-      atm_ntasks = task_per_node*num_nodes
-      cmd = './xmlchange -file env_mach_pes.xml '
-      cmd += f' NTASKS_ATM={atm_ntasks}'
-      if ne==4:  alt_ntask = task_per_node*4
-      if ne==45: alt_ntask = task_per_node*6*4
-      cmd += f',NTASKS_LND={alt_ntask},NTASKS_CPL={alt_ntask}'
-      cmd += f',NTASKS_OCN={alt_ntask},NTASKS_ICE={alt_ntask}'
-      alt_ntask = task_per_node
-      cmd += f',NTASKS_ROF={alt_ntask},NTASKS_WAV={alt_ntask},NTASKS_GLC={alt_ntask}'
-      cmd += f',NTASKS_ESP=1,NTASKS_IAC=1'
-      run_cmd(cmd)
-      # run_cmd('./xmlchange -file env_mach_pes.xml NTHRDS_ATM=2,NTHRDS_CPL=2,NTHRDS_LND=1')
+   atm_ntasks = task_per_node*num_nodes
+   cmd = './xmlchange -file env_mach_pes.xml '
+   cmd += f' NTASKS_ATM={atm_ntasks}'
+   alt_ntask = task_per_node * min([ne,num_nodes])
+   cmd += f',NTASKS_LND={alt_ntask},NTASKS_CPL={alt_ntask}'
+   cmd += f',NTASKS_OCN={alt_ntask},NTASKS_ICE={alt_ntask}'
+   cmd += f',NTASKS_ROF=1,NTASKS_WAV=1,NTASKS_GLC=1,NTASKS_ESP=1,NTASKS_IAC=1'
+   run_cmd(cmd)
+   # run_cmd('./xmlchange -file env_mach_pes.xml NTHRDS_ATM=2,NTHRDS_CPL=2,NTHRDS_LND=1')
    #-------------------------------------------------------
    # 64_data format is needed for large numbers of columns (GCM or CRM)
    run_cmd('./xmlchange PIO_NETCDF_FORMAT=\"64bit_data\" ')
@@ -209,39 +231,6 @@ if submit :
    nfile = 'user_nl_eam'
    file = open(nfile,'w') 
    #------------------------------
-   # Specify history output frequency and variables
-   #------------------------------   
-   file.write(' nhtfrq    = 0,-1,-3 \n') 
-   # file.write(' mfilt     = 1, 24, 8 \n') # 1-day files for testing
-   file.write(' mfilt     = 1,120,40 \n') # 5-day files for production
-   if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
-      file.write(" fincl1    = 'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' \n")
-   # hourly 2D fields
-   file.write(" fincl2    = 'PS','PSL','TS'")
-   file.write(             ",'PRECT','TMQ'")
-   file.write(             ",'LHFLX','SHFLX'")             # surface fluxes
-   file.write(             ",'FSNT','FLNT'")               # Net TOM heating rates
-   file.write(             ",'FLNS','FSNS'")               # Surface rad for total column heating
-   file.write(             ",'FSNTC','FLNTC'")             # clear sky heating rates for CRE
-   file.write(             ",'LWCF','SWCF'")               # cloud radiative foricng
-   file.write(             ",'TGCLDLWP','TGCLDIWP'")
-   file.write(             ",'TAUX','TAUY'")                       # surface stress
-   file.write(             ",'TBOT:I','QBOT:I','UBOT:I','VBOT:I'") # lowest model leve
-   file.write(             ",'T900:I','Q900:I','U900:I','V900:I'") # 900mb data
-   file.write(             ",'T850:I','Q850:I','U850:I','V850:I'") # 850mb data
-   file.write(             ",'Z300:I','Z500:I'")
-   file.write(             ",'OMEGA850:I','OMEGA500:I'")
-   file.write('\n')
-   # 3-hourly 3D fields
-   file.write(" fincl3    = 'PS','T','Q','Z3'")            # 3D thermodynamic budget components
-   file.write(             ",'U','V','OMEGA'")             # 3D velocity components
-   file.write(             ",'CLOUD','CLDLIQ','CLDICE'")   # 3D cloud fields
-   file.write(             ",'QRL','QRS'")                 # 3D radiative heating profiles
-   if 'use_MMF' in config_opts :
-      if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
-         file.write(       ",'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' ")
-   file.write('\n')
-   #------------------------------
    # Other namelist stuff
    #------------------------------
    # file.write(' srf_flux_avg = 1 \n')              # sfc flux smoothing (for MMF stability)
@@ -251,7 +240,8 @@ if submit :
 
    if 'checks-on' in case: file.write(' state_debug_checks = .true. \n')
 
-   file.write(" inithist = \'ENDOFRUN\' \n") # ENDOFRUN / NONE
+   # disable cami file output
+   file.write(" inithist = \'NONE\' \n") # ENDOFRUN / NONE
 
    if 'init_file_atm' in locals():
       file.write(f' ncdata = \'{init_file_dir}/{init_file_atm}\'\n')
@@ -273,9 +263,11 @@ if submit :
    run_cmd(f'./xmlchange JOB_QUEUE=batch,JOB_WALLCLOCK_TIME={walltime}')
    run_cmd(f'./xmlchange CHARGE_ACCOUNT={acct},PROJECT={acct}')
 
-   # Restart Frequency
-   run_cmd(f'./xmlchange -file env_run.xml REST_OPTION={stop_opt},REST_N={stop_n}')
-   # run_cmd('./xmlchange -file env_run.xml REST_OPTION=nmonths,REST_N=2')
+   # disable restart files
+   run_cmd(f'./xmlchange REST_OPTION=never')
+
+   # # Restart Frequency
+   # run_cmd('./xmlchange -file env_run.xml REST_OPTION={stop_opt},REST_N={stop_n}')
 
    if continue_run :
       run_cmd('./xmlchange -file env_run.xml CONTINUE_RUN=TRUE ')   

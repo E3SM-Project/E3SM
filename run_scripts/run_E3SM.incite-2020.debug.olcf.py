@@ -12,38 +12,92 @@ src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC1/'
 
 ### flags to control config/build/submit sections
 # clean        = True
-# newcase      = True
-# config       = True
-# build        = True
+newcase      = True
+config       = True
+build        = True
 submit       = True
-continue_run = True
+# continue_run = True
 
 ### run duration and resubmission (remember to set continue_run)
-stop_opt,stop_n,resub = 'ndays',73*3,6
-# stop_opt,stop_n,resub = 'ndays',10,1
+
 
 ### same settings for all runs
-compset = 'F-MMFXX'
-arch    = 'GNUGPU'
-ne,npg  = 45,2
-grid    = f'ne{ne}pg{npg}_r05_oECv3'
+# compset = 'F-MMFXX'
+# arch,compset = 'GNUCPU','F-MMF1-AQP1'
+# arch,compset = 'GNUGPU','F-MMFXX-AQP1'
+# arch    = 'GNUGPU'
+ne,npg  = 4,2
+# grid    = f'ne{ne}pg{npg}_r05_oECv3'
+grid    = f'ne{ne}pg{npg}_ne{ne}pg{npg}'
 crm_dx  = 3200 
 crm_dt  = 10
 rad_nx  = 2
 
 ### time stamps for distinguishing different settings
-# timestamp = '20200930' # star with rad_nx/ny=4
-# timestamp = '20201002' # reduced rad columns to rad_nx/ny=2
-timestamp = '20201006' # after rebase with master to bring in EAM name changes
-# timestamp = '20201016' # restart to reproduce restart issues
+# timestamp = '20200930' # rad_nx=4
+# timestamp = '20201002' # rad_nx=2
+# timestamp = '20201006' # rad_nx=2 after rebasing
+# timestamp = '20201015' # same as 20201006
+# timestamp = '20201021' # same as 20201006 - just add CRM output for sanity check
+# timestamp = '20201030' # new batch with timestep output
+# timestamp = '20201030a' # new batch with timestep output + bug fix (cast int to real)
+# timestamp = '20201030b' # new batch with timestep output + bug fix (enable top 2 layer tendencies)
+# timestamp = '20201030c' # 20201030b had an error, which is fixed here
+# timestamp = '20201030d'; crm_dt = 2 # same as c, but with much shorter time step parameters
+# timestamp = '20201030e'; rad_nx = 1 # same as a, but single rad column
+# timestamp = '20201030f'; # same as a, but with print_energy_errors = .true.
+# timestamp = '20201030g'; # same as a, but with USE_ORIG_FFT
+# timestamp = '20201030h' # after cherry picking Matt's commit that update literal precision - MISSING COMMITS!!!
+# timestamp = '20201030i' # after cherry picking Matt's commit that update literal precision
+
+timestamp = '20201105' # new batch - timestep output - includes precision fixes - new MMF_CPL_TOP option - print_energy_errors=true
 
 ### common parts of the case name
-case_list = ['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32']
+# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_72','CRMNX_32']
+# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_50','CRMNX_32']
+# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_50','CRMNX_8'] 
 
 ### specific case names and task/node settings
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32','MOMFB',timestamp] )
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32',timestamp] )
-num_nodes= 150; task_per_node=48; case = '.'.join(case_list+[timestamp] )
+# num_nodes=8; task_per_node=48
+# stop_opt,stop_n,resub='ndays',73,5;case='.'.join(case_list+['CRMNY_8',timestamp,'00'] )
+
+stop_opt,stop_n,resub='ndays',10,0
+
+case_list = ['INCITE2020','DEBUG']
+
+### C++ CPU
+# arch,compset='GNUCPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp] )
+### C++ GPU
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','NO-GW',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','OLD-FFT',timestamp] )
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_44','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+
+### fortran
+### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
+### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
+
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
+arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+
+if 'GPU' in arch : num_nodes=4; task_per_node=12
+if 'CPU' in arch : num_nodes=4; task_per_node=48
+
+# if 'CRMNX_1024' in case : num_nodes=8
+
+### alternate case name for testing # of nodes and tasks
+# num_nodes=200 ; task_per_node=48; case = '.'.join(case_list+[timestamp,f'NN_{num_nodes}',f'TPN_{task_per_node}'] )
 
 # Impose wall limits for Summits
 # if num_nodes>=  1: walltime =  '2:00'
@@ -58,21 +112,28 @@ walltime = '2:00'
 # case += '.checks-on'
 
 ### specify atmos initial condition file
+
 # init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
 init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/HICCUP/data/'
 params = [p.split('_') for p in case.split('.')]
 for p in params:
    if p[0]=='NLEV': 
-      if p[1]!='72': init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}.nc'
+      if p[1]!='72': 
+         if 'RCE' in compset or 'AQP' in compset:
+            init_file_atm = f'HICCUP.AQUA.ne{ne}np4.L{p[1]}.nc'
+         else:
+            init_file_atm = f'HICCUP.cami_mam3_Linoz_ne{ne}np4.L{p[1]}.nc'
 
 ### specify land initial condition file
-land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
-land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
+# land_init_path = '/gpfs/alpine/scratch/hannah6/cli115/e3sm_scratch/init_files'
+# land_init_file = 'CLM_spinup.ICRUELM.ne45pg2_r05_oECv3.20-yr.2010-10-01.elm.r.2006-01-01-00000.nc'
 #---------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------
 print('\n  case : '+case+'\n')
 
 dtime = 20*60   # GCM physics time step
+
+if timestamp=='20201030d': dtime = 5*60
 
 if 'dtime' in locals(): ncpl  = 86400 / dtime
 
@@ -134,9 +195,13 @@ if config :
       if p[0]=='CRMNY': run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_ny {p[1]} \" ')
       if p[0]=='NLEV' and p[1] != '72' : 
          nlev = p[1]; crm_nz = None
-         if nlev== '50': crm_nz =  '46'
-         if nlev=='100': crm_nz =  '95'
-         if nlev=='120': crm_nz = '115'
+         if 'CRMNZ' not in case:
+            if nlev== '50': crm_nz =  '46'
+            if nlev=='100': crm_nz =  '95'
+            if nlev=='120': crm_nz = '115'
+         else:
+            for m in params:
+               if m[0]=='CRMNZ': crm_nz = m[1]
          if crm_nz is None: raise ValueError('No value of crm_nz specified')
          run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -nlev {p[1]} -crm_nz {crm_nz} \" ')
    #-------------------------------------------------------
@@ -147,8 +212,10 @@ if config :
    #-------------------------------------------------------
    # Add special MMF options based on case name
    cpp_opt = ''
-   if '.MOMFB.'  in case: cpp_opt += ' -DMMF_MOMENTUM_FEEDBACK'
-   if 'debug-on' in case: cpp_opt += ' -DYAKL_DEBUG'
+   if '.MOMFB.'   in case: cpp_opt += ' -DMMF_MOMENTUM_FEEDBACK'
+   if '.CPL-TOP.' in case: cpp_opt += ' -DMMF_CPL_TOP'
+   if '.OLD-FFT.' in case: cpp_opt += ' -DUSE_ORIG_FFT'
+   if 'debug-on'  in case: cpp_opt += ' -DYAKL_DEBUG'
 
    if cpp_opt != '' :
       cmd  = f'./xmlchange --append -file env_build.xml -id CAM_CONFIG_OPTS'
@@ -211,9 +278,11 @@ if submit :
    #------------------------------
    # Specify history output frequency and variables
    #------------------------------   
-   file.write(' nhtfrq    = 0,-1,-3 \n') 
+   file.write(' nhtfrq    = 0,1,1 \n') 
+   file.write(' mfilt     = 1,72,72 \n') # 1-day files
+   # file.write(' nhtfrq    = 0,-1,-3 \n') 
    # file.write(' mfilt     = 1, 24, 8 \n') # 1-day files for testing
-   file.write(' mfilt     = 1,120,40 \n') # 5-day files for production
+   # file.write(' mfilt     = 1,120,40 \n') # 5-day files for production
    if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
       file.write(" fincl1    = 'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' \n")
    # hourly 2D fields
@@ -225,12 +294,12 @@ if submit :
    file.write(             ",'FSNTC','FLNTC'")             # clear sky heating rates for CRE
    file.write(             ",'LWCF','SWCF'")               # cloud radiative foricng
    file.write(             ",'TGCLDLWP','TGCLDIWP'")
-   file.write(             ",'TAUX','TAUY'")                       # surface stress
-   file.write(             ",'TBOT:I','QBOT:I','UBOT:I','VBOT:I'") # lowest model leve
-   file.write(             ",'T900:I','Q900:I','U900:I','V900:I'") # 900mb data
-   file.write(             ",'T850:I','Q850:I','U850:I','V850:I'") # 850mb data
-   file.write(             ",'Z300:I','Z500:I'")
-   file.write(             ",'OMEGA850:I','OMEGA500:I'")
+   # file.write(             ",'TAUX','TAUY'")                       # surface stress
+   # file.write(             ",'TBOT:I','QBOT:I','UBOT:I','VBOT:I'") # lowest model leve
+   # file.write(             ",'T900:I','Q900:I','U900:I','V900:I'") # 900mb data
+   # file.write(             ",'T850:I','Q850:I','U850:I','V850:I'") # 850mb data
+   # file.write(             ",'Z300:I','Z500:I'")
+   # file.write(             ",'OMEGA850:I','OMEGA500:I'")
    file.write('\n')
    # 3-hourly 3D fields
    file.write(" fincl3    = 'PS','T','Q','Z3'")            # 3D thermodynamic budget components
@@ -238,6 +307,12 @@ if submit :
    file.write(             ",'CLOUD','CLDLIQ','CLDICE'")   # 3D cloud fields
    file.write(             ",'QRL','QRS'")                 # 3D radiative heating profiles
    if 'use_MMF' in config_opts :
+      file.write(          ",'MMF_DT','MMF_DQ'")               # CRM heating/moistening tendencies
+      file.write(          ",'MMF_TLS','MMF_QTLS' ")           # CRM large-scale forcing
+      file.write(          ",'MMF_DQC','MMF_DQI' ")
+      file.write(          ",'MMF_QRL','MMF_QRS' ")
+      file.write(          ",'MMF_QC','MMF_QI','MMF_QS','MMF_QG','MMF_QR' ")
+      # file.write(          ",'CRM_QV','CRM_QC','CRM_W'")
       if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
          file.write(       ",'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' ")
    file.write('\n')
@@ -246,6 +321,12 @@ if submit :
    #------------------------------
    # file.write(' srf_flux_avg = 1 \n')              # sfc flux smoothing (for MMF stability)
    # file.write(f' crm_accel_factor = 3 \n')         # CRM acceleration factor (default is 2)
+
+   if 'NO-MSA' in case: file.write(f' use_crm_accel = .false. \n')
+   if 'NO-GW' in case: 
+      file.write(f' use_gw_convect   = .false. \n')
+      file.write(f' use_gw_front     = .false. \n')
+      file.write(f' use_gw_oro       = .false. \n')
 
    if num_dyn<ntasks_atm: file.write(' dyn_npes = '+str(num_dyn)+' \n')   # limit dynamics tasks
 
