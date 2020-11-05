@@ -23,8 +23,8 @@ set (CASEROOT "" CACHE STRING "The case root directory.")
 # Turn on timing
 set(E3SM_ENABLE_TIMING FALSE CACHE BOOL "Turn on build timings")
 if (E3SM_ENABLE_TIMING)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "/usr/bin/time --format '%C %E' ")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "/usr/bin/time --format '%C %E' ")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "/usr/bin/time --format '%C\\nElapsed time: %E' ")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "/usr/bin/time --format '%C\\nElapsed time: %E' ")
 endif()
 
 # We need to set the compilers *before* calling `project`.
