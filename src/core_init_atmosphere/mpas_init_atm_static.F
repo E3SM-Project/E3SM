@@ -1080,8 +1080,20 @@
     call mpas_log_write('Using MODIS FPAR 30-arc-second data for climatological monthly vegetation fraction')
 
     geog_sub_path = 'greenfrac_fpar_modis/'
+
+    ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when initalizing the interpolation of montly vegetation fraction (greenfrac)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
+
     greenfrac(:,:) = 0.0
 
+    ierr = mgr % finalize()
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when finalizing the interpolation of montly vegetation fraction (greenfrac)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
  else if (trim(config_vegfrac_data) == 'NCEP') then
 
     call mpas_log_write('Using NCEP 0.144-deg data for climatological monthly vegetation fraction')
