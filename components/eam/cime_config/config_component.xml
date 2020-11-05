@@ -138,8 +138,8 @@
       <value compset="_EAM%ADIAB"     >-phys adiabatic</value>
 
       <!-- SCREAM configurations -->
-      <value compset="_EAM%SCREAM-LR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp</value>
-      <value compset="_EAM%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp</value>
+      <value compset="_EAM%SCREAM-LR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates</value>
+      <value compset="_EAM%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates</value>
 
       <!-- Aquaplanet -->
       <value compset="_EAM%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
