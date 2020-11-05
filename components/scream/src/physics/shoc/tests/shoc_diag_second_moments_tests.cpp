@@ -252,7 +252,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
   static void run_bfb()
   {
     DiagSecondMomentsData f90_data[] = {
-      // TODO
+      DiagSecondMomentsData(36,  72, 73),
+      DiagSecondMomentsData(72,  72, 73),
+      DiagSecondMomentsData(128, 72, 73),
+      DiagSecondMomentsData(256, 72, 73),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondMomentsData);
@@ -265,7 +268,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     DiagSecondMomentsData cxx_data[] = {
-      // TODO
+      DiagSecondMomentsData(f90_data[0]),
+      DiagSecondMomentsData(f90_data[1]),
+      DiagSecondMomentsData(f90_data[2]),
+      DiagSecondMomentsData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -279,7 +285,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      diag_second_moments_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
+      diag_second_moments_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.u_wind, d.v_wind, 
+                            d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, 
+                            d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, 
+                            d.vw_sec, d.wtke_sec, d.w_sec);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 

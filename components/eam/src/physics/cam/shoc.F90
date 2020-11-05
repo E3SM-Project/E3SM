@@ -1270,6 +1270,10 @@ subroutine diag_second_moments(&
          qwthl_sec,uw_sec,vw_sec,wtke_sec, &    ! Input/Output
          w_sec)                                 ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_moments_f
+#endif
+
   ! Purpose of this subroutine is to diagnose the second
   !  order moments needed for the SHOC parameterization.
   !  Namely these are variances of thetal, qw, and vertical
@@ -1339,6 +1343,16 @@ subroutine diag_second_moments(&
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
   real(rtype) :: tk_zi(shcol,nlevi)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+     call diag_second_moments_f(shcol,nlev,nlevi,thetal,qw,u_wind,v_wind,tke, &         ! Input
+                                isotropy,tkh,tk,dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+                                thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec,uw_sec,vw_sec,wtke_sec, &    ! Input/Output
+                                w_sec)                                 
+      return
+   endif
+#endif
 
   ! Interpolate some variables from the midpoint grid to the interface grid
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
