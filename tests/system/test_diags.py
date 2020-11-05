@@ -165,17 +165,25 @@ class TestAllSets(unittest.TestCase):
         set_name = 'streamflow'
         variables = ['RIVER_DISCHARGE_OVER_LAND_LIQ']
         for variable in variables:
-            for plot_type in ['seasonality', 'bias']:
+            for plot_type in ['seasonality_map', 'annual_map', 'annual_scatter']:
                 png_path = '{}/{}/{}.png'.format(
                     set_name, case_id, plot_type)
                 expected = 'streamflow/RIVER_DISCHARGE_OVER_LAND_LIQ_GSIM/{}.png'.format(plot_type)
                 self.assertEqual(png_path, expected)
                 full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
                 self.assertTrue(os.path.exists(full_png_path))
-                html_path = 'viewer/{}/{}/{}-{}/{}.html'.format(
-                    set_name, plot_type, case_id_lower, plot_type, plot_type)
-                expected = 'viewer/streamflow/{}/river_discharge_over_land_liq_gsim-{}/{}.html'.format(
-                    plot_type, plot_type, plot_type)
+                if plot_type == 'seasonality_map':
+                    plot_label = 'seasonality-map'
+                elif plot_type == 'annual_map':
+                    plot_label = 'mean-annual-streamflow-map'
+                elif plot_type == 'annual_scatter':
+                    plot_label = 'mean-annual-streamflow-scatter-plot'
+                else:
+                    raise Exception('Invalid plot_type={}'.format(plot_type))
+                html_path = 'viewer/{}/{}/{}-{}/plot.html'.format(
+                    set_name, plot_label, case_id_lower, plot_type)
+                expected = 'viewer/streamflow/{}/river_discharge_over_land_liq_gsim-{}/plot.html'.format(
+                    plot_label, plot_type)
                 self.assertEqual(html_path, expected)
                 full_html_path = '{}{}'.format(TestAllSets.results_dir, html_path)
                 self.check_html_image(full_html_path, png_path)
