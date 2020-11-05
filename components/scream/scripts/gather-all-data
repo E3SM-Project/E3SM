@@ -67,7 +67,7 @@ OR
                         help="Run tests on local machine, only using this script to manage env and batch submission.")
 
     parser.add_argument("-k", "--kokkos", help="Use to select specific kokkos installation. "
-                        "Default will be scream-repo/externals/kokkos. "
+                        "Only supported for scream-docs runs. "
                         "Supported magic strings: $machine $compiler")
 
     parser.add_argument("-r", "--root-dir",

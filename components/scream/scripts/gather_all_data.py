@@ -50,19 +50,18 @@ class GatherAllData(object):
 
         repo = scream_docs_repo if self._scream_docs else scream_repo
 
-        # Compute kokkos location
-        if self._kokkos:
-            expect (self._scream_docs, "Error! Scream runs do not allow to specify a user-provided kokkos installation.")
-            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
-
         local_cmd = self._run
         # Do magic replacements here
         local_cmd = local_cmd.\
             replace("$compiler", compiler).\
-            replace("$kokkos", str(kokkos_loc)).\
             replace("$machine", machine).\
             replace("$scream_docs", str(scream_docs_repo)).\
             replace("$scream", str(scream_repo))
+        if self._kokkos:
+            # Compute kokkos location and do magic replacement
+            expect (self._scream_docs, "Error! Scream runs do not allow to specify a user-provided kokkos installation.")
+            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
+            local_cmd.replace("$kokkos", str(kokkos_loc)).\
 
         # Scream-docs tests may depend on scream's Kokkos and scripts, so update scream repo too if we're doing
         # a scream-docs test.
