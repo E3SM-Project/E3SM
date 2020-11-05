@@ -5,7 +5,7 @@ Given an XML file containing the CF conventions for standardized field names
 (https://cfconventions.org/standard-names.html), this tool generates a YAML
 file with the same information.
 
-Usage: cf-xml-toyaml <cf-xml-file>
+Usage: cf-xml-to-yaml <cf-xml-file>
 """
 
 import sys, os
