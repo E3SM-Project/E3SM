@@ -258,6 +258,7 @@ void post_timeloop() {
   // don't use CRM tendencies from two crm top levels
   // radiation tendencies are added back after the CRM call (see crm_physics_tend)
 
+#ifndef MMF_CPL_TOP
   // for (int k=0; k<2; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(2,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -272,6 +273,8 @@ void post_timeloop() {
     crm_output_vltend (k,icrm) = 0.0;
 #endif
   });
+#endif /* MMF_CPL_TOP */
+
 
   // Save the last step to the permanent core:
 

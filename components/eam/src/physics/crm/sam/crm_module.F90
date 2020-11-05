@@ -1230,6 +1230,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     crm_output%precstend(icrm) = (colprecs(icrm)-crm_output%precstend(icrm))/ggr*factor_xy * icrm_run_time
   enddo
 
+#ifndef MMF_CPL_TOP
   ! don't use CRM tendencies from two crm top levels
   ! radiation tendencies are added back after the CRM call (see crm_physics_tend)
   !$acc parallel loop collapse(2) async(asyncid)
@@ -1245,6 +1246,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
+#endif /* MMF_CPL_TOP */
 
   !-------------------------------------------------------------
   !

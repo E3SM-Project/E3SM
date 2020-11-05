@@ -949,9 +949,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          end do
       end do
 
+#ifdef MMF_CPL_TOP
+      ! The radiation tendencies in the GCM levels above the CRM  are set to
+      ! be zero in the CRM, So add radiation tendencies to these levels 
+      ptend%s(:ncol, :pver-crm_nz) = qrs(:ncol,:pver-crm_nz) + qrl(:ncol,:pver-crm_nz)
+#else
       ! The radiation tendencies in the GCM levels above the CRM and the top 2 CRM levels are set to
       ! be zero in the CRM, So add radiation tendencies to these levels 
       ptend%s(:ncol, :pver-crm_nz+2) = qrs(:ncol,:pver-crm_nz+2) + qrl(:ncol,:pver-crm_nz+2)
+#endif /* MMF_CPL_TOP */
+
 
       ! This will be used to check energy conservation
       mmf_rad_flux(:ncol) = 0.0_r8
