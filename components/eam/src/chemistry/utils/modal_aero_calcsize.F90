@@ -4,7 +4,7 @@ module modal_aero_calcsize
 
 use shr_kind_mod,     only: r8 => shr_kind_r8, cs => shr_kind_cs
 use spmd_utils,       only: masterproc
-use physconst,        only: pi, rhoh2o, gravit
+use physconst,        only: pi, gravit
 
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state, physics_ptend
@@ -25,18 +25,16 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 #ifdef MODAL_AERO
 
 ! These are the variables needed for the diagnostic calculation of dry radius
-use modal_aero_data, only: ntot_amode, nspec_amode, numptr_amode, alnsg_amode, &
-                           voltonumbhi_amode, voltonumblo_amode, &
-                           dgnum_amode, dgnumhi_amode, dgnumlo_amode, &
-                           modename_amode
+use modal_aero_data, only: ntot_amode, numptr_amode, voltonumbhi_amode, voltonumblo_amode,&
+     dgnum_amode, dgnumhi_amode, dgnumlo_amode, &
+     modename_amode
 
 
 ! These variables are needed for the prognostic calculations to exchange mass
 ! between modes
-use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, lmassptrcw_amode, &
-           lmassptr_amode, modeptr_accum, modeptr_aitken, ntot_aspectype, &
-           lspectype_amode, specmw_amode, specdens_amode, voltonumb_amode, &
-           cnst_name_cw
+use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
+     modeptr_accum, modeptr_aitken, ntot_aspectype, &
+     voltonumb_amode, cnst_name_cw
 
 #endif
 !---------------------------------------------------------------------------------------------------------
@@ -768,7 +766,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    ! Only if "update_mmr" is TRUE and only for list_idx_local=0
    !----------------------------------------------------------------------
    if(update_mmr .and. list_idx_local == 0) then
-      call update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
+      call update_cld_brn_mmr(list_idx_local, top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
       !----------------------------------------------------------------------
       ! do outfld calls
@@ -1008,7 +1006,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   real(r8) :: drv_a, drv_c                  ! dry volume (cm3/mol_air)
   real(r8) :: num_a0, num_c0                ! initial number (#/mol_air)
   real(r8) :: num_a, num_c                  ! working number (#/mol_air)
-  real(r8) :: cmn_factor
+  real(r8) :: sigmag, cmn_factor
   real(r8), pointer :: fldcw(:,:)           !specie mmr (cloud borne)
 
   !find state q array number mode indices for interstitial and cloud borne aerosols
@@ -1035,7 +1033,12 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   end if
 
   !pointer to cloud borne number mmr for mode imode
+  !(it is okay to use qqcw_get_field to get number mixing ratios for diagnostic calls)
   fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
+
+  !Compute a common factor for size computations
+  call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
+  cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 
   do  klev = top_lev, pver
      do  icol = 1, ncol
@@ -1074,9 +1077,6 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
            endif
         endif !do_adjust
-
-        !Compute a common factor for size computations
-        cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
 
         !
         ! now compute current dgn and v2n
@@ -1164,6 +1164,9 @@ real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
 
 !v2nxx = voltonumbhi_amode is proportional to dgnumhi**(-3),
 !        and produces the minimum allowed number for a given volume
+      !voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*alnsg**2) )
+      !voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*alnsg**2) )
+!call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
 v2nxx   = voltonumbhi_amode(imode)
 
 !v2nyy = voltonumblo_amode is proportional to dgnumlo**(-3),
@@ -1579,11 +1582,11 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
            drv_c_acc = max( 0.0_r8, drv_c_accsv(icol,klev) + duma )
 
            !interstitial species
-           call compute_new_sz_after_transfer(iait, drv_a, num_a, &
+           call compute_new_sz_after_transfer(list_idx, iait, drv_a, num_a, &
                 dgncur_a(icol,klev,iait), v2ncur_a(icol,klev,iait))
 
            !cloud borne species
-           call compute_new_sz_after_transfer(iait, drv_c, num_c, &
+           call compute_new_sz_after_transfer(list_idx, iait, drv_c, num_c, &
                 dgncur_c(icol,klev,iait), v2ncur_c(icol,klev,iait))
 
            num_a = num_a_acc
@@ -1592,11 +1595,11 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
            drv_c = drv_c_acc
 
            !interstitial species
-           call compute_new_sz_after_transfer(iacc, drv_a, num_a, &
+           call compute_new_sz_after_transfer(list_idx, iacc, drv_a, num_a, &
                 dgncur_a(icol,klev,iacc), v2ncur_a(icol,klev,iacc))
 
            !cloud borne species
-           call compute_new_sz_after_transfer(iacc, drv_c, num_c, &
+           call compute_new_sz_after_transfer(list_idx, iacc, drv_c, num_c, &
                 dgncur_c(icol,klev,iacc), v2ncur_c(icol,klev,iacc))
 
            !Printout just once in hte log file (idiagaa is set to negaitive after this if condition)
@@ -1831,22 +1834,24 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
 end subroutine compute_coef_acc_ait_transfer
 
 
-subroutine compute_new_sz_after_transfer(imode, drv, num, &
+subroutine compute_new_sz_after_transfer(list_idx, imode, drv, num, &
               dgncur, v2ncur)
 
 implicit none
 
 !intent-ins
-integer,  intent(in) :: imode
+integer,  intent(in) :: imode, list_idx
 real(r8), intent(in) :: drv, num
 
 !intent-outs
 real(r8), intent(inout) :: dgncur, v2ncur
 
 !local
-real(r8) :: cmn_factor
+real(r8) :: cmn_factor, sigmag
 
-cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
+!Compute a common factor for size computations
+call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag)
+cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 
 if (drv > 0.0_r8) then
    if (num <= drv*voltonumbhi_amode(imode)) then
@@ -1976,7 +1981,7 @@ end subroutine update_num_tends
 
 !---------------------------------------------------------------------------------------------
 
-subroutine update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
+subroutine update_cld_brn_mmr(list_idx, top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
   !-----------------------------------------------------------------------------
   !Purpose: updates mmr of cloud borne aerosols
@@ -1990,7 +1995,7 @@ subroutine update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, d
   implicit none
 
   !input
-  integer,  intent(in) :: top_lev, pver !for model level loop
+  integer,  intent(in) :: list_idx, top_lev, pver !for model level loop
   integer,  intent(in) :: ncol          !# of columns
   integer,  intent(in) :: lchnk
   integer,  intent(in) :: pcnst         !# of constituents
@@ -2006,6 +2011,14 @@ subroutine update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, d
   !local
   integer :: icnst, lc, klev, icol
   real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+  character(len = 1000) :: err_msg
+
+  !check if list_idx > 0
+  !This subroutine should ONLY be called for list_idx=0 as we are using qqcw_get_field
+  if(list_idx > 0) then
+     write(err_msg,*)'updating mmrs is not supported for list_idx>0, current list_idx is:',list_idx,' ',errmsg(__FILE__,__LINE__)
+     call endrun(trim(err_msg))
+  endif
 
   do icnst = 1, pcnst
      lc = icnst
