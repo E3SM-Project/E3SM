@@ -2,6 +2,8 @@
 <config case="base_mesh">
 
 	<add_link source_path="script_test_dir" source="build_base_mesh.py" dest="build_base_mesh.py"/>
+	<add_link source_path="script_test_dir" source="north_mid_res_region.geojson" dest="north_mid_res_region.geojson"/>
+	<add_link source_path="script_test_dir" source="arctic_high_res_region.geojson" dest="arctic_high_res_region.geojson"/>
 
 	<run_script name="run.py">
 		<step executable="./build_base_mesh.py">
