@@ -836,7 +836,7 @@
 			possible_values="positive real number less than 1"
 			icepack_name="grid_o_t"
 		/>
-		<nml_option name="config_bio_gravity_drainage_length_scale" type="real" default_value="20." units="m"
+		<nml_option name="config_bio_gravity_drainage_length_scale" type="real" default_value="2." units="m"
 			description="positive real number less than 1"
 			possible_values="Sets the gravity drainage length scale in the biological transport model"
 			icepack_name="l_sk"
@@ -951,7 +951,7 @@
 			possible_values="zero or positive real number"
 			icepack_name="tau_min"
 		/>
-		<nml_option name="config_long_mobile_to_stationary_time" type="real" default_value="7776000.0" units="seconds"
+		<nml_option name="config_long_mobile_to_stationary_time" type="real" default_value="604800.0" units="seconds"
 			description="Slow adsorption timescale"
 			possible_values="zero or positive real number"
 			icepack_name="tau_max"
@@ -1031,32 +1031,32 @@
 			possible_values="positive real"
 			icepack_name="mu_max_phaeo"
 		/>
-		<nml_option name="config_temperature_growth_diatoms" type="real" default_value="0.06" units="1/C"
+		<nml_option name="config_temperature_growth_diatoms" type="real" default_value="0.063" units="1/C"
 			description="Controls the temperature dependence of growth for diatoms"
 			possible_values="positive real less than 1"
 			icepack_name="grow_Tdep_diatoms"
 		/>
-		<nml_option name="config_temperature_growth_small_plankton" type="real" default_value="0.06" units="1/C"
+		<nml_option name="config_temperature_growth_small_plankton" type="real" default_value="0.063" units="1/C"
 			description="Controls the temperature dependence of growth for small plankton"
 			possible_values="positive real less than 1"
 			icepack_name="grow_Tdep_sp"
 		/>
-		<nml_option name="config_temperature_growth_phaeocystis" type="real" default_value="0.06" units="1/C"
+		<nml_option name="config_temperature_growth_phaeocystis" type="real" default_value="0.063" units="1/C"
 			description="Controls the temperature dependence of growth for phaeocystis"
 			possible_values="positive real less than 1"
 			icepack_name="grow_Tdep_phaeo"
 		/>
-		<nml_option name="config_grazed_fraction_diatoms" type="real" default_value="0.0" units="unitless"
+		<nml_option name="config_grazed_fraction_diatoms" type="real" default_value="0.19" units="unitless"
 			description="Fraction of diatom biomass grazed"
 			possible_values="zero or positive real less than 1"
 			icepack_name="fr_graze_diatoms"
 		/>
-		<nml_option name="config_grazed_fraction_small_plankton" type="real" default_value="0.7" units="unitless"
+		<nml_option name="config_grazed_fraction_small_plankton" type="real" default_value="0.19" units="unitless"
 			description="Fraction of small plankton biomass grazed"
 			possible_values="zero or positive real less than 1"
 			icepack_name="fr_graze_sp"
 		/>
-		<nml_option name="config_grazed_fraction_phaeocystis" type="real" default_value="0.7" units="unitless"
+		<nml_option name="config_grazed_fraction_phaeocystis" type="real" default_value="0.19" units="unitless"
 			description="Fraction of phaeocystis biomass grazed"
 			possible_values="zero or positive real less than 1"
 			icepack_name="fr_graze_phaeo"
@@ -1171,7 +1171,7 @@
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="f_don_protein"
 		/>
-		<nml_option name="config_degredation_of_DON" type="real" default_value="0.03" units="1/day"
+		<nml_option name="config_degredation_of_DON" type="real" default_value="0.2" units="1/day"
 			description="Bacterial degredation of DON"
 			possible_values="positive real"
 			icepack_name="kn_bac_protein"
@@ -1246,7 +1246,7 @@
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="fr_dFe"
 		/>
-		<nml_option name="config_nitrification_rate" type="real" default_value="0.0" units="1/day"
+		<nml_option name="config_nitrification_rate" type="real" default_value="0.046" units="1/day"
 			description="Nitrification rate"
 			possible_values="zero or positive real"
 			icepack_name="k_nitrif"
