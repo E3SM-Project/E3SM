@@ -1194,7 +1194,21 @@
        call mpas_log_write('   Dataset will be supersampled by a factor of $i', intArgs=(/supersample_fac/))
     end if
 
+    geog_sub_path = 'albedo_modis/'
+
+    ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when initalizing the interpolation of montly albedo (albedo12m)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
+
     albedo12m(:,:) = 0.0
+
+    ierr = mgr % finalize()
+    if (ierr /= 0) then
+       call mpas_log_write('Error occurred when finalizing the interpolation of montly albedo (albedo12m)', &
+                            messageType=MPAS_LOG_CRIT)
+    endif
 
  else if (trim(config_albedo_data) == 'NCEP') then
 
