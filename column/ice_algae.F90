@@ -1502,7 +1502,7 @@
       subroutine algal_dyn (dt,           &
                             n_zaero, n_doc, n_dic,  n_don, n_fed, n_fep, &
                             dEdd_algae,   &
-                            fswthru,      reactb,       & 
+                            fswthru,      reactb,       &
                             ltrcrn,       nbtrcr,       &
                             grow_alg,     n_algae,      &
                             T_bot,                      &
@@ -1524,8 +1524,8 @@
 
       use ice_zbgc_shared, only:   chlabs, alpha2max_low, beta2max, mu_max, &
                                    grow_Tdep, fr_graze, mort_pre, mort_Tdep, &
-                                   k_exude, K_Nit, K_Am, K_Sil, K_Fe, &   
-                                   f_don, kn_bac, f_don_Am, & 
+                                   k_exude, K_Nit, K_Am, K_Sil, K_Fe, &
+                                   f_don, kn_bac, f_don_Am, &
                                    f_doc, f_exude, k_bac
 
       use ice_colpkg_tracers, only: tr_brine, nt_fbri, &
@@ -1546,7 +1546,7 @@
          n_algae    ! number of autotrophic types
 
       real (kind=dbl_kind), intent(in) :: &
-         dt      , & ! time step 
+         dt      , & ! time step
          T_bot   , & ! ice temperature (oC)
          fswthru     ! average shortwave passing through current ice layer (W/m^2)
 
@@ -1564,55 +1564,62 @@
          reactb     ! biological reaction terms (mmol/m3)
 
       real (kind=dbl_kind), dimension(:), intent(in) :: &
-         ltrcrn     ! brine concentrations  in layer (mmol/m^3) 
+         ltrcrn     ! brine concentrations  in layer (mmol/m^3)
 
-      logical (kind=log_kind), intent(inout) :: & 
+      logical (kind=log_kind), intent(inout) :: &
          conserve_C
 
-      logical (kind=log_kind), intent(in) :: & 
+      logical (kind=log_kind), intent(in) :: &
          dEdd_algae  ! .true.  chla impact on shortwave computed in dEdd
 
       !  local variables
       !------------------------------------------------------------------------------------
       !            3 possible autotrophs nt_bgc_N(1:3):  diatoms, flagellates, phaeocystis
-      !                2 types of dissolved organic carbon nt_bgc_DOC(1:2): 
+      !                2 types of dissolved organic carbon nt_bgc_DOC(1:2):
       !                        polysaccharids, lipids
       !                1 DON (proteins)
       !                1 particulate iron (nt_bgc_Fe) n_fep
-      !                1 dossp;ved orpm m+fed 
-      ! Limiting macro/micro nutrients: nt_bgc_Nit -> nitrate, nt_bgc_NH -> ammonium, 
-      !                        nt_bgc_Sil -> silicate, nt_bgc_Fe -> dissolved iron   
+      !                1 dossp;ved orpm m+fed
+      ! Limiting macro/micro nutrients: nt_bgc_Nit -> nitrate, nt_bgc_NH -> ammonium,
+      !                        nt_bgc_Sil -> silicate, nt_bgc_Fe -> dissolved iron
       ! --------------------------------------------------------------------------------------
 
       real (kind=dbl_kind),  parameter, dimension(max_algae) :: &
          alpha2max_high  = (/ 0.25_dbl_kind, 0.25_dbl_kind, 0.25_dbl_kind/) ! light limitation (1/(W/m^2))
+      real (kind=dbl_kind), parameter, dimension(max_algae) :: &
+         graze_exponent = (/ 0.333_dbl_kind, c1, c1/) ! Implicit grazing exponent (Dunneet al. 2005)
+
+      real (kind=dbl_kind), parameter :: &
+         graze_conc = 1.36_dbl_kind ! (mmol N/m^3) converted from Dunne et al 2005
+                                    ! data fit for phytoplankton (1.9 mmol C/m^3) to
+                                    ! ice algal N with 20% porosity and C/N = 7
 
       integer (kind=int_kind) :: k, n
 
       real (kind=dbl_kind), dimension(n_algae) :: &
-         Nin        , &     ! algal nitrogen concentration on volume (mmol/m^3) 
+         Nin        , &     ! algal nitrogen concentration on volume (mmol/m^3)
          Cin        , &     ! algal carbon concentration on volume (mmol/m^3)
          chlin              ! algal chlorophyll concentration on volume (mg/m^3)
 
       real (kind=dbl_kind), dimension(n_doc) :: &
-         Docin              ! dissolved organic carbon concentration on volume (mmolC/m^3) 
+         Docin              ! dissolved organic carbon concentration on volume (mmolC/m^3)
 
       real (kind=dbl_kind), dimension(n_dic) :: &
-         Dicin              ! dissolved inorganic carbon concentration on volume (mmolC/m^3) 
+         Dicin              ! dissolved inorganic carbon concentration on volume (mmolC/m^3)
 
       real (kind=dbl_kind), dimension(n_don) :: &  !proteins
-         Donin              ! dissolved organic nitrogen concentration on volume (mmolN/m^3) 
+         Donin              ! dissolved organic nitrogen concentration on volume (mmolN/m^3)
 
       real (kind=dbl_kind), dimension(n_fed) :: &  !iron
-         Fedin              ! dissolved iron concentration on volume (umol/m^3) 
+         Fedin              ! dissolved iron concentration on volume (umol/m^3)
 
       real (kind=dbl_kind), dimension(n_fep) :: &  !iron
-         Fepin              ! algal nitrogen concentration on volume (umol/m^3) 
+         Fepin              ! algal nitrogen concentration on volume (umol/m^3)
 
       real (kind=dbl_kind) :: &
-         Nitin      , &     ! nitrate concentration on volume (mmol/m^3) 
-         Amin       , &     ! ammonia/um concentration on volume (mmol/m^3) 
-         Silin      , &     ! silicon concentration on volume (mmol/m^3) 
+         Nitin      , &     ! nitrate concentration on volume (mmol/m^3)
+         Amin       , &     ! ammonia/um concentration on volume (mmol/m^3)
+         Silin      , &     ! silicon concentration on volume (mmol/m^3)
          DMSPpin    , &     ! DMSPp concentration on volume (mmol/m^3)
          DMSPdin    , &     ! DMSPd concentration on volume (mmol/m^3)
          DMSin      , &     ! DMS concentration on volume (mmol/m^3)
@@ -1621,7 +1628,7 @@
          Iavg_loc           ! bottom layer attenuated Fswthru (W/m^2)
 
       real (kind=dbl_kind), dimension(n_algae) :: &
-         L_lim    , &  ! overall light limitation 
+         L_lim    , &  ! overall light limitation
          Nit_lim  , &  ! overall nitrate limitation
          Am_lim   , &  ! overall ammonium limitation
          N_lim    , &  ! overall nitrogen species limitation
@@ -1659,7 +1666,7 @@
          fr_graze_p   , &  ! fraction of N grazed that becomes protein
                            !  (rest is assimilated) < (1-fr_graze_a)
                            !  and fr_graze_a*fr_graze_e becomes ammonia
-         fr_mort_p         ! fraction of N mortality that becomes protein 
+         fr_mort_p         ! fraction of N mortality that becomes protein
                            ! < (1-fr_mort2min)
 
       real (kind=dbl_kind), dimension(n_algae) :: &
@@ -1710,7 +1717,7 @@
          Nit_r     , &  ! net nitrate removal (mmol/m^3)
          Am_s_e    , &  ! ammonium source from excretion (mmol/m^3)
          Am_s_r    , &  ! ammonium source from respiration (mmol/m^3)
-         Am_s_mo   , &  ! ammonium source from mort/remin (mmol/m^3) 
+         Am_s_mo   , &  ! ammonium source from mort/remin (mmol/m^3)
          Am_r_p    , &  ! ammonium uptake by algae (mmol/m^3)
          Am_r_n    , &  ! ammonium removal to nitrification (mmol/m^3)
          Am_s      , &  ! net ammonium sources (mmol/m^3)
@@ -1720,7 +1727,7 @@
          Fe_r_p    , &  ! iron uptake by algae  (nM)
          DOC_r_c   , &  ! net doc removal from bacterial consumption (mmol/m^3)
          doc_s_m   , &  ! protein source due to algal mortality (mmol/m^3)
-         doc_s_g        ! protein source due to grazing (mmol/m^3)         
+         doc_s_g        ! protein source due to grazing (mmol/m^3)
 
       real (kind=dbl_kind) :: &
          DMSPd_s_r , &  ! skl dissolved DMSP from respiration (mmol/m^3)
@@ -1744,7 +1751,7 @@
 
       character(len=char_len_long) :: &
            warning ! warning message
-      
+
       !-----------------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------------
@@ -1764,7 +1771,7 @@
        DMSPpin    = c0
        DMSPdin    = c0
        DMSin      = c0
-       PONin      = c0 
+       PONin      = c0
        U_Am_tot   = c0
        U_Nit_tot  = c0
        U_Sil_tot  = c0
@@ -1778,7 +1785,7 @@
        DIC_s(:)   = c0
        DIC_r(:)   = c0
        DOC_r_c    = c0
-       nitrif     = c0 
+       nitrif     = c0
        mort_N     = c0
        mort_C     = c0
        graze_N    = c0
@@ -1786,15 +1793,15 @@
        exude_C    = c0
        resp_N     = c0
        growth_N   = c0
-       Nit_r      = c0 
+       Nit_r      = c0
        Am_s       = c0
-       Am_r       = c0 
+       Am_r       = c0
        Sil_r      = c0
        Fed_r(:)   = c0
        Fed_s(:)   = c0
        Fep_r(:)   = c0
        Fep_s(:)   = c0
-       DMSPd_s    = c0 
+       DMSPd_s    = c0
        dTemp      = min(T_bot-T_max,c0)
        Fed_tot    = c0
        Fed_tot_r  = c0
@@ -1804,12 +1811,12 @@
        Fep_tot_r  = c0
        Fep_tot_s  = c0
        rFep(:)    = c0
-     
+
        Nitin     = ltrcrn(nlt_bgc_Nit)
        op_dep = c0
        do k = 1, n_algae
           Nin(k)   = ltrcrn(nlt_bgc_N(k))
-          chlin(k) = R_chl2N(k)* Nin(k)  
+          chlin(k) = R_chl2N(k)* Nin(k)
           op_dep = op_dep + chlabs(k)*chlin(k)
        enddo
        if (tr_bgc_C)   then
@@ -1828,19 +1835,19 @@
        if (tr_bgc_DMS) then
         !       DMSPpin  = ltrcrn(nlt_bgc_DMSPp)
              DMSPdin  = ltrcrn(nlt_bgc_DMSPd)
-             DMSin    = ltrcrn(nlt_bgc_DMS) 
+             DMSin    = ltrcrn(nlt_bgc_DMS)
        endif
-       if (tr_bgc_PON)       PONin    = ltrcrn(nlt_bgc_PON) 
+       if (tr_bgc_PON)       PONin    = ltrcrn(nlt_bgc_PON)
        if (tr_bgc_DON) then
          do k = 1, n_don
              DONin(k) = ltrcrn(nlt_bgc_DON(k))
          enddo
        endif
        if (tr_bgc_Fe ) then
-         do k = 1, n_fed 
+         do k = 1, n_fed
              Fedin(k) = ltrcrn(nlt_bgc_Fed(k))
          enddo
-         do k = 1, n_fep 
+         do k = 1, n_fep
              Fepin(k) = ltrcrn(nlt_bgc_Fep(k))
          enddo
        endif
@@ -1879,10 +1886,10 @@
        do k = 1, n_algae
           ! With light inhibition ! Maybe include light inhibition for diatoms but phaeocystis
 
-           L_lim = (c1 - exp(-alpha2max_low(k)*Iavg_loc)) * exp(-beta2max(k)*Iavg_loc)      
+           L_lim = (c1 - exp(-alpha2max_low(k)*Iavg_loc)) * exp(-beta2max(k)*Iavg_loc)
 
           ! Without light inhibition
-          !L_lim(k) = (c1 - exp(-alpha2max_low(k)*Iavg_loc)) 
+          !L_lim(k) = (c1 - exp(-alpha2max_low(k)*Iavg_loc))
 
       !-----------------------------------------------------------------------
       ! Nutrient limitation
@@ -1893,7 +1900,7 @@
           N_lim(k) = Nit_lim(k)
           if (tr_bgc_Am) then
              Am_lim(k) = Amin/(Amin + K_Am(k))
-             N_lim(k)  = min(c1, Nit_lim(k) + Am_lim(k))  
+             N_lim(k)  = min(c1, Nit_lim(k) + Am_lim(k))
           endif
           Sil_lim(k) = c1
           if (tr_bgc_Sil .and. K_Sil(k) > c0) Sil_lim(k) = Silin/(Silin + K_Sil(k))
@@ -1902,13 +1909,13 @@
       ! Iron limitation
       !-----------------------------------------------------------------------
 
-          Fe_lim(k) = c1         
+          Fe_lim(k) = c1
           if (tr_bgc_Fe  .and. K_Fe (k) > c0) Fe_lim (k) = Fed_tot/(Fed_tot + K_Fe(k))
-  
+
       !----------------------------------------------------------------------------
-      ! Growth and uptake computed within the bottom layer 
-      ! Note here per A93 discussions and MBJ model, salinity is a universal 
-      ! restriction.  Comparison with available column nutrients inserted 
+      ! Growth and uptake computed within the bottom layer
+      ! Note here per A93 discussions and MBJ model, salinity is a universal
+      ! restriction.  Comparison with available column nutrients inserted
       ! but in tests had no effect.
       ! Primary production reverts to SE form, see MBJ below and be careful
       !----------------------------------------------------------------------------
@@ -1916,7 +1923,7 @@
           growmax_N(k) = mu_max(k) / secday * exp(grow_Tdep(k) * dTemp)* Nin(k) *fsal
           grow_N(k)    = min(L_lim(k), N_lim(k), Sil_lim(k), Fe_lim(k)) * growmax_N(k)
           potU_Nit(k)  = Nit_lim(k)* growmax_N(k)
-          potU_Am(k)   = Am_lim(k)* growmax_N(k) 
+          potU_Am(k)   = Am_lim(k)* growmax_N(k)
           U_Am(k)      = min(grow_N(k), potU_Am(k))
           U_Nit(k)     = grow_N(k) - U_Am(k)
           U_Sil(k)     = R_Si2N(k) * grow_N(k)
@@ -1936,8 +1943,8 @@
 
        if (tr_bgc_Sil) U_Sil_tot = min(U_Sil_tot, max_loss * Silin/dt)
        if (tr_bgc_Fe)  U_Fe_tot  = min(U_Fe_tot, max_loss * Fed_tot/dt)
-       U_Nit_tot = min(U_Nit_tot, max_loss * Nitin/dt)  
-       U_Am_tot  = min(U_Am_tot,  max_loss * Amin/dt)    
+       U_Nit_tot = min(U_Nit_tot, max_loss * Nitin/dt)
+       U_Am_tot  = min(U_Am_tot,  max_loss * Amin/dt)
 
        do k = 1, n_algae
           U_Am(k)  = U_Am_f(k)*U_Am_tot
@@ -1961,13 +1968,13 @@
           U_Am(k)   = fr_Am(k)  * grow_N(k)
           U_Sil(k)  = R_Si2N(k) * grow_N(k)
           U_Fe (k)  = R_Fe2N(k) * grow_N(k)
-    
+
       !-----------------------------------------------------------------------
       ! Define reaction terms
       !-----------------------------------------------------------------------
 
       ! Since the framework remains incomplete at this point,
-      ! it is assumed as a starting expedient that 
+      ! it is assumed as a starting expedient that
       ! DMSP loss to melting results in 10% conversion to DMS
       ! which is then given a ten day removal constant.
       ! Grazing losses are channeled into rough spillage and assimilation
@@ -1975,32 +1982,32 @@
 
       !--------------------------------------------------------------------
       ! Algal reaction term
-      ! N_react = (grow_N*(c1 - fr_graze-fr_resp) - mort)*dt  
+      ! v1: N_react = (grow_N*(c1 - fr_graze-fr_resp) - mort)*dt
+      ! v2: N_react = (grow_N*(c1 - fr_graze * (N/graze_conc)**graze_exp-fr_resp) - mort)*dt
+      !  with maximum grazing less than max_loss * Nin(k)/dt
       !--------------------------------------------------------------------
 
-          resp(k)   = fr_resp  * grow_N(k)  
-          graze(k)  = fr_graze(k) * grow_N(k)
+          resp(k)   = fr_resp  * grow_N(k)
+          graze(k)  = min(max_loss * Nin(k)/dt, grow_N(k) * fr_graze(k) * (Nin(k)/graze_conc)**graze_exponent(k))
           mort(k)   = min(max_loss * Nin(k)/dt, mort_pre(k)* exp(mort_Tdep(k)*dTemp) * Nin(k) / secday)
- 
+
         ! history variables
           grow_alg(k) = grow_N(k)
           upNOn(k) = U_Nit(k)
           upNHn(k) = U_Am(k)
 
-          N_s_p  = grow_N(k) * dt  
-          N_r_g  = graze(k)  * dt 
+          N_s_p  = grow_N(k) * dt
+          N_r_g  = graze(k)  * dt
           N_r_r  = resp(k)   * dt
           N_r_mo = mort(k)   * dt
-          N_s(k)    = (c1- fr_resp - fr_graze(k)) * grow_N(k) *dt   !N_s_p
-          N_r(k)    = mort(k) * dt                                  !N_r_g  + N_r_mo + N_r_r 
-
+          N_s(k)    = N_s_p !(c1- fr_resp - fr_graze(k)) * grow_N(k) *dt
+          N_r(k)    = N_r_g + N_r_mo + N_r_r !mort(k) * dt
           graze_N   = graze_N + graze(k)
           graze_C   = graze_C + R_C2N(k)*graze(k)
-          mort_N    = mort_N + mort(k)      
+          mort_N    = mort_N + mort(k)
           mort_C    = mort_C + R_C2N(k)*mort(k)
           resp_N    = resp_N + resp(k)
           growth_N  = growth_N + grow_N(k)
- 
       enddo ! n_algae
       !--------------------------------------------------------------------
       ! Ammonium source: algal grazing, respiration, and mortality
@@ -2014,17 +2021,17 @@
       !--------------------------------------------------------------------
       ! Nutrient net loss terms: algal uptake
       !--------------------------------------------------------------------
-        
+
        do k = 1, n_algae
           Am_r_p  = U_Am(k)   * dt
-          Am_r    = Am_r + Am_r_p 
-          Nit_r_p = U_Nit(k)  * dt                
-          Nit_r   = Nit_r + Nit_r_p 
+          Am_r    = Am_r + Am_r_p
+          Nit_r_p = U_Nit(k)  * dt
+          Nit_r   = Nit_r + Nit_r_p
           Sil_r_p = U_Sil(k) * dt
-          Sil_r   = Sil_r + Sil_r_p 
+          Sil_r   = Sil_r + Sil_r_p
           Fe_r_p  = U_Fe (k) * dt
-          Fed_tot_r = Fed_tot_r + Fe_r_p  
-          exude_C = exude_C + k_exude(k)* R_C2N(k)*Nin(k) / secday 
+          Fed_tot_r = Fed_tot_r + Fe_r_p
+          exude_C = exude_C + k_exude(k)* R_C2N(k)*Nin(k) / secday
           DIC_r(1) = DIC_r(1) + (c1-fr_resp)*grow_N(k) * R_C2N(k) * dt
        enddo
 
@@ -2032,18 +2039,18 @@
       ! nitrification
       !--------------------------------------------------------------------
        nitrification = c0
-       nitrif  = k_nitrif /secday * Amin 
+       nitrif  = k_nitrif /secday * Amin
        Am_r = Am_r +  nitrif*dt
        Nit_s_n = nitrif * dt  !source from NH4
-       Nit_s   = Nit_s_n  
+       Nit_s   = Nit_s_n
 
       !--------------------------------------------------------------------
       ! PON:  currently using PON to shadow nitrate
       !
-      ! N Losses are counted in Zoo.  These arise from mortality not 
-      ! remineralized (Zoo_s_m), assimilated grazing not excreted (Zoo_s_a), 
-      !spilled N not going to DON (Zoo_s_s) and  bacterial recycling 
-      ! of DON (Zoo_s_b). 
+      ! N Losses are counted in Zoo.  These arise from mortality not
+      ! remineralized (Zoo_s_m), assimilated grazing not excreted (Zoo_s_a),
+      !spilled N not going to DON (Zoo_s_s) and  bacterial recycling
+      ! of DON (Zoo_s_b).
       !--------------------------------------------------------------------
 
        if (tr_bgc_Am) then
@@ -2053,31 +2060,31 @@
        else
          Zoo_s_a = graze_N*dt*(c1-fr_graze_s)
          Zoo_s_s = graze_N*fr_graze_s*dt
-         Zoo_s_m = mort_N*dt 
+         Zoo_s_m = mort_N*dt
        endif
 
          Zoo_s_b = c0
 
       !--------------------------------------------------------------------
       ! DON (n_don = 1)
-      ! Proteins   
+      ! Proteins
       !--------------------------------------------------------------------
 
        DON_r(:) = c0
        DON_s(:) = c0
 
        if (tr_bgc_DON) then
-       do n = 1, n_don   
+       do n = 1, n_don
           DON_r(n) =  kn_bac(n)/secday * DONin(n) * dt
-          !DON_s(n) =  (c1 - fr_graze_s + fr_graze_e*fr_graze_s)* graze_N * dt !fr_graze_N*f_don(n)*fr_graze_s * dt 
+          !DON_s(n) =  (c1 - fr_graze_s + fr_graze_e*fr_graze_s)* graze_N * dt !fr_graze_N*f_don(n)*fr_graze_s * dt
           DON_s(n) =  graze_N*dt - Am_s_e + mort_N*dt - Am_s_mo
           Zoo_s_s = Zoo_s_s - DON_s(n)
           Zoo_s_b = Zoo_s_b + DON_r(n)*(c1-f_don_Am(n))
           Am_s = Am_s + DON_r(n)*f_don_Am(n)
-          DIC_s(1) = DIC_s(1) + DON_r(n) * R_C2N_DON(n) 
+          DIC_s(1) = DIC_s(1) + DON_r(n) * R_C2N_DON(n)
       enddo
       endif
-     
+
        Zoo = Zoo_s_a + Zoo_s_s + Zoo_s_m + Zoo_s_b
 
       !--------------------------------------------------------------------
@@ -2097,7 +2104,7 @@
       ! Iron sources from remineralization  (follows ammonium but reduced)
       ! only Fed_s(1)  has remineralized sources
       !--------------------------------------------------------------------
-      
+
       Fed_s(1) = Fed_s(1) + Am_s * R_Fe2N(1) * fr_dFe   ! remineralization source
 
       !--------------------------------------------------------------------
@@ -2106,39 +2113,39 @@
       !--------------------------------------------------------------------
 
       if (tr_bgc_C .and. tr_bgc_Fe) then
-        if (DOCin(1) > c0) then 
-        !if (Fed_tot/DOCin(1) > max_dfe_doc1) then             
-        !  do n = 1,n_fed                                    ! low saccharid:dFe ratio leads to 
+        if (DOCin(1) > c0) then
+        !if (Fed_tot/DOCin(1) > max_dfe_doc1) then
+        !  do n = 1,n_fed                                    ! low saccharid:dFe ratio leads to
         !     Fed_r_l(n)  = Fedin(n)/t_iron_conv*dt/secday   ! loss of bioavailable Fe to particulate fraction
         !     Fep_tot_s   = Fep_tot_s + Fed_r_l(n)
-        !     Fed_r(n)    = Fed_r_l(n)                        ! removal due to particulate scavenging 
+        !     Fed_r(n)    = Fed_r_l(n)                        ! removal due to particulate scavenging
         !  enddo
         !  do n = 1,n_fep
-        !     Fep_s(n) = rFep(n)* Fep_tot_s                  ! source from dissolved Fe 
+        !     Fep_s(n) = rFep(n)* Fep_tot_s                  ! source from dissolved Fe
         !  enddo
-        !elseif (Fed_tot/DOCin(1) < max_dfe_doc1) then  
-         if (Fed_tot/DOCin(1) < max_dfe_doc1) then  
-          do n = 1,n_fep                                    ! high saccharid:dFe ratio leads to 
+        !elseif (Fed_tot/DOCin(1) < max_dfe_doc1) then
+         if (Fed_tot/DOCin(1) < max_dfe_doc1) then
+          do n = 1,n_fep                                    ! high saccharid:dFe ratio leads to
              Fep_r(n)  = Fepin(n)/t_iron_conv*dt/secday     ! gain of bioavailable Fe from particulate fraction
              Fed_tot_s = Fed_tot_s + Fep_r(n)
-          enddo  
+          enddo
           do n = 1,n_fed
              Fed_s(n) = Fed_s(n) + rFed(n)* Fed_tot_s       ! source from particulate Fe
-          enddo    
+          enddo
         endif
         endif !Docin(1) > c0
       endif
       if (tr_bgc_Fe) then
         do n = 1,n_fed
            Fed_r(n) = Fed_r(n) + rFed(n)*Fed_tot_r          ! scavenging + uptake
-        enddo 
+        enddo
 
-      ! source from algal mortality/grazing and fraction of remineralized nitrogen that does 
+      ! source from algal mortality/grazing and fraction of remineralized nitrogen that does
       ! not become immediately bioavailable
 
          do n = 1,n_fep
-            Fep_s(n) = Fep_s(n) + rFep(n)* (Am_s * R_Fe2N(1) * (c1-fr_dFe))   
-         enddo ! losses not direct to Fed 
+            Fep_s(n) = Fep_s(n) + rFep(n)* (Am_s * R_Fe2N(1) * (c1-fr_dFe))
+         enddo ! losses not direct to Fed
       endif
 
       !--------------------------------------------------------------------
@@ -2146,7 +2153,7 @@
       !--------------------------------------------------------------------
       ! Grazing losses are channeled into rough spillage and assimilation
       ! then onward and the MBJ mortality channel is included
-      ! It is assumed as a starting expedient that 
+      ! It is assumed as a starting expedient that
       ! DMSP loss to melting gives partial conversion to DMS in product layer
       ! which then undergoes Stefels removal.
 
@@ -2160,16 +2167,16 @@
           DMSPd_s_r = fr_resp_s  * R_S2N(k) * resp(k)   * dt  !respiration fraction to DMSPd
           DMSPd_s_mo= fr_mort2min * R_S2N(k)* mort(k)   * dt  !mortality and extracellular excretion
 
-          DMSPd_s = DMSPd_s + DMSPd_s_r + DMSPd_s_mo 
+          DMSPd_s = DMSPd_s + DMSPd_s_r + DMSPd_s_mo
        enddo
        DMSPd_r = (c1/t_sk_conv) * (c1/secday)  * (DMSPdin) * dt
 
       !--------------------------------------------------------------------
-      ! DMS reaction term + DMSPd loss term 
+      ! DMS reaction term + DMSPd loss term
       ! DMS_react = ([\DMSPd]*y_sk_DMS/t_sk_conv - c1/t_sk_ox *[\DMS])*dt
       !--------------------------------------------------------------------
 
-       DMS_s_c = y_sk_DMS * DMSPd_r 
+       DMS_s_c = y_sk_DMS * DMSPd_r
        DMS_r_o = DMSin * dt / (t_sk_ox * secday)
        DMS_s   = DMS_s_c
        DMS_r   = DMS_r_o
@@ -2190,11 +2197,11 @@
         !      reactb(nlt_bgc_C(k))  = R_C2N(k)*reactb(nlt_bgc_N(k))
         ! enddo
          do k = 1,n_doc
-              reactb(nlt_bgc_DOC(k))= DOC_s(k) - DOC_r(k)  
+              reactb(nlt_bgc_DOC(k))= DOC_s(k) - DOC_r(k)
               dC = dC + reactb(nlt_bgc_DOC(k))
          enddo
          do k = 1,n_dic
-              reactb(nlt_bgc_DIC(k))= DIC_s(k) - DIC_r(k)  
+              reactb(nlt_bgc_DIC(k))= DIC_s(k) - DIC_r(k)
               dC = dC + reactb(nlt_bgc_DIC(k))
          enddo
        endif
@@ -2218,10 +2225,10 @@
        Cerror = dC
        if (tr_bgc_Fe ) then
         do k = 1,n_fed
-              reactb(nlt_bgc_Fed(k))= Fed_s (k) - Fed_r (k) 
+              reactb(nlt_bgc_Fed(k))= Fed_s (k) - Fed_r (k)
         enddo
         do k = 1,n_fep
-              reactb(nlt_bgc_Fep(k))= Fep_s (k) - Fep_r (k) 
+              reactb(nlt_bgc_Fep(k))= Fep_s (k) - Fep_r (k)
         enddo
        endif
        if (tr_bgc_DMS) then
