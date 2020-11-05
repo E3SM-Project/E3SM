@@ -146,7 +146,7 @@ def get_mach_baseline_root_dir (machine,default_dir):
     if MACHINE_METADATA[machine][5]=="":
         return default_dir
     else:
-        return MACHINE_METADATA[machine][6]
+        return MACHINE_METADATA[machine][5]
 
 ###############################################################################
 def setup_mach_env (machine):

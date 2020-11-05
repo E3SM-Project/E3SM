@@ -2,7 +2,7 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_batch_command, get_mach_testing_resources
+from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_batch_command, get_mach_testing_resources
 
 ###############################################################################
 class GatherAllData(object):
@@ -23,9 +23,10 @@ class GatherAllData(object):
     ###########################################################################
     def formulate_command(self, machine):
     ###########################################################################
-        env_setup = get_mach_env_setup_command(machine)
-        compiler  = get_mach_cxx_compiler(machine)
-        batch     = get_mach_batch_command(machine)
+        env_setup    = get_mach_env_setup_command(machine)
+        cxx_compiler = get_mach_cxx_compiler(machine)
+        f90_compiler = get_mach_f90_compiler(machine)
+        batch        = get_mach_batch_command(machine)
 
         env_setup.append("CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine)))
         env_setup_str = " && ".join(env_setup)
@@ -53,15 +54,16 @@ class GatherAllData(object):
         local_cmd = self._run
         # Do magic replacements here
         local_cmd = local_cmd.\
-            replace("$compiler", compiler).\
+            replace("-cxx $cxx_compiler", cxx_compiler).\
+            replace("-f90 $f90_compiler", f90_compiler).\
             replace("$machine", machine).\
             replace("$scream_docs", str(scream_docs_repo)).\
             replace("$scream", str(scream_repo))
         if self._kokkos:
             # Compute kokkos location and do magic replacement
             expect (self._scream_docs, "Error! Scream runs do not allow to specify a user-provided kokkos installation.")
-            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$compiler", compiler))
-            local_cmd.replace("$kokkos", str(kokkos_loc)).\
+            kokkos_loc = pathlib.Path(self._kokkos.replace("$machine", machine).replace("$cxx_compiler", cxx_compiler))
+            local_cmd.replace("$kokkos", str(kokkos_loc))
 
         # Scream-docs tests may depend on scream's Kokkos and scripts, so update scream repo too if we're doing
         # a scream-docs test.
