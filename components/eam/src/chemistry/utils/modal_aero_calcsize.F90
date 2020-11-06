@@ -35,7 +35,6 @@ use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
 !1. Find out if we can remove the "if (masterproc)" from the subroutines called during time stepping
 !2. cloud borne and interstitial species processes can be combined and refactored into one subroutine.(aitken_accum_exchange)
 !3. init and register routine should be re-worked/streamlined to remove redundant logics
-!4. improve update_mmr logic in the refactored subroutines
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
 
@@ -742,7 +741,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    !------------------------------------------------------------------------------
 
    if ( do_aitacc_transfer ) then
-      call aitken_accum_exchange(ncol, lchnk, list_idx_local, tadjinv, &
+      call aitken_accum_exchange(ncol, lchnk, list_idx_local, update_mmr, tadjinv, &
            deltat, pdel, state_q, state, &
            pbuf, &
            drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
@@ -1081,7 +1080,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
              v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
              dgncur_a, v2ncur_a, qsrflx, dqdt)
 
-           !for cloud borne aerosols
+        !for cloud borne aerosols
         call update_dgn_voltonum(icol, klev, imode, update_mmr, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
              v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
              dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
@@ -1369,7 +1368,7 @@ end subroutine update_dgn_voltonum
 
 !---------------------------------------------------------------------------------------------
 
-subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
+subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
      deltat, pdel, state_q, state, &
      pbuf, &
      drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
@@ -1391,6 +1390,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
 
   !inputs
   integer,  intent(in) :: ncol, lchnk, list_idx
+  logical,  intent(in) :: update_mmr
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: deltat
   real(r8), intent(in) :: pdel(:,:)
@@ -1407,8 +1407,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
   real(r8), intent(inout) :: dgncur_c(:,:,:)
   real(r8), intent(inout) :: v2ncur_a(:,:,:)
   real(r8), intent(inout) :: v2ncur_c(:,:,:)
-  logical,  intent(inout), optional :: dotend(:), dotendqqcw(:)
-  real(r8), intent(inout), optional :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
+  logical,  intent(inout) :: dotend(:), dotendqqcw(:)
+  real(r8), intent(inout) :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
 
   !local
   integer  :: imode, jmode, aer_type, jsrflx, icol, klev, iq
@@ -1427,14 +1427,10 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, tadjinv, &
   real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
   real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfertend, xfertend_num(2,2)
-  real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
-  logical  :: update_mmr, noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
+  logical  :: noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
 
   character(len=32)  :: spec_name
   character(len=800) :: err_msg
-
-  update_mmr = .false.
-  if(present(dotend) .and. present(dotendqqcw)) update_mmr = .true.
 
   if (npair_csizxf .le. 0)call endrun('npair_csizxf <= 0'//errmsg(__FILE__,__LINE__))
 
