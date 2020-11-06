@@ -1,1 +1,2 @@
 ./xmlchange PIO_TYPENAME=netcdf
+./xmlchange CAM_TARGET=preqx
