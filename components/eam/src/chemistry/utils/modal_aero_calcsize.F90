@@ -1157,11 +1157,11 @@ real(r8), intent(out) :: dgnyy
 !local
 real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
                                               !i.e. dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3
-real(r8) :: dgnumlo, dgnumhi, sigmag
+real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
 
 call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
-
+cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 !v2nxx = voltonumbhi is proportional to dgnumhi**(-3),
 !        and produces the minimum allowed number for a given volume
 v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*log(sigmag)**2) )
@@ -1863,9 +1863,9 @@ real(r8) :: cmn_factor, sigmag, dgnum, dgnumlo, dgnumhi, voltonumb, voltonumbhi,
 call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
 
-voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*log(sigmag)**2) )
-voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
-voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+voltonumbhi = 1._r8 / (cmn_factor*dgnumhi**3)
+voltonumblo = 1._r8 / (cmn_factor*dgnumlo**3)
+voltonumb   = 1._r8 / (cmn_factor*dgnum**3)
 
 if (drv > 0.0_r8) then
    if (num <= drv*voltonumbhi) then
