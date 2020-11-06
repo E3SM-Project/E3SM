@@ -163,7 +163,7 @@ inline void OutputManager::init()
   EKAT_REQUIRE_MSG(stride==1,"Error! Output only supports a PIO Stride of 1");  // TODO: Delete when no longer valid.
   // TODO: Implement stride>1 for PIO.  The following commented lines spec out how this would look.
   // Int comm_color = atm_comm.rank() % stride;
-  // auto pio_comm = atm_comm;  // TODO, EKAT should have a comm_split option (.split(comm_color));
+  pio_comm = atm_comm;  // TODO, EKAT should have a comm_split option (.split(comm_color));
   // PIO requires a subsystem to begin.  TODO, the component coupler actually inits the subsystem for the ATM,
   // int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
 //  MPI_Fint fcomm = MPI_Comm_c2f(pio_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.

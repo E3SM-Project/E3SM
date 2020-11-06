@@ -17,9 +17,13 @@ set (ARRAY_SCORPIO_SRCS
 #)
 #configure_file(scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
 
-CreateUnitTest(io_test "io.cpp" scream_io)
+CreateUnitTest(io_test "io.cpp" scream_io
+  MPI_RANKS 1 2
+)
 
-CreateUnitTest(restart_test "restart.cpp" scream_io)
+CreateUnitTest(restart_test "restart.cpp" scream_io
+  MPI_RANKS 1 2
+)
 
 ## Copy files needed by tests
 configure_file(io_test_instant.yaml io_test_instant.yaml COPYONLY)

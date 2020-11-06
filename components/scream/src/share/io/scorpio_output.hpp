@@ -495,9 +495,16 @@ inline void AtmosphereOutput::register_dimensions(const std::string name)
     auto tag_loc = m_dims.find(tag2string(tag));
     if (tag_loc == m_dims.end()) 
     { 
-      m_dims.emplace(std::make_pair(tag2string(tag),fid.get_layout().dim(ii)));
+      Int tag_len = 0;
+      if(tag2string(tag) == "COL")
+      {
+        tag_len = m_total_dofs;  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
+      } else {
+        tag_len = fid.get_layout().dim(ii);
+      }
+      m_dims.emplace(std::make_pair(tag2string(tag),tag_len));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==fid.get_layout().dim(ii),
+      EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==fid.get_layout().dim(ii) or tag2string(tag)=="COL",
         "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
     }
   }
@@ -614,7 +621,6 @@ inline void AtmosphereOutput::new_file(const std::string filename)
   // Register dimensions with netCDF file.
   for (auto it : m_dims)
   {
-    if(it.first == "COL") { it.second=m_total_dofs;}  // Note: This is because only cols are decomposed over mpi ranks.  In this case still need max number of cols.
     register_dimension(filename,it.first,it.first,it.second);
   }
   register_dimension(filename,"time","time",0);  // Note that time has an unknown length, setting the "length" to 0 tells the interface to set this dimension as having an unlimited length, thus allowing us to write as many timesnaps to file as we desire.
