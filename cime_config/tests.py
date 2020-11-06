@@ -46,7 +46,7 @@ _TESTS = {
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.eam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM5A97",
+            "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
             )
