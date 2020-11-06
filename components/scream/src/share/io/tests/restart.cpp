@@ -11,7 +11,7 @@
 #include "share/io/scream_scorpio_interface.hpp"
 
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/simple_grid.hpp"
+#include "share/grid/point_grid.hpp"
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
@@ -236,9 +236,8 @@ std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, 
 
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  std::shared_ptr<UserProvidedGridsManager> upgm;
-  upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_grid= std::make_shared<SimpleGrid>("Physics",num_cols,num_levs,io_comm);
+  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_cols,num_levs,io_comm));
+  auto upgm = std::make_shared<UserProvidedGridsManager>();
   upgm->set_grid(dummy_grid);
 
   return upgm;
