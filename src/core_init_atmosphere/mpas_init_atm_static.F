@@ -79,8 +79,6 @@
  character(len=StrKIND+1) :: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
  character(len=StrKIND+1) :: geog_sub_path       ! subdirectory names in config_geog_data_path, with trailing slash
 
- integer:: ismax_lu
-
  integer(c_int):: nx,ny,nz
  integer(c_int):: endian,isigned,istatus,wordsize
  integer:: i,j,k
@@ -106,6 +104,9 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: vegfra
 
  integer, pointer :: isice_lu, iswater_lu
+ integer, pointer :: isice_lu_ptr, iswater_lu_ptr
+ integer :: iswater_soil
+ integer, pointer :: iswater_soil_ptr
  integer, pointer :: nCells, nCellsSolve, nEdges, nVertices, maxEdges
  logical, pointer :: on_a_sphere
  real (kind=RKIND), pointer :: sphere_radius
@@ -132,6 +133,7 @@
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
  real (kind=RKIND) :: msgval, fillval
+ integer, pointer :: category_min, category_max
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
  integer, dimension(:), pointer :: landmask
@@ -284,14 +286,8 @@
 !
  surface_input_select0: select case(trim(config_landuse_data))
     case('USGS')
-       isice_lu = 24
-       iswater_lu = 16
-       ismax_lu = 24
        write(mminlu,'(a)') 'USGS'
     case('MODIFIED_IGBP_MODIS_NOAH')
-       isice_lu = 15
-       iswater_lu = 17
-       ismax_lu = 20
        write(mminlu,'(a)') 'MODIFIED_IGBP_MODIS_NOAH'
     case default
          call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
@@ -464,171 +460,252 @@
        call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
        call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select surface_input_select1
- nx = 1200
- ny = 1200
- nz = 1
- isigned  = 1
- endian   = 0
- wordsize = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(ncat(ismax_lu,nCells))
+
+ ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+ if (ierr /= 0) then
+    call mpas_log_write('Error occurred when initializing the interpolation of landuse category (lu_index)', &
+                         messageType=MPAS_LOG_CRIT)
+ endif
+
+ call mpas_pool_get_config(mgr % pool, 'iswater', iswater_lu_ptr)
+ call mpas_pool_get_config(mgr % pool, 'isice', isice_lu_ptr)
+ call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+ call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+ call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
+ call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+
+ ! Transfer iswater_lu_ptr, isice_lu_ptr to iswater_lu and isice_lu because
+ ! isawter_lu_ptr and isice_lu_ptr will become unassociated when calling
+ ! mgr % finalize. iswater_lu and isice_lu will be written to the output
+ ! stream
+ iswater_lu = iswater_lu_ptr
+ isice_lu = isice_lu_ptr
+
+ allocate(ncat(category_min:category_max, nCells))
  ncat(:,:) = 0
- lu_index(:) = 0.0
+ lu_index(:) = 0
 
- rarray_ptr = c_loc(rarray)
+ do iCell = 1, nCells
 
- do jTileStart = 1,20401,ny
-    jTileEnd = jTileStart + ny - 1
+     if (all(ncat(:,iCell) == 0)) then
+         tile => null()
+         ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+         if (ierr /= 0 .or. .not. associated(tile)) then
+             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+         end if
 
-    do iTileStart = 1,42001,nx
-       iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-             trim(geog_sub_path),iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       call mpas_log_write(trim(fname))
-       call mpas_f_to_c_string(fname, c_fname)
+         ierr = mgr % push_tile(tile)
+         if (ierr /= 0) then
+             call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+         end if
+     end if
 
-       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                         scalefactor,wordsize,istatus)
-       call init_atm_check_read_error(istatus, fname)
 
-       iPoint = 1
-       do j=1,ny
-       do i=1,nx
-!
-! The MODIS dataset appears to have zeros at the South Pole, possibly other places, too
-!
-if (rarray(i,j,1) == 0) cycle
+     do while (.not. mgr % is_stack_empty())
+         tile => mgr % pop_tile()
 
-          lat_pt = -89.99583  + (jTileStart + j - 2) * 0.0083333333
-          lon_pt = -179.99583 + (iTileStart + i - 2) * 0.0083333333
-          lat_pt = lat_pt * PI / 180.0
-          lon_pt = lon_pt * PI / 180.0
+         if (tile % is_processed) then
+             cycle
+         endif
 
-          iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                nEdgesOnCell,cellsOnCell, &
-                                latCell,lonCell)
+         call mpas_log_write('Processing tile: '//trim(tile%fname))
 
-          !
-          ! For all but the outermost boundary cells, we can safely assume that the nearest
-          ! model grid cell contains the pixel (else, a different cell would be nearest)
-          !
-          if (bdyMaskCell(iPoint) < nBdyLayers) then
-             ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+         all_pixels_mapped_to_halo_cells = .true.
 
-          ! For outermost boundary cells, additional work is needed to verify that the pixel
-          ! actually lies within the nearest cell
-          else
-             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+         do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
+             do i = 1 + tile_bdr, tile_nx + tile_bdr, 1
 
-             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+                !
+                ! The MODIS dataset has zeros at the South Pole, and possibly other places, so
+                ! skip any value that is less than category_min or greater than category_max as
+                ! reported in the index file.
+                !
+                if (tile % tile(i,j,1) < category_min .or. tile % tile(i,j,1) > category_max) then
+                    cycle
+                end if
 
-                ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+                call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+                call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
 
-             end if
-          end if
-       end do
-       end do
+                !
+                ! For all but the outermost boundary cells, we can safely assume that the nearest
+                ! model grid cell contains the pixel (else, a different cell would be nearest)
+                !
+                if (bdyMaskCell(res % id) < nBdyLayers) then
 
-    end do
+                   ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                   if (res % id <= nCellsSolve) then
+                       all_pixels_mapped_to_halo_cells = .false.
+                   end if
+
+                ! For outermost boundary cells, additional work is needed to verify that the pixel
+                ! actually lies within the nearest cell
+                else
+                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                    nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                      ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                      if (res % id <= nCellsSolve) then
+                          all_pixels_mapped_to_halo_cells = .false.
+                      end if
+                   end if
+                end if
+             end do
+         end do
+
+         tile % is_processed = .true.
+
+         if (.not. all_pixels_mapped_to_halo_cells) then
+             ierr = mgr % push_neighbors(tile)
+             if (ierr /= 0) then
+                 call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+             endif
+         end if
+
+     end do
  end do
 
- do iCell = 1,nCells
-    lu_index(iCell) = 1
-    do i = 2,ismax_lu
-       if(ncat(i,iCell) > ncat(lu_index(iCell),iCell)) then
-          lu_index(iCell) = i
-       end if
-    end do
+ do iCell = 1, nCells
+    ! Because maxloc returns the location of the maximum value of an array as if the
+    ! starting index of the array is 1, and dataset categories do not necessarily start
+    ! at 1, we need to use category_min to ensure the correct category location is chosen.
+    lu_index(iCell) = maxloc(ncat(:,iCell), dim=1) - 1 + category_min
  end do
- deallocate(rarray)
  deallocate(ncat)
- call mpas_log_write('--- end interpolate LU_INDEX')
 
+ ierr = mgr % finalize()
+ if (ierr /= 0) then
+    call mpas_log_write('Error occurred when finalizing the interpolation of landuse category (lu_index)', &
+                         messageType=MPAS_LOG_CRIT)
+ endif
+
+ call mpas_log_write('--- end interpolate LU_INDEX')
 
 !
 ! Interpolate SOILCAT_TOP
 !
- nx = 1200
- ny = 1200
- nz = 1
- isigned     = 1
- endian      = 0
- wordsize    = 1
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(ncat(16,nCells))
+ geog_sub_path = 'soiltype_top_30s/'
+
+ ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+ if (ierr /= 0) then
+    call mpas_log_write('Error occurred when initalizing the interpolation of soil top category (soilcat_top)', &
+                         messageType=MPAS_LOG_CRIT)
+ endif
+
+ call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+ call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+ call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
+ call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+ call mpas_pool_get_config(mgr % pool, 'isoilwater', iswater_soil_ptr)
+
+ iswater_soil = iswater_soil_ptr
+
+ allocate(ncat(category_min:category_max, nCells))
+ soilcat_top(:) = 0
  ncat(:,:) = 0
- soilcat_top(:) = 0.0
 
- rarray_ptr = c_loc(rarray)
+ do iCell = 1, nCells
 
- do jTileStart = 1,20401,ny
-    jTileEnd = jTileStart + ny - 1
+     if (all(ncat(:,iCell) == 0)) then
+         tile => null()
+         ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+         if (ierr /= 0 .or. .not. associated(tile)) then
+             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+         end if
 
-    do iTileStart = 1,42001,nx
-       iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
-             'soiltype_top_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       call mpas_log_write(trim(fname))
-       call mpas_f_to_c_string(fname, c_fname)
+         ierr = mgr % push_tile(tile)
+         if (ierr /= 0) then
+             call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+         end if
+    end if
 
-       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                         scalefactor,wordsize,istatus)
-       call init_atm_check_read_error(istatus, fname)
+    do while(.not. mgr % is_stack_empty())
+        tile => mgr % pop_tile()
 
-       iPoint = 1
-       do j=1,ny
-       do i=1,nx
-          lat_pt = -89.99583  + (jTileStart + j - 2) * 0.0083333333
-          lon_pt = -179.99583 + (iTileStart + i - 2) * 0.0083333333
-          lat_pt = lat_pt * PI / 180.0
-          lon_pt = lon_pt * PI / 180.0
+        if (tile % is_processed) then
+            cycle
+        end if
 
-          iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                nEdgesOnCell,cellsOnCell, &
-                                latCell,lonCell)
+        call mpas_log_write('Processing tile: '//trim(tile%fname))
 
-          !
-          ! For all but the outermost boundary cells, we can safely assume that the nearest
-          ! model grid cell contains the pixel (else, a different cell would be nearest)
-          !
-          if (bdyMaskCell(iPoint) < nBdyLayers) then
-             ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+        all_pixels_mapped_to_halo_cells = .true.
 
-          ! For outermost boundary cells, additional work is needed to verify that the pixel
-          ! actually lies within the nearest cell
-          else
-             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
+        do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
+            do i = 1 + tile_bdr, tile_nx + tile_bdr, 1
 
-             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
+                !
+                ! While the currently used soil type dataset, soiltype_top_30s, does not contain any
+                ! invalid values, have this sanity check for any future soil type datasets
+                !
+                if (tile % tile(i,j,1) < category_min .or. tile % tile(i,j,1) > category_max) then
+                    cycle
+                end if
 
-                ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
+                call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+                call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
 
-             end if
-          end if
-       end do
-       end do
+                res => null()
+                call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                !
+                ! For all but the outermost boundary cells, we can safely assume that the nearest
+                ! model grid cell contains the pixel (else, a different cell would be nearest)
+                !
+                if (bdyMaskCell(res % id) < nBdyLayers) then
+
+                   ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                   if (res % id <= nCellsSolve) then
+                       all_pixels_mapped_to_halo_cells = .false.
+                   end if
+
+                ! For outermost boundary cells, additional work is needed to verify that the pixel
+                ! actually lies within the nearest cell
+                else
+                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                    nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                      ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                      if (res % id <= nCellsSolve) then
+                          all_pixels_mapped_to_halo_cells = .false.
+                      end if
+                   end if
+                 end if
+            end do
+        end do
+
+        tile % is_processed = .true.
+
+        if (.not. all_pixels_mapped_to_halo_cells) then
+            ierr = mgr % push_neighbors(tile)
+            if (ierr /=0) then
+                call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
 
     end do
  end do
 
- do iCell = 1,nCells
-    soilcat_top(iCell) = 1
-    do i = 2,16
-       if(ncat(i,iCell) > ncat(soilcat_top(iCell),iCell)) then
-          soilcat_top(iCell) = i
-       end if
-    end do
+ do iCell = 1, nCells
+    ! Because maxloc returns the location of the maximum value of an array as if the
+    ! starting index of the array is 1, and dataset categories do not necessarily start
+    ! at 1, we need to use category_min to ensure the correct category location is chosen.
+    soilcat_top(iCell) = maxloc(ncat(:,iCell), dim=1) - 1 + category_min
  end do
- deallocate(rarray)
+
  deallocate(ncat)
+
+ ierr = mgr % finalize()
+ if (ierr /= 0) then
+    call mpas_log_write('Error occurred when finalizing the interpolation of soil top category (soilcat_top)', &
+                         messageType=MPAS_LOG_CRIT)
+ endif
  call mpas_log_write('--- end interpolate SOILCAT_TOP')
 
 
@@ -642,14 +719,14 @@ if (rarray(i,j,1) == 0) cycle
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  do iCell = 1,nCells
     if (lu_index(iCell) == iswater_lu .or. &
-        soilcat_top(iCell) == 14) then
+        soilcat_top(iCell) == iswater_soil) then
         if (lu_index(iCell) /= iswater_lu) then
             call mpas_log_write('Turning lu_index into water at $i', intArgs=(/iCell/))
             lu_index(iCell) = iswater_lu
         end if
-        if (soilcat_top(iCell) /= 14) then
+        if (soilcat_top(iCell) /= iswater_soil) then
             call mpas_log_write('Turning soilcat_top into water at $i', intArgs=(/iCell/))
-            soilcat_top(iCell) = 14
+            soilcat_top(iCell) = iswater_soil
         end if
     end if
  end do
