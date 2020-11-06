@@ -543,11 +543,9 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    integer  :: ilist
 
    real(r8), parameter :: close_to_one = 1.0_r8 + 1.0e-15_r8
-   real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
-   real(r8), pointer :: state_q(:,:,:)    ! Tracer MR array
 
-   logical,  pointer :: dotend(:)   ! flag for doing tendency
-   real(r8), pointer :: dqdt(:,:,:) ! TMR tendency array
+   real(r8) :: state_q(pcols,pver,pcnst), dqdt(pcols,pver,pcnst)
+   real(r8) :: pdel(pcols,pver)   ! pressure thickness of levels
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
@@ -556,7 +554,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
 
-   logical  :: dotendqqcw(pcnst)
+   logical  :: dotend(pcnst), dotendqqcw(pcnst)
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
@@ -658,20 +656,22 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
               ' is true by default); '//errmsg(__FILE__,__LINE__)
          call endrun(trim(err_msg))
       endif
-      dotend => ptend%lq
-      dqdt   => ptend%q
+      dotend = ptend%lq
+      dqdt   = ptend%q
       dotendqqcw(:)   = .false.
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
+      dotend = huge(dotend)
+      dqdt   = huge(dqdt)
       dqqcwdt(:,:,:)  = huge(dqqcwdt)
       qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
    !if(present(caller) .and. masterproc) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
 
-   pdel     => state%pdel !Only required if update_mmr = .true.
-   state_q  => state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
+   pdel     = state%pdel !Only required if update_mmr = .true.
+   state_q  = state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
@@ -759,6 +759,12 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    ! Only if "update_mmr" is TRUE and only for list_idx_local=0
    !----------------------------------------------------------------------
    if(update_mmr .and. list_idx_local == 0) then
+
+      !first update ptend with the tendencies
+      ptend%lq = dotend
+      ptend%q  = dqdt
+
+      !update cld brn aerosols
       call update_cld_brn_mmr(list_idx_local, top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
       !----------------------------------------------------------------------
@@ -1062,41 +1068,23 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
            !Adjustments that bring numbers to within specified bounds are
            !applied over time-scale tadj
            !-----------------------------------------------------------------
-           if(update_mmr) then
-              call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+           call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
                    drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
                    num_a, num_c, dqdt, dqqcwdt)                                                        !output
 
-           else
-              call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
-                   drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
-                   num_a, num_c)                                                                       !output
-
-           endif
         endif !do_adjust
 
         !
         ! now compute current dgn and v2n
         !
-        if(update_mmr) then
-           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
-                v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
-                dgncur_a, v2ncur_a, qsrflx, dqdt)
+        call update_dgn_voltonum(icol, klev, imode, update_mmr, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
+             v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
+             dgncur_a, v2ncur_a, qsrflx, dqdt)
 
            !for cloud borne aerosols
-           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
-                v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
-                dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
-        else
-           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
-                v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
-                dgncur_a, v2ncur_a)
-
-           !for cloud borne aerosols
-           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
-                v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
-                dgncur_c, v2ncur_c)
-        endif
+        call update_dgn_voltonum(icol, klev, imode, update_mmr, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
+             v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
+             dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
 
         ! save number and dryvol for aitken <--> accum transfer
         if ( do_aitacc_transfer ) then
@@ -1196,7 +1184,7 @@ end subroutine compute_dgn_vol_limits
 
 !---------------------------------------------------------------------------------------------
 
-subroutine adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &
+subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &
      drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, &
      num_a, num_c, dqdt, dqqcwdt)
 
@@ -1213,23 +1201,20 @@ subroutine adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &
 
   !inputs
   integer,  intent(in) :: icol, klev
+  logical,  intent(in) :: update_mmr
   real(r8), intent(in) :: drv_a, num_a0, drv_c, num_c0
   real(r8), intent(in) :: deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj
   integer,  intent(in) :: num_mode_idx, num_cldbrn_mode_idx
 
   !outputs
   real(r8), intent(inout) :: num_a, num_c
-  real(r8), intent(inout), optional :: dqdt(:,:,:), dqqcwdt(:,:,:)
+  real(r8), intent(inout) :: dqdt(:,:,:), dqqcwdt(:,:,:)
 
   !local
-  logical  :: update_mmr
   real(r8) :: num_a1, num_c1, numbnd
   real(r8) :: num_a2, num_c2, delnum_a2, delnum_c2
   real(r8) :: delnum_a3, delnum_c3
   real(r8) :: num_t2, drv_t, delnum_t3
-
-  update_mmr = .false.
-  if(present(dqdt) .and. present(dqqcwdt)) update_mmr = .true.
 
 
   if ((drv_a <= 0.0_r8) .and. (drv_c <= 0.0_r8)) then
@@ -1331,7 +1316,7 @@ end subroutine adjust_num_sizes
 
 !---------------------------------------------------------------------------------------------
 
-subroutine update_dgn_voltonum(icol, klev, imode, num_idx, aer_type, gravit, cmn_factor, drv, num, &
+subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type, gravit, cmn_factor, drv, num, &
      v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
      dgncur, v2ncur, qsrflx, dqdt)
 
@@ -1348,21 +1333,18 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, aer_type, gravit, cmn
 
   !inputs
   integer,  intent(in) :: icol, klev, imode, num_idx, aer_type
+  logical,  intent(in) :: update_mmr
   real(r8), intent(in) :: gravit, cmn_factor
   real(r8), intent(in) :: drv, num
   real(r8), intent(in) :: v2nxx, v2nyy, dgnxx, dgnyy
   real(r8), intent(in) :: pdel(:,:)
-  real(r8), intent(in), optional :: dqdt(:,:,:)
+  real(r8), intent(in) :: dqdt(:,:,:)
   !output
   real(r8), intent(inout) :: dgncur(:,:,:), v2ncur(:,:,:)
-  real(r8), intent(inout), optional :: qsrflx(:,:,:,:)
+  real(r8), intent(inout) :: qsrflx(:,:,:,:)
 
   !local
-  logical  :: update_mmr
   real(r8) :: pdel_fac
-
-  update_mmr = .false.
-  if(present(qsrflx) .and. present(dqdt)) update_mmr = .true.
 
   if (drv > 0.0_r8) then
      if (num <= drv*v2nxx) then
