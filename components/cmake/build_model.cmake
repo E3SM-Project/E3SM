@@ -249,7 +249,7 @@ function(build_model COMP_CLASS COMP_NAME)
       endif()
     endif()
     if (USE_KOKKOS)
-      target_link_libraries (${TARGET_NAME} Kokkos::kokkos)
+      target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
     endif ()
   endif()
 
