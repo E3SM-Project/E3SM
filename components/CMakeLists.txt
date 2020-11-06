@@ -20,12 +20,9 @@ cmake_policy(SET CMP0057 NEW)
 # we can still access ${CASEROOT}/Macros.cmake
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
-# Turn on timing
-set(E3SM_ENABLE_TIMING FALSE CACHE BOOL "Turn on build timings")
-if (E3SM_ENABLE_TIMING)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "/usr/bin/time --format '%C\\nElapsed time: %E' ")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "/usr/bin/time --format '%C\\nElapsed time: %E' ")
-endif()
+# Turn on wrapper
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
@@ -75,9 +72,7 @@ build_mpas_models()
 
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-if (NOT E3SM_ENABLE_TIMING)
-  set(CMAKE_VERBOSE_MAKEFILE TRUE)
-endif()
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
