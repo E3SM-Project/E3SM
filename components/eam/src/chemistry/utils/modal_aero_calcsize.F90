@@ -661,7 +661,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
-      dotend = huge(dotend)
+      dotend = .false.
       dqdt   = huge(dqdt)
       dqqcwdt(:,:,:)  = huge(dqqcwdt)
       qsrflx(:,:,:,:) = huge(qsrflx)
