@@ -29,7 +29,7 @@
     logical, parameter :: rain_evap_to_coarse_aero = .false.
 #endif
 
-#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE_MOM ) || ( defined MODAL_AERO_5MODE_SOA_MOM ))
     ! carbonaceous species counters - will eventually be set by configuration options
     integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
     integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
@@ -257,9 +257,11 @@
           modeptr_finedust,  modeptr_fineseas,                          &   !
           modeptr_coardust,  modeptr_coarseas
 
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE_MOM) || (defined MODAL_AERO_5MODE_SOA_MOM) )
       integer &
           lptr2_soa_a_amode(ntot_amode,nsoa), &
           lptr2_soa_g_amode(nsoag)
+#endif
 
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &

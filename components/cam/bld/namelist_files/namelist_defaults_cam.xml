@@ -213,6 +213,15 @@
 <!-- (starting from initial file interpolated using interpic) -->
 <ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
+<ncdata dyn="se" hgrid="ne5np8"   nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne5np8_L26_ape_c061102.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_ape_c071213.nc</ncdata>
+<ncdata dyn="se" hgrid="ne16np8"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np8_L26_ape_c110222.nc</ncdata>
+<ncdata dyn="se" hgrid="ne21np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne21np4_L26_ape_c071210.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="26"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L26_ape_c071210.nc</ncdata>
+
+<ncdata dyn="se" hgrid="ne16np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L30_ape_c101201.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="30"  ocn="aquaplanet" ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne30np4_L30_ape_c111020.nc</ncdata>
+
 
 <!-- Topography -->
 <bnd_topo hgrid="256x512" >atm/cam/topo/topo-from-cami_0000-01-01_256x512_L26_c030918.nc</bnd_topo>
@@ -830,6 +839,8 @@
 <drydep_method chem="linoz_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam5_resus_soa_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam5_resus_soa_mom_soag_vbs">xactive_atm</drydep_method>
 <drydep_method chem="superfast_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
@@ -1613,6 +1624,21 @@
 <se_tstep > -1 </se_tstep>
 <hypervis_subcycle > 1 </hypervis_subcycle>
 
+<hypervis_subcycle>                   3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne4np4" >   3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne11np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne16np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne30np4" >  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne60np4" >  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne120np4">  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne240np4">  4 </hypervis_subcycle>
+<hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon"  > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"  > 7 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_enax4v1">7</hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_twpx4v1" > 7 </hypervis_subcycle>
 
 <!-- new interface used for E3SM v2 and later compsets  --> 
 <!-- enabed by setting se_tstep, dt_tracer_factor, dt_remap_factor   -->

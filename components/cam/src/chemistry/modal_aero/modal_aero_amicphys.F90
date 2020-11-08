@@ -5841,11 +5841,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          iaer_mproc = naer
       end if
 
-#if ( defined MODAL_AERO_4MODE_MOM )
-      naer = naer + 1 ; name_aerpfx(naer) = 'mom'
-      iaer_mom = naer
-#endif
-
       if ((ngas /= max_gas) .or. (naer /= max_aer)) then
          write(iulog,'(a,4i10)') 'ngas, max_gas, naer, max_aer', &
             ngas, max_gas, naer, max_aer
