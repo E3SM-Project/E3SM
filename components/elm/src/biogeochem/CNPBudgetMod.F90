@@ -1,0 +1,280 @@
+module CNPBudgetMod
+  ! !USES:
+  use shr_kind_mod      , only : r8 => shr_kind_r8
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_sys_mod       , only : shr_sys_abort
+  use decompMod         , only : bounds_type
+  use abortutils        , only : endrun
+  use clm_varctl        , only : iulog
+  use atm2lndType       , only : atm2lnd_type
+  use lnd2atmType       , only : lnd2atm_type
+  use spmdMod           , only : masterproc
+  use GridcellDataType  , only : grc_ws
+  use ColumnDataType    , only : col_ws
+
+  implicit none
+  save
+  private
+
+  !public :: CNPBudget_Reset
+
+  !--- F for flux ---
+
+  ! C inputs
+  integer, parameter :: f_gpp                  = 1
+
+  ! C outputs
+  integer, parameter :: f_ar                   =  2
+  integer, parameter :: f_hr                   =  3
+  integer, parameter :: f_fire_closs           =  4
+  integer, parameter :: f_hrv_xsmrpool_to_atm  =  5
+  integer, parameter :: f_prod1c_loss          =  6
+  integer, parameter :: f_prod10c_loss         =  7
+  integer, parameter :: f_prod100c_loss        =  8
+  integer, parameter :: f_som_c_leached        =  9
+  integer, parameter :: f_som_c_yield          = 10
+
+  integer, parameter, public :: f_size_c = f_som_c_yield
+
+  character(len=51), parameter :: f_name_c(f_size_c) = &
+       (/&
+       '                              gross primary product', &
+       '                            autotrophic respiration', &
+       '                          heterotrophic respiration', &
+       '                                        fire C loss', &
+       '                   excess MR pool harvest mortality', &
+       '        decomposition loss from 1-year product pool', &
+       '       decomposition loss from 10-year product pool', &
+       '      decomposition loss from 100-year product pool', &
+       '                 SOM C loss from vertical transport', &
+       '                                         SOM C loss'  &
+       /)
+       
+       
+  ! N inputs
+  integer, parameter :: f_ndep_to_sminn        = 11
+  integer, parameter :: f_nfix_to_ecosysn      = 12
+  integer, parameter :: f_nfix_to_sminn        = 13
+  integer, parameter :: f_supplement_to_sminn  = 14
+  integer, parameter :: f_fert_to_sminn        = 15
+  integer, parameter :: f_soyfixn_to_sminn     = 16
+  integer, parameter :: f_supplement_to_plantn = 17
+  integer, parameter :: f_nfert_dose           = 18
+
+  ! N outputs
+  integer, parameter :: f_denit                = 19
+  integer, parameter :: f_fire_ploss           = 20
+  integer, parameter :: f_n2o_nit            = 21
+  integer, parameter :: f_smin_no3_leached     = 22
+  integer, parameter :: f_smin_no3_runoff      = 23
+  integer, parameter :: f_sminn_leached        = 24
+  integer, parameter :: f_col_prod1n_loss      = 25
+  integer, parameter :: f_col_prod10n_loss     = 26
+  integer, parameter :: f_col_prod100n_loss    = 27
+  integer, parameter :: f_som_n_leached        = 28
+  integer, parameter :: f_som_n_yield          = 29
+
+  integer, parameter, public :: f_size_n = f_som_n_yield     - f_som_c_yield
+
+  character(len=39), parameter :: f_name_n(f_size_n) = &
+       (/&
+       '                      atm. N deposition', &
+       '                total nitrogen fixation', &
+       '        symbiotic/asymbiotic N fixation', &
+       '         vert-int supplemental N supply', &
+       '                           fertilizer N', &
+       '                       soybean fixation', &
+       '         supplementary P flux for plant', &
+       '                    forest N fertiziler', &
+       '                rate of denitrification', &
+       '                            fire N loss', &
+       '            N2O flux from nitrification', &
+       ' soil mineral NO3 pool loss to leaching', &
+       '   soil mineral NO3 pool loss to runoff', &
+       '   soil mineral N pool loss to leaching', &
+       '          1-year wood product harvested', &
+       '         10-year wood product harvested', &
+       '        100-year wood product harvested', &
+       '     SOM N loss from vertical transport', &
+       '                  SOM N loss by erosion' &
+       /)
+
+  ! P inputs
+  integer, parameter :: f_primp_to_labilep     = 30
+  integer, parameter :: f_supplement_to_sminp  = 31
+  integer, parameter :: f_supplement_to_plantp = 32
+  integer, parameter :: f_pfert_dose           = 33
+
+  ! P outputs
+  integer, parameter :: f_secondp_to_occlp     = 34
+  integer, parameter :: f_sminp_leached        = 35
+  integer, parameter :: f_col_fire_ploss       = 36
+  integer, parameter :: f_solutionp            = 37
+  integer, parameter :: f_labilep              = 38
+  integer, parameter :: f_secondp              = 39
+  integer, parameter :: f_col_prod1p_loss      = 40
+  integer, parameter :: f_col_prod10p_loss     = 41
+  integer, parameter :: f_col_prod100p_loss    = 42
+  integer, parameter :: f_som_p_yield          = 43
+  integer, parameter :: f_labilep_yield        = 44
+  integer, parameter :: f_secondp_yield        = 45
+
+  integer, parameter, public :: f_size_p = f_secondp_yield - f_som_n_yield
+
+  character(len=44), parameter :: f_name_p(f_size_p) = &
+       (/&
+       '                   primary mineral to labile', &
+       '                         supplemental supply', &
+       '                     supplementary for plant', &
+       '                           forest fertiziler', &
+       '   desorption of secondary mineral to labile', &
+       '          soil mineral pool loss to leaching', &
+       '                                   fire loss', &
+       '                                solution ???', &
+       '                                  labile ???', &
+       '                                scondary ???', &
+       '   decomposition loss from 1-yr crop product', &
+       '  decomposition loss from 10-yr crop product', &
+       ' decomposition loss from 100-yr crop product', &
+       '                         erosion loss of SOM', &
+       '                 erosion loss of soil labile', &
+       '      erosion loss of soil secondary mineral' &
+       /)
+
+  !--- S for state ---
+
+  ! C
+  integer, parameter :: s_totpftc_beg           =  1
+  integer, parameter :: s_totpftc_end           =  2
+  integer, parameter :: s_cwdc_beg              =  3
+  integer, parameter :: s_cwdc_end              =  4
+  integer, parameter :: s_totlitc_beg           =  5
+  integer, parameter :: s_totlitc_end           =  6
+  integer, parameter :: s_totsomc_beg           =  7
+  integer, parameter :: s_totsomc_end           =  8
+  integer, parameter :: s_totprodc_beg          =  9
+  integer, parameter :: s_totprodc_end          = 10
+  integer, parameter :: s_ctrunc_beg            = 11
+  integer, parameter :: s_ctrunc_end            = 12
+  integer, parameter :: s_cropseedc_deficit_beg = 13
+  integer, parameter :: s_cropseedc_deficit_end = 14
+  integer, parameter :: s_c_error               = 15
+
+  integer, parameter, public :: s_size_c = s_c_error
+
+  character(len=25),parameter :: s_name_c(s_size_c) = &
+       (/&
+       '              total_c_beg', &
+       '              total_c_end', &
+       'coarse woody debris_c_beg', &
+       'coarse woody debris_c_end', &
+       '       total litter_c_beg', &
+       '       total litter_c_end', &
+       '          total_som_c_beg', &
+       '          total_som_c_end', &
+       ' total_wood_product_c_beg', &
+       ' total_wood_product_c_end', &
+       '    truncation_sink_c_beg', &
+       '    truncation_sink_c_end', &
+       '  crop_seed_deficit_c_beg', &
+       '  crop_seed_deficit_c_end', &
+       '                  error c'  &
+       /)
+
+  ! N
+  integer, parameter :: s_totpftn_beg           = 16
+  integer, parameter :: s_totpftn_end           = 17
+  integer, parameter :: s_cwdn_beg              = 18
+  integer, parameter :: s_cwdn_end              = 19
+  integer, parameter :: s_totlitn_beg           = 20
+  integer, parameter :: s_totlitn_end           = 21
+  integer, parameter :: s_totsomn_beg           = 22
+  integer, parameter :: s_totsomn_end           = 23
+  integer, parameter :: s_sminn_beg             = 24
+  integer, parameter :: s_sminn_end             = 25
+  integer, parameter :: s_totprodn_beg          = 26
+  integer, parameter :: s_totprodn_end          = 27
+  integer, parameter :: s_ntrunc_beg            = 28
+  integer, parameter :: s_ntrunc_end            = 29
+  integer, parameter :: s_plant_n_buffer_beg    = 30
+  integer, parameter :: s_plant_n_buffer_end    = 31
+  integer, parameter :: s_cropseedn_deficit_beg = 32
+  integer, parameter :: s_cropseedn_deficit_end = 33
+  integer, parameter :: s_n_error               = 34
+
+  integer, parameter, public :: s_size_n = s_n_error - s_c_error
+  
+  character(len=25),parameter :: s_name_n(s_size_n) = &
+       (/&
+       '              total_n_beg', &
+       '              total_n_end', &
+       'coarse woody_debris_n_beg', &
+       'coarse woody_debris_n_end', &
+       '       total_litter_n_beg', &
+       '       total_litter_n_end', &
+       '          total_som_n_beg', &
+       '          total_som_n_end', &
+       '       soil_mineral_n_beg', &
+       '       soil_mineral_n_end', &
+       ' total_wood_product_n_beg', &
+       ' total_wood_product_n_end', &
+       '    truncation_sink_n_beg', &
+       '    truncation_sink_n_end', &
+       '   abstract_storage_n_beg', &
+       '   abstract_storage_n_end', &
+       '  crop_seed_deficit_n_beg', &
+       '  crop_seed_deficit_n_end', &
+       '                  error c'  &
+       /)
+
+  ! P
+  integer, parameter :: s_totpftp_beg           = 35
+  integer, parameter :: s_totpftp_end           = 36
+  integer, parameter :: s_cwdp_beg              = 37
+  integer, parameter :: s_cwd_endp              = 38
+  integer, parameter :: s_totlitp_beg           = 39
+  integer, parameter :: s_totlitp_end           = 40
+  integer, parameter :: s_totsomp_beg           = 41
+  integer, parameter :: s_totsomp_end           = 42
+  integer, parameter :: s_totprodp_beg          = 43
+  integer, parameter :: s_totprodp_end          = 44
+  integer, parameter :: s_ptrunc_beg            = 45
+  integer, parameter :: s_ptrunc_end            = 46
+  integer, parameter :: s_solutionp_beg         = 47
+  integer, parameter :: s_solutionp_end         = 48
+  integer, parameter :: s_labilep_beg           = 49
+  integer, parameter :: s_labilep_end           = 50
+  integer, parameter :: s_secondp_beg           = 51
+  integer, parameter :: s_secondp_end           = 52
+  integer, parameter :: s_cropseedp_deficit_beg = 53
+  integer, parameter :: s_cropseedp_deficit_end = 54
+  integer, parameter :: s_p_error               = 55
+
+  integer, parameter, public :: s_size_p = s_p_error - s_n_error
+
+  character(len=25),parameter :: s_name_p(s_size_p) = &
+       (/&
+       '              total_n_beg', &
+       '              total_n_end', &
+       'coarse woody_debris_n_beg', &
+       'coarse woody_debris_n_end', &
+       '       total_litter_n_beg', &
+       '       total_litter_n_end', &
+       '          total_som_n_beg', &
+       '          total_som_n_end', &
+       ' total_wood_product_n_beg', &
+       ' total_wood_product_n_end', &
+       '       solution_???_n_beg', &
+       '       solution_???_n_end', &
+       '         labile_???_n_beg', &
+       '         labile_???_n_end', &
+       '      secondary_???_n_beg', &
+       '      secondary_???_n_end', &
+       '    truncation_sink_n_beg', &
+       '    truncation_sink_n_end', &
+       '  crop_seed_deficit_n_beg', &
+       '  crop_seed_deficit_n_end', &
+       '                  error c'  &
+       /)
+
+end module CNPBudgetMod
