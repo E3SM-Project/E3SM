@@ -113,6 +113,7 @@ struct UnitWrap {
     struct TestPblintdCldCheck;
     struct TestComputeShocVapor;
     struct TestUpdatePrognosticsImplicit;
+    struct TestShocMain;
   };
 
 };

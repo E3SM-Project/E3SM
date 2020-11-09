@@ -232,12 +232,12 @@ PIECES = OrderedDict([
 ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
-        "components/cam/src/physics/cam/micro_p3.F90",
+        "components/eam/src/physics/cam/micro_p3.F90",
         "components/scream/src/physics/p3",
         "p3_init();"
     ),
     "shoc" : (
-        "components/cam/src/physics/cam/shoc.F90",
+        "components/eam/src/physics/cam/shoc.F90",
         "components/scream/src/physics/shoc",
         "shoc_init(REPLACE_ME, true);"
     ),

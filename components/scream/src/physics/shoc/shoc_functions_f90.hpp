@@ -852,6 +852,23 @@ struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
 
   PTDG_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
 };
+struct ShocMainData : public PhysicsTestDataGeneric {
+  // Inputs
+  Int shcol, nlev, nlevi, nadv, num_qtracers;
+  Real dtime;
+  Real *host_dx, *host_dy, *thv, *zt_grid, *zi_grid, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *wtracer_sfc, *w_field, *exner, *phis;
+  
+  // Inputs/Outputs
+  Real *host_dse, *tke, *thetal, *qw, *u_wind, *v_wind, *qtracers, *wthv_sec, *tkh, *tk, *shoc_ql, *shoc_cldfrac;
+  
+  // Outputs
+  Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2;
+  
+  ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_) :
+    PhysicsTestDataGeneric({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }}, {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh }, { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal, &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac, &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 }, { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec, &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 }, { &wtracer_sfc }, { &qtracers }}, {}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_), dtime(dtime_), nadv(nadv_) {}
+  
+  PTDG_STD_DEF(ShocMainData, 6, shcol, nlev, nlevi, num_qtracers, dtime, nadv);
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void shoc_grid                                      (SHOCGridData &d);
 void shoc_diag_obklen                               (SHOCObklenData &d);
@@ -915,6 +932,7 @@ void diag_second_shoc_moments                       (DiagSecondShocMomentsData& 
 void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
 
+void shoc_main(ShocMainData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -985,6 +1003,7 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
 void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi);
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
+void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2);
 } // end _f function decls
 
 }  // namespace shoc
