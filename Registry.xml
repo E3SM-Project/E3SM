@@ -172,6 +172,14 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
+		<nml_option name="config_restore_damage" type="logical" default_value=".false." units="unitless"
+                        description="If true, then turn on the restore_damage function."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
+                        description="If true, then turn on the calculate_damage function."
+		            possible_values=".true. or .false."
+                />
                 <nml_option name="config_damage_restore_threshold" type="real" default_value="0.0" units="unitless"
                         description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_restore_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to 0.6 if non-damaged ice is transported from upstream. If we set config_damage_restore_threshold to 0 (default), then it will just not play a role in pratical."
 	                possible_values="real value between 0 and 1"
@@ -188,7 +196,7 @@
                         description="If true, then we change stiffnessFactor to 1-damage during the run."
 	                possible_values=".true. or .false."
 		/>
-                <nml_option name="config_use_constant_A" type="logical" default_value=".false." units="unitless"
+                <nml_option name="config_damage_use_constant_A" type="logical" default_value=".false." units="unitless"
                         description="If true, then we use constant A (i.e., config_default_flowParamA) in the damage calculation."
 	                possible_values=".true. or .false."
 		/>
@@ -606,6 +614,10 @@
 			<var name="damage"/>
 			<var name="ddamagedt"/>
 			<var name="szero"/>
+			<var name="nstar"/>
+			<var name="epsmax"/>
+			<var name="sigmamax"/>
+			<var name="visc"/>
 			<var name="source"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
@@ -703,6 +715,10 @@
 			<var name="damage"/>
 			<var name="ddamagedt"/>
 			<var name="szero"/>
+			<var name="nstar"/>
+			<var name="epsmax"/>
+			<var name="sigmamax"/>
+			<var name="visc"/>
 			<var name="source"/>
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
@@ -739,8 +755,8 @@
 			<var name="upperSurface"/>
 			<var name="temperature"/>
 			<var name="cellMask"/>
-			<var name="cellMaskFront"/>
-			<var name="cellVolumeLeft"/>
+			<!--var name="cellMaskFront"/-->
+			<!--var name="cellVolumeLeft"/-->
 			<var name="edgeMask"/>
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
@@ -1051,6 +1067,18 @@ is the value of that variable from the *previous* time level!
 		     description="maximum damage number kept constant"
 		/>
                 <var name="szero" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="S0 number"
+		/>
+                <var name="nstar" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="S0 number"
+		/>
+                <var name="visc" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="S0 number"
+		/>
+                <var name="epsmax" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="S0 number"
+		/>
+                <var name="sigmamax" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
 		     description="S0 number"
 		/>
                 <var name="source" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
@@ -1382,10 +1410,10 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
-	  <var name="viscField" type="real" dimensions="nCells" units="none"
+	  <!--var name="viscField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
-	       />
+	       /-->
 	  <var name="sigmaxyField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
@@ -1414,14 +1442,14 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
-	  <var name="epsmaxField" type="real" dimensions="nCells" units="none"
+	  <!--var name="epsmaxField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
-	       />
-	  <var name="nstarField" type="real" dimensions="nCells" units="none"
+	       /-->
+	  <!--var name="nstarField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
-	       />
+	       /-->
 	  <!--var name="szeroField" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"

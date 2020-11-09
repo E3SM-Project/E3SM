@@ -105,10 +105,14 @@ module li_time_integration_fe
       integer :: err_tmp
 
       logical, pointer :: config_restore_calving_front
+      logical, pointer :: config_calculate_damage
+      logical, pointer :: config_restore_damage
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
+      call mpas_pool_get_config(liConfigs, 'config_restore_damage',config_restore_damage)
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -130,10 +134,12 @@ module li_time_integration_fe
       call mpas_timer_stop("vertical therm")
 
 ! === calculate damage ===========
-      call mpas_timer_start("damage")
-      call calculate_damage(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("damage")
+      if (config_calculate_damage) then
+          call mpas_timer_start("damage")
+          call calculate_damage(domain, err_tmp)
+          err = ior(err, err_tmp)
+          call mpas_timer_stop("damage")
+      endif
 
 ! === Compute new state for prognostic variables ==================================
       call mpas_timer_start("advect thickness and tracers")
@@ -142,10 +148,12 @@ module li_time_integration_fe
       call mpas_timer_stop("advect thickness and tracers")
 
 ! === restore damage ===========
-      call mpas_timer_start("restore damage")
-      call restore_damage(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("restore damage")
+      if (config_restore_damage) then
+          call mpas_timer_start("restore damage")
+          call restore_damage(domain, err_tmp)
+          err = ior(err, err_tmp)
+          call mpas_timer_stop("restore damage")
+      endif
 
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be.
