@@ -37,6 +37,7 @@ module ocn_init_routines
    use ocn_gm
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    use ocn_surface_land_ice_fluxes
    use ocn_forcing
@@ -243,38 +244,15 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !>   kiteIndexOnCell.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_init_routines_setup_sign_and_index_fields(meshPool)!{{{
+   subroutine ocn_init_routines_setup_sign_and_index_fields()!{{{
 
-       type (mpas_pool_type), intent(inout) :: meshPool
-
-       integer, dimension(:), pointer :: nEdgesOnCell
-       integer, dimension(:,:), pointer :: edgesOnCell, edgesOnVertex, cellsOnVertex, cellsOnEdge, verticesOnCell, verticesOnEdge
-       integer, dimension(:,:), pointer :: edgeSignOnCell, edgeSignOnVertex, kiteIndexOnCell
-
-       integer, pointer :: nCells, nEdges, nVertices, vertexDegree
        integer :: iCell, iEdge, iVertex, i, j, k
-
-       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
-
-       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-       call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
-       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
-       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
-       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
-       call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', kiteIndexOnCell)
 
        edgeSignOnCell = 0.0_RKIND
        edgeSignOnVertex = 0.0_RKIND
        kiteIndexOnCell = 0.0_RKIND
 
-       do iCell = 1, nCells
+       do iCell = 1, nCellsAll
          do i = 1, nEdgesOnCell(iCell)
            iEdge = edgesOnCell(i, iCell)
            iVertex = verticesOnCell(i, iCell)
@@ -294,7 +272,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          end do
        end do
 
-       do iVertex = 1, nVertices
+       do iVertex = 1, nVerticesAll
          do i = 1, vertexDegree
            iEdge = edgesOnVertex(i, iVertex)
 
@@ -322,26 +300,12 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 !-----------------------------------------------------------------------
    subroutine ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)!{{{
 
-      type (mpas_pool_type), intent(in) :: meshPool
+      type(mpas_pool_type), intent(inout) :: meshPool
       real (kind=RKIND), dimension(:,:), intent(inout) :: edgeAreaFractionOfCell
 
-      integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:,:), pointer :: edgesOnCell
-      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
-
-      integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, i, j, k
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-
-      do iCell = 1, nCells
+      do iCell = 1, nCellsAll
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             ! edgeAreaFractionOfCell is the fractional area of cell iCell
@@ -539,7 +503,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
               do iCell = 1,nCells
                  if (landIceMask(iCell)==0.and.abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
                     consistentSSH = .false.
-                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', & 
+                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
                        MPAS_LOG_ERR)
                     call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
                        intArgs=(/iCell, maxLevelCell(iCell) /), &
@@ -550,7 +514,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
               do iCell = 1,nCells
                  if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>20.0_RKIND) then
                     consistentSSH = .false.
-                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', & 
+                    call mpas_log_write(' Warning: Sea surface height is outside of acceptable physical range, i.e. abs(sum(h)-bottomDepth)>20m.', &
                        MPAS_LOG_ERR)
                     call mpas_log_write(' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r, sum(h): $r', &
                        intArgs=(/iCell, maxLevelCell(iCell) /), &
@@ -603,22 +567,22 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
 
-      type (mpas_pool_type), pointer :: meshPool, statePool, tracersPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool, tracersPool
       type (mpas_pool_type), pointer :: forcingPool, diagnosticsPool, scratchPool
       integer :: i, iEdge, iCell, k
       integer :: err1
 
-      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, indMLD
-      integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
-      real (kind=RKIND), dimension(:), pointer :: areaCell, boundaryLayerDepth
-      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, normalTransportVelocity
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
+      integer, dimension(:), pointer :: indMLD
+      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
+      real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity, normalGMBolusVelocity
       real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
       real (kind=RKIND), dimension(:,:), pointer :: edgeAreaFractionOfCell
-      real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
+      integer, dimension(:,:), pointer :: highOrderAdvectionMaskTmp, boundaryCellTmp
+      integer, dimension(:,:), pointer :: edgeSignOnCellTmp, edgeSignOnVertexTmp
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
 
@@ -639,19 +603,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-      call mpas_pool_get_array(meshPool, 'derivTwo', derivTwo)
-      call mpas_pool_get_array(meshPool, 'advCoefs', advCoefs)
-      call mpas_pool_get_array(meshPool, 'advCoefs3rd', advCoefs3rd)
-      call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', nAdvCellsForEdge)
-      call mpas_pool_get_array(meshPool, 'advCellsForEdge', advCellsForEdge)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', highOrderAdvectionMask)
-      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
-      call mpas_pool_get_array(meshPool, 'edgeTangentVectors', edgeTangentVectors)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', highOrderAdvectionMaskTmp)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCellTmp)
 
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
@@ -667,15 +620,28 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
-      call ocn_init_routines_setup_sign_and_index_fields(meshPool)
+      call ocn_init_routines_setup_sign_and_index_fields()
+
+      ! Update edgeSignOnCell and edgeSignOnVertex pionters in ocn_mesh.  The ocn_mesh allocatables
+      ! are updated in ocn_init_routines_setup_sign_and_index_fields.  This updates the pointers to
+      ! Registry to match the allocatable arrays
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCellTmp)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertexTmp)
+      edgeSignOnCellTmp = int(edgeSignOnCell)
+      edgeSignOnVertexTmp = int(edgeSignOnVertex)
+
       call ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
           config_horiz_tracer_adv_order, derivTwo, advCoefs, &
           advCoefs3rd, nAdvCellsForEdge, advCellsForEdge, &
-          err1, maxLevelCell, highOrderAdvectionMask, &
-          boundaryCell)
+          err1, maxLevelCell, highOrderAdvectionMaskTmp, &
+          boundaryCellTmp)
       err = ior(err, err1)
+
+      ! Update ocn_mesh variables for highOrderAdvectionMask and boundaryCell
+      highOrderAdvectionMask = real(highOrderAdvectionMaskTmp, kind=RKIND)
+      boundaryCell = real(boundaryCellTmp, kind=RKIND)
 
       if (.not. config_do_restart) then
          do iCell=1,nCells

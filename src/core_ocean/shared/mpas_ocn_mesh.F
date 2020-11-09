@@ -1032,9 +1032,11 @@ contains
       end do
       end do
 
+      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
+      ! pointer needs to be udpated
       do n = 1, nCellsAll+1
       do k = 1, maxEdges
-         edgeSignOnCell(k, n) = real(edgeSignOnCellTmp(k, n), RKIND)
+         edgeSignOnCellTmp(k, n) = int(edgeSignOnCell(k, n))
       end do
       end do
 
@@ -1054,10 +1056,12 @@ contains
       end do
       end do
 
+      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
+      ! pointer needs to be udpated
       do n = 1, nVerticesAll+1
       do k = 1, vertexDegree
-         edgeSignOnVertex(k, n) = &
-            real(edgeSignOnVertexTmp(k, n), RKIND)
+         edgeSignOnVertexTmp(k, n) = &
+            int(edgeSignOnVertex(k, n))
       end do
       end do
 
