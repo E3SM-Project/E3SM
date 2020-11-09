@@ -34,9 +34,9 @@ module CNPBudgetMod
   integer, parameter :: f_som_c_leached        =  9
   integer, parameter :: f_som_c_yield          = 10
 
-  integer, parameter, public :: f_size_c = f_som_c_yield
+  integer, parameter, public :: c_f_size = f_som_c_yield
 
-  character(len=51), parameter :: f_name_c(f_size_c) = &
+  character(len=51), parameter :: c_f_name(c_f_size) = &
        (/&
        '                              gross primary product', &
        '                            autotrophic respiration', &
@@ -74,9 +74,9 @@ module CNPBudgetMod
   integer, parameter :: f_som_n_leached        = 28
   integer, parameter :: f_som_n_yield          = 29
 
-  integer, parameter, public :: f_size_n = f_som_n_yield     - f_som_c_yield
+  integer, parameter, public :: n_f_size = f_som_n_yield     - f_som_c_yield
 
-  character(len=39), parameter :: f_name_n(f_size_n) = &
+  character(len=39), parameter :: n_f_name(n_f_size) = &
        (/&
        '                      atm. N deposition', &
        '                total nitrogen fixation', &
@@ -119,9 +119,9 @@ module CNPBudgetMod
   integer, parameter :: f_labilep_yield        = 44
   integer, parameter :: f_secondp_yield        = 45
 
-  integer, parameter, public :: f_size_p = f_secondp_yield - f_som_n_yield
+  integer, parameter, public :: p_f_size = f_secondp_yield - f_som_n_yield
 
-  character(len=44), parameter :: f_name_p(f_size_p) = &
+  character(len=44), parameter :: p_f_name(p_f_size) = &
        (/&
        '                   primary mineral to labile', &
        '                         supplemental supply', &
@@ -160,9 +160,9 @@ module CNPBudgetMod
   integer, parameter :: s_cropseedc_deficit_end = 14
   integer, parameter :: s_c_error               = 15
 
-  integer, parameter, public :: s_size_c = s_c_error
+  integer, parameter, public :: c_s_size = s_c_error
 
-  character(len=25),parameter :: s_name_c(s_size_c) = &
+  character(len=25),parameter :: c_s_name(c_s_size) = &
        (/&
        '              total_c_beg', &
        '              total_c_end', &
@@ -202,9 +202,9 @@ module CNPBudgetMod
   integer, parameter :: s_cropseedn_deficit_end = 33
   integer, parameter :: s_n_error               = 34
 
-  integer, parameter, public :: s_size_n = s_n_error - s_c_error
+  integer, parameter, public :: n_s_size = s_n_error - s_c_error
   
-  character(len=25),parameter :: s_name_n(s_size_n) = &
+  character(len=25),parameter :: n_s_name(n_s_size) = &
        (/&
        '              total_n_beg', &
        '              total_n_end', &
@@ -276,5 +276,38 @@ module CNPBudgetMod
        '  crop_seed_deficit_n_end', &
        '                  error c'  &
        /)
+
+  !--- P for period ---
+
+  integer, parameter :: p_inst = 1
+  integer, parameter :: p_day  = 2
+  integer, parameter :: p_mon  = 3
+  integer, parameter :: p_ann  = 4
+  integer, parameter :: p_inf  = 5
+
+  integer, parameter, public :: p_size = p_inf
+
+  character(len=8),parameter :: pname(p_size) = &
+       (/'    inst','   daily',' monthly','  annual','all_time' /)
+
+  real(r8) :: c_budg_fluxL(c_f_size, p_size) ! local sum, valid on all pes
+  real(r8) :: n_budg_fluxL(n_f_size, p_size) ! local sum, valid on all pes
+  real(r8) :: p_budg_fluxL(p_f_size, p_size) ! local sum, valid on all pes
+
+  real(r8) :: c_budg_fluxG(c_f_size, p_size) ! global sum, valid only on root pe
+  real(r8) :: n_budg_fluxG(n_f_size, p_size) ! global sum, valid only on root pe
+  real(r8) :: p_budg_fluxG(p_f_size, p_size) ! global sum, valid only on root pe
+
+  real(r8) :: c_budg_fluxN(c_f_size, p_size) ! counter, valid only oon root pe
+  real(r8) :: n_budg_fluxN(n_f_size, p_size) ! counter, valid only oon root pe
+  real(r8) :: p_budg_fluxN(p_f_size, p_size) ! counter, valid only oon root pe
+
+  real(r8) :: c_budg_stateL(s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: n_budg_stateL(s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: p_budg_stateL(s_size, p_size) ! local sum, valid on all pes
+
+  real(r8), public :: c_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
+  real(r8), public :: n_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
+  real(r8), public :: p_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
 
 end module CNPBudgetMod
