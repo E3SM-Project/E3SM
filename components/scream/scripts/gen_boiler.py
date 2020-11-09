@@ -1140,7 +1140,8 @@ def gen_struct_api_sugar(physics, struct_name, arg_data):
             expect(not td_reals, "Multiple sets of 3d reals?")
             td_reals = reals
 
-    i_ints = list(int_data.values())[0]
+    if int_data:
+        i_ints = list(int_data.values())[0]
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
