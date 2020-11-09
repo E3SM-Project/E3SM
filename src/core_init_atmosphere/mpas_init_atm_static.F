@@ -127,6 +127,7 @@
 
  real (kind=RKIND), dimension(:), pointer :: ter
  integer (kind=I8KIND), dimension(:), pointer :: ter_integer
+ integer (kind=I8KIND), dimension(:,:), pointer :: greenfrac_int
  real (kind=RKIND), dimension(:), pointer :: soiltemp
  real (kind=RKIND), dimension(:), pointer :: snoalb
  integer (kind=I8KIND), dimension(:), pointer :: snoalb_integer
@@ -154,7 +155,7 @@
  real (kind=RKIND) :: tval
  integer (kind=I8KIND) :: i8val
  integer, pointer :: tile_bdr
- integer, pointer :: tile_nx, tile_ny
+ integer, pointer :: tile_nx, tile_ny, tile_nz
 
  logical :: all_pixels_mapped_to_halo_cells
  integer :: ierr
@@ -1083,17 +1084,131 @@
 
     ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
     if (ierr /= 0) then
-       call mpas_log_write('Error occurred when initalizing the interpolation of montly vegetation fraction (greenfrac)', &
+       call mpas_log_write('Error occurred when initalizing the interpolation of monthly vegetation fraction (greenfrac)', &
                             messageType=MPAS_LOG_CRIT)
     endif
 
+    call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+    call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+    call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+    call mpas_pool_get_config(mgr % pool, 'tile_z', tile_nz)
+    call mpas_pool_get_config(mgr % pool, 'missing_value', missing_value)
+
+    allocate(nhs(nCells))
+    allocate(greenfrac_int(tile_nz, nCells))
+    nhs(:) = 0
     greenfrac(:,:) = 0.0
+    greenfrac_int(:,:) = 0_I8KIND
+    fillval = 0.0
+
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            tile => null()
+            ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+            if (ierr /= 0 .or. .not. associated(tile)) then
+                call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+            end if
+
+            ierr = mgr % push_tile(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile % fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
+
+        do while (.not. mgr % is_stack_empty())
+            tile => mgr % pop_tile()
+
+            if (tile % is_processed) then
+                cycle
+            end if
+
+            call mpas_log_write('Processing tile: '//trim(tile % fname))
+
+            all_pixels_mapped_to_halo_cells = .true.
+
+            do j = tile_bdr + 1, tile_ny + tile_bdr, 1
+                do i = tile_bdr + 1, tile_nx + tile_bdr, 1
+
+                    call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+                    call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                    call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                    !
+                    ! This field only matters for land cells, and for all but the outermost boundary cells,
+                    ! we can safely assume that the nearest model grid cell contains the pixel (else, a different
+                    ! cell would be nearest)
+                    !
+                    if (landMask(res % id) == 1 .and. bdyMaskCell(res % id) < nBdyLayers) then
+                        do k = 1, tile_nz
+                            if (tile % tile(i, j, k) == missing_value) then
+                                i8val = int(fillval, kind=I8KIND)
+                            else
+                                i8val = int(tile % tile(i,j,k), kind=I8KIND)
+                            end if
+                            greenfrac_int(k, res % id) = greenfrac_int(k, res % id) + i8val
+                        end do
+                        nhs(res % id) = nhs(res % id) + 1
+
+                        if (res % id <= nCellsSolve) then
+                            all_pixels_mapped_to_halo_cells = .false.
+                        end if
+
+                    ! For outermost land cells, additional work is needed to verify that the pixel
+                    ! actually lies within the nearest cell
+                    else if (landMask(res % id) == 1) then
+                        if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                          nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+                            do k = 1, tile_nz
+                                if (tile % tile(i, j, k) == missing_value) then
+                                    i8val = int(fillval, kind=I8KIND)
+                                else
+                                    i8val = int(tile % tile(i,j,k), kind=I8KIND)
+                                end if
+                                greenfrac_int(k, res % id) = greenfrac_int(k, res % id) + i8val
+                            end do
+                            nhs(res % id) = nhs(res % id) + 1
+
+                            if (res % id <= nCellsSolve) then
+                                all_pixels_mapped_to_halo_cells = .false.
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+
+            tile % is_processed = .true.
+
+            if (.not. all_pixels_mapped_to_halo_cells) then
+                ierr = mgr % push_neighbors(tile)
+                if (ierr /= 0) then
+                    call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+                end if
+            end if
+
+        end do
+    end do
+
+    do iCell = 1, nCells
+        ! For land points that have no overlap with valid data, and for water points,
+        ! just use the fill value...
+        if (nhs(iCell) == 0) then
+            greenfrac(:,iCell) = fillval
+        else
+            greenfrac(:,iCell) = real(greenfrac_int(:,iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+        end if
+        shdmin(iCell) = minval(greenfrac(:,iCell))
+        shdmax(iCell) = maxval(greenfrac(:,iCell))
+    end do
+
+    deallocate(nhs)
+    deallocate(greenfrac_int)
 
     ierr = mgr % finalize()
     if (ierr /= 0) then
-       call mpas_log_write('Error occurred when finalizing the interpolation of montly vegetation fraction (greenfrac)', &
+       call mpas_log_write('Error occurred when finalizing the interpolation of monthly vegetation fraction (greenfrac)', &
                             messageType=MPAS_LOG_CRIT)
     endif
+
  else if (trim(config_vegfrac_data) == 'NCEP') then
 
     call mpas_log_write('Using NCEP 0.144-deg data for climatological monthly vegetation fraction')
