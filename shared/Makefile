@@ -76,7 +76,7 @@ mpas_ocn_tendency.o: mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_su
 
 mpas_ocn_diagnostics_routines.o: mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_mesh.o: 
 
