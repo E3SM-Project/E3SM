@@ -4,7 +4,7 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
                            get_mach_baseline_root_dir, setup_mach_env, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler
+                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
 
 check_minimum_python_version(3, 4)
 
@@ -18,7 +18,7 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx_compiler, f90_compiler, submit=False, parallel=False, fast_fail=False,
+    def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
@@ -27,6 +27,7 @@ class TestAllScream(object):
 
         self._cxx_compiler            = cxx_compiler
         self._f90_compiler            = f90_compiler
+        self._c_compiler              = c_compiler
         self._submit                  = submit
         self._parallel                = parallel
         self._fast_fail               = fast_fail
@@ -103,9 +104,12 @@ class TestAllScream(object):
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)
         if self._f90_compiler is None:
             self._f90_compiler = get_mach_f90_compiler(self._machine)
+        if self._c_compiler is None:
+            self._c_compiler = get_mach_c_compiler(self._machine)
 
         self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
         self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
+        self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
 
         ###################################
         #      Compute baseline info      #
@@ -315,6 +319,7 @@ class TestAllScream(object):
     ###############################################################################
         result  = "{}-C {}".format("" if for_ctest else "cmake ", self.get_machine_file())
         result += " -DCMAKE_CXX_COMPILER={}".format(self._cxx_compiler)
+        result += " -DCMAKE_C_COMPILER={}".format(self._c_compiler)
         result += " -DCMAKE_Fortran_COMPILER={}".format(self._f90_compiler)
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
