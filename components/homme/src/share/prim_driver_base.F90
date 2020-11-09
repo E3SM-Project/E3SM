@@ -1386,7 +1386,18 @@ contains
     enddo
     call t_stopf("prim_step_dyn")
     
-    call prim_step_scm2(elem, nets, nete, dt, tl, hvcoord)
+    if (single_column) then
+      do ie=nets_in,nete_in
+        do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+        enddo
+      enddo
+    endif
+
+    write(*,*) 'DP3D ', elem(1)%state%dp3d(1,1,:,tl%np1)
+
+!    call prim_step_scm2(elem, nets, nete, dt_q, tl, hvcoord)
     
     if (qsize > 0 .and. .not. single_column) then
        call t_startf("PAT_remap")
@@ -1814,6 +1825,15 @@ contains
     enddo
 #endif
 
+!#ifdef MODEL_THETA_L
+!    do ie=nets,nete
+!      do k=1,nlev
+!        elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+!             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+!      enddo
+!    enddo
+!#endif
+
   end subroutine prim_step_scm  
   
   subroutine prim_step_scm2(elem, nets,nete, dt, tl, hvcoord)
@@ -1881,9 +1901,9 @@ contains
     
     dt_q=1800.
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
-    call set_prescribed_scm2(elem,dt_q,tl)
+    call set_prescribed_scm2(elem,dt,tl)
 
-!#ifndef MODEL_THETA_L
+#ifndef MODEL_THETA_L
     do n=2,dt_tracer_factor
 
       call TimeLevel_update(tl,"leapfrog")
@@ -1896,7 +1916,7 @@ contains
       call set_prescribed_scm2(elem,dt,tl)
       
     enddo
-!#endif
+#endif
 
     do ie=nets,nete
       do k=1,nlev
@@ -2009,10 +2029,10 @@ contains
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
         + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k)) 
-!#ifdef MODEL_THETA_L       
-!      elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,n0) &
-!        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
-!#endif
+#ifdef MODEL_THETA_L
+      elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,n0) &
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+#endif
     enddo
 
     ! If running theta_l model then the floating potential temperature
@@ -2024,11 +2044,11 @@ contains
     enddo
 #endif
 
-!    do p=1,qsize
-!      do k=1,nlev
-!        !elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
-!      enddo
-!    enddo
+    do p=1,qsize
+      do k=1,nlev
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+      enddo
+    enddo
     
   end subroutine set_prescribed_scm   
   
