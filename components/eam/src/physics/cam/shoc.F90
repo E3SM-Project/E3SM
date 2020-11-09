@@ -282,33 +282,33 @@ subroutine shoc_main ( &
   !  to be output to history file by host model (if desired)
 
   ! Turbulent length scale [m]
-  real(rtype) :: shoc_mix(shcol,nlev)
+  real(rtype), intent(out) :: shoc_mix(shcol,nlev)
   ! vertical velocity variance [m2/s2]
-  real(rtype) :: w_sec(shcol,nlev)
+  real(rtype), intent(out) :: w_sec(shcol,nlev)
   ! temperature variance [K^2]
-  real(rtype) :: thl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: thl_sec(shcol,nlevi)
   ! moisture variance [kg2/kg2]
-  real(rtype) :: qw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: qw_sec(shcol,nlevi)
   ! temp moisture covariance [K kg/kg]
-  real(rtype) :: qwthl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: qwthl_sec(shcol,nlevi)
   ! vertical heat flux [K m/s]
-  real(rtype) :: wthl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wthl_sec(shcol,nlevi)
   ! vertical moisture flux [K m/s]
-  real(rtype) :: wqw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wqw_sec(shcol,nlevi)
   ! vertical tke flux [m3/s3]
-  real(rtype) :: wtke_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wtke_sec(shcol,nlevi)
   ! vertical zonal momentum flux [m2/s2]
-  real(rtype) :: uw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: uw_sec(shcol,nlevi)
   ! vertical meridional momentum flux [m2/s2]
-  real(rtype) :: vw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: vw_sec(shcol,nlevi)
   ! third moment vertical velocity [m3/s3]
-  real(rtype) :: w3(shcol,nlevi)
+  real(rtype), intent(out) :: w3(shcol,nlevi)
   ! liquid water flux [kg/kg m/s]
-  real(rtype) :: wqls_sec(shcol,nlev)
+  real(rtype), intent(out) :: wqls_sec(shcol,nlev)
   ! brunt vaisala frequency [s-1]
-  real(rtype) :: brunt(shcol,nlev)
+  real(rtype), intent(out) :: brunt(shcol,nlev)
   ! return to isotropic timescale [s]
-  real(rtype) :: isotropy(shcol,nlev)
+  real(rtype), intent(out) :: isotropy(shcol,nlev)
 
   !============================================================================
 ! LOCAL VARIABLES
