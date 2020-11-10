@@ -60,7 +60,7 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   EkatCreateUnitTest(${target_name} "${target_srcs}"
     DEP " ${CreateUnitTest_DEP}"
     MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
-    MPI_NP_FLAG -np
+    MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG}
     MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
     THREADS "${CreateUnitTest_THREADS}"
     EXE_ARGS " ${CreateUnitTest_EXE_ARGS}"
