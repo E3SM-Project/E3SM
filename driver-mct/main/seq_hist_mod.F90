@@ -171,7 +171,7 @@ contains
     character(len=18) :: date_str
     type(mct_gsMap), pointer :: gsmap
     type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
-    character(CL) :: model_doi_url 
+    character(CL) :: model_doi_url
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1254,7 +1254,7 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
           if (fk1 == 1) then
-             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found, model_doi_url=model_doi_url)
+             call seq_io_wopen(hist_file(found), clobber=.true., file_ind=found, model_doi_url=model_doi_url, set_fill=.true.)
           endif
 
           ! loop twice,  first time write header,  second time write data for perf

@@ -132,7 +132,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url)
+  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url, set_fill)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -140,9 +140,9 @@ contains
     logical,optional,intent(in):: clobber
     integer,optional,intent(in):: file_ind
     character(CL), optional, intent(in)  :: model_doi_url
-
+    logical, optional, intent(in) :: set_fill
     !EOP
-
+    integer :: lset_fill = PIO_NOFILL, old_set_fill
     logical :: exists
     logical :: lclobber
     integer :: iam,mpicom
@@ -158,7 +158,9 @@ contains
     !-------------------------------------------------------------------------------
 
     lversion=trim(version0)
-
+    if(present(set_fill)) then
+       if(set_fill) lset_fill = PIO_FILL
+    endif
     lclobber = .false.
     if (present(clobber)) lclobber=clobber
 
@@ -186,6 +188,8 @@ contains
 
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
+             rcode = pio_set_fill(cpl_io_file(lfile_ind), lset_fill, old_set_fill)
+
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
           else
@@ -425,6 +429,7 @@ contains
     logical :: lcolumn
 
     real(r8), allocatable :: tmpdata(:)
+    real(r4), allocatable :: tmpr4data(:)
 
     !-------------------------------------------------------------------------------
     !
@@ -528,10 +533,16 @@ contains
 
     if (lwdata) then
        call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
        ns = size(dof)
+       if(luse_float) then
+          allocate(tmpr4data(ns))
+          call pio_initdecomp(cpl_io_subsystem, pio_real, (/lnx,lny/), dof, iodesc)
+       else
+          allocate(tmpdata(ns))
+          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+       endif
        deallocate(dof)
-       allocate(tmpdata(ns))
+
        do k = 1,nf
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
@@ -541,12 +552,18 @@ contains
              name1 = trim(lpre)//'_'//trim(itemc)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
              call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             tmpdata = av%rattr(k,:)
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+             if(luse_float) then
+                tmpr4data = real(av%rattr(k,:), kind=r4)
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpr4data, rcode, fillval=real(lfillvalue, kind=r4))
+             else
+                tmpdata = av%rattr(k,:)
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+             endif
              !-------tcraig
           endif
        enddo
-       deallocate(tmpdata)
+       if(allocated(tmpdata)) deallocate(tmpdata)
+       if(allocated(tmpr4data)) deallocate(tmpr4data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
 
     end if
