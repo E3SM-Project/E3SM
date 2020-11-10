@@ -1110,7 +1110,7 @@
                                         possible_values="any positive integer, but typically 2"
                 />
 		<nml_option name="config_btr_si_thread_match_mode" type="logical" default_value=".false." units="unitless"
-					description="If true, the semi-implicit method is uses the Jacobi preconditioner with the bit-for-bit allreduce."
+					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit allreduce."
 					possible_values=".true. or .false."
 		/>
         </nml_record>
