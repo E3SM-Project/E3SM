@@ -16,7 +16,7 @@ module CNPBudgetMod
   save
   private
 
-  !public :: CNPBudget_Reset
+  public :: CNPBudget_Reset
 
   !--- F for flux ---
 
@@ -250,9 +250,9 @@ module CNPBudgetMod
   integer, parameter :: s_cropseedp_deficit_end = 54
   integer, parameter :: s_p_error               = 55
 
-  integer, parameter, public :: s_size_p = s_p_error - s_n_error
+  integer, parameter, public :: p_s_size = s_p_error - s_n_error
 
-  character(len=25),parameter :: s_name_p(s_size_p) = &
+  character(len=25),parameter :: s_name_p(p_s_size) = &
        (/&
        '              total_n_beg', &
        '              total_n_end', &
@@ -298,16 +298,294 @@ module CNPBudgetMod
   real(r8) :: n_budg_fluxG(n_f_size, p_size) ! global sum, valid only on root pe
   real(r8) :: p_budg_fluxG(p_f_size, p_size) ! global sum, valid only on root pe
 
-  real(r8) :: c_budg_fluxN(c_f_size, p_size) ! counter, valid only oon root pe
-  real(r8) :: n_budg_fluxN(n_f_size, p_size) ! counter, valid only oon root pe
-  real(r8) :: p_budg_fluxN(p_f_size, p_size) ! counter, valid only oon root pe
+  real(r8) :: c_budg_fluxN(c_f_size, p_size) ! counter, valid only on root pe
+  real(r8) :: n_budg_fluxN(n_f_size, p_size) ! counter, valid only on root pe
+  real(r8) :: p_budg_fluxN(p_f_size, p_size) ! counter, valid only on root pe
 
-  real(r8) :: c_budg_stateL(s_size, p_size) ! local sum, valid on all pes
-  real(r8) :: n_budg_stateL(s_size, p_size) ! local sum, valid on all pes
-  real(r8) :: p_budg_stateL(s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: c_budg_stateL(c_s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: n_budg_stateL(n_s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: p_budg_stateL(n_s_size, p_size) ! local sum, valid on all pes
 
-  real(r8), public :: c_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
-  real(r8), public :: n_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
-  real(r8), public :: p_budg_stateG(s_size, p_size) ! global sum, valid only on root pe
+  real(r8), public :: c_budg_stateG(c_s_size, p_size) ! global sum, valid only on root pe
+  real(r8), public :: n_budg_stateG(n_s_size, p_size) ! global sum, valid only on root pe
+  real(r8), public :: p_budg_stateG(p_s_size, p_size) ! global sum, valid only on root pe
+
+contains
+
+  !-----------------------------------------------------------------------
+  subroutine CNPBudget_Reset(mode)
+
+    !
+    implicit none
+    !
+    character(len=*), intent(in),optional :: mode
+    !
+    call Reset(mode, c_budg_fluxL, c_budg_fluxG, c_budg_fluxN, c_budg_stateL, c_budg_stateG)
+    call Reset(mode, n_budg_fluxL, n_budg_fluxG, n_budg_fluxN, n_budg_stateL, n_budg_stateG)
+    call Reset(mode, p_budg_fluxL, p_budg_fluxG, p_budg_fluxN, p_budg_stateL, p_budg_stateG)
+
+  end subroutine CNPBudget_Reset
+
+
+  !-----------------------------------------------------------------------
+  subroutine Reset(mode, budg_fluxL, budg_fluxG, budg_fluxN, budg_stateL, budg_stateG)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date
+    !
+    implicit none
+    !
+    character(len=*), intent(in), optional :: mode
+    real(r8) :: budg_fluxL(:,:), budg_fluxG(:,:), budg_fluxN(:,:), budg_stateL(:,:), budg_stateG(:,:)
+    !
+    integer :: year, mon, day, sec
+    integer :: ip
+    character(*),parameter :: subName = '(WaterBudget_Reset) '
+
+    if (.not.present(mode)) then
+       call get_curr_date(year, mon, day, sec)
+       call get_prev_date(year, mon, day, sec)
+
+       do ip = 1,p_size
+          if (ip == p_inst) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_day .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_mon .and. day==1 .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+          if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
+             budg_fluxL(:,ip)  = 0.0_r8
+             budg_fluxG(:,ip)  = 0.0_r8
+             budg_fluxN(:,ip)  = 0.0_r8
+          endif
+       enddo
+
+    else
+
+       if (trim(mode) == 'inst') then
+          budg_fluxL  (:,p_inst)   = 0.0_r8
+          budg_fluxG  (:,p_inst)   = 0.0_r8
+          budg_fluxN  (:,p_inst)   = 0.0_r8
+          budg_stateL (:,p_inst)   = 0.0_r8
+          budg_stateG (:,p_inst)   = 0.0_r8
+       elseif (trim(mode) == 'day') then
+          budg_fluxL  (:,p_day)    = 0.0_r8
+          budg_fluxG  (:,p_day)    = 0.0_r8
+          budg_fluxN  (:,p_day)    = 0.0_r8
+          budg_stateL (:,p_day)    = 0.0_r8
+          budg_stateG (:,p_day)    = 0.0_r8
+       elseif (trim(mode) == 'mon') then
+          budg_fluxL  (:,p_mon)    = 0.0_r8
+          budg_fluxG  (:,p_mon)    = 0.0_r8
+          budg_fluxN  (:,p_mon)    = 0.0_r8
+          budg_stateL (:,p_mon)    = 0.0_r8
+          budg_stateG (:,p_mon)    = 0.0_r8
+       elseif (trim(mode) == 'ann') then
+          budg_fluxL  (:,p_ann)    = 0.0_r8
+          budg_fluxG  (:,p_ann)    = 0.0_r8
+          budg_fluxN  (:,p_ann)    = 0.0_r8
+          budg_stateL (:,p_ann)    = 0.0_r8
+          budg_stateG (:,p_ann)    = 0.0_r8
+       elseif (trim(mode) == 'inf') then
+          budg_fluxL  (:,p_inf)    = 0.0_r8
+          budg_fluxG  (:,p_inf)    = 0.0_r8
+          budg_fluxN  (:,p_inf)    = 0.0_r8
+          budg_stateL (:,p_inf)    = 0.0_r8
+          budg_stateG (:,p_inf)    = 0.0_r8
+       elseif (trim(mode) == 'all') then
+          budg_fluxL  (:,:)        = 0.0_r8
+          budg_fluxG  (:,:)        = 0.0_r8
+          budg_fluxN  (:,:)        = 0.0_r8
+          budg_stateL (:,:)        = 0.0_r8
+          budg_stateG (:,:)        = 0.0_r8
+       else
+          call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
+       endif
+    endif
+
+  end subroutine Reset
+
+  !-----------------------------------------------------------------------
+  subroutine CNP_Restart(bounds, ncid, flag)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio, only : ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    !
+    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+
+    select case (trim(flag))
+    case ('define')
+       call Restart_Define(bounds, ncid, 'C')
+       call Restart_Define(bounds, ncid, 'N')
+       call Restart_Define(bounds, ncid, 'P')
+
+    case ('write')
+       call Restart_Write(bounds, ncid, flag, 'C', c_f_size, c_s_size, &
+            c_budg_fluxL, c_budg_fluxG, c_budg_fluxN, c_budg_stateL, c_budg_stateG)
+       call Restart_Write(bounds, ncid, flag, 'N', n_f_size, n_s_size, &
+            n_budg_fluxL, n_budg_fluxG, n_budg_fluxN, n_budg_stateL, n_budg_stateG)
+       call Restart_Write(bounds, ncid, flag, 'P', n_f_size, n_s_size, &
+            n_budg_fluxL, n_budg_fluxG, n_budg_fluxN, n_budg_stateL, n_budg_stateG)
+
+    case ('read')
+       call Restart_Read(bounds, ncid, flag, 'C', c_f_size, c_s_size, &
+            c_budg_fluxG, c_budg_fluxN, c_budg_stateL)
+       call Restart_Read(bounds, ncid, flag, 'N', n_f_size, n_s_size, &
+            n_budg_fluxG, n_budg_fluxN, n_budg_stateL)
+       call Restart_Read(bounds, ncid, flag, 'P', n_f_size, n_s_size, &
+            n_budg_fluxG, n_budg_fluxN, n_budg_stateL)
+
+    case default
+       write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+  end subroutine CNP_Restart
+
+  !-----------------------------------------------------------------------
+  subroutine Restart_Define(bounds, ncid, name)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=1)                 :: name
+
+    call ncd_defvar(varname=name//'_budg_fluxG', xtype=ncd_double, &
+         dim1name=name//'_budg_flux', &
+         long_name=name//'_budg_fluxG', units='mm', ncid=ncid)
+
+    call ncd_defvar(varname=name//'_budg_fluxN', xtype=ncd_double, &
+         dim1name=name//'_budg_flux', &
+         long_name=name//'_budg_fluxN', units='-', ncid=ncid)
+
+    call ncd_defvar(varname=name//'_budg_stateG', xtype=ncd_double, &
+         dim1name=name//'_budg_state', &
+         long_name=name//'_budg_stateG', units='mm', ncid=ncid)
+
+  end subroutine Restart_Define
+
+  !-----------------------------------------------------------------------
+  subroutine Restart_Write(bounds, ncid, flag, name, f_size, s_size, &
+       budg_fluxL, budg_fluxG, budg_fluxN, budg_stateL, budg_stateG)
+    !
+    use ncdio_pio   , only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio   , only : ncd_defvar
+    use spmdMod     , only : mpicom
+    use shr_mpi_mod , only : shr_mpi_sum
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid                                               ! netcdf id
+    character(len=*) , intent(in)    :: flag                                               ! 'read' or 'write'
+    character(len=1), intent(in)     :: name
+    integer                          :: f_size, s_size
+    real(r8)                         :: budg_fluxL(:,:), budg_fluxG(:,:)
+    real(r8)                         :: budg_fluxN(:,:)
+    real(r8)                         :: budg_stateL(:,:), budg_stateG(:,:)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+    real(r8) :: budg_stateGtmp(s_size,p_size) ! temporary sum
+    real(r8) :: budg_fluxG_1D (f_size*p_size)
+    real(r8) :: budg_fluxN_1D (f_size*p_size)
+    real(r8) :: budg_stateG_1D(s_size*p_size)
+    integer  :: f, s, p, count
+    character(*),parameter :: subName = '(Restart_Write) '
+
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+
+    ! Copy data from 2D into 1D array
+    count = 0
+    do f = 1, f_size
+       do p = 1, p_size
+          count = count + 1
+          budg_fluxG_1D(count) = budg_fluxG(f,p) + budg_fluxGtmp(f,p)
+          budg_fluxN_1D(count) = budg_fluxN(f,p)
+       end do
+    end do
+
+    ! Copy data from 2D into 1D array
+    count = 0
+    do s = 1, s_size
+       do p = 1, p_size
+          count = count + 1
+          budg_stateG_1D(count) = budg_stateGtmp(s,p)
+       end do
+    end do
+
+    call ncd_io(flag=flag, varname=name//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=name//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=name//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+  end subroutine Restart_Write
+
+  !-----------------------------------------------------------------------
+  subroutine Restart_Read(bounds, ncid, flag, name, f_size, s_size, budg_fluxG, budg_fluxN, budg_stateL)
+    !
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
+    use ncdio_pio, only : ncd_defvar
+    !
+    implicit none
+    !
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
+    character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
+    character(len=1), intent(in)     :: name
+    integer                          :: f_size, s_size
+    real(r8)                         :: budg_fluxG(:,:)
+    real(r8)                         :: budg_fluxN(:,:)
+    real(r8)                         :: budg_stateL(:,:)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: budg_fluxG_1D (f_size*p_size)
+    real(r8) :: budg_fluxN_1D (f_size*p_size)
+    real(r8) :: budg_stateG_1D(s_size*p_size)
+    integer  :: f, s, p, count
+
+    call ncd_io(flag=flag, varname=name//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=name//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=name//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
+
+    ! Copy data from 1D into 2D array
+    count = 0
+    do f = 1, f_size
+       do p = 1, p_size
+          count = count + 1
+          budg_fluxG(f,p) = budg_fluxG_1D(count)
+          budg_fluxN(f,p) = budg_fluxN_1D(count)
+       end do
+    end do
+
+    ! Copy data from 1D into 2D array
+    if (masterproc) then
+       count = 0
+       do s = 1, s_size
+          do p = 1, p_size
+             count = count + 1
+             budg_stateL(s,p) = budg_stateG_1D(count)
+          end do
+       end do
+    end if
+
+  end subroutine Restart_Read
 
 end module CNPBudgetMod
