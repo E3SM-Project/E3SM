@@ -1473,7 +1473,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
       real (kind=RKIND), dimension(:), pointer :: szero, nstar, epsmax, visc, sigmamax
-      real (kind=RKIND), dimension(:), pointer :: source
+      real (kind=RKIND), dimension(:), pointer :: damageSource
       real (kind=RKIND), dimension(:), pointer :: damage_nye
       real (kind=RKIND), dimension(:), pointer :: damage_max
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
@@ -1508,8 +1508,8 @@ module li_calving
       !real, dimension(:), pointer :: nstar
       !type (field1dReal), pointer :: szeroField
       !real, dimension(:), pointer :: szero
-      !type (field1dReal), pointer :: sourceField
-      !real, dimension(:), pointer :: source
+      !type (field1dReal), pointer :: damageSourceField
+      !real, dimension(:), pointer :: damageSource
       !type (field1dReal), pointer :: ddamagedtField
       !real, dimension(:), pointer :: ddamagedt
       type (field1dReal), pointer :: forceField
@@ -1583,7 +1583,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'epsmax', epsmax)
          call mpas_pool_get_array(geometryPool, 'visc', visc)
          call mpas_pool_get_array(geometryPool, 'sigmamax', sigmamax)
-         call mpas_pool_get_array(geometryPool, 'source', source)
+         call mpas_pool_get_array(geometryPool, 'damageSource', damageSource)
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(geometryPool, 'damage_max', damage_max)
 
@@ -1655,9 +1655,9 @@ module li_calving
          !call mpas_allocate_scratch_field(szeroField, .true.)
          !szero => szeroField % array
 
-         !call mpas_pool_get_field(scratchPool, 'sourceField', sourceField )
-         !call mpas_allocate_scratch_field(sourceField, .true.)
-         !source => sourceField % array
+         !call mpas_pool_get_field(scratchPool, 'damageSourceField', damageSourceField )
+         !call mpas_allocate_scratch_field(damageSourceField, .true.)
+         !damageSource => damageSourceField % array
 
          !call mpas_pool_get_field(scratchPool, 'ddamagedtField', ddamagedtField )
          !call mpas_allocate_scratch_field(ddamagedtField, .true.)
@@ -1750,9 +1750,9 @@ module li_calving
 
          do iCell = 1, nCells
          if (thickness(iCell) == 0.0_RKIND) then
-             source(iCell) = 0.0_RKIND
+             damageSource(iCell) = 0.0_RKIND
          else
-             source(iCell) = nstar(iCell) * (1.0d0-szero(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0d0-szero(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
          endif
          enddo
 
@@ -1760,14 +1760,14 @@ module li_calving
 
          ! below is the force for the manufacured experiments
          !force(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
-         !    source(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
+         !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
          !force(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
-         !    source(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
+         !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
          ! set force to zero if not manufactured
          force(:) = 0.0
 
-         ddamagedt(:) = source(:) * damage(:) + force(:)
+         ddamagedt(:) = damageSource(:) * damage(:) + force(:)
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
@@ -1845,8 +1845,8 @@ module li_calving
 
         if (.true.) then
 
-             call mpas_log_write("source value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(source), maxval(source)/))
+             call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
+                        realArgs=(/minval(damageSource), maxval(damageSource)/))
              call mpas_log_write("szero  value range: Min=$r, Max=$r", &
                         realArgs=(/minval(szero), maxval(szero)/))
              call mpas_log_write("nstar value range: Min=$r, Max=$r", &
@@ -1876,7 +1876,7 @@ module li_calving
          !call mpas_deallocate_scratch_field(epsmaxField, .true.)
          !call mpas_deallocate_scratch_field(nstarField, .true.)
          !call mpas_deallocate_scratch_field(szeroField, .true.)
-         !call mpas_deallocate_scratch_field(sourceField, .true.)
+         !call mpas_deallocate_scratch_field(damageSourceField, .true.)
          !call mpas_deallocate_scratch_field(ddamagedtField, .true.)
          call mpas_deallocate_scratch_field(forceField, .true.)
          call mpas_deallocate_scratch_field(meanTField, .true.)
