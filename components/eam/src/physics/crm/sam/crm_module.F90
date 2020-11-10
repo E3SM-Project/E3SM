@@ -1,5 +1,7 @@
 
 module crm_module
+  use mpi
+  use dmdf
   use openacc_utils, only: prefetch
   use perf_mod
   use task_init_mod, only: task_init
@@ -173,14 +175,14 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     integer, allocatable :: seed(:)
     integer :: seed_size, seed_clock
     real(8) :: rand_num
-    integer, parameter :: rand_thresh = 0.01D0
+    real(8), parameter :: rand_thresh = 0.01D0
 
     call random_seed(size=seed_size)
     allocate(seed(seed_size))
     call random_seed(get=seed)
     do iseed = 1 , seed_size
       call system_clock(seed_clock)
-      seed(iseed) = seed(iseed) * seed_clock
+      seed(iseed) = seed(iseed) + seed_clock + myrank
     enddo
     call random_seed(put=seed)
 
@@ -202,7 +204,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         call dmdf_write(crm_input%ql              (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_ql              '),(/'nlev  '/)                              ,.false.,.false.)
         call dmdf_write(crm_input%qccl            (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_qccl            '),(/'nlev  '/)                              ,.false.,.false.)
         call dmdf_write(crm_input%qiil            (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_qiil            '),(/'nlev  '/)                              ,.false.,.false.)
-        call dmdf_write(crm_input%ps              (icrm)      ,myrank,'crmdata_3d_bug',trim('in_ps              '),                                          ,.false.,.false.)
+        call dmdf_write(crm_input%ps              (icrm)      ,myrank,'crmdata_3d_bug',trim('in_ps              ')                                           ,.false.,.false.)
         call dmdf_write(crm_input%pmid            (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_pmid            '),(/'nlev  '/)                              ,.false.,.false.)
         call dmdf_write(crm_input%pint            (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_pint            '),(/'nlevp1'/)                              ,.false.,.false.)
         call dmdf_write(crm_input%pdel            (icrm,:)    ,myrank,'crmdata_3d_bug',trim('in_pdel            '),(/'nlev  '/)                              ,.false.,.false.)
