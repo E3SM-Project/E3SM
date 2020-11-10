@@ -175,7 +175,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     integer, allocatable :: seed(:)
     integer :: seed_size, seed_clock
     real(8) :: rand_num
-    real(8), parameter :: rand_thresh = 0.01D0
+    real(8), parameter :: rand_thresh = 0.005D0
 
     call random_seed(size=seed_size)
     allocate(seed(seed_size))
