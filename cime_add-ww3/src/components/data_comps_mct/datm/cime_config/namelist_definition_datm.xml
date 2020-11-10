@@ -201,6 +201,7 @@
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="CFSv2">CFSv2.UV,CFSv2.PRMSL</value>
     </values>
   </entry>
 
@@ -259,6 +260,8 @@
       <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/atm/datm7</value>
+      <value stream="CFSv2.PRMSL">$DIN_LOC_ROOT/atm/datm7</value>
     </values>
   </entry>
 
@@ -354,6 +357,8 @@
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">domain.ocn.1760x880_1760x880.200616.nc</value>
+      <value stream="CFSv2.PRMLS">domain.ocn.720x361_720x361.200616.nc</value>
     </values>
   </entry>
 
@@ -458,6 +463,8 @@
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/ocn/iaf</value>
+      <value stream="CFSv2.PRMSL">$DIN_LOC_ROOT/ocn/iaf</value>
     </values>
   </entry>
 
@@ -2221,6 +2228,8 @@
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="CFSRv2.UV">sandy_wnd10m_ww3.nc</value>
+      <value stream="CFSRv2.PRMSL">sandy_prmsl_ww3.nc</value>
     </values>
   </entry>
 
@@ -2562,6 +2571,13 @@
       <value stream="topo.observed">
         TOPO topo
       </value>
+      <value  stream="CFSv2.UV">
+        U_GRD_L103  u
+        V_GRD_L103  v
+      </value>
+      <value  stream="CFSv2.PRMSL">
+        PRMSL_L101 pslv
+      </value>
     </values>
   </entry>
 
@@ -2602,6 +2618,7 @@
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="CFSv2">1</value>
     </values>
   </entry>
 
