@@ -6,5 +6,5 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 option(Kokkos_ARCH_SNB "" ON)
 
 set(CMAKE_CXX_FLAGS "-w" CACHE STRING "")
-set(SCREAM_DEFAULT_MPIRUN_EXE "srun" CACHE STRING "")
-set(SCREAM_DEFAULT_MPI_NP_FLAG "-n" CACHE STRING "")
+set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
+set(SCREAM_MPI_NP_FLAG "-n" CACHE STRING "")
