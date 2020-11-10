@@ -1109,6 +1109,10 @@
                                         description="number of outer iterations"
                                         possible_values="any positive integer, but typically 2"
                 />
+		<nml_option name="config_btr_si_thread_match_mode" type="logical" default_value=".false." units="unitless"
+					description="If true, the semi-implicit method is uses the Jacobi preconditioner with the bit-for-bit allreduce."
+					possible_values=".true. or .false."
+		/>
         </nml_record>
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
