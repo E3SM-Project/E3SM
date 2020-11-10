@@ -493,13 +493,13 @@ contains
     implicit none
     !
     type(bounds_type), intent(in)    :: bounds
-    type(file_desc_t), intent(inout) :: ncid                                               ! netcdf id
-    character(len=*) , intent(in)    :: flag                                               ! 'read' or 'write'
-    character(len=1), intent(in)     :: name
-    integer                          :: f_size, s_size
-    real(r8)                         :: budg_fluxL(:,:), budg_fluxG(:,:)
-    real(r8)                         :: budg_fluxN(:,:)
-    real(r8)                         :: budg_stateL(:,:), budg_stateG(:,:)
+    type(file_desc_t), intent(inout) :: ncid                               ! netcdf id
+    character(len=*) , intent(in)    :: flag                               ! 'read' or 'write'
+    character(len=1), intent(in)     :: name                               ! name of bgc 
+    integer                          :: f_size, s_size                     ! size of fluxes and states
+    real(r8)                         :: budg_fluxL(:,:), budg_fluxG(:,:)   ! fluxes local and global
+    real(r8)                         :: budg_fluxN(:,:)                    ! count
+    real(r8)                         :: budg_stateL(:,:), budg_stateG(:,:) ! states local and global
     !
     ! !LOCAL VARIABLES:
     real(r8) :: budg_fluxGtmp(f_size,p_size) ! temporary sum
