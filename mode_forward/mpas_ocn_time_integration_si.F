@@ -77,7 +77,7 @@ module ocn_time_integration_si
    real (kind=RKIND), allocatable,dimension(:)   :: R1_alpha1s_g_dt
    real (kind=RKIND) :: total_num_cells,mean_num_cells
    real (kind=RKIND) :: R1_alpha1_g,alpha1,alpha2,crit_main
-   integer :: nPrecVec, si_opt, si_ismf
+   integer :: nPrecVec, si_opt, si_ismf, ncpus
 
    contains
 
@@ -211,6 +211,8 @@ module ocn_time_integration_si
       real (kind=RKIND), dimension(2) :: CGcst_allreduce2,CGcst_allreduce_global2
       real (kind=RKIND), dimension(3) :: CGcst_allreduce3,CGcst_allreduce_global3
       real (kind=RKIND), dimension(5) :: CGcst_allreduce5,CGcst_allreduce_global5
+      real (kind=RKIND), dimension(5) :: CGcst_allreduce_temp5
+      integer          , dimension(5) :: CGcst_allreduce_itemp5
       real (kind=RKIND) :: CGcst_r00r0       ,CGcst_r00w0       ,CGcst_r00r1       ,CGcst_r00w1
       real (kind=RKIND) :: CGcst_r00r0_global,CGcst_r00w0_global,CGcst_r00r1_global,CGcst_r00w1_global
       real (kind=RKIND) :: CGcst_r0r0        ,CGcst_r1r1
@@ -1128,12 +1130,23 @@ module ocn_time_integration_si
          call mpas_dmpar_sum_real_array(dminfo, 2, CGcst_allreduce2, CGcst_allreduce_global2)
          call mpas_timer_stop ("si reduction r0")
 
+         if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            CGcst_allreduce5(:)       = 0.0_RKIND
+            CGcst_allreduce_temp5(:)  = 0.0_RKIND
+            CGcst_allreduce_itemp5(:) = 0.0_RKIND
+            CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
+            CGcst_allreduce_temp5(1:2)  = fraction(CGcst_allreduce_global2(:))
+            CGcst_allreduce_temp5(1:2) = anint(CGcst_allreduce_temp5(1:2)*1.0000000000000000d+8)/1.0000000000000000d+8
+            CGcst_allreduce_global2(:) = CGcst_allreduce_temp5(1:2) * 2 ** (CGcst_allreduce_itemp5(1:2))
+         endif
+
          CGcst_r00r0_global = CGcst_allreduce_global2(1)
          CGcst_r00w0_global = CGcst_allreduce_global2(2)
 
          CGcst_alpha0 = CGcst_r00r0_global / CGcst_r00w0_global
          CGcst_beta0  = 0.0_RKIND
          CGcst_omega0 = 0.0_RKIND
+
 
          call mpas_timer_stop("si btr residual")
 
@@ -1217,7 +1230,17 @@ module ocn_time_integration_si
             call mpas_timer_start("si reduction iter")
             call mpas_dmpar_sum_real_array(dminfo, 3, CGcst_allreduce3, CGcst_allreduce_global3)
             call mpas_timer_stop("si reduction iter")
-   
+
+            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+               CGcst_allreduce5(:)       = 0.0_RKIND
+               CGcst_allreduce_temp5(:)  = 0.0_RKIND
+               CGcst_allreduce_itemp5(:) = 0.0_RKIND
+               CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
+               CGcst_allreduce_temp5(1:3)  = fraction(CGcst_allreduce_global3(:))
+               CGcst_allreduce_temp5(1:3) = anint(CGcst_allreduce_temp5(1:3)*1.0000000000000000d+8)/1.0000000000000000d+8
+               CGcst_allreduce_global3(:) = CGcst_allreduce_temp5(1:3) * 2 ** (CGcst_allreduce_itemp5(1:3))
+            endif
+
             CGcst_q0y0_global  = CGcst_allreduce_global3(1)
             CGcst_y0y0_global  = CGcst_allreduce_global3(2)
             CGcst_r00r0_global = CGcst_allreduce_global3(3)
@@ -1397,7 +1420,17 @@ module ocn_time_integration_si
             call mpas_timer_start("si reduction iter")
             call mpas_dmpar_sum_real_array(dminfo, 5, CGcst_allreduce5, CGcst_allreduce_global5)
             call mpas_timer_stop("si reduction iter")
-   
+
+            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+               CGcst_allreduce5(:)       = 0.0_RKIND
+               CGcst_allreduce_temp5(:)  = 0.0_RKIND
+               CGcst_allreduce_itemp5(:) = 0.0_RKIND
+               CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
+               CGcst_allreduce_temp5(1:5)  = fraction(CGcst_allreduce_global5(:))
+               CGcst_allreduce_temp5(1:5) = anint(CGcst_allreduce_temp5(1:5)*1.0000000000000000d+8)/1.0000000000000000d+8
+               CGcst_allreduce_global5(:) = CGcst_allreduce_temp5(1:5) * 2 ** (CGcst_allreduce_itemp5(1:5))
+            endif
+
             CGcst_r00r1_global = CGcst_allreduce_global5(1)
             CGcst_r00w1_global = CGcst_allreduce_global5(2)
             CGcst_r00s0_global = CGcst_allreduce_global5(3)
@@ -2041,6 +2074,16 @@ module ocn_time_integration_si
          call mpas_dmpar_sum_real_array(dminfo, 2, CGcst_allreduce2, CGcst_allreduce_global2)
          call mpas_timer_stop("si reduction r0")
 
+         if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            CGcst_allreduce5(:)       = 0.0_RKIND
+            CGcst_allreduce_temp5(:)  = 0.0_RKIND
+            CGcst_allreduce_itemp5(:) = 0.0_RKIND
+            CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
+            CGcst_allreduce_temp5(1:2)  = fraction(CGcst_allreduce_global2(:))
+            CGcst_allreduce_temp5(1:2) = anint(CGcst_allreduce_temp5(1:2)*1.0000000000000000d+8)/1.0000000000000000d+8
+            CGcst_allreduce_global2(:) = CGcst_allreduce_temp5(1:2) * 2 ** (CGcst_allreduce_itemp5(1:2))
+         endif
+
          CGcst_r00r0_global = CGcst_allreduce_global2(1)
          CGcst_r00w0_global = CGcst_allreduce_global2(2)
 
@@ -2138,10 +2181,21 @@ module ocn_time_integration_si
             call mpas_timer_start("si reduction iter")
             call mpas_dmpar_sum_real_array(dminfo, 3, CGcst_allreduce3, CGcst_allreduce_global3)
             call mpas_timer_stop("si reduction iter")
+
+            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+               CGcst_allreduce5(:)       = 0.0_RKIND
+               CGcst_allreduce_temp5(:)  = 0.0_RKIND
+               CGcst_allreduce_itemp5(:) = 0.0_RKIND
+               CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
+               CGcst_allreduce_temp5(1:3)  = fraction(CGcst_allreduce_global3(:))
+               CGcst_allreduce_temp5(1:3) = anint(CGcst_allreduce_temp5(1:3)*1.0000000000000000d+8)/1.0000000000000000d+8
+               CGcst_allreduce_global3(:) = CGcst_allreduce_temp5(1:3) * 2 ** (CGcst_allreduce_itemp5(1:3))
+            endif
    
             CGcst_q0y0_global  = CGcst_allreduce_global3(1)
             CGcst_y0y0_global  = CGcst_allreduce_global3(2)
             CGcst_r00r0_global = CGcst_allreduce_global3(3)
+
    
    
             ! Preconditioning ------------------------------------------------------------------------!
@@ -2316,6 +2370,16 @@ module ocn_time_integration_si
             call mpas_timer_start("si reduction iter")
             call mpas_dmpar_sum_real_array(dminfo, 5, CGcst_allreduce5, CGcst_allreduce_global5)
             call mpas_timer_stop("si reduction iter")
+
+            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+               CGcst_allreduce5(:)       = 0.0_RKIND
+               CGcst_allreduce_temp5(:)  = 0.0_RKIND
+               CGcst_allreduce_itemp5(:) = 0.0_RKIND
+               CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
+               CGcst_allreduce_temp5(1:5)  = fraction(CGcst_allreduce_global5(:))
+               CGcst_allreduce_temp5(1:5) = anint(CGcst_allreduce_temp5(1:5)*1.0000000000000000d+8)/1.0000000000000000d+8
+               CGcst_allreduce_global5(:) = CGcst_allreduce_temp5(1:5) * 2 ** (CGcst_allreduce_itemp5(1:5))
+            endif
    
             CGcst_r00r1_global = CGcst_allreduce_global5(1)
             CGcst_r00w1_global = CGcst_allreduce_global5(2)
@@ -2333,7 +2397,6 @@ module ocn_time_integration_si
                call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
                call mpas_timer_stop("si halo iter")
             end if
-   
    
             block => domain % blocklist
             do while (associated(block))
@@ -2470,7 +2533,6 @@ module ocn_time_integration_si
                                                      - CGcst_beta0 * CGcst_omega0 * CGcst_r00z0_global       )
    
                do iCell = 1,nCells
-   
                   CGvec_r0(iCell) = CGvec_r1(iCell)
                   CGvec_s0(iCell) = CGvec_s1(iCell)
                   CGvec_z0(iCell) = CGvec_z1(iCell)
@@ -2489,7 +2551,7 @@ module ocn_time_integration_si
    	    
                CGcst_r00r0_global = CGcst_r00r1_global
                CGcst_alpha0       = CGcst_alpha1
-   
+
                block => block % next
             end do  ! block
 
@@ -3333,7 +3395,6 @@ module ocn_time_integration_si
       integer, pointer :: nVertLevels, nCells, nEdges
       character (len=StrKIND), pointer :: config_time_integrator, config_btr_dt, config_dt
       logical, pointer :: config_filter_btr_mode, config_do_restart
-      real (kind=RKIND), pointer :: config_btr_si_tolerance
       integer, pointer :: config_n_ts_iter
 
       type (mpas_time_type) :: nowTime
@@ -3344,7 +3405,7 @@ module ocn_time_integration_si
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
       real (kind=RKIND) :: local_num_cells,sum1,total_area_sum,local_area_sum,tmp1,tmp2,area_mean
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      integer :: ncpus,ihh,imm,iss,isum1,isum2,mpi_ierr
+      integer :: ihh,imm,iss,isum1,isum2,mpi_ierr
 
 #ifndef USE_LAPACK
       call mpas_log_write('MPAS was not compiled with LAPACK / BLAS.  LAPACK required for SI', MPAS_LOG_CRIT)
@@ -3359,7 +3420,6 @@ module ocn_time_integration_si
       call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
       call mpas_pool_get_config(domain % configs, 'config_btr_dt', config_btr_dt)
       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
-      call mpas_pool_get_config(domain % configs, 'config_btr_si_tolerance', config_btr_si_tolerance)
       call mpas_pool_get_config(domain % configs, 'config_n_ts_iter', config_n_ts_iter)
 
       nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -3477,6 +3537,9 @@ module ocn_time_integration_si
             mean_num_cells = total_num_cells/ncpus
    
             ! Tolerance for main iteration
+            if ( config_btr_si_thread_match_mode ) then
+               config_btr_si_tolerance = 1.d-8
+            endif
             crit_main  = config_btr_si_tolerance * area_mean
    
             ! Impliciness parameters
@@ -3594,7 +3657,7 @@ module ocn_time_integration_si
       integer,           dimension(:)  , pointer :: globalCellId
 
       real (kind=RKIND) :: temp1,temp2
-      integer :: local_num_cells,total_num_cells,ncpus
+      integer :: local_num_cells,total_num_cells
       integer :: local_start,local_end,nCellsA2,nCellsA3,nPrecMatPacked,info,itmp1
 
       dminfo = domain % dminfo
@@ -3649,6 +3712,14 @@ module ocn_time_integration_si
                config_btr_si_preconditioner = 'jacobi'
             endif
          endif
+
+         if ( config_btr_si_thread_match_mode ) then
+            call mpas_log_write('       Thread-match mode is turned on.')
+            call mpas_log_write('       The preconditioner is configured as jacobi.')
+            call mpas_log_write('       The bit-for-bit allreduce is used.')
+            config_btr_si_preconditioner = 'jacobi'
+         endif
+
 
          ! Restricted Additive Schwarz preconditioner ---------------------------------------------!
          if ( trim(config_btr_si_preconditioner) == 'ras' ) then
