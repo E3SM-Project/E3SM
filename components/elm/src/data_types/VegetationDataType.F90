@@ -5379,26 +5379,16 @@ module VegetationDataType
     call hist_addfld1d (fname='QIRRIG_REAL', units='mm/s', &
          avgflag='A', long_name='actual water added through irrigation (surface + ground)', &
          ptr_patch=this%qflx_real_irrig_patch)
-    
-    this%qflx_supply_patch(begp:endp) = spval     
-    call hist_addfld1d (fname='QSUPPLY', units='mm/s', &
-         avgflag='A', long_name='irrigation supply from MOSART', &
-         ptr_patch=this%qflx_supply_patch)
          
     this%qflx_surf_irrig_patch(begp:endp) = spval    
-    call hist_addfld1d (fname='QSURF_IRRIG', units='mm/s', &
+    call hist_addfld1d (fname='QIRRIG_SURF', units='mm/s', &
          avgflag='A', long_name='Surface water irrigation', &
          ptr_patch=this%qflx_surf_irrig_patch)
     
     this%qflx_grnd_irrig_patch(begp:endp) = spval   
-    call hist_addfld1d (fname='QGRND_IRRIG', units='mm/s', &
+    call hist_addfld1d (fname='QIRRIG_GRND', units='mm/s', &
          avgflag='A', long_name='Groundwater irrigation', &
-         ptr_patch=this%qflx_grnd_irrig_patch)
-		 
-    this%qflx_over_supply_patch(begp:endp) = spval   
-    call hist_addfld1d (fname='QOVER_SUPPLY', units='mm/s', &
-         avgflag='A', long_name='Over supplied irrigation due to remapping, added to irrigation to conserve mass', &
-         ptr_patch=this%qflx_over_supply_patch)
+         ptr_patch=this%qflx_grnd_irrig_patch)	 
 
     this%qflx_prec_intr(begp:endp) = spval
     call hist_addfld1d (fname='QINTR', units='mm/s',  &

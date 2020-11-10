@@ -160,19 +160,15 @@ contains
 
     if (wrmflag) then
 
-      call RtmHistAddfld (fname='WRM_SUPPLY', units='m3/s',  &
+      call RtmHistAddfld (fname='WRM_IRR_SUPPLY', units='m3/s',  &
          avgflag='A', long_name='WRM supply provided ', &
          ptr_rof=StorWater%Supply, default='active')                                                                                                                              
 
-      call RtmHistAddfld (fname='WRM_DEMAND', units='m3/s',  &
-         avgflag='A', long_name='WRM new demand after supply: same as deficit ', &
-         ptr_rof=StorWater%demand, default='active')
-
-      call RtmHistAddfld (fname='WRM_DEMAND0', units='m3/s',  &
+      call RtmHistAddfld (fname='WRM_IRR_DEMAND', units='m3/s',  &
          avgflag='A', long_name='WRM demand requested ', &
          ptr_rof=StorWater%demand0, default='active')
 
-      call RtmHistAddfld (fname='WRM_DEFICIT', units='m3/s',  &
+      call RtmHistAddfld (fname='WRM_IRR_DEFICIT', units='m3/s',  &
          avgflag='A', long_name='WRM deficit ', &
          ptr_rof=StorWater%deficit, default='active')
 

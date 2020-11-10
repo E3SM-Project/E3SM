@@ -16,7 +16,7 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog, tw_irr, extra_gw_irr
+  use clm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
   use LandunitType      , only : lun_pp                
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -117,9 +117,10 @@ contains
      ! !USES:
      use clm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
-     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec 
+     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak 
      use clm_varctl         , only : subgridflag
      use clm_varpar         , only : nlevsoi,nlevsno
+     use clm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
      use clm_time_manager   , only : get_step_size
@@ -379,9 +380,9 @@ contains
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
-          if (tw_irr) then ! else one way  
-
-               qflx_supply(p) = atm2lnd_vars%supply_grc(g)/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level 
+          if(irrigate) then
+           if (tw_irr) then ! else one way  
+               qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
                qflx_real_irrig(p) = 0._r8 
                qflx_surf_irrig(p) = 0._r8
                qflx_grnd_irrig(p) = 0._r8
@@ -405,15 +406,21 @@ contains
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
                qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
                end if		
-             end if
-                
-          else  ! one way coupling
+             end if       
+           else  ! one way coupling
                qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
                qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
                qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
                qflx_supply(p) = 0._r8 !no water supplied by MOSART 
+           end if
+          else
+               qflx_surf_irrig(p) = 0._r8
+               qflx_grnd_irrig(p) = 0._r8
+               qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) 
+               qflx_over_supply(p) = 0._r8
+               qflx_supply(p) = 0._r8 !no water supplied by MOSART
           end if
 
           ! Done irrigation
