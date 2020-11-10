@@ -19,7 +19,11 @@ OBJS =  \
 	mpas_atmphys_date_time.o \
 	mpas_atmphys_functions.o \
 	mpas_atmphys_initialize_real.o \
-	mpas_atmphys_utilities.o
+	mpas_atmphys_utilities.o \
+	mpas_stack.o \
+	mpas_kd_tree.o \
+	mpas_parse_geoindex.o \
+	mpas_geotile_manager.o
 
 all: core_hyd
 
@@ -66,17 +70,29 @@ mpas_init_atm_read_met.o:
 
 read_geogrid.o:
 
+mpas_kd_tree.o:
+
 mpas_init_atm_llxy.o:
 
 mpas_init_atm_core_interface.o: mpas_init_atm_core.o
 
 mpas_init_atm_core.o: mpas_advection.o mpas_init_atm_cases.o
 
+mpas_stack.o:
+
+mpas_parse_geoindex.o:
+
+mpas_geotile_manager.o: mpas_parse_geoindex.o
+
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \
 	mpas_init_atm_hinterp.o \
 	mpas_init_atm_llxy.o \
-	mpas_atmphys_utilities.o
+	mpas_atmphys_utilities.o \
+	mpas_stack.o \
+	mpas_kd_tree.o \
+	mpas_parse_geoindex.o \
+	mpas_geotile_manager.o
 
 mpas_init_atm_surface.o: \
 	mpas_init_atm_hinterp.o  \
@@ -99,10 +115,10 @@ clean:
 .F.o:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) -I./inc $< > $*.f90
 	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators  -I../external/esmf_time_f90
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators  -I../external/esmf_time_f90
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I./inc -I../framework -I../operators  -I../external/esmf_time_f90
 endif
 
 .c.o:

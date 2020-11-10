@@ -209,7 +209,7 @@ module mpas_pool_routines
       integer :: i, j
       type (mpas_pool_member_type), pointer :: ptr
       type (mpas_pool_data_type), pointer :: dptr
-      integer :: local_err, threadNum
+      integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
 
@@ -224,9 +224,9 @@ module mpas_pool_routines
                if (ptr % contentsType == MPAS_POOL_DIMENSION) then
    
                   if (ptr % data % contentsDims > 0) then
-                     deallocate(ptr % data % simple_int_arr, stat=local_err)
+                     deallocate(ptr % data % simple_int_arr)
                   else
-                     deallocate(ptr % data % simple_int, stat=local_err)
+                     deallocate(ptr % data % simple_int)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_CONFIG) then
@@ -234,13 +234,13 @@ module mpas_pool_routines
                   dptr => ptr % data
    
                   if (dptr % contentsType == MPAS_POOL_REAL) then
-                     deallocate(dptr % simple_real, stat=local_err)
+                     deallocate(dptr % simple_real)
                   else if (dptr % contentsType == MPAS_POOL_INTEGER) then
-                     deallocate(dptr % simple_int, stat=local_err)
+                     deallocate(dptr % simple_int)
                   else if (dptr % contentsType == MPAS_POOL_CHARACTER) then
-                     deallocate(dptr % simple_char, stat=local_err)
+                     deallocate(dptr % simple_char)
                   else if (dptr % contentsType == MPAS_POOL_LOGICAL) then
-                     deallocate(dptr % simple_logical, stat=local_err)
+                     deallocate(dptr % simple_logical)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_FIELD) then
@@ -249,138 +249,96 @@ module mpas_pool_routines
    
                   ! Do this through brute force...
                   if (associated(dptr % r0)) then
-                     deallocate(dptr % r0, stat=local_err)
+                     call mpas_deallocate_field(dptr % r0)
                   else if (associated(dptr % r1)) then
-                     if (associated(dptr % r1 % array)) then
-                        deallocate(dptr % r1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r1, stat=local_err)
+                     call mpas_deallocate_field(dptr % r1)
                   else if (associated(dptr % r2)) then
-                     if (associated(dptr % r2 % array)) then
-                        deallocate(dptr % r2 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r2, stat=local_err)
+                     call mpas_deallocate_field(dptr % r2)
                   else if (associated(dptr % r3)) then
-                     if (associated(dptr % r3 % array)) then
-                        deallocate(dptr % r3 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r3, stat=local_err)
+                     call mpas_deallocate_field(dptr % r3)
                   else if (associated(dptr % r4)) then
-                     if (associated(dptr % r4 % array)) then
-                        deallocate(dptr % r4 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r4, stat=local_err)
+                     call mpas_deallocate_field(dptr % r4)
                   else if (associated(dptr % r5)) then
-                     if (associated(dptr % r5 % array)) then
-                        deallocate(dptr % r5 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r5, stat=local_err)
+                     call mpas_deallocate_field(dptr % r5)
                   else if (associated(dptr % i0)) then
-                     deallocate(dptr % i0, stat=local_err)
+                     call mpas_deallocate_field(dptr % i0)
                   else if (associated(dptr % i1)) then
-                     if (associated(dptr % i1 % array)) then
-                        deallocate(dptr % i1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i1, stat=local_err)
+                     call mpas_deallocate_field(dptr % i1)
                   else if (associated(dptr % i2)) then
-                     if (associated(dptr % i2 % array)) then
-                        deallocate(dptr % i2 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i2, stat=local_err)
+                     call mpas_deallocate_field(dptr % i2)
                   else if (associated(dptr % i3)) then
-                     if (associated(dptr % i3 % array)) then
-                        deallocate(dptr % i3 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i3, stat=local_err)
+                     call mpas_deallocate_field(dptr % i3)
                   else if (associated(dptr % c0)) then
-                     deallocate(dptr % c0, stat=local_err)
+                     call mpas_deallocate_field(dptr % c0)
                   else if (associated(dptr % c1)) then
-                     if (associated(dptr % c1 % array)) then
-                        deallocate(dptr % c1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % c1, stat=local_err)
+                     call mpas_deallocate_field(dptr % c1)
                   else if (associated(dptr % l0)) then
-                     deallocate(dptr % l0, stat=local_err)
+                     call mpas_deallocate_field(dptr % l0)
                   else if (associated(dptr % r0a)) then
-                     deallocate(dptr % r0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % r0a(j))
+                     end do
+                     deallocate(dptr % r0a)
                   else if (associated(dptr % r1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r1a(j) % array)) then
-                           deallocate(dptr % r1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r1a(j))
                      end do
-                     deallocate(dptr % r1a, stat=local_err)
+                     deallocate(dptr % r1a)
                   else if (associated(dptr % r2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r2a(j) % array)) then
-                           deallocate(dptr % r2a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r2a(j))
                      end do
-                     deallocate(dptr % r2a, stat=local_err)
+                     deallocate(dptr % r2a)
                   else if (associated(dptr % r3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r3a(j) % array)) then
-                           deallocate(dptr % r3a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r3a(j))
                      end do
-                     deallocate(dptr % r3a, stat=local_err)
+                     deallocate(dptr % r3a)
                   else if (associated(dptr % r4a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r4a(j) % array)) then
-                           deallocate(dptr % r4a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r4a(j))
                      end do
-                     deallocate(dptr % r4a, stat=local_err)
+                     deallocate(dptr % r4a)
                   else if (associated(dptr % r5a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r5a(j) % array)) then
-                           deallocate(dptr % r5a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r5a(j))
                      end do
-                     deallocate(dptr % r5a, stat=local_err)
+                     deallocate(dptr % r5a)
                   else if (associated(dptr % i0a)) then
-                     deallocate(dptr % i0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % i0a(j))
+                     end do
+                     deallocate(dptr % i0a)
                   else if (associated(dptr % i1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i1a(j) % array)) then
-                           deallocate(dptr % i1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i1a(j))
                      end do
-                     deallocate(dptr % i1a, stat=local_err)
+                     deallocate(dptr % i1a)
                   else if (associated(dptr % i2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i2a(j) % array)) then
-                           deallocate(dptr % i2a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i2a(j))
                      end do
-                     deallocate(dptr % i2a, stat=local_err)
+                     deallocate(dptr % i2a)
                   else if (associated(dptr % i3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i3a(j) % array)) then
-                           deallocate(dptr % i3a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i3a(j))
                      end do
-                     deallocate(dptr % i3a, stat=local_err)
+                     deallocate(dptr % i3a)
                   else if (associated(dptr % c0a)) then
-                     deallocate(dptr % c0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % c0a(j))
+                     end do
+                     deallocate(dptr % c0a)
                   else if (associated(dptr % c1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % c1a(j) % array)) then
-                           deallocate(dptr % c1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % c1a(j))
                      end do
-                     deallocate(dptr % c1a, stat=local_err)
+                     deallocate(dptr % c1a)
                   else if (associated(dptr % l0a)) then
-                     deallocate(dptr % l0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % l0a(j))
+                     end do
+                     deallocate(dptr % l0a)
                   else
                      call pool_mesg('While destroying pool, member '//trim(ptr % key)//' has no valid field pointers.')
                   end if
@@ -390,14 +348,14 @@ module mpas_pool_routines
                   call mpas_pool_destroy_pool(ptr % data % p)
    
                end if
-               deallocate(ptr % data, stat=local_err)
-               deallocate(ptr, stat=local_err)
+               deallocate(ptr % data)
+               deallocate(ptr)
             end do
    
          end do
    
-         deallocate(inPool % table, stat=local_err)
-         deallocate(inPool, stat=local_err)
+         deallocate(inPool % table)
+         deallocate(inPool)
       end if
 
    end subroutine mpas_pool_destroy_pool!}}}
@@ -710,7 +668,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r0)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r0a(dptr % contentsTimeLevs), newmem % data % r0)
                         newmem % data % r0a(j) = newmem % data % r0
                         deallocate(newmem % data % r0)
@@ -728,7 +686,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r1)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r1a(dptr % contentsTimeLevs), newmem % data % r1)
                         newmem % data % r1a(j) = newmem % data % r1
                         deallocate(newmem % data % r1)
@@ -746,7 +704,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r2)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r2a(dptr % contentsTimeLevs), newmem % data % r2)
                         newmem % data % r2a(j) = newmem % data % r2
                         deallocate(newmem % data % r2)
@@ -764,7 +722,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r3)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r3a(dptr % contentsTimeLevs), newmem % data % r3)
                         newmem % data % r3a(j) = newmem % data % r3
                         deallocate(newmem % data % r3)
@@ -782,7 +740,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r4)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r4a(dptr % contentsTimeLevs), newmem % data % r4)
                         newmem % data % r4a(j) = newmem % data % r4
                         deallocate(newmem % data % r4)
@@ -800,7 +758,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % r5)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % r5a(dptr % contentsTimeLevs), newmem % data % r5)
                         newmem % data % r5a(j) = newmem % data % r5
                         deallocate(newmem % data % r5)
@@ -818,7 +776,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % i0)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % i0a(dptr % contentsTimeLevs), newmem % data % i0)
                         newmem % data % i0a(j) = newmem % data % i0
                         deallocate(newmem % data % i0)
@@ -836,7 +794,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % i1)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % i1a(dptr % contentsTimeLevs), newmem % data % i1)
                         newmem % data % i1a(j) = newmem % data % i1
                         deallocate(newmem % data % i1)
@@ -854,7 +812,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % i2)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % i2a(dptr % contentsTimeLevs), newmem % data % i2)
                         newmem % data % i2a(j) = newmem % data % i2
                         deallocate(newmem % data % i2)
@@ -872,7 +830,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % i3)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % i3a(dptr % contentsTimeLevs), newmem % data % i3)
                         newmem % data % i3a(j) = newmem % data % i3
                         deallocate(newmem % data % i3)
@@ -890,7 +848,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % c0)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % c0a(dptr % contentsTimeLevs), newmem % data % c0)
                         newmem % data % c0a(j) = newmem % data % c0
                         deallocate(newmem % data % c0)
@@ -908,7 +866,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % c1)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % c1a(dptr % contentsTimeLevs), newmem % data % c1)
                         newmem % data % c1a(j) = newmem % data % c1
                         deallocate(newmem % data % c1)
@@ -926,7 +884,7 @@ module mpas_pool_routines
                         deallocate(newmem % data % l0)
                      end do
 
-                     do j = minTimeLevels, newmem % data % contentsTimeLevs
+                     do j = minTimeLevels+1, newmem % data % contentsTimeLevs
                         call mpas_duplicate_field(dptr % l0a(dptr % contentsTimeLevs), newmem % data % l0)
                         newmem % data % l0a(j) = newmem % data % l0
                         deallocate(newmem % data % l0)
@@ -1861,7 +1819,7 @@ module mpas_pool_routines
                      end if
                   else if (poolItr % nDims == 4) then
                      if (poolItr % nTimeLevels > 1) then
-                        decompType = pool_get_member_decomp_type(poolMem % r4 % dimNames(4))
+                        decompType = pool_get_member_decomp_type(poolMem % r4a(1) % dimNames(4))
 
                         if (decompType == MPAS_DECOMP_CELLS) then
                            do i = 1, poolItr % nTimeLevels
@@ -3271,7 +3229,7 @@ module mpas_pool_routines
       info % isActive = .false.
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5142,7 +5100,7 @@ module mpas_pool_routines
 
       type (mpas_pool_type), intent(inout) :: inPool
       character (len=*), intent(in) :: key
-      type (mpas_pool_type), intent(in), target :: subPool
+      type (mpas_pool_type), pointer :: subPool
 
 
       type (mpas_pool_member_type), pointer :: newmem
@@ -5703,7 +5661,7 @@ module mpas_pool_routines
       integer :: hash, oldLevel
       type (mpas_pool_member_type), pointer :: ptr
 
-      call pool_hash(hash, trim(newmem % key), newmem % keylen)
+      call pool_hash(hash, trim(newmem % key))
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5762,7 +5720,7 @@ module mpas_pool_routines
       nullify(pool_get_member)
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5797,7 +5755,7 @@ module mpas_pool_routines
       threadNum = mpas_threading_get_thread_num()
 
       endl = len_trim(key)
-      call pool_hash(hash, key, endl)
+      call pool_hash(hash, key)
 
       hash = mod(hash, inPool % size) + 1
 
@@ -5991,6 +5949,31 @@ module mpas_pool_routines
       end if
 
    end function pool_get_member_decomp_type!}}}
+
+   subroutine pool_hash(hash, key)!{{{
+
+      use iso_c_binding, only : c_int, c_char
+      use mpas_c_interfacing, only : mpas_f_to_c_string
+
+      implicit none
+
+      interface
+        subroutine c_pool_hash(hash, key) bind(c)
+           use iso_c_binding, only : c_int, c_char
+           integer (c_int), intent(inout) :: hash
+           character (c_char), dimension(*), intent(in) :: key
+        end subroutine c_pool_hash
+      end interface
+
+      integer (c_int), intent(inout) :: hash
+      character(len=*), intent(in) :: key
+
+      character(kind=c_char), dimension(StrKIND+1) :: c_key
+
+      call mpas_f_to_c_string(key, c_key)
+      call c_pool_hash(hash, c_key)
+
+   end subroutine pool_hash!}}}
 
 
 end module mpas_pool_routines

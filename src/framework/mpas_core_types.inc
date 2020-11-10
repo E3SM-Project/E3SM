@@ -64,12 +64,13 @@
    end interface
 
    abstract interface
-      function mpas_setup_log_function(logInfo, domain) result(iErr)
+      function mpas_setup_log_function(logInfo, domain, unitNumbers) result(iErr)
          import mpas_log_type
          import domain_type
 
          type (mpas_log_type), pointer, intent(inout) :: logInfo
          type (domain_type), pointer, intent(in) :: domain
+         integer, dimension(2), intent(in), optional :: unitNumbers
          integer :: iErr
       end function mpas_setup_log_function
    end interface

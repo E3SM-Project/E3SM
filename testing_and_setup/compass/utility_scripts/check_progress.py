@@ -7,8 +7,8 @@ config_restart_timestamp_name does not exists, exits 0
 checks that the current date does not exceed the end
 date specified by the -e flag with format
 YYYY-MM-DD_hh:mm:ss. (Note: only years between 0001
-and 9999 are supported.)  If this date is exceeded, 
-exits 1, indicating that the run should stop.  
+and 9999 are supported.)  If this date is exceeded,
+exits 1, indicating that the run should stop.
 Otherwise, exits 0, indicating the run has not yet
 completed.
 
@@ -52,10 +52,12 @@ or performing sanity checks.
 
 A number of jobs could be chained with this script. If one of
 these jobs exits with exit status 1, this could be made to
-cancel dependent jobs (depending on the capabilities of the 
+cancel dependent jobs (depending on the capabilities of the
 job scheduler).  Even if not, the next job would immediately
 exit once it runs, thus using negligible computing time.
 """
+from __future__ import absolute_import, division, print_function, \
+    unicode_literals
 
 import os
 import argparse
@@ -91,6 +93,6 @@ for line in inFile:
 inFile.close()
 endDate = datetime.strptime(args.endDate, '%Y-%m-%d_%H:%M:%S')
 if restartDate >= endDate:
-    print 'Run has completed.'
+    print('Run has completed.')
     sys.exit(1)
 sys.exit(0)

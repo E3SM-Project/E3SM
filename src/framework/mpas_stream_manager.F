@@ -104,6 +104,11 @@ module mpas_stream_manager
 
         implicit none
 
+        interface
+          subroutine seed_random() bind(c)
+          end subroutine seed_random
+        end interface
+
         character (len=*), parameter :: sub = 'MPAS_stream_mgr_init'
 
         type (MPAS_streamManager_type), pointer :: manager
@@ -3042,6 +3047,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine write_stream(manager, stream, blockID, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
 
+        use mpas_dmpar, only : IO_NODE
+
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
@@ -3149,7 +3156,10 @@ module mpas_stream_manager
                    STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
     
                    ! Check if the file exists
-                   inquire(file=trim(stream % filename), exist=recordSeek)
+                   if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                       inquire(file=trim(stream % filename), exist=recordSeek)
+                   end if
+                   call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, recordSeek)
                end if
 
                !
@@ -3232,7 +3242,10 @@ module mpas_stream_manager
                        STREAM_DEBUG_WRITE(' -- Cobber mode is overwrite or append...')
            
                        ! Check if the file exists
-                       inquire(file=trim(stream % filename), exist=recordSeek)
+                       if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                           inquire(file=trim(stream % filename), exist=recordSeek)
+                       end if
+                       call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, recordSeek)
                    end if
 
                    stream % nRecords = 1
@@ -3543,6 +3556,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine read_stream(manager, stream, timeLevel, mgLevel, forceReadNow, when, whence, actualWhen, ierr) !{{{
 
+        use mpas_dmpar, only : IO_NODE
+
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
@@ -3808,13 +3823,18 @@ module mpas_stream_manager
 
               STREAM_DEBUG_WRITE(' --- Retesting filename is ' // trim(test_filename))
 
-              inquire(file=trim(test_filename), exist=retestFile)
+              if (manager % ioContext % dminfo % my_proc_id == IO_NODE) then
+                 inquire(file=trim(test_filename), exist=retestFile)
+              end if
+              call mpas_dmpar_bcast_logical(manager % ioContext % dminfo, retestFile)
 
               ! If file exists, the testing stream needs to be built.
               if ( retestFile ) then
                   call mpas_createStream(testStream, manager % ioContext, test_filename, stream % io_type, MPAS_IO_READ, precision=stream % precision, ierr=local_ierr)
               else
                   STREAM_DEBUG_WRITE(' Filename: ' // trim(test_filename) // ' does not exist.')
+                  ierr = MPAS_STREAM_MGR_ERROR
+                  return
               end if
            end if
 
@@ -4148,7 +4168,18 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine build_stream(stream, direction, allFields, allPackages, timeLevelIn, mgLevelIn, ierr) !{{{
 
+        use iso_c_binding, only : c_int, c_char
+        use mpas_c_interfacing, only : mpas_c_to_f_string
+
         implicit none
+
+        interface
+          subroutine gen_random(len, id) bind(c)
+             use iso_c_binding, only : c_int, c_char
+             integer (c_int), intent(in), value :: len
+             character (c_char), dimension(*), intent(inout) :: id
+          end subroutine gen_random
+        end interface
 
         type (MPAS_stream_list_type), intent(inout) :: stream
         integer, intent(in) :: direction
@@ -4184,8 +4215,9 @@ module mpas_stream_manager
 
         integer :: local_ierr
 
-        integer, parameter :: idLength = 10
-        character (len=idLength) :: file_id
+        integer (c_int), parameter :: idLength = 10
+        character(len=idLength) :: f_file_id
+        character(kind=c_char), dimension(idLength+1) :: c_file_id
 
         character (len=StrKIND), pointer :: packages
         logical :: active_field
@@ -4228,8 +4260,9 @@ module mpas_stream_manager
             !
             ! Generate file_id and write to stream
             !
-            call gen_random(idLength, file_id)
-            call mpas_writeStreamAtt(stream % stream, 'file_id', file_id, syncVal=.true., ierr=local_ierr)
+            call gen_random(idLength, c_file_id)
+            call mpas_c_to_f_string(c_file_id, f_file_id)
+            call mpas_writeStreamAtt(stream % stream, 'file_id', f_file_id, syncVal=.true., ierr=local_ierr)
             if (local_ierr /= MPAS_STREAM_NOERR) then
                 ierr = MPAS_STREAM_MGR_ERROR
                 return
@@ -4787,6 +4820,10 @@ module mpas_stream_manager
 
         implicit none
 
+        integer, parameter :: UNUSED_CELL = 0
+        integer, parameter :: UNUSED_EDGE = 0
+        integer, parameter :: UNUSED_VERTEX = 0
+
         type (mpas_pool_type), pointer :: allFields
         type (mpas_pool_type), pointer :: streamFields
 
@@ -4909,7 +4946,7 @@ module mpas_stream_manager
                            cellsOnCell % array(j,i) = indexToCellID % array(cellsOnCell_ptr % array(j,i))
                        end do
 
-                       cellsOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nCells+1
+                       cellsOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_CELL
                    end do
 
                    cellsOnCell => cellsOnCell % next
@@ -4929,7 +4966,7 @@ module mpas_stream_manager
                            edgesOnCell % array(j,i) = indexToEdgeID % array(edgesOnCell_ptr % array(j,i))
                        end do
 
-                       edgesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nEdges+1
+                       edgesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_EDGE
                    end do
 
                    edgesOnCell => edgesOnCell % next
@@ -4949,7 +4986,7 @@ module mpas_stream_manager
                            verticesOnCell % array(j,i) = indexToVertexID % array(verticesOnCell_ptr % array(j,i))
                        end do
 
-                       verticesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = nVertices+1
+                       verticesOnCell % array(nEdgesOnCell%array(i)+1:maxEdges,i) = UNUSED_VERTEX
                    end do
 
                    verticesOnCell => verticesOnCell % next
@@ -5003,7 +5040,7 @@ module mpas_stream_manager
                            edgesOnEdge % array(j,i) = indexToEdgeID % array(edgesOnEdge_ptr % array(j,i))
                        end do
 
-                       edgesOnEdge % array(nEdgesOnEdge%array(i)+1:maxEdges2,i) = nEdges+1
+                       edgesOnEdge % array(nEdgesOnEdge%array(i)+1:maxEdges2,i) = UNUSED_EDGE
                    end do
 
                    edgesOnEdge => edgesOnEdge % next
