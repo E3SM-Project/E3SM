@@ -158,9 +158,11 @@ contains
     !-------------------------------------------------------------------------------
 
     lversion=trim(version0)
+#ifdef PIO2
     if(present(set_fill)) then
        if(set_fill) lset_fill = PIO_FILL
     endif
+#endif
     lclobber = .false.
     if (present(clobber)) lclobber=clobber
 
@@ -188,8 +190,9 @@ contains
 
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
+#ifdef PIO2
              rcode = pio_set_fill(cpl_io_file(lfile_ind), lset_fill, old_set_fill)
-
+#endif
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
           else
