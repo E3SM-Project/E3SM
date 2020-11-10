@@ -2,7 +2,8 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_batch_command, get_mach_testing_resources
+from machines_specs import get_mach_env_setup_command, get_mach_batch_command, get_mach_testing_resources, \
+                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
 
 ###############################################################################
 class GatherAllData(object):
@@ -26,6 +27,7 @@ class GatherAllData(object):
         env_setup    = get_mach_env_setup_command(machine)
         cxx_compiler = get_mach_cxx_compiler(machine)
         f90_compiler = get_mach_f90_compiler(machine)
+        c_compiler   = get_mach_c_compiler(machine)
         batch        = get_mach_batch_command(machine)
 
         env_setup.append("CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine)))
@@ -65,6 +67,7 @@ class GatherAllData(object):
             replace("$kokkos", str(kokkos_loc)).\
             replace("$cxx_compiler", cxx_compiler).\
             replace("$f90_compiler", f90_compiler).\
+            replace("$c_compiler", c_compiler).\
             replace("$machine", machine).\
             replace("$scream_docs", str(scream_docs_repo)).\
             replace("$scream", str(scream_repo))

@@ -54,7 +54,7 @@ OR
     )
 
     parser.add_argument("run", help="What to run on the machine, cwd for the command will be root-dir. "
-                        "Supported magic strings: $cxx_compiler $f90_compiler $kokkos $machine $scream_docs $scream")
+                        "Supported magic strings: $cxx_compiler $f90_compiler $c_compiler $kokkos $machine $scream_docs $scream")
 
     parser.add_argument("-c", "--commit", help="Commit to test. Default is current HEAD.")
 
