@@ -1054,36 +1054,36 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
                 />
-                <var name="damage" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="damage number"
-		/>
-                <var name="ddamagedt" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="damage change rate"
-		/>
-                <var name="damage_nye" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="Nye zero-stress damage number"
-		/>
-                <var name="damage_max" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="maximum damage number kept constant"
-		/>
-                <var name="szero" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="S0 number"
-		/>
-                <var name="nstar" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="S0 number"
-		/>
-                <var name="visc" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="S0 number"
-		/>
-                <var name="epsmax" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="S0 number"
-		/>
-                <var name="sigmamax" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
-		     description="S0 number"
-		/>
-                <var name="source" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
-		     description="damage source term"
-		/>
+                <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="damage number, ranging from 0 to 1"
+                />
+                <var name="ddamagedt" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage change rate"
+                />
+                <var name="damage_nye" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="Nye zero-stress damage number"
+                />
+                <var name="damage_max" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="maximum damage number kept constant"
+                />
+                <var name="szero" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf"
+                />
+                <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="adjusted Glen flow law parameter"
+                />
+            <var name="visc" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
+                     description="effective viscosity"
+                />
+                <var name="epsmax" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="strain rate along the direction of maximum deviatoric principal stress"
+                />
+                <var name="sigmamax" type="real" dimensions="nCells Time" units="Pa" time_levs="1"
+                     description="maximum deviatoric principal stress"
+                />
+                <var name="damageSource" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage source term"
+                />
                 <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"
                      description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
                 />
