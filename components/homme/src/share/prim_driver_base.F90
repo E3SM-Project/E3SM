@@ -1278,7 +1278,7 @@ contains
     logical,              intent(in)    :: single_column
 
     real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
-    integer :: ie, q, k, n, n0_qdp, np1_qdp, nets_in, nete_in, np1_qdp_in
+    integer :: ie, q, k, n, n0_qdp, np1_qdp, nets_in, nete_in
     logical :: compute_diagnostics_it, apply_forcing
 
     logical :: scm_update_T
@@ -1377,7 +1377,6 @@ contains
              else
                 ! Set np1_qdp to -1 to remap dynamics variables but
                 ! not tracers
-
                 call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, &
 		                    -1, nets_in, nete_in)
 
@@ -1512,6 +1511,7 @@ contains
     enddo
 #endif
   endif
+
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1732,7 +1732,6 @@ contains
    
 #endif
 
-
   end subroutine applyCAMforcing_tracers
   
   
@@ -1837,7 +1836,7 @@ contains
 
 #ifdef MODEL_THETA_L
     ! If using theta-l model and updating Q, the dp3d variable is used as the
-    !   reference height for the remap routine, thus reset this here
+    !   reference height for the remap routine, thus reset this here.
     if (update_Q) then
       do ie=nets,nete
         do k=1,nlev

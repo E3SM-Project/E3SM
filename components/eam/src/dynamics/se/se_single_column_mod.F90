@@ -226,11 +226,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-#ifdef MODEL_THETA_L
            temperature(i,j,:),temperature(i,j,:),&
-#else
-           elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
-#endif
            forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
            stateQin_qfcst,p(i,j,:),stateQin1,1)
 
