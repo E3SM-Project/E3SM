@@ -1281,6 +1281,16 @@ contains
     integer :: ie, q, k, n, n0_qdp, np1_qdp, nets_in, nete_in, np1_qdp_in
     logical :: compute_diagnostics_it, apply_forcing
 
+    logical :: scm_update_T
+
+    if (single_column) then
+      nets_in=1
+      nete_in=1
+    else
+      nets_in=nets
+      nete_in=nete
+    endif
+
     dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
        dt_remap = dt
@@ -1338,7 +1348,10 @@ contains
          call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
               compute_diagnostics_it)
        else
-         call prim_step_scm(elem, nets, nete, dt, tl, hvcoord)
+         ! Update floating temperature based prescribed LS vertical velocity,
+         !  but don't update tracers at this point
+         scm_update_T = .true.
+         call prim_step_scm(elem, nets_in, nete_in, dt, tl, hvcoord, scm_update_T)
        endif
 
        if (dt_remap_factor == 0) then
@@ -1363,21 +1376,10 @@ contains
                 end do
              else
                 ! Set np1_qdp to -1 to remap dynamics variables but
-                ! not tracers (unless single column mode)
-
-		if (single_column) then
-                  nets_in=1
-                  nete_in=1
-                  !np1_qdp_in = np1_qdp
-                  np1_qdp_in = -1
-                else
-                  nets_in=nets
-                  nete_in=nete
-                  np1_qdp_in = -1
-                endif
+                ! not tracers
 
                 call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, &
-		                    np1_qdp_in, nets_in, nete_in)
+		                    -1, nets_in, nete_in)
 
              end if
           end if
@@ -1385,19 +1387,10 @@ contains
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")
-    
-    if (single_column) then
-      do ie=nets_in,nete_in
-        do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
-        enddo
-      enddo
-    endif
 
-    write(*,*) 'DP3D ', elem(1)%state%dp3d(1,1,:,tl%np1)
-
-!    call prim_step_scm2(elem, nets, nete, dt_q, tl, hvcoord)
+    ! Update tracers based on LS vertical velocity
+    scm_update_T = .false.
+    call prim_step_scm(elem, nets_in, nete_in, dt, tl, hvcoord, scm_update_T)
     
     if (qsize > 0 .and. .not. single_column) then
        call t_startf("PAT_remap")
@@ -1411,7 +1404,6 @@ contains
     end if
 
     ! Remap tracers.
-!    if (qsize > 0 .and. .not. single_column) then
     if (qsize > 0) then 
        call sl_vertically_remap_tracers(hybrid, elem, nets_in, nete_in, tl, dt_q)
     end if
@@ -1744,7 +1736,7 @@ contains
   end subroutine applyCAMforcing_tracers
   
   
-  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
+  subroutine prim_step_scm(elem, nets, nete, dt, tl, hvcoord, update_T_in)
   !
   !   prim_step version for single column model (SCM)
   !   Here we simply want to compute the floating level tendency
@@ -1780,11 +1772,29 @@ contains
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
+    logical, optional,    intent(in)    :: update_T_in ! update temperature?
 
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
+    logical :: update_T, update_Q
+    
+    ! Determine if we are updating T or Q
+    if (.not. present(update_T_in)) then
+      ! If there is no optional argument present, then assume we 
+      !   are in preqx dycore where this routine is called only
+      !   for Q tracers
+      update_T = .false.
+      update_Q = .true.
+    else
+      ! Else we only update Q if not T and vice versa since 
+      !   since this routine is called in different locations
+      !   in the theta-l code for T and Q respectively
+      update_T = update_T_in
+      if (update_T_in) update_Q = .false.
+      if (.not. update_T_in) update_Q = .true.
+    endif
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1808,125 +1818,37 @@ contains
     ! ===============
     
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
-    call set_prescribed_scm(elem,dt,tl)
+    call set_prescribed_scm(elem,dt,tl,update_T)
 
-#ifndef MODEL_THETA_L
-    do n=2,dt_tracer_factor
- 
-      call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+    if (update_Q) then
+      do n=2,dt_tracer_factor
 
-      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
-      
-      ! call the single column forcing
-      call set_prescribed_scm(elem,dt,tl)
-      
-    enddo
-#endif
+        call TimeLevel_update(tl,"leapfrog")
+        if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
 
-!#ifdef MODEL_THETA_L
-!    do ie=nets,nete
-!      do k=1,nlev
-!        elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-!             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
-!      enddo
-!    enddo
-!#endif
+        ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
+        call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
 
-  end subroutine prim_step_scm  
-  
-  subroutine prim_step_scm2(elem, nets,nete, dt, tl, hvcoord)
-  !
-  !   prim_step version for single column model (SCM)
-  !   Here we simply want to compute the floating level tendency
-  !    based on the prescribed large scale vertical velocity
-  !   Take qsplit dynamics steps and one tracer step
-  !   for vertically lagrangian option, this subroutine does only the horizontal step
-  !
-  !   input:
-  !       tl%nm1   not used
-  !       tl%n0    data at time t
-  !       tl%np1   new values at t+dt_q
-  !
-  !   then we update timelevel pointers:
-  !       tl%nm1 = tl%n0
-  !       tl%n0  = tl%np1
-  !   so that:
-  !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
-  !       tl%n0    time t + dt_q
-  !
-  !
-    use control_mod,        only: statefreq, integration, ftype, nu_p, dt_tracer_factor, dt_remap_factor
-    use control_mod,        only: transport_alg
-    use hybvcoord_mod,      only : hvcoord_t
-    use parallel_mod,       only: abortmp
-    use prim_advance_mod,   only: prim_advance_exp, applyCAMforcing_dynamics
-    use reduction_mod,      only: parallelmax
-    use time_mod,           only: time_at,TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
-    use prim_state_mod,     only: prim_printstate, prim_diag_scalars, prim_energy_halftimes
+        ! call the single column forcing
+        call set_prescribed_scm(elem,dt,tl,update_T)
 
-    type(element_t),      intent(inout) :: elem(:)
-    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
-    integer,              intent(in)    :: nets     ! starting thread element number (private)
-    integer,              intent(in)    :: nete     ! ending thread element number   (private)
-    real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
-    type(TimeLevel_t),    intent(inout) :: tl
-
-    real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n,qn0
-    real (kind=real_kind)                          :: maxcflx, maxcfly
-    real (kind=real_kind) :: dp_np1(np,np)
- 
-    ! ===============
-    ! initialize mean flux accumulation variables and save some variables at n0
-    ! for use by advection
-    ! ===============
-    do ie=nets,nete
-      elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
-      elem(ie)%derived%vn0=0              ! mean horizontal mass flux
-      if (nu_p>0) then
-         elem(ie)%derived%dpdiss_ave=0
-         elem(ie)%derived%dpdiss_biharmonic=0
-      endif
-      if (transport_alg > 0) then
-        elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
-      end if
-      elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
-    enddo
-
-    ! ===============
-    ! Dynamical Step
-    ! ===============
-    
-    dt_q=1800.
-    call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
-    call set_prescribed_scm2(elem,dt,tl)
-
-#ifndef MODEL_THETA_L
-    do n=2,dt_tracer_factor
-
-      call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
-
-      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
-      
-      ! call the single column forcing
-      call set_prescribed_scm2(elem,dt,tl)
-      
-    enddo
-#endif
-
-    do ie=nets,nete
-      do k=1,nlev
-        elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
       enddo
-    enddo
+    endif
 
-  end subroutine prim_step_scm2  
+#ifdef MODEL_THETA_L
+    ! If using theta-l model and updating Q, the dp3d variable is used as the
+    !   reference height for the remap routine, thus reset this here
+    if (update_Q) then
+      do ie=nets,nete
+        do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+        enddo
+      enddo
+    endif
+#endif
 
+  end subroutine prim_step_scm
 
 !=======================================================================================================!
 
@@ -1997,7 +1919,7 @@ contains
     end subroutine smooth_topo_datasets
     
   !_____________________________________________________________________
-  subroutine set_prescribed_scm(elem,dt,tl)
+  subroutine set_prescribed_scm(elem,dt,tl,update_T)
   
     ! Update the floating levels based on the prescribed
     !  large scale vertical velocity for single column model
@@ -2010,11 +1932,21 @@ contains
     type (element_t),      intent(inout), target  :: elem(:) 
     real (kind=real_kind), intent(in)             :: dt
     type (TimeLevel_t)   , intent(in)             :: tl
+    logical,               intent(in)             :: update_T
     
     real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
     
     integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
+    logical :: update_T, update_Q
+
+    ! Determine if we are updating T or Q
+    !  If updating T, then don't update Q and vice versa
+    if (update_T) then
+      update_Q = .false.
+    else
+      update_Q = .true.
+    endif  
 
     n0    = tl%n0
     np1   = tl%np1
@@ -2030,83 +1962,36 @@ contains
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
         + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k)) 
 #ifdef MODEL_THETA_L
-      elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+      ! If updating Q and using the theta-l dycore the dp_star (floating
+      !   levels) are stored in divdp.  Thus feed in the latest predicted
+      !   floating level here.
+      if (update_Q) then
+        elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,np1)
+      endif
 #endif
     enddo
 
     ! If running theta_l model then the floating potential temperature
     !   needs to be updated with the new floating levels
 #ifdef MODEL_THETA_L
-    do k=1,nlev
-      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
+    if (update_T) then
+      do k=1,nlev
+        elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
                       elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
-    enddo
+      enddo
+    endif
 #endif
 
-    do p=1,qsize
-      do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+    if (update_Q) then
+      do p=1,qsize
+        do k=1,nlev
+          elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*&
+            elem(1)%state%dp3d(:,:,k,np1)
+        enddo
       enddo
-    enddo
+    endif
     
-  end subroutine set_prescribed_scm   
-  
-  !_____________________________________________________________________
-  subroutine set_prescribed_scm2(elem,dt,tl)
-  
-    ! Update the floating levels based on the prescribed
-    !  large scale vertical velocity for single column model
-
-    use dimensions_mod, only: qsize
-    use time_mod, only: timelevel_qdp
-    use control_mod, only: dt_tracer_factor  
-    use time_mod,       only: timelevel_t
-
-    type (element_t),      intent(inout), target  :: elem(:) 
-    real (kind=real_kind), intent(in)             :: dt
-    type (TimeLevel_t)   , intent(in)             :: tl
-    
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
-    real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
-    
-    integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-
-    n0    = tl%n0
-    np1   = tl%np1
-
-    call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
-    
-    do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
-    enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
-    
-    do k=1,nlev
-      elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k)) 
-#ifdef MODEL_THETA_L       
-      elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
-#endif
-    enddo
-
-    ! If running theta_l model then the floating potential temperature
-    !   needs to be updated with the new floating levels
-!#ifdef MODEL_THETA_L
-!    do k=1,nlev
-!      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
-!                      elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
-!    enddo
-!#endif
-
-    do p=1,qsize
-      do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
-      enddo
-    enddo
-    
-  end subroutine set_prescribed_scm2                   
+  end subroutine set_prescribed_scm
     
 end module prim_driver_base
 
