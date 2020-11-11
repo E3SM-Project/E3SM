@@ -34,6 +34,23 @@ set (E3SM_INTERNAL_KOKKOS_ALREADY_BUILT TRUE)
 # configure Homme folder
 add_subdirectory(${HOMME_SOURCE_DIR} ${HOMME_BINARY_DIR})
 
+# Store homme compiler/linker flags, for future use, to prevent them from  going out of scope
+# Long story: Homme sets all flags in CMAKE_<LANG>_FLAGS. Those are local vars, so at the end
+#             of its main CMakeLists.txt, we copy them in the parent scope. But that's still
+#             a local var, and the macro below will be likely called from a different subdir.
+#             Therefore, store the flags internally in the cache, for future use in different
+#             parts of the src tree.
+# Also, strip leading/trailing spaces
+
+string (STRIP "${HOMME_C_FLAGS}"       HOMME_C_FLAGS       )
+string (STRIP "${HOMME_CXX_FLAGS}"     HOMME_CXX_FLAGS     )
+string (STRIP "${HOMME_Fortran_FLAGS}" HOMME_Fortran_FLAGS )
+string (STRIP "${HOMME_LINKER_FLAGS}"  HOMME_LINKER_FLAGS  )
+set (HOMME_C_FLAGS ${HOMME_C_FLAGS} CACHE INTERNAL "")
+set (HOMME_CXX_FLAGS ${HOMME_CXX_FLAGS} CACHE INTERNAL "")
+set (HOMME_Fortran_FLAGS ${HOMME_Fortran_FLAGS} CACHE INTERNAL "")
+set (HOMME_LINKER_FLAGS ${HOMME_LINKER_FLAGS} CACHE INTERNAL "")
+
 #######################################################################
 #     Macro to create dyn lib with specific compile-time options      #
 #######################################################################
@@ -93,6 +110,15 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       LIBRARY_OUTPUT_DIRECTORY "${dynLibDir}"
       RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
     )
+
+    if(${CMAKE_VERSION} VERSION_GREATER "3.13.0")
+      target_link_options(${hommeLibName} PRIVATE "${HOMME_LINKER_FLAGS}")
+    else ()
+      target_link_libraries(${hommeLibName} "${HOMME_LINKER_FLAGS}")
+    endif ()
+    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:C>:${HOMME_C_FLAGS}>)
+    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${HOMME_CXX_FLAGS}>)
+    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${HOMME_Fortran_FLAGS}>)
 
     #####################################
     ###     Build SCREAM library      ###
