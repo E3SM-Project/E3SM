@@ -619,8 +619,13 @@ class Dataset():
         var_start_year = int(fnm.split('/')[-1].split('_')[-2][:4])
         var_end_year = int(fnm.split('/')[-1].split('_')[-1][:4])
 
-        if start_year < var_start_year or end_year > var_end_year:
-            msg = "Invalid year range specified for test/reference time series data" 
+        if start_year < var_start_year:
+            msg = "Invalid year range specified for test/reference time series data: start_year={}<{}=var_start_yr".format(
+                start_year, var_start_year)
+            raise RuntimeError(msg)
+        elif end_year > var_end_year:
+            msg = "Invalid year range specified for test/reference time series data: end_year={}>{}=var_end_yr".format(
+                end_year, var_end_year)
             raise RuntimeError(msg)
         else: 
             #with cdms2.open(fnm) as f:
