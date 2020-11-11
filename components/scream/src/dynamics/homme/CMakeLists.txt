@@ -2,9 +2,15 @@
 set (HOMME_SOURCE_DIR ${SCREAM_SOURCE_DIR}/../homme CACHE INTERNAL "Homme source directory")
 set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme binary directory")
 
-# Set some important options used to configure homme
-set (WITH_PNETCDF FALSE CACHE BOOL "Whether pnetcdf is available.")
-set (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "Whether homme should find (rther than build) blas/lapack")
+# If using Intel, we need to tell Homme to link against mkl rather than lapack
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  option (HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" ON)
+  option (HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" OFF)
+else ()
+  option (HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" OFF)
+  option (HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" ON)
+endif ()
 
 # Disable all the targets by default
 set(BUILD_HOMME_SWEQX        OFF CACHE BOOL "")
