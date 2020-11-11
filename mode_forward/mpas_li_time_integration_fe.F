@@ -29,7 +29,7 @@ module li_time_integration_fe
    use mpas_log
 
    use li_advection
-   use li_calving, only: li_calve_ice, li_restore_calving_front, calculate_damage, restore_damage
+   use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_restore_damage
    use li_thermal, only: li_thermal_solver
    use li_iceshelf_melt
    use li_diagnostic_vars
@@ -136,7 +136,7 @@ module li_time_integration_fe
 ! === calculate damage ===========
       if (config_calculate_damage) then
           call mpas_timer_start("damage")
-          call calculate_damage(domain, err_tmp)
+          call li_calculate_damage(domain, err_tmp)
           err = ior(err, err_tmp)
           call mpas_timer_stop("damage")
       endif
@@ -150,7 +150,7 @@ module li_time_integration_fe
 ! === restore damage ===========
       if (config_restore_damage) then
           call mpas_timer_start("restore damage")
-          call restore_damage(domain, err_tmp)
+          call li_restore_damage(domain, err_tmp)
           err = ior(err, err_tmp)
           call mpas_timer_stop("restore damage")
       endif
