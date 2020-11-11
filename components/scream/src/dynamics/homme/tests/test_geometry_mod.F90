@@ -9,7 +9,7 @@ contains
 
   subroutine init_cube_geometry_f90 (ne_in) bind(c)
     use iso_c_binding,  only: c_int
-    use dimensions_mod, only: ne, npart
+    use dimensions_mod, only: ne
     use control_mod,    only: topology, cubed_sphere_map, partmethod
     use params_mod,     only: SFCURVE
     use homme_grid_mod, only: init_geometry_f90

@@ -86,7 +86,6 @@ protected:
   void do_remap_bwd () const override;
 
   void setup_boundary_exchange ();
-  void create_p2d_map ();
 
   std::vector<field_type>   m_phys;
   std::vector<field_type>   m_dyn;
@@ -111,6 +110,8 @@ public:
   void remap_bwd_2d (const field_type& phys, const field_type& dyn, const int itl) const;
   template<typename ScalarT>
   void remap_bwd_3d_impl (const field_type& phys, const field_type& dyn, const int itl) const;
+
+  void create_p2d_map ();
 };
 
 // ================= IMPLEMENTATION ================= //
