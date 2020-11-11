@@ -3357,8 +3357,9 @@ subroutine shoc_length(&
 end subroutine shoc_length
 
 !==============================================================
-! Subroutine to determine superdiagonal, subdiagonal, and diagonal
-! coeffs of the tridiagonal diffusion matrix.
+! Subroutine to determine superdiagonal and the factorized
+! subdiagonal and diagonal coeffs for solving the
+! tridiagonal diffusion matrix.
 
 subroutine vd_shoc_decomp( &
          shcol,nlev,nlevi,&          ! Input
@@ -3390,9 +3391,9 @@ subroutine vd_shoc_decomp( &
 ! OUTPUT VARIABLES
   ! superdiagonal
   real(rtype), intent(out) :: du(shcol,nlev)
-  ! subdiagonal
+  ! Factorized version of subdiagonal
   real(rtype), intent(out) :: dl(shcol,nlev)
-  ! diagonal
+  ! Factorized version of diagonal
   real(rtype), intent(out) :: d(shcol,nlev)
 
 ! LOCAL VARIABLES
@@ -3426,6 +3427,14 @@ subroutine vd_shoc_decomp( &
     d(i,1) = 1._rtype - du(i,1)
   enddo
 
+  ! Compute the Thomas factorization
+  do k=2,nlev
+    do i=1,shcol
+      dl(i,k) = dl(i,k)/d(i,k-1)
+      d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
+    enddo
+  enddo
+
   return
 
 end subroutine vd_shoc_decomp
@@ -3433,14 +3442,13 @@ end subroutine vd_shoc_decomp
 !==============================================================
 ! Subroutine to solve the implicit vertical diffsion equation
 ! with zero flux boundary conditions. Actual surface fluxes
-! should be applied explicitly.  Procedure for solution of the
+! should be applied explicitly. Procedure for solution of the
 ! implicit equation follows Richtmeyer and Morton (1967, pp 198-200).
-! The equation solved is
 !
-!   du(k)*q(k+1) + d(k)*q(k) - dl(k)*q(k-1) = b(k),
-!
-! where b(k) is the input profile and q(k) is the output profile. The
-! solution is found using the Thomas algorithm for tridiagonal systems.
+! Here, du is the superdiagonal and dl and d are the factorized
+! version of the subdiagonal and diagonal using the Thomas algorithm.
+! This subroutine takes in an input profile var and solves using the
+! remainder of the Thomas algorithm. The solution is stored in var.
 !
 ! Note that the same routine is used for temperature, momentum and
 ! tracers.
@@ -3460,9 +3468,9 @@ subroutine vd_shoc_solve(&
   integer, intent(in) :: nlev
   ! superdiagonal
   real(rtype), intent(in) :: du(shcol,nlev)
-  ! subdiagonal
+  ! Factorized version of subdiagonal
   real(rtype), intent(in) :: dl(shcol,nlev)
-  ! diagonal
+  ! Factorized version of diagonal
   real(rtype), intent(in) :: d(shcol,nlev)
 
 ! IN/OUT VARIABLES
@@ -3470,34 +3478,19 @@ subroutine vd_shoc_solve(&
 
 ! LOCAL VARIABLES
   integer :: i, k
-  ! Temporary variables for tridiag solve
-  real(rtype) :: temp_dl(shcol,nlev)
-  real(rtype) :: temp_d(shcol,nlev)
-
-  ! Copy over data to temporary variables
-  temp_dl(:,:) = dl(:,:)
-  temp_d (:,:) = d (:,:)
-
-  ! Compute Thomas factorization
-  do k=2,nlev
-    do i=1,shcol
-      temp_dl(i,k) = temp_dl(i,k)/temp_d(i,k-1)
-      temp_d (i,k) = temp_d (i,k) - temp_dl(i,k)*du(i,k-1)
-    enddo
-  enddo
 
   ! Solve using Thomas algorithm
   do k=2,nlev
     do i=1,shcol
-      var(i,k) = var(i,k) - temp_dl(i,k)*var(i,k-1)
+      var(i,k) = var(i,k) - dl(i,k)*var(i,k-1)
     enddo
   enddo
   do i=1,shcol
-    var(i,nlev) = var(i,nlev)/temp_d(i,nlev)
+    var(i,nlev) = var(i,nlev)/d(i,nlev)
   enddo
   do k=nlev,2,-1
     do i=1,shcol
-      var(i,k-1) = (var(i,k-1) - du(i,k-1)*var(i,k))/temp_d(i,k-1)
+      var(i,k-1) = (var(i,k-1) - du(i,k-1)*var(i,k))/d(i,k-1)
     enddo
   enddo
 
