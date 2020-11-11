@@ -261,8 +261,6 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_LINK_LIBRARIES(${libName} sundials_fnvecserial)
   ENDIF ()
 
-  INSTALL(TARGETS ${libName} RUNTIME DESTINATION tests)
-
 endmacro(createExecLib)
 
 macro (copyDirFiles testDir)

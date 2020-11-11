@@ -263,7 +263,7 @@ ENDIF ()
 IF (HOMME_BUILD_LIBS)
   THETAL_KOKKOS_SETUP()
 
-  createExecLib(theta-l_kokkos theta-l_kokkos "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
+  createExecLib(theta-l_kokkos_lib theta-l_kokkos "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
       ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
 ENDIF ()
 
