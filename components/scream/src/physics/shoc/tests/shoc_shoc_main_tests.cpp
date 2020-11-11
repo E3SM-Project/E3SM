@@ -26,12 +26,12 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
     static constexpr Int num_qtracers = 3;
-    static constexpr Int nadv = 1;
+    static constexpr Int nadv = 10;
     
     // Tests for the subroutine shoc_main
     
     // Timestep [s]
-    static constexpr Real dtime = 30;   
+    static constexpr Real dtime = 300;
     // host dx [m]
     static constexpr Real host_dx = 3000;
     // host dy [m]
@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Define pressures on the interface grid [Pa]
     static constexpr Real presi[nlevi] = {850e2, 875e2, 900e2, 950e2, 975e2, 1000e2};
     // Define temperature on the zt grid [K]
-    static constexpr Real temp[nlev] = {285, 287, 290, 295, 300};
+    static constexpr Real temp[nlev] = {290, 295, 297, 297, 300};
     // Define the large scale vertical velocity on zt grid [m/s]
     static constexpr Real w_field[nlev] = {5e-2, 4e-2, 3e-2, 2e-2, 1e-2};
     // Define the zonal wind [m/s]
@@ -144,7 +144,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     REQUIRE(SDS.num_qtracers == num_qtracers);
     REQUIRE(SDS.dtime == dtime);
     REQUIRE(SDS.nadv == nadv);
-    REQUIRE(shcol > 1);
+    REQUIRE(shcol > 0);
     REQUIRE(nlev > 1);
     REQUIRE(nlevi == nlev+1);
     REQUIRE(num_qtracers >= 1);
@@ -204,6 +204,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
         
         SDS.zi_grid[offset] = zi_grid[n];
         SDS.presi[offset] = presi[n];
+
       }      
     }
     

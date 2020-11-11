@@ -73,7 +73,7 @@ contains
     real(kind=c_real), intent(inout), dimension(shcol, nlev, num_qtracers) :: qtracers
     real(kind=c_real), intent(inout), dimension(shcol, nlev) :: tk, tkh
 
-    real(kind=c_real), intent(out), dimension(shcol, nlev) :: shoc_cldfrac, shoc_ql
+    real(kind=c_real), intent(inout), dimension(shcol, nlev) :: shoc_cldfrac, shoc_ql
     real(kind=c_real), intent(out), dimension(shcol) :: pblh
     real(kind=c_real), intent(out), dimension(shcol, nlev) :: shoc_mix, w_sec
     real(kind=c_real), intent(out), dimension(shcol, nlevi) :: thl_sec, qw_sec, &
