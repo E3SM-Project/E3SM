@@ -3401,7 +3401,7 @@ subroutine vd_shoc_decomp( &
 
   ! Determine superdiagonal (du) and subdiagonal (dl) coeffs of the
   ! tridiagonal diffusion matrix.
-  do k=nlev-1,1,-1
+  do k=1,nlev-1
     do i=1,shcol
       du(i,k)   = -1._rtype * kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k)
       dl(i,k+1) = -1._rtype * kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k+1)
@@ -3413,25 +3413,19 @@ subroutine vd_shoc_decomp( &
   du(:,nlev) = 0._rtype
   dl(:,1)    = 0._rtype
 
-  ! The diagonal elements are a combination of du and dl (d=1-du-dl). Surface
-  ! fluxes are applied explicitly in the diagonal at the top level.
-  do i=1,shcol
-    d(i,nlev) = 1._rtype - dl(i,nlev) + flux(i)*dtime*ggr*rdp_zt(i,nlev)
-  enddo
-  do k=nlev-1,2,-1
+  do k=1,nlev
     do i=1,shcol
+      ! Compute the diagonal. The diagonal elements are a combination
+      ! of du and dl (d=1-du-dl). Surface fluxes are applied explicitly
+      ! in the diagonal at the top level.
       d(i,k) = 1._rtype - du(i,k) - dl(i,k)
-    enddo
-  enddo
-  do i=1,shcol
-    d(i,1) = 1._rtype - du(i,1)
-  enddo
+      if (k .eq. nlev) d(i,k) = d(i,k) + flux(i)*dtime*ggr*rdp_zt(i,nlev)
 
-  ! Compute the Thomas factorization
-  do k=2,nlev
-    do i=1,shcol
-      dl(i,k) = dl(i,k)/d(i,k-1)
-      d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
+      ! Compute the Thomas factorization
+      if (k .ne. 1) then
+        dl(i,k) = dl(i,k)/d(i,k-1)
+        d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
+      endif
     enddo
   enddo
 
