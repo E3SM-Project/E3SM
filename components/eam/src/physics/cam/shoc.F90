@@ -3413,20 +3413,25 @@ subroutine vd_shoc_decomp( &
   du(:,nlev) = 0._rtype
   dl(:,1)    = 0._rtype
 
-  do k=1,nlev
+  ! Compute the diagonal and perform Thomas factorization. The diagonal
+  ! elements are a combination of du and dl (d=1-du-dl). Surface fluxes
+  ! are applied explicitly in the diagonal at the top level.
+  do i=1,shcol
+    d(i,1) = 1._rtype - du(i,1)
+  enddo
+  do k=2,nlev-1
     do i=1,shcol
-      ! Compute the diagonal. The diagonal elements are a combination
-      ! of du and dl (d=1-du-dl). Surface fluxes are applied explicitly
-      ! in the diagonal at the top level.
       d(i,k) = 1._rtype - du(i,k) - dl(i,k)
-      if (k .eq. nlev) d(i,k) = d(i,k) + flux(i)*dtime*ggr*rdp_zt(i,nlev)
 
-      ! Compute the Thomas factorization
-      if (k .ne. 1) then
-        dl(i,k) = dl(i,k)/d(i,k-1)
-        d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
-      endif
+      dl(i,k) = dl(i,k)/d(i,k-1)
+      d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
     enddo
+  enddo
+  do i=1,shcol
+    d(i,nlev) = 1._rtype - dl(i,nlev) + flux(i)*dtime*ggr*rdp_zt(i,nlev)
+
+    dl(i,nlev) = dl(i,nlev)/d(i,nlev-1)
+    d (i,nlev) = d (i,nlev) - dl(i,nlev)*du(i,nlev-1)
   enddo
 
   return
