@@ -43,6 +43,11 @@ set (CMAKE_CXX_STANDARD 11)
 if (NOT CIME_BUILD)
   project(SCREAM CXX Fortran)
 
+  if (SCREAM_CORI_HACK)
+    list(APPEND CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifcore")
+    list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifport")
+  endif()
+
   # Print the sha of the last commit (useful to double check which version was tested on CDash)
   execute_process (COMMAND git rev-parse HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
