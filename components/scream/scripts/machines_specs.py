@@ -66,7 +66,7 @@ MACHINE_METADATA = {
                 ""),
     "cori"   : (["eval $(../../cime/scripts/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
                 ["CC","ftn"],
-                "srun --time 00:30:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q debug --account e3sm",
+                "srun --time 02:30:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
                 20,
                 68,
                 ""),
