@@ -693,9 +693,9 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: flux_dummy(shcol)
   real(rtype) :: ksrf(shcol), wtke_sfc(shcol)
 
-  real(rtype) :: du(shcol,nlev) ! superdiagonal for solver
-  real(rtype) :: dl(shcol,nlev) ! subdiagonal for solver
-  real(rtype) :: d(shcol,nlev)  ! diagonal for solver
+  real(rtype) :: du(shcol,nlev) ! Superdiagonal for solver
+  real(rtype) :: dl(shcol,nlev) ! Factorized subdiagonal for solver
+  real(rtype) :: d(shcol,nlev)  ! Factorized diagonal for solver
 
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
