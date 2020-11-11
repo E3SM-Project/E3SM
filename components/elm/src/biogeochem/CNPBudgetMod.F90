@@ -145,19 +145,21 @@ module CNPBudgetMod
 
   ! C
   integer, parameter :: s_totpftc_beg           =  1
-  integer, parameter :: s_totpftc_end           =  2
-  integer, parameter :: s_cwdc_beg              =  3
-  integer, parameter :: s_cwdc_end              =  4
-  integer, parameter :: s_totlitc_beg           =  5
-  integer, parameter :: s_totlitc_end           =  6
-  integer, parameter :: s_totsomc_beg           =  7
-  integer, parameter :: s_totsomc_end           =  8
-  integer, parameter :: s_totprodc_beg          =  9
-  integer, parameter :: s_totprodc_end          = 10
-  integer, parameter :: s_ctrunc_beg            = 11
-  integer, parameter :: s_ctrunc_end            = 12
-  integer, parameter :: s_cropseedc_deficit_beg = 13
+  integer, parameter :: s_cwdc_beg              =  2
+  integer, parameter :: s_totlitc_beg           =  3
+  integer, parameter :: s_totsomc_beg           =  4
+  integer, parameter :: s_totprodc_beg          =  5
+  integer, parameter :: s_ctrunc_beg            =  6
+  integer, parameter :: s_cropseedc_deficit_beg =  7
+
+  integer, parameter :: s_totpftc_end           =  8
+  integer, parameter :: s_cwdc_end              =  9
+  integer, parameter :: s_totlitc_end           = 10
+  integer, parameter :: s_totsomc_end           = 11
+  integer, parameter :: s_totprodc_end          = 12
+  integer, parameter :: s_ctrunc_end            = 13
   integer, parameter :: s_cropseedc_deficit_end = 14
+
   integer, parameter :: s_c_error               = 15
 
   integer, parameter, public :: c_s_size = s_c_error
@@ -183,23 +185,25 @@ module CNPBudgetMod
 
   ! N
   integer, parameter :: s_totpftn_beg           = 16
-  integer, parameter :: s_totpftn_end           = 17
-  integer, parameter :: s_cwdn_beg              = 18
-  integer, parameter :: s_cwdn_end              = 19
-  integer, parameter :: s_totlitn_beg           = 20
-  integer, parameter :: s_totlitn_end           = 21
-  integer, parameter :: s_totsomn_beg           = 22
-  integer, parameter :: s_totsomn_end           = 23
-  integer, parameter :: s_sminn_beg             = 24
-  integer, parameter :: s_sminn_end             = 25
-  integer, parameter :: s_totprodn_beg          = 26
-  integer, parameter :: s_totprodn_end          = 27
-  integer, parameter :: s_ntrunc_beg            = 28
-  integer, parameter :: s_ntrunc_end            = 29
-  integer, parameter :: s_plant_n_buffer_beg    = 30
+  integer, parameter :: s_cwdn_beg              = 17
+  integer, parameter :: s_totlitn_beg           = 18
+  integer, parameter :: s_totsomn_beg           = 19
+  integer, parameter :: s_sminn_beg             = 20
+  integer, parameter :: s_totprodn_beg          = 21
+  integer, parameter :: s_plant_n_buffer_beg    = 22
+  integer, parameter :: s_ntrunc_beg            = 23
+  integer, parameter :: s_cropseedn_deficit_beg = 24
+
+  integer, parameter :: s_totpftn_end           = 25
+  integer, parameter :: s_cwdn_end              = 26
+  integer, parameter :: s_totlitn_end           = 27
+  integer, parameter :: s_totsomn_end           = 28
+  integer, parameter :: s_sminn_end             = 29
+  integer, parameter :: s_totprodn_end          = 30
   integer, parameter :: s_plant_n_buffer_end    = 31
-  integer, parameter :: s_cropseedn_deficit_beg = 32
+  integer, parameter :: s_ntrunc_end            = 32
   integer, parameter :: s_cropseedn_deficit_end = 33
+
   integer, parameter :: s_n_error               = 34
 
   integer, parameter, public :: n_s_size = s_n_error - s_c_error
@@ -229,25 +233,27 @@ module CNPBudgetMod
 
   ! P
   integer, parameter :: s_totpftp_beg           = 35
-  integer, parameter :: s_totpftp_end           = 36
-  integer, parameter :: s_cwdp_beg              = 37
-  integer, parameter :: s_cwd_endp              = 38
-  integer, parameter :: s_totlitp_beg           = 39
-  integer, parameter :: s_totlitp_end           = 40
-  integer, parameter :: s_totsomp_beg           = 41
-  integer, parameter :: s_totsomp_end           = 42
-  integer, parameter :: s_totprodp_beg          = 43
-  integer, parameter :: s_totprodp_end          = 44
-  integer, parameter :: s_ptrunc_beg            = 45
-  integer, parameter :: s_ptrunc_end            = 46
-  integer, parameter :: s_solutionp_beg         = 47
-  integer, parameter :: s_solutionp_end         = 48
-  integer, parameter :: s_labilep_beg           = 49
-  integer, parameter :: s_labilep_end           = 50
-  integer, parameter :: s_secondp_beg           = 51
-  integer, parameter :: s_secondp_end           = 52
-  integer, parameter :: s_cropseedp_deficit_beg = 53
+  integer, parameter :: s_cwdp_beg              = 36
+  integer, parameter :: s_totlitp_beg           = 37
+  integer, parameter :: s_totsomp_beg           = 38
+  integer, parameter :: s_totprodp_beg          = 39
+  integer, parameter :: s_ptrunc_beg            = 40
+  integer, parameter :: s_solutionp_beg         = 41
+  integer, parameter :: s_labilep_beg           = 42
+  integer, parameter :: s_secondp_beg           = 43
+  integer, parameter :: s_cropseedp_deficit_beg = 44
+
+  integer, parameter :: s_totpftp_end           = 45
+  integer, parameter :: s_cwd_endp              = 46
+  integer, parameter :: s_totlitp_end           = 47
+  integer, parameter :: s_totsomp_end           = 48
+  integer, parameter :: s_totprodp_end          = 49
+  integer, parameter :: s_ptrunc_end            = 50
+  integer, parameter :: s_solutionp_end         = 51
+  integer, parameter :: s_labilep_end           = 52
+  integer, parameter :: s_secondp_end           = 53
   integer, parameter :: s_cropseedp_deficit_end = 54
+
   integer, parameter :: s_p_error               = 55
 
   integer, parameter, public :: p_s_size = s_p_error - s_n_error
@@ -455,6 +461,113 @@ contains
     end select
 
   end subroutine CNP_Restart
+
+!-----------------------------------------------------------------------
+  subroutine CNP_Accum()
+    !
+    implicit none
+
+    call Accum(c_s_size,c_budg_fluxN, c_budg_fluxL, c_budg_stateL, c_budg_stateG)
+    call Accum(n_s_size,n_budg_fluxN, n_budg_fluxL, n_budg_stateL, n_budg_stateG)
+    call Accum(p_s_size,p_budg_fluxN, p_budg_fluxL, p_budg_stateL, p_budg_stateG)
+
+  end subroutine CNP_Accum
+!-----------------------------------------------------------------------
+  subroutine Accum(s_size, budg_fluxN, budg_fluxL, budg_stateL, budg_stateG)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
+    !
+    implicit none
+    !
+    integer                :: s_size
+    real(r8)               :: budg_fluxN(:,:), budg_fluxL(:,:), budg_stateL(:,:), budg_stateG(:,:)
+    !
+    integer                :: ip, is
+    integer                :: year_prev, month_prev, day_prev, sec_prev
+    integer                :: year_curr, month_curr, day_curr, sec_curr
+    character(*),parameter :: subName = '(WaterBudget_Accum)'
+    logical                :: update_state_beg, update_state_end
+
+    call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
+    call get_curr_date(year_curr, month_curr, day_curr, sec_curr)
+
+    do ip = p_inst+1, p_size
+       budg_fluxL(:,ip) = budg_fluxL(:,ip) + budg_fluxL(:,p_inst)
+       update_state_beg = .false.
+       update_state_end = .false.
+
+       select case (ip)
+       case (p_day)
+          if (sec_prev == 0) update_state_beg = .true.
+          if (sec_curr == 0) update_state_end = .true.
+       case (p_mon)
+          if (sec_prev == 0 .and. day_prev == 1) update_state_beg = .true.
+          if (sec_curr == 0 .and. day_curr == 1) update_state_end = .true.
+       case (p_ann)
+          if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
+          if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
+       case (p_inf)
+          if (get_nstep() == 1) update_state_beg = .true.
+          update_state_end = .true.
+       end select
+
+       if (update_state_beg) then
+          do is = 1, s_size/2 - 1
+             budg_stateL(is,ip) = budg_stateL(is, p_inst)
+          end do
+       endif
+
+       if (update_state_end) then
+          do is = s_size/2 + 1, s_size-1
+             budg_stateL(is,ip) = budg_stateL(is, p_inst)
+          end do
+       endif
+       is= s_size; budg_stateL(is,ip) = budg_stateL(is,ip) + budg_stateL(is, p_inst)
+    end do
+    budg_fluxN(:,:) = budg_fluxN(:,:) + 1._r8
+
+  end subroutine Accum
+
+  !-----------------------------------------------------------------------
+  subroutine CNPBudget_Sum0()
+    !
+    implicit none
+
+    call Sum0(c_f_size, c_s_size, c_budg_fluxL, c_budg_fluxG, c_budg_stateL, c_budg_stateG)
+    call Sum0(n_f_size, n_s_size, n_budg_fluxL, n_budg_fluxG, n_budg_stateL, n_budg_stateG)
+    call Sum0(p_f_size, p_s_size, p_budg_fluxL, p_budg_fluxG, p_budg_stateL, p_budg_stateG)
+
+  end subroutine CNPBudget_Sum0
+
+  !-----------------------------------------------------------------------
+  subroutine Sum0(f_size, s_size, budg_fluxL, budg_fluxG, budg_stateL, budg_stateG)
+    !
+    use spmdMod    , only : mpicom
+    use shr_mpi_mod, only : shr_mpi_sum
+    !
+    implicit none
+    !
+    integer                :: f_size, s_size
+    real(r8)               :: budg_fluxL(:,:), budg_fluxG(:,:)
+    real(r8)               :: budg_stateL(:,:), budg_stateG(:,:)
+    !
+    real(r8)               :: budg_fluxGtmp(f_size,p_size) ! temporary sum
+    real(r8)               :: budg_stateGtmp(s_size,p_size) ! temporary sum
+    character(*),parameter :: subName = '(Sum0)'
+
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
+
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+
+    budg_fluxG  = budg_fluxG + budg_fluxGtmp
+    budg_stateG = budg_stateGtmp
+
+    budg_fluxL(:,:)       = 0._r8 ! reset all fluxes
+    budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
+
+  end subroutine Sum0
 
   !-----------------------------------------------------------------------
   subroutine Restart_Define(bounds, ncid, name)
