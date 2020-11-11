@@ -30,7 +30,7 @@ MACHINE_METADATA = {
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
     "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -I -q rhel7W",
+                  "bsub -I -q rhel7W -n 4",
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
