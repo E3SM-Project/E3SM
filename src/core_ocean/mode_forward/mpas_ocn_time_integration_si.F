@@ -1136,7 +1136,7 @@ module ocn_time_integration_si
             CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
             CGcst_allreduce_temp5(1:2)  = fraction(CGcst_allreduce_global2(:))
             CGcst_allreduce_temp5(1:2)  = anint(CGcst_allreduce_temp5(1:2)*1.0000000000000000d+8)/1.0000000000000000d+8
-            CGcst_allreduce_global2(:)  = CGcst_allreduce_temp5(1:2) * 2 ** (CGcst_allreduce_itemp5(1:2))
+            CGcst_allreduce_global2(:)  = CGcst_allreduce_temp5(1:2) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:2))
          endif
 
          CGcst_r00r0_global = CGcst_allreduce_global2(1)
@@ -1236,7 +1236,7 @@ module ocn_time_integration_si
                CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
                CGcst_allreduce_temp5(1:3)  = fraction(CGcst_allreduce_global3(:))
                CGcst_allreduce_temp5(1:3)  = anint(CGcst_allreduce_temp5(1:3)*1.0000000000000000d+8)/1.0000000000000000d+8
-               CGcst_allreduce_global3(:)  = CGcst_allreduce_temp5(1:3) * 2 ** (CGcst_allreduce_itemp5(1:3))
+               CGcst_allreduce_global3(:)  = CGcst_allreduce_temp5(1:3) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:3))
             endif
 
             CGcst_q0y0_global  = CGcst_allreduce_global3(1)
@@ -1425,7 +1425,7 @@ module ocn_time_integration_si
                CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
                CGcst_allreduce_temp5(1:5)  = fraction(CGcst_allreduce_global5(:))
                CGcst_allreduce_temp5(1:5)  = anint(CGcst_allreduce_temp5(1:5)*1.0000000000000000d+8)/1.0000000000000000d+8
-               CGcst_allreduce_global5(:)  = CGcst_allreduce_temp5(1:5) * 2 ** (CGcst_allreduce_itemp5(1:5))
+               CGcst_allreduce_global5(:)  = CGcst_allreduce_temp5(1:5) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:5))
             endif
 
             CGcst_r00r1_global = CGcst_allreduce_global5(1)
@@ -2077,7 +2077,7 @@ module ocn_time_integration_si
             CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
             CGcst_allreduce_temp5(1:2)  = fraction(CGcst_allreduce_global2(:))
             CGcst_allreduce_temp5(1:2)  = anint(CGcst_allreduce_temp5(1:2)*1.0000000000000000d+8)/1.0000000000000000d+8
-            CGcst_allreduce_global2(:)  = CGcst_allreduce_temp5(1:2) * 2 ** (CGcst_allreduce_itemp5(1:2))
+            CGcst_allreduce_global2(:)  = CGcst_allreduce_temp5(1:2) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:2))
          endif
 
          CGcst_r00r0_global = CGcst_allreduce_global2(1)
@@ -2184,7 +2184,7 @@ module ocn_time_integration_si
                CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
                CGcst_allreduce_temp5(1:3)  = fraction(CGcst_allreduce_global3(:))
                CGcst_allreduce_temp5(1:3)  = anint(CGcst_allreduce_temp5(1:3)*1.0000000000000000d+8)/1.0000000000000000d+8
-               CGcst_allreduce_global3(:)  = CGcst_allreduce_temp5(1:3) * 2 ** (CGcst_allreduce_itemp5(1:3))
+               CGcst_allreduce_global3(:)  = CGcst_allreduce_temp5(1:3) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:3))
             endif
    
             CGcst_q0y0_global  = CGcst_allreduce_global3(1)
@@ -2372,7 +2372,7 @@ module ocn_time_integration_si
                CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
                CGcst_allreduce_temp5(1:5)  = fraction(CGcst_allreduce_global5(:))
                CGcst_allreduce_temp5(1:5)  = anint(CGcst_allreduce_temp5(1:5)*1.0000000000000000d+8)/1.0000000000000000d+8
-               CGcst_allreduce_global5(:)  = CGcst_allreduce_temp5(1:5) * 2 ** (CGcst_allreduce_itemp5(1:5))
+               CGcst_allreduce_global5(:)  = CGcst_allreduce_temp5(1:5) * 2.0_RKIND ** (CGcst_allreduce_itemp5(1:5))
             endif
    
             CGcst_r00r1_global = CGcst_allreduce_global5(1)
