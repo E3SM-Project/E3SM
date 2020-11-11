@@ -26,7 +26,7 @@ module homme_params_mod
     qsize_d                     ! Compile time upper bound for qsize
 
   use cube_mod, only: rotate_grid
-  use time_mod, only: tstep, nEndStep, secpday, &
+  use time_mod, only: tstep, nEndStep, secpday, ndays, nmax, &
                       smooth ! Unused in SCREAM
   use thread_mod,   only: nthreads, vthreads      ! Unused in SCREAM
   use parallel_mod, only: mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
@@ -51,6 +51,7 @@ module homme_params_mod
     moisture,               &
     use_moisture,           &
     runtype,                & ! Unused in SCREAM
+    max_hypervis_courant,   &
     nu,                     &
     nu_s,                   &
     nu_q,                   &
@@ -63,6 +64,8 @@ module homme_params_mod
     hypervis_subcycle,      &
     hypervis_subcycle_tom,  &
     hypervis_subcycle_q,    &
+    transport_alg,          &
+    disable_diagnostics,    &
     test_case,              &
     dcmip16_mu,             &
     dcmip16_mu_s,           &
@@ -102,7 +105,7 @@ contains
 
     ! Locals
     character(len=256), pointer :: nl_fname
-    integer :: ierr, unitn
+    integer :: ierr, unitn, se_ftype
     real(kind=real_kind) :: dt_max
     character(len=MAX_FILE_LEN) :: mesh_file ! Unused in SCREAM
 
@@ -378,7 +381,6 @@ contains
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
           write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
-          write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        elseif(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
