@@ -15,6 +15,236 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestShocMain {
 
+  static void run_property()
+  {
+    static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
+    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair;
+    static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
+    static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
+    static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
+    static constexpr Int shcol    = 5;
+    static constexpr Int nlev     = 5;
+    static constexpr auto nlevi   = nlev + 1;
+    static constexpr Int num_qtracers = 3;
+    static constexpr Int nadv = 1;
+    
+    // Tests for the subroutine shoc_main
+    
+    // Timestep [s]
+    static constexpr Real dtime = 30;   
+    // host dx [m]
+    static constexpr Real host_dx = 3000;
+    // host dy [m]
+    static constexpr Real host_dy = 3000;
+    
+    // Define PROFILE variables
+    // Define the heights on the zi grid [m]
+    static constexpr Real zi_grid[nlevi] = {3000, 2000, 1500, 1000, 500, 0};
+    // Define pressures on the interface grid [Pa]
+    static constexpr Real presi[nlevi] = {850e2, 875e2, 900e2, 950e2, 975e2, 1000e2};
+    // Define temperature on the zt grid [K]
+    static constexpr Real temp[nlev] = {285, 287, 290, 295, 300};
+    // Define the large scale vertical velocity on zt grid [m/s]
+    static constexpr Real w_field[nlev] = {5e-2, 4e-2, 3e-2, 2e-2, 1e-2};
+    // Define the zonal wind [m/s]
+    static constexpr Real u_wind[nlev] = {4, 4, 2, 0, -1};
+    // define the meridional wind [m/s]
+    static constexpr Real v_wind[nlev] = {-2, -2, 1, 3, 0};
+    // Define the total water mixing ratio [kg/kg]
+    static constexpr Real qw[nlev] = {1e-2, 1.2e-2, 1.5e-2, 1.5e-2, 1.4e-2};
+    // Define the TKE [m2/s2]
+    static constexpr Real tke[nlev] = {mintke, 0.1, 0.3, 0.2, 0.1};
+    // Define the eddy vicosity for heat and momentum [m2/s]
+    static constexpr Real tkh[nlev] = {3, 10, 50, 30, 20};
+    // Buoyancy flux [K m/s]
+    static constexpr Real wthv_sec[nlev] = {-0.02, 0.04, 0.03, -0.02, 0.03}; 
+    // SHOC cloud liquid water [kg/kg]
+    static constexpr Real shoc_ql[nlev] = {0, 0, 1e-3, 1e-4, 0}; 
+    // SHOC cloud fraction [-]
+    static constexpr Real shoc_cldfrac[nlev] = {0, 0, 0.8, 0.2, 0};           
+    
+    // heat flux at surface [K m/s], COLUMN ONLY variables
+    static constexpr Real wthl_sfc[shcol] = {0.03, -0.03, 0.1, 0, -0.1};
+    // moisture flux at surface [kg/kg m/s]
+    static constexpr Real wqw_sfc[shcol] = {2e-5, 1e-6, 0, -2e-5, 1e-4};
+    // Surface moment flux, zonal direction [m3/s3]
+    static constexpr Real uw_sfc[shcol] = {0.03, -0.03, 0.1, 0, -0.1};
+    // Surface moment flux, meridional direction [m3/s3]
+    static constexpr Real vw_sfc[shcol] = {-0.01, -0.01, 0.3, 0, -0.3};
+    // Surfafce geopotential height
+    static constexpr Real phis[shcol] = {100, 200, 0, 150, 500};
+    
+    // establish reasonable bounds for checking input/output
+    static constexpr Real thl_lbound = 200; // [K]
+    static constexpr Real thl_ubound = 350; // [K]
+    static constexpr Real qw_lbound = 1e-4; // [kg/kg]
+    static constexpr Real qw_ubound = 5e-2; // [kg/kg]
+    static constexpr Real tke_lbound = 0; // [m2/s2]
+    static constexpr Real tke_ubound = 5; // [m2/s2]
+    static constexpr Real wind_bounds = 5; // [m/s]    
+    
+    // Compute some inputs based on the above
+    
+    // base pressure [Pa]
+    static constexpr Real p0 = 1000e2;
+    
+    // Input for tracer (no units)
+    Real tracer_in[shcol][nlev][num_qtracers];    
+    
+    // First compute variables related to height 
+    Real pres[nlev], zt_grid[nlev], pdel[nlev];
+    for(Int n = 0; n < nlev; ++n) {
+      // height on the midpoint grid
+      zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+      // pressure on the midpoint grid
+      pres[n] = 0.5*(presi[n]+presi[n+1]);
+      // pressure thickness
+      pdel[n] = presi[n+1] - presi[n];
+    }
+    
+    // Compute variables related to temperature
+    Real host_dse[shcol][nlev];
+    Real thetal[nlev], thv[nlev], exner[nlev];
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        // Compute the dry static energy
+        host_dse[s][n] = Cpair*temp[n]+gravit*zt_grid[n]+phis[s];
+      }
+    }
+    
+    Real pot_temp, qv;
+    for(Int n = 0; n < nlev; ++n) {
+      // Compute potential temperature and water vapor
+      pot_temp = temp[n]*std::pow(p0/pres[n],Rair/Cpair);
+      qv = qw[n] - shoc_ql[n];
+      // Liquid water potential temperature
+      thetal[n] = pot_temp - (LatVap/Cpair)*shoc_ql[n];
+      // Virtual potential temperature
+      thv[n] = pot_temp * (1 + 0.61*qv - shoc_ql[n]);
+      // Compute exner function
+      exner[n] = std::pow(pres[n]/p0,Rair/Cpair);
+    }
+    
+    // Load up tracer input array with random data
+    //  ranging from values of 0 to 1e-1 (unitless)
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        for (Int t = 0; t < num_qtracers; ++t){
+          tracer_in[s][n][t] = (rand()%100 + 1)/1000.;
+        }
+      }
+    }    
+    // Initialize data structure for bridging to F90
+    ShocMainData SDS(shcol,nlev,nlevi,num_qtracers,dtime,nadv);
+    
+    // Test the inputs are good
+    REQUIRE(SDS.shcol == shcol);
+    REQUIRE(SDS.nlev == nlev);
+    REQUIRE(SDS.nlevi == nlevi);
+    REQUIRE(SDS.num_qtracers == num_qtracers);
+    REQUIRE(SDS.dtime == dtime);
+    REQUIRE(SDS.nadv == nadv);
+    REQUIRE(shcol > 1);
+    REQUIRE(nlev > 1);
+    REQUIRE(nlevi == nlev+1);
+    REQUIRE(num_qtracers >= 1);
+    REQUIRE(dtime > 0);
+    REQUIRE(nadv > 0);        
+    
+    // Fill in test data, first for column only input
+    for(Int s = 0; s < shcol; ++s) {
+      SDS.uw_sfc[s] = uw_sfc[s];
+      SDS.vw_sfc[s] = vw_sfc[s];
+      SDS.wthl_sfc[s] = wthl_sfc[s];
+      SDS.wqw_sfc[s] = wqw_sfc[s];
+      SDS.phis[s] = phis[s];
+      SDS.host_dx[s] = host_dx;
+      SDS.host_dy[s] = host_dy;
+      
+      // Fill in tracer fluxes with random data from -1e-2 to 1e-2 (unitless)
+      for (Int t = 0; t < num_qtracers; ++t){
+        const auto offset = t + s * num_qtracers;
+          SDS.wtracer_sfc[offset] = (rand()%20 + -10)/1000.;
+      }
+      
+      // Fill in data on the nlev grid
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.pres[offset] = pres[n];
+        SDS.pdel[offset] = pdel[n];
+        SDS.thv[offset] = thv[n];
+        SDS.w_field[offset] = w_field[n];
+        SDS.exner[offset] = exner[n];
+        SDS.shoc_ql[offset] = shoc_ql[n];
+        SDS.shoc_cldfrac[offset] = shoc_cldfrac[n];
+        SDS.qw[offset] = qw[n];
+        SDS.thetal[offset] = thetal[n];
+        SDS.u_wind[offset] = u_wind[n];
+        SDS.v_wind[offset] = v_wind[n];
+        SDS.tke[offset] = tke[n];
+        SDS.wthv_sec[offset] = wthv_sec[n];
+        SDS.host_dse[offset] = host_dse[s][n];
+        
+        // TKH and TK get the same values on purpose
+        SDS.tkh[offset] = tkh[n];
+        SDS.tk[offset] = tkh[n];
+        
+        for (Int t = 0; t < num_qtracers; t++){
+          const auto t_offset = t + offset * num_qtracers;
+          SDS.qtracers[t_offset] = tracer_in[s][n][t];
+        }  
+             
+      }
+      
+      // Fill in data on the nlevi grid
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+        
+        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.presi[offset] = presi[n];
+      }      
+    }
+    
+    // Check that inputs make sense
+    
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev - 1; ++n) {
+        const auto offset = n + s * nlev;
+        // Check that zt increases upward
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);   
+      }
+
+      // Check that zi increases upward
+      for(Int n = 0; n < nlevi - 1; ++n) {
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+      }
+      
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        
+        // Make sure inputs fall within reasonable bounds
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
+        REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
+        REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
+
+        // While there is nothing unphysical with winds outside of these
+        //  bounds, for this particular test we want to make sure the
+        //  winds are modestly defined for checking later on.
+        REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds);
+        REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds);
+      }
+      
+    }    
+    
+    // Call the fortran implementation
+    shoc_main(SDS);
+    
+  }
+
   static void run_bfb()
   {
     ShocMainData f90_data[] = {
@@ -129,7 +359,14 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
 namespace {
 
-TEST_CASE("shoc_main_bfb", "[shoc]")
+TEST_CASE("shoc_main_property", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
+
+  TestStruct::run_property();
+}
+
+TEST_CASE("shoc_main_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
