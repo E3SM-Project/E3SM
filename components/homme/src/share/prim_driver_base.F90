@@ -1937,7 +1937,7 @@ contains
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
     
     integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-    logical :: update_T, update_Q
+    logical :: update_Q
 
     ! Determine if we are updating T or Q
     !  If updating T, then don't update Q and vice versa
