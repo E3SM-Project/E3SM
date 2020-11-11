@@ -205,7 +205,7 @@
 		            possible_values="'calving_rate', 'threshold'"
 		/>
     <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
-                        description="A scalar parameter that links damage and calving"
+                        description="A scalar parameter that links damage and calving when we use the calving_rate method"
 	                possible_values="any positive real value"
 		/>
 	</nml_record>
@@ -755,8 +755,6 @@
 			<var name="upperSurface"/>
 			<var name="temperature"/>
 			<var name="cellMask"/>
-			<!--var name="cellMaskFront"/-->
-			<!--var name="cellVolumeLeft"/-->
 			<var name="edgeMask"/>
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
@@ -1055,7 +1053,7 @@ is the value of that variable from the *previous* time level!
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
                 />
                 <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
-                     description="damage number, ranging from 0 to 1"
+                     description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"
                 />
                 <var name="ddamagedt" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
                      description="damage change rate"
@@ -1063,14 +1061,14 @@ is the value of that variable from the *previous* time level!
                 <var name="damage_nye" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="Nye zero-stress damage number"
                 />
-                <var name="damage_max" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                <var name="damageMax" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="maximum damage number kept constant"
                 />
                 <var name="s0" type="real" dimensions="nCells Time" units="none" time_levs="1"
-                     description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf"
+                     description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf, rho_i * (rho_w - rho_i) * g * h / ( 2 * Tau_xx * rho_w ), where "h" is the ice thickness."
                 />
                 <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
-                     description="adjusted Glen flow law parameter"
+                     description="n∗ denotes the usual parameter n from Glen’s flow law, adjusted by including the ratio of the principal horizontal strain rates:  epsilon Dot_yy / epsilon Dot_xx"
                 />
             <var name="visc" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
                      description="effective viscosity"
@@ -1083,15 +1081,6 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="damageSource" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
                      description="damage source term"
-                />
-                <var name="requiredCalvingVolumeRate" type="real" dimensions="nCells Time" units="m^3 s^{-1}" time_levs="1"
-                     description="total volume of ice that needs to be removed based on eigencalving rate at this margin cell"
-                />
-               <var name="uncalvedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
-                     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
-                />
-                <var name="requiredCalvingVolume" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
-                     description="total volume of ice that needs to be removed based on calving rate for the given time step"
                 />
                 <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left uncalved from required calving flux at non-dynamic cells"
@@ -1406,72 +1395,68 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
-	  <var name="meanFlowParamAField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+       <var name="meanFlowParamAField" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
+	       description="depth averaged flow parameter A"
 	       persistence="scratch"
 	       />
-	  <!--var name="viscField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <!--var name="viscField" type="real" dimensions="nCells" units="Pa s"
+	       description="effective viscosity"
 	       persistence="scratch"
 	       /-->
-	  <var name="sigmaxyField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+      <var name="sigmaxyField" type="real" dimensions="nCells" units="Pa"
+	       description="deviatoric stress xy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayxField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="sigmayxField" type="real" dimensions="nCells" units="Pa"
+	       description="deviatoric stress yx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaxxField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="sigmaxxField" type="real" dimensions="nCells" units="Pa"
+	       description="deviatoric stress xx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayyField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="sigmayyField" type="real" dimensions="nCells" units="Pa"
+	       description="deviatoric stress yy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaminField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="sigmaminField" type="real" dimensions="nCells" units="Pa"
+	       description="minimum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="sigmamaxField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="sigmamaxField" type="real" dimensions="nCells" units="Pa"
+	       description="maximum principal deviatoric stress"
 	       persistence="scratch"
 	       />
 	  <var name="alphaField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	       description="the ratio of the principal horizontal strain rate"
 	       persistence="scratch"
 	       />
-	  <!--var name="epsmaxField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <!--var name="epsmaxField" type="real" dimensions="nCells" units="s^{-1}"
+	       description="strain rate corresponding to sigmamax"
 	       persistence="scratch"
 	       /-->
 	  <!--var name="nstarField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	       description="adjusted flow law parameter n"
 	       persistence="scratch"
 	       /-->
 	  <!--var name="s0Field" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	       description="a ratio between hydeostatic pressure and the largest principal stress"
 	       persistence="scratch"
 	       /-->
-	  <!--var name="sourceField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <!--var name="damageSourceField" type="real" dimensions="nCells" units="s^{-1}"
+	       description="damage source"
 	       persistence="scratch"
 	       /-->
-	  <var name="ddamagedtField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+	  <var name="ddamagedtField" type="real" dimensions="nCells" units="s^{-1}"
+          description="d(damage) / dt"
 	       persistence="scratch"
 	       />
-	  <var name="forceField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
+       <var name="forceField" type="real" dimensions="nCells" units="s^{-1}"
+	       description="environmental forcing for damage production"
 	       persistence="scratch"
 	       />
 	  <var name="thicknessField" type="real" dimensions="nCells" units="none"
 	       description="update halo for thickness (nCells)"
-	       persistence="scratch"
-	       />
-	  <var name="meanTField" type="real" dimensions="nCells" units="none"
-	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"

@@ -47,7 +47,7 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front, calculate_damage, restore_damage
+   public :: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_restore_damage
 
    !--------------------------------------------------------------------
    !
@@ -1263,10 +1263,9 @@ module li_calving
 !> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory 
 !> \author Tong Zhang
 !> \date   May. 2019
-!> \details Calving using damage model
+!> \details Connect calving with the damage model
 !> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing." 
 !> Earth and Planetary Science Letters 409 (2015): 203-211.
-! TODO need to properly connect damage tracer to calving flux
 
 !-----------------------------------------------------------------------
    subroutine damage_calving(domain, err)
@@ -1366,7 +1365,6 @@ module li_calving
                * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
 
-         !call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
 
          if (trim(config_damage_calving_method) == 'calving_rate') then
              call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
@@ -1425,7 +1423,7 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine calculate_damage
+!    routine li_calculate_damage
 !
 !> \author Tong Zhang
 !> \date   May. 2019
@@ -1435,7 +1433,7 @@ module li_calving
 
 !-----------------------------------------------------------------------
 
-   subroutine calculate_damage(domain, err)
+   subroutine li_calculate_damage(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1484,7 +1482,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: s0, nstar, epsmax, visc, sigmamax
       real (kind=RKIND), dimension(:), pointer :: damageSource
       real (kind=RKIND), dimension(:), pointer :: damage_nye
-      real (kind=RKIND), dimension(:), pointer :: damage_max
+      real (kind=RKIND), dimension(:), pointer :: damageMax
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       real (kind=RKIND), pointer ::  &
            config_ice_density,            & ! ice density
@@ -1523,8 +1521,6 @@ module li_calving
       !real, dimension(:), pointer :: ddamagedt
       type (field1dReal), pointer :: forceField
       real, dimension(:), pointer :: force
-      type (field1dReal), pointer :: meanTField
-      real, dimension(:), pointer :: meanT
 
       ! TZ: we can comment out the scratch field as above and redefine it in Registry.xml if we want to see it in the output nc file
 
@@ -1540,7 +1536,6 @@ module li_calving
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream, damage_tmp, cellCalvingFrontLength, cellCalvingFrontHeight, seconds, R, A01, A02, Q1, Q2
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
-      character (len=StrKIND), pointer :: xtime
       integer :: err_tmp, loc
 
       err = 0
@@ -1594,7 +1589,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'sigmamax', sigmamax)
          call mpas_pool_get_array(geometryPool, 'damageSource', damageSource)
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
-         call mpas_pool_get_array(geometryPool, 'damage_max', damage_max)
+         call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
 
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
          call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
@@ -1619,10 +1614,6 @@ module li_calving
          call mpas_pool_get_field(scratchPool, 'meanFlowParamAField',  meanFlowParamAField)
          call mpas_allocate_scratch_field(meanFlowParamAField, .true.)
          meanFlowParamA => meanFlowParamAField % array
-
-         !call mpas_pool_get_field(scratchPool, 'viscField',  viscField)
-         !call mpas_allocate_scratch_field(viscField, .true.)
-         !visc => viscField % array
 
          call mpas_pool_get_field(scratchPool, 'sigmaxyField', sigmaxyField )
          call mpas_allocate_scratch_field(sigmaxyField, .true.)
@@ -1676,16 +1667,12 @@ module li_calving
          call mpas_allocate_scratch_field(forceField, .true.)
          force => forceField % array
 
-         call mpas_pool_get_field(scratchPool, 'meanTField', meanTField )
-         call mpas_allocate_scratch_field(meanTField, .true.)
-         meanT => meanTField % array
 
          call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
          call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
          rhoi = config_ice_density
          rhoo = config_ocean_density
 
-         meanT(:) = sum(temperature(:,:), dim=1)/nVertLevels
 
          call li_compute_gradient_2d(meshPool, uReconstructX(1,:), exx, exy, err_tmp)
          err = ior(err, err_tmp)
@@ -1697,35 +1684,41 @@ module li_calving
          err = ior(err, err_tmp)
 
 
-         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/nVertLevels
+         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)
          ! calculate the depth-averaged flow parameter A
 
-         call mpas_log_write("meanFlowParamA: Min=$r, Max=$r", &
-                    realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/))
+         !call mpas_log_write("meanFlowParamA: Min=$r, Max=$r", &
+         !           realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/))
+
          if (config_damage_use_constant_A) then
              where (thickness == 0.0_RKIND)
                  visc = 0.0_RKIND
              elsewhere
-                 visc = 0.5*stiffnessFactor*config_default_flowParamA**(-1.0/3.0)*(sqrt(exx**2+eyy**2 + exx*eyy + 0.25*(exy+eyx)**2))**((1.0-3.0)/3.0)
+                 visc =
+                 0.5_RKIND*stiffnessFactor*config_default_flowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
+                 exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
              endwhere
          else
              where (thickness == 0.0_RKIND)
                  visc = 0.0_RKIND
              elsewhere
-                 visc = 0.5*stiffnessFactor*meanFlowParamA**(-1.0/3.0)*(sqrt(exx**2+eyy**2 + exx*eyy + 0.25*(exy+eyx)**2))**((1.0-3.0)/3.0)
+                 visc = 0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
+                 exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
              endwhere
          end if
          ! recover effective viscosity from vel. and temp. fields
 
-         sigmaxy(:) = 2*visc(:)*(exy(:)+eyx(:))/2.0
-         sigmayx(:) = 2*visc(:)*(eyx(:)+exy(:))/2.0
+         sigmaxy(:) = 2.0_RKIND*visc(:)*(exy(:)+eyx(:))/2.0_RKIND
+         sigmayx(:) = 2.0_RKIND*visc(:)*(eyx(:)+exy(:))/2.0_RKIND
 
-         sigmaxx(:) = 2*visc(:)*exx(:)
-         sigmayy(:) = 2*visc(:)*eyy(:)
+         sigmaxx(:) = 2.0_RKIND*visc(:)*exx(:)
+         sigmayy(:) = 2.0_RKIND*visc(:)*eyy(:)
          !deviatoric stress
 
-         sigmamin(:) = (sigmaxx(:)+sigmayy(:))/2.0-sqrt(((sigmaxx(:)-sigmayy(:))/2.0)**2+((sigmaxy(:)+sigmayx(:))/2)**2)
-         sigmamax(:) = (sigmaxx(:)+sigmayy(:))/2.0+sqrt(((sigmaxx(:)-sigmayy(:))/2.0)**2+((sigmaxy(:)+sigmayx(:))/2)**2)
+         sigmamin(:) =
+         (sigmaxx(:)+sigmayy(:))/2.0_RKIND-sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
+         sigmamax(:) =
+         (sigmaxx(:)+sigmayy(:))/2.0_RKIND+sqrt(((sigmaxx(:)-sigmayy(:))/2.0_RKIND)**2.0_RKIND+((sigmaxy(:)+sigmayx(:))/2.0_RKIND)**2.0_RKIND)
          !deviatoric principal stress
 
          where (thickness == 0.0_RKIND)
@@ -1734,8 +1727,8 @@ module li_calving
              s0 = 0.0_RKIND
          elsewhere
              alpha = sigmamin / sigmamax
-             epsmax = sigmamax / (2.0d0*visc)
-             s0 = rhoi*(rhoo-rhoi)*gravity*thickness/(2.0d0*sigmamax*rhoo)
+             epsmax = sigmamax / (2.0_RKIND*visc)
+             s0 = rhoi*(rhoo-rhoi)*gravity*thickness/(2.0_RKIND*sigmamax*rhoo)
          endwhere
              
          !alpha(:) = sigmamin(:) / (sigmamax(:))
@@ -1744,7 +1737,8 @@ module li_calving
           ! Compute the hydrostatic to tensile stress ratio
           ! These commented lines are doing the same thing as the above where loop. Which is better?
 
-         nstar(:) = 12.0d0*(1.0d0+alpha(:)+alpha(:)**2)/(4.0d0*(1.0d0+alpha(:)+alpha(:)**2)+6.0d0*alpha(:)**2) 
+         nstar(:) =
+         12.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)+6.0_RKIND*alpha(:)**2.0_RKIND) 
           ! Compute the effective flow law exponent
 
          !s0(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
@@ -1761,11 +1755,11 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0d0-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
          endif
          enddo
 
-         seconds = daysSinceStart*24.0*3600.0
+         !seconds = daysSinceStart*24.0*3600.0
 
          ! below is the force for the manufacured experiments
          !force(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
@@ -1774,7 +1768,7 @@ module li_calving
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
          ! set force to zero if not manufactured
-         force(:) = 0.0
+         force(:) = 0.0_RKIND
 
          ddamagedt(:) = damageSource(:) * damage(:) + force(:)
 
@@ -1784,21 +1778,21 @@ module li_calving
          ! temporarily set damage to a constant value
 
          do iCell = 1, nCells
-         if (thickness(iCell) == 0.0_RKIND) then
-             damage_nye(iCell) = 0.0_RKIND
-         else
-             damage_nye(iCell) = (2.0+alpha(iCell)) * sigmamax(iCell) / (gravity*(rhoo-rhoi)*thickness(iCell))
-         endif
+             if (thickness(iCell) == 0.0_RKIND) then
+                 damage_nye(iCell) = 0.0_RKIND
+             else
+                 damage_nye(iCell) = (2.0+alpha(iCell)) * sigmamax(iCell) / (gravity*(rhoo-rhoi)*thickness(iCell))
+             endif
          enddo
          !damage_nye(:) = 0.5
          ! temporarily set damage_nye to a constant value, 0.8
 
          do iCell = 1, nCells
             if (damage(iCell) > config_damage_restore_threshold) then
-                damage_max(iCell) = damage(iCell)
+                damageMax(iCell) = damage(iCell)
             end if
          end do
-         ! save the damage_max value for restoring (no heal) later if we want
+         ! save the damageMax value for restoring (no heal) later if we want
 
          do iCell = 1, nCells
             if (damage(iCell) < 0.0_RKIND) then
@@ -1888,25 +1882,25 @@ module li_calving
          !call mpas_deallocate_scratch_field(damageSourceField, .true.)
          !call mpas_deallocate_scratch_field(ddamagedtField, .true.)
          call mpas_deallocate_scratch_field(forceField, .true.)
-         call mpas_deallocate_scratch_field(meanTField, .true.)
          ! call mpas_deallocate_scratch_field(damageField, .true.)
 
          block => block % next
              
       enddo
 
-   end subroutine calculate_damage 
+   end subroutine li_calculate_damage 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine restore_damage
+!    routine li_restore_damage
 !
 !> \author Tong Zhang
 !> \date   Oct. 2019
 !> \details restore the damage to the original value before advection if it exceeds some large number
+!>          if we turn on this function, we do not allow the damage to heal (damage to decrease).
 !-----------------------------------------------------------------------
 
-   subroutine restore_damage(domain, err)
+   subroutine li_restore_damage(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1935,26 +1929,16 @@ module li_calving
       logical, pointer :: config_damage_rheology_coupling
       logical, pointer :: config_print_calving_info
       real (kind=RKIND), dimension(:), pointer :: damage
-      real (kind=RKIND), dimension(:), pointer :: damage_max
+      real (kind=RKIND), dimension(:), pointer :: damageMax
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
-      real (kind=RKIND), pointer ::  &
-           config_ice_density,            & ! ice density
-           config_ocean_density             ! ocean density
 
-      real (kind=RKIND), save :: rhoi    ! ice density (kg m^{-3}), copied from config_ice_density
-      real (kind=RKIND), save :: rhoo    ! ocean density (kg m^{-3}), copied from config_ocean_density
 
       integer, dimension(:), pointer :: cellMask
-      type (field1dInteger), pointer :: calvingFrontMaskField
-      integer, dimension(:), pointer :: calvingFrontMask
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
-      integer, dimension(:,:), pointer :: edgesOnCell
-      real (kind=RKIND), dimension(:), pointer :: xCell, dvEdge
-      integer, pointer :: nCells, nVertLevels
+      integer, pointer :: nCells 
       integer :: iCell, jCell, iNeighbor, n_damage_downstream
-      real(kind=RKIND) :: damage_downstream, damage_tmp, cellCalvingFrontLength, cellCalvingFrontHeight, seconds
-      integer :: err_tmp, loc
+      real(kind=RKIND) :: damage_downstream
 
       err = 0
 
@@ -1975,21 +1959,20 @@ module li_calving
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
-         call mpas_pool_get_array(geometryPool, 'damage_max', damage_max)
+         call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
 
          do iCell = 1, nCells
-            if (damage(iCell) < damage_max(iCell)) then
-                damage(iCell) = damage_max(iCell)
+            if (damage(iCell) < damageMax(iCell)) then
+                damage(iCell) = damageMax(iCell)
             end if
          end do
-         ! put the damage_max value back to restore the damage value (no heal)
+         ! put the damageMax value back to restore the damage value (no heal)
 
          where (damage < 0.0_RKIND)
              damage = 0.0_RKIND
@@ -2052,7 +2035,7 @@ module li_calving
              
       enddo
 
-   end subroutine restore_damage 
+   end subroutine li_restore_damage 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
