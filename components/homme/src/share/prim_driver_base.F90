@@ -1403,7 +1403,7 @@ contains
     end if
 
     ! Remap tracers.
-    if (qsize > 0) then 
+    if (qsize > 0) then
        call sl_vertically_remap_tracers(hybrid, elem, nets_in, nete_in, tl, dt_q)
     end if
   end subroutine prim_step_flexible
@@ -1735,7 +1735,7 @@ contains
   end subroutine applyCAMforcing_tracers
   
   
-  subroutine prim_step_scm(elem, nets, nete, dt, tl, hvcoord, update_T_in)
+  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord, update_T_in)
   !
   !   prim_step version for single column model (SCM)
   !   Here we simply want to compute the floating level tendency
