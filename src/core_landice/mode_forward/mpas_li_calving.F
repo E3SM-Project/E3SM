@@ -1319,6 +1319,7 @@ module li_calving
       logical :: dynamicNeighbor
       real(kind=RKIND), pointer :: config_damagecalvingParameter
       real(kind=RKIND) :: calvingSubtotal
+      character (len=StrKIND), pointer :: config_damage_calving_method
 
       err = 0
 
@@ -1326,6 +1327,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
       call mpas_pool_get_config(liConfigs, 'config_damagecalvingParameter', config_damagecalvingParameter)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
       ! block loop
       block => domain % blocklist
@@ -1365,7 +1367,14 @@ module li_calving
                   ! calculate only for floating ice - map of "potential" calving rate
 
          !call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
-         call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+
+         if (trim(config_damage_calving_method) == 'calving_rate') then
+             call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+         endif
+
+         if (trim(config_damage_calving_method) == 'threshold') then
+             call apply_calving_velocity_damage_threshold(meshPool, geometryPool, scratchPool, err)
+         endif
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
@@ -1472,7 +1481,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
-      real (kind=RKIND), dimension(:), pointer :: szero, nstar, epsmax, visc, sigmamax
+      real (kind=RKIND), dimension(:), pointer :: s0, nstar, epsmax, visc, sigmamax
       real (kind=RKIND), dimension(:), pointer :: damageSource
       real (kind=RKIND), dimension(:), pointer :: damage_nye
       real (kind=RKIND), dimension(:), pointer :: damage_max
@@ -1506,8 +1515,8 @@ module li_calving
       !real, dimension(:), pointer :: epsmax
       !type (field1dReal), pointer :: nstarField
       !real, dimension(:), pointer :: nstar
-      !type (field1dReal), pointer :: szeroField
-      !real, dimension(:), pointer :: szero
+      !type (field1dReal), pointer :: s0Field
+      !real, dimension(:), pointer :: s0
       !type (field1dReal), pointer :: damageSourceField
       !real, dimension(:), pointer :: damageSource
       !type (field1dReal), pointer :: ddamagedtField
@@ -1578,7 +1587,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeRate', requiredCalvingVolumeRate)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
-         call mpas_pool_get_array(geometryPool, 'szero', szero)
+         call mpas_pool_get_array(geometryPool, 's0', s0)
          call mpas_pool_get_array(geometryPool, 'nstar', nstar)
          call mpas_pool_get_array(geometryPool, 'epsmax', epsmax)
          call mpas_pool_get_array(geometryPool, 'visc', visc)
@@ -1651,9 +1660,9 @@ module li_calving
          !call mpas_allocate_scratch_field(nstarField, .true.)
          !nstar => nstarField % array
 
-         !call mpas_pool_get_field(scratchPool, 'szeroField', szeroField )
-         !call mpas_allocate_scratch_field(szeroField, .true.)
-         !szero => szeroField % array
+         !call mpas_pool_get_field(scratchPool, 's0Field', s0Field )
+         !call mpas_allocate_scratch_field(s0Field, .true.)
+         !s0 => s0Field % array
 
          !call mpas_pool_get_field(scratchPool, 'damageSourceField', damageSourceField )
          !call mpas_allocate_scratch_field(damageSourceField, .true.)
@@ -1722,23 +1731,23 @@ module li_calving
          where (thickness == 0.0_RKIND)
              alpha = 0.0_RKIND
              epsmax = 0.0_RKIND
-             szero = 0.0_RKIND
+             s0 = 0.0_RKIND
          elsewhere
              alpha = sigmamin / sigmamax
              epsmax = sigmamax / (2.0d0*visc)
-             szero = rhoi*(rhoo-rhoi)*gravity*thickness/(2.0d0*sigmamax*rhoo)
+             s0 = rhoi*(rhoo-rhoi)*gravity*thickness/(2.0d0*sigmamax*rhoo)
          endwhere
              
          !alpha(:) = sigmamin(:) / (sigmamax(:))
          !epsmax(:) = sigmamax(:) / (2.0d0*visc(:))
-         !szero(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
+         !s0(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
           ! Compute the hydrostatic to tensile stress ratio
           ! These commented lines are doing the same thing as the above where loop. Which is better?
 
          nstar(:) = 12.0d0*(1.0d0+alpha(:)+alpha(:)**2)/(4.0d0*(1.0d0+alpha(:)+alpha(:)**2)+6.0d0*alpha(:)**2) 
           ! Compute the effective flow law exponent
 
-         !szero(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
+         !s0(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
           ! Compute the hydrostatic to tensile stress ratio
 
          !do iCell = 1, nCells
@@ -1752,7 +1761,7 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0d0-szero(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0d0-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
          endif
          enddo
 
@@ -1847,8 +1856,8 @@ module li_calving
 
              call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
                         realArgs=(/minval(damageSource), maxval(damageSource)/))
-             call mpas_log_write("szero  value range: Min=$r, Max=$r", &
-                        realArgs=(/minval(szero), maxval(szero)/))
+             call mpas_log_write("s0 value range: Min=$r, Max=$r", &
+                        realArgs=(/minval(s0), maxval(s0)/))
              call mpas_log_write("nstar value range: Min=$r, Max=$r", &
                         realArgs=(/minval(nstar), maxval(nstar)/))
              call mpas_log_write("deltat value range: Min=$r, Max=$r", &
@@ -1875,7 +1884,7 @@ module li_calving
          call mpas_deallocate_scratch_field(alphaField, .true.)
          !call mpas_deallocate_scratch_field(epsmaxField, .true.)
          !call mpas_deallocate_scratch_field(nstarField, .true.)
-         !call mpas_deallocate_scratch_field(szeroField, .true.)
+         !call mpas_deallocate_scratch_field(s0Field, .true.)
          !call mpas_deallocate_scratch_field(damageSourceField, .true.)
          !call mpas_deallocate_scratch_field(ddamagedtField, .true.)
          call mpas_deallocate_scratch_field(forceField, .true.)
@@ -2463,6 +2472,141 @@ module li_calving
        scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
     end function scale_edge_length
 
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine apply_calving_velocity_damage_threshold
+!
+!> \brief Apply a specified calving flux along the calving front
+!> \author Tong Zhang 
+!> \date   Nov. 2020
+!> \details Applies a specified calving flux along the calving front.
+!> The calving volume needs to be distributed in three ways:
+!> 1. We need to first remove any "thin" ice in front of this cell
+!> 2. Then we remove ice from this cell if the damage is above a threshold value
+!-----------------------------------------------------------------------
+   subroutine apply_calving_velocity_damage_threshold(meshPool, geometryPool, scratchPool, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
+      type (mpas_pool_type), pointer, intent(in) :: scratchPool !< Input: scratch pool
+      integer, dimension(:), intent(in) :: calvingFrontMask
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+!      logical, pointer :: config_print_calving_info
+      real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolumeRate
+         !< Input: the specified calving flux at calving front margin cells
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
+      real (kind=RKIND), dimension(:), pointer :: thickness, damage
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real(kind=RKIND), pointer :: config_damage_calving_threshold
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
+      integer, pointer :: nCells
+      integer :: iCell, iNeighbor, jCell
+      real(kind=RKIND) :: volumeLeft
+      real(kind=RKIND) :: removeVolumeHere
+      type (field1dReal), pointer :: cellVolumeField
+      real(kind=RKIND), dimension(:), pointer :: cellVolume
+      real(kind=RKIND), dimension(:), pointer :: uncalvedVolume
+      integer :: inwardNeighbors
+      integer :: uncalvedCount
+      real(kind=RKIND) :: uncalvedTotal
+      !logical, pointer :: config_damage_if_calving_rate
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
+      !call mpas_pool_get_config(liConfigs, 'config_damage_if_calving_rate', config_damage_if_calving_rate)
+
+      ! get fields
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'requiredCalvingVolumeRate', requiredCalvingVolumeRate)
+      call mpas_pool_get_array(geometryPool, 'uncalvedVolume', uncalvedVolume)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+      call mpas_pool_get_field(scratchPool, 'workCell',  cellVolumeField)
+      call mpas_allocate_scratch_field(cellVolumeField, .true.)
+      cellVolume => cellVolumeField % array
+
+      calvingThickness(:) = 0.0_RKIND
+
+      cellVolume(:) = areaCell(:) * thickness(:)
+
+      ! The calving volume needs to be distributed in three ways:
+      ! 1. We need to first remove any "thin" ice in front of this cell
+      ! 2. Then we remove ice from this cell if damage > threshold
+      do iCell = 1, nCells
+         if ( ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
+                .or.  (groundedMarineMarginMask(iCell) == 1) ) &
+              .and. li_mask_is_margin(cellMask(iCell)) &
+              .and. (damage(iCell) .ge. config_damage_calving_threshold)) then
+
+            ! First remove ice from "thin" neighbors
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
+                  ! this is a thin neighbor - remove the whole cell volume
+                  removeVolumeHere = cellVolume(jCell) ! how much we want to remove here
+                  calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
+                      ! < apply to the field that will be used, in thickness units
+                  cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
+               endif
+            enddo
+
+            ! Now remove ice from iCell
+            removeVolumeHere = cellVolume(iCell)
+            ! remove the whole damaged cell
+            calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
+            ! < apply to the field that will be used in thickness units
+            cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere 
+            ! update accounting on cell volume
+
+            ! Now calved away the neighboring cells if the damage is also > the threshold value
+            ! I choose to disable this section (i.e., no recursive calving) -- TZ
+            !do iNeighbor = 1, nEdgesOnCell(iCell)
+            !   jCell = cellsOnCell(iNeighbor, iCell)
+            !   if (li_mask_is_floating_ice(cellMask(jCell)) .and. li_mask_is_dynamic_ice(cellMask(jCell)) &
+            !           .and. (.not. li_mask_is_dynamic_margin(jCell)) .and. (damage(jCell) .gt. config_damage_calving_threshold)) then
+            !      removeVolumeHere = cellVolume(jCell)
+                     ! < how much we want to remove here
+            !      calvingThickness(jCell) = removeVolumeHere / areaCell(jCell)
+                     ! < apply to the field that will be used in thickness units
+            !      cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere 
+                     ! update accounting on cell volume
+            !   endif
+            !enddo
+
+         endif ! if cell is calving margin
+
+      enddo ! cell loop
+
+      call mpas_deallocate_scratch_field(cellVolumeField, .true.)
+
+   end subroutine apply_calving_velocity_damage_threshold
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
