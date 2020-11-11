@@ -350,7 +350,7 @@ contains
        write(iulog,*)"done reading namelist..."
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
-#
+
        write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
        write(iulog,*)"readnl: omega         = ",omega
        write(iulog,*)"readnl: ndays         = ",ndays
