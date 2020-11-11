@@ -200,9 +200,9 @@
                         description="If true, then we use constant A (i.e., config_default_flowParamA) in the damage calculation."
 	                possible_values=".true. or .false."
 		/>
-                <nml_option name="config_damage_if_calving_rate" type="logical" default_value=".false." units="unitless"
-                        description="If true, then we use a parameterized calving velocity to connect calving and damage."
-	                possible_values=".true. or .false."
+		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
+		                description="Selection of the method for damage calving"
+		            possible_values="'calving_rate', 'threshold'"
 		/>
     <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
                         description="A scalar parameter that links damage and calving"
@@ -613,7 +613,7 @@
                         <var name="basalFrictionFlux"/>
 			<var name="damage"/>
 			<var name="ddamagedt"/>
-			<var name="szero"/>
+			<var name="s0"/>
 			<var name="nstar"/>
 			<var name="epsmax"/>
 			<var name="sigmamax"/>
@@ -714,7 +714,7 @@
 			<var name="waterFluxMask" packages="hydro"/>
 			<var name="damage"/>
 			<var name="ddamagedt"/>
-			<var name="szero"/>
+			<var name="s0"/>
 			<var name="nstar"/>
 			<var name="epsmax"/>
 			<var name="sigmamax"/>
@@ -1066,7 +1066,7 @@ is the value of that variable from the *previous* time level!
                 <var name="damage_max" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="maximum damage number kept constant"
                 />
-                <var name="szero" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                <var name="s0" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf"
                 />
                 <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
@@ -1450,7 +1450,7 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       /-->
-	  <!--var name="szeroField" type="real" dimensions="nCells" units="none"
+	  <!--var name="s0Field" type="real" dimensions="nCells" units="none"
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       /-->
