@@ -100,6 +100,9 @@ class TestAllScream(object):
         #    Deduce compilers if needed/possible   #
         ############################################
 
+        # Setup the env on this machine
+        setup_mach_env(self._machine)
+
         if self._cxx_compiler is None:
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)
         if self._f90_compiler is None:
@@ -585,9 +588,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
-
-        # Setup the env on this machine
-        setup_mach_env(self._machine)
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:
