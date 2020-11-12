@@ -125,7 +125,7 @@ module elm_interface_funcsMod
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
   ! if (use_elm_interface .and. use_pflotran)
   public    :: update_bgc_data_pf2elm   ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
-                                        ! STEP-2:   see 'clm_pf_run' in clm_interface_pflotranMod
+                                        ! STEP-2:   see 'elm_pf_run' in elm_interface_pflotranMod
 
   public    :: update_th_data_pf2elm
   !--------------------------------------------------------------------------------------

@@ -162,8 +162,8 @@ module elm_driver
   use clm_time_manager            , only : nsstep, nestep
   use elm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
   use elm_interface_funcsMod      , only : update_bgc_data_pf2elm, update_th_data_pf2elm
-  use clm_interface_pflotranMod   , only : clm_pf_run, clm_pf_write_restart
-  use clm_interface_pflotranMod   , only : clm_pf_finalize
+  use elm_interface_pflotranMod   , only : elm_pf_run, elm_pf_write_restart
+  use elm_interface_pflotranMod   , only : elm_pf_finalize
   !----------------------------------------------------------------------------
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
@@ -983,7 +983,7 @@ contains
                     ! STEP-2: (2) run pflotran
                     ! STEP-2: (3) update clm_interface_data from pflotran
                     ! -------------------------------------------------------------------------
-                    call clm_pf_run(clm_interface_data, bounds_clump, filter, nc)
+                    call elm_pf_run(clm_interface_data, bounds_clump, filter, nc)
 
                     ! STEP-3: update CLM from clm_interface_data
                     call update_bgc_data_pf2elm(clm_interface_data%bgc,         &
@@ -1461,7 +1461,7 @@ contains
          !----------------------------------------------
          ! pflotran (off now)
          ! if (use_pflotran) then
-         !     call clm_pf_write_restart(rdate)
+         !     call elm_pf_write_restart(rdate)
          ! end if
          !----------------------------------------------
 
@@ -1473,7 +1473,7 @@ contains
     end if
 
     if (use_pflotran .and. nstep>=nestep) then
-       call clm_pf_finalize()
+       call elm_pf_finalize()
     end if
 
   end subroutine elm_drv

@@ -115,7 +115,7 @@ contains
     use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
-    use clm_interface_pflotranMod , only : clm_pf_readnl
+    use elm_interface_pflotranMod , only : elm_pf_readnl
     use ALMBeTRNLMod              , only : betr_readNL
     !
     implicit none
@@ -475,7 +475,7 @@ contains
     call control_spmd()
     
     if (use_pflotran) then
-       call clm_pf_readnl(NLFilename)
+       call elm_pf_readnl(NLFilename)
     end if
 
     if (use_betr) then

@@ -372,7 +372,7 @@ module clm_varctl
   logical, public :: pf_tmode     = .false.                 ! switch for 'T' mode coupling (will be updated in interface)
   logical, public :: pf_frzmode   = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
   logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
-  integer, public :: pf_clmnstep0 = 0                       ! the CLM timestep of start/restart
+  integer, public :: pf_elmnstep0 = 0                       ! the CLM timestep of start/restart
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode

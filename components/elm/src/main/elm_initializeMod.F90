@@ -434,7 +434,7 @@ contains
     use lnd2glcMod            , only : lnd2glc_type 
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use elm_varctl                          , only : use_elm_interface, use_pflotran
-    use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
+    use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
@@ -929,7 +929,7 @@ contains
         call clm_interface_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
-            call clm_pf_interface_init(bounds_proc)
+            call elm_pf_interface_init(bounds_proc)
         end if
     end if
     call t_stopf('init_clm_interface_data & pflotran')
