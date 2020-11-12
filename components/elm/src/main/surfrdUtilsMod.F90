@@ -199,7 +199,7 @@ contains
     ! !USES:
     use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
-    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoclmpft
+    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
     !
     ! !ARGUMENTS:
 
@@ -269,21 +269,21 @@ contains
 
     do g = begg, endg
        do m = 1, npcropmax
-          if (m /= mergetoclmpft(m)) then
-             wt_cft_to                   = wt_cft(g, mergetoclmpft(m))
+          if (m /= mergetoelmpft(m)) then
+             wt_cft_to                   = wt_cft(g, mergetoelmpft(m))
              wt_cft_from                 = wt_cft(g, m)
              wt_cft_merge                = wt_cft_to + wt_cft_from
-             wt_cft(g, mergetoclmpft(m)) = wt_cft_merge
+             wt_cft(g, mergetoelmpft(m)) = wt_cft_merge
              wt_cft(g, m)                = 0._r8
              if (wt_cft_merge > 0._r8) then
-                fert_cft(g,mergetoclmpft(m)) = (wt_cft_to * fert_cft(g,mergetoclmpft(m)) + &
+                fert_cft(g,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,mergetoelmpft(m)) + &
                                                 wt_cft_from * fert_cft(g,m)) / wt_cft_merge
              end if
           end if
        end do
     end do
 
-    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoclmpft')
+    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoelmpft')
 
   end subroutine collapse_crop_types
 
