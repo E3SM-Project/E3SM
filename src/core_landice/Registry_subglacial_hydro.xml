@@ -90,7 +90,7 @@
 		            description="power of beta parameter in subglacial water flux formula (in channels)"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta)"
+		<nml_option name="config_SGH_chnl_conduc_coeff" type="real" default_value="0.1" units="m^(2*beta-2*alpha+1) s^(2*beta-3) kg^(1-beta)"
 		            description="conductivity coefficient (in channels)"
 		            possible_values="positive real number"
 		/>
