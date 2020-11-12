@@ -20,7 +20,7 @@ module initGridCellsMod
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
-  use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
+  use initSubgridMod , only : elm_ptrs_compdown, elm_ptrs_check
   use initSubgridMod , only : add_topounit, add_landunit, add_column, add_patch
   !
   ! !PUBLIC TYPES:
@@ -219,12 +219,12 @@ contains
 
        ! Fill in subgrid datatypes
 
-       call clm_ptrs_compdown(bounds_clump)
+       call elm_ptrs_compdown(bounds_clump)
 
        ! By putting this check within the loop over clumps, we ensure that (for example)
        ! if a clump is responsible for landunit L, then that same clump is also
        ! responsible for all columns and pfts in L.
-       call clm_ptrs_check(bounds_clump)
+       call elm_ptrs_check(bounds_clump)
 
        ! Set veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
