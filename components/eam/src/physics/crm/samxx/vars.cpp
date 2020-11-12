@@ -3,7 +3,7 @@
 
 
 void allocate() {
-  t00              = real2d( "t00                "      , nz , ncrms);
+  t00              = real2d( "t00                "      , nzm, ncrms);
   tln              = real2d( "tln                "      ,plev, ncrms);
   qln              = real2d( "qln                "      ,plev, ncrms);
   qccln            = real2d( "qccln              "      ,plev, ncrms);
