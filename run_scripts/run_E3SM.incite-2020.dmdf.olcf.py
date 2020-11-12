@@ -6,32 +6,34 @@ newcase,config,build,clean,submit,continue_run = False,False,False,False,False,F
 
 acct = 'cli115'
 case_dir = os.getenv('HOME')+'/E3SM/Cases/'
-src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC1/'
+src_dir  = os.getenv('HOME')+'/E3SM/E3SM_SRC4/'
 
 ### flags to control config/build/submit sections
 # clean        = True
-newcase      = True
-config       = True
-build        = True
+# newcase      = True
+# config       = True
+# build        = True
 submit       = True
 # continue_run = True
 
 # same settings for all runs
-arch,compset = 'GNUCPU','F-MMF1-AQP1'
 ne,npg  = 4,2
 grid    = f'ne{ne}pg{npg}_ne{ne}pg{npg}'
+arch,compset = 'GNUCPU','F-MMF1-AQP1'
 
-num_nodes=4
-if 'GPU' in arch : task_per_node=12
-if 'CPU' in arch : task_per_node=48
+stop_opt,stop_n,resub = 'ndays',10,0
 
-crm_nx, crm_ny, crm_dx, crm_dt, rad_nx, nlev, crm_nz = 32, 1, 3200, 10, 2, 50, 46  # 2D
-# crm_nx, crm_ny, crm_dx, crm_dt, rad_nx, nlev, crm_nz = 32, 32, 3200, 10, 2, 50, 46  # 3D
+num_nodes = 8
 
-timestamp = '20201104' # new batch with timestep output
+if 'GPU' in arch : task_per_node = 12
+if 'CPU' in arch : task_per_node = 48
 
-# common parts of the case name
-case_list = ['INCITE2020','DMDF',arch,grid,compset,f'NLEV_{nlev}',f'CRMNX_{crm_nx}']
+# crm_nx, crm_ny, crm_dx, crm_dt, rad_nx, nlev, crm_nz = 32, 1, 3200, 10, 2, 50, 46  # 2D
+crm_nx, crm_ny, crm_dx, crm_dt, rad_nx, nlev, crm_nz = 32, 32, 3200, 10, 2, 50, 46  # 3D
+
+timestamp = '20201110' # new batch with timestep output
+
+case='.'.join(['INCITE2020','DMDF',arch,grid,compset,f'NLEV_{nlev}',f'CRMNZ_{crm_nz}',f'CRMNXY_{crm_nx}_{crm_ny}',timestamp])
 
 # Impose wall limits for Summits
 if num_nodes>=  1: walltime =  '2:00'
@@ -45,7 +47,7 @@ init_file_dir = '/gpfs/alpine/scratch/hannah6/cli115/HICCUP/data/'
 init_file_atm = f'HICCUP.AQUA.ne{ne}np4.L{nlev}.nc'
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-print('\n  case : '+case+'\n')
+print(f'\n  case : {case}\n')
 
 num_dyn = ne*ne*6
 

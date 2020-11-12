@@ -50,37 +50,11 @@ rad_nx  = 2
 # timestamp = '20201030h' # after cherry picking Matt's commit that update literal precision - MISSING COMMITS!!!
 # timestamp = '20201030i' # after cherry picking Matt's commit that update literal precision
 
-timestamp = '20201105' # new batch - timestep output - includes precision fixes - new MMF_CPL_TOP option - print_energy_errors=true
-
-### common parts of the case name
-# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_72','CRMNX_32']
-# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_50','CRMNX_32']
-# case_list = ['INCITE2020','DEBUG',arch,grid,compset,'NLEV_50','CRMNX_8'] 
-
-### specific case names and task/node settings
-# num_nodes=8; task_per_node=48
-# stop_opt,stop_n,resub='ndays',73,5;case='.'.join(case_list+['CRMNY_8',timestamp,'00'] )
-
 stop_opt,stop_n,resub='ndays',10,0
 
+# timestamp = '20201105' # new batch - timestep output - includes precision fixes - new MMF_CPL_TOP option - print_energy_errors=true
+
 case_list = ['INCITE2020','DEBUG']
-
-### C++ CPU
-# arch,compset='GNUCPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp] )
-### C++ GPU
-### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
-### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32','CRMNY_32',timestamp] )
-### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
-### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
-
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','NO-GW',timestamp] )
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','OLD-FFT',timestamp] )
-
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_44','CRMNX_32','CRMNY_32',timestamp] )
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32',timestamp] )
-# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
 
 ### fortran
 ### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
@@ -88,8 +62,59 @@ case_list = ['INCITE2020','DEBUG']
 ### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
 ### arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
 
-# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
-arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_42','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )        #!!!#
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+
+# arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_42','CRMNX_32',timestamp] )
+# arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )                  #!!!#
+# arch,compset='GNUCPU','F-MMF1-AQP1'; case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32',timestamp] )
+
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_1','CRMNY_32',timestamp] )
+# arch,compset='GNUCPU','F-MMF1-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_8','CRMNY_8',timestamp] )
+
+### C++ CPU
+# arch,compset='GNUCPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp] )
+
+# timestamp = '20201105a' # added lots of casting from int to real  
+# timestamp = '20201105b' # a + change setperturb mag
+timestamp = '20201105c' # new indexing fixes from standalone and valgrind sessions
+
+### C++ GPU
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32','CRMNY_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
+### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
+
+arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )       #!!!#
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','OLD-FFT',timestamp] )
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_42','CRMNX_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32',timestamp] )
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_16',timestamp] )  # crash?
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_16','CRMNY_32',timestamp] )  # crash?
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_42','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_44','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_48','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
+
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_56','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_54','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_52','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_50','CRMNX_32','CRMNY_32',timestamp] )
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_48','CRMNX_32','CRMNY_32',timestamp] )
+
+
+
+
 
 if 'GPU' in arch : num_nodes=4; task_per_node=12
 if 'CPU' in arch : num_nodes=4; task_per_node=48
@@ -173,6 +198,8 @@ if newcase :
    run_cmd(f'./xmlchange -file env_mach_pes.xml -id MAX_TASKS_PER_NODE    -val {task_per_node} ')
    run_cmd(f'./xmlchange -file env_mach_pes.xml -id MAX_MPITASKS_PER_NODE -val {task_per_node} ')
 
+   run_cmd('./xmlchange DIN_LOC_ROOT=/gpfs/alpine/cli115/scratch/hannah6/inputdata ')
+
 #---------------------------------------------------------------------------------------------------
 # Configure
 #---------------------------------------------------------------------------------------------------
@@ -193,7 +220,8 @@ if config :
    for p in params:
       if p[0]=='CRMNX': run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_nx {p[1]} \" ')
       if p[0]=='CRMNY': run_cmd(f'./xmlchange --append -id CAM_CONFIG_OPTS -val \" -crm_ny {p[1]} \" ')
-      if p[0]=='NLEV' and p[1] != '72' : 
+      # if p[0]=='NLEV' and p[1] != '72' : 
+      if p[0]=='NLEV': 
          nlev = p[1]; crm_nz = None
          if 'CRMNZ' not in case:
             if nlev== '50': crm_nz =  '46'
@@ -312,6 +340,10 @@ if submit :
       file.write(          ",'MMF_DQC','MMF_DQI' ")
       file.write(          ",'MMF_QRL','MMF_QRS' ")
       file.write(          ",'MMF_QC','MMF_QI','MMF_QS','MMF_QG','MMF_QR' ")
+      file.write(          ",'MMF_TK','MMF_TKE','MMF_TKES' ")
+      file.write(          ",'MMF_PFLX','MMF_QTTR','MMF_QPTR' ")
+      file.write(          ",'MMF_QPEVP','MMF_QPFALL','MMF_QPSRC' ")
+      file.write(          ",'MMF_QTFLXS','MMF_QTFLX','MMF_QPFLX' ")
       # file.write(          ",'CRM_QV','CRM_QC','CRM_W'")
       if 'MMF_MOMENTUM_FEEDBACK' in config_opts  :
          file.write(       ",'MMF_DU','MMF_DV','ZMMTU','ZMMTV','uten_Cu','vten_Cu' ")
