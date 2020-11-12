@@ -100,7 +100,7 @@ module elm_interface_funcsMod
 
   ! STEP-3.x: elm_interface_data -> clm vars
   ! update clm variables from elm_interface_data,
-  ! e.g., called in 'update_bgc_data_clm2clm' and 'update_bgc_data_pf2elm'
+  ! e.g., called in 'update_bgc_data_elm2elm' and 'update_bgc_data_pf2elm'
   ! specific bgc-module (e.g., PFLOTRAN) requires certain combination of these subroutines
   private   :: update_bgc_state_decomp
   private   :: update_bgc_state_smin
@@ -120,7 +120,7 @@ module elm_interface_funcsMod
   private   :: elm_bgc_get_data         ! STEP-2.1: elm_interface_data  -> clm-bgc module                          ; called in elm_bgc_run
                                         ! STEP-2.2: run clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
   private   :: elm_bgc_update_data      ! STEP-2.3: clm-bgc module-> elm_interface_data                            ; called in elm_bgc_run
-  public    :: update_bgc_data_clm2clm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
+  public    :: update_bgc_data_elm2elm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
 
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
   ! if (use_elm_interface .and. use_pflotran)
@@ -1000,7 +1000,7 @@ contains
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     integer :: fc, c, j, k
-    character(len=256) :: subname = "update_soil_bgc_pf2clm"
+    character(len=256) :: subname = "update_bgc_flux_decomp_sourcesink"
 
     associate ( &
      decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
@@ -1041,7 +1041,7 @@ contains
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
     integer :: fc, c, j, k
-    character(len=256) :: subname = "update_soil_bgc_pf2clm"
+    character(len=256) :: subname = "update_bgc_flux_decomp_cascade"
 
     associate ( &
      phr_vr                           => col_cf%phr_vr                                 , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
@@ -1698,7 +1698,7 @@ contains
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
-  subroutine update_bgc_data_clm2clm(elm_bgc_data,bounds,         &
+  subroutine update_bgc_data_elm2elm(elm_bgc_data,bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
            cnstate_vars, carbonflux_vars, carbonstate_vars,       &
@@ -1730,7 +1730,7 @@ contains
 
     !-----------------------------------------------------------------------
 
-    character(len=256) :: subname = "update_bgc_data_clm2clm"
+    character(len=256) :: subname = "update_bgc_data_elm2elm"
 
     ! bgc_state_decomp is updated in CLM
     ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
@@ -1748,7 +1748,7 @@ contains
                 bounds, num_soilc, filter_soilc,        &
                 nitrogenflux_vars, phosphorusflux_vars)
 
-  end subroutine update_bgc_data_clm2clm
+  end subroutine update_bgc_data_elm2elm
 !--------------------------------------------------------------------------------------
 ! END of CLM-bgc through interface
 !--------------------------------------------------------------------------------------

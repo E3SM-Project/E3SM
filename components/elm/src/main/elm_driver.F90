@@ -157,7 +157,7 @@ module elm_driver
   use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
   use elm_varctl             , only : use_elm_bgc
-  use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_clm2clm
+  use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_elm2elm
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
   use elm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
@@ -1015,7 +1015,7 @@ contains
                            phosphorusstate_vars,phosphorusflux_vars)
 
                     ! STEP-3: update CLM from elm_interface_data
-                    call update_bgc_data_clm2clm(elm_interface_data%bgc,        &
+                    call update_bgc_data_elm2elm(elm_interface_data%bgc,        &
                            bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &

@@ -333,7 +333,7 @@ module clm_varctl
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
   !
-  logical, private :: clmvarctl_isset = .false.
+  logical, private :: elmvarctl_isset = .false.
   !-----------------------------------------------------------------------
  
   !-----------------------------------------------------------------------
@@ -416,7 +416,7 @@ contains
     character(len=256), optional, intent(IN) :: username_in              ! username running job
     !-----------------------------------------------------------------------
 
-    if ( clmvarctl_isset )then
+    if ( elmvarctl_isset )then
        call shr_sys_abort(' ERROR:: control variables already set, cannot call this routine')
     end if
 
