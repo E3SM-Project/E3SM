@@ -3409,9 +3409,9 @@ sub write_output_files {
       push @groups, "pdepdyn_nml";
     #}
   } else {
-    @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
-                 clm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
-                 clmu_inparm clm_soilstate_inparm clm_pflotran_inparm betr_inparm);
+    @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm 
+                 elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
+                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm);
     #@groups = qw(elm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on
@@ -3422,7 +3422,7 @@ sub write_output_files {
       push @groups, "ch4par_in";
     }
     if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
-      push @groups, "clm_humanindex_inparm";
+      push @groups, "elm_humanindex_inparm";
     }
   }
 

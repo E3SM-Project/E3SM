@@ -24,7 +24,7 @@ module ColumnDataType
   use elm_varctl      , only : use_hydrstress
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use elm_varctl      , only : use_erosion
-  use elm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
@@ -6744,7 +6744,7 @@ contains
     !----------------------------------------------------------------
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface.and. (use_pflotran .and. pf_cmode)) then
         call col_cf_summary_pf(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
@@ -9182,7 +9182,7 @@ contains
     endif
 
     ! bgc interface & pflotran
-    if (use_clm_interface .and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface .and. (use_pflotran .and. pf_cmode)) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)
     end if
   
@@ -10708,7 +10708,7 @@ contains
     end do
 
     ! bgc interface & pflotran:
-    if (use_clm_interface) then
+    if (use_elm_interface) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)
     end if
   

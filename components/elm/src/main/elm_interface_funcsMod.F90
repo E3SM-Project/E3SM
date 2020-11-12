@@ -115,7 +115,7 @@ module elm_interface_funcsMod
   !--------------------------------------------------------------------------------------
   ! (2) SPECIFIC SUBROUTINES: used by a specific soil BGC module
   ! (2.1) Specific Subroutines for running clm-bgc (CN or BGC) through interface
-  ! if (use_clm_interface .and. use_clm_bgc)
+  ! if (use_elm_interface .and. use_elm_bgc)
   public    :: elm_bgc_run              ! STEP-2:   elm_interface_data  -> clm-bgc module -> elm_interface_data    ; called in clm_driver
   private   :: elm_bgc_get_data         ! STEP-2.1: elm_interface_data  -> clm-bgc module                          ; called in elm_bgc_run
                                         ! STEP-2.2: run clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
@@ -123,7 +123,7 @@ module elm_interface_funcsMod
   public    :: update_bgc_data_clm2clm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
 
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
-  ! if (use_clm_interface .and. use_pflotran)
+  ! if (use_elm_interface .and. use_pflotran)
   public    :: update_bgc_data_pf2elm   ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
                                         ! STEP-2:   see 'clm_pf_run' in clm_interface_pflotranMod
 

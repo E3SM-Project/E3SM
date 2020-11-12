@@ -412,8 +412,8 @@ module elm_varctl
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
-  logical, public :: use_clm_interface  = .false.
-  logical, public :: use_clm_bgc        = .false.
+  logical, public :: use_elm_interface  = .false.
+  logical, public :: use_elm_bgc        = .false.
   logical, public :: use_pflotran       = .false.
   logical, public :: pf_surfaceflow     = .false.
   ! the following switches will allow flexibility of coupling CLM with PFLOTRAN (which in fact runs in 3 modes individually or coupled)

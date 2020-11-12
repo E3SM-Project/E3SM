@@ -72,7 +72,7 @@ contains
     character(len=32) :: subname = 'CanopyHydrology_readnl'  ! subroutine name
     !-----------------------------------------------------------------------
 
-    namelist / clm_canopyhydrology_inparm / oldfflag
+    namelist / elm_canopyhydrology_inparm / oldfflag
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard input. 
@@ -81,13 +81,13 @@ contains
     if ( masterproc )then
 
        unitn = getavu()
-       write(iulog,*) 'Read in clm_CanopyHydrology_inparm  namelist'
+       write(iulog,*) 'Read in elm_canopyhydrology_inparm  namelist'
        call opnfil (NLFilename, unitn, 'F')
-       call shr_nl_find_group_name(unitn, 'clm_CanopyHydrology_inparm', status=ierr)
+       call shr_nl_find_group_name(unitn, 'elm_canopyhydrology_inparm', status=ierr)
        if (ierr == 0) then
-          read(unitn, clm_canopyhydrology_inparm, iostat=ierr)
+          read(unitn, elm_canopyhydrology_inparm, iostat=ierr)
           if (ierr /= 0) then
-             call endrun(msg="ERROR reading clm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+             call endrun(msg="ERROR reading elm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
           end if
        end if
        call relavu( unitn )

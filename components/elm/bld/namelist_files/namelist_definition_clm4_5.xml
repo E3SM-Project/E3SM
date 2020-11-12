@@ -5,7 +5,7 @@
 <namelist_definition>
 
 <!-- ========================================================================================  -->
-<!-- CLM Namelist -->
+<!-- ELM Namelist -->
 <!-- ========================================================================================  -->
 
 <entry id="finidat_interp_source" 
@@ -35,7 +35,7 @@ to interpolate finidat_interp_source and create output file finidat_interp_dest.
        input_pathname="abs" 
        group="elm_inparm"
        valid_values="" >
-Full pathname of initial conditions file. If blank CLM will startup from
+Full pathname of initial conditions file. If blank ELM will startup from
 arbitrary initial conditions.
 </entry>
 
@@ -553,7 +553,7 @@ If TRUE, urban traffic flux will be activated (Currently NOT implemented).
 
 <entry id="wrtdia" type="logical" category="history"
        group="elm_inparm" valid_values="" >
-If TRUE, write diagnostic of global radiative temperature written to CLM log file.
+If TRUE, write diagnostic of global radiative temperature written to ELM log file.
 </entry>
 
 <entry id="subgridflag" type="integer" category="elm_physics"
@@ -571,19 +571,19 @@ Toggle to make wild-fires inactive for biogeochemistry=CN mode
 
 <entry id="use_lch4" type="logical" category="bgc"
        group="elm_inparm" valid_values="" value=".false.">
-Turn on methane model. Standard part of CLM45BGC model.
+Turn on methane model. Standard part of ELMBGC model.
 </entry>
 
 <entry id="use_cn" type="logical" category="bgc"
        group="elm_inparm" valid_values="" value=".false.">
-CLM Biogeochemistry mode : Carbon Nitrogen model (CN) 
-(or CLM45BGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+ELM Biogeochemistry mode : Carbon Nitrogen model (CN)
+(or ELMBGC if phys=elm, vsoilc_centbgc='on', and elm4me='on')
 </entry>
 
 <entry id="use_cndv" type="logical" category="bgc"
        group="elm_inparm" valid_values="" value=".false.">
 CLM Biogeochemistry mode : Carbon Nitrogen with Dynamic Global Vegetation Model (CNDV)
-(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and elm4me='on')
 </entry>
 
 <entry id="use_nitrif_denitrif" type="logical" category="bgc"
@@ -664,7 +664,7 @@ Toggle to turn on the dynamic root model.
 <!-- mkmapdata  namelist                               -->
 <!--                                                   -->
 <entry id="scripgriddata" type="char*256" category="mkmapdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 SCRIP format grid data file
 </entry>
 
@@ -1551,7 +1551,7 @@ Turn on reaction in betr if it is true.
 <!-- ========================================================================================  -->
 
 <entry id="oldfflag" type="integer" category="elm_physics"
-       group="clm_canopyhydrology_inparm" valid_values="0,1" >
+       group="elm_canopyhydrology_inparm" valid_values="0,1" >
 Use old snow cover fraction from Niu et al. 2007
 (deprecated -- will be removed)
 </entry>
@@ -1737,12 +1737,12 @@ Specifies the method for decomposing CLM grids across processors.
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
-<entry id="use_clm_interface" type="logical" category="default_settings"
+<entry id="use_elm_interface" type="logical" category="default_settings"
     group="elm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
 </entry>
 
-<entry id="use_clm_bgc" type="logical" category="default_settings"
+<entry id="use_elm_bgc" type="logical" category="default_settings"
     group="elm_inparm" valid_values="">
     Runtime flag to turn on/off clm-bgc.
 </entry>
@@ -1752,13 +1752,13 @@ Specifies the method for decomposing CLM grids across processors.
     Runtime flag to turn on/off pflotran interface.
 </entry>
 
-<entry id="pflotran_inputdir" type="char*256" category="clm_pflotran"
-    group="clm_pflotran_inparm" valid_values="" >
+<entry id="pflotran_inputdir" type="char*256" category="elm_pflotran"
+    group="elm_pflotran_inparm" valid_values="" >
     pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
 </entry>
 
-<entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
-    group="clm_pflotran_inparm" valid_values="" >
+<entry id="pflotran_prefix" type="char*256" category="elm_pflotran"
+    group="elm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
 </entry>
 

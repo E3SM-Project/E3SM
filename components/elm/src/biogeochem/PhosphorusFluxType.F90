@@ -14,7 +14,7 @@ module PhosphorusFluxType
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
   ! bgc interface & pflotran:
-  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none

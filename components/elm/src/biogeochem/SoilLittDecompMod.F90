@@ -40,7 +40,7 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
   ! clm interface & pflotran:
-  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -720,7 +720,7 @@ contains
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-      if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
+      if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
          ! fpg calculation
          do fc=1,num_soilc
             c = filter_soilc(fc)
@@ -816,7 +816,7 @@ contains
             end do
          end do
 
-      end if !if(use_clm_interface.and.use_pflotran.and.pf_cmode)
+      end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants

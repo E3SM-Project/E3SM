@@ -1,6 +1,6 @@
 module clm_interface_pflotranMod
 
-!#define CLM_PFLOTRAN
+!#define elm_pflotran
 ! the above #directive IS for explicit coupling CLM and PFLOTRAN (i.e. this interface)
 
 !#define COLUMN_MODE
@@ -32,7 +32,7 @@ module clm_interface_pflotranMod
   !-----------------------------------------------------------------------
   !BOP
   !
-  ! !MODULE: clm_pflotran_interfaceMod
+  ! !MODULE: elm_pflotran_interfaceMod
   !
   ! !DESCRIPTION:
   ! Performs
@@ -54,8 +54,8 @@ module clm_interface_pflotranMod
   use elm_interface_dataType, only : elm_interface_data_type
 
 
-#ifdef CLM_PFLOTRAN
-  use clm_pflotran_interface_data
+#ifdef ELM_PFLOTRAN
+  use elm_pflotran_interface_data
   use pflotran_clm_main_module
   use pflotran_clm_setmapping_module
 #endif
@@ -67,7 +67,7 @@ module clm_interface_pflotranMod
 
   private    ! By default everything is private
 
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
   type(pflotran_model_type), pointer, public :: pflotran_m
 
   logical, pointer, public :: mapped_gcount_skip(:)     ! dim: inactive grid mask in (1:bounds%endg-bounds%begg+1),
@@ -82,7 +82,7 @@ module clm_interface_pflotranMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: clm_pf_readnl
 
-  ! wrappers around '#ifdef CLM_PFLOTRAN .... #endif' block statements to maintain sane runtime behavior
+  ! wrappers around '#ifdef ELM_PFLOTRAN .... #endif' block statements to maintain sane runtime behavior
   ! when pflotran is not available.
   public :: clm_pf_interface_init
   public :: clm_pf_set_restart_stamp
@@ -92,8 +92,8 @@ module clm_interface_pflotranMod
 
   private :: pflotran_not_available
 
-#ifdef CLM_PFLOTRAN
-  ! private work functions that truely require '#ifdef CLM_PFLOTRAN .... #endif'
+#ifdef ELM_PFLOTRAN
+  ! private work functions that truely require '#ifdef ELM_PFLOTRAN .... #endif'
   !
   private :: interface_init
   private :: pflotran_run_onestep
@@ -163,7 +163,7 @@ contains
     character(len=32) :: subname = 'clm_pf_readnl'  ! subroutine name
   !EOP
   !-----------------------------------------------------------------------
-    namelist / clm_pflotran_inparm / pflotran_prefix
+    namelist / elm_pflotran_inparm / pflotran_prefix
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard namelist file.
@@ -174,11 +174,11 @@ contains
        unitn = getavu()
        write(iulog,*) 'Read in clm-pflotran namelist'
        call opnfil (NLFilename, unitn, 'F')
-       call shr_nl_find_group_name(unitn, 'clm_pflotran_inparm', status=ierr)
+       call shr_nl_find_group_name(unitn, 'elm_pflotran_inparm', status=ierr)
        if (ierr == 0) then
-          read(unitn, clm_pflotran_inparm, iostat=ierr)
+          read(unitn, elm_pflotran_inparm, iostat=ierr)
           if (ierr /= 0) then
-             call endrun(msg=subname //':: ERROR: reading clm_pflotran_inparm namelist.'//&
+             call endrun(msg=subname //':: ERROR: reading elm_pflotran_inparm namelist.'//&
                          errMsg(__FILE__, __LINE__))
           end if
        end if
@@ -266,7 +266,7 @@ contains
 
     character(len=256) :: subname = "clm_pf_interface_init()"
 
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
     call interface_init(bounds)
 #else
     call pflotran_not_available(subname)
@@ -292,7 +292,7 @@ contains
     character(len=256) :: subname = "clm_pf_run"
     integer :: nstep
 
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
     call clm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
     call clm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
 
@@ -317,7 +317,7 @@ contains
 
     character(len=32) :: subname = "clm_pf_write_restart"
 
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
     call pflotran_write_checkpoint(date_stamp)
 #else
     call pflotran_not_available(subname)
@@ -336,7 +336,7 @@ contains
     implicit none
     character(len=256) :: subname = "clm_pf_finalize"
 
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
     call pflotran_finalize()
 #else
     call pflotran_not_available(subname)
@@ -351,7 +351,7 @@ contains
 ! (BEGIN)
 ! Private interface subroutines, requiring explicit coupling between CLM and PFLOTRAN
 !
-#ifdef CLM_PFLOTRAN
+#ifdef ELM_PFLOTRAN
 
   !====================================================================================================
   !                                                                                                   !
@@ -2293,7 +2293,7 @@ contains
     use shr_infnan_mod  , only : shr_infnan_isnan
     use shr_const_mod   , only : SHR_CONST_G
 
-    use clm_pflotran_interface_data
+    use elm_pflotran_interface_data
     use elm_varctl      , only : pf_clmnstep0
 
   ! !ARGUMENTS:
@@ -2676,7 +2676,7 @@ contains
     use elm_varpar      , only : nlevgrnd
     use shr_infnan_mod  , only : shr_infnan_isnan
 
-    use clm_pflotran_interface_data
+    use elm_pflotran_interface_data
     use elm_varctl      , only : pf_clmnstep0
 
   ! !ARGUMENTS:

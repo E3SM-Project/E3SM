@@ -16,7 +16,7 @@ module CNCarbonFluxType
   use ColumnType             , only : col_pp                
   use LandunitType           , only : lun_pp
   use elm_varctl             , only : nu_com
-  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, use_vertsoilc
   use AnnualFluxDribbler     , only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   ! 
   ! !PUBLIC TYPES:
@@ -2088,7 +2088,7 @@ contains
 
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface.and. (use_pflotran .and. pf_cmode)) then
         call CSummary_interface(this, bounds, num_soilc, filter_soilc)
     endif
     if(.not. (use_pflotran .and. pf_cmode))then

@@ -45,7 +45,7 @@ module EcosystemDynMod
   use VegetationDataType  , only : veg_ps, veg_pf
   
   ! bgc interface & pflotran
-  use elm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
+  use elm_varctl          , only : use_elm_interface, use_elm_bgc, use_pflotran, pf_cmode, pf_hmode
   use VerticalProfileMod   , only : decomp_vertprofiles
   use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl          , only : nu_com, use_pheno_flux_limiter
@@ -474,7 +474,7 @@ contains
            num_soilc, filter_soilc, num_soilp, filter_soilp, &
            soilstate_vars, canopystate_vars, cnstate_vars)
        !-------------------------------------------------------------------------------------------------
-       ! Allocation1 is always called (w/ or w/o use_clm_interface)
+       ! Allocation1 is always called (w/ or w/o use_elm_interface)
        ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
        call t_startf('CNAllocation - phase-1')
        call Allocation1_PlantNPDemand (bounds                             , &
@@ -588,9 +588,9 @@ contains
 
        call t_startf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_clm_interface) then
+       if(.not.use_elm_interface) then
             ! directly run clm-bgc
-            ! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
+            ! if (use_elm_interface & use_elm_bgc), then CNDecomAlloc is called in clm_driver
             call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
@@ -599,7 +599,7 @@ contains
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-       end if !if(.not.use_clm_interface)
+       end if !if(.not.use_elm_interface)
        !----------------------------------------------------------------
        ! SoilLittDecompAlloc2 is called by both clm-bgc & pflotran
        ! pflotran: call 'SoilLittDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake

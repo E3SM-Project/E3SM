@@ -26,7 +26,7 @@ module CNCarbonStateType
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
 
   ! bgc interface & pflotran
-  use elm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:

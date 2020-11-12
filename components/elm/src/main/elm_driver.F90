@@ -152,11 +152,11 @@ module elm_driver
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
-  use elm_varctl             , only : use_clm_interface
+  use elm_varctl             , only : use_elm_interface
   use elm_instMod            , only : clm_interface_data
   use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
-  use elm_varctl             , only : use_clm_bgc
+  use elm_varctl             , only : use_elm_bgc
   use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_clm2clm
   ! (2) pflotran
   use clm_time_manager            , only : nsstep, nestep
@@ -960,7 +960,7 @@ contains
                        phosphorusflux_vars,phosphorusstate_vars)
 
              !--------------------------------------------------------------------------------
-             if (use_clm_interface) then
+             if (use_elm_interface) then
                  ! STEP-1: pass data from CLM to clm_interface_data (INTERFACE DATA TYPE)
                  call get_elm_data(clm_interface_data,bounds_clump,                     &
                            filter(nc)%num_soilc, filter(nc)%soilc,                      &
@@ -996,7 +996,7 @@ contains
 
                     call t_stopf('pflotran')
 
-                 elseif (use_clm_bgc) then
+                 elseif (use_elm_bgc) then
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     ! run clm-bgc (SoilLittDecompAlloc) through interface
@@ -1024,7 +1024,7 @@ contains
                            ch4_vars)
                     call t_stopf('clm-bgc via interface')
                  end if !if (use_pflotran .and. pf_cmode)
-             end if !if (use_clm_interface)
+             end if !if (use_elm_interface)
              !--------------------------------------------------------------------------------
 
              call EcosystemDynNoLeaching2(bounds_clump,                                   &
@@ -1120,7 +1120,7 @@ contains
 
        call t_startf('hydro2 drainage')
 
-       if (use_clm_interface .and. (use_pflotran .and. pf_hmode)) then
+       if (use_elm_interface .and. (use_pflotran .and. pf_hmode)) then
          ! pflotran only works on 'soilc' (already done above).
          ! here for non-soil hydrology columns
          call HydrologyDrainage(bounds_clump,                     &

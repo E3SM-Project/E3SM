@@ -272,7 +272,7 @@ contains
          co2_file, aero_file,const_climate_hist
 
     ! bgc & pflotran interface
-    namelist /elm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
+    namelist /elm_inparm/ use_elm_interface, use_elm_bgc, use_pflotran
 
     namelist /elm_inparm/ use_dynroot
 
@@ -439,17 +439,17 @@ contains
 
        ! ----------------------------------------------------------------------
        ! bgc & pflotran interface
-       if(.not.use_clm_interface) then
-            use_clm_bgc     = .false.
+       if(.not.use_elm_interface) then
+            use_elm_bgc     = .false.
             use_pflotran    = .false.
        else
-       ! use_clm_interface
-            if (use_clm_bgc) then
+       ! use_elm_interface
+            if (use_elm_bgc) then
                 use_pflotran = .false.
             end if
 
             if (use_pflotran) then
-                use_clm_bgc = .false.
+                use_elm_bgc = .false.
                 ! enable 'use_nitrif_denitrif' to initilize Nh4 & NO3 pools,
                 ! but NOT to implement 'nitrif_denitrif'
                 use_nitrif_denitrif = .true.
@@ -787,8 +787,8 @@ contains
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
     ! bgc & pflotran interface
-    call mpi_bcast (use_clm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_clm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
     
     !cpl_bypass
