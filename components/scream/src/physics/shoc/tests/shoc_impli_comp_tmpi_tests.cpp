@@ -117,7 +117,53 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCComptmpiData f90_data[] = {
+      //          shcol, nlevi, dtime
+      SHOCComptmpiData(10, 72, 1),
+      SHOCComptmpiData(10, 13, 10),
+      SHOCComptmpiData(7,  17, 125),
+      SHOCComptmpiData(2,   8, 300)
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCComptmpiData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCComptmpiData cxx_data[] = {
+      SHOCComptmpiData(f90_data[0]),
+      SHOCComptmpiData(f90_data[1]),
+      SHOCComptmpiData(f90_data[2]),
+      SHOCComptmpiData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      compute_tmpi(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      compute_tmpi_f(d.nlevi(), d.shcol(), d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCComptmpiData& d_f90 = f90_data[i];
+      SHOCComptmpiData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
+      }
+    }
   }
 };
 

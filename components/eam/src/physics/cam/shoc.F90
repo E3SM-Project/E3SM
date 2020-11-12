@@ -282,33 +282,33 @@ subroutine shoc_main ( &
   !  to be output to history file by host model (if desired)
 
   ! Turbulent length scale [m]
-  real(rtype) :: shoc_mix(shcol,nlev)
+  real(rtype), intent(out) :: shoc_mix(shcol,nlev)
   ! vertical velocity variance [m2/s2]
-  real(rtype) :: w_sec(shcol,nlev)
+  real(rtype), intent(out) :: w_sec(shcol,nlev)
   ! temperature variance [K^2]
-  real(rtype) :: thl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: thl_sec(shcol,nlevi)
   ! moisture variance [kg2/kg2]
-  real(rtype) :: qw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: qw_sec(shcol,nlevi)
   ! temp moisture covariance [K kg/kg]
-  real(rtype) :: qwthl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: qwthl_sec(shcol,nlevi)
   ! vertical heat flux [K m/s]
-  real(rtype) :: wthl_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wthl_sec(shcol,nlevi)
   ! vertical moisture flux [K m/s]
-  real(rtype) :: wqw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wqw_sec(shcol,nlevi)
   ! vertical tke flux [m3/s3]
-  real(rtype) :: wtke_sec(shcol,nlevi)
+  real(rtype), intent(out) :: wtke_sec(shcol,nlevi)
   ! vertical zonal momentum flux [m2/s2]
-  real(rtype) :: uw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: uw_sec(shcol,nlevi)
   ! vertical meridional momentum flux [m2/s2]
-  real(rtype) :: vw_sec(shcol,nlevi)
+  real(rtype), intent(out) :: vw_sec(shcol,nlevi)
   ! third moment vertical velocity [m3/s3]
-  real(rtype) :: w3(shcol,nlevi)
+  real(rtype), intent(out) :: w3(shcol,nlevi)
   ! liquid water flux [kg/kg m/s]
-  real(rtype) :: wqls_sec(shcol,nlev)
+  real(rtype), intent(out) :: wqls_sec(shcol,nlev)
   ! brunt vaisala frequency [s-1]
-  real(rtype) :: brunt(shcol,nlev)
+  real(rtype), intent(out) :: brunt(shcol,nlev)
   ! return to isotropic timescale [s]
-  real(rtype) :: isotropy(shcol,nlev)
+  real(rtype), intent(out) :: isotropy(shcol,nlev)
 
   !============================================================================
 ! LOCAL VARIABLES
@@ -759,6 +759,10 @@ end subroutine update_prognostics_implicit
 
 subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_tmpi_f
+#endif
+
   !intent-ins
   integer,     intent(in) :: nlevi, shcol
   !time step [s]
@@ -774,6 +778,13 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
   !local vars
   integer :: i, k
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_tmpi_f(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
+     return
+  endif
+#endif
+
   tmpi(:,1) = 0._rtype
   ! eqn: tmpi = dt*(g*rho)**2/dp, where dp = g*rho*dz, therefore tmpi = dt*g*rho/dz
   do k = 2, nlevi
@@ -785,6 +796,10 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
 end subroutine compute_tmpi
 
 subroutine dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: dp_inverse_f
+#endif
 
   !intent-ins
   integer,     intent(in) :: nlev, shcol
@@ -798,6 +813,13 @@ subroutine dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
 
   !local vars
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call dp_inverse_f(nlev, shcol, rho_zt, dz_zt, rdp_zt)
+     return
+  endif
+#endif
 
   do k = 1, nlev
     do i = 1, shcol
@@ -1248,6 +1270,10 @@ subroutine diag_second_moments(&
          qwthl_sec,uw_sec,vw_sec,wtke_sec, &    ! Input/Output
          w_sec)                                 ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_moments_f
+#endif
+
   ! Purpose of this subroutine is to diagnose the second
   !  order moments needed for the SHOC parameterization.
   !  Namely these are variances of thetal, qw, and vertical
@@ -1317,6 +1343,16 @@ subroutine diag_second_moments(&
   real(rtype) :: isotropy_zi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
   real(rtype) :: tk_zi(shcol,nlevi)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+     call diag_second_moments_f(shcol,nlev,nlevi,thetal,qw,u_wind,v_wind,tke, &         ! Input
+                                isotropy,tkh,tk,dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
+                                thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec,uw_sec,vw_sec,wtke_sec, &    ! Input/Output
+                                w_sec)                                 
+      return
+   endif
+#endif
 
   ! Interpolate some variables from the midpoint grid to the interface grid
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)

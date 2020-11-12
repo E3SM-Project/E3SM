@@ -232,12 +232,12 @@ PIECES = OrderedDict([
 ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
-        "components/cam/src/physics/cam/micro_p3.F90",
+        "components/eam/src/physics/cam/micro_p3.F90",
         "components/scream/src/physics/p3",
         "p3_init();"
     ),
     "shoc" : (
-        "components/cam/src/physics/cam/shoc.F90",
+        "components/eam/src/physics/cam/shoc.F90",
         "components/scream/src/physics/shoc",
         "shoc_init(REPLACE_ME, true);"
     ),
@@ -1121,7 +1121,7 @@ def gen_struct_api_sugar(physics, struct_name, arg_data):
     """
     Return struct contents using syntactic sugar
     """
-    fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data = group_data(arg_data)
+    _, _, _, all_dims, scalars, real_data, int_data = group_data(arg_data)
     ik_reals, ij_reals, i_reals, td_reals, i_ints = [], [], [], [], []
     for dims, reals in real_data.items():
         if len(dims) == 1:
@@ -1140,7 +1140,8 @@ def gen_struct_api_sugar(physics, struct_name, arg_data):
             expect(not td_reals, "Multiple sets of 3d reals?")
             td_reals = reals
 
-    i_ints = list(int_data.values())[0]
+    if int_data:
+        i_ints = list(int_data.values())[0]
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -1175,7 +1176,7 @@ def gen_struct_api_sugar(physics, struct_name, arg_data):
 ###############################################################################
 def gen_struct_api_generic(physics, struct_name, arg_data):
 ###############################################################################
-    fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data = group_data(arg_data)
+    _, _, _, all_dims, scalars, real_data, int_data = group_data(arg_data)
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -1188,12 +1189,12 @@ def gen_struct_api_generic(physics, struct_name, arg_data):
     real_vec = []
     int_vec = []
     for dims, reals in real_data.items():
-        dim_cxx_vec.append("{{ {} }}".format(", ".join(dims)))
+        dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
         real_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in reals])))
 
     for dims, ints in int_data.items():
-        dim_cxx_vec.append("{{ {} }}".format(", ".join(dims)))
-        int_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in reals])))
+        dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
+        int_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in ints])))
 
     parent_call = "  PhysicsTestDataGeneric({{{}}}, {{{}}}, {{{}}})".format(", ".join(dim_cxx_vec), ", ".join(real_vec), ", ".join(int_vec))
 
@@ -1222,7 +1223,7 @@ def gen_struct_api(physics, struct_name, arg_data):
 
     >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA2)))
     DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-      PhysicsTestDataGeneric({{ shcol }, { shcol, nlev }, { shcol, nlevi }, { shcol, nlev, ntracers }, { shcol }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &tracerd1, &tracerd2 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+      PhysicsTestDataGeneric({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
     <BLANKLINE>
     PTDG_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
@@ -1230,11 +1231,8 @@ def gen_struct_api(physics, struct_name, arg_data):
 
     if sugar_compatible:
         return gen_struct_api_sugar(physics, struct_name, arg_data)
-
     else:
         return gen_struct_api_generic(physics, struct_name, arg_data)
-
-    return result
 
 ###############################################################################
 def find_insertion(lines, insert_regex):
