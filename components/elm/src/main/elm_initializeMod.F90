@@ -105,7 +105,7 @@ contains
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
 
-    call t_startf('clm_init1')
+    call t_startf('elm_init1')
 
     ! ------------------------------------------------------------------------
     ! Initialize run control variables, timestep
@@ -359,7 +359,7 @@ contains
 
     deallocate (wt_cft, wt_glc_mec)
 
-    call t_stopf('clm_init1')
+    call t_stopf('elm_init1')
 
     ! initialize glc_topo
     ! TODO - does this belong here?
@@ -476,7 +476,7 @@ contains
     character(len=32)     :: subname = 'initialize2' 
     !----------------------------------------------------------------------
 
-    call t_startf('clm_init2')
+    call t_startf('elm_init2')
 
     if (do_budgets) call WaterBudget_Reset('all')
 
@@ -956,7 +956,7 @@ contains
     endif
     call t_stopf('init_wlog')
 
-    call t_stopf('clm_init2')
+    call t_stopf('elm_init2')
 
   end subroutine initialize2
 
@@ -994,7 +994,7 @@ contains
     type(bounds_type) :: bounds_proc
     logical           :: restart_vsfm          ! does VSFM need to be restarted
 
-    call t_startf('clm_init3')
+    call t_startf('elm_init3')
 
     ! Is this a restart run?
     restart_vsfm = .false.
@@ -1038,7 +1038,7 @@ contains
        call EMI_Init_EM(EM_ID_PTM)
     endif
 
-    call t_stopf('clm_init3')
+    call t_stopf('elm_init3')
 
 
   end subroutine initialize3

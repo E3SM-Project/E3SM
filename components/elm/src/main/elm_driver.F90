@@ -997,7 +997,7 @@ contains
                     call t_stopf('pflotran')
 
                  elseif (use_elm_bgc) then
-                    call t_startf('clm-bgc via interface')
+                    call t_startf('elm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     ! run clm-bgc (SoilLittDecompAlloc) through interface
                     ! STEP-2: (1) pass data from elm_interface_data to SoilLittDecompAlloc
@@ -1022,7 +1022,7 @@ contains
                            nitrogenflux_vars, nitrogenstate_vars,               &
                            phosphorusflux_vars, phosphorusstate_vars,           &
                            ch4_vars)
-                    call t_stopf('clm-bgc via interface')
+                    call t_stopf('elm-bgc via interface')
                  end if !if (use_pflotran .and. pf_cmode)
              end if !if (use_elm_interface)
              !--------------------------------------------------------------------------------
@@ -1430,10 +1430,10 @@ contains
 
     if (.not. use_noio) then
 
-       call t_startf('clm_drv_io')
+       call t_startf('elm_drv_io')
 
        ! Create history and write history tapes if appropriate
-       call t_startf('clm_drv_io_htapes')
+       call t_startf('elm_drv_io_htapes')
 
        call hist_htapes_wrapup( rstwr, nlend, bounds_proc,                    &
             soilstate_vars%watsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
@@ -1441,11 +1441,11 @@ contains
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
 
-       call t_stopf('clm_drv_io_htapes')
+       call t_stopf('elm_drv_io_htapes')
 
        ! Write restart/initial files if appropriate
        if (rstwr) then
-          call t_startf('clm_drv_io_wrest')
+          call t_startf('elm_drv_io_wrest')
           filer = restFile_filename(rdate=rdate)
 
           call restFile_write( bounds_proc, filer,                                            &
@@ -1466,9 +1466,9 @@ contains
          !----------------------------------------------
 
 
-          call t_stopf('clm_drv_io_wrest')
+          call t_stopf('elm_drv_io_wrest')
        end if
-       call t_stopf('clm_drv_io')
+       call t_stopf('elm_drv_io')
 
     end if
 
