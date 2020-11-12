@@ -124,7 +124,7 @@ contains
     call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
-    call clm_petsc_init()
+    call elm_petsc_init()
     call init_soil_temperature()
 
     if (masterproc) call control_print()
@@ -1044,7 +1044,7 @@ contains
   end subroutine initialize3
 
   !-----------------------------------------------------------------------
-  subroutine clm_petsc_init()
+  subroutine elm_petsc_init()
     !
     ! !DESCRIPTION:
     ! Initialize PETSc
@@ -1080,11 +1080,11 @@ contains
     PETSC_COMM_SELF  = MPI_COMM_SELF
     PETSC_COMM_WORLD = mpicom
 #else
-    call endrun(msg='ERROR clm_petsc_init: '//&
+    call endrun(msg='ERROR elm_petsc_init: '//&
          'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
 #endif
 
-  end subroutine clm_petsc_init
+  end subroutine elm_petsc_init
 
 
 end module elm_initializeMod
