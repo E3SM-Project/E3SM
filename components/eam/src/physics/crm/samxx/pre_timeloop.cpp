@@ -155,7 +155,7 @@ void pre_timeloop() {
   dostatis  = false;    // no statistics are collected.
   idt_gl    = 1.0/dt_glob;
   ptop      = plev-nzm+1;
-  factor_xy = 1.0/(nx*ny);
+  factor_xy = 1.0/( (real) nx * (real) ny );
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<crm_ny_rad; j++) {
@@ -462,7 +462,7 @@ void pre_timeloop() {
   //perturb_arrays()
 
   nstop = dt_glob/dt;
-  dt = dt_glob/nstop;
+  dt = dt_glob/((real) nstop);
 
   crm_run_time  = dt_glob;
   icrm_run_time = 1.0/crm_run_time;

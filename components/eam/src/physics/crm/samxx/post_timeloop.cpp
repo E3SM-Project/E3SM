@@ -143,8 +143,8 @@ void post_timeloop() {
   auto &crm_output_subcycle_factor= :: crm_output_subcycle_factor;
   auto &ncrms                   = :: ncrms;
 
-  factor_xyt = factor_xy/nstop;
-  real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/nstop;
+  factor_xyt = factor_xy/((real) nstop);
+  real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<crm_ny_rad; j++) {
@@ -341,8 +341,8 @@ void post_timeloop() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
-    precsfc(j,i,icrm) = precsfc(j,i,icrm)*dz(icrm)/dt/nstop;
-    precssfc(j,i,icrm) = precssfc(j,i,icrm)*dz(icrm)/dt/nstop;
+    precsfc(j,i,icrm) = precsfc(j,i,icrm)*dz(icrm)/dt/((real) nstop);
+    precssfc(j,i,icrm) = precssfc(j,i,icrm)*dz(icrm)/dt/((real) nstop);
     if (precsfc(j,i,icrm) > 10.0/86400.0) {
       yakl::atomicAdd(crm_output_precc (icrm) , precsfc (j,i,icrm));
       yakl::atomicAdd(crm_output_precsc(icrm) , precssfc(j,i,icrm));
@@ -428,8 +428,8 @@ void post_timeloop() {
     real tmp2 = tmp1/dtn; // dtn is calculated inside of the icyc loop. It seems wrong to use it here ???? +++mhwang
 
     for (int l=0; l<nmicro_fields; l++) {                                           
-      mkwsb(l,k,icrm) = mkwsb(l,k,icrm) * tmp1*rhow(k,icrm) * factor_xy/nstop;     //kg/m3/s --> kg/m2/s
-      mkwle(l,k,icrm) = mkwle(l,k,icrm) * tmp2*rhow(k,icrm) * factor_xy/nstop;     //kg/m3   --> kg/m2/s
+      mkwsb(l,k,icrm) = mkwsb(l,k,icrm) * tmp1*rhow(k,icrm) * factor_xy/((real) nstop);     //kg/m3/s --> kg/m2/s
+      mkwle(l,k,icrm) = mkwle(l,k,icrm) * tmp2*rhow(k,icrm) * factor_xy/((real) nstop);     //kg/m3   --> kg/m2/s
       mkadv(l,k,icrm) = mkadv(l,k,icrm) * factor_xy*icrm_run_time;     // kg/kg  --> kg/kg/s
       mkdiff(l,k,icrm) = mkdiff(l,k,icrm) * factor_xy*icrm_run_time;   // kg/kg  --> kg/kg/s
     }
@@ -438,11 +438,11 @@ void post_timeloop() {
     qpsrc(k,icrm) = qpsrc(k,icrm) * factor_xy*icrm_run_time;
     qpevp(k,icrm) = qpevp(k,icrm) * factor_xy*icrm_run_time;
     qpfall(k,icrm) = qpfall(k,icrm) * factor_xy*icrm_run_time;   // kg/kg in M2005 ---> kg/kg/s
-    precflux(k,icrm) = precflux(k,icrm) * factor_xy*dz(icrm)/dt/nstop;  //kg/m2/dz in M2005 -->kg/m2/s or mm/s (idt_gl=1/dt/nstop)
+    precflux(k,icrm) = precflux(k,icrm) * factor_xy*dz(icrm)/dt/((real) nstop);  //kg/m2/dz in M2005 -->kg/m2/s or mm/s (idt_gl=1/dt/((real) nstop))
 
     int l = plev-(k+1);
-    crm_output_flux_u    (l,icrm) = (uwle(k,icrm) + uwsb(k,icrm))*tmp1*factor_xy/nstop;
-    crm_output_flux_v    (l,icrm) = (vwle(k,icrm) + vwsb(k,icrm))*tmp1*factor_xy/nstop;
+    crm_output_flux_u    (l,icrm) = (uwle(k,icrm) + uwsb(k,icrm))*tmp1*factor_xy/((real) nstop);
+    crm_output_flux_v    (l,icrm) = (vwle(k,icrm) + vwsb(k,icrm))*tmp1*factor_xy/((real) nstop);
     crm_output_flux_qt   (l,icrm) = mkwle(0,k,icrm) + mkwsb(0,k,icrm);
     crm_output_fluxsgs_qt(l,icrm) = mkwsb(0,k,icrm);
     crm_output_flux_qp   (l,icrm) = mkwle(1,k,icrm) + mkwsb(1,k,icrm);
@@ -475,7 +475,7 @@ void post_timeloop() {
   });
 
   parallel_for( ncrms , YAKL_LAMBDA(int icrm) {
-    crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)/nstop;
+    crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)/((real) nstop);
   });
 }
 

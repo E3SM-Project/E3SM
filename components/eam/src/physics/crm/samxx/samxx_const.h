@@ -237,7 +237,7 @@ real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
 
-real constexpr crm_accel_coef = 1.0/(nx*ny);
+real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 
 int constexpr plev = PLEV;
 
