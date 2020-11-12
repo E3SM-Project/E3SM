@@ -125,7 +125,7 @@ module elm_instMod
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
   type(phosphorusstate_type)                          :: phosphorusstate_vars
   type(phosphorusflux_type)                           :: phosphorusflux_vars
-  type(elm_interface_data_type)                       :: clm_interface_data
+  type(elm_interface_data_type)                       :: elm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
   class(betr_simulation_alm_type), pointer            :: ep_betr

@@ -50,7 +50,7 @@ module elm_interface_pflotranMod
   !  use landunit_varcon     , only : istsoil, istcrop
 
   ! (dummy) variable definitions
-  ! ALM types/variables are replaced by clm_interface_data
+  ! ALM types/variables are replaced by elm_interface_data
   use elm_interface_dataType, only : elm_interface_data_type
 
 
@@ -275,7 +275,7 @@ contains
 
   !--------------------------------------------------------------------------------------------
 
-    subroutine elm_pf_run(clm_interface_data, bounds, filters, ifilter)
+    subroutine elm_pf_run(elm_interface_data, bounds, filters, ifilter)
     use clm_time_manager, only : get_nstep
 
     implicit none
@@ -285,7 +285,7 @@ contains
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
 
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
     !-----------------------------------------------------------------------
 
@@ -293,16 +293,16 @@ contains
     integer :: nstep
 
 #ifdef ELM_PFLOTRAN
-    call elm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
-    call elm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
+    call elm_pf_BeginCBalance(elm_interface_data, bounds, filters, ifilter)
+    call elm_pf_BeginNBalance(elm_interface_data, bounds, filters, ifilter)
 
-    call pflotran_run_onestep(clm_interface_data, bounds, filters, ifilter)
+    call pflotran_run_onestep(elm_interface_data, bounds, filters, ifilter)
 
     nstep = get_nstep()
 
     if (nstep > 1 )then
-        call elm_pf_CBalanceCheck(clm_interface_data, bounds, filters, ifilter)
-        call elm_pf_NBalanceCheck(clm_interface_data, bounds, filters, ifilter)
+        call elm_pf_CBalanceCheck(elm_interface_data, bounds, filters, ifilter)
+        call elm_pf_NBalanceCheck(elm_interface_data, bounds, filters, ifilter)
     end if
 #else
     call pflotran_not_available(subname)
@@ -1066,7 +1066,7 @@ contains
   !
   ! !INTERFACE:
 
-  subroutine pflotran_run_onestep(clm_interface_data, bounds, filters, ifilter)
+  subroutine pflotran_run_onestep(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -1087,7 +1087,7 @@ contains
     type(clumpfilter) , intent(inout) :: filters(:)     ! filters on current process
     integer           , intent(in)    :: ifilter        ! which filter to be operate
 
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
     !LOCAL VARIABLES:
     real(r8) :: dtime                         ! land model time step (sec)
@@ -1213,26 +1213,26 @@ contains
 
     if (pf_hmode) then
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
-        call update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
+        call update_soil_moisture_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
         ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
         ! are retrieving from PFLOTRAN using 'update_bcflow_pf2clm' subroutine
         call pflotranModelGetBCMassBalanceDeltaFromPF( pflotran_m )
-        call update_bcflow_pf2clm(clm_interface_data, bounds, filters, ifilter)
+        call update_bcflow_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
     endif
 
     if (pf_tmode) then
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
-        call update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
+        call update_soil_temperature_pf2clm(elm_interface_data, bounds, filters, ifilter)
     endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables
 
-        call update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
+        call update_soil_bgc_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
-        call update_bgc_bcflux_pf2clm(clm_interface_data, bounds, filters, ifilter)
+        call update_bgc_bcflux_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
         ! if CLM forced changing them into PF at NEXT timestep
@@ -1334,7 +1334,7 @@ contains
 #include "petsc/finclude/petscvec.h90"
 
     type(bounds_type)                   , intent(in) :: bounds
-    type(elm_interface_data_type)   , intent(in) :: clm_interface_data
+    type(elm_interface_data_type)   , intent(in) :: elm_interface_data
     !
     ! !REVISION HISTORY:
     ! Created by Gautam Bisht
@@ -1688,7 +1688,7 @@ contains
     type(bounds_type), intent(in) :: bounds           ! bounds
     type(clumpfilter), intent(in) :: filters(:)       ! filters on current process
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
     ! LOCAL VARAIBLES:
 
@@ -1730,23 +1730,23 @@ contains
          dz                       => col_pp%dz                                   , & !  [real(r8) (:,:)]  layer thickness depth (m)
          zi                       => col_pp%zi                                   , & !  [real(r8) (:,:)]  interface level below a "z" level (m)
          !
-         bd                       => clm_interface_data%bd_col                      , & !
-         bsw                      => clm_interface_data%bsw_col                     , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
-         hksat                    => clm_interface_data%hksat_col                   , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
-         sucsat                   => clm_interface_data%sucsat_col                  , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
-         watsat                   => clm_interface_data%watsat_col                  , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
-         watfc                    => clm_interface_data%watfc_col                   , & !  [real(r8) (:,:)]  volumetric soil water at field capacity (nlevgrnd)
+         bd                       => elm_interface_data%bd_col                      , & !
+         bsw                      => elm_interface_data%bsw_col                     , & !  [real(r8) (:,:)]  Clapp and Hornberger "b" (nlevgrnd)
+         hksat                    => elm_interface_data%hksat_col                   , & !  [real(r8) (:,:)]  hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
+         sucsat                   => elm_interface_data%sucsat_col                  , & !  [real(r8) (:,:)]  minimum soil suction (mm) (nlevgrnd)
+         watsat                   => elm_interface_data%watsat_col                  , & !  [real(r8) (:,:)]  volumetric soil water at saturation (porosity) (nlevgrnd)
+         watfc                    => elm_interface_data%watfc_col                   , & !  [real(r8) (:,:)]  volumetric soil water at field capacity (nlevgrnd)
          !
-         tkwet                    => clm_interface_data%tkwet_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
-         tkdry                    => clm_interface_data%tkdry_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
-         tkfrz                    => clm_interface_data%tkfrz_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
-         csol                     => clm_interface_data%csol_col                    , & !  [real(r8) (:,:)]  (nlevgrnd)
+         tkwet                    => elm_interface_data%tkwet_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
+         tkdry                    => elm_interface_data%tkdry_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
+         tkfrz                    => elm_interface_data%tkfrz_col                   , & !  [real(r8) (:,:)]  (nlevgrnd)
+         csol                     => elm_interface_data%csol_col                    , & !  [real(r8) (:,:)]  (nlevgrnd)
          !
-         rf_decomp_cascade        => clm_interface_data%bgc%rf_decomp_cascade_col       , &
-         pathfrac_decomp_cascade  => clm_interface_data%bgc%pathfrac_decomp_cascade_col , &
-         initial_cn_ratio         => clm_interface_data%bgc%initial_cn_ratio            , &
-         kd_decomp_pools          => clm_interface_data%bgc%decomp_k_pools              , &
-         kd_adfactor_pools        => clm_interface_data%bgc%adfactor_kd_pools             &
+         rf_decomp_cascade        => elm_interface_data%bgc%rf_decomp_cascade_col       , &
+         pathfrac_decomp_cascade  => elm_interface_data%bgc%pathfrac_decomp_cascade_col , &
+         initial_cn_ratio         => elm_interface_data%bgc%initial_cn_ratio            , &
+         kd_decomp_pools          => elm_interface_data%bgc%decomp_k_pools              , &
+         kd_adfactor_pools        => elm_interface_data%bgc%adfactor_kd_pools             &
          )
 
 !-------------------------------------------------------------------------------------
@@ -1993,7 +1993,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, gcount, cellcount       ! indices
@@ -2019,21 +2019,21 @@ contains
       cgridcell       => col_pp%gridcell               , & ! column's gridcell
       dz              => col_pp%dz                     , & ! layer thickness depth (m)
       !
-      sucsat          => clm_interface_data%sucsat_col    , & ! minimum soil suction (mm) (nlevgrnd)
-      bsw             => clm_interface_data%bsw_col       , & ! Clapp and Hornberger "b"
-      watsat          => clm_interface_data%watsat_col    , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
-      watmin          => clm_interface_data%watmin_col    , & ! col minimum volumetric soil water (nlevsoi)
-      sucmin          => clm_interface_data%sucmin_col    , & ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
+      sucsat          => elm_interface_data%sucsat_col    , & ! minimum soil suction (mm) (nlevgrnd)
+      bsw             => elm_interface_data%bsw_col       , & ! Clapp and Hornberger "b"
+      watsat          => elm_interface_data%watsat_col    , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
+      watmin          => elm_interface_data%watmin_col    , & ! col minimum volumetric soil water (nlevsoi)
+      sucmin          => elm_interface_data%sucmin_col    , & ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
       !
-      soilpsi         => clm_interface_data%th%soilpsi_col   ,  & ! soil water matric potential in each soil layer (MPa)
-      h2osoi_liq      => clm_interface_data%th%h2osoi_liq_col,  & ! liquid water (kg/m2)
-      h2osoi_ice      => clm_interface_data%th%h2osoi_ice_col,  & ! ice lens (kg/m2)
-      h2osoi_vol      => clm_interface_data%th%h2osoi_vol_col,  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-      t_soisno        => clm_interface_data%th%t_soisno_col  ,  & ! snow-soil temperature (Kelvin)
+      soilpsi         => elm_interface_data%th%soilpsi_col   ,  & ! soil water matric potential in each soil layer (MPa)
+      h2osoi_liq      => elm_interface_data%th%h2osoi_liq_col,  & ! liquid water (kg/m2)
+      h2osoi_ice      => elm_interface_data%th%h2osoi_ice_col,  & ! ice lens (kg/m2)
+      h2osoi_vol      => elm_interface_data%th%h2osoi_vol_col,  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+      t_soisno        => elm_interface_data%th%t_soisno_col  ,  & ! snow-soil temperature (Kelvin)
       !
-      t_scalar        => clm_interface_data%bgc%t_scalar_col ,  & ! soil temperature scalar for decomp
-      w_scalar        => clm_interface_data%bgc%w_scalar_col ,  & ! soil water scalar for decomp
-      o_scalar        => clm_interface_data%bgc%o_scalar_col    & ! fraction by which decomposition is limited by anoxia
+      t_scalar        => elm_interface_data%bgc%t_scalar_col ,  & ! soil temperature scalar for decomp
+      w_scalar        => elm_interface_data%bgc%w_scalar_col ,  & ! soil water scalar for decomp
+      o_scalar        => elm_interface_data%bgc%o_scalar_col    & ! fraction by which decomposition is limited by anoxia
     )
 
     !--------------------------------------------------------------------------------------
@@ -2195,7 +2195,7 @@ contains
     type(clumpfilter)         , intent(in) :: filters(:)     ! filters on current process
     integer                   , intent(in) :: ifilter        ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, j, gcount, cellcount       ! indices
@@ -2213,8 +2213,8 @@ contains
     cgridcell       => col_pp%gridcell                           , & ! column's gridcell
     dz              => col_pp%dz                                 , & ! layer thickness depth (m)
     !
-    watsat          => clm_interface_data%watsat_col          , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
-    h2osoi_ice      => clm_interface_data%th%h2osoi_ice_col     & ! ice lens (kg/m2)
+    watsat          => elm_interface_data%watsat_col          , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
+    h2osoi_ice      => elm_interface_data%th%h2osoi_ice_col     & ! ice lens (kg/m2)
     )
 
     ! if 'pf_tmode' is NOT using freezing option, the phase-change of soil water done in 'SoilTemperatureMod.F90' in 'bgp2'
@@ -2307,7 +2307,7 @@ contains
     type(clumpfilter), intent(inout) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, g, c, j               ! do loop indices
@@ -2353,25 +2353,25 @@ contains
     cwtgcell          => col_pp%wtgcell                             , & ! weight (relative to gridcell)
     dz                => col_pp%dz                                  , & ! layer thickness depth (m)
     !
-    bsw               => clm_interface_data%bsw_col                           , &! Clapp and Hornberger "b" (nlevgrnd)
-    hksat             => clm_interface_data%hksat_col                         , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
-    watsat            => clm_interface_data%watsat_col                        , &! volumetric soil water at saturation (porosity) (nlevgrnd)
-    sucsat            => clm_interface_data%sucsat_col                        , &! minimum soil suction (mm) (nlevgrnd)
-    watmin            => clm_interface_data%watmin_col                        , &! restriction for min of volumetric soil water, or, residual vwc (-) (nlevgrnd)
-    sucmin            => clm_interface_data%sucmin_col                        , &! restriction for min of soil potential (mm) (nlevgrnd)
+    bsw               => elm_interface_data%bsw_col                           , &! Clapp and Hornberger "b" (nlevgrnd)
+    hksat             => elm_interface_data%hksat_col                         , &! hydraulic conductivity at saturation (mm H2O /s) (nlevgrnd)
+    watsat            => elm_interface_data%watsat_col                        , &! volumetric soil water at saturation (porosity) (nlevgrnd)
+    sucsat            => elm_interface_data%sucsat_col                        , &! minimum soil suction (mm) (nlevgrnd)
+    watmin            => elm_interface_data%watmin_col                        , &! restriction for min of volumetric soil water, or, residual vwc (-) (nlevgrnd)
+    sucmin            => elm_interface_data%sucmin_col                        , &! restriction for min of soil potential (mm) (nlevgrnd)
     !
-    frac_sno_eff      => clm_interface_data%th%frac_sno_eff_col               , &! [real(r8) (:) ]   fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       => clm_interface_data%th%frac_h2osfc_col                , &! [real(r8) (:) ]   fraction of ground covered by surface water (0 to 1)
-    t_soisno          => clm_interface_data%th%t_soisno_col                   , &! [real(r8) (:,:) ] snow-soil layered temperature [K]
-    t_grnd            => clm_interface_data%th%t_grnd_col                     , &! [real(r8) (:) ]   col ground(-air interface averaged) temperature (Kelvin)
-    t_nearsurf        => clm_interface_data%th%t_nearsurf_col                 , &! [real(r8) (:) ]   col mixed air/veg. temperature near surface (for coupling with PFLOTRAN as BC)
-    qflx_top_soil     => clm_interface_data%th%qflx_top_soil_col              , &! [real(r8) (:) ]   column-level net liq. water input into soil from top (mm/s)
-    qflx_evap_h2osfc  => clm_interface_data%th%qflx_evap_h2osfc_col           , &! [real(r8) (:) ]   column-level p-aggregated evaporation flux from h2osfc (mm H2O/s) [+ to atm]
-    qflx_evap_soil    => clm_interface_data%th%qflx_evap_soil_col             , &! [real(r8) (:) ]   column-level p-aggregated evaporation flux from soil (mm H2O/s) [+ to atm]
-    qflx_evap_snow    => clm_interface_data%th%qflx_evap_snow_col             , &! [real(r8) (:) ]   column-level p-aggregated evaporation (inc. subl.) flux from snow (mm H2O/s) [+ to atm]
-    qflx_rootsoil     => clm_interface_data%th%qflx_rootsoil_col              , &! [real(r8) (:,:) ] column-level p-aggregated vertically-resolved vegetation/soil water exchange (m H2O/s) (+ = to atm)
-    h2osoi_liq        => clm_interface_data%th%h2osoi_liq_col                 , &! [real(r8) (:,:) ] liquid water (kg/m2)
-    h2osoi_ice        => clm_interface_data%th%h2osoi_ice_col                   &! [real(r8) (:,:) ] ice lens (kg/m2)
+    frac_sno_eff      => elm_interface_data%th%frac_sno_eff_col               , &! [real(r8) (:) ]   fraction of ground covered by snow (0 to 1)
+    frac_h2osfc       => elm_interface_data%th%frac_h2osfc_col                , &! [real(r8) (:) ]   fraction of ground covered by surface water (0 to 1)
+    t_soisno          => elm_interface_data%th%t_soisno_col                   , &! [real(r8) (:,:) ] snow-soil layered temperature [K]
+    t_grnd            => elm_interface_data%th%t_grnd_col                     , &! [real(r8) (:) ]   col ground(-air interface averaged) temperature (Kelvin)
+    t_nearsurf        => elm_interface_data%th%t_nearsurf_col                 , &! [real(r8) (:) ]   col mixed air/veg. temperature near surface (for coupling with PFLOTRAN as BC)
+    qflx_top_soil     => elm_interface_data%th%qflx_top_soil_col              , &! [real(r8) (:) ]   column-level net liq. water input into soil from top (mm/s)
+    qflx_evap_h2osfc  => elm_interface_data%th%qflx_evap_h2osfc_col           , &! [real(r8) (:) ]   column-level p-aggregated evaporation flux from h2osfc (mm H2O/s) [+ to atm]
+    qflx_evap_soil    => elm_interface_data%th%qflx_evap_soil_col             , &! [real(r8) (:) ]   column-level p-aggregated evaporation flux from soil (mm H2O/s) [+ to atm]
+    qflx_evap_snow    => elm_interface_data%th%qflx_evap_snow_col             , &! [real(r8) (:) ]   column-level p-aggregated evaporation (inc. subl.) flux from snow (mm H2O/s) [+ to atm]
+    qflx_rootsoil     => elm_interface_data%th%qflx_rootsoil_col              , &! [real(r8) (:,:) ] column-level p-aggregated vertically-resolved vegetation/soil water exchange (m H2O/s) (+ = to atm)
+    h2osoi_liq        => elm_interface_data%th%h2osoi_liq_col                 , &! [real(r8) (:,:) ] liquid water (kg/m2)
+    h2osoi_ice        => elm_interface_data%th%h2osoi_ice_col                   &! [real(r8) (:,:) ] ice lens (kg/m2)
     )
 
 !----------------------------------------------------------------------------
@@ -2690,7 +2690,7 @@ contains
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, gcount            ! do loop indices
@@ -2720,19 +2720,19 @@ contains
     dz                => col_pp%dz                    , &! layer thickness depth (m)
     snl               => col_pp%snl                   , &! number of snow layers (negative)
     !
-    frac_sno_eff      => clm_interface_data%th%frac_sno_eff_col      , &! fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       => clm_interface_data%th%frac_h2osfc_col       , &! fraction of ground covered by surface water (0 to 1)
+    frac_sno_eff      => elm_interface_data%th%frac_sno_eff_col      , &! fraction of ground covered by snow (0 to 1)
+    frac_h2osfc       => elm_interface_data%th%frac_h2osfc_col       , &! fraction of ground covered by surface water (0 to 1)
     !
-    htvp              => clm_interface_data%th%htvp_col              , &! latent heat of vapor of water (or sublimation) [j/kg]
-    eflx_fgr0_snow    => clm_interface_data%th%eflx_fgr0_snow_col    , &! heat flux from snow column (W/m**2) [+ = into soil]
-    eflx_fgr0_h2osfc  => clm_interface_data%th%eflx_fgr0_h2osfc_col  , &! heat flux from surface water column (W/m**2) [+ = into soil]
-    eflx_fgr0_soil    => clm_interface_data%th%eflx_fgr0_soil_col    , &! heat flux from near-surface air (W/m**2) [+ = into soil]
-    eflx_rnet_soil    => clm_interface_data%th%eflx_rnet_soil_col    , &! heat flux between soil layer 1 and above-air, excluding SH and LE (i.e. radiation form) (W/m2) [+ = into soil]
-    eflx_bot          => clm_interface_data%th%eflx_bot_col          , &! heat flux from beneath column (W/m**2) [+ = upward]
-    t_soisno          => clm_interface_data%th%t_soisno_col          , &! snow-soil layered temperature [K]
-    t_h2osfc          => clm_interface_data%th%t_h2osfc_col          , &! surface-water temperature [K]
-    t_nearsurf        => clm_interface_data%th%t_nearsurf_col        , &! mixed air/veg. temperature near surface (for coupling with PFLOTRAN as BC)
-    qflx_evap_soil    => clm_interface_data%th%qflx_evap_soil_col      &! non-urban column-level p-aggregated evaporation flux from soil (mm H2O/s) [+ to atm]
+    htvp              => elm_interface_data%th%htvp_col              , &! latent heat of vapor of water (or sublimation) [j/kg]
+    eflx_fgr0_snow    => elm_interface_data%th%eflx_fgr0_snow_col    , &! heat flux from snow column (W/m**2) [+ = into soil]
+    eflx_fgr0_h2osfc  => elm_interface_data%th%eflx_fgr0_h2osfc_col  , &! heat flux from surface water column (W/m**2) [+ = into soil]
+    eflx_fgr0_soil    => elm_interface_data%th%eflx_fgr0_soil_col    , &! heat flux from near-surface air (W/m**2) [+ = into soil]
+    eflx_rnet_soil    => elm_interface_data%th%eflx_rnet_soil_col    , &! heat flux between soil layer 1 and above-air, excluding SH and LE (i.e. radiation form) (W/m2) [+ = into soil]
+    eflx_bot          => elm_interface_data%th%eflx_bot_col          , &! heat flux from beneath column (W/m**2) [+ = upward]
+    t_soisno          => elm_interface_data%th%t_soisno_col          , &! snow-soil layered temperature [K]
+    t_h2osfc          => elm_interface_data%th%t_h2osfc_col          , &! surface-water temperature [K]
+    t_nearsurf        => elm_interface_data%th%t_nearsurf_col        , &! mixed air/veg. temperature near surface (for coupling with PFLOTRAN as BC)
+    qflx_evap_soil    => elm_interface_data%th%qflx_evap_soil_col      &! non-urban column-level p-aggregated evaporation flux from soil (mm H2O/s) [+ to atm]
     )
 
 !----------------------------------------------------------------------------
@@ -2882,7 +2882,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)      ! filters on current process
     integer           , intent(in) :: ifilter         ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
     character(len=256) :: subname = "get_elm_bgc_concentration"
 
@@ -2911,22 +2911,22 @@ contains
     associate ( &
       cgridcell        => col_pp%gridcell                                , & ! column's gridcell
       !
-      initial_cn_ratio => clm_interface_data%bgc%initial_cn_ratio        , &
-      initial_cp_ratio => clm_interface_data%bgc%initial_cp_ratio        , &
+      initial_cn_ratio => elm_interface_data%bgc%initial_cn_ratio        , &
+      initial_cp_ratio => elm_interface_data%bgc%initial_cp_ratio        , &
 
-      decomp_cpools_vr => clm_interface_data%bgc%decomp_cpools_vr_col    , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-      decomp_npools_vr => clm_interface_data%bgc%decomp_npools_vr_col    , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-      smin_no3_vr      => clm_interface_data%bgc%smin_no3_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NO3
-      smin_nh4_vr      => clm_interface_data%bgc%smin_nh4_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NH4
-      smin_nh4sorb_vr  => clm_interface_data%bgc%smin_nh4sorb_vr_col     , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+      decomp_cpools_vr => elm_interface_data%bgc%decomp_cpools_vr_col    , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+      decomp_npools_vr => elm_interface_data%bgc%decomp_npools_vr_col    , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+      smin_no3_vr      => elm_interface_data%bgc%smin_no3_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NO3
+      smin_nh4_vr      => elm_interface_data%bgc%smin_nh4_vr_col         , & ! (gN/m3) vertically-resolved soil mineral NH4
+      smin_nh4sorb_vr  => elm_interface_data%bgc%smin_nh4sorb_vr_col     , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
 
-      decomp_ppools_vr => clm_interface_data%bgc%decomp_ppools_vr_col    , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
-      solutionp_vr     => clm_interface_data%bgc%solutionp_vr_col        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
-      labilep_vr       => clm_interface_data%bgc%labilep_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
-      secondp_vr       => clm_interface_data%bgc%secondp_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-      occlp_vr         => clm_interface_data%bgc%occlp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
-      primp_vr         => clm_interface_data%bgc%primp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
-      sminp_vr         => clm_interface_data%bgc%sminp_vr_col              & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+      decomp_ppools_vr => elm_interface_data%bgc%decomp_ppools_vr_col    , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+      solutionp_vr     => elm_interface_data%bgc%solutionp_vr_col        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
+      labilep_vr       => elm_interface_data%bgc%labilep_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
+      secondp_vr       => elm_interface_data%bgc%secondp_vr_col          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
+      occlp_vr         => elm_interface_data%bgc%occlp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
+      primp_vr         => elm_interface_data%bgc%primp_vr_col            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
+      sminp_vr         => elm_interface_data%bgc%sminp_vr_col              & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
     )
 
     call VecGetArrayF90(elm_pf_idata%decomp_cpools_vr_clmp, decomp_cpools_vr_clm_loc, ierr)
@@ -3044,7 +3044,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
     character(len=256) :: subname = "get_elm_bgc_rate"
 
@@ -3078,27 +3078,27 @@ contains
     associate ( &
       cgridcell                         => col_pp%gridcell               , & ! column's gridcell
       !
-      decomp_cpools_vr                  => clm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-      decomp_npools_vr                  => clm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-      decomp_k_scalar_vr                => clm_interface_data%bgc%sitefactor_kd_vr_col            , &      ! (-) vertically-resolved decomposing rate adjusting factor relevant to location (site)
-      smin_no3_vr                       => clm_interface_data%bgc%smin_no3_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NO3
-      smin_nh4_vr                       => clm_interface_data%bgc%smin_nh4_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NH4
-      smin_nh4sorb_vr                   => clm_interface_data%bgc%smin_nh4sorb_vr_col             , &      ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+      decomp_cpools_vr                  => elm_interface_data%bgc%decomp_cpools_vr_col            , &      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+      decomp_npools_vr                  => elm_interface_data%bgc%decomp_npools_vr_col            , &      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
+      decomp_k_scalar_vr                => elm_interface_data%bgc%sitefactor_kd_vr_col            , &      ! (-) vertically-resolved decomposing rate adjusting factor relevant to location (site)
+      smin_no3_vr                       => elm_interface_data%bgc%smin_no3_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NO3
+      smin_nh4_vr                       => elm_interface_data%bgc%smin_nh4_vr_col                 , &      ! (gN/m3) vertically-resolved soil mineral NH4
+      smin_nh4sorb_vr                   => elm_interface_data%bgc%smin_nh4sorb_vr_col             , &      ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
       ! plant litering and removal + SOM/LIT vertical transport
-      col_net_to_decomp_cpools_vr       => clm_interface_data%bgc%externalc_to_decomp_cpools_col  , &
-      col_net_to_decomp_npools_vr       => clm_interface_data%bgc%externaln_to_decomp_npools_col  , &
+      col_net_to_decomp_cpools_vr       => elm_interface_data%bgc%externalc_to_decomp_cpools_col  , &
+      col_net_to_decomp_npools_vr       => elm_interface_data%bgc%externaln_to_decomp_npools_col  , &
       ! inorg. nitrogen sink potential
-      col_plant_ndemand_vr              => clm_interface_data%bgc%plant_ndemand_vr_col            , &
+      col_plant_ndemand_vr              => elm_interface_data%bgc%plant_ndemand_vr_col            , &
       ! inorg. N source/sink
-      externaln_to_nh4_vr               => clm_interface_data%bgc%externaln_to_nh4_col            , &
-      externaln_to_no3_vr               => clm_interface_data%bgc%externaln_to_no3_col            , &
+      externaln_to_nh4_vr               => elm_interface_data%bgc%externaln_to_nh4_col            , &
+      externaln_to_no3_vr               => elm_interface_data%bgc%externaln_to_no3_col            , &
 
-      col_net_to_decomp_ppools_vr       => clm_interface_data%bgc%externalp_to_decomp_ppools_col  , &
-      externalp_to_primp_vr             => clm_interface_data%bgc%externalp_to_primp_col          , &
-      externalp_to_labilep_vr           => clm_interface_data%bgc%externalp_to_labilep_col        , &
-      externalp_to_solutionp            => clm_interface_data%bgc%externalp_to_solutionp_col      , &
-      sminp_net_transport_vr            => clm_interface_data%bgc%sminp_net_transport_vr_col      , &
-      col_plant_pdemand_vr              => clm_interface_data%bgc%plant_pdemand_vr_col              &
+      col_net_to_decomp_ppools_vr       => elm_interface_data%bgc%externalp_to_decomp_ppools_col  , &
+      externalp_to_primp_vr             => elm_interface_data%bgc%externalp_to_primp_col          , &
+      externalp_to_labilep_vr           => elm_interface_data%bgc%externalp_to_labilep_col        , &
+      externalp_to_solutionp            => elm_interface_data%bgc%externalp_to_solutionp_col      , &
+      sminp_net_transport_vr            => elm_interface_data%bgc%sminp_net_transport_vr_col      , &
+      col_plant_pdemand_vr              => elm_interface_data%bgc%plant_pdemand_vr_col              &
     )
 
     dtime = get_step_size()
@@ -3255,7 +3255,7 @@ contains
   ! !IROUTINE: update_soil_moisture_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_soil_moisture_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_moisture_pf2clm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -3277,7 +3277,7 @@ contains
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
     integer  :: fc, c, j, g              ! indices
@@ -3297,12 +3297,12 @@ contains
       cgridcell       => col_pp%gridcell               , & ! column's gridcell
       dz              => col_pp%dz                     , & ! layer thickness depth (m)
       !
-      watsat          => clm_interface_data%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
+      watsat          => elm_interface_data%watsat_col       , & ! volumetric soil water at saturation (porosity) (nlevgrnd)
       !
-      soilpsi         => clm_interface_data%th%soilpsi_col   , & ! soil water matric potential in each soil layer (MPa)
-      h2osoi_liq      => clm_interface_data%th%h2osoi_liq_col, & ! liquid water (kg/m2)
-      h2osoi_ice      => clm_interface_data%th%h2osoi_ice_col, & ! ice lens (kg/m2)
-      h2osoi_vol      => clm_interface_data%th%h2osoi_vol_col  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+      soilpsi         => elm_interface_data%th%soilpsi_col   , & ! soil water matric potential in each soil layer (MPa)
+      h2osoi_liq      => elm_interface_data%th%h2osoi_liq_col, & ! liquid water (kg/m2)
+      h2osoi_ice      => elm_interface_data%th%h2osoi_ice_col, & ! ice lens (kg/m2)
+      h2osoi_vol      => elm_interface_data%th%h2osoi_vol_col  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
      )
     !
     call VecGetArrayReadF90(elm_pf_idata%soillsat_clms, sat_clm_loc, ierr)
@@ -3393,7 +3393,7 @@ contains
   ! !IROUTINE: update_soil_temperature_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_soil_temperature_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_temperature_pf2clm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -3406,7 +3406,7 @@ contains
   ! !ARGUMENTS:
     implicit none
 
-    type(elm_interface_data_type), intent(in) :: clm_interface_data
+    type(elm_interface_data_type), intent(in) :: elm_interface_data
 
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscvec.h"
@@ -3432,8 +3432,8 @@ contains
        cgridcell       => col_pp%gridcell                    , & ! column's gridcell
        z               => col_pp%z                           , & ! [real(r8) (:,:) ] layer depth (m)
        !
-       t_soisno        => clm_interface_data%th%t_soisno_col      , &  ! [real(r8)(:,:)] snow-soil temperature (Kelvin) [:, 1:nlevgrnd]
-       frost_table     => clm_interface_data%th%frost_table_col     &  ! [real(r8)(:)] frost table depth (m)
+       t_soisno        => elm_interface_data%th%t_soisno_col      , &  ! [real(r8)(:,:)] snow-soil temperature (Kelvin) [:, 1:nlevgrnd]
+       frost_table     => elm_interface_data%th%frost_table_col     &  ! [real(r8)(:)] frost table depth (m)
        )
 
     !
@@ -3509,7 +3509,7 @@ contains
   ! !IROUTINE: update_bcflow_pf2clm
   !
   ! !INTERFACE:
-  subroutine update_bcflow_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_bcflow_pf2clm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   ! update qflx_surf, qflx_infl from PF's
@@ -3526,7 +3526,7 @@ contains
     type(bounds_type), intent(in) :: bounds         ! bounds of current process
     type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
     integer, intent(in) :: ifilter                  ! which filter to be operated
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
   ! !LOCAL VARIABLES:
 #include "petsc/finclude/petscsys.h"
@@ -3551,18 +3551,18 @@ contains
     associate(&
     cgridcell         =>    col_pp%gridcell          , & ! gridcell index of column
     !
-    frac_sno_eff      =>    clm_interface_data%th%frac_sno_eff_col      , & ! fraction of ground covered by snow (0 to 1)
-    frac_h2osfc       =>    clm_interface_data%th%frac_h2osfc_col       , & ! fraction of ground covered by surface water (0 to 1)
+    frac_sno_eff      =>    elm_interface_data%th%frac_sno_eff_col      , & ! fraction of ground covered by snow (0 to 1)
+    frac_h2osfc       =>    elm_interface_data%th%frac_h2osfc_col       , & ! fraction of ground covered by surface water (0 to 1)
     !
-    forc_pbot         =>    clm_interface_data%th%forc_pbot_grc         , & ! [real(r8) (:)] atmospheric pressure (Pa)
-    t_grnd            =>    clm_interface_data%th%t_grnd_col            , & ! [real(r8) (:)] ground surface temperature [K]
-    qflx_top_soil     =>    clm_interface_data%th%qflx_top_soil_col     , & ! [real(r8) (:)] net liq. water input into soil from top (mm/s)
-    qflx_ev_h2osfc    =>    clm_interface_data%th%qflx_evap_h2osfc_col  , & ! [real(r8) (:)] column-level evaporation flux from h2osfc (mm H2O/s) [+ to atm]
-    qflx_ev_soil      =>    clm_interface_data%th%qflx_evap_soil_col    , & ! [real(r8) (:)] column-level evaporation flux from soil (mm H2O/s) [+ to atm]
-    qflx_surf         =>    clm_interface_data%th%qflx_surf_col         , & ! [real(r8) (:)] surface runoff (mm H2O /s)
-    qflx_infl         =>    clm_interface_data%th%qflx_infl_col         , & ! [real(r8) (:)] soil infiltration (mm H2O /s)
-    qflx_drain        =>    clm_interface_data%th%qflx_drain_col        , & ! [real(r8) (:,:)]  sub-surface runoff (drainage) (mm H2O /s)
-    qflx_drain_vr     =>    clm_interface_data%th%qflx_drain_vr_col       & ! [real(r8) (:)]  vertically-resolved sub-surface runoff (drainage) (mm H2O /s)
+    forc_pbot         =>    elm_interface_data%th%forc_pbot_grc         , & ! [real(r8) (:)] atmospheric pressure (Pa)
+    t_grnd            =>    elm_interface_data%th%t_grnd_col            , & ! [real(r8) (:)] ground surface temperature [K]
+    qflx_top_soil     =>    elm_interface_data%th%qflx_top_soil_col     , & ! [real(r8) (:)] net liq. water input into soil from top (mm/s)
+    qflx_ev_h2osfc    =>    elm_interface_data%th%qflx_evap_h2osfc_col  , & ! [real(r8) (:)] column-level evaporation flux from h2osfc (mm H2O/s) [+ to atm]
+    qflx_ev_soil      =>    elm_interface_data%th%qflx_evap_soil_col    , & ! [real(r8) (:)] column-level evaporation flux from soil (mm H2O/s) [+ to atm]
+    qflx_surf         =>    elm_interface_data%th%qflx_surf_col         , & ! [real(r8) (:)] surface runoff (mm H2O /s)
+    qflx_infl         =>    elm_interface_data%th%qflx_infl_col         , & ! [real(r8) (:)] soil infiltration (mm H2O /s)
+    qflx_drain        =>    elm_interface_data%th%qflx_drain_col        , & ! [real(r8) (:,:)]  sub-surface runoff (drainage) (mm H2O /s)
+    qflx_drain_vr     =>    elm_interface_data%th%qflx_drain_vr_col       & ! [real(r8) (:)]  vertically-resolved sub-surface runoff (drainage) (mm H2O /s)
     )
 
     dtime = get_step_size()
@@ -3641,7 +3641,7 @@ contains
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
   !           and the 'SoilLittVertTranspMod.F90' after 'update1'.
   !
-  subroutine update_soil_bgc_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_bgc_pf2clm(elm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars
     use ColumnType              , only : col_pp
     use elm_varctl              , only : iulog, use_fates
@@ -3658,7 +3658,7 @@ contains
     type(clumpfilter) , intent(in) :: filters(:)     ! filters on current process
     integer           , intent(in) :: ifilter        ! which filter to be operated
 
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
     character(len=256) :: subname = "update_soil_bgc_pf2clm"
 
@@ -3697,23 +3697,23 @@ contains
      associate ( &
      cgridcell                    => col_pp%gridcell                                        , & !  [integer (:)]  gridcell index of column
      !
-     initial_cn_ratio             => clm_interface_data%bgc%initial_cn_ratio             , &
-     decomp_cpools_vr             => clm_interface_data%bgc%decomp_cpools_vr_col         , &
-     decomp_npools_vr             => clm_interface_data%bgc%decomp_npools_vr_col         , &
-     sminn_vr                     => clm_interface_data%bgc%sminn_vr_col                 , &
-     smin_no3_vr                  => clm_interface_data%bgc%smin_no3_vr_col              , &
-     smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col              , &
-     smin_nh4sorb_vr              => clm_interface_data%bgc%smin_nh4sorb_vr_col          , &
+     initial_cn_ratio             => elm_interface_data%bgc%initial_cn_ratio             , &
+     decomp_cpools_vr             => elm_interface_data%bgc%decomp_cpools_vr_col         , &
+     decomp_npools_vr             => elm_interface_data%bgc%decomp_npools_vr_col         , &
+     sminn_vr                     => elm_interface_data%bgc%sminn_vr_col                 , &
+     smin_no3_vr                  => elm_interface_data%bgc%smin_no3_vr_col              , &
+     smin_nh4_vr                  => elm_interface_data%bgc%smin_nh4_vr_col              , &
+     smin_nh4sorb_vr              => elm_interface_data%bgc%smin_nh4sorb_vr_col          , &
 
-     decomp_cpools_delta_vr       => clm_interface_data%bgc%decomp_cpools_sourcesink_col  , &
-     decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_npools_sourcesink_col  , &
+     decomp_cpools_delta_vr       => elm_interface_data%bgc%decomp_cpools_sourcesink_col  , &
+     decomp_npools_delta_vr       => elm_interface_data%bgc%decomp_npools_sourcesink_col  , &
 
-     sminn_to_plant_vr            => clm_interface_data%bgc%sminn_to_plant_vr_col         , &
-     smin_no3_to_plant_vr         => clm_interface_data%bgc%smin_no3_to_plant_vr_col      , &
-     smin_nh4_to_plant_vr         => clm_interface_data%bgc%smin_nh4_to_plant_vr_col      , &
-     potential_immob_vr           => clm_interface_data%bgc%potential_immob_vr_col        , &
-     actual_immob_vr              => clm_interface_data%bgc%actual_immob_vr_col           , &
-     gross_nmin_vr                => clm_interface_data%bgc%gross_nmin_vr_col               &
+     sminn_to_plant_vr            => elm_interface_data%bgc%sminn_to_plant_vr_col         , &
+     smin_no3_to_plant_vr         => elm_interface_data%bgc%smin_no3_to_plant_vr_col      , &
+     smin_nh4_to_plant_vr         => elm_interface_data%bgc%smin_nh4_to_plant_vr_col      , &
+     potential_immob_vr           => elm_interface_data%bgc%potential_immob_vr_col        , &
+     actual_immob_vr              => elm_interface_data%bgc%actual_immob_vr_col           , &
+     gross_nmin_vr                => elm_interface_data%bgc%gross_nmin_vr_col               &
      )
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
@@ -3934,7 +3934,7 @@ contains
      endif
 
      ! update bgc gas losses
-     call update_bgc_gaslosses_pf2clm(clm_interface_data, bounds, filters, ifilter)
+     call update_bgc_gaslosses_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
     end associate
   end subroutine update_soil_bgc_pf2clm
@@ -3950,7 +3950,7 @@ contains
   ! from their aq. phase states
   ! (due to not yet available in pflotran bgc)
   !
-  subroutine update_bgc_gaslosses_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_bgc_gaslosses_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size, get_nstep
@@ -3966,7 +3966,7 @@ contains
      type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
      integer          , intent(in) :: ifilter        ! which filter to be operated
 
-     type(elm_interface_data_type), intent(inout) :: clm_interface_data
+     type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
      character(len=256) :: subname = "get_pf_bgc_gaslosses"
 
@@ -4018,18 +4018,18 @@ contains
      cgridcell                    => col_pp%gridcell                      , & ! gridcell index of column
      dz                           => col_pp%dz                            , & ! soil layer thickness depth (m)
      !
-     frac_sno_eff                 => clm_interface_data%th%frac_sno_eff_col            , & ! fraction of ground covered by snow (0 to 1)
-     frac_h2osfc                  => clm_interface_data%th%frac_h2osfc_col             , & ! fraction of ground covered by surface water (0 to 1)
-     forc_pbot                    => clm_interface_data%th%forc_pbot_grc               , & ! atmospheric pressure (Pa)
+     frac_sno_eff                 => elm_interface_data%th%frac_sno_eff_col            , & ! fraction of ground covered by snow (0 to 1)
+     frac_h2osfc                  => elm_interface_data%th%frac_h2osfc_col             , & ! fraction of ground covered by surface water (0 to 1)
+     forc_pbot                    => elm_interface_data%th%forc_pbot_grc               , & ! atmospheric pressure (Pa)
      !
-     forc_pco2                    => clm_interface_data%bgc%forc_pco2_grc              , & ! partial pressure co2 (Pa)
-     hr_vr                        => clm_interface_data%bgc%hr_vr_col                  , &
-     f_co2_soil_vr                => clm_interface_data%bgc%f_co2_soil_vr_col          , &
-     f_n2o_soil_vr                => clm_interface_data%bgc%f_n2o_soil_vr_col          , &
-     f_n2_soil_vr                 => clm_interface_data%bgc%f_n2_soil_vr_col           , &
-     f_ngas_decomp_vr             => clm_interface_data%bgc%f_ngas_decomp_vr_col       , &
-     f_ngas_nitri_vr              => clm_interface_data%bgc%f_ngas_nitri_vr_col        , &
-     f_ngas_denit_vr              => clm_interface_data%bgc%f_ngas_denit_vr_col          &
+     forc_pco2                    => elm_interface_data%bgc%forc_pco2_grc              , & ! partial pressure co2 (Pa)
+     hr_vr                        => elm_interface_data%bgc%hr_vr_col                  , &
+     f_co2_soil_vr                => elm_interface_data%bgc%f_co2_soil_vr_col          , &
+     f_n2o_soil_vr                => elm_interface_data%bgc%f_n2o_soil_vr_col          , &
+     f_n2_soil_vr                 => elm_interface_data%bgc%f_n2_soil_vr_col           , &
+     f_ngas_decomp_vr             => elm_interface_data%bgc%f_ngas_decomp_vr_col       , &
+     f_ngas_nitri_vr              => elm_interface_data%bgc%f_ngas_nitri_vr_col        , &
+     f_ngas_denit_vr              => elm_interface_data%bgc%f_ngas_denit_vr_col          &
      )
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
@@ -4309,7 +4309,7 @@ contains
   !   i.e. it's NOT for mass state updating,
   !   because PFLOTRAN had already updated state variables.
   !
-  subroutine update_bgc_bcflux_pf2clm(clm_interface_data, bounds, filters, ifilter)
+  subroutine update_bgc_bcflux_pf2clm(elm_interface_data, bounds, filters, ifilter)
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size
@@ -4322,7 +4322,7 @@ contains
      type(clumpfilter), intent(in) :: filters(:)     ! filters on current process
      integer          , intent(in) :: ifilter        ! which filter to be operated
 
-     type(elm_interface_data_type), intent(inout) :: clm_interface_data
+     type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
      character(len=256) :: subname = "get_pf_bgc_bcfluxes"
 
@@ -4349,8 +4349,8 @@ contains
      cgridcell                    => col_pp%gridcell                                     , & ! gridcell index of column
      dz                           => col_pp%dz                                           , & ! soil layer thickness depth (m)
      !
-     no3_net_transport_vr         => clm_interface_data%bgc%no3_net_transport_vr_col  , & ! output: [c,j] (gN/m3/s)
-     nh4_net_transport_vr         => clm_interface_data%bgc%nh4_net_transport_vr_col    & ! output: [c,j] (gN/m3/s)
+     no3_net_transport_vr         => elm_interface_data%bgc%no3_net_transport_vr_col  , & ! output: [c,j] (gN/m3/s)
+     nh4_net_transport_vr         => elm_interface_data%bgc%nh4_net_transport_vr_col    & ! output: [c,j] (gN/m3/s)
      )
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
@@ -4458,7 +4458,7 @@ contains
   end subroutine elm_pf_checkerr
 
 !--------------------------------------------------------------------------------------
-  subroutine elm_pf_BeginCBalance(clm_interface_data, bounds, filters, ifilter)
+  subroutine elm_pf_BeginCBalance(elm_interface_data, bounds, filters, ifilter)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning carbon balance for mass
@@ -4471,7 +4471,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,l     ! indices
@@ -4480,8 +4480,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         decomp_cpools_vr       => clm_interface_data%bgc%decomp_cpools_vr_col      , &
-         soil_begcb             => clm_interface_data%bgc%soil_begcb_col              & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         decomp_cpools_vr       => elm_interface_data%bgc%decomp_cpools_vr_col      , &
+         soil_begcb             => elm_interface_data%bgc%soil_begcb_col              & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
     ! calculate beginning column-level soil carbon balance, for mass conservation check
       do fc = 1,filters(ifilter)%num_soilc
@@ -4500,7 +4500,7 @@ contains
 
 !--------------------------------------------------------------------------------------
 
-  subroutine elm_pf_BeginNBalance(clm_interface_data, bounds, filters, ifilter)
+  subroutine elm_pf_BeginNBalance(elm_interface_data, bounds, filters, ifilter)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning carbon balance for mass
@@ -4513,7 +4513,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,l     ! indices
@@ -4523,13 +4523,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         decomp_npools_vr       => clm_interface_data%bgc%decomp_npools_vr_col      , &
-         smin_no3_vr            => clm_interface_data%bgc%smin_no3_vr_col           , &
-         smin_nh4_vr            => clm_interface_data%bgc%smin_nh4_vr_col           , &
-         smin_nh4sorb_vr        => clm_interface_data%bgc%smin_nh4sorb_vr_col       , &
-         soil_begnb             => clm_interface_data%bgc%soil_begnb_col            , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
-         soil_begnb_org         => clm_interface_data%bgc%soil_begnb_org_col        , & !
-         soil_begnb_min         => clm_interface_data%bgc%soil_begnb_min_col          & !
+         decomp_npools_vr       => elm_interface_data%bgc%decomp_npools_vr_col      , &
+         smin_no3_vr            => elm_interface_data%bgc%smin_no3_vr_col           , &
+         smin_nh4_vr            => elm_interface_data%bgc%smin_nh4_vr_col           , &
+         smin_nh4sorb_vr        => elm_interface_data%bgc%smin_nh4sorb_vr_col       , &
+         soil_begnb             => elm_interface_data%bgc%soil_begnb_col            , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         soil_begnb_org         => elm_interface_data%bgc%soil_begnb_org_col        , & !
+         soil_begnb_min         => elm_interface_data%bgc%soil_begnb_min_col          & !
          )
     ! calculate beginning column-level soil carbon balance, for mass conservation check
     nlev = nlevdecomp_full
@@ -4556,7 +4556,7 @@ contains
     end subroutine elm_pf_BeginNBalance
 !--------------------------------------------------------------------------------------
 
-  subroutine elm_pf_CBalanceCheck(clm_interface_data,bounds, filters, ifilter)
+  subroutine elm_pf_CBalanceCheck(elm_interface_data,bounds, filters, ifilter)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check for column and pft
@@ -4570,7 +4570,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer  :: c,j,l                                                               ! indices
@@ -4588,10 +4588,10 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                    &
-         externalc               => clm_interface_data%bgc%externalc_to_decomp_cpools_col , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         decomp_cpools_delta_vr  => clm_interface_data%bgc%decomp_cpools_sourcesink_col   , &
-         hr_vr                   => clm_interface_data%bgc%hr_vr_col                      , &
-         soil_begcb              => clm_interface_data%bgc%soil_begcb_col                   & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         externalc               => elm_interface_data%bgc%externalc_to_decomp_cpools_col , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         decomp_cpools_delta_vr  => elm_interface_data%bgc%decomp_cpools_sourcesink_col   , &
+         hr_vr                   => elm_interface_data%bgc%hr_vr_col                      , &
+         soil_begcb              => elm_interface_data%bgc%soil_begcb_col                   & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          )
 
     ! ------------------------------------------------------------------------
@@ -4641,7 +4641,7 @@ contains
     end subroutine elm_pf_CBalanceCheck
 !--------------------------------------------------------------------------------------
 
-  subroutine elm_pf_NBalanceCheck(clm_interface_data,bounds, filters, ifilter)
+  subroutine elm_pf_NBalanceCheck(elm_interface_data,bounds, filters, ifilter)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, perform carbon mass conservation check for column and pft
@@ -4655,7 +4655,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds      ! bounds of current process
     type(clumpfilter) , intent(inout) :: filters(:)  ! filters on current process
     integer           , intent(in)    :: ifilter     ! which filter to be operated
-    type(elm_interface_data_type), intent(inout) :: clm_interface_data
+    type(elm_interface_data_type), intent(inout) :: elm_interface_data
     !
     ! !LOCAL VARIABLES:
     integer  :: nlev
@@ -4701,27 +4701,27 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                        &
-         externaln_to_decomp_npools   => clm_interface_data%bgc%externaln_to_decomp_npools_col, & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         externaln_to_no3_vr          => clm_interface_data%bgc%externaln_to_no3_col          , &
-         externaln_to_nh4_vr          => clm_interface_data%bgc%externaln_to_nh4_col          , &
-         decomp_npools_delta_vr       => clm_interface_data%bgc%decomp_npools_sourcesink_col  , &
-         decomp_npools_vr             => clm_interface_data%bgc%decomp_npools_vr_col          , &
-         smin_no3_vr                  => clm_interface_data%bgc%smin_no3_vr_col               , &
-         smin_nh4_vr                  => clm_interface_data%bgc%smin_nh4_vr_col               , &
-         smin_nh4sorb_vr              => clm_interface_data%bgc%smin_nh4sorb_vr_col           , &
-         f_ngas_decomp_vr             => clm_interface_data%bgc%f_ngas_decomp_vr_col          , &
-         f_ngas_nitri_vr              => clm_interface_data%bgc%f_ngas_nitri_vr_col           , &
-         f_ngas_denit_vr              => clm_interface_data%bgc%f_ngas_denit_vr_col           , &
-         sminn_to_plant_vr            => clm_interface_data%bgc%sminn_to_plant_vr_col         , &
+         externaln_to_decomp_npools   => elm_interface_data%bgc%externaln_to_decomp_npools_col, & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         externaln_to_no3_vr          => elm_interface_data%bgc%externaln_to_no3_col          , &
+         externaln_to_nh4_vr          => elm_interface_data%bgc%externaln_to_nh4_col          , &
+         decomp_npools_delta_vr       => elm_interface_data%bgc%decomp_npools_sourcesink_col  , &
+         decomp_npools_vr             => elm_interface_data%bgc%decomp_npools_vr_col          , &
+         smin_no3_vr                  => elm_interface_data%bgc%smin_no3_vr_col               , &
+         smin_nh4_vr                  => elm_interface_data%bgc%smin_nh4_vr_col               , &
+         smin_nh4sorb_vr              => elm_interface_data%bgc%smin_nh4sorb_vr_col           , &
+         f_ngas_decomp_vr             => elm_interface_data%bgc%f_ngas_decomp_vr_col          , &
+         f_ngas_nitri_vr              => elm_interface_data%bgc%f_ngas_nitri_vr_col           , &
+         f_ngas_denit_vr              => elm_interface_data%bgc%f_ngas_denit_vr_col           , &
+         sminn_to_plant_vr            => elm_interface_data%bgc%sminn_to_plant_vr_col         , &
 
-         plant_ndemand_vr             => clm_interface_data%bgc%plant_ndemand_vr_col          , &
-         potential_immob_vr           => clm_interface_data%bgc%potential_immob_vr_col        , &
-         actual_immob_vr              => clm_interface_data%bgc%actual_immob_vr_col           , &
-         gross_nmin_vr                => clm_interface_data%bgc%gross_nmin_vr_col             , &
+         plant_ndemand_vr             => elm_interface_data%bgc%plant_ndemand_vr_col          , &
+         potential_immob_vr           => elm_interface_data%bgc%potential_immob_vr_col        , &
+         actual_immob_vr              => elm_interface_data%bgc%actual_immob_vr_col           , &
+         gross_nmin_vr                => elm_interface_data%bgc%gross_nmin_vr_col             , &
 
-         soil_begnb                   => clm_interface_data%bgc%soil_begnb_col                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         soil_begnb_org               => clm_interface_data%bgc%soil_begnb_org_col            , & !
-         soil_begnb_min               => clm_interface_data%bgc%soil_begnb_min_col              & !
+         soil_begnb                   => elm_interface_data%bgc%soil_begnb_col                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         soil_begnb_org               => elm_interface_data%bgc%soil_begnb_org_col            , & !
+         soil_begnb_min               => elm_interface_data%bgc%soil_begnb_min_col              & !
          )
 
     ! ------------------------------------------------------------------------

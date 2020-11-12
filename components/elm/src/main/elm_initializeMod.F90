@@ -924,15 +924,15 @@ contains
 
     !------------------------------------------------------------
     ! initialize clm_bgc_interface_data_type
-    call t_startf('init_clm_interface_data & pflotran')
+    call t_startf('init_elm_interface_data & pflotran')
     if (use_elm_interface) then
-        call clm_interface_data%Init(bounds_proc)
+        call elm_interface_data%Init(bounds_proc)
         ! PFLOTRAN initialization
         if (use_pflotran) then
             call elm_pf_interface_init(bounds_proc)
         end if
     end if
-    call t_stopf('init_clm_interface_data & pflotran')
+    call t_stopf('init_elm_interface_data & pflotran')
     !------------------------------------------------------------
 
     !------------------------------------------------------------       

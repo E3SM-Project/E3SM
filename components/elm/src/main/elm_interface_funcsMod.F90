@@ -12,12 +12,12 @@ module elm_interface_funcsMod
   !--------------------------------------------------------------------------------------
   ! DESCRIPTION:
   ! Coupling of CLM with any specific Soil BGC module Consists of 3 STEPS:
-  ! STEP-1:   clm vars             -> clm_interface_data (i.e. elm_interface_dataType)  ; pass clm vars to clm_interface_data
-  ! STEP-2:   clm_interface_data   -> soil bgc module -> clm_interface_data
-  !      2.1: clm_interface_data   -> soil bgc module
+  ! STEP-1:   clm vars             -> elm_interface_data (i.e. elm_interface_dataType)  ; pass clm vars to elm_interface_data
+  ! STEP-2:   elm_interface_data   -> soil bgc module -> elm_interface_data
+  !      2.1: elm_interface_data   -> soil bgc module
   !      2.2: run soil bgc module
-  !      2.3: soil bgc module      -> clm_interface_data
-  ! STEP-3:   clm_interface_data   -> clm vars
+  !      2.3: soil bgc module      -> elm_interface_data
+  ! STEP-3:   elm_interface_data   -> clm vars
   !--------------------------------------------------------------------------------------
 
 

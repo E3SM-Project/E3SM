@@ -153,7 +153,7 @@ module elm_driver
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_elm_interface
-  use elm_instMod            , only : clm_interface_data
+  use elm_instMod            , only : elm_interface_data
   use elm_interface_funcsMod , only : get_elm_data
   ! (1) clm_bgc through interface
   use elm_varctl             , only : use_elm_bgc
@@ -961,8 +961,8 @@ contains
 
              !--------------------------------------------------------------------------------
              if (use_elm_interface) then
-                 ! STEP-1: pass data from CLM to clm_interface_data (INTERFACE DATA TYPE)
-                 call get_elm_data(clm_interface_data,bounds_clump,                     &
+                 ! STEP-1: pass data from CLM to elm_interface_data (INTERFACE DATA TYPE)
+                 call get_elm_data(elm_interface_data,bounds_clump,                     &
                            filter(nc)%num_soilc, filter(nc)%soilc,                      &
                            filter(nc)%num_soilp, filter(nc)%soilp,                      &
                            atm2lnd_vars, soilstate_vars,                                &
@@ -979,14 +979,14 @@ contains
                     ! -------------------------------------------------------------------------
                     ! PFLOTRAN calling for solving below-ground and ground-surface processes,
                     ! including thermal, hydrological and biogeochemical processes
-                    ! STEP-2: (1) pass data from clm_interface_data to pflotran
+                    ! STEP-2: (1) pass data from elm_interface_data to pflotran
                     ! STEP-2: (2) run pflotran
-                    ! STEP-2: (3) update clm_interface_data from pflotran
+                    ! STEP-2: (3) update elm_interface_data from pflotran
                     ! -------------------------------------------------------------------------
-                    call elm_pf_run(clm_interface_data, bounds_clump, filter, nc)
+                    call elm_pf_run(elm_interface_data, bounds_clump, filter, nc)
 
-                    ! STEP-3: update CLM from clm_interface_data
-                    call update_bgc_data_pf2elm(clm_interface_data%bgc,         &
+                    ! STEP-3: update CLM from elm_interface_data
+                    call update_bgc_data_pf2elm(elm_interface_data%bgc,         &
                            bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
@@ -1000,11 +1000,11 @@ contains
                     call t_startf('clm-bgc via interface')
                     ! -------------------------------------------------------------------------
                     ! run clm-bgc (SoilLittDecompAlloc) through interface
-                    ! STEP-2: (1) pass data from clm_interface_data to SoilLittDecompAlloc
+                    ! STEP-2: (1) pass data from elm_interface_data to SoilLittDecompAlloc
                     ! STEP-2: (2) run SoilLittDecompAlloc
-                    ! STEP-2: (3) update clm_interface_data from SoilLittDecompAlloc
+                    ! STEP-2: (3) update elm_interface_data from SoilLittDecompAlloc
                     ! -------------------------------------------------------------------------
-                    call elm_bgc_run(clm_interface_data, bounds_clump,          &
+                    call elm_bgc_run(elm_interface_data, bounds_clump,          &
                            filter(nc)%num_soilc, filter(nc)%soilc,              &
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            canopystate_vars, soilstate_vars,                    &
@@ -1014,8 +1014,8 @@ contains
                            nitrogenstate_vars, nitrogenflux_vars,               &
                            phosphorusstate_vars,phosphorusflux_vars)
 
-                    ! STEP-3: update CLM from clm_interface_data
-                    call update_bgc_data_clm2clm(clm_interface_data%bgc,        &
+                    ! STEP-3: update CLM from elm_interface_data
+                    call update_bgc_data_clm2clm(elm_interface_data%bgc,        &
                            bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
                            filter(nc)%num_soilp, filter(nc)%soilp,              &
                            cnstate_vars, carbonflux_vars, carbonstate_vars,     &
