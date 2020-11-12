@@ -1897,7 +1897,9 @@ module li_calving
 !> \author Tong Zhang
 !> \date   Oct. 2019
 !> \details restore the damage to the original value before advection if it exceeds some large number
-!>          if we turn on this function, we do not allow the damage to heal (damage to decrease).
+!>          (config_damage_restore_threshold). For example, if config_damage_restore_threshold = 0.5, 
+!>          then the localtions with damage > 0.5 on the ice shelf will not heal.
+!>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_restore_threshold.
 !-----------------------------------------------------------------------
 
    subroutine li_restore_damage(domain, err)
