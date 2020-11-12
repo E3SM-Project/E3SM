@@ -17,7 +17,7 @@ module kurant_mod
       real(crm_rknd), allocatable :: wm (:,:)  ! maximum vertical wind velocity
       real(crm_rknd), allocatable :: uhm(:,:) ! maximum horizontal wind velocity
       real(crm_rknd) cfl, cfl_sgs, tmp
-      integer, parameter :: max_ncycle = 16
+      integer, parameter :: max_ncycle = 4
 
       allocate(wm (ncrms,nz))
       allocate(uhm(ncrms,nz))
@@ -64,7 +64,7 @@ module kurant_mod
       ncycle = max(ncycle,max(1,ceiling(cfl/0.7D0)))
 
       if(ncycle.gt.max_ncycle) then
-        if(masterproc) print *,'kurant() - the number of cycles exceeded 4.'
+        if(masterproc) print *,'kurant() - the number of cycles exceeded max_ncycle = ',max_ncycle
         do icrm = 1 , ncrms
           write(0, 5550) cfl, cfl_sgs, latitude(icrm,1,1), longitude(icrm,1,1)
           do k=1, nzm
