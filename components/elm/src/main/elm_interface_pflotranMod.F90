@@ -1,10 +1,10 @@
 module elm_interface_pflotranMod
 
 !#define elm_pflotran
-! the above #directive IS for explicit coupling CLM and PFLOTRAN (i.e. this interface)
+! the above #directive IS for explicit coupling ELM and PFLOTRAN (i.e. this interface)
 
 !#define COLUMN_MODE
-! the above #define IS for column-wised 1D grid CLM-PF coupling (i.e. 'VERTICAL_ONLY_FLOW/TRAN').
+! the above #define IS for column-wised 1D grid ELM-PF coupling (i.e. 'VERTICAL_ONLY_FLOW/TRAN').
 !  (1) active columns ('filter(:)%soilc', i.e. only including both 'istsoil' and 'istcrop');
 !  (2) 'soilc' are arranged arbitrarily by 'clumps', following by orders in 'soilc', along X-direction;
 !  (3) The order/sequence in (2) are forced passing to over-ride PF's fakely reading input cards.
@@ -12,7 +12,7 @@ module elm_interface_pflotranMod
 !  (5) Since PF fake mesh will be over-rided, mapping_files are NOT needed.
 
 !----------------------------------------------------------------------------------------------
-! NGEE-Arctic CLM-PFLOTRAN soil Thermal-Hydrology & bgC coupling interface
+! NGEE-Arctic ELM-PFLOTRAN soil Thermal-Hydrology & bgC coupling interface
 ! authors: Fengming YUAN1, Gautam Bisht1,2, and Guoping Tang1
 !
 !          1.Climate Change Science Institute & Environmental Science Division
@@ -22,7 +22,7 @@ module elm_interface_pflotranMod
 !
 ! date: 2012 - 2017
 !
-! modified by Gangsheng Wang @ ORNL based on clm_interface: 8/28/2015, 2/2/2017
+! modified by Gangsheng Wang @ ORNL based on elm_interface: 8/28/2015, 2/2/2017
 !
 ! yfm: Added Thermal-Hydrology coupling subroutines: 04/2017
 !----------------------------------------------------------------------------------------------
@@ -56,8 +56,8 @@ module elm_interface_pflotranMod
 
 #ifdef ELM_PFLOTRAN
   use elm_pflotran_interface_data
-  use pflotran_clm_main_module
-  use pflotran_clm_setmapping_module
+  use pflotran_elm_main_module
+  use pflotran_elm_setmapping_module
 #endif
 
   ! !PUBLIC TYPES:
@@ -109,8 +109,8 @@ module elm_interface_pflotranMod
   !
   private :: get_elm_bgc_conc
   private :: get_elm_bgc_rate
-  private :: update_soil_bgc_pf2clm
-  private :: update_bgc_gaslosses_pf2clm
+  private :: update_soil_bgc_pf2elm
+  private :: update_bgc_gaslosses_pf2elm
   ! pflotran mass balance check
   private :: elm_pf_BeginCBalance
   private :: elm_pf_BeginNBalance
@@ -119,9 +119,9 @@ module elm_interface_pflotranMod
   !
   private :: get_elm_bcwflx
   private :: get_elm_bceflx
-  private :: update_soil_temperature_pf2clm
-  private :: update_soil_moisture_pf2clm
-  private :: update_bcflow_pf2clm
+  private :: update_soil_temperature_pf2elm
+  private :: update_soil_moisture_pf2elm
+  private :: update_bcflow_pf2elm
 
 #endif
 
@@ -143,7 +143,7 @@ contains
   subroutine elm_pf_readnl( NLFilename )
   !
   ! !DESCRIPTION:
-  ! Read namelist for clm-pflotran interface
+  ! Read namelist for elm-pflotran interface
   !
   ! !USES:
     use elm_varctl    , only : iulog
@@ -172,7 +172,7 @@ contains
     if ( masterproc )then
 
        unitn = getavu()
-       write(iulog,*) 'Read in clm-pflotran namelist'
+       write(iulog,*) 'Read in elm-pflotran namelist'
        call opnfil (NLFilename, unitn, 'F')
        call shr_nl_find_group_name(unitn, 'elm_pflotran_inparm', status=ierr)
        if (ierr == 0) then
@@ -183,7 +183,7 @@ contains
           end if
        end if
        call relavu( unitn )
-       write(iulog, '(/, A)') " clm-pflotran namelist:"
+       write(iulog, '(/, A)') " elm-pflotran namelist:"
        write(iulog, '(A, " : ", A,/)') "   pflotran_prefix", trim(pflotran_prefix)
     end if
 
@@ -198,7 +198,7 @@ contains
   ! !IROUTINE: elm_pf_set_restart_stamp
   !
   ! !INTERFACE:
-  subroutine elm_pf_set_restart_stamp(clm_restart_filename)
+  subroutine elm_pf_set_restart_stamp(elm_restart_filename)
   !
   ! !DESCRIPTION: Set the pflotran restart date stamp. Note we do NOT
   ! restart here, that gets handled by pflotran's internal
@@ -206,23 +206,23 @@ contains
   !
   ! !USES:
   ! !ARGUMENTS:
-    character(len=256), intent(in) :: clm_restart_filename
+    character(len=256), intent(in) :: elm_restart_filename
   ! !LOCAL VARIABLES:
     integer :: name_length, start_pos, end_pos
-    character(len=32) :: clm_stamp
+    character(len=32) :: elm_stamp
   !EOP
   !-----------------------------------------------------------------------
 
-    ! clm restart file name is of the form:
-    !     ${CASE_NAME}.clm2.r.YYYY-MM-DD-SSSSS.nc
+    ! elm restart file name is of the form:
+    !     ${CASE_NAME}.elm2.r.YYYY-MM-DD-SSSSS.nc
     ! we need to extract the: YYYY-MM-DD-SSSSS
-    write(*, '("clm-pf : clm restart file name : ", A/)') trim(clm_restart_filename)
-    name_length = len(trim(clm_restart_filename))
+    write(*, '("elm-pf : elm restart file name : ", A/)') trim(elm_restart_filename)
+    name_length = len(trim(elm_restart_filename))
     start_pos = name_length - 18
     end_pos = name_length - 3
-    clm_stamp = clm_restart_filename(start_pos : end_pos)
-    write(*, '("clm-pf : clm date stamp : ", A/)') trim(clm_stamp)
-    restart_stamp = clm_stamp
+    elm_stamp = elm_restart_filename(start_pos : end_pos)
+    write(*, '("elm-pf : elm date stamp : ", A/)') trim(elm_stamp)
+    restart_stamp = elm_stamp
 
   end subroutine elm_pf_set_restart_stamp
 
@@ -246,7 +246,7 @@ contains
   ! !LOCAL VARIABLES:
   !EOP
   !-----------------------------------------------------------------------
-    call endrun(trim(subname) // ": ERROR: CLM-PFLOTRAN interface has not been compiled " // &
+    call endrun(trim(subname) // ": ERROR: ELM-PFLOTRAN interface has not been compiled " // &
          "into this version of ALM.")
   end subroutine pflotran_not_available
 
@@ -349,7 +349,7 @@ contains
 
 !************************************************************************************!
 ! (BEGIN)
-! Private interface subroutines, requiring explicit coupling between CLM and PFLOTRAN
+! Private interface subroutines, requiring explicit coupling between ELM and PFLOTRAN
 !
 #ifdef ELM_PFLOTRAN
 
@@ -384,7 +384,7 @@ contains
     use elm_varcon      , only : dzsoi, zisoi
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp_full, ndecomp_pools
     use elm_varctl      , only : pf_hmode, pf_tmode, pf_cmode, pf_frzmode,  &
-                                 initth_pf2clm, pf_elmnstep0,               &
+                                 initth_pf2elm, pf_elmnstep0,               &
                                  pf_surfaceflow
 
 
@@ -399,7 +399,7 @@ contains
     use Realization_Subsurface_class, only : realization_subsurface_type
 
     use PFLOTRAN_Constants_module
-    use pflotran_clm_setmapping_module
+    use pflotran_elm_setmapping_module
     use Mapping_module
     ! !ARGUMENTS:
 
@@ -432,12 +432,12 @@ contains
 
     character(len= 32) :: subname = 'interface_init' ! subroutine name
 
-    integer, pointer :: clm_all_cell_ids_nindex(:)
-    integer, pointer :: clm_top_cell_ids_nindex(:)
-    integer, pointer :: clm_bot_cell_ids_nindex(:)
-    integer :: clm_all_npts
-    integer :: clm_top_npts
-    integer :: clm_bot_npts
+    integer, pointer :: elm_all_cell_ids_nindex(:)
+    integer, pointer :: elm_top_cell_ids_nindex(:)
+    integer, pointer :: elm_bot_cell_ids_nindex(:)
+    integer :: elm_all_npts
+    integer :: elm_top_npts
+    integer :: elm_bot_npts
     real(r8):: x0, x1, y0, y1, dx_global(1:ldomain%ni), dy_global(1:ldomain%nj)
     integer :: i, j
     real(r8):: lon0, lat0 !origin of longitude/latitude
@@ -462,7 +462,7 @@ contains
     lat0 = ldomain%lat0
     ! end----------------------------------------------------------------
 
-    ! (0) determines Total grids/columns and ids to be mapped between CLM and PFLOTRAN
+    ! (0) determines Total grids/columns and ids to be mapped between ELM and PFLOTRAN
 
 #ifdef COLUMN_MODE
     ! counting 'soilc' in 'filters'
@@ -482,11 +482,11 @@ contains
 
          if (.not.cactive(c) .or. cwtgcell(c)<=0._r8) then
             !write (iulog,*) 'WARNING: SOIL/CROP column with wtgcell <= 0 or inactive... within the domain'
-            !write (iulog,*) 'CLM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
+            !write (iulog,*) 'ELM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
 
          elseif ( .not.(ltype(l)==istsoil .or. ltype(l)==istcrop) ) then
             !write (iulog,*) 'WARNING: non-SOIL/CROP column found in filter%num_soilc: nc, l, ltype', nc, l, ltype(l)
-            !write (iulog,*) 'CLM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
+            !write (iulog,*) 'ELM-- PFLOTRAN does not include such a SOIL/CROP column, AND will skip it'
 
          else
             total_soilc = total_soilc + 1
@@ -506,8 +506,8 @@ contains
                     total_soilc_pes, 1, MPI_INTEGER, 0, mpicom, ierr)
     call mpi_bcast(total_soilc_pes, npes, MPI_INTEGER, 0, mpicom, ierr)
 
-    ! CLM's natural grid id, continued and ordered across processes, for mapping to PF mesh
-    ! will be assigned to calculate 'clm_cell_ids_nindex' below
+    ! ELM's natural grid id, continued and ordered across processes, for mapping to PF mesh
+    ! will be assigned to calculate 'elm_cell_ids_nindex' below
     allocate(mapped_gid(1:total_soilc))
 
     start_mappedgid = 0
@@ -536,8 +536,8 @@ contains
 #else
     ! 'grid'-wised coupling
     !  (1) grid without soil column IS allowed, but will be skipped.
-    !      This will allow exactly same grid domain for CLM and PFLOTRAN
-    !      (why? - we may be able to run CLM-PFLOTRAN for irregular mesh, by assigning non-soil grid in normally a CLM rectangulal surface domain.)
+    !      This will allow exactly same grid domain for ELM and PFLOTRAN
+    !      (why? - we may be able to run ELM-PFLOTRAN for irregular mesh, by assigning non-soil grid in normally a ELM rectangulal surface domain.)
     !  (2) if soil column within a grid, assumes that only 1 natural/cropped soil-column allowed per grid cell NOW
 
     ! count active soil columns for a gridcell to do checking below
@@ -550,7 +550,7 @@ contains
       gcount = g - bounds%begg + 1
       if ((.not.(ltype(l)==istsoil)) .and. (.not.(ltype(l)==istcrop)) ) then
          !write (iulog,*) 'WARNING: Land Unit type of Non-SOIL/CROP... within the domain'
-         !write (iulog,*) 'CLM-- PFLOTRAN does not support this land unit at present, AND will skip it'
+         !write (iulog,*) 'ELM-- PFLOTRAN does not support this land unit at present, AND will skip it'
 
       else
           if (cactive(c) .and. cwtgcell(c)>0._r8) then
@@ -565,11 +565,11 @@ contains
     do g = bounds%begg, bounds%endg
        if (gcolumns(g-bounds%begg+1) > 1) then
            write (iulog,*) 'ERROR: More than 1 ACTIVE soil column found in gridcell:', g, gcolumns(g-bounds%begg+1)
-           write (iulog,*) 'CLM-PFLOTRAN does not support this at present, AND please check your surface data, then re-run'
-           write (iulog,*) ' i.e., this mode is used for user-defined CLM grid, which may be generated together with PF mesh'
+           write (iulog,*) 'ELM-PFLOTRAN does not support this at present, AND please check your surface data, then re-run'
+           write (iulog,*) ' i.e., this mode is used for user-defined ELM grid, which may be generated together with PF mesh'
 
            call endrun(trim(subname) // ": ERROR: Currently does not support multiple or inactive soil column per grid " // &
-              "in this version of CLM-PFLOTRAN.")
+              "in this version of ELM-PFLOTRAN.")
 
        else
            total_soilc = total_soilc + gcolumns(g-bounds%begg+1)
@@ -584,8 +584,8 @@ contains
     ! counting active gridcells in current pes
     total_grid = bounds%endg-bounds%begg+1
 
-    ! CLM's natural grid id, continued and ordered across processors, for mapping to PF mesh
-    ! will be assigned to calculate 'clm_cell_ids_nindex' below
+    ! ELM's natural grid id, continued and ordered across processors, for mapping to PF mesh
+    ! will be assigned to calculate 'elm_cell_ids_nindex' below
     allocate(mapped_gid(1:total_grid))
 
     ! mark the inactive grid (non-natveg/crop landunits)
@@ -632,20 +632,20 @@ contains
     pf_elmnstep0 = get_nstep()
 
     !----------------------------------------------------------------------------------------
-    ! (1) Initialize PETSc vector for data transfer between CLM and PFLOTRAN
-    call CLMPFLOTRANIDataInit()
+    ! (1) Initialize PETSc vector for data transfer between ELM and PFLOTRAN
+    call ELMPFLOTRANIDataInit()
 
     !----------------------------------------------------------------------------------------
     ! (2) passing grid/mesh info to interface_data so that PF mesh can be established/mapped
 
     !(2a) domain/decompose
-    elm_pf_idata%nzclm_mapped = nlevgrnd      ! the soil layer no. mapped btw CLM and PF for data-passing
+    elm_pf_idata%nzelm_mapped = nlevgrnd      ! the soil layer no. mapped btw ELM and PF for data-passing
 
     if (masterproc) then
       write(iulog,*) '%%                                                     %%'
-      write(iulog,*) '%% CLM-Layer-No.     PF-Layer-NO.    Thickness (m)     %%'
-      do j=elm_pf_idata%nzclm_mapped, 1, -1
-         write(iulog,*) j, elm_pf_idata%nzclm_mapped-j+1, dzsoi(j)
+      write(iulog,*) '%% ELM-Layer-No.     PF-Layer-NO.    Thickness (m)     %%'
+      do j=elm_pf_idata%nzelm_mapped, 1, -1
+         write(iulog,*) j, elm_pf_idata%nzelm_mapped-j+1, dzsoi(j)
       enddo
       write(iulog,*) '%%                                                     %%'
       write(iulog,*) ' '
@@ -653,35 +653,35 @@ contains
 
 
 #ifdef COLUMN_MODE
-    elm_pf_idata%nxclm_mapped = global_numc  ! 1-D format, along X direction
-    elm_pf_idata%nyclm_mapped = 1            ! 1-D format
+    elm_pf_idata%nxelm_mapped = global_numc  ! 1-D format, along X direction
+    elm_pf_idata%nyelm_mapped = 1            ! 1-D format
 
     elm_pf_idata%npx = npes
     elm_pf_idata%npy = 1
     elm_pf_idata%npz = 1
 
-    if(.not.associated(elm_pf_idata%clm_lx)) &
-    allocate(elm_pf_idata%clm_lx(1:elm_pf_idata%npx))
-    if(.not.associated(elm_pf_idata%clm_ly)) &
-    allocate(elm_pf_idata%clm_ly(1:elm_pf_idata%npy))
-    if(.not.associated(elm_pf_idata%clm_lz)) &
-    allocate(elm_pf_idata%clm_lz(1:elm_pf_idata%npz))
+    if(.not.associated(elm_pf_idata%elm_lx)) &
+    allocate(elm_pf_idata%elm_lx(1:elm_pf_idata%npx))
+    if(.not.associated(elm_pf_idata%elm_ly)) &
+    allocate(elm_pf_idata%elm_ly(1:elm_pf_idata%npy))
+    if(.not.associated(elm_pf_idata%elm_lz)) &
+    allocate(elm_pf_idata%elm_lz(1:elm_pf_idata%npz))
 
     !
     do pid=0, npes-1
-       elm_pf_idata%clm_lx(pid+1) = total_soilc_pes(pid)
+       elm_pf_idata%elm_lx(pid+1) = total_soilc_pes(pid)
     end do
-    elm_pf_idata%clm_ly = 1
-    elm_pf_idata%clm_lz = elm_pf_idata%nzclm_mapped
+    elm_pf_idata%elm_ly = 1
+    elm_pf_idata%elm_lz = elm_pf_idata%nzelm_mapped
 
     deallocate(total_soilc_pes)
 
 #else
-    elm_pf_idata%nxclm_mapped = ldomain%ni  ! longitudial
-    elm_pf_idata%nyclm_mapped = ldomain%nj  ! latidudial
+    elm_pf_idata%nxelm_mapped = ldomain%ni  ! longitudial
+    elm_pf_idata%nyelm_mapped = ldomain%nj  ! latidudial
 
     ! Currently, the following IS only good for user-defined non-global soil domain
-    ! AND, the CLM grids ONLY over-rides PF mesh, when 'mapping_files' not provided
+    ! AND, the ELM grids ONLY over-rides PF mesh, when 'mapping_files' not provided
     ! i.e. only used for structured-grid.
 
     ! due to virtually 2-D surface-grid, along which PF structured-grids are decomposed,
@@ -712,22 +712,22 @@ contains
     elm_pf_idata%npz = 1                               ! No decompose along Z-direction currently
 
     ! calculate node no. for each processor along X-/Y-/Z-direction
-    if(.not.associated(elm_pf_idata%clm_lx)) &
-    allocate(elm_pf_idata%clm_lx(1:elm_pf_idata%npx))
-    if(.not.associated(elm_pf_idata%clm_ly)) &
-    allocate(elm_pf_idata%clm_ly(1:elm_pf_idata%npy))
-    if(.not.associated(elm_pf_idata%clm_lz)) &
-    allocate(elm_pf_idata%clm_lz(1:elm_pf_idata%npz))
+    if(.not.associated(elm_pf_idata%elm_lx)) &
+    allocate(elm_pf_idata%elm_lx(1:elm_pf_idata%npx))
+    if(.not.associated(elm_pf_idata%elm_ly)) &
+    allocate(elm_pf_idata%elm_ly(1:elm_pf_idata%npy))
+    if(.not.associated(elm_pf_idata%elm_lz)) &
+    allocate(elm_pf_idata%elm_lz(1:elm_pf_idata%npz))
 
-    elm_pf_idata%clm_lx(:) = (nx-mod(nx,elm_pf_idata%npx))/elm_pf_idata%npx
+    elm_pf_idata%elm_lx(:) = (nx-mod(nx,elm_pf_idata%npx))/elm_pf_idata%npx
     do i=1, mod(nx,elm_pf_idata%npx)
-       elm_pf_idata%clm_lx(i) = elm_pf_idata%clm_lx(i)+1
+       elm_pf_idata%elm_lx(i) = elm_pf_idata%elm_lx(i)+1
     end do
-    elm_pf_idata%clm_ly(:) = (ny-mod(ny,elm_pf_idata%npy))/elm_pf_idata%npy
+    elm_pf_idata%elm_ly(:) = (ny-mod(ny,elm_pf_idata%npy))/elm_pf_idata%npy
     do j=1, mod(ny,elm_pf_idata%npy)
-       elm_pf_idata%clm_ly(j) = elm_pf_idata%clm_ly(j)+1
+       elm_pf_idata%elm_ly(j) = elm_pf_idata%elm_ly(j)+1
     end do
-    elm_pf_idata%clm_lz = elm_pf_idata%nzclm_mapped
+    elm_pf_idata%elm_lz = elm_pf_idata%nzelm_mapped
 
 #endif
 
@@ -740,36 +740,36 @@ contains
     endif
 
 
-    ! (2b) clm land-surface grid length/width, if provided for over-ride PF's mesh
+    ! (2b) elm land-surface grid length/width, if provided for over-ride PF's mesh
     ! unit IS upon input (now: degree)
 
 #ifdef COLUMN_MODE
     ! dummy values here, will be modified later
 
-    if(.not.associated(elm_pf_idata%dxclm_global)) &
-    allocate(elm_pf_idata%dxclm_global(1:elm_pf_idata%nxclm_mapped))
-    if(.not.associated(elm_pf_idata%dyclm_global)) &
-    allocate(elm_pf_idata%dyclm_global(1:elm_pf_idata%nyclm_mapped))
-    elm_pf_idata%x0clm_global = 0.d0
-    elm_pf_idata%y0clm_global = 0.d0
-    elm_pf_idata%dxclm_global = 1.d0
-    elm_pf_idata%dyclm_global = 1.d0
+    if(.not.associated(elm_pf_idata%dxelm_global)) &
+    allocate(elm_pf_idata%dxelm_global(1:elm_pf_idata%nxelm_mapped))
+    if(.not.associated(elm_pf_idata%dyelm_global)) &
+    allocate(elm_pf_idata%dyelm_global(1:elm_pf_idata%nyelm_mapped))
+    elm_pf_idata%x0elm_global = 0.d0
+    elm_pf_idata%y0elm_global = 0.d0
+    elm_pf_idata%dxelm_global = 1.d0
+    elm_pf_idata%dyelm_global = 1.d0
 
 #else
     ! if given vertices,
-    ! then have enough information to configure out spatial connections of CLM grids
+    ! then have enough information to configure out spatial connections of ELM grids
     ! ldomain%nv missing in ACME1
     
     if (ldomain%nv == 4) then
 
-      if(.not.associated(elm_pf_idata%dxclm_global)) &
-      allocate(elm_pf_idata%dxclm_global(1:elm_pf_idata%nxclm_mapped))
-      if(.not.associated(elm_pf_idata%dyclm_global)) &
-      allocate(elm_pf_idata%dyclm_global(1:elm_pf_idata%nyclm_mapped))
+      if(.not.associated(elm_pf_idata%dxelm_global)) &
+      allocate(elm_pf_idata%dxelm_global(1:elm_pf_idata%nxelm_mapped))
+      if(.not.associated(elm_pf_idata%dyelm_global)) &
+      allocate(elm_pf_idata%dyelm_global(1:elm_pf_idata%nyelm_mapped))
 
       ! globally grids
       !NOTE: lon1d/lat1d are the centroid of a grid along longitude-axis/latitude-axis
-      elm_pf_idata%x0clm_global = lon0
+      elm_pf_idata%x0elm_global = lon0
       x0 = lon0
       x1 = lon1d(1) + (lon1d(1) - lon0)
 
@@ -780,7 +780,7 @@ contains
       end do
       dx_global(i) = abs(x1 - x0)
 
-      elm_pf_idata%y0clm_global = lat0
+      elm_pf_idata%y0elm_global = lat0
       y0 = lat0
       y1 = lat1d(1) + (lat1d(1) - lat0)
       do j=1,ldomain%nj-1
@@ -790,31 +790,31 @@ contains
       end do
       dy_global(j) = abs(y1 - y0)
 
-      ! passing info to clm-pf-interface
+      ! passing info to elm-pf-interface
       do i=1, ldomain%ni
-         elm_pf_idata%dxclm_global(i)=dx_global(i)
+         elm_pf_idata%dxelm_global(i)=dx_global(i)
       end do
       do j=1, ldomain%nj
-         elm_pf_idata%dyclm_global(j)=dy_global(j)
+         elm_pf_idata%dyelm_global(j)=dy_global(j)
       end do
 
     end if
 
 #endif
 
-    ! the soil layer thickness mapped btw CLM and PF for data-passing consistently
-    ! unit IS upon CLM (now: meter)
-    if(.not.associated(elm_pf_idata%dzclm_global)) &
-    allocate(elm_pf_idata%dzclm_global(1:elm_pf_idata%nzclm_mapped))
-    do j=1,elm_pf_idata%nzclm_mapped
-       elm_pf_idata%dzclm_global(j) = dzsoi(elm_pf_idata%nzclm_mapped-j+1)
+    ! the soil layer thickness mapped btw ELM and PF for data-passing consistently
+    ! unit IS upon ELM (now: meter)
+    if(.not.associated(elm_pf_idata%dzelm_global)) &
+    allocate(elm_pf_idata%dzelm_global(1:elm_pf_idata%nzelm_mapped))
+    do j=1,elm_pf_idata%nzelm_mapped
+       elm_pf_idata%dzelm_global(j) = dzsoi(elm_pf_idata%nzelm_mapped-j+1)
     end do
-    elm_pf_idata%z0clm_global = 0._r8
+    elm_pf_idata%z0elm_global = 0._r8
 
     !----------------------------------------------------------------------------------------
     ! (3) passing BGC species no./constants to interface_data
 
-    ! the CLM-CN/BGC decomposing pool size and element number, and constants
+    ! the ELM-CN/BGC decomposing pool size and element number, and constants
     elm_pf_idata%ndecomp_pools    = ndecomp_pools
     elm_pf_idata%ndecomp_elements = 2    ! now: C and N only
 
@@ -861,25 +861,25 @@ contains
 
     call pflotranModelSetupMappingFiles(pflotran_m)
 
-    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with CLM. So it's off and restart PF from CLM.
+    ! PFLOTRAN ck file (*.ck) NOT works well when coupling with ELM. So it's off and restart PF from ELM.
     !restart_stamp = ""
     !call pflotranModelSetupRestart(pflotran_m, restart_stamp)
-    initth_pf2clm = .false.
+    initth_pf2elm = .false.
     !if (restart_stamp .ne. "") then
-    !   initth_pf2clm = .true.
+    !   initth_pf2elm = .true.
     !endif
 
     select type (simulation => pflotran_m%simulation)
       class is (simulation_subsurface_type)
          realization => simulation%realization
       class default
-         pflotran_m%option%io_buffer = "This version of clm-pflotran only works with subsurface simulations."
+         pflotran_m%option%io_buffer = "This version of elm-pflotran only works with subsurface simulations."
          write(*, '(/A/)') pflotran_m%option%io_buffer
          call printErrMsg(pflotran_m%option)
     end select
 
     if(pflotran_m%option%nsurfflowdof > 0) then
-       pflotran_m%option%io_buffer = "This version of clm-pflotran DOES NOT work with PF Surface simulation."
+       pflotran_m%option%io_buffer = "This version of elm-pflotran DOES NOT work with PF Surface simulation."
        write(*, '(/A/)') pflotran_m%option%io_buffer
        call printErrMsg(pflotran_m%option)
     endif
@@ -887,53 +887,53 @@ contains
 
     !------------------------------------------------
 
-    ! Number of cells and Indexing in CLM domain's clumps on current process ('bounds')
+    ! Number of cells and Indexing in ELM domain's clumps on current process ('bounds')
 
 #ifdef COLUMN_MODE
     ! soil column-wised for mapping.
-    clm_all_npts = total_soilc*elm_pf_idata%nzclm_mapped
-    clm_top_npts = total_soilc
-    clm_bot_npts = total_soilc
-    allocate(clm_all_cell_ids_nindex(1:clm_all_npts))
-    allocate(clm_top_cell_ids_nindex(1:clm_top_npts))
-    allocate(clm_bot_cell_ids_nindex(1:clm_bot_npts))
+    elm_all_npts = total_soilc*elm_pf_idata%nzelm_mapped
+    elm_top_npts = total_soilc
+    elm_bot_npts = total_soilc
+    allocate(elm_all_cell_ids_nindex(1:elm_all_npts))
+    allocate(elm_top_cell_ids_nindex(1:elm_top_npts))
+    allocate(elm_bot_cell_ids_nindex(1:elm_bot_npts))
 
     cellcount = 0
     do colcount = 1, total_soilc
        gid = mapped_gid(colcount)
 
-       ! Save cell IDs (0-based) of CLM columns in 1D array on current process ('bounds')
-       clm_top_cell_ids_nindex(colcount) = (gid-1)*elm_pf_idata%nzclm_mapped
-       do j = 1,elm_pf_idata%nzclm_mapped
+       ! Save cell IDs (0-based) of ELM columns in 1D array on current process ('bounds')
+       elm_top_cell_ids_nindex(colcount) = (gid-1)*elm_pf_idata%nzelm_mapped
+       do j = 1,elm_pf_idata%nzelm_mapped
           cellcount = cellcount + 1
-          clm_all_cell_ids_nindex(cellcount) = (gid-1)*elm_pf_idata%nzclm_mapped + j - 1
+          elm_all_cell_ids_nindex(cellcount) = (gid-1)*elm_pf_idata%nzelm_mapped + j - 1
        enddo
-       clm_bot_cell_ids_nindex(colcount) = gid*elm_pf_idata%nzclm_mapped - 1
+       elm_bot_cell_ids_nindex(colcount) = gid*elm_pf_idata%nzelm_mapped - 1
 
     end do
     deallocate(mapped_gid)
 
 #else
     !grid-wised for mapping.
-    clm_all_npts = total_grid*elm_pf_idata%nzclm_mapped
-    clm_top_npts = total_grid
-    clm_bot_npts = total_grid
-    allocate(clm_all_cell_ids_nindex(1:clm_all_npts))
-    allocate(clm_top_cell_ids_nindex(1:clm_top_npts))
-    allocate(clm_bot_cell_ids_nindex(1:clm_bot_npts))
+    elm_all_npts = total_grid*elm_pf_idata%nzelm_mapped
+    elm_top_npts = total_grid
+    elm_bot_npts = total_grid
+    allocate(elm_all_cell_ids_nindex(1:elm_all_npts))
+    allocate(elm_top_cell_ids_nindex(1:elm_top_npts))
+    allocate(elm_bot_cell_ids_nindex(1:elm_bot_npts))
 
     cellcount = 0
     do gcount = 1, total_grid
 
        gid = mapped_gid(gcount)
 
-       ! Save cell IDs of CLM grid
-       do j = 1,elm_pf_idata%nzclm_mapped
+       ! Save cell IDs of ELM grid
+       do j = 1,elm_pf_idata%nzelm_mapped
           cellcount = cellcount + 1
-          clm_all_cell_ids_nindex(cellcount) = (gid-1)*elm_pf_idata%nzclm_mapped + j-1   ! zero-based
+          elm_all_cell_ids_nindex(cellcount) = (gid-1)*elm_pf_idata%nzelm_mapped + j-1   ! zero-based
        enddo
-       clm_top_cell_ids_nindex(gcount) = (gid-1)*elm_pf_idata%nzclm_mapped               ! zero-based
-       clm_bot_cell_ids_nindex(gcount) = gid*elm_pf_idata%nzclm_mapped-1                 ! zero-based
+       elm_top_cell_ids_nindex(gcount) = (gid-1)*elm_pf_idata%nzelm_mapped               ! zero-based
+       elm_bot_cell_ids_nindex(gcount) = gid*elm_pf_idata%nzelm_mapped-1                 ! zero-based
 
     enddo
     deallocate(mapped_gid)
@@ -941,64 +941,64 @@ contains
 #endif
 
 
-    ! CLM: 3-D Subsurface domain (local and ghosted cells)
-    elm_pf_idata%nlclm_sub = clm_all_npts
-    elm_pf_idata%ngclm_sub = clm_all_npts
+    ! ELM: 3-D Subsurface domain (local and ghosted cells)
+    elm_pf_idata%nlelm_sub = elm_all_npts
+    elm_pf_idata%ngelm_sub = elm_all_npts
 
-    ! CLM: Surface/Bottom cells of subsurface domain (local and ghosted cells)
-    elm_pf_idata%nlclm_2dtop = clm_top_npts
-    elm_pf_idata%ngclm_2dtop = clm_top_npts
+    ! ELM: Surface/Bottom cells of subsurface domain (local and ghosted cells)
+    elm_pf_idata%nlelm_2dtop = elm_top_npts
+    elm_pf_idata%ngelm_2dtop = elm_top_npts
 
-    ! CLM: bottom face of subsurface domain
-    elm_pf_idata%nlclm_2dbot = clm_bot_npts
-    elm_pf_idata%ngclm_2dbot = clm_bot_npts
+    ! ELM: bottom face of subsurface domain
+    elm_pf_idata%nlelm_2dbot = elm_bot_npts
+    elm_pf_idata%ngelm_2dbot = elm_bot_npts
 
     ! PFLOTRAN: 3-D Subsurface domain (local and ghosted cells)
     elm_pf_idata%nlpf_sub = realization%patch%grid%nlmax
     elm_pf_idata%ngpf_sub = realization%patch%grid%ngmax
 
-    ! For CLM/PF: ground surface NOT defined, so need to set the following to zero.
-    elm_pf_idata%nlclm_srf = 0
-    elm_pf_idata%ngclm_srf = 0
+    ! For ELM/PF: ground surface NOT defined, so need to set the following to zero.
+    elm_pf_idata%nlelm_srf = 0
+    elm_pf_idata%ngelm_srf = 0
     elm_pf_idata%nlpf_srf  = 0
     elm_pf_idata%ngpf_srf  = 0
 
-    ! Initialize maps for transferring data between CLM and PFLOTRAN.
-    if(associated(pflotran_m%map_clm_sub_to_pf_sub) .and. &
-       pflotran_m%map_clm_sub_to_pf_sub%id == CLM_3DSUB_TO_PF_3DSUB) then
-       call pflotranModelInitMapping(pflotran_m, clm_all_cell_ids_nindex, &
-                                  clm_all_npts, CLM_3DSUB_TO_PF_3DSUB)
+    ! Initialize maps for transferring data between ELM and PFLOTRAN.
+    if(associated(pflotran_m%map_elm_sub_to_pf_sub) .and. &
+       pflotran_m%map_elm_sub_to_pf_sub%id == ELM_3DSUB_TO_PF_3DSUB) then
+       call pflotranModelInitMapping(pflotran_m, elm_all_cell_ids_nindex, &
+                                  elm_all_npts, ELM_3DSUB_TO_PF_3DSUB)
     endif
-    if(associated(pflotran_m%map_pf_sub_to_clm_sub) .and. &
-       pflotran_m%map_pf_sub_to_clm_sub%id == PF_3DSUB_TO_CLM_3DSUB) then
-       call pflotranModelInitMapping(pflotran_m, clm_all_cell_ids_nindex, &
-                                  clm_all_npts, PF_3DSUB_TO_CLM_3DSUB)
-    endif
-    !
-    if(associated(pflotran_m%map_clm_2dtop_to_pf_2dtop) .and. &
-       pflotran_m%map_clm_2dtop_to_pf_2dtop%id == CLM_2DTOP_TO_PF_2DTOP) then
-       call pflotranModelInitMapping(pflotran_m, clm_top_cell_ids_nindex,   &
-                                      clm_top_npts, CLM_2DTOP_TO_PF_2DTOP)
-    endif
-    if(associated(pflotran_m%map_pf_2dtop_to_clm_2dtop) .and. &
-       pflotran_m%map_pf_2dtop_to_clm_2dtop%id == PF_2DTOP_TO_CLM_2DTOP) then
-       call pflotranModelInitMapping(pflotran_m, clm_top_cell_ids_nindex,   &
-                                      clm_top_npts, PF_2DTOP_TO_CLM_2DTOP)
+    if(associated(pflotran_m%map_pf_sub_to_elm_sub) .and. &
+       pflotran_m%map_pf_sub_to_elm_sub%id == PF_3DSUB_TO_ELM_3DSUB) then
+       call pflotranModelInitMapping(pflotran_m, elm_all_cell_ids_nindex, &
+                                  elm_all_npts, PF_3DSUB_TO_ELM_3DSUB)
     endif
     !
-    if(associated(pflotran_m%map_clm_2dbot_to_pf_2dbot) .and. &
-       pflotran_m%map_clm_2dbot_to_pf_2dbot%id == CLM_2DBOT_TO_PF_2DBOT) then
-       call pflotranModelInitMapping(pflotran_m, clm_bot_cell_ids_nindex, &
-                                     clm_bot_npts, CLM_2DBOT_TO_PF_2DBOT)
+    if(associated(pflotran_m%map_elm_2dtop_to_pf_2dtop) .and. &
+       pflotran_m%map_elm_2dtop_to_pf_2dtop%id == ELM_2DTOP_TO_PF_2DTOP) then
+       call pflotranModelInitMapping(pflotran_m, elm_top_cell_ids_nindex,   &
+                                      elm_top_npts, ELM_2DTOP_TO_PF_2DTOP)
     endif
-    if(associated(pflotran_m%map_pf_2dbot_to_clm_2dbot) .and. &
-       pflotran_m%map_pf_2dbot_to_clm_2dbot%id == PF_2DBOT_TO_CLM_2DBOT) then
-       call pflotranModelInitMapping(pflotran_m, clm_bot_cell_ids_nindex, &
-                                     clm_bot_npts, PF_2DBOT_TO_CLM_2DBOT)
+    if(associated(pflotran_m%map_pf_2dtop_to_elm_2dtop) .and. &
+       pflotran_m%map_pf_2dtop_to_elm_2dtop%id == PF_2DTOP_TO_ELM_2DTOP) then
+       call pflotranModelInitMapping(pflotran_m, elm_top_cell_ids_nindex,   &
+                                      elm_top_npts, PF_2DTOP_TO_ELM_2DTOP)
+    endif
+    !
+    if(associated(pflotran_m%map_elm_2dbot_to_pf_2dbot) .and. &
+       pflotran_m%map_elm_2dbot_to_pf_2dbot%id == ELM_2DBOT_TO_PF_2DBOT) then
+       call pflotranModelInitMapping(pflotran_m, elm_bot_cell_ids_nindex, &
+                                     elm_bot_npts, ELM_2DBOT_TO_PF_2DBOT)
+    endif
+    if(associated(pflotran_m%map_pf_2dbot_to_elm_2dbot) .and. &
+       pflotran_m%map_pf_2dbot_to_elm_2dbot%id == PF_2DBOT_TO_ELM_2DBOT) then
+       call pflotranModelInitMapping(pflotran_m, elm_bot_cell_ids_nindex, &
+                                     elm_bot_npts, PF_2DBOT_TO_ELM_2DBOT)
     endif
 
-    ! Allocate vectors for data transfer between CLM and PFLOTRAN.
-    call CLMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
+    ! Allocate vectors for data transfer between ELM and PFLOTRAN.
+    call ELMPFLOTRANIDataCreateVec(MPI_COMM_WORLD)
 
 #ifdef COLUMN_MODE
     ! if 'column-wised' mapping, vertical-flow/transport only mode IS ON by default
@@ -1011,7 +1011,7 @@ contains
 
     ! checking if 'option%mapping_files' turned off by default
     if(pflotran_m%option%mapping_files) then
-       pflotran_m%option%io_buffer = " COLUMN_MODE coupled clm-pflotran DOES NOT need MAPPING_FILES ON."
+       pflotran_m%option%io_buffer = " COLUMN_MODE coupled elm-pflotran DOES NOT need MAPPING_FILES ON."
        write(*, '(/A/)') pflotran_m%option%io_buffer
        call printErrMsg(pflotran_m%option)
     endif
@@ -1021,19 +1021,19 @@ contains
     ! if BGC is on
     if(pflotran_m%option%ntrandof > 0) then
 
-      ! the CLM-CN/BGC decomposing pools
+      ! the ELM-CN/BGC decomposing pools
       elm_pf_idata%decomp_pool_name  = decomp_cascade_con%decomp_pool_name_history(1:ndecomp_pools)
       elm_pf_idata%floating_cn_ratio = decomp_cascade_con%floating_cn_ratio_decomp_pools(1:ndecomp_pools)
       ! PF bgc species names/IDs
       call pflotranModelGetRTspecies(pflotran_m)
     endif
 
-    deallocate(clm_all_cell_ids_nindex)
-    deallocate(clm_top_cell_ids_nindex)
-    deallocate(clm_bot_cell_ids_nindex)
+    deallocate(elm_all_cell_ids_nindex)
+    deallocate(elm_top_cell_ids_nindex)
+    deallocate(elm_bot_cell_ids_nindex)
 
 !-------------------------------------------------------------------------------------
-    ! coupled module controls betweeen PFLOTRAN and CLM45 (F.-M. Yuan, Aug. 2013)
+    ! coupled module controls betweeen PFLOTRAN and ELM45 (F.-M. Yuan, Aug. 2013)
     if(pflotran_m%option%iflowmode==RICHARDS_MODE) then
       pf_hmode = .true.
       pf_tmode = .false.
@@ -1050,7 +1050,7 @@ contains
     endif
 
     if(pflotran_m%option%ntrandof.gt.0) then
-      pf_cmode = .true.        ! initialized as '.false.' in clm initialization
+      pf_cmode = .true.        ! initialized as '.false.' in elm initialization
     endif
 
 
@@ -1078,7 +1078,7 @@ contains
     use clm_time_manager  , only : get_step_size, get_nstep, nsstep, nestep,         &
                                    is_first_step, is_first_restart_step, calc_nestep
     use elm_varctl        , only : pf_tmode, pf_hmode, pf_cmode,                     &
-                                   pf_frzmode, pf_elmnstep0, initth_pf2clm
+                                   pf_frzmode, pf_elmnstep0, initth_pf2elm
 
     !
     implicit none
@@ -1092,9 +1092,9 @@ contains
     !LOCAL VARIABLES:
     real(r8) :: dtime                         ! land model time step (sec)
     integer  :: nstep                         ! time step number
-    integer  :: total_clmstep                 ! total clm time step number
+    integer  :: total_elmstep                 ! total elm time step number
     logical  :: ispfprint                     ! let PF printout or not
-    logical  :: isinitpf = .FALSE.            ! (re-)initialize PF from CLM or not
+    logical  :: isinitpf = .FALSE.            ! (re-)initialize PF from ELM or not
     integer  :: ierr
 
   !-----------------------------------------------------------------------
@@ -1112,17 +1112,17 @@ contains
     ! (0)
     if (isinitpf) then
       call calc_nestep()  ! nestep
-       total_clmstep = nestep - pf_elmnstep0 !nestep - nsstep
+       total_elmstep = nestep - pf_elmnstep0 !nestep - nsstep
        ispfprint = .true.               ! turn-on or shut-off PF's *.h5 output
 
-       call pflotranModelUpdateFinalWaypoint(pflotran_m, total_clmstep*dtime, dtime, ispfprint)
+       call pflotranModelUpdateFinalWaypoint(pflotran_m, total_elmstep*dtime, dtime, ispfprint)
 
        ! beg------------------------------------------------
        ! move from 'interface_init'
-       ! force CLM soil domain into PFLOTRAN subsurface grids
+       ! force ELM soil domain into PFLOTRAN subsurface grids
        call get_elm_soil_dimension(elm_interface_data, bounds)
 
-       ! Currently always set soil hydraulic/BGC properties from CLM to PF
+       ! Currently always set soil hydraulic/BGC properties from ELM to PF
        call get_elm_soil_properties(elm_interface_data, bounds, filters)
 
        ! Get top surface area of 3-D pflotran subsurface domain
@@ -1130,20 +1130,20 @@ contains
 
        ! end------------------------------------------------
 
-       ! always initializing soil 'TH' states from CLM to pflotran
-       call get_elm_soil_th(elm_interface_data, .not.initth_pf2clm, .not.initth_pf2clm, bounds, filters, ifilter)
+       ! always initializing soil 'TH' states from ELM to pflotran
+       call get_elm_soil_th(elm_interface_data, .not.initth_pf2elm, .not.initth_pf2elm, bounds, filters, ifilter)
 
-       call pflotranModelUpdateTHfromCLM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
+       call pflotranModelUpdateTHfromELM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
 
     endif
 
 
     ! (1)
-    ! if PF T/H mode not available, have to pass those from CLM to global variable in PF to drive BGC/H
-    if (.not. isinitpf .and. (.not.pf_tmode .or. .not.pf_hmode)) then    ! always initialize from CLM to pF, if comment out this 'if'block
+    ! if PF T/H mode not available, have to pass those from ELM to global variable in PF to drive BGC/H
+    if (.not. isinitpf .and. (.not.pf_tmode .or. .not.pf_hmode)) then    ! always initialize from ELM to pF, if comment out this 'if'block
        call get_elm_soil_th(elm_interface_data, .TRUE., .TRUE., bounds, filters, ifilter)
 
-       call pflotranModelUpdateTHfromCLM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
+       call pflotranModelUpdateTHfromELM(pflotran_m, .FALSE., .FALSE.)     ! pass TH to global_auxvar
 
     end if
 
@@ -1151,33 +1151,33 @@ contains
     if (.not.pf_frzmode) then
         call get_elm_iceadj_porosity(elm_interface_data, bounds, filters, ifilter)
 
-        call pflotranModelResetSoilPorosityFromCLM(pflotran_m)
+        call pflotranModelResetSoilPorosityFromELM(pflotran_m)
 
     endif
 
-    ! (2) CLM thermal BC to PFLOTRAN-CLM interface
+    ! (2) ELM thermal BC to PFLOTRAN-ELM interface
     if (pf_tmode) then
         call get_elm_bceflx(elm_interface_data, bounds, filters, ifilter)
         call pflotranModelUpdateSubsurfTCond( pflotran_m )   ! E-SrcSink and T bc
     end if
 
-    ! (3) pass CLM water fluxes to PFLOTRAN-CLM interface
-    if (pf_hmode) then      !if coupled 'H' mode between CLM45 and PFLOTRAN
+    ! (3) pass ELM water fluxes to PFLOTRAN-ELM interface
+    if (pf_hmode) then      !if coupled 'H' mode between ELM45 and PFLOTRAN
         call get_elm_bcwflx(elm_interface_data, bounds, filters, ifilter)
 
-        ! pass flux 'vecs' from CLM to pflotran
+        ! pass flux 'vecs' from ELM to pflotran
         call pflotranModelUpdateHSourceSink( pflotran_m )   ! H SrcSink
-        call pflotranModelSetSoilHbcsFromCLM( pflotran_m )  ! H bc
+        call pflotranModelSetSoilHbcsFromELM( pflotran_m )  ! H bc
     end if
 
     ! (4)
     if (pf_cmode) then
 
-    ! (4a) always (re-)initialize PFLOTRAN soil bgc state variables from CLM-CN
+    ! (4a) always (re-)initialize PFLOTRAN soil bgc state variables from ELM-CN
     !      (this will be easier to maintain balance error-free)
 
         call get_elm_bgc_conc(elm_interface_data, bounds, filters, ifilter)
-        call pflotranModelSetBgcConcFromCLM(pflotran_m)
+        call pflotranModelSetBgcConcFromELM(pflotran_m)
         if ((.not.pf_hmode .or. .not.pf_frzmode)) then
           ! this is needed, because at step 0, PF's interface data is empty
           ! which causes Aq. conc. adjustment balacne issue
@@ -1185,22 +1185,22 @@ contains
         endif
 
 
-       ! MUST reset PFLOTRAN soil aq. bgc state variables from CLM-CN due to liq. water volume change
-       ! when NOT coupled with PF Hydrology or NOT in freezing-mode (porosity will be forced to vary from CLM)
+       ! MUST reset PFLOTRAN soil aq. bgc state variables from ELM-CN due to liq. water volume change
+       ! when NOT coupled with PF Hydrology or NOT in freezing-mode (porosity will be forced to vary from ELM)
         if (.not.pf_hmode .or. .not.pf_frzmode) then
-          call pflotranModelUpdateAqConcFromCLM(pflotran_m)
+          call pflotranModelUpdateAqConcFromELM(pflotran_m)
         endif
 
-    ! (4b) bgc rate (fluxes) from CLM to PFLOTRAN
+    ! (4b) bgc rate (fluxes) from ELM to PFLOTRAN
         call get_elm_bgc_rate(elm_interface_data, bounds, filters, ifilter)
-        call pflotranModelSetBgcRatesFromCLM(pflotran_m)
+        call pflotranModelSetBgcRatesFromELM(pflotran_m)
 
     endif
 
     ! (5) the main callings of PFLOTRAN
     call mpi_barrier(mpicom, ierr)
 
-    if(mod(nstep+1,48) == 0) then   ! this will allow PFLOTRAN write out every 48 CLM time-step, if relevant option is ON.
+    if(mod(nstep+1,48) == 0) then   ! this will allow PFLOTRAN write out every 48 ELM time-step, if relevant option is ON.
        ispfprint = .TRUE.
     else
        ispfprint = .FALSE.
@@ -1209,33 +1209,33 @@ contains
     call pflotranModelStepperRunTillPauseTime( pflotran_m, (nstep+1.0d0)*dtime, dtime, ispfprint )
     call mpi_barrier(mpicom, ierr)
 
-    ! (6) update CLM variables from PFLOTRAN
+    ! (6) update ELM variables from PFLOTRAN
 
     if (pf_hmode) then
         call pflotranModelGetSaturationFromPF( pflotran_m )   ! hydrological states
-        call update_soil_moisture_pf2clm(elm_interface_data, bounds, filters, ifilter)
+        call update_soil_moisture_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
         ! the actual infiltration/runoff/drainage and solute flux with BC, if defined,
-        ! are retrieving from PFLOTRAN using 'update_bcflow_pf2clm' subroutine
+        ! are retrieving from PFLOTRAN using 'update_bcflow_pf2elm' subroutine
         call pflotranModelGetBCMassBalanceDeltaFromPF( pflotran_m )
-        call update_bcflow_pf2clm(elm_interface_data, bounds, filters, ifilter)
+        call update_bcflow_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
     endif
 
     if (pf_tmode) then
         call pflotranModelGetTemperatureFromPF( pflotran_m )  ! thermal states
-        call update_soil_temperature_pf2clm(elm_interface_data, bounds, filters, ifilter)
+        call update_soil_temperature_pf2elm(elm_interface_data, bounds, filters, ifilter)
     endif
 
     if (pf_cmode) then
         call pflotranModelGetBgcVariablesFromPF( pflotran_m)      ! bgc variables
 
-        call update_soil_bgc_pf2clm(elm_interface_data, bounds, filters, ifilter)
+        call update_soil_bgc_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
-        call update_bgc_bcflux_pf2clm(elm_interface_data, bounds, filters, ifilter)
+        call update_bgc_bcflux_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
         ! need to save the current time-step PF porosity/liq. saturation for bgc species mass conservation
-        ! if CLM forced changing them into PF at NEXT timestep
+        ! if ELM forced changing them into PF at NEXT timestep
         if (.not.pf_hmode .or. .not.pf_frzmode) then
            call pflotranModelGetSaturationFromPF(pflotran_m)
         endif
@@ -1265,7 +1265,7 @@ contains
   !-----------------------------------------------------------------------
 
     ! temporarily OFF - it's not working well for BGC
-    ! So, now must initializing PF variables from CLM each start/restart.
+    ! So, now must initializing PF variables from ELM each start/restart.
 
     !call pflotranModelStepperCheckpoint(pflotran_m, date_stamp)
 
@@ -1300,7 +1300,7 @@ contains
 
   !====================================================================================================
   !                                                                                                   !
-  !               Subroutines to GET CLM Dimension & Properties to PFLOTRAN                           !
+  !               Subroutines to GET ELM Dimension & Properties to PFLOTRAN                           !
   !                                                                                                   !
   !====================================================================================================
   !BOP
@@ -1348,8 +1348,8 @@ contains
     integer  :: gcount, colcount, cellcount   ! gcount: 0-based, colcount: 1-based, cellcount: 1-based
     integer  :: v, n1, n2
     real(r8) :: p1, p2
-    real(r8) :: dxsoil_clm(1:bounds%endg-bounds%begg+1)
-    real(r8) :: dysoil_clm(1:bounds%endg-bounds%begg+1)
+    real(r8) :: dxsoil_elm(1:bounds%endg-bounds%begg+1)
+    real(r8) :: dysoil_elm(1:bounds%endg-bounds%begg+1)
 #ifdef COLUMN_MODE
     real(r8) :: wtgcell_sum(1:bounds%endc-bounds%begc+1)
 #else
@@ -1359,15 +1359,15 @@ contains
 
     character(len= 32) :: subname = 'get_elm_soil_dimension' ! subroutine name
 
-    PetscScalar, pointer :: cellid_clm_loc(:)
-    PetscScalar, pointer :: zisoil_clm_loc(:)     ! 3-D PF-cell's z-node coordinates (elevation-adjusted, unit: m)
-    PetscScalar, pointer :: dxsoil_clm_loc(:)     ! 3-D PF-cell's soil length (unit: degrees)
-    PetscScalar, pointer :: dysoil_clm_loc(:)     ! 3-D PF-cell's soil width (unit: degrees)
-    PetscScalar, pointer :: dzsoil_clm_loc(:)     ! 3-D PF-cell's soil thickness (unit: m)
-    PetscScalar, pointer :: xsoil_clm_loc(:)      ! 3-D PF-cell's center x coordinates (unit: m)
-    PetscScalar, pointer :: ysoil_clm_loc(:)      ! 3-D PF-cell's center y coordinates (unit: m)
-    PetscScalar, pointer :: zsoil_clm_loc(:)      ! 3-D PF-cell's soil depth from ground surface at the layer center (unit: m)
-    PetscScalar, pointer :: toparea_clm_loc(:)    ! 3-D PF-cell (unit: m^2)
+    PetscScalar, pointer :: cellid_elm_loc(:)
+    PetscScalar, pointer :: zisoil_elm_loc(:)     ! 3-D PF-cell's z-node coordinates (elevation-adjusted, unit: m)
+    PetscScalar, pointer :: dxsoil_elm_loc(:)     ! 3-D PF-cell's soil length (unit: degrees)
+    PetscScalar, pointer :: dysoil_elm_loc(:)     ! 3-D PF-cell's soil width (unit: degrees)
+    PetscScalar, pointer :: dzsoil_elm_loc(:)     ! 3-D PF-cell's soil thickness (unit: m)
+    PetscScalar, pointer :: xsoil_elm_loc(:)      ! 3-D PF-cell's center x coordinates (unit: m)
+    PetscScalar, pointer :: ysoil_elm_loc(:)      ! 3-D PF-cell's center y coordinates (unit: m)
+    PetscScalar, pointer :: zsoil_elm_loc(:)      ! 3-D PF-cell's soil depth from ground surface at the layer center (unit: m)
+    PetscScalar, pointer :: toparea_elm_loc(:)    ! 3-D PF-cell (unit: m^2)
 
     PetscErrorCode :: ierr
 
@@ -1467,7 +1467,7 @@ contains
                end if
             end do
             if (n1 > 0 .and. n2 > 0) then
-               dxsoil_clm(gcount+1) = abs(p2/n2-p1/n1)  ! degs
+               dxsoil_elm(gcount+1) = abs(p2/n2-p1/n1)  ! degs
             endif
 
             p1 = 0._r8
@@ -1484,7 +1484,7 @@ contains
                end if
             end do
             if (n1 > 0 .and. n2 > 0) then
-               dysoil_clm(gcount+1) = abs(p2/n2-p1/n1)  ! degs
+               dysoil_elm(gcount+1) = abs(p2/n2-p1/n1)  ! degs
             endif
 
          endif  !if(.not.ldomain%isgrid2d)
@@ -1493,36 +1493,36 @@ contains
 
     end do
 
-    call VecGetArrayF90(elm_pf_idata%cellid_clmp,  cellid_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%cellid_elmp,  cellid_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecGetArrayF90(elm_pf_idata%zisoil_clmp,  zisoil_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%zisoil_elmp,  zisoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%dxsoil_clmp,  dxsoil_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%dxsoil_elmp,  dxsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%dysoil_clmp,  dysoil_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%dysoil_elmp,  dysoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%dzsoil_clmp,  dzsoil_clm_loc,  ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecGetArrayF90(elm_pf_idata%area_top_face_clmp,  toparea_clm_loc,  ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%xsoil_clmp,  xsoil_clm_loc,  ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%ysoil_clmp,  ysoil_clm_loc,  ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%zsoil_clmp,  zsoil_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%dzsoil_elmp,  dzsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    zisoil_clm_loc(:)   = 0._r8
-    dxsoil_clm_loc(:)   = 0._r8
-    dysoil_clm_loc(:)   = 0._r8
-    dzsoil_clm_loc(:)   = 0._r8
+    call VecGetArrayF90(elm_pf_idata%area_top_face_elmp,  toparea_elm_loc,  ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%xsoil_elmp,  xsoil_elm_loc,  ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%ysoil_elmp,  ysoil_elm_loc,  ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%zsoil_elmp,  zsoil_elm_loc,  ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    toparea_clm_loc(:)  = 0._r8
-    xsoil_clm_loc(:)    = 0._r8
-    ysoil_clm_loc(:)    = 0._r8
-    zsoil_clm_loc(:)    = 0._r8
+    zisoil_elm_loc(:)   = 0._r8
+    dxsoil_elm_loc(:)   = 0._r8
+    dysoil_elm_loc(:)   = 0._r8
+    dzsoil_elm_loc(:)   = 0._r8
+
+    toparea_elm_loc(:)  = 0._r8
+    xsoil_elm_loc(:)    = 0._r8
+    ysoil_elm_loc(:)    = 0._r8
+    zsoil_elm_loc(:)    = 0._r8
 
 
 #ifdef COLUMN_MODE
@@ -1537,20 +1537,20 @@ contains
        if (.not.mapped_gcount_skip(colcount) ) then
           gcount = gcount + 1                                      ! 0-based: the active soil column count
 
-          do j = 1, elm_pf_idata%nzclm_mapped
+          do j = 1, elm_pf_idata%nzelm_mapped
             if (j <= nlevgrnd) then
 
-               cellcount = gcount*elm_pf_idata%nzclm_mapped + j    ! 1-based
+               cellcount = gcount*elm_pf_idata%nzelm_mapped + j    ! 1-based
 
-               xsoil_clm_loc(cellcount) = lonc(g)
-               ysoil_clm_loc(cellcount) = latc(g)
+               xsoil_elm_loc(cellcount) = lonc(g)
+               ysoil_elm_loc(cellcount) = latc(g)
                !
-               dzsoil_clm_loc(cellcount) = dz(c, j)                ! cell vertical thickness (m)
-               zisoil_clm_loc(cellcount) = -zi(c, j-1) + lelev(g)  ! cell-node (top) elevation (m)
-               zsoil_clm_loc(cellcount)  = z(c, j)                 ! cell-center vertical depth from surface (m)
+               dzsoil_elm_loc(cellcount) = dz(c, j)                ! cell vertical thickness (m)
+               zisoil_elm_loc(cellcount) = -zi(c, j-1) + lelev(g)  ! cell-node (top) elevation (m)
+               zsoil_elm_loc(cellcount)  = z(c, j)                 ! cell-center vertical depth from surface (m)
 
                ! top face area, scaled by active column weight and land fraction
-               toparea_clm_loc(cellcount) = wtgcell_sum(colcount) * ldomain%frac(g) * larea(g) * 1.e6_r8       ! m^2
+               toparea_elm_loc(cellcount) = wtgcell_sum(colcount) * ldomain%frac(g) * larea(g) * 1.e6_r8       ! m^2
 
 
                ! after knowing 'toparea', we may get a pseudo 'dx' and 'dy' so that PF will not crash
@@ -1560,25 +1560,25 @@ contains
                   ! having 4 vertices
                   lats = latv(g,1:4)
                   lons = lonv(g,1:4)
-                  dxsoil_clm_loc(cellcount) = abs(lons(1)+lons(4)-lons(2)-lons(3))/2.0_r8     &
+                  dxsoil_elm_loc(cellcount) = abs(lons(1)+lons(4)-lons(2)-lons(3))/2.0_r8     &
                                                * wtgcell_sum(colcount) * ldomain%frac(g)
                     ! note: since in 'column_wise' mode, the columns are in 1D array by x-axis,
                     ! only need to scale 'dx' by column area fraction
-                  dysoil_clm_loc(cellcount) = abs(lats(1)+lats(2)-lats(3)-lats(4))/2.0_r8
+                  dysoil_elm_loc(cellcount) = abs(lats(1)+lats(2)-lats(3)-lats(4))/2.0_r8
 
                else
-                  dxsoil_clm_loc(cellcount) = larea(g)/(re**2)  &       ! in degrees of great circle length
+                  dxsoil_elm_loc(cellcount) = larea(g)/(re**2)  &       ! in degrees of great circle length
                                                * wtgcell_sum(colcount) * ldomain%frac(g)
-                  dysoil_clm_loc(cellcount) = larea(g)/(re**2)
+                  dysoil_elm_loc(cellcount) = larea(g)/(re**2)
                endif
 
             else
-               call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+               call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
                    " 'elm_varpar%nlevgrnd'. Please check")
 
             endif
 
-          enddo  ! do j=1,nzclm_mapped
+          enddo  ! do j=1,nzelm_mapped
 
         endif
      enddo ! do c = bounds%begc, bounds%endc
@@ -1588,59 +1588,59 @@ contains
     do g = bounds%begg, bounds%endg
        gcount = g - bounds%begg                                ! 0-based
 
-       do j = 1, elm_pf_idata%nzclm_mapped
+       do j = 1, elm_pf_idata%nzelm_mapped
 
          if (j <= nlevgrnd) then
 
-            cellcount = gcount*elm_pf_idata%nzclm_mapped + j   ! 1-based
+            cellcount = gcount*elm_pf_idata%nzelm_mapped + j   ! 1-based
 
-            cellid_clm_loc(cellcount) = (grc_pp%gindex(g)-1)*elm_pf_idata%nzclm_mapped + j  ! 1-based
+            cellid_elm_loc(cellcount) = (grc_pp%gindex(g)-1)*elm_pf_idata%nzelm_mapped + j  ! 1-based
 
-            xsoil_clm_loc(cellcount) = lonc(g)
-            ysoil_clm_loc(cellcount) = latc(g)
-            dxsoil_clm_loc(cellcount) = -9999.d0
-            dysoil_clm_loc(cellcount) = -9999.d0
+            xsoil_elm_loc(cellcount) = lonc(g)
+            ysoil_elm_loc(cellcount) = latc(g)
+            dxsoil_elm_loc(cellcount) = -9999.d0
+            dysoil_elm_loc(cellcount) = -9999.d0
 
             !
-            dzsoil_clm_loc(cellcount) = dz(xwtgcell_c(gcount+1), j)                ! cell vertical thickness (m), by column of max. weight in a grid
-            zisoil_clm_loc(cellcount) = -zi(xwtgcell_c(gcount+1), j-1) + lelev(g)  ! cell-node (top) elevation (m)
-            zsoil_clm_loc(cellcount)  = z(xwtgcell_c(gcount+1), j)                 ! cell-center vertical depth from surface (m)
+            dzsoil_elm_loc(cellcount) = dz(xwtgcell_c(gcount+1), j)                ! cell vertical thickness (m), by column of max. weight in a grid
+            zisoil_elm_loc(cellcount) = -zi(xwtgcell_c(gcount+1), j-1) + lelev(g)  ! cell-node (top) elevation (m)
+            zsoil_elm_loc(cellcount)  = z(xwtgcell_c(gcount+1), j)                 ! cell-center vertical depth from surface (m)
 
             ! top face area, scaled by active column weight (summed) and land fraction
-            toparea_clm_loc(cellcount) = wtgcell_sum(gcount+1) * ldomain%frac(g) * larea(g) * 1.e6_r8       ! m^2
+            toparea_elm_loc(cellcount) = wtgcell_sum(gcount+1) * ldomain%frac(g) * larea(g) * 1.e6_r8       ! m^2
 
          else
-            call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+            call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
               " 'elm_varpar%nlevgrnd'. Please check")
 
          endif
 
-       enddo ! do j=1,nzclm_mapped
+       enddo ! do j=1,nzelm_mapped
     enddo ! do g = bounds%begg, bounds%endg
 
 #endif
 
-    call VecRestoreArrayF90(elm_pf_idata%cellid_clmp,  cellid_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%cellid_elmp,  cellid_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%zisoil_clmp,  zisoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%zisoil_elmp,  zisoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%dxsoil_clmp,  dxsoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%dxsoil_elmp,  dxsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%dysoil_clmp,  dysoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%dysoil_elmp,  dysoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%dzsoil_clmp,  dzsoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%dzsoil_elmp,  dzsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%area_top_face_clmp,  toparea_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%area_top_face_elmp,  toparea_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%xsoil_clmp,  xsoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%xsoil_elmp,  xsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%ysoil_clmp,  ysoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%ysoil_elmp,  ysoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%zsoil_clmp,  zsoil_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%zsoil_elmp,  zsoil_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    ! Set CLM soil domain onto PFLOTRAN grid
+    ! Set ELM soil domain onto PFLOTRAN grid
     call pflotranModelSetSoilDimension(pflotran_m)
 
     end associate
@@ -1702,19 +1702,19 @@ contains
     character(len= 32) :: subname = 'get_elm_soil_properties' ! subroutine name
 
 
-    PetscScalar, pointer :: hksat_x_clm_loc(:) ! hydraulic conductivity in x-dir at saturation (mm H2O /s)
-    PetscScalar, pointer :: hksat_y_clm_loc(:) ! hydraulic conductivity in y-dir at saturation (mm H2O /s)
-    PetscScalar, pointer :: hksat_z_clm_loc(:) ! hydraulic conductivity in z-dir at saturation (mm H2O /s)
-    PetscScalar, pointer :: watsat_clm_loc(:)  ! minimum soil suction (mm)
-    PetscScalar, pointer :: sucsat_clm_loc(:)  ! volumetric soil water at saturation (porosity)
-    PetscScalar, pointer :: bsw_clm_loc(:)     ! Clapp and Hornberger "b"
-    PetscScalar, pointer :: watfc_clm_loc(:)
-    PetscScalar, pointer :: bulkdensity_dry_clm_loc(:)
+    PetscScalar, pointer :: hksat_x_elm_loc(:) ! hydraulic conductivity in x-dir at saturation (mm H2O /s)
+    PetscScalar, pointer :: hksat_y_elm_loc(:) ! hydraulic conductivity in y-dir at saturation (mm H2O /s)
+    PetscScalar, pointer :: hksat_z_elm_loc(:) ! hydraulic conductivity in z-dir at saturation (mm H2O /s)
+    PetscScalar, pointer :: watsat_elm_loc(:)  ! minimum soil suction (mm)
+    PetscScalar, pointer :: sucsat_elm_loc(:)  ! volumetric soil water at saturation (porosity)
+    PetscScalar, pointer :: bsw_elm_loc(:)     ! Clapp and Hornberger "b"
+    PetscScalar, pointer :: watfc_elm_loc(:)
+    PetscScalar, pointer :: bulkdensity_dry_elm_loc(:)
 
-    PetscScalar, pointer :: tkwet_clm_loc(:)
-    PetscScalar, pointer :: tkdry_clm_loc(:)
-    PetscScalar, pointer :: tkfrz_clm_loc(:)
-    PetscScalar, pointer :: hcvsol_clm_loc(:)
+    PetscScalar, pointer :: tkwet_elm_loc(:)
+    PetscScalar, pointer :: tkdry_elm_loc(:)
+    PetscScalar, pointer :: tkfrz_elm_loc(:)
+    PetscScalar, pointer :: hcvsol_elm_loc(:)
 
     PetscErrorCode :: ierr
 
@@ -1763,8 +1763,8 @@ contains
       elm_pf_idata%adfactor_ck_c = kd_adfactor_pools(1:ndecomp_pools)
 
       ! find the first active SOIL Column to pick up the decomposition constants
-      ! NOTE: this only is good for CLM-CN reaction-network;
-      !       for CLM-BGC (century-type), those constants are 'cell' dependent
+      ! NOTE: this only is good for ELM-CN reaction-network;
+      !       for ELM-BGC (century-type), those constants are 'cell' dependent
       !      So, here we do the data passing by cell (although only 1 now) that can be extended by adding two loops in the future
       !
       soilc1 = filters(1)%soilc(1)
@@ -1783,7 +1783,7 @@ contains
           elseif(elm_pf_idata%fr_decomp_c(ki,ki) .ne. rf_decomp_cascade(soilc1,layer1,k)) then
             ! have assigned 'co2' fraction for same donor-pool with different receive-pool,
             ! BUT 'co2' fraction inconsistent
-            call endrun(trim(subname) // ": ERROR: CLM-PFLOTRAN interface finds different respiration fraction for " // &
+            call endrun(trim(subname) // ": ERROR: ELM-PFLOTRAN interface finds different respiration fraction for " // &
              "same decomposition pool: " //trim(decomp_cascade_con%decomp_pool_name_history(ki)) )
 
           endif
@@ -1794,7 +1794,7 @@ contains
           else
             if(elm_pf_idata%fr_decomp_c(ki,ki) .ne. 1.0) then
                ! if no receivor, respiration fraction must be 1.0
-               call endrun(trim(subname) // ": ERROR: CLM-PFLOTRAN interface finds respiration fraction not 1.0 for " // &
+               call endrun(trim(subname) // ": ERROR: ELM-PFLOTRAN interface finds respiration fraction not 1.0 for " // &
                   "no-down decomposition pool: " //trim(decomp_cascade_con%decomp_pool_name_history(ki)) )
             endif
 
@@ -1804,49 +1804,49 @@ contains
 
       enddo
 
-      call pflotranModelSetSOMKfromCLM(pflotran_m)
+      call pflotranModelSetSOMKfromELM(pflotran_m)
     endif
 
 
-    call VecGetArrayF90(elm_pf_idata%hksat_x_clmp, hksat_x_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%hksat_x_elmp, hksat_x_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%hksat_y_clmp, hksat_y_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%hksat_y_elmp, hksat_y_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%hksat_z_clmp, hksat_z_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%hksat_z_elmp, hksat_z_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%sucsat_clmp,  sucsat_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%sucsat_elmp,  sucsat_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%watsat_clmp,  watsat_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%watsat_elmp,  watsat_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%bsw_clmp,     bsw_clm_loc,     ierr)
+    call VecGetArrayF90(elm_pf_idata%bsw_elmp,     bsw_elm_loc,     ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%watfc_clmp,  watfc_clm_loc,  ierr)
+    call VecGetArrayF90(elm_pf_idata%watfc_elmp,  watfc_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%bulkdensity_dry_clmp,  bulkdensity_dry_clm_loc,  ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecGetArrayF90(elm_pf_idata%tkwet_clmp, tkwet_clm_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%tkdry_clmp, tkdry_clm_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%tkfrz_clmp, tkfrz_clm_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%hcvsol_clmp, hcvsol_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%bulkdensity_dry_elmp,  bulkdensity_dry_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    hksat_x_clm_loc(:) = 0._r8
-    hksat_y_clm_loc(:) = 0._r8
-    hksat_z_clm_loc(:) = 0._r8
-    sucsat_clm_loc(:)  = 0._r8
-    watsat_clm_loc(:)  = 0._r8
-    bsw_clm_loc(:)     = 0._r8
-    watfc_clm_loc(:)   = 0._r8
-    bulkdensity_dry_clm_loc(:) =  0._r8
+    call VecGetArrayF90(elm_pf_idata%tkwet_elmp, tkwet_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%tkdry_elmp, tkdry_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%tkfrz_elmp, tkfrz_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%hcvsol_elmp, hcvsol_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    tkwet_clm_loc(:)   = 0._r8
-    tkdry_clm_loc(:)   = 0._r8
-    tkfrz_clm_loc(:)   = 0._r8
-    hcvsol_clm_loc(:)  = 0._r8
+    hksat_x_elm_loc(:) = 0._r8
+    hksat_y_elm_loc(:) = 0._r8
+    hksat_z_elm_loc(:) = 0._r8
+    sucsat_elm_loc(:)  = 0._r8
+    watsat_elm_loc(:)  = 0._r8
+    bsw_elm_loc(:)     = 0._r8
+    watfc_elm_loc(:)   = 0._r8
+    bulkdensity_dry_elm_loc(:) =  0._r8
+
+    tkwet_elm_loc(:)   = 0._r8
+    tkdry_elm_loc(:)   = 0._r8
+    tkfrz_elm_loc(:)   = 0._r8
+    hcvsol_elm_loc(:)  = 0._r8
 
     gcount = -1
     ! note: the following data-passing will be looping for all columns, instead of filters,
@@ -1867,46 +1867,46 @@ contains
         wtgcount = cwtgcell(c)
 #endif
 
-        do j = 1, elm_pf_idata%nzclm_mapped
+        do j = 1, elm_pf_idata%nzelm_mapped
 
           if (j <= nlevgrnd) then
-            cellcount = gcount*elm_pf_idata%nzclm_mapped + j     ! 1-based
+            cellcount = gcount*elm_pf_idata%nzelm_mapped + j     ! 1-based
 
-            ! CLM calculation of wet thermal-conductivity as following:
+            ! ELM calculation of wet thermal-conductivity as following:
             ! dksat = tkmg(c,j)*tkwat**(fl*watsat(c,j))*tkice**((1._r8-fl)*watsat(c,j))
             ! where, fl is the liq. saturation/total saturation
             ! so, if fl=0, it's the frozen-wet thermal-conductitivity
             !     if fl=1, it's the liq.-wet thermal-conductivity, i.e. 'tksatu'
 
-            tkwet_clm_loc(cellcount )  = &                      !(W/m/K)
-                tkwet_clm_loc(cellcount ) + tkwet(c,j)*wtgcount
-            tkdry_clm_loc(cellcount )  = &
-                tkdry_clm_loc(cellcount ) + tkdry(c,j)*wtgcount
-            tkfrz_clm_loc(cellcount )  = &
-                tkfrz_clm_loc(cellcount ) + tkfrz(c,j)*wtgcount
-            hcvsol_clm_loc(cellcount ) = &
-                hcvsol_clm_loc(cellcount ) + csol(c,j)*wtgcount  ! (J/m3/K)
+            tkwet_elm_loc(cellcount )  = &                      !(W/m/K)
+                tkwet_elm_loc(cellcount ) + tkwet(c,j)*wtgcount
+            tkdry_elm_loc(cellcount )  = &
+                tkdry_elm_loc(cellcount ) + tkdry(c,j)*wtgcount
+            tkfrz_elm_loc(cellcount )  = &
+                tkfrz_elm_loc(cellcount ) + tkfrz(c,j)*wtgcount
+            hcvsol_elm_loc(cellcount ) = &
+                hcvsol_elm_loc(cellcount ) + csol(c,j)*wtgcount  ! (J/m3/K)
 
-            hksat_x_clm_loc(cellcount ) = &
-                hksat_x_clm_loc(cellcount ) + hksat(c,j)*wtgcount
-            hksat_y_clm_loc(cellcount ) = &
-                hksat_y_clm_loc(cellcount ) + hksat(c,j)*wtgcount
-            hksat_z_clm_loc(cellcount ) = &
-                hksat_z_clm_loc(cellcount ) + hksat(c,j)*wtgcount
+            hksat_x_elm_loc(cellcount ) = &
+                hksat_x_elm_loc(cellcount ) + hksat(c,j)*wtgcount
+            hksat_y_elm_loc(cellcount ) = &
+                hksat_y_elm_loc(cellcount ) + hksat(c,j)*wtgcount
+            hksat_z_elm_loc(cellcount ) = &
+                hksat_z_elm_loc(cellcount ) + hksat(c,j)*wtgcount
 
-            sucsat_clm_loc( cellcount ) = &
-                sucsat_clm_loc( cellcount ) + sucsat(c,j)*wtgcount
-            watsat_clm_loc( cellcount ) = &
-                watsat_clm_loc( cellcount ) + watsat(c,j)*wtgcount
-            bsw_clm_loc(    cellcount ) = &
-                bsw_clm_loc(    cellcount ) + bsw(c,j)*wtgcount
-            watfc_clm_loc( cellcount )  = &
-                watfc_clm_loc( cellcount ) + watfc(c,j)*wtgcount
-            bulkdensity_dry_clm_loc( cellcount ) = &
-                bulkdensity_dry_clm_loc( cellcount ) + bd(c,j)*wtgcount
+            sucsat_elm_loc( cellcount ) = &
+                sucsat_elm_loc( cellcount ) + sucsat(c,j)*wtgcount
+            watsat_elm_loc( cellcount ) = &
+                watsat_elm_loc( cellcount ) + watsat(c,j)*wtgcount
+            bsw_elm_loc(    cellcount ) = &
+                bsw_elm_loc(    cellcount ) + bsw(c,j)*wtgcount
+            watfc_elm_loc( cellcount )  = &
+                watfc_elm_loc( cellcount ) + watfc(c,j)*wtgcount
+            bulkdensity_dry_elm_loc( cellcount ) = &
+                bulkdensity_dry_elm_loc( cellcount ) + bd(c,j)*wtgcount
 
           else
-            call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+            call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
               " 'elm_varpar%nlevgrnd'. Please check")
 
           endif
@@ -1915,36 +1915,36 @@ contains
 
     enddo ! do c = bounds%begc, bounds%endc
 
-    call VecRestoreArrayF90(elm_pf_idata%hksat_x_clmp, hksat_x_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%hksat_x_elmp, hksat_x_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%hksat_y_clmp, hksat_y_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%hksat_y_elmp, hksat_y_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%hksat_z_clmp, hksat_z_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%hksat_z_elmp, hksat_z_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%sucsat_clmp,  sucsat_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%sucsat_elmp,  sucsat_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%watsat_clmp,  watsat_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%watsat_elmp,  watsat_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%bsw_clmp,     bsw_clm_loc,     ierr)
+    call VecRestoreArrayF90(elm_pf_idata%bsw_elmp,     bsw_elm_loc,     ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%watfc_clmp,  watfc_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%watfc_elmp,  watfc_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%bulkdensity_dry_clmp,  bulkdensity_dry_clm_loc,  ierr)
+    call VecRestoreArrayF90(elm_pf_idata%bulkdensity_dry_elmp,  bulkdensity_dry_elm_loc,  ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-!     call VecRestoreArrayF90(elm_pf_idata%zsoi_clmp,  zsoi_clm_loc,  ierr)
+!     call VecRestoreArrayF90(elm_pf_idata%zsoi_elmp,  zsoi_elm_loc,  ierr)
 !     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%tkwet_clmp, tkwet_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%tkwet_elmp, tkwet_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%tkdry_clmp, tkdry_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%tkdry_elmp, tkdry_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%tkfrz_clmp, tkfrz_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%tkfrz_elmp, tkfrz_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%hcvsol_clmp, hcvsol_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%hcvsol_elmp, hcvsol_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    ! Set CLM soil properties onto PFLOTRAN grid
+    ! Set ELM soil properties onto PFLOTRAN grid
     call pflotranModelSetSoilProp(pflotran_m)
 
     end associate
@@ -1953,7 +1953,7 @@ contains
 
   !====================================================================================================
   !                                                                                                   !
-  !                  Subroutines to GET CLM initial/src-sink/BC to PFLOTRAN                           !
+  !                  Subroutines to GET ELM initial/src-sink/BC to PFLOTRAN                           !
   !                                                                                                   !
   !====================================================================================================
 
@@ -1967,7 +1967,7 @@ contains
 
   !
   ! !DESCRIPTION:
-  !  update soil temperature/saturation from CLM to PFLOTRAN for driving PF's BGC
+  !  update soil temperature/saturation from ELM to PFLOTRAN for driving PF's BGC
   !  if either NOT available inside PFLOTRAN
   !
   ! !USES:
@@ -1998,15 +1998,15 @@ contains
   ! !LOCAL VARIABLES:
     integer  :: fc, c, g, gcount, cellcount       ! indices
 
-    PetscScalar, pointer :: soilpress_clmp_loc(:)
-    PetscScalar, pointer :: soilpsi_clmp_loc(:)
-    PetscScalar, pointer :: soillsat_clmp_loc(:)
-    PetscScalar, pointer :: soilisat_clmp_loc(:)
-    PetscScalar, pointer :: soilvwc_clmp_loc(:)  !
-    PetscScalar, pointer :: soilt_clmp_loc(:)  !
-    PetscScalar, pointer :: t_scalar_clmp_loc(:)  !
-    PetscScalar, pointer :: w_scalar_clmp_loc(:)  !
-    PetscScalar, pointer :: o_scalar_clmp_loc(:)  !
+    PetscScalar, pointer :: soilpress_elmp_loc(:)
+    PetscScalar, pointer :: soilpsi_elmp_loc(:)
+    PetscScalar, pointer :: soillsat_elmp_loc(:)
+    PetscScalar, pointer :: soilisat_elmp_loc(:)
+    PetscScalar, pointer :: soilvwc_elmp_loc(:)  !
+    PetscScalar, pointer :: soilt_elmp_loc(:)  !
+    PetscScalar, pointer :: t_scalar_elmp_loc(:)  !
+    PetscScalar, pointer :: w_scalar_elmp_loc(:)  !
+    PetscScalar, pointer :: o_scalar_elmp_loc(:)  !
     PetscErrorCode :: ierr
     integer :: j,nstep
     real(r8):: sattmp, psitmp, itheta, sucmin_pa, psitmp0
@@ -2039,23 +2039,23 @@ contains
     !--------------------------------------------------------------------------------------
     nstep = get_nstep()
 
-    call VecGetArrayF90(elm_pf_idata%press_clmp, soilpress_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%press_elmp, soilpress_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soilpsi_clmp, soilpsi_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soilpsi_elmp, soilpsi_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soillsat_clmp, soillsat_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soillsat_elmp, soillsat_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soilisat_elmp, soilisat_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soilt_elmp, soilt_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%h2osoi_vol_clmp, soilvwc_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%h2osoi_vol_elmp, soilvwc_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%t_scalar_clmp, t_scalar_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%t_scalar_elmp, t_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%w_scalar_clmp, w_scalar_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%w_scalar_elmp, w_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%o_scalar_clmp, o_scalar_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%o_scalar_elmp, o_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     ! operating via 'filters'
@@ -2072,17 +2072,17 @@ contains
       if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-      do j = 1, elm_pf_idata%nzclm_mapped
+      do j = 1, elm_pf_idata%nzelm_mapped
 
         if (j<=nlevgrnd) then
-          cellcount = gcount*elm_pf_idata%nzclm_mapped + j    ! 1-based
+          cellcount = gcount*elm_pf_idata%nzelm_mapped + j    ! 1-based
 
           if (initpfhmode) then
              ! this adjusting should be done first, if PF-freezing-mode off,
              ! so that the following calculation can be done correctly
              itheta = h2osoi_ice(c,j) / (dz(c,j) * denice)
              itheta = min(itheta, watsat(c,j)-watmin(c,j))
-             soilisat_clmp_loc(cellcount) = itheta/watsat(c,j)
+             soilisat_elmp_loc(cellcount) = itheta/watsat(c,j)
 
              if(.not.pf_frzmode) then
                 ! porosity will be ice-adjusted for PF, if PF freezing-mode is off,
@@ -2090,8 +2090,8 @@ contains
                 sattmp = h2osoi_liq(c,j) / ((watsat(c,j)-itheta)*dz(c,j)*denh2o)
                 sattmp = min(max(0.01d0, sattmp/(watsat(c,j)-itheta)),1._r8)
 
-                ! soil matric potential re-done by Clapp-Hornburger method (this is the default used by CLM)
-                ! this value IS different from what CLM used (not ice-content adjusted)
+                ! soil matric potential re-done by Clapp-Hornburger method (this is the default used by ELM)
+                ! this value IS different from what ELM used (not ice-content adjusted)
                 ! So that in PF, if not ice-adjusted, the PSI is very small (negative) which implies possible water movement
 
                 ! sucsat > 0, sucmin < 0, sucsat & sucmin have units of mm
@@ -2108,56 +2108,56 @@ contains
 
                 psitmp = soilpsi(c,j)*1.e6_r8  ! MPa -> Pa
                 if (shr_infnan_isnan(soilpsi(c,j)) .or. nstep<=0) then ! only for initialization, in which NOT assigned a value
-                    psitmp0 = sucsat(c,j) * (-SHR_CONST_G) * ((sattmp+itheta)**(-bsw(c,j)))  ! -Pa: included both ice and liq. water as CLM does
+                    psitmp0 = sucsat(c,j) * (-SHR_CONST_G) * ((sattmp+itheta)**(-bsw(c,j)))  ! -Pa: included both ice and liq. water as ELM does
                     psitmp = denh2o*(-SHR_CONST_G)*(sucsat(c,j)*1.e-3_r8) * ((sattmp+itheta)**(-bsw(c,j)))
                     sucmin_pa = denh2o*SHR_CONST_G*sucmin(c,j)*1.e-3_r8
                     psitmp = min(max(psitmp,sucmin_pa),0._r8)
                 endif
 
              endif !if(.not.pf_frzmode) 
-             soillsat_clmp_loc(cellcount)  = sattmp
+             soillsat_elmp_loc(cellcount)  = sattmp
 
-             soilpsi_clmp_loc(cellcount)   = psitmp
-             soilpress_clmp_loc(cellcount) = psitmp+elm_pf_idata%pressure_reference
+             soilpsi_elmp_loc(cellcount)   = psitmp
+             soilpress_elmp_loc(cellcount) = psitmp+elm_pf_idata%pressure_reference
 
-             w_scalar_clmp_loc(cellcount)  = w_scalar(c,j)
-             o_scalar_clmp_loc(cellcount)  = o_scalar(c,j)
+             w_scalar_elmp_loc(cellcount)  = w_scalar(c,j)
+             o_scalar_elmp_loc(cellcount)  = o_scalar(c,j)
 
-             soilvwc_clmp_loc(cellcount)   = h2osoi_vol(c,j)
+             soilvwc_elmp_loc(cellcount)   = h2osoi_vol(c,j)
 
           endif !if (initpfhmode) then
 
           if (initpftmode) then
-             soilt_clmp_loc(cellcount)=t_soisno(c,j)-tfrz
-             t_scalar_clmp_loc(cellcount)=t_scalar(c,j)
+             soilt_elmp_loc(cellcount)=t_soisno(c,j)-tfrz
+             t_scalar_elmp_loc(cellcount)=t_scalar(c,j)
           endif
 
         else 
-            call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+            call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
               " 'elm_varpar%nlevgrnd'. Please check")
 
         endif !if (j<=nlevgrnd) then
 
-      enddo  !do j = 1, elm_pf_idata%nzclm_mapped
+      enddo  !do j = 1, elm_pf_idata%nzelm_mapped
     enddo !do fc = 1,filters(ifilter)%num_soilc
 
-    call VecRestoreArrayF90(elm_pf_idata%press_clmp, soilpress_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%press_elmp, soilpress_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soilpsi_clmp, soilpsi_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soilpsi_elmp, soilpsi_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soillsat_clmp, soillsat_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soillsat_elmp, soillsat_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soilisat_clmp, soilisat_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soilisat_elmp, soilisat_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soilt_clmp, soilt_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soilt_elmp, soilt_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%h2osoi_vol_clmp, soilvwc_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%h2osoi_vol_elmp, soilvwc_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%t_scalar_clmp, t_scalar_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%t_scalar_elmp, t_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%w_scalar_clmp, w_scalar_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%w_scalar_elmp, w_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%o_scalar_clmp, o_scalar_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%o_scalar_elmp, o_scalar_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
    end associate
@@ -2173,7 +2173,7 @@ contains
   subroutine get_elm_iceadj_porosity(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
-  !  update soil effective porosity from CLM to PFLOTRAN if PF freezing mode is off
+  !  update soil effective porosity from ELM to PFLOTRAN if PF freezing mode is off
   !
   ! !USES:
     use ColumnType          , only : col_pp
@@ -2201,8 +2201,8 @@ contains
     integer  :: fc, c, g, j, gcount, cellcount       ! indices
     real(r8) :: itheta
 
-    PetscScalar, pointer :: adjporosity_clmp_loc(:)  !
-    PetscScalar, pointer :: soilisat_clmp_loc(:)  !
+    PetscScalar, pointer :: adjporosity_elmp_loc(:)  !
+    PetscScalar, pointer :: soilisat_elmp_loc(:)  !
     PetscErrorCode :: ierr
 
     character(len= 32) :: subname = 'get_elm_iceadj_porosity' ! subroutine name
@@ -2222,10 +2222,10 @@ contains
     ! This is doing prior to the real liquid water source/sink, because 'h2osoi_liq' will be updated during those calls after 'bgp2'.
     if (.not. pf_frzmode) then
 
-        ! re-calculate the effective porosity (CLM ice-len adjusted), which should be pass to pflotran
-        call VecGetArrayF90(elm_pf_idata%effporosity_clmp, adjporosity_clmp_loc,  ierr)
+        ! re-calculate the effective porosity (ELM ice-len adjusted), which should be pass to pflotran
+        call VecGetArrayF90(elm_pf_idata%effporosity_elmp, adjporosity_elmp_loc,  ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-        call VecGetArrayF90(elm_pf_idata%soilisat_clmp, soilisat_clmp_loc,  ierr)
+        call VecGetArrayF90(elm_pf_idata%soilisat_elmp, soilisat_elmp_loc,  ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
         ! operating via 'filters'
@@ -2242,16 +2242,16 @@ contains
           if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-           do j = 1, elm_pf_idata%nzclm_mapped
+           do j = 1, elm_pf_idata%nzelm_mapped
              if (j<=nlevgrnd) then
-               cellcount = gcount*elm_pf_idata%nzclm_mapped + j    ! 1-based
+               cellcount = gcount*elm_pf_idata%nzelm_mapped + j    ! 1-based
 
                itheta = h2osoi_ice(c,j) / (dz(c,j) * denice)
                itheta = min(itheta, 0.99_r8*watsat(c,j))
-               adjporosity_clmp_loc(cellcount ) = watsat(c,j) - itheta
-               soilisat_clmp_loc(cellcount ) = itheta/watsat(c,j)
+               adjporosity_elmp_loc(cellcount ) = watsat(c,j) - itheta
+               soilisat_elmp_loc(cellcount ) = itheta/watsat(c,j)
              else
-               call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer number is greater than " // &
+               call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer number is greater than " // &
                  " 'elm_varpar%nlevgrnd'. Please check")
 
              endif
@@ -2259,9 +2259,9 @@ contains
            end do
         end do
 
-        call VecRestoreArrayF90(elm_pf_idata%effporosity_clmp,  adjporosity_clmp_loc,  ierr)
+        call VecRestoreArrayF90(elm_pf_idata%effporosity_elmp,  adjporosity_elmp_loc,  ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-        call VecRestoreArrayF90(elm_pf_idata%soilisat_clmp, soilisat_clmp_loc,  ierr)
+        call VecRestoreArrayF90(elm_pf_idata%soilisat_elmp, soilisat_elmp_loc,  ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     end if
@@ -2280,7 +2280,7 @@ contains
   !
   ! !DESCRIPTION:
   !
-  !  F.-M. YUAN: the water fluxes in CLM4.5 are separately calculated in a few subroutines
+  !  F.-M. YUAN: the water fluxes in ELM4.5 are separately calculated in a few subroutines
   !        in 'SoilHydrologyMod.F90'. When coupled with pflotran, it's hard to get those together
   !        like GB does in 'step_th_elm_pf' subroutine. So, this subroutine is a collective call of
   !        that and others in 'Hydrology2Mod.F90' so that pflotran can be called out of 'hydrology2'.
@@ -2325,24 +2325,24 @@ contains
     real(r8) :: sr      = 0.10_r8
     real(r8) :: tempreal, reductor
 
-    ! for PF --> CLM (seq.)
-    PetscScalar, pointer :: press_clms_loc(:)       !
-    PetscScalar, pointer :: soillsat_clms_loc(:)    !
-    PetscScalar, pointer :: soilisat_clms_loc(:)    !
-    PetscScalar, pointer :: porosity_clms_loc(:)    !
-    PetscScalar, pointer :: sr_pcwmax_clms_loc(:)   !
+    ! for PF --> ELM (seq.)
+    PetscScalar, pointer :: press_elms_loc(:)       !
+    PetscScalar, pointer :: soillsat_elms_loc(:)    !
+    PetscScalar, pointer :: soilisat_elms_loc(:)    !
+    PetscScalar, pointer :: porosity_elms_loc(:)    !
+    PetscScalar, pointer :: sr_pcwmax_elms_loc(:)   !
 
-    PetscScalar, pointer :: area_clms_loc(:)         !
+    PetscScalar, pointer :: area_elms_loc(:)         !
 
-    ! for CLM (mpi) --> PF
-    PetscScalar, pointer :: qflw_clmp_loc(:)         !   source/sink term for plant Transpiration: unit in mass rate (kgH2O/sec)
-    PetscScalar, pointer :: qflwt_clmp_loc(:)        !   temperature of source/sink term for plant Transpiration: oC (ET water temperature for thermal contact with soil)
-    PetscScalar, pointer :: press_top_clmp_loc(:)    !   BC in pressure type: unit in Pa
-    PetscScalar, pointer :: press_base_clmp_loc(:)   !
-    PetscScalar, pointer :: qfluxw_top_clmp_loc(:)         !   BC in neumann flux type: unit in m/s (liq.)
-    PetscScalar, pointer :: qfluxev_top_clmp_loc(:)        !   BC in neumann flux type: unit in m/s (evaporation)
-    PetscScalar, pointer :: qfluxw_base_clmp_loc(:)        !   BC in neumann flux type: unit in m/s (liq.)
-    PetscScalar, pointer :: press_maxponding_clmp_loc(:)   !
+    ! for ELM (mpi) --> PF
+    PetscScalar, pointer :: qflw_elmp_loc(:)         !   source/sink term for plant Transpiration: unit in mass rate (kgH2O/sec)
+    PetscScalar, pointer :: qflwt_elmp_loc(:)        !   temperature of source/sink term for plant Transpiration: oC (ET water temperature for thermal contact with soil)
+    PetscScalar, pointer :: press_top_elmp_loc(:)    !   BC in pressure type: unit in Pa
+    PetscScalar, pointer :: press_base_elmp_loc(:)   !
+    PetscScalar, pointer :: qfluxw_top_elmp_loc(:)         !   BC in neumann flux type: unit in m/s (liq.)
+    PetscScalar, pointer :: qfluxev_top_elmp_loc(:)        !   BC in neumann flux type: unit in m/s (evaporation)
+    PetscScalar, pointer :: qfluxw_base_elmp_loc(:)        !   BC in neumann flux type: unit in m/s (liq.)
+    PetscScalar, pointer :: press_maxponding_elmp_loc(:)   !
     PetscErrorCode :: ierr
 
     character(len= 32) :: subname = 'get_elm_bcwflx' ! subroutine name
@@ -2378,42 +2378,42 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
-    ! (1) pass the clm_qflx to the vecs
+    ! (1) pass the elm_qflx to the vecs
     ! NOTE the following unit conversions:
-    ! qflx_soil_top and qflx_tran_veg are in [mm/sec] from CLM;
-    ! qflx_clm_loc is in [kgH2O/sec] as mass rate for pflotran (as input)
+    ! qflx_soil_top and qflx_tran_veg are in [mm/sec] from ELM;
+    ! qflx_elm_loc is in [kgH2O/sec] as mass rate for pflotran (as input)
 
     ! previous time-step soil water pressure and saturation for adjusting qflx
     ! note that this is a temporary workaround - waiting for PF's solution
-    call VecGetArrayF90(elm_pf_idata%press_clms, press_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%press_elms, press_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soillsat_clms, soillsat_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soillsat_elms, soillsat_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%soilisat_clms, soilisat_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%soilisat_elms, soilisat_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%effporosity_clms, porosity_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%effporosity_elms, porosity_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%sr_pcwmax_clms, sr_pcwmax_clms_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecGetArrayF90(elm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%sr_pcwmax_elms, sr_pcwmax_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecGetArrayF90(elm_pf_idata%qflow_clmp, qflw_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%area_top_face_elms, area_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%qflowt_clmp, qflwt_clmp_loc, ierr)
+
+    call VecGetArrayF90(elm_pf_idata%qflow_elmp, qflw_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%press_subsurf_clmp, press_top_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%qflowt_elmp, qflwt_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%press_subbase_clmp, press_base_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%press_subsurf_elmp, press_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%qfluxw_subsurf_clmp, qfluxw_top_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%press_subbase_elmp, press_base_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%qfluxev_subsurf_clmp, qfluxev_top_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%qfluxw_subsurf_elmp, qfluxw_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%qfluxw_subbase_clmp, qfluxw_base_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%qfluxev_subsurf_elmp, qfluxev_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%press_maxponding_clmp, press_maxponding_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%qfluxw_subbase_elmp, qfluxw_base_elmp_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%press_maxponding_elmp, press_maxponding_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     ! operating via 'filters'
@@ -2440,27 +2440,27 @@ contains
       qflx_evap(c)=(1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c))*qflx_evap_soil(c)
 
 
-      do j = 1, elm_pf_idata%nzclm_mapped
+      do j = 1, elm_pf_idata%nzelm_mapped
         if(j<=nlevgrnd) then
 
-          cellcount = gcount*elm_pf_idata%nzclm_mapped + j
+          cellcount = gcount*elm_pf_idata%nzelm_mapped + j
 
-          qflw_clmp_loc(cellcount )  = 0.0_r8
-          qflwt_clmp_loc(cellcount ) = t_nearsurf(gcount+1) - tfrz
+          qflw_elmp_loc(cellcount )  = 0.0_r8
+          qflwt_elmp_loc(cellcount ) = t_nearsurf(gcount+1) - tfrz
 
           if (j .eq. 1) then
-             qfluxw_top_clmp_loc(gcount+1)     = 0.0_r8
-             qfluxev_top_clmp_loc(gcount+1)    = 0.0_r8
-             press_top_clmp_loc(gcount+1)  = press_clms_loc(cellcount)   ! same as the first top layer
+             qfluxw_top_elmp_loc(gcount+1)     = 0.0_r8
+             qfluxev_top_elmp_loc(gcount+1)    = 0.0_r8
+             press_top_elmp_loc(gcount+1)  = press_elms_loc(cellcount)   ! same as the first top layer
           end if
 
-          if (j .eq. elm_pf_idata%nzclm_mapped) then
-             qfluxw_base_clmp_loc(gcount+1)    = 0.0_r8
-             press_base_clmp_loc(gcount+1) = press_clms_loc((gcount+1)*elm_pf_idata%nzclm_mapped)   ! same as the bottom layer
+          if (j .eq. elm_pf_idata%nzelm_mapped) then
+             qfluxw_base_elmp_loc(gcount+1)    = 0.0_r8
+             press_base_elmp_loc(gcount+1) = press_elms_loc((gcount+1)*elm_pf_idata%nzelm_mapped)   ! same as the bottom layer
           end if
 
         else
-          call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+          call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
              " 'elm_varpar%nlevgrnd'. Please check")
 
         endif
@@ -2468,7 +2468,7 @@ contains
 
     end do
 
-    pondmax(:) = 0.0_r8   ! this is temporarily set (not yet figure out how CLM get this value)
+    pondmax(:) = 0.0_r8   ! this is temporarily set (not yet figure out how ELM get this value)
     ! operating via 'filters'
     gcount = -1
     do fc = 1,filters(ifilter)%num_soilc
@@ -2483,33 +2483,33 @@ contains
       if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-       area = area_clms_loc(gcount*elm_pf_idata%nzclm_mapped+1)
+       area = area_elms_loc(gcount*elm_pf_idata%nzelm_mapped+1)
        reference_pressure = elm_pf_idata%pressure_reference
        ponding_pressure = pondmax(c)*SHR_CONST_G              ! max. ponding water depth (mm) ==> pressure (Pa)
 
-       press_maxponding_clmp_loc(gcount+1) = reference_pressure+ponding_pressure
+       press_maxponding_elmp_loc(gcount+1) = reference_pressure+ponding_pressure
 
-       do j = 1, elm_pf_idata%nzclm_mapped
+       do j = 1, elm_pf_idata%nzelm_mapped
 
          if (j<=nlevgrnd) then
 
-          cellcount = gcount*elm_pf_idata%nzclm_mapped  + j
+          cellcount = gcount*elm_pf_idata%nzelm_mapped  + j
 
-          ! CLM soil hydrology ONLY works down to 'nlevsoi' (one exception for 'vwc_zwt' when t<tfrz)
+          ! ELM soil hydrology ONLY works down to 'nlevsoi' (one exception for 'vwc_zwt' when t<tfrz)
           ! So, it needs to trunc the inactive soil layers
           !if (j>nlevsoi) cycle  ! comment out so that it can be down to 'nlevgrnd', although NOT really now.
 
           ! previous time-step soil water saturation for adjusting qflx to avoid too wet or too dry to cause PF math issue
           ! (this is a temporary workaround - waiting for PF's solution)
-          soilvwc = soillsat_clms_loc(cellcount) *  &
-                    porosity_clms_loc(cellcount)                      ! PF saturation ==> real vwc (using adjusted porosity???)
+          soilvwc = soillsat_elms_loc(cellcount) *  &
+                    porosity_elms_loc(cellcount)                      ! PF saturation ==> real vwc (using adjusted porosity???)
 
-          dsoilliq1 = (0.99_r8*porosity_clms_loc(cellcount)-soilvwc) &
+          dsoilliq1 = (0.99_r8*porosity_elms_loc(cellcount)-soilvwc) &
                   *dz(c,j)*area*denh2o/dtime                          ! mH2O ==> kgH2O/sec to be filled at most (1% for hard-accessible pore and error-handling )
           dsoilliq1 = max(0._r8, dsoilliq1)                           ! always +
 
-          sr = 1.01_r8*sr_pcwmax_clms_loc(cellcount) * &              ! '1.01' will give 1% for hard-accessible pore and holding error in the calculation
-                    porosity_clms_loc(cellcount)                      ! PF saturation ==> 'real' vwc
+          sr = 1.01_r8*sr_pcwmax_elms_loc(cellcount) * &              ! '1.01' will give 1% for hard-accessible pore and holding error in the calculation
+                    porosity_elms_loc(cellcount)                      ! PF saturation ==> 'real' vwc
           dsoilliq2 = (sr-soilvwc)*dz(c,j)*area*denh2o/dtime          ! mH2O ==> kgH2O/sec to be extracted at most (-)
           dsoilliq2 = min(0._r8, dsoilliq2)                           ! always -
 
@@ -2540,7 +2540,7 @@ contains
                   qflx_evap(c)=0._r8
                endif
 
-               qfluxev_top_clmp_loc(gcount+1) = -qflx_evap(c)*1.e-3     ! mmH2O/sec ==> mH2O/sec, - = out of soil
+               qfluxev_top_elmp_loc(gcount+1) = -qflx_evap(c)*1.e-3     ! mmH2O/sec ==> mH2O/sec, - = out of soil
              endif
 
              ! net liq water input/output to soil column
@@ -2555,12 +2555,12 @@ contains
                      qflx_ground = 0._r8
                   endif
 
-                  if (soilisat_clms_loc(cellcount)>=0.95_r8 .and. &
-                     (soillsat_clms_loc(cellcount)+soilisat_clms_loc(cellcount)) >= 0.9999_r8) then  ! ice-blocked first-layer
+                  if (soilisat_elms_loc(cellcount)>=0.95_r8 .and. &
+                     (soillsat_elms_loc(cellcount)+soilisat_elms_loc(cellcount)) >= 0.9999_r8) then  ! ice-blocked first-layer
                      qflx_ground = 0._r8
                   endif
 
-                  qfluxw_top_clmp_loc(gcount+1)  = qflx_ground*1.e-3    ! mm/sec --> kg/m2/sec
+                  qfluxw_top_elmp_loc(gcount+1)  = qflx_ground*1.e-3    ! mm/sec --> kg/m2/sec
                endif
              endif
 
@@ -2568,14 +2568,14 @@ contains
              ! both waterhead and flux calcuated here, but not applied in PFLOTRAN in the same time (upon BC type picked-up by PF)
              if ( qflx_ground .gt. 0._r8) then
                 ! Newly ADDED mmH2O ==> pressure (Pa) as top BC (dirichlet) by forming a layer of surface water column
-                ! AND, the actual infiltration/runoff are retrieving from PFLOTRAN using 'update_surflow_pf2clm' subroutine
-                if (soillsat_clms_loc(cellcount) >= 1._r8) then
+                ! AND, the actual infiltration/runoff are retrieving from PFLOTRAN using 'update_surflow_pf2elm' subroutine
+                if (soillsat_elms_loc(cellcount) >= 1._r8) then
                    ! water-head formed on saturated below-ground soil layer
-                   press_top_clmp_loc(gcount+1) = press_clms_loc(gcount*elm_pf_idata%nzclm_mapped+1) + &
+                   press_top_elmp_loc(gcount+1) = press_elms_loc(gcount*elm_pf_idata%nzelm_mapped+1) + &
                           qflx_ground*dtime*SHR_CONST_G
                 else
                    ! ground-water-head discontinued from below-ground (atm. pressure applied at both ends)
-                   press_top_clmp_loc(gcount+1) = reference_pressure +  &
+                   press_top_elmp_loc(gcount+1) = reference_pressure +  &
                           qflx_ground*dtime*SHR_CONST_G
                 endif
 
@@ -2586,7 +2586,7 @@ contains
           ! plant root extraction of water (transpiration: negative to soil)
           ! mmH2O/sec ==> kgH2O/sec of source rate
           qflx = -qflx_rootsoil(c,j)*area*1.e-3*denh2o
-          qflx = qflx * cwtgcell(c)                  ! clm column fraction of grid-cell adjustment
+          qflx = qflx * cwtgcell(c)                  ! elm column fraction of grid-cell adjustment
 
           ! checking if over-filled when sinking (excluding infiltration)
           qflx_sink = max(0._r8, qflx)             ! sink (+) only (kgH2O/sec)
@@ -2596,24 +2596,24 @@ contains
           qflx_source = min(0._r8, qflx)           ! source (-) only (kgH2O/sec)
           qflx_source = max(qflx_source, min(0._r8,dsoilliq2))
 
-          qflw_clmp_loc(cellcount) = (qflx_sink+qflx_source)/area/dz(c,j)        ! source/sink unit: kg/m3/sec
-          qflwt_clmp_loc(cellcount)= t_soisno(c,j) - tfrz              !
+          qflw_elmp_loc(cellcount) = (qflx_sink+qflx_source)/area/dz(c,j)        ! source/sink unit: kg/m3/sec
+          qflwt_elmp_loc(cellcount)= t_soisno(c,j) - tfrz              !
 
           ! bottom BC (neumman type): m/sec
-          if (j .eq. elm_pf_idata%nzclm_mapped) then
+          if (j .eq. elm_pf_idata%nzelm_mapped) then
              ! available water flux-out rate (-) adjusted by source(-)/sink(+) term
-             dsoilliq3 = min(0._r8, dsoilliq2 - qflw_clmp_loc(cellcount)) &
+             dsoilliq3 = min(0._r8, dsoilliq2 - qflw_elmp_loc(cellcount)) &
                              /area/denh2o                                      ! kgH2O/sec ==> mH2O/sec
 
              ! free drainage at bottom
              tempreal = soilvwc/watsat(c,j)                                    ! using 'real' saturation
              kbot = hksat(c,j)*(tempreal**(2._r8*bsw(c,j)+3._r8))*1.e-3        ! mmH2O/sec ==> mH2O/sec
-             qfluxw_base_clmp_loc(gcount+1) = max(dsoilliq3, -kbot)            ! mH2O/sec
+             qfluxw_base_elmp_loc(gcount+1) = max(dsoilliq3, -kbot)            ! mH2O/sec
 
           end if
 
         else   !j>elm_varpar%nlevgrnd
-          call endrun(trim(subname) // ": ERROR: CLM-PF mapped soil layer numbers is greater than " // &
+          call endrun(trim(subname) // ": ERROR: ELM-PF mapped soil layer numbers is greater than " // &
               " 'elm_varpar%nlevgrnd'. Please check")
         endif
 
@@ -2621,35 +2621,35 @@ contains
 
     end do
 
-    call VecRestoreArrayF90(elm_pf_idata%press_clms, press_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%press_elms, press_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soillsat_clms, soillsat_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soillsat_elms, soillsat_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%soilisat_clms, soilisat_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%soilisat_elms, soilisat_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%sr_pcwmax_clms, sr_pcwmax_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%sr_pcwmax_elms, sr_pcwmax_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%effporosity_clms, porosity_clms_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecRestoreArrayF90(elm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%effporosity_elms, porosity_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%qflow_clmp, qflw_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%area_top_face_elms, area_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%qflowt_clmp, qflwt_clmp_loc, ierr)
+
+    call VecRestoreArrayF90(elm_pf_idata%qflow_elmp, qflw_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%press_subsurf_clmp, press_top_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%qflowt_elmp, qflwt_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%press_subbase_clmp, press_base_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%press_subsurf_elmp, press_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%qfluxw_subsurf_clmp, qfluxw_top_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%press_subbase_elmp, press_base_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%qfluxev_subsurf_clmp, qfluxev_top_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%qfluxw_subsurf_elmp, qfluxw_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%qfluxw_subbase_clmp, qfluxw_base_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%qfluxev_subsurf_elmp, qfluxev_top_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%press_maxponding_clmp, press_maxponding_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%qfluxw_subbase_elmp, qfluxw_base_elmp_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecRestoreArrayF90(elm_pf_idata%press_maxponding_elmp, press_maxponding_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
@@ -2663,7 +2663,7 @@ contains
   !
   ! !DESCRIPTION:
   !
-  !  F.-M. YUAN: the boundary heat fluxes in CLM4.5 are extracted to drive pflotran TH mode.
+  !  F.-M. YUAN: the boundary heat fluxes in ELM4.5 are extracted to drive pflotran TH mode.
   !        GB only defined ground-heaf-flux.
   !        So, this subroutine is a collective setting on either heat-flux (neumann type)
   !        or interface thermal state (temperature) (dirichlet type)
@@ -2699,15 +2699,15 @@ contains
     real(r8) :: t_grnd0, eflx_fgr0, eflx_ev0, eflx_rnet0
     real(r8) :: area
 
-    ! for CLM (mpi) --> PF
-    PetscScalar, pointer :: geflx_subsurf_clmp_loc(:)    !   all-form energy flux: unit MJ/m2/s
-    PetscScalar, pointer :: geflxr_subsurf_clmp_loc(:)   !   radiation energy flux: unit MJ/m2/s
-    PetscScalar, pointer :: geflxl_subsurf_clmp_loc(:)   !   soil evap. LE flux: unit MJ/m2/s
-    PetscScalar, pointer :: gtemp_subsurf_clmp_loc(:)    !   BC in dirichlet type: unit in degC
-    PetscScalar, pointer :: geflx_subbase_clmp_loc(:)    !   all-form energy flux: unit MJ/m2/s
-    PetscScalar, pointer :: gtemp_subbase_clmp_loc(:)    !   BC in dirichlet type: unit in degC
+    ! for ELM (mpi) --> PF
+    PetscScalar, pointer :: geflx_subsurf_elmp_loc(:)    !   all-form energy flux: unit MJ/m2/s
+    PetscScalar, pointer :: geflxr_subsurf_elmp_loc(:)   !   radiation energy flux: unit MJ/m2/s
+    PetscScalar, pointer :: geflxl_subsurf_elmp_loc(:)   !   soil evap. LE flux: unit MJ/m2/s
+    PetscScalar, pointer :: gtemp_subsurf_elmp_loc(:)    !   BC in dirichlet type: unit in degC
+    PetscScalar, pointer :: geflx_subbase_elmp_loc(:)    !   all-form energy flux: unit MJ/m2/s
+    PetscScalar, pointer :: gtemp_subbase_elmp_loc(:)    !   BC in dirichlet type: unit in degC
 
-    PetscScalar, Pointer :: area_clms_loc(:)
+    PetscScalar, Pointer :: area_elms_loc(:)
 
     PetscErrorCode :: ierr
 
@@ -2739,28 +2739,28 @@ contains
     nstep = get_nstep()
     dtime = get_step_size()
 
-    ! (1) pass the clm_gflux/gtemp to the vec
+    ! (1) pass the elm_gflux/gtemp to the vec
 
-    call VecGetArrayF90(elm_pf_idata%eflux_subsurf_clmp, geflx_subsurf_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%eflux_subsurf_elmp, geflx_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%efluxr_subsurf_clmp, geflxr_subsurf_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%efluxr_subsurf_elmp, geflxr_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%efluxl_subsurf_clmp, geflxl_subsurf_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%efluxl_subsurf_elmp, geflxl_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%eflux_subbase_clmp, geflx_subbase_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%eflux_subbase_elmp, geflx_subbase_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%gtemp_subsurf_clmp, gtemp_subsurf_clmp_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%gtemp_subsurf_elmp, gtemp_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%gtemp_subbase_clmp, gtemp_subbase_clmp_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecGetArrayF90(elm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%gtemp_subbase_elmp, gtemp_subbase_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    geflx_subsurf_clmp_loc(:)  = 0._r8
-    geflxr_subsurf_clmp_loc(:) = 0._r8
-    geflxl_subsurf_clmp_loc(:) = 0._r8
-    geflx_subbase_clmp_loc(:)  = 0._r8
+    call VecGetArrayF90(elm_pf_idata%area_top_face_elms, area_elms_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+
+    geflx_subsurf_elmp_loc(:)  = 0._r8
+    geflxr_subsurf_elmp_loc(:) = 0._r8
+    geflxl_subsurf_elmp_loc(:) = 0._r8
+    geflx_subbase_elmp_loc(:)  = 0._r8
 
     ! operating via 'filters'
     gcount = -1
@@ -2776,11 +2776,11 @@ contains
        if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-       area = area_clms_loc(gcount*elm_pf_idata%nzclm_mapped+1)
+       area = area_elms_loc(gcount*elm_pf_idata%nzelm_mapped+1)
 
        ! (1) Dirichlet-Type BC for energy
        ! near-surface/subsurface interface temperature
-       ! NOTE that this is not exactly ground temperature from CLM, which is for air/ground (snow/surfwater-1st soil) interface
+       ! NOTE that this is not exactly ground temperature from ELM, which is for air/ground (snow/surfwater-1st soil) interface
 
        if (snl(c) < 0) then
           if(frac_h2osfc(c) /= 0._r8) then
@@ -2801,8 +2801,8 @@ contains
           endif
        endif
 
-       gtemp_subsurf_clmp_loc(gcount+1)  = t_grnd0 - tfrz
-       gtemp_subbase_clmp_loc(gcount+1)  = -9999                                ! not yet get it from CLM (i.e.,dirichlet type bottom BC not available)
+       gtemp_subsurf_elmp_loc(gcount+1)  = t_grnd0 - tfrz
+       gtemp_subbase_elmp_loc(gcount+1)  = -9999                                ! not yet get it from ELM (i.e.,dirichlet type bottom BC not available)
 
        ! (2) Neumann-Type BC for energy
        !   THREE (3) types: radiation flux, latent heat flux, and sensible heat flux
@@ -2827,34 +2827,34 @@ contains
 
        ! for heat flux boundry only (i.e. NO thermal-state boundary or LE flux BC)
        if (.not.shr_infnan_isnan(eflx_fgr0)) &                          ! when initializing, it's a NAN
-         geflx_subsurf_clmp_loc(gcount+1)  = eflx_fgr0*1.0e-6_r8        ! positive = into soil, unit: MJ/m2/sec
+         geflx_subsurf_elmp_loc(gcount+1)  = eflx_fgr0*1.0e-6_r8        ! positive = into soil, unit: MJ/m2/sec
 
        ! if thermal-state boundary (i.e. dirichlet-type, temperature)
        ! it must include non-heat-conductance energy fluxes, such as radiation and LE, which usually occurs if not covered by snow or h2osfc.
        if (.not.shr_infnan_isnan(eflx_ev0)) &
-         geflxl_subsurf_clmp_loc(gcount+1)  = eflx_ev0*1.0e-6_r8        ! positive = into soil, unit: MJ/m2/sec
+         geflxl_subsurf_elmp_loc(gcount+1)  = eflx_ev0*1.0e-6_r8        ! positive = into soil, unit: MJ/m2/sec
 
        if (.not.shr_infnan_isnan(eflx_rnet0)) &
-         geflxr_subsurf_clmp_loc(gcount+1)  = eflx_rnet0*1.0e-6_r8      ! positive = into soil, unit: MJ/m2/sec
+         geflxr_subsurf_elmp_loc(gcount+1)  = eflx_rnet0*1.0e-6_r8      ! positive = into soil, unit: MJ/m2/sec
 
        if (.not.shr_infnan_isnan(eflx_bot(c))) &
-         geflx_subbase_clmp_loc(gcount+1)  = eflx_bot(c)*1.0e-6_r8      ! positive = into soil
+         geflx_subbase_elmp_loc(gcount+1)  = eflx_bot(c)*1.0e-6_r8      ! positive = into soil
 
     end do
 
-    call VecRestoreArrayF90(elm_pf_idata%eflux_subsurf_clmp, geflx_subsurf_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%eflux_subsurf_elmp, geflx_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%efluxr_subsurf_clmp, geflxr_subsurf_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%efluxr_subsurf_elmp, geflxr_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%efluxl_subsurf_clmp, geflxl_subsurf_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%efluxl_subsurf_elmp, geflxl_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%eflux_subbase_clmp, geflx_subbase_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%eflux_subbase_elmp, geflx_subbase_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%gtemp_subsurf_clmp, gtemp_subsurf_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%gtemp_subsurf_elmp, gtemp_subsurf_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%gtemp_subbase_clmp, gtemp_subbase_clmp_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%gtemp_subbase_elmp, gtemp_subbase_elmp_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%area_top_face_clms, area_clms_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%area_top_face_elms, area_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
@@ -2896,13 +2896,13 @@ contains
     real(r8) :: CN_ratio_mass_to_mol
 
     integer  :: vec_offset
-    PetscScalar, pointer :: decomp_cpools_vr_clm_loc(:)      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-    PetscScalar, pointer :: decomp_npools_vr_clm_loc(:)      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-!   PetscScalar, pointer :: decomp_ppools_vr_clm_loc(:)      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+    PetscScalar, pointer :: decomp_cpools_vr_elm_loc(:)      ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+    PetscScalar, pointer :: decomp_npools_vr_elm_loc(:)      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
+!   PetscScalar, pointer :: decomp_ppools_vr_elm_loc(:)      ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
 
-    PetscScalar, pointer :: smin_no3_vr_clm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NO3
-    PetscScalar, pointer :: smin_nh4_vr_clm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NH4
-    PetscScalar, pointer :: smin_nh4sorb_vr_clm_loc(:)       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
+    PetscScalar, pointer :: smin_no3_vr_elm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NO3
+    PetscScalar, pointer :: smin_nh4_vr_elm_loc(:)           ! (gN/m3) vertically-resolved soil mineral NH4
+    PetscScalar, pointer :: smin_nh4sorb_vr_elm_loc(:)       ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
 
     PetscErrorCode :: ierr
     !
@@ -2929,26 +2929,26 @@ contains
       sminp_vr         => elm_interface_data%bgc%sminp_vr_col              & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
     )
 
-    call VecGetArrayF90(elm_pf_idata%decomp_cpools_vr_clmp, decomp_cpools_vr_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%decomp_cpools_vr_elmp, decomp_cpools_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%decomp_npools_vr_clmp, decomp_npools_vr_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%decomp_npools_vr_elmp, decomp_npools_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecGetArrayF90(elm_pf_idata%smin_no3_vr_clmp, smin_no3_vr_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%smin_no3_vr_elmp, smin_no3_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%smin_nh4_vr_clmp, smin_nh4_vr_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%smin_nh4_vr_elmp, smin_nh4_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%smin_nh4sorb_vr_clmp, smin_nh4sorb_vr_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%smin_nh4sorb_vr_elmp, smin_nh4sorb_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     CN_ratio_mass_to_mol = elm_pf_idata%N_molecular_weight/elm_pf_idata%C_molecular_weight
 
     !
-    decomp_cpools_vr_clm_loc(:) = 0._r8
-    decomp_npools_vr_clm_loc(:) = 0._r8
-    smin_no3_vr_clm_loc(:)      = 0._r8
-    smin_nh4_vr_clm_loc(:)      = 0._r8
-    smin_nh4sorb_vr_clm_loc(:)  = 0._r8
+    decomp_cpools_vr_elm_loc(:) = 0._r8
+    decomp_npools_vr_elm_loc(:) = 0._r8
+    smin_no3_vr_elm_loc(:)      = 0._r8
+    smin_nh4_vr_elm_loc(:)      = 0._r8
+    smin_nh4sorb_vr_elm_loc(:)  = 0._r8
 
     ! operating via 'filters'
     gcount = -1
@@ -2965,56 +2965,56 @@ contains
 #endif
 
 
-      do j = 1, elm_pf_idata%nzclm_mapped
-          cellcount = gcount*elm_pf_idata%nzclm_mapped + j    ! 1-based
+      do j = 1, elm_pf_idata%nzelm_mapped
+          cellcount = gcount*elm_pf_idata%nzelm_mapped + j    ! 1-based
 
-          ! note: all clm-pf soil layers are 'elm_pf_idata%nzclm_mapped' for both TH/BGC,
-          !       but in CLM, T is within 'nlevgrnd', H is within 'nlevsoi', bgc within 'nlevdecomp'
+          ! note: all elm-pf soil layers are 'elm_pf_idata%nzelm_mapped' for both TH/BGC,
+          !       but in ELM, T is within 'nlevgrnd', H is within 'nlevsoi', bgc within 'nlevdecomp'
 
           if(j <= nlevdecomp_full) then
 
              do k = 1, ndecomp_pools
-                vec_offset = (k-1)*elm_pf_idata%nlclm_sub        ! 0-based
+                vec_offset = (k-1)*elm_pf_idata%nlelm_sub        ! 0-based
                 ! decomp_pool vec: 'cell' first, then 'species' (i.e. cell by cell for 1 species, then species by species)
                 ! Tips: then when doing 3-D data-mapping, no need to stride the vecs BUT to do segmentation.
 
-                decomp_cpools_vr_clm_loc(vec_offset+cellcount) = decomp_cpools_vr(c,j,k)   &
+                decomp_cpools_vr_elm_loc(vec_offset+cellcount) = decomp_cpools_vr(c,j,k)   &
                      /elm_pf_idata%C_molecular_weight
 
                 if (elm_pf_idata%floating_cn_ratio(k)) then
-                  decomp_npools_vr_clm_loc(vec_offset+cellcount) = decomp_npools_vr(c,j,k) &
+                  decomp_npools_vr_elm_loc(vec_offset+cellcount) = decomp_npools_vr(c,j,k) &
                      /elm_pf_idata%N_molecular_weight
                 else
-                  decomp_npools_vr_clm_loc(vec_offset+cellcount) =   &
-                      decomp_cpools_vr_clm_loc(vec_offset+cellcount) &
+                  decomp_npools_vr_elm_loc(vec_offset+cellcount) =   &
+                      decomp_cpools_vr_elm_loc(vec_offset+cellcount) &
                      /(initial_cn_ratio(k)*CN_ratio_mass_to_mol)      ! initial_cn_ratio: in unit of mass
                 endif
 
              enddo ! do k=1, ndecomp_pools
 
-             smin_no3_vr_clm_loc(cellcount)      = smin_no3_vr(c,j) &
+             smin_no3_vr_elm_loc(cellcount)      = smin_no3_vr(c,j) &
                         /elm_pf_idata%N_molecular_weight
-             smin_nh4_vr_clm_loc(cellcount)      = smin_nh4_vr(c,j) &
+             smin_nh4_vr_elm_loc(cellcount)      = smin_nh4_vr(c,j) &
                         /elm_pf_idata%N_molecular_weight
-             smin_nh4sorb_vr_clm_loc(cellcount)  = smin_nh4sorb_vr(c,j) &
+             smin_nh4sorb_vr_elm_loc(cellcount)  = smin_nh4sorb_vr(c,j) &
                         /elm_pf_idata%N_molecular_weight
 
            endif
 
-       enddo ! do j = 1, elm_pf_idata%nzclm_mapped
+       enddo ! do j = 1, elm_pf_idata%nzelm_mapped
 
     enddo ! do fc = 1, num_soilc
 
-    call VecRestoreArrayF90(elm_pf_idata%decomp_cpools_vr_clmp, decomp_cpools_vr_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%decomp_cpools_vr_elmp, decomp_cpools_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%decomp_npools_vr_clmp, decomp_npools_vr_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%decomp_npools_vr_elmp, decomp_npools_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%smin_no3_vr_clmp, smin_no3_vr_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%smin_no3_vr_elmp, smin_no3_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%smin_nh4_vr_clmp, smin_nh4_vr_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%smin_nh4_vr_elmp, smin_nh4_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%smin_nh4sorb_vr_clmp, smin_nh4sorb_vr_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%smin_nh4sorb_vr_elmp, smin_nh4sorb_vr_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
   end associate
@@ -3060,15 +3060,15 @@ contains
 
     ! C/N source/sink rates as inputs for pflotran: Units - moles/m3/s (note: do unit conversion here for input rates)
     integer  :: vec_offset
-    PetscScalar, pointer :: rate_decomp_c_clm_loc(:)       !
-    PetscScalar, pointer :: rate_decomp_n_clm_loc(:)       !
-!     PetscScalar, pointer :: rate_decomp_p_clm_loc(:)     !
+    PetscScalar, pointer :: rate_decomp_c_elm_loc(:)       !
+    PetscScalar, pointer :: rate_decomp_n_elm_loc(:)       !
+!     PetscScalar, pointer :: rate_decomp_p_elm_loc(:)     !
 
-    PetscScalar, pointer :: kscalar_decomp_c_clm_loc(:)  !
+    PetscScalar, pointer :: kscalar_decomp_c_elm_loc(:)  !
 
-    PetscScalar, pointer :: rate_plantndemand_clm_loc(:)   !
-    PetscScalar, pointer :: rate_smin_no3_clm_loc(:)       !
-    PetscScalar, pointer :: rate_smin_nh4_clm_loc(:)       !
+    PetscScalar, pointer :: rate_plantndemand_elm_loc(:)   !
+    PetscScalar, pointer :: rate_smin_no3_elm_loc(:)       !
+    PetscScalar, pointer :: rate_smin_nh4_elm_loc(:)       !
 
     PetscErrorCode :: ierr
 
@@ -3104,29 +3104,29 @@ contains
     dtime = get_step_size()
 
 
-    call VecGetArrayF90(elm_pf_idata%rate_decomp_c_clmp, rate_decomp_c_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%rate_decomp_c_elmp, rate_decomp_c_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%rate_decomp_n_clmp, rate_decomp_n_clm_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecGetArrayF90(elm_pf_idata%kscalar_decomp_c_clmp, kscalar_decomp_c_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%rate_decomp_n_elmp, rate_decomp_n_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecGetArrayF90(elm_pf_idata%rate_plantndemand_clmp, rate_plantndemand_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%kscalar_decomp_c_elmp, kscalar_decomp_c_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%rate_smin_no3_clmp, rate_smin_no3_clm_loc, ierr)
+
+    call VecGetArrayF90(elm_pf_idata%rate_plantndemand_elmp, rate_plantndemand_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayF90(elm_pf_idata%rate_smin_nh4_clmp, rate_smin_nh4_clm_loc, ierr)
+    call VecGetArrayF90(elm_pf_idata%rate_smin_no3_elmp, rate_smin_no3_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecGetArrayF90(elm_pf_idata%rate_smin_nh4_elmp, rate_smin_nh4_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     ! Initialize to ZERO
 
-    rate_decomp_c_clm_loc(:) = 0.0_r8
-    rate_decomp_n_clm_loc(:) = 0.0_r8
+    rate_decomp_c_elm_loc(:) = 0.0_r8
+    rate_decomp_n_elm_loc(:) = 0.0_r8
 
-    rate_smin_no3_clm_loc(:) = 0.0_r8
-    rate_smin_nh4_clm_loc(:) = 0.0_r8
-    rate_plantndemand_clm_loc(:) = 0.0_r8
+    rate_smin_no3_elm_loc(:) = 0.0_r8
+    rate_smin_nh4_elm_loc(:) = 0.0_r8
+    rate_plantndemand_elm_loc(:) = 0.0_r8
 
     ! operating via 'filters'
     gcount = -1
@@ -3142,11 +3142,11 @@ contains
       if (mapped_gcount_skip(gcount+1)) cycle  ! skip inactive grid, but not numbering
 #endif
 
-      do j = 1, elm_pf_idata%nzclm_mapped
-          cellcount = gcount*elm_pf_idata%nzclm_mapped + j    ! 1-based
+      do j = 1, elm_pf_idata%nzelm_mapped
+          cellcount = gcount*elm_pf_idata%nzelm_mapped + j    ! 1-based
 
-          ! note: all clm-pf soil layers are 'elm_pf_idata%nzclm_mapped' for both TH/BGC,
-          !       but in CLM, T is within 'nlevgrnd', H is within 'nlevsoi', bgc within 'nlevdecomp'
+          ! note: all elm-pf soil layers are 'elm_pf_idata%nzelm_mapped' for both TH/BGC,
+          !       but in ELM, T is within 'nlevgrnd', H is within 'nlevsoi', bgc within 'nlevdecomp'
           !       (nlevdecomp_full = nlevgrnd)
 
           if(j <= nlevdecomp_full) then
@@ -3166,28 +3166,28 @@ contains
               end do
 
               do k = 1, ndecomp_pools
-                 vec_offset = (k-1)*elm_pf_idata%nlclm_sub        ! 0-based
+                 vec_offset = (k-1)*elm_pf_idata%nlelm_sub        ! 0-based
                  ! decomp_pool vec: 'cell' first, then 'species' (i.e. cell by cell for 1 species, then species by species)
                  ! Tips: then when doing 3-D data-mapping, no need to stride the vecs BUT to do segmentation.
 
-                 rate_decomp_c_clm_loc(vec_offset+cellcount)   =  &
+                 rate_decomp_c_elm_loc(vec_offset+cellcount)   =  &
                             col_net_to_decomp_cpools_vr(c,j,k)    &
                            /elm_pf_idata%C_molecular_weight
 
-                 if (rate_decomp_c_clm_loc(vec_offset+cellcount)<0._r8) then
-                   rate_decomp_c_clm_loc(vec_offset+cellcount) = max(     &
-                     rate_decomp_c_clm_loc(vec_offset+cellcount),         &
+                 if (rate_decomp_c_elm_loc(vec_offset+cellcount)<0._r8) then
+                   rate_decomp_c_elm_loc(vec_offset+cellcount) = max(     &
+                     rate_decomp_c_elm_loc(vec_offset+cellcount),         &
                      -max(decomp_cpools_vr(c,j,k)/elm_pf_idata%C_molecular_weight/dtime, 0._r8))
                  endif
 
                  if (elm_pf_idata%floating_cn_ratio(k)) then
-                   rate_decomp_n_clm_loc(vec_offset+cellcount) =  &
+                   rate_decomp_n_elm_loc(vec_offset+cellcount) =  &
                            col_net_to_decomp_npools_vr(c,j,k)     &
                            /elm_pf_idata%N_molecular_weight
 
-                   if (rate_decomp_n_clm_loc(vec_offset+cellcount)<0._r8) then
-                     rate_decomp_n_clm_loc(vec_offset+cellcount) = max(     &
-                       rate_decomp_n_clm_loc(vec_offset+cellcount),         &
+                   if (rate_decomp_n_elm_loc(vec_offset+cellcount)<0._r8) then
+                     rate_decomp_n_elm_loc(vec_offset+cellcount) = max(     &
+                       rate_decomp_n_elm_loc(vec_offset+cellcount),         &
                        -max(decomp_npools_vr(c,j,k)/elm_pf_idata%N_molecular_weight/dtime, 0._r8))
                    endif
 
@@ -3198,47 +3198,47 @@ contains
               ! site-scalar to adjust decomposition rate constants
               ! note: (1) this only works for CTC, together with adspinup_factor(k)>1
               !       (2) coding here is because of its time (year)-dependent, which implies checking each time-step
-              kscalar_decomp_c_clm_loc(cellcount) = decomp_k_scalar_vr(c,j)
+              kscalar_decomp_c_elm_loc(cellcount) = decomp_k_scalar_vr(c,j)
 
-              rate_smin_nh4_clm_loc(cellcount) = externaln_to_nh4_vr(c,j)/ &
+              rate_smin_nh4_elm_loc(cellcount) = externaln_to_nh4_vr(c,j)/ &
                                                  elm_pf_idata%N_molecular_weight
-              if (rate_smin_nh4_clm_loc(cellcount)<0._r8) then
-                 rate_smin_nh4_clm_loc(cellcount) = max(     &
-                   rate_smin_nh4_clm_loc(cellcount),         &
+              if (rate_smin_nh4_elm_loc(cellcount)<0._r8) then
+                 rate_smin_nh4_elm_loc(cellcount) = max(     &
+                   rate_smin_nh4_elm_loc(cellcount),         &
                    -max(smin_nh4_vr(c,j)/elm_pf_idata%N_molecular_weight/dtime, 0._r8))
               endif
 
-              rate_smin_no3_clm_loc(cellcount) = externaln_to_no3_vr(c,j)/ &
+              rate_smin_no3_elm_loc(cellcount) = externaln_to_no3_vr(c,j)/ &
                                                  elm_pf_idata%N_molecular_weight
-              if (rate_smin_no3_clm_loc(cellcount)<0._r8) then
-                 rate_smin_no3_clm_loc(cellcount) = max(     &
-                   rate_smin_no3_clm_loc(cellcount),         &
+              if (rate_smin_no3_elm_loc(cellcount)<0._r8) then
+                 rate_smin_no3_elm_loc(cellcount) = max(     &
+                   rate_smin_no3_elm_loc(cellcount),         &
                    -max(smin_no3_vr(c,j)/elm_pf_idata%N_molecular_weight/dtime, 0._r8))
               endif
 
               ! plant N uptake rate here IS the N demand (potential uptake)
-              rate_plantndemand_clm_loc(cellcount) = &
+              rate_plantndemand_elm_loc(cellcount) = &
                          col_plant_ndemand_vr(c,j)/elm_pf_idata%N_molecular_weight
 
           endif ! if (j<=nlevdecomp_full)
 
-      enddo ! do j=1, elm_pf_idata%nzclm_mapped
+      enddo ! do j=1, elm_pf_idata%nzelm_mapped
 
     enddo ! do fc=1,numsoic
 
-    call VecRestoreArrayF90(elm_pf_idata%rate_decomp_c_clmp, rate_decomp_c_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%rate_decomp_c_elmp, rate_decomp_c_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%rate_decomp_n_clmp, rate_decomp_n_clm_loc, ierr)
-    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-    call VecRestoreArrayF90(elm_pf_idata%kscalar_decomp_c_clmp, kscalar_decomp_c_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%rate_decomp_n_elmp, rate_decomp_n_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecRestoreArrayF90(elm_pf_idata%rate_plantndemand_clmp, rate_plantndemand_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%kscalar_decomp_c_elmp, kscalar_decomp_c_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%rate_smin_no3_clmp, rate_smin_no3_clm_loc, ierr)
+
+    call VecRestoreArrayF90(elm_pf_idata%rate_plantndemand_elmp, rate_plantndemand_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayF90(elm_pf_idata%rate_smin_nh4_clmp, rate_smin_nh4_clm_loc, ierr)
+    call VecRestoreArrayF90(elm_pf_idata%rate_smin_no3_elmp, rate_smin_no3_elm_loc, ierr)
+    call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+    call VecRestoreArrayF90(elm_pf_idata%rate_smin_nh4_elmp, rate_smin_nh4_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     end associate
@@ -3248,14 +3248,14 @@ contains
 
   !====================================================================================================
   !                                                                                                   !
-  !             Subroutines to UPDATE PFLOTRAN evolving variables to CLM                              !
+  !             Subroutines to UPDATE PFLOTRAN evolving variables to ELM                              !
   !                                                                                                   !
   !====================================================================================================
   !
-  ! !IROUTINE: update_soil_moisture_pf2clm
+  ! !IROUTINE: update_soil_moisture_pf2elm
   !
   ! !INTERFACE:
-  subroutine update_soil_moisture_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_moisture_pf2elm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -3283,13 +3283,13 @@ contains
     integer  :: fc, c, j, g              ! indices
     integer  :: cellcount, gcount
 
-    PetscScalar, pointer :: sat_ice_clm_loc(:)
-    PetscScalar, pointer :: sat_clm_loc(:)
-    PetscScalar, pointer :: effporo_clm_loc(:)
-    PetscScalar, pointer :: soilpsi_clm_loc(:)
+    PetscScalar, pointer :: sat_ice_elm_loc(:)
+    PetscScalar, pointer :: sat_elm_loc(:)
+    PetscScalar, pointer :: effporo_elm_loc(:)
+    PetscScalar, pointer :: soilpsi_elm_loc(:)
     PetscErrorCode :: ierr
 
-    character(len=256) :: subname = "update_soil_moisture_pf2clm"
+    character(len=256) :: subname = "update_soil_moisture_pf2elm"
 
   !EOP
   !-----------------------------------------------------------------------
@@ -3305,14 +3305,14 @@ contains
       h2osoi_vol      => elm_interface_data%th%h2osoi_vol_col  & ! volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
      )
     !
-    call VecGetArrayReadF90(elm_pf_idata%soillsat_clms, sat_clm_loc, ierr)
+    call VecGetArrayReadF90(elm_pf_idata%soillsat_elms, sat_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayReadF90(elm_pf_idata%effporosity_clms, effporo_clm_loc, ierr)
+    call VecGetArrayReadF90(elm_pf_idata%effporosity_elms, effporo_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayReadF90(elm_pf_idata%soilpsi_clms, soilpsi_clm_loc, ierr)
+    call VecGetArrayReadF90(elm_pf_idata%soilpsi_elms, soilpsi_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     if (pf_frzmode) then
-       call VecGetArrayReadF90(elm_pf_idata%soilisat_clms, sat_ice_clm_loc, ierr)
+       call VecGetArrayReadF90(elm_pf_idata%soilisat_elms, sat_ice_elm_loc, ierr)
        call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     endif
 
@@ -3332,38 +3332,38 @@ contains
 
       do j = 1, nlevgrnd
 
-        if (j<=elm_pf_idata%nzclm_mapped) then
-          cellcount = gcount*elm_pf_idata%nzclm_mapped + j
+        if (j<=elm_pf_idata%nzelm_mapped) then
+          cellcount = gcount*elm_pf_idata%nzelm_mapped + j
 
-          h2osoi_liq(c,j) = sat_clm_loc(cellcount) * &
-                            effporo_clm_loc(cellcount) * dz(c,j) * denh2o    ! 'watsat_clm_loc' may be effective porosity
+          h2osoi_liq(c,j) = sat_elm_loc(cellcount) * &
+                            effporo_elm_loc(cellcount) * dz(c,j) * denh2o    ! 'watsat_elm_loc' may be effective porosity
           if (pf_frzmode) then
              ! since 'effporo' may be expanding when freezing, and 'soilpsi' is actually what PF works on
-             ! it's better to use CLM's 'watsat'
-             h2osoi_liq(c,j) = sat_clm_loc(cellcount) * &
-                              !effporo_clm_loc(cellcount) * dz(c,j) * denh2o
+             ! it's better to use ELM's 'watsat'
+             h2osoi_liq(c,j) = sat_elm_loc(cellcount) * &
+                              !effporo_elm_loc(cellcount) * dz(c,j) * denh2o
                               watsat(c,j) * dz(c,j) * denh2o
-             h2osoi_ice(c,j) = sat_ice_clm_loc(cellcount) * &
-                              !effporo_clm_loc(cellcount) * dz(c,j) * denice
+             h2osoi_ice(c,j) = sat_ice_elm_loc(cellcount) * &
+                              !effporo_elm_loc(cellcount) * dz(c,j) * denice
                               watsat(c,j) * dz(c,j) * denice
           end if
 
-          soilpsi(c,j) = soilpsi_clm_loc(cellcount)*1.e-6_r8         ! Pa --> MPa (negative)
+          soilpsi(c,j) = soilpsi_elm_loc(cellcount)*1.e-6_r8         ! Pa --> MPa (negative)
 
         else
-          h2osoi_liq(c,j) = sat_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) *      &
-                            effporo_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) *  &
-                            dz(c,j) * denh2o    ! 'watsat_clm_loc' may be effective porosity
+          h2osoi_liq(c,j) = sat_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) *      &
+                            effporo_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) *  &
+                            dz(c,j) * denh2o    ! 'watsat_elm_loc' may be effective porosity
           if (pf_frzmode) then
-             h2osoi_liq(c,j) = sat_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) * &
-                              !effporo_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) * dz(c,j) * denh2o    ! 'watsat_clm_loc' may be effective porosity
-                              watsat(c,elm_pf_idata%nzclm_mapped) * dz(c,j) * denh2o
-             h2osoi_ice(c,j) = sat_ice_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) * &
-                              !effporo_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped) * dz(c,j) * denice
-                              watsat(c,elm_pf_idata%nzclm_mapped) * dz(c,j) * denice
+             h2osoi_liq(c,j) = sat_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) * &
+                              !effporo_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) * dz(c,j) * denh2o    ! 'watsat_elm_loc' may be effective porosity
+                              watsat(c,elm_pf_idata%nzelm_mapped) * dz(c,j) * denh2o
+             h2osoi_ice(c,j) = sat_ice_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) * &
+                              !effporo_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped) * dz(c,j) * denice
+                              watsat(c,elm_pf_idata%nzelm_mapped) * dz(c,j) * denice
           end if
 
-          soilpsi(c,j) = soilpsi(c,elm_pf_idata%nzclm_mapped)
+          soilpsi(c,j) = soilpsi(c,elm_pf_idata%nzelm_mapped)
         end if
 
         h2osoi_vol(c,j) = h2osoi_liq(c,j) / dz(c,j) / denh2o + &
@@ -3374,26 +3374,26 @@ contains
 
     enddo
 
-    call VecRestoreArrayReadF90(elm_pf_idata%soillsat_clms, sat_clm_loc, ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%soillsat_elms, sat_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayReadF90(elm_pf_idata%effporosity_clms, effporo_clm_loc, ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%effporosity_elms, effporo_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayReadF90(elm_pf_idata%soilpsi_clms, soilpsi_clm_loc, ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%soilpsi_elms, soilpsi_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     if (pf_frzmode) then
-       call VecRestoreArrayReadF90(elm_pf_idata%soilisat_clms, sat_ice_clm_loc, ierr)
+       call VecRestoreArrayReadF90(elm_pf_idata%soilisat_elms, sat_ice_elm_loc, ierr)
        call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
     endif
 
     end associate
-  end subroutine update_soil_moisture_pf2clm
+  end subroutine update_soil_moisture_pf2elm
 
   !-----------------------------------------------------------------------------
   !
-  ! !IROUTINE: update_soil_temperature_pf2clm
+  ! !IROUTINE: update_soil_temperature_pf2elm
   !
   ! !INTERFACE:
-  subroutine update_soil_temperature_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_temperature_pf2elm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   !
@@ -3421,10 +3421,10 @@ contains
     integer  :: cellcount, gcount
     integer  :: j_frz
 
-    PetscScalar, pointer :: soilt_clms_loc(:)
+    PetscScalar, pointer :: soilt_elms_loc(:)
     PetscErrorCode :: ierr
 
-    character(len=256) :: subname = "update_soil_temperature_pf2clm"
+    character(len=256) :: subname = "update_soil_temperature_pf2elm"
 
   !EOP
   !-----------------------------------------------------------------------
@@ -3437,7 +3437,7 @@ contains
        )
 
     !
-    call VecGetArrayReadF90(elm_pf_idata%soilt_clms, soilt_clms_loc, ierr)
+    call VecGetArrayReadF90(elm_pf_idata%soilt_elms, soilt_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     ! operating via 'filters'
@@ -3456,12 +3456,12 @@ contains
 
       do j = 1, nlevgrnd
 
-        if (j<=elm_pf_idata%nzclm_mapped) then
-           cellcount = gcount*elm_pf_idata%nzclm_mapped + j
+        if (j<=elm_pf_idata%nzelm_mapped) then
+           cellcount = gcount*elm_pf_idata%nzelm_mapped + j
 
-           t_soisno(c,j) = soilt_clms_loc(cellcount) + tfrz
+           t_soisno(c,j) = soilt_elms_loc(cellcount) + tfrz
         else
-           t_soisno(c,j) = t_soisno(c, elm_pf_idata%nzclm_mapped)
+           t_soisno(c,j) = t_soisno(c, elm_pf_idata%nzelm_mapped)
         end if
 
         ! a simple (and temporary) checking of TH mode fake convergence
@@ -3475,7 +3475,7 @@ contains
 
     enddo
 
-    call VecRestoreArrayReadF90(elm_pf_idata%soilt_clms, soilt_clms_loc, ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%soilt_elms, soilt_elms_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
 
@@ -3501,15 +3501,15 @@ contains
 
 
     end associate
-  end subroutine update_soil_temperature_pf2clm
+  end subroutine update_soil_temperature_pf2elm
 
   !-----------------------------------------------------------------------------
   !BOP
   !
-  ! !IROUTINE: update_bcflow_pf2clm
+  ! !IROUTINE: update_bcflow_pf2elm
   !
   ! !INTERFACE:
-  subroutine update_bcflow_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_bcflow_pf2elm(elm_interface_data, bounds, filters, ifilter)
   !
   ! !DESCRIPTION:
   ! update qflx_surf, qflx_infl from PF's
@@ -3539,12 +3539,12 @@ contains
     integer  :: nstep
     real(r8) :: qflx_evap                  ! bare-soil surface evaporation (mmH2O/s)
 
-    PetscScalar, pointer :: area_clm_loc(:)
-    PetscScalar, pointer :: qinfl_subsurf_clm_loc(:)        ! kgH2O/time-step
-    PetscScalar, pointer :: qsurf_subsurf_clm_loc(:)        ! kgH2O/time-step
-    PetscScalar, pointer :: qflux_subbase_clm_loc(:)        ! kgH2O/time-step
+    PetscScalar, pointer :: area_elm_loc(:)
+    PetscScalar, pointer :: qinfl_subsurf_elm_loc(:)        ! kgH2O/time-step
+    PetscScalar, pointer :: qsurf_subsurf_elm_loc(:)        ! kgH2O/time-step
+    PetscScalar, pointer :: qflux_subbase_elm_loc(:)        ! kgH2O/time-step
     PetscErrorCode :: ierr
-    character(len=32) :: subname = 'update_bcflow_pf2clm'  ! subroutine name
+    character(len=32) :: subname = 'update_bcflow_pf2elm'  ! subroutine name
 
     !-----------------------------------------------------------------------
 
@@ -3568,15 +3568,15 @@ contains
     dtime = get_step_size()
     nstep = get_nstep()
 
-    ! from PF==>CLM
-    call VecGetArrayReadF90(elm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
+    ! from PF==>ELM
+    call VecGetArrayReadF90(elm_pf_idata%area_top_face_elms, area_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-    call VecGetArrayReadF90(elm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
+    call VecGetArrayReadF90(elm_pf_idata%qinfl_subsurf_elms,qinfl_subsurf_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayReadF90(elm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
+    call VecGetArrayReadF90(elm_pf_idata%qsurf_subsurf_elms,qsurf_subsurf_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecGetArrayReadF90(elm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
+    call VecGetArrayReadF90(elm_pf_idata%qflux_subbase_elms,qflux_subbase_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     ! operating via 'filters'
@@ -3594,46 +3594,46 @@ contains
 #endif
 
       ! the following was actually duplicated from 'get_elm_bcwflx' to calculate total water evap from 'qflx_topsoil'
-      ! in order to get potential infiltration from CLM, because 'qflx_ev_soil' might be reduced due to water limits
+      ! in order to get potential infiltration from ELM, because 'qflx_ev_soil' might be reduced due to water limits
       qflx_evap = (1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c))*qflx_ev_soil(c)
       if (t_grnd(c) < tfrz .and. qflx_evap<0._r8) then
           qflx_evap = 0._r8
       endif
 
-      !'from PF: qinfl_subsurf_clm_loc: positive - in, negative - out
-      area = area_clm_loc(gcount*elm_pf_idata%nzclm_mapped+1)
-      qflx_infl(c) = qinfl_subsurf_clm_loc(gcount+1)  &
+      !'from PF: qinfl_subsurf_elm_loc: positive - in, negative - out
+      area = area_elm_loc(gcount*elm_pf_idata%nzelm_mapped+1)
+      qflx_infl(c) = qinfl_subsurf_elm_loc(gcount+1)  &
                        /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec
 
       qflx_surf(c) = qflx_top_soil(c)  - qflx_infl(c) - qflx_evap
       qflx_surf(c) = max(0._r8, qflx_surf(c))
 
-      !'from PF: qflux_subbase_clm_loc: positive - in, negative - out)
-      area = area_clm_loc((gcount+1)*elm_pf_idata%nzclm_mapped)                              ! note: this 'area_clm_loc' is in 3-D for all subsurface domain
-      qflx_drain(c) = -qflux_subbase_clm_loc(gcount+1)  &
+      !'from PF: qflux_subbase_elm_loc: positive - in, negative - out)
+      area = area_elm_loc((gcount+1)*elm_pf_idata%nzelm_mapped)                              ! note: this 'area_elm_loc' is in 3-D for all subsurface domain
+      qflx_drain(c) = -qflux_subbase_elm_loc(gcount+1)  &
                        /dtime/(area*denh2o*1.e-3)     ! kgH2O/time-step ==> mmH2O/sec (+ drainage, - upward-in)
 
     end do
 
 
-    call VecRestoreArrayReadF90(elm_pf_idata%area_top_face_clms, area_clm_loc, ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%area_top_face_elms, area_elm_loc, ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayReadF90(elm_pf_idata%qinfl_subsurf_clms,qinfl_subsurf_clm_loc,ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%qinfl_subsurf_elms,qinfl_subsurf_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayReadF90(elm_pf_idata%qsurf_subsurf_clms,qsurf_subsurf_clm_loc,ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%qsurf_subsurf_elms,qsurf_subsurf_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-    call VecRestoreArrayReadF90(elm_pf_idata%qflux_subbase_clms,qflux_subbase_clm_loc,ierr)
+    call VecRestoreArrayReadF90(elm_pf_idata%qflux_subbase_elms,qflux_subbase_elm_loc,ierr)
     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
     end associate
-  end subroutine update_bcflow_pf2clm
+  end subroutine update_bcflow_pf2elm
 
   !
   !-----------------------------------------------------------------------------
   !
   !
   !-----------------------------------------------------------------------------
-  ! !ROUTINE: update_soil_bgc_pf2clm()
+  ! !ROUTINE: update_soil_bgc_pf2elm()
   !
   ! !INTERFACE:
   !
@@ -3641,7 +3641,7 @@ contains
   !   NOTE: Don't update the organic C/N state variables, which will be updated in those 'update' subroutines
   !           and the 'SoilLittVertTranspMod.F90' after 'update1'.
   !
-  subroutine update_soil_bgc_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_soil_bgc_pf2elm(elm_interface_data, bounds, filters, ifilter)
 ! TODO: add phosphorus vars
     use ColumnType              , only : col_pp
     use elm_varctl              , only : iulog, use_fates
@@ -3660,7 +3660,7 @@ contains
 
     type(elm_interface_data_type), intent(inout) :: elm_interface_data
 
-    character(len=256) :: subname = "update_soil_bgc_pf2clm"
+    character(len=256) :: subname = "update_soil_bgc_pf2elm"
 
 #include "petsc/finclude/petscsys.h"
 #include "petsc/finclude/petscvec.h"
@@ -3672,23 +3672,23 @@ contains
     real(r8) :: dtime            ! land model time step (sec)
 
     integer  :: vec_offset
-    PetscScalar, pointer :: decomp_cpools_vr_clm_loc(:)      ! (moleC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-    PetscScalar, pointer :: decomp_npools_vr_clm_loc(:)      ! (moleN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
+    PetscScalar, pointer :: decomp_cpools_vr_elm_loc(:)      ! (moleC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+    PetscScalar, pointer :: decomp_npools_vr_elm_loc(:)      ! (moleN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
 
-    PetscScalar, pointer :: smin_no3_vr_clm_loc(:)           ! (moleN/m3) vertically-resolved soil mineral NO3
-    PetscScalar, pointer :: smin_nh4_vr_clm_loc(:)           ! (moleN/m3) vertically-resolved total soil mineral NH4
-    PetscScalar, pointer :: smin_nh4sorb_vr_clm_loc(:)       ! (moleN/m3) vertically-resolved absorbed soil mineral NH4
+    PetscScalar, pointer :: smin_no3_vr_elm_loc(:)           ! (moleN/m3) vertically-resolved soil mineral NO3
+    PetscScalar, pointer :: smin_nh4_vr_elm_loc(:)           ! (moleN/m3) vertically-resolved total soil mineral NH4
+    PetscScalar, pointer :: smin_nh4sorb_vr_elm_loc(:)       ! (moleN/m3) vertically-resolved absorbed soil mineral NH4
 
-    ! 'accextrn_vr' - accumulative (root) extracted N, i.e., actual plant N uptake from each soil layer, within a CLM timestep
-    PetscScalar, pointer :: accextrnh4_vr_clm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil mineral N root-extraction (accumulated)
-    PetscScalar, pointer :: accextrno3_vr_clm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil mineral N root-extraction (accumulated)
+    ! 'accextrn_vr' - accumulative (root) extracted N, i.e., actual plant N uptake from each soil layer, within a ELM timestep
+    PetscScalar, pointer :: accextrnh4_vr_elm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil mineral N root-extraction (accumulated)
+    PetscScalar, pointer :: accextrno3_vr_elm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil mineral N root-extraction (accumulated)
 
-    ! 'accnmin_vr' - accumulative gross N mineralization within a CLM timestep
-    PetscScalar, pointer :: accnmin_vr_clm_loc(:)               ! (moleN/m3/timestep) vertically-resolved soil N mineralization (accumulated)
+    ! 'accnmin_vr' - accumulative gross N mineralization within a ELM timestep
+    PetscScalar, pointer :: accnmin_vr_elm_loc(:)               ! (moleN/m3/timestep) vertically-resolved soil N mineralization (accumulated)
 
-    ! 'accnimm_vr' - accumulative N immobilization within a CLM timestep
-    PetscScalar, pointer :: accnimmp_vr_clm_loc(:)              ! (moleN/m3/timestep) vertically-resolved soil N potential immoblilization (accumulated)
-    PetscScalar, pointer :: accnimm_vr_clm_loc(:)               ! (moleN/m3/timestep) vertically-resolved soil N immoblilization (accumulated)
+    ! 'accnimm_vr' - accumulative N immobilization within a ELM timestep
+    PetscScalar, pointer :: accnimmp_vr_elm_loc(:)              ! (moleN/m3/timestep) vertically-resolved soil N potential immoblilization (accumulated)
+    PetscScalar, pointer :: accnimm_vr_elm_loc(:)               ! (moleN/m3/timestep) vertically-resolved soil N immoblilization (accumulated)
 
     PetscErrorCode :: ierr
 
@@ -3722,46 +3722,46 @@ contains
      decomp_cpools_delta_vr  = 0._r8-decomp_cpools_vr
      decomp_npools_delta_vr  = 0._r8-decomp_npools_vr
 
-     ! clm-pf interface data updated
-     call VecGetArrayReadF90(elm_pf_idata%decomp_cpools_vr_clms, decomp_cpools_vr_clm_loc, ierr)
+     ! elm-pf interface data updated
+     call VecGetArrayReadF90(elm_pf_idata%decomp_cpools_vr_elms, decomp_cpools_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%decomp_npools_vr_clms, decomp_npools_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-
-     call VecGetArrayReadF90(elm_pf_idata%smin_no3_vr_clms, smin_no3_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%smin_nh4_vr_clms, smin_nh4_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%smin_nh4sorb_vr_clms, smin_nh4sorb_vr_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%decomp_npools_vr_elms, decomp_npools_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-     call VecGetArrayReadF90(elm_pf_idata%accextrnh4_vr_clms, accextrnh4_vr_clm_loc, ierr)
+
+     call VecGetArrayReadF90(elm_pf_idata%smin_no3_vr_elms, smin_no3_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%accextrno3_vr_clms, accextrno3_vr_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%smin_nh4_vr_elms, smin_nh4_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+     call VecGetArrayReadF90(elm_pf_idata%smin_nh4sorb_vr_elms, smin_nh4sorb_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+
+     call VecGetArrayReadF90(elm_pf_idata%accextrnh4_vr_elms, accextrnh4_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+     call VecGetArrayReadF90(elm_pf_idata%accextrno3_vr_elms, accextrno3_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      if(elm_pf_idata%ispec_nmin>0) then
-        call VecGetArrayReadF90(elm_pf_idata%acctotnmin_vr_clms, accnmin_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%acctotnmin_vr_elms, accnmin_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecGetArrayReadF90(elm_pf_idata%accnmin_vr_clms, accnmin_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%accnmin_vr_elms, accnmin_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      if(elm_pf_idata%ispec_nimp>0) then
-        call VecGetArrayReadF90(elm_pf_idata%acctotnimmp_vr_clms, accnimmp_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%acctotnimmp_vr_elms, accnimmp_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecGetArrayReadF90(elm_pf_idata%accnimmp_vr_clms, accnimmp_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%accnimmp_vr_elms, accnimmp_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      if(elm_pf_idata%ispec_nimm>0) then
-        call VecGetArrayReadF90(elm_pf_idata%acctotnimm_vr_clms, accnimm_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%acctotnimm_vr_elms, accnimm_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecGetArrayReadF90(elm_pf_idata%accnimm_vr_clms, accnimm_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%accnimm_vr_elms, accnimm_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
@@ -3785,23 +3785,23 @@ contains
           actual_immob_vr(c,j)    = 0._r8
           potential_immob_vr(c,j) = 0._r8
 
-          if(j <= elm_pf_idata%nzclm_mapped) then
+          if(j <= elm_pf_idata%nzelm_mapped) then
 
-              cellcount = gcount*elm_pf_idata%nzclm_mapped + j   ! 1-based
+              cellcount = gcount*elm_pf_idata%nzelm_mapped + j   ! 1-based
 
               do k=1, ndecomp_pools
 
-                 vec_offset = (k-1)*elm_pf_idata%ngclm_sub        ! 0-based
+                 vec_offset = (k-1)*elm_pf_idata%ngelm_sub        ! 0-based
                  ! decomp_pool vec: 'cell' first, then 'species' (i.e. cell by cell for 1 species, then species by species)
                  ! Tips: then when doing 3-D data-mapping, no need to stride the vecs BUT to do segmentation.
 
                  decomp_cpools_delta_vr(c,j,k) = ( decomp_cpools_delta_vr(c,j,k)  &
-                                + decomp_cpools_vr_clm_loc(vec_offset+cellcount)  &
+                                + decomp_cpools_vr_elm_loc(vec_offset+cellcount)  &
                                 * elm_pf_idata%C_molecular_weight ) !decomp_cpools_delta_vr=> elm_bgc_data%decomp_cpools_sourcesink_col
 
                  if (elm_pf_idata%floating_cn_ratio(k)) then
                      decomp_npools_delta_vr(c,j,k) = ( decomp_npools_delta_vr(c,j,k)  &
-                                + decomp_npools_vr_clm_loc(vec_offset+cellcount)      &
+                                + decomp_npools_vr_elm_loc(vec_offset+cellcount)      &
                                 * elm_pf_idata%N_molecular_weight ) !/dtime
                  else
                      decomp_npools_delta_vr(c,j,k) = decomp_cpools_delta_vr(c,j,k)/ &
@@ -3814,21 +3814,21 @@ contains
                  !
                  if (elm_pf_idata%ispec_decomp_nmin(k)>0 .and. elm_pf_idata%ispec_nmin<=0) then
                     gross_nmin_vr(c,j)  = gross_nmin_vr(c,j)            &
-                          + (accnmin_vr_clm_loc(vec_offset+cellcount)   &
+                          + (accnmin_vr_elm_loc(vec_offset+cellcount)   &
                           * elm_pf_idata%N_molecular_weight)/dtime
                  endif
 
                  !
                  if (elm_pf_idata%ispec_decomp_nimm(k)>0 .and. elm_pf_idata%ispec_nimm<=0) then
                     actual_immob_vr(c,j) = actual_immob_vr(c,j)         &
-                          + (accnimm_vr_clm_loc(vec_offset+cellcount)   &
+                          + (accnimm_vr_elm_loc(vec_offset+cellcount)   &
                           * elm_pf_idata%N_molecular_weight)/dtime
                  endif
 
                  !
                  if (elm_pf_idata%ispec_decomp_nimp(k)>0 .and. elm_pf_idata%ispec_nimp<=0) then
                     potential_immob_vr(c,j) = potential_immob_vr(c,j)   &
-                          + (accnimmp_vr_clm_loc(vec_offset+cellcount)  &
+                          + (accnimmp_vr_elm_loc(vec_offset+cellcount)  &
                           * elm_pf_idata%N_molecular_weight)/dtime
                  endif
 
@@ -3836,42 +3836,42 @@ contains
 
               if (elm_pf_idata%ispec_nmin>0) then
                  gross_nmin_vr(c,j)  = gross_nmin_vr(c,j)           &
-                          + (accnmin_vr_clm_loc(cellcount)          &
+                          + (accnmin_vr_elm_loc(cellcount)          &
                           * elm_pf_idata%N_molecular_weight)/dtime
               endif
               if (elm_pf_idata%ispec_nimm>0) then
                  actual_immob_vr(c,j) = actual_immob_vr(c,j)        &
-                          + (accnimm_vr_clm_loc(cellcount)          &
+                          + (accnimm_vr_elm_loc(cellcount)          &
                           * elm_pf_idata%N_molecular_weight)/dtime
               endif
               if (elm_pf_idata%ispec_nimp>0) then
                  potential_immob_vr(c,j) = potential_immob_vr(c,j)  &
-                          + (accnimmp_vr_clm_loc(cellcount)         &
+                          + (accnimmp_vr_elm_loc(cellcount)         &
                           * elm_pf_idata%N_molecular_weight)/dtime
               endif
 
               ! beg:--------------------------------------------------------------------------------
               ! directly update the 'smin' N pools (SO, must bypass the 'CNNStateUpdate1,2,3' relevant to soil N)
               smin_no3_vr(c,j) = &
-                           smin_no3_vr_clm_loc(cellcount)*elm_pf_idata%N_molecular_weight
+                           smin_no3_vr_elm_loc(cellcount)*elm_pf_idata%N_molecular_weight
 
               smin_nh4_vr(c,j) = &
-                           smin_nh4_vr_clm_loc(cellcount)*elm_pf_idata%N_molecular_weight
+                           smin_nh4_vr_elm_loc(cellcount)*elm_pf_idata%N_molecular_weight
 
               smin_nh4sorb_vr(c,j) = &
-                           smin_nh4sorb_vr_clm_loc(cellcount)*elm_pf_idata%N_molecular_weight
+                           smin_nh4sorb_vr_elm_loc(cellcount)*elm_pf_idata%N_molecular_weight
 
               sminn_vr(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j) + smin_nh4sorb_vr(c,j)
               ! end:--------------------------------------------------------------------------------
 
               ! flows or changes
-              smin_nh4_to_plant_vr(c,j) = (accextrnh4_vr_clm_loc(cellcount)  &
+              smin_nh4_to_plant_vr(c,j) = (accextrnh4_vr_elm_loc(cellcount)  &
                           * elm_pf_idata%N_molecular_weight)/dtime
-              smin_no3_to_plant_vr(c,j) = (accextrno3_vr_clm_loc(cellcount)  &
+              smin_no3_to_plant_vr(c,j) = (accextrno3_vr_elm_loc(cellcount)  &
                           * elm_pf_idata%N_molecular_weight)/dtime
               sminn_to_plant_vr(c,j) = smin_nh4_to_plant_vr(c,j) + smin_no3_to_plant_vr(c,j)
 
-          else    ! just in case 'elm_pf_idata%nzclm_mapped<nlevdcomp_full', all set to ZERO (different from TH)
+          else    ! just in case 'elm_pf_idata%nzelm_mapped<nlevdcomp_full', all set to ZERO (different from TH)
 
               do k=1, ndecomp_pools
                  decomp_cpools_delta_vr(c,j,k) = 0._r8
@@ -3892,57 +3892,57 @@ contains
      enddo ! do fc = 1, filters(ifilter)%num_soilc
 
 
-     call VecRestoreArrayReadF90(elm_pf_idata%decomp_cpools_vr_clms, decomp_cpools_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%decomp_cpools_vr_elms, decomp_cpools_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%decomp_npools_vr_clms, decomp_npools_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-
-     call VecRestoreArrayReadF90(elm_pf_idata%smin_no3_vr_clms, smin_no3_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%smin_nh4_vr_clms, smin_nh4_vr_clm_loc, ierr)
-     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%smin_nh4sorb_vr_clms, smin_nh4sorb_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%decomp_npools_vr_elms, decomp_npools_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-     call VecRestoreArrayReadF90(elm_pf_idata%accextrnh4_vr_clms, accextrnh4_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%smin_no3_vr_elms, smin_no3_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%accextrno3_vr_clms, accextrno3_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%smin_nh4_vr_elms, smin_nh4_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+     call VecRestoreArrayReadF90(elm_pf_idata%smin_nh4sorb_vr_elms, smin_nh4sorb_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+
+     call VecRestoreArrayReadF90(elm_pf_idata%accextrnh4_vr_elms, accextrnh4_vr_elm_loc, ierr)
+     call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
+     call VecRestoreArrayReadF90(elm_pf_idata%accextrno3_vr_elms, accextrno3_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      if(elm_pf_idata%ispec_nmin>0) then
-        call VecRestoreArrayReadF90(elm_pf_idata%acctotnmin_vr_clms, accnmin_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%acctotnmin_vr_elms, accnmin_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecRestoreArrayReadF90(elm_pf_idata%accnmin_vr_clms, accnmin_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%accnmin_vr_elms, accnmin_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      if(elm_pf_idata%ispec_nimp>0) then
-        call VecRestoreArrayReadF90(elm_pf_idata%acctotnimmp_vr_clms, accnimmp_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%acctotnimmp_vr_elms, accnimmp_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecRestoreArrayReadF90(elm_pf_idata%accnimmp_vr_clms, accnimmp_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%accnimmp_vr_elms, accnimmp_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      if(elm_pf_idata%ispec_nimm>0) then
-        call VecRestoreArrayReadF90(elm_pf_idata%acctotnimm_vr_clms, accnimm_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%acctotnimm_vr_elms, accnimm_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecRestoreArrayReadF90(elm_pf_idata%accnimm_vr_clms, accnimm_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%accnimm_vr_elms, accnimm_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      ! update bgc gas losses
-     call update_bgc_gaslosses_pf2clm(elm_interface_data, bounds, filters, ifilter)
+     call update_bgc_gaslosses_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
     end associate
-  end subroutine update_soil_bgc_pf2clm
+  end subroutine update_soil_bgc_pf2elm
 
 
   !-----------------------------------------------------------------------------
   !
-  ! !ROUTINE: update_bgc_gaslosses_pf2clm()
+  ! !ROUTINE: update_bgc_gaslosses_pf2elm()
   !
   ! !INTERFACE:
   !
@@ -3950,7 +3950,7 @@ contains
   ! from their aq. phase states
   ! (due to not yet available in pflotran bgc)
   !
-  subroutine update_bgc_gaslosses_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_bgc_gaslosses_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size, get_nstep
@@ -3987,28 +3987,28 @@ contains
      integer  :: lair_barrier(bounds%begc:bounds%endc)      ! toppest soil layer that little air space for air flow into deep soil (-1: no, 0: ground, >0: soil layer)
 
      ! gases from PFLOTRAN are timely accumulated, so gas fluxes are calculated here if over atm. partial pressure (no explicit transport available from PF now)
-     PetscScalar, pointer :: gco2_vr_clms_loc(:)               ! (M: molC/m3 bulk soil) vertically-resolved soil gas CO2 from PF's evolution
-     PetscScalar, pointer :: gn2_vr_clms_loc(:)                ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2 from PF's evolution
-     PetscScalar, pointer :: gn2o_vr_clms_loc(:)               ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2O from PF's evolution
-     PetscScalar, pointer :: gco2_vr_clmp_loc(:)               ! (M: molC/m3 bulk soil) vertically-resolved soil gas CO2 to reset PF's CO2g
-     PetscScalar, pointer :: gn2_vr_clmp_loc(:)                ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2 to reset PF's N2g
-     PetscScalar, pointer :: gn2o_vr_clmp_loc(:)               ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2O to reset PF's N2Og
+     PetscScalar, pointer :: gco2_vr_elms_loc(:)               ! (M: molC/m3 bulk soil) vertically-resolved soil gas CO2 from PF's evolution
+     PetscScalar, pointer :: gn2_vr_elms_loc(:)                ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2 from PF's evolution
+     PetscScalar, pointer :: gn2o_vr_elms_loc(:)               ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2O from PF's evolution
+     PetscScalar, pointer :: gco2_vr_elmp_loc(:)               ! (M: molC/m3 bulk soil) vertically-resolved soil gas CO2 to reset PF's CO2g
+     PetscScalar, pointer :: gn2_vr_elmp_loc(:)                ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2 to reset PF's N2g
+     PetscScalar, pointer :: gn2o_vr_elmp_loc(:)               ! (M: molN/m3 bulk soil) vertically-resolved soil gas N2O to reset PF's N2Og
 
      ! 'acchr_vr' - accumulative CO2 proudction from decompositon (for tracking HR, not involving mass-balance)
-     PetscScalar, pointer :: acchr_vr_clm_loc(:)               ! (moleC/m3/timestep) vertically-resolved soil CO2 production (accumulated)
+     PetscScalar, pointer :: acchr_vr_elm_loc(:)               ! (moleC/m3/timestep) vertically-resolved soil CO2 production (accumulated)
      ! 'accngasmin_vr' - accumulative N gas proudction from mineralization (for tracking, not involving mass-balance)
-     PetscScalar, pointer :: accngasmin_vr_clm_loc(:)          ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
+     PetscScalar, pointer :: accngasmin_vr_elm_loc(:)          ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
      ! 'accngasnitr_vr' - accumulative N gas proudction from nitrification (for tracking)
-     PetscScalar, pointer :: accngasnitr_vr_clm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
+     PetscScalar, pointer :: accngasnitr_vr_elm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
      ! 'accngasdeni_vr' - accumulative N gas proudction from denitrification (for tracking)
-     PetscScalar, pointer :: accngasdeni_vr_clm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
+     PetscScalar, pointer :: accngasdeni_vr_elm_loc(:)         ! (moleN/m3/timestep) vertically-resolved soil gaseous N  production (accumulated)
 
      !
-     PetscScalar, pointer :: soillsat_clm_loc(:)
-     PetscScalar, pointer :: soilisat_clm_loc(:)
-     PetscScalar, pointer :: soilpor_clm_loc(:)
-     PetscScalar, pointer :: soilt_clm_loc(:)
-     PetscScalar, pointer :: soilpress_clm_loc(:)
+     PetscScalar, pointer :: soillsat_elm_loc(:)
+     PetscScalar, pointer :: soilisat_elm_loc(:)
+     PetscScalar, pointer :: soilpor_elm_loc(:)
+     PetscScalar, pointer :: soilt_elm_loc(:)
+     PetscScalar, pointer :: soilpress_elm_loc(:)
      PetscErrorCode :: ierr
 
      real(r8), parameter :: rgas = 8.3144621       ! m3 Pa K-1 mol-1
@@ -4036,62 +4036,62 @@ contains
      nstep = get_nstep()
 
      ! get the current time-step state variables of aq. phase of interested species
-     call VecGetArrayReadF90(elm_pf_idata%gco2_vr_clms, gco2_vr_clms_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%gco2_vr_elms, gco2_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%gn2_vr_clms, gn2_vr_clms_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%gn2_vr_elms, gn2_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%gn2o_vr_clms, gn2o_vr_clms_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%gn2o_vr_elms, gn2o_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-     call VecGetArrayF90(elm_pf_idata%gco2_vr_clmp, gco2_vr_clmp_loc, ierr)
+     call VecGetArrayF90(elm_pf_idata%gco2_vr_elmp, gco2_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayF90(elm_pf_idata%gn2_vr_clmp, gn2_vr_clmp_loc, ierr)
+     call VecGetArrayF90(elm_pf_idata%gn2_vr_elmp, gn2_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayF90(elm_pf_idata%gn2o_vr_clmp, gn2o_vr_clmp_loc, ierr)
+     call VecGetArrayF90(elm_pf_idata%gn2o_vr_elmp, gn2o_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      
-     call VecGetArrayReadF90(elm_pf_idata%accngasmin_vr_clms, accngasmin_vr_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%accngasmin_vr_elms, accngasmin_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%accngasnitr_vr_clms, accngasnitr_vr_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%accngasnitr_vr_elms, accngasnitr_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%accngasdeni_vr_clms, accngasdeni_vr_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%accngasdeni_vr_elms, accngasdeni_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      if(elm_pf_idata%ispec_hrimm>0) then
-        call VecGetArrayReadF90(elm_pf_idata%acctothr_vr_clms, acchr_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%acctothr_vr_elms, acchr_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecGetArrayReadF90(elm_pf_idata%acchr_vr_clms, acchr_vr_clm_loc, ierr)
+        call VecGetArrayReadF90(elm_pf_idata%acchr_vr_elms, acchr_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
      ! env. variables to properties of gases
      if (pf_tmode) then
-         call VecGetArrayReadF90(elm_pf_idata%soilt_clms, soilt_clm_loc, ierr)
+         call VecGetArrayReadF90(elm_pf_idata%soilt_elms, soilt_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soilt'
      else
-         call VecGetArrayReadF90(elm_pf_idata%soilt_clmp, soilt_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)   ! CLM evolved 'soilt' - for CLM, MPI vecs and Seq. vecs should be same
+         call VecGetArrayReadF90(elm_pf_idata%soilt_elmp, soilt_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)   ! ELM evolved 'soilt' - for ELM, MPI vecs and Seq. vecs should be same
      end if
 
      if (pf_frzmode) then
-         call VecGetArrayReadF90(elm_pf_idata%soilisat_clms, soilisat_clm_loc, ierr)
+         call VecGetArrayReadF90(elm_pf_idata%soilisat_elms, soilisat_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soil ice saturation'
      end if
 
      if (pf_hmode) then
-         call VecGetArrayReadF90(elm_pf_idata%soillsat_clms, soillsat_clm_loc, ierr)
+         call VecGetArrayReadF90(elm_pf_idata%soillsat_elms, soillsat_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soil liq. saturation'
-         call VecGetArrayReadF90(elm_pf_idata%press_clms, soilpress_clm_loc, ierr)
+         call VecGetArrayReadF90(elm_pf_idata%press_elms, soilpress_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soil liq. saturation'
      else
-         call VecGetArrayReadF90(elm_pf_idata%soillsat_clmp, soillsat_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! CLM evolved 'soilt liq. saturation'
-         call VecGetArrayReadF90(elm_pf_idata%press_clmp, soilpress_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! CLM evolved 'soilt liq. saturation'
+         call VecGetArrayReadF90(elm_pf_idata%soillsat_elmp, soillsat_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! ELM evolved 'soilt liq. saturation'
+         call VecGetArrayReadF90(elm_pf_idata%press_elmp, soilpress_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! ELM evolved 'soilt liq. saturation'
      endif
-     call VecGetArrayReadF90(elm_pf_idata%effporosity_clms, soilpor_clm_loc, ierr)  ! PF evolved 'soil porosity'
+     call VecGetArrayReadF90(elm_pf_idata%effporosity_elms, soilpor_elm_loc, ierr)  ! PF evolved 'soil porosity'
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      ! find the toppest air barrier layer
@@ -4117,18 +4117,18 @@ contains
          lair_barrier(c) = 0
        endif
 
-       do j = 1, elm_pf_idata%nzclm_mapped
+       do j = 1, elm_pf_idata%nzelm_mapped
 
-          cellcount = gcount*elm_pf_idata%nzclm_mapped+j
+          cellcount = gcount*elm_pf_idata%nzelm_mapped+j
 
           wfps = 0._r8
           if (lair_barrier(c) >= 0) exit
 
           if (pf_frzmode) then
-             wfps =soillsat_clm_loc(cellcount)  &
-                    + soilisat_clm_loc(cellcount)
+             wfps =soillsat_elm_loc(cellcount)  &
+                    + soilisat_elm_loc(cellcount)
           else
-             wfps =soillsat_clm_loc(cellcount)   ! note: 'lsat' from PF has been adjusted by 'isat' reduced porosity
+             wfps =soillsat_elm_loc(cellcount)   ! note: 'lsat' from PF has been adjusted by 'isat' reduced porosity
           endif
           if (wfps > 0.95_r8) then             ! 95% total saturation as a critical-point for air-flow into deep soil
               lair_barrier(c) = j
@@ -4137,24 +4137,24 @@ contains
     
 
     ! gas exchanges btw atm. and non-barrierred soil layer
-    ! only operating on soil column one by one, which then back to CLM-CN
+    ! only operating on soil column one by one, which then back to ELM-CN
 
        total_p = forc_pbot(g)
 
        do j = 1, nlevdecomp_full
           
-          if(j <= elm_pf_idata%nzclm_mapped) then
-              cellcount = gcount*elm_pf_idata%nzclm_mapped+j
+          if(j <= elm_pf_idata%nzelm_mapped) then
+              cellcount = gcount*elm_pf_idata%nzelm_mapped+j
 
-              tc = soilt_clm_loc(cellcount)    ! soil layer tc (oC)
+              tc = soilt_elm_loc(cellcount)    ! soil layer tc (oC)
               tk = tc+tfrz
 
               ! total_p is soil air pressure (soil water pressure if not less than atm. pressure)
-              total_p = max(total_p, soilpress_clm_loc(cellcount))
+              total_p = max(total_p, soilpress_elm_loc(cellcount))
 
               ! the following is for adjusting air space in soil (seems not right ?? -- off)
-              !air_vol = (1.0_r8 - soillsat_clm_loc(cellcount)) * &
-              !                    soilpor_clm_loc(cellcount)                 ! m3 air/m3 soil
+              !air_vol = (1.0_r8 - soillsat_elm_loc(cellcount)) * &
+              !                    soilpor_elm_loc(cellcount)                 ! m3 air/m3 soil
               !air_vol = max(air_vol, 0.01d0)            ! min. 0.01 to avoid math. issue
 
               air_vol = 1.0_r8                          ! atm used if not commented out
@@ -4162,72 +4162,72 @@ contains
 
               ! gas fluxes from  immobile PFLOTRAN evolving CO2imm, N2Oimm and N2imm, which are cumulative
               ! CO2 -
-              cgas = gco2_vr_clms_loc(cellcount)       ! mol/m3 soil (evolving in PF, but not yet transport)
+              cgas = gco2_vr_elms_loc(cellcount)       ! mol/m3 soil (evolving in PF, but not yet transport)
               co2_p = forc_pco2(g)                              ! assuming atm. pco2 (pa) as directly equilibrated with soil CO2(g)
               cgas_p = co2_p/forc_pbot(g) * air_molar
 
               f_co2_soil_vr(c,j) = cgas-cgas_p
               cgas = cgas - f_co2_soil_vr(c,j)
               if (j <= lair_barrier(c) .or. lair_barrier(c) < 0) then     ! above barrier OR no-barrier(-1)
-                 gco2_vr_clmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
+                 gco2_vr_elmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
               else
-                 gco2_vr_clmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
+                 gco2_vr_elmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
               endif
 
               f_co2_soil_vr(c,j) = f_co2_soil_vr(c,j)*elm_pf_idata%C_molecular_weight                  ! moleCO2/m3 --> gC/m3 soil
               f_co2_soil_vr(c,j) = f_co2_soil_vr(c,j)/dtime                               ! gC/m3/s
 
               ! N2
-              cgas = gn2_vr_clms_loc(cellcount)       ! mol/m3 soil (evolving in PF, but not yet transport)
+              cgas = gn2_vr_elms_loc(cellcount)       ! mol/m3 soil (evolving in PF, but not yet transport)
               n2_p = 0.78084_r8                                ! assuming atm. pn2 as directly equilibrated with soil n2(g)
               cgas_p = n2_p * air_molar           ! moleN2/m3
 
               f_n2_soil_vr(c,j) = cgas-cgas_p
               cgas = cgas - f_n2_soil_vr(c,j)
               if (j <= lair_barrier(c) .or. lair_barrier(c) < 0) then     ! above barrier OR no-barrier(-1)
-                 gn2_vr_clmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
+                 gn2_vr_elmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
               else
-                 gn2_vr_clmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
+                 gn2_vr_elmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
               endif
 
               f_n2_soil_vr(c,j) = f_n2_soil_vr(c,j)*elm_pf_idata%N_molecular_weight*2._r8    ! mole-N2/m3 --> g-N/m3 soil
               f_n2_soil_vr(c,j) = f_n2_soil_vr(c,j)/dtime                 ! gN/m3/s
 
               ! N2O
-              cgas = gn2o_vr_clms_loc(cellcount)
+              cgas = gn2o_vr_elms_loc(cellcount)
               n2o_p = 310e-9_r8                   ! assuming general atm. pN2O (310ppbv in 1990) as directly equilibrated with soil N2(aq)
               cgas_p = n2o_p * air_molar          ! moleN2O/m3
 
               f_n2o_soil_vr(c,j) = cgas-cgas_p
               cgas = cgas - f_n2o_soil_vr(c,j)
               if (j <= lair_barrier(c) .or. lair_barrier(c) < 0) then     ! above barrier OR no-barrier(-1)
-                 gn2o_vr_clmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
+                 gn2o_vr_elmp_loc(cellcount) = cgas_p  ! this refreshed-air will pass back to PF
               else
-                 gn2o_vr_clmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
+                 gn2o_vr_elmp_loc(cellcount) = cgas    ! currently don't have air transport (TODO)
               endif
 
               f_n2o_soil_vr(c,j) = f_n2o_soil_vr(c,j)*elm_pf_idata%N_molecular_weight*2._r8   ! mole-N2O/m3 --> g-N/m3 soil
               f_n2o_soil_vr(c,j) = f_n2o_soil_vr(c,j)/dtime                ! gN/m3/s
 
               ! tracking HR from SOM-C reaction network
-              hr_vr(c,j)           = (acchr_vr_clm_loc(cellcount) &
+              hr_vr(c,j)           = (acchr_vr_elm_loc(cellcount) &
                                     * elm_pf_idata%C_molecular_weight)/dtime
 
               ! tracking gaseous N production from N reaction network
-              f_ngas_decomp_vr(c,j)= (accngasmin_vr_clm_loc (cellcount) &
+              f_ngas_decomp_vr(c,j)= (accngasmin_vr_elm_loc (cellcount) &
                                     * elm_pf_idata%N_molecular_weight)/dtime
 
-              f_ngas_nitri_vr(c,j) = (accngasnitr_vr_clm_loc(cellcount) &
+              f_ngas_nitri_vr(c,j) = (accngasnitr_vr_elm_loc(cellcount) &
                                     * elm_pf_idata%N_molecular_weight)/dtime
 
-              f_ngas_denit_vr(c,j) = (accngasdeni_vr_clm_loc(cellcount) &
+              f_ngas_denit_vr(c,j) = (accngasdeni_vr_elm_loc(cellcount) &
                                     * elm_pf_idata%N_molecular_weight)/dtime
 
-          else    ! just in case 'elm_pf_idata%nzclm_mapped<nlevdecomp_full'
+          else    ! just in case 'elm_pf_idata%nzelm_mapped<nlevdecomp_full'
 
-              f_co2_soil_vr(c,j)         = f_co2_soil_vr(c,elm_pf_idata%nzclm_mapped)
-              f_n2_soil_vr(c,j)          = f_n2_soil_vr(c,elm_pf_idata%nzclm_mapped)
-              f_n2o_soil_vr(c,j)         = f_n2o_soil_vr(c,elm_pf_idata%nzclm_mapped)
+              f_co2_soil_vr(c,j)         = f_co2_soil_vr(c,elm_pf_idata%nzelm_mapped)
+              f_n2_soil_vr(c,j)          = f_n2_soil_vr(c,elm_pf_idata%nzelm_mapped)
+              f_n2o_soil_vr(c,j)         = f_n2o_soil_vr(c,elm_pf_idata%nzelm_mapped)
 
               hr_vr(c,j)                 = 0._r8
               f_ngas_decomp_vr(c,j)      = 0._r8
@@ -4238,69 +4238,69 @@ contains
        enddo ! do j = 1, nlevdecomp_full
      enddo ! do fc = 1,filters(ifilter)%num_soilc
 
-     call VecRestoreArrayReadF90(elm_pf_idata%gco2_vr_clms, gco2_vr_clms_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%gco2_vr_elms, gco2_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%gn2_vr_clms, gn2_vr_clms_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%gn2_vr_elms, gn2_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%gn2o_vr_clms, gn2o_vr_clms_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%gn2o_vr_elms, gn2o_vr_elms_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayF90(elm_pf_idata%gco2_vr_clmp, gco2_vr_clmp_loc, ierr)
+     call VecRestoreArrayF90(elm_pf_idata%gco2_vr_elmp, gco2_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayF90(elm_pf_idata%gn2_vr_clmp, gn2_vr_clmp_loc, ierr)
+     call VecRestoreArrayF90(elm_pf_idata%gn2_vr_elmp, gn2_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayF90(elm_pf_idata%gn2o_vr_clmp, gn2o_vr_clmp_loc, ierr)
+     call VecRestoreArrayF90(elm_pf_idata%gn2o_vr_elmp, gn2o_vr_elmp_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      if(elm_pf_idata%ispec_hrimm>0) then
-        call VecRestoreArrayReadF90(elm_pf_idata%acctothr_vr_clms, acchr_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%acctothr_vr_elms, acchr_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-        call VecRestoreArrayReadF90(elm_pf_idata%acchr_vr_clms, acchr_vr_clm_loc, ierr)
+        call VecRestoreArrayReadF90(elm_pf_idata%acchr_vr_elms, acchr_vr_elm_loc, ierr)
         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      endif
 
-     call VecRestoreArrayReadF90(elm_pf_idata%accngasmin_vr_clms, accngasmin_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%accngasmin_vr_elms, accngasmin_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%accngasnitr_vr_clms, accngasnitr_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%accngasnitr_vr_elms, accngasnitr_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%accngasdeni_vr_clms, accngasdeni_vr_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%accngasdeni_vr_elms, accngasdeni_vr_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      if (pf_tmode) then
-         call VecRestoreArrayReadF90(elm_pf_idata%soilt_clms, soilt_clm_loc, ierr)
+         call VecRestoreArrayReadF90(elm_pf_idata%soilt_elms, soilt_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      else
-         call VecRestoreArrayReadF90(elm_pf_idata%soilt_clmp, soilt_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)  ! for CLM, MPI vecs and Seq. vecs should be same
+         call VecRestoreArrayReadF90(elm_pf_idata%soilt_elmp, soilt_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)  ! for ELM, MPI vecs and Seq. vecs should be same
      end if
      if (pf_frzmode) then
-         call VecRestoreArrayReadF90(elm_pf_idata%soilisat_clms, soilisat_clm_loc, ierr)
+         call VecRestoreArrayReadF90(elm_pf_idata%soilisat_elms, soilisat_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
      end if
 
      if (pf_hmode) then
-         call VecRestoreArrayReadF90(elm_pf_idata%soillsat_clms, soillsat_clm_loc, ierr)
+         call VecRestoreArrayReadF90(elm_pf_idata%soillsat_elms, soillsat_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soil liq. saturation'
-         call VecRestoreArrayReadF90(elm_pf_idata%press_clms, soilpress_clm_loc, ierr)
+         call VecRestoreArrayReadF90(elm_pf_idata%press_elms, soilpress_elm_loc, ierr)
          call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)     ! PF evolved 'soil liq. saturation'
      else
-         call VecRestoreArrayReadF90(elm_pf_idata%soillsat_clmp, soillsat_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! CLM evolved 'soil liq. saturation'
-         call VecRestoreArrayReadF90(elm_pf_idata%press_clmp, soilpress_clm_loc, ierr)
-         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! CLM evolved 'soil liq. saturation'
+         call VecRestoreArrayReadF90(elm_pf_idata%soillsat_elmp, soillsat_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! ELM evolved 'soil liq. saturation'
+         call VecRestoreArrayReadF90(elm_pf_idata%press_elmp, soilpress_elm_loc, ierr)
+         call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)! ELM evolved 'soil liq. saturation'
      endif
-     call VecRestoreArrayReadF90(elm_pf_idata%effporosity_clms, soilpor_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%effporosity_elms, soilpor_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
-     ! need to reset the PF's internal gas concentration (CLM ==> PF)
-     call pflotranModelUpdateAqGasesfromCLM(pflotran_m)
+     ! need to reset the PF's internal gas concentration (ELM ==> PF)
+     call pflotranModelUpdateAqGasesfromELM(pflotran_m)
 
     end associate
-  end subroutine update_bgc_gaslosses_pf2clm
+  end subroutine update_bgc_gaslosses_pf2elm
 
   !-----------------------------------------------------------------------------
   !
-  ! !ROUTINE: update_bgc_bcflux_pf2clm()
+  ! !ROUTINE: update_bgc_bcflux_pf2elm()
   !
   ! !INTERFACE:
   !
@@ -4309,7 +4309,7 @@ contains
   !   i.e. it's NOT for mass state updating,
   !   because PFLOTRAN had already updated state variables.
   !
-  subroutine update_bgc_bcflux_pf2clm(elm_interface_data, bounds, filters, ifilter)
+  subroutine update_bgc_bcflux_pf2elm(elm_interface_data, bounds, filters, ifilter)
 
      use ColumnType         , only : col_pp
      use clm_time_manager   , only : get_step_size
@@ -4336,10 +4336,10 @@ contains
      !
      ! actual aqeuous N mass flow rate(moleN/m2/sec) at the top (runoff)/bottom (leaching) of 3-D subsurface domain
      ! (+ in, - out)
-     PetscScalar, pointer :: f_nh4_subsurf_clm_loc(:)
-     PetscScalar, pointer :: f_nh4_subbase_clm_loc(:)
-     PetscScalar, pointer :: f_no3_subsurf_clm_loc(:)
-     PetscScalar, pointer :: f_no3_subbase_clm_loc(:)
+     PetscScalar, pointer :: f_nh4_subsurf_elm_loc(:)
+     PetscScalar, pointer :: f_nh4_subbase_elm_loc(:)
+     PetscScalar, pointer :: f_no3_subsurf_elm_loc(:)
+     PetscScalar, pointer :: f_no3_subbase_elm_loc(:)
 
      PetscErrorCode :: ierr
 
@@ -4355,13 +4355,13 @@ contains
 ! ------------------------------------------------------------------------
      dtime = get_step_size()
 
-     call VecGetArrayReadF90(elm_pf_idata%f_nh4_subsurf_clms, f_nh4_subsurf_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%f_nh4_subsurf_elms, f_nh4_subsurf_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%f_no3_subsurf_clms, f_no3_subsurf_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%f_no3_subsurf_elms, f_no3_subsurf_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%f_nh4_subbase_clms, f_nh4_subbase_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%f_nh4_subbase_elms, f_nh4_subbase_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecGetArrayReadF90(elm_pf_idata%f_no3_subbase_clms, f_no3_subbase_clm_loc, ierr)
+     call VecGetArrayReadF90(elm_pf_idata%f_no3_subbase_elms, f_no3_subbase_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      no3_net_transport_vr(:,:) = 0._r8
@@ -4382,38 +4382,38 @@ contains
 #endif
 
        ! add actual BC mass fluxes ( in gN/m2/s) from PFLOTRAN
-       no3_net_transport_vr(c,elm_pf_idata%nzclm_mapped) =      &
-          no3_net_transport_vr(c,elm_pf_idata%nzclm_mapped) -   &
-                                f_no3_subbase_clm_loc(gcount) * & !( - is out in PF)
+       no3_net_transport_vr(c,elm_pf_idata%nzelm_mapped) =      &
+          no3_net_transport_vr(c,elm_pf_idata%nzelm_mapped) -   &
+                                f_no3_subbase_elm_loc(gcount) * & !( - is out in PF)
                                 elm_pf_idata%N_molecular_weight
 
-       nh4_net_transport_vr(c,elm_pf_idata%nzclm_mapped) =      &
-          nh4_net_transport_vr(c,elm_pf_idata%nzclm_mapped) -   &
-                                f_nh4_subbase_clm_loc(gcount) * &
+       nh4_net_transport_vr(c,elm_pf_idata%nzelm_mapped) =      &
+          nh4_net_transport_vr(c,elm_pf_idata%nzelm_mapped) -   &
+                                f_nh4_subbase_elm_loc(gcount) * &
                                 elm_pf_idata%N_molecular_weight
 
        no3_net_transport_vr(c,1) = no3_net_transport_vr(c,1) -  &
-                                f_no3_subsurf_clm_loc(gcount) * &
+                                f_no3_subsurf_elm_loc(gcount) * &
                                 elm_pf_idata%N_molecular_weight
        nh4_net_transport_vr(c,1) = nh4_net_transport_vr(c,1) -  &
-                                f_nh4_subsurf_clm_loc(gcount) * &
+                                f_nh4_subsurf_elm_loc(gcount) * &
                                 elm_pf_idata%N_molecular_weight
 
        ! (TODO) not yet considering lateral transport (although data structure is here)
 
      enddo ! do fc = 1,filters(ifilter)%num_soilc
 
-     call VecRestoreArrayReadF90(elm_pf_idata%f_nh4_subsurf_clms, f_nh4_subsurf_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%f_nh4_subsurf_elms, f_nh4_subsurf_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%f_no3_subsurf_clms, f_no3_subsurf_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%f_no3_subsurf_elms, f_no3_subsurf_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%f_nh4_subbase_clms, f_nh4_subbase_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%f_nh4_subbase_elms, f_nh4_subbase_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
-     call VecRestoreArrayReadF90(elm_pf_idata%f_no3_subbase_clms, f_no3_subbase_clm_loc, ierr)
+     call VecRestoreArrayReadF90(elm_pf_idata%f_no3_subbase_elms, f_no3_subbase_elm_loc, ierr)
      call elm_pf_checkerr(ierr, subname, __FILE__, __LINE__)
 
      end associate
-  end subroutine update_bgc_bcflux_pf2clm
+  end subroutine update_bgc_bcflux_pf2elm
 
   !-----------------------------------------------------------------------------
   !BOP
@@ -4884,7 +4884,7 @@ contains
 
 #endif
 !
-! Private interface subroutines, requiring explicit coupling between CLM and PFLOTRAN
+! Private interface subroutines, requiring explicit coupling between ELM and PFLOTRAN
 ! (END)
 !************************************************************************************!
 
