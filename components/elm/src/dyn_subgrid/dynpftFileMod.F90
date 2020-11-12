@@ -164,7 +164,7 @@ contains
              write(iulog,*) 'If you are confident that you are using the correct landuse_timeseries file'
              write(iulog,*) 'and the correct surface dataset, then you can bypass this check by setting:'
              write(iulog,*) '  check_dynpft_consistency = .false.'
-             write(iulog,*) 'in user_nl_clm'
+             write(iulog,*) 'in user_nl_elm'
              write(iulog,*) ' '
              call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
           end if

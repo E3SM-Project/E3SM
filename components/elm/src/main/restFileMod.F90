@@ -1416,7 +1416,7 @@ contains
              write(iulog,*) '(3) If you are confident that you are using the correct surface dataset and initial conditions file,'
              write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
              write(iulog,*) '      check_finidat_fsurdat_consistency = .false.'
-             write(iulog,*) '    in user_nl_clm'
+             write(iulog,*) '    in user_nl_elm'
              write(iulog,*) ' '
           end if
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1492,7 +1492,7 @@ contains
                 write(iulog,*) '(3) If you are confident that you are using the correct start date and initial conditions file,'
                 write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
                 write(iulog,*) '      check_finidat_year_consistency = .false.'
-                write(iulog,*) '    in user_nl_clm'
+                write(iulog,*) '    in user_nl_elm'
                 write(iulog,*) ' '
              end if
              call endrun(msg=errMsg(__FILE__, __LINE__))
