@@ -58,7 +58,7 @@
 ! this is only used for some specific box model tests
 #endif
 
-  integer, public :: mdo_gaexch_cldy_subarea = 1 !changed by Manish Shrivastava from default 0 to 1
+  integer, public :: mdo_gaexch_cldy_subarea = 0
 ! controls if gas condensation is done in cloudy subarea
 !    1 = yes ; 0 = no
 
