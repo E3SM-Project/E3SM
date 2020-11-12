@@ -1,4 +1,4 @@
-module micro_p3_iso_c
+module p3_iso_c
   use iso_c_binding
   implicit none
 
@@ -82,7 +82,7 @@ contains
             array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
             array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
        if (.not. ok) then
-          print *, 'micro_p3_iso_c::p3_init: One or more table files exists but gave a read error.'
+          print *, 'p3_iso_c::p3_init: One or more table files exists but gave a read error.'
           info = -1
        end if
     end if
@@ -97,7 +97,7 @@ contains
             array_io_write(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
             array_io_write(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
        if (.not. ok) then
-          print *, 'micro_p3_iso_c::p3_init: Error when writing table files.'
+          print *, 'p3_iso_c::p3_init: Error when writing table files.'
           info = -1
        end if
     end if
@@ -934,4 +934,4 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
  end subroutine p3_main_part3_c
 
-end module micro_p3_iso_c
+end module p3_iso_c

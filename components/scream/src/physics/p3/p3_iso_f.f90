@@ -1,4 +1,4 @@
-module micro_p3_iso_f
+module p3_iso_f
   use iso_c_binding
   implicit none
 
@@ -627,4 +627,4 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
 end interface
 
-end module micro_p3_iso_f
+end module p3_iso_f
