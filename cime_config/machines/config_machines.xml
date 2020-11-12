@@ -1532,38 +1532,27 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="rm">craype-mic-knl</command>
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">intel</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">cray-parallel-netcdf</command>
         <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">cray-hdf5</command>
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="rm">cray-libsci</command>
-        <command name="rm">craype</command>
-        <command name="rm">perftools-base</command>
-        <command name="rm">darshan</command>
         <command name="load">craype/2.6.5</command>
         <command name="load">cmake/3.14.5</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.1.0.166</command>
         <command name="load">PrgEnv-intel/6.0.7</command>
+        <command name="swap">intel intel/19.1.0.166</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/9.3.0</command>
-        <command name="load">PrgEnv-gnu/6.0.7</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.7</command>
+        <command name="swap">gcc gcc/9.3.0</command>
       </modules>
       <modules compiler="!intel">
-        <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/20.06.1</command>
+        <command name="swap">cray-libsci cray-libsci/20.06.1</command>
       </modules>
       <modules>
-        <command name="load">darshan</command>
-        <command name="load">craype-mic-knl</command>
         <command name="load">cray-mpich/7.7.14</command>
         <command name="load">cray-hdf5-parallel/1.10.6.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
