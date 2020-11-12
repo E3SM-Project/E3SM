@@ -357,7 +357,7 @@ contains
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
 
-    deallocate (wt_lunit, wt_cft, wt_glc_mec)
+    deallocate (wt_cft, wt_glc_mec)
 
     call t_stopf('clm_init1')
 

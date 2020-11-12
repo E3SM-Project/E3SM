@@ -21,6 +21,7 @@ my @groups = qw(seaice_model
                 atmosphere
                 ocean
                 diagnostics
+                prescribed_ice
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics

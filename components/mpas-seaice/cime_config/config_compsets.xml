@@ -19,4 +19,9 @@
     <lname>2000_DATM%NYF_SLND_MPASSI%BGC_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
   </compset>
 
+  <compset>
+    <alias>DTESTM-PRES</alias>
+    <lname>2000_DATM%NYF_SLND_MPASSI%PRES_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+  </compset>
+
 </compsets>
