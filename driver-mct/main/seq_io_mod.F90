@@ -1463,7 +1463,7 @@ contains
     real(r8) :: time_val_1d(1)
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_time) '
-
+    integer :: ndims
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1504,25 +1504,24 @@ contains
     endif
 
     if (lwdata) then
-       start = 1
-       count = 0
-       if (present(nt)) then
-          start(1) = nt
-       endif
-       count(1) = 1
-       time_val_1d(1) = time_val
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
-       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
+       if (present(nt)) then
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,(/nt/),time_val)
+       else
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,time_val)
+       endif
        if (present(tbnds)) then
           rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
           start = 1
           count = 0
+          ndims = 1
           if (present(nt)) then
              start(2) = nt
+             ndims = 2
           endif
           count(1) = 2
           count(2) = 1
-          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,tbnds)
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start(1:ndims),count(1:ndims),tbnds)
        endif
 
        !      write(logunit,*) subname,' wrote time ',lwhead,lwdata

@@ -252,11 +252,11 @@ contains
           if (tbnds(1) >= tbnds(2)) then
              call seq_io_write(hist_file,&
                   time_units=time_units, time_cal=calendar, time_val=curr_time, &
-                  whead=whead, wdata=wdata)
+                  nt=1,whead=whead, wdata=wdata)
           else
              call seq_io_write(hist_file, &
                   time_units=time_units, time_cal=calendar, time_val=curr_time, &
-                  whead=whead, wdata=wdata, tbnds=tbnds)
+                  nt=1,whead=whead, wdata=wdata, tbnds=tbnds)
           endif
 
           if (atm_present) then
