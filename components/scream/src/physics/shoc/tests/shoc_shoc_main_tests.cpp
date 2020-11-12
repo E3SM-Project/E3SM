@@ -26,7 +26,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
     static constexpr Int num_qtracers = 3;
-    static constexpr Int nadv = 10;
+    static constexpr Int nadv = 5;
     
     // Tests for the subroutine shoc_main
     
@@ -41,17 +41,17 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {3000, 2000, 1500, 1000, 500, 0};
     // Define pressures on the interface grid [Pa]
-    static constexpr Real presi[nlevi] = {850e2, 875e2, 900e2, 950e2, 975e2, 1000e2};
+    static constexpr Real presi[nlevi] = {700e2, 800e2, 850e2, 900e2, 950e2, 1000e2};
     // Define temperature on the zt grid [K]
     static constexpr Real temp[nlev] = {290, 295, 297, 297, 300};
     // Define the large scale vertical velocity on zt grid [m/s]
     static constexpr Real w_field[nlev] = {5e-2, 4e-2, 3e-2, 2e-2, 1e-2};
     // Define the zonal wind [m/s]
-    static constexpr Real u_wind[nlev] = {4, 4, 2, 0, -1};
+    static constexpr Real u_wind[nlev] = {-4.61, -6, -8.75, -7.75, -7.75};
     // define the meridional wind [m/s]
-    static constexpr Real v_wind[nlev] = {-2, -2, 1, 3, 0};
+    static constexpr Real v_wind[nlev] = {0, 0, 0, 0, 0};
     // Define the total water mixing ratio [kg/kg]
-    static constexpr Real qw[nlev] = {1e-2, 1.2e-2, 1.5e-2, 1.5e-2, 1.4e-2};
+    static constexpr Real qw[nlev] = {1e-3, 4.2e-3, 10.7e-3, 16.3e-3, 17e-3};
     // Define the TKE [m2/s2]
     static constexpr Real tke[nlev] = {mintke, 0.1, 0.3, 0.2, 0.1};
     // Define the eddy vicosity for heat and momentum [m2/s]
@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     static constexpr Real qw_ubound = 5e-2; // [kg/kg]
     static constexpr Real tke_lbound = 0; // [m2/s2]
     static constexpr Real tke_ubound = 5; // [m2/s2]
-    static constexpr Real wind_bounds = 5; // [m/s]    
+    static constexpr Real wind_bounds = 10; // [m/s]    
     
     // Compute some inputs based on the above
     
@@ -243,6 +243,13 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     
     // Call the fortran implementation
     shoc_main(SDS);
+
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;    
+        REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
+      }
+    }
     
   }
 
