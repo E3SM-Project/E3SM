@@ -208,17 +208,17 @@ module histFileMod
      type (history_entry) :: hlist(max_flds)   ! array of active history tape entries
   end type history_tape
 
-  type clmpoint_rs                             ! Pointer to real scalar data (1D)
+  type elmpoint_rs                             ! Pointer to real scalar data (1D)
      real(r8), pointer :: ptr(:)
-  end type clmpoint_rs
-  type clmpoint_ra                             ! Pointer to real array data (2D)
+  end type elmpoint_rs
+  type elmpoint_ra                             ! Pointer to real array data (2D)
      real(r8), pointer :: ptr(:,:)
-  end type clmpoint_ra
+  end type elmpoint_ra
 
   ! Pointers into datatype  arrays
   integer, parameter :: max_mapflds = 2500     ! Maximum number of fields to track
-  type (clmpoint_rs) :: clmptr_rs(max_mapflds) ! Real scalar data (1D)
-  type (clmpoint_ra) :: clmptr_ra(max_mapflds) ! Real array data (2D)
+  type (elmpoint_rs) :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
+  type (elmpoint_ra) :: elmptr_ra(max_mapflds) ! Real array data (2D)
   !
   ! Master list: an array of master_entry entities
   !
@@ -1069,7 +1069,7 @@ contains
     l2g_scale_type =  tape(t)%hlist(f)%field%l2g_scale_type
     t2g_scale_type =  tape(t)%hlist(f)%field%t2g_scale_type
     hpindex        =  tape(t)%hlist(f)%field%hpindex
-    field          => clmptr_rs(hpindex)%ptr
+    field          => elmptr_rs(hpindex)%ptr
 
     ! set variables to check weights when allocate all pfts
 
@@ -1334,13 +1334,13 @@ contains
        ! hist_set_snow_field_2d rather than relying on beg1d & end1d (which give the proc,
        ! bounds not the clump bounds)
 
-       allocate(field(lbound(clmptr_ra(hpindex)%ptr, 1) : ubound(clmptr_ra(hpindex)%ptr, 1), 1:num2d))
+       allocate(field(lbound(elmptr_ra(hpindex)%ptr, 1) : ubound(elmptr_ra(hpindex)%ptr, 1), 1:num2d))
        field_allocated = .true.
 
-       call hist_set_snow_field_2d(field, clmptr_ra(hpindex)%ptr, no_snow_behavior, type1d, &
+       call hist_set_snow_field_2d(field, elmptr_ra(hpindex)%ptr, no_snow_behavior, type1d, &
             beg1d, end1d)
     else
-       field => clmptr_ra(hpindex)%ptr(:,1:num2d)
+       field => elmptr_ra(hpindex)%ptr(:,1:num2d)
        field_allocated = .false.
     end if
 
@@ -4325,22 +4325,22 @@ contains
     if (present(ptr_lnd)) then
        l_type1d = grlnd
        l_type1d_out = grlnd
-       clmptr_rs(hpindex)%ptr => ptr_lnd
+       elmptr_rs(hpindex)%ptr => ptr_lnd
 
     else if (present(ptr_gcell)) then
        l_type1d = nameg
        l_type1d_out = nameg
-       clmptr_rs(hpindex)%ptr => ptr_gcell
+       elmptr_rs(hpindex)%ptr => ptr_gcell
 
     else if (present(ptr_topo)) then
        l_type1d = namet
        l_type1d_out = namet
-       clmptr_rs(hpindex)%ptr => ptr_topo
+       elmptr_rs(hpindex)%ptr => ptr_topo
 
     else if (present(ptr_lunit)) then
        l_type1d = namel
        l_type1d_out = namel
-       clmptr_rs(hpindex)%ptr => ptr_lunit
+       elmptr_rs(hpindex)%ptr => ptr_lunit
        if (present(set_lake)) then
           do l = bounds%begl,bounds%endl
              if (lun_pp%lakpoi(l)) ptr_lunit(l) = set_lake
@@ -4370,7 +4370,7 @@ contains
     else if (present(ptr_col)) then
        l_type1d = namec
        l_type1d_out = namec
-       clmptr_rs(hpindex)%ptr => ptr_col
+       elmptr_rs(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
              l =col_pp%landunit(c)
@@ -4411,7 +4411,7 @@ contains
     else if (present(ptr_patch)) then
        l_type1d = namep
        l_type1d_out = namep
-       clmptr_rs(hpindex)%ptr => ptr_patch
+       elmptr_rs(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
              l =veg_pp%landunit(p)
@@ -4679,22 +4679,22 @@ contains
     if (present(ptr_lnd)) then
        l_type1d = grlnd
        l_type1d_out = grlnd
-       clmptr_ra(hpindex)%ptr => ptr_lnd
+       elmptr_ra(hpindex)%ptr => ptr_lnd
 
     else if (present(ptr_gcell)) then
        l_type1d = nameg
        l_type1d_out = nameg
-       clmptr_ra(hpindex)%ptr => ptr_gcell
+       elmptr_ra(hpindex)%ptr => ptr_gcell
 
     else if (present(ptr_topo)) then
        l_type1d = namet
        l_type1d_out = namet
-       clmptr_ra(hpindex)%ptr => ptr_topo
+       elmptr_ra(hpindex)%ptr => ptr_topo
 
     else if (present(ptr_lunit)) then
        l_type1d = namel
        l_type1d_out = namel
-       clmptr_ra(hpindex)%ptr => ptr_lunit
+       elmptr_ra(hpindex)%ptr => ptr_lunit
        if (present(set_lake)) then
           do l = bounds%begl,bounds%endl
              if (lun_pp%lakpoi(l)) ptr_lunit(l,:) = set_lake
@@ -4724,7 +4724,7 @@ contains
     else if (present(ptr_col)) then
        l_type1d = namec
        l_type1d_out = namec
-       clmptr_ra(hpindex)%ptr => ptr_col
+       elmptr_ra(hpindex)%ptr => ptr_col
        if (present(set_lake)) then
           do c = bounds%begc,bounds%endc
              l =col_pp%landunit(c)
@@ -4759,7 +4759,7 @@ contains
     else if (present(ptr_patch)) then
        l_type1d = namep
        l_type1d_out = namep
-       clmptr_ra(hpindex)%ptr => ptr_patch
+       elmptr_ra(hpindex)%ptr => ptr_patch
        if (present(set_lake)) then
           do p = bounds%begp,bounds%endp
              l =veg_pp%landunit(p)
