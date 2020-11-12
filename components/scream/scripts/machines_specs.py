@@ -24,7 +24,7 @@ MACHINE_METADATA = {
                   ""),
     "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3 python/3.7.3"],
                  ["mpicxx","mpifort","mpicc"],
-                  "srun",
+                  "salloc -N 1 srun -n1 --preserve-env",
                   48,
                   48,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
