@@ -37,25 +37,47 @@ set (BUILD_HOMME_THETA_KOKKOS ON CACHE BOOL "")
 # Note: if/when Homme will rely on EKAT for kokkos, you can get rid of this
 set (E3SM_INTERNAL_KOKKOS_ALREADY_BUILT TRUE)
 
+# Note: we need scream's fp model to superseed homme's one. So we append our
+# current compiler flags to homme's flags
+set (TEMP_C_FLAGS ${CMAKE_C_FLAGS})
+set (TEMP_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+set (TEMP_F_FLAGS ${CMAKE_Fortran_FLAGS})
+set (CMAKE_C_FLAGS)
+set (CMAKE_CXX_FLAGS)
+set (CMAKE_Fortran_FLAGS)
+
 # configure Homme folder
 add_subdirectory(${HOMME_SOURCE_DIR} ${HOMME_BINARY_DIR})
 
-# Store homme compiler/linker flags, for future use, to prevent them from  going out of scope
-# Long story: Homme sets all flags in CMAKE_<LANG>_FLAGS. Those are local vars, so at the end
-#             of its main CMakeLists.txt, we copy them in the parent scope. But that's still
-#             a local var, and the macro below will be likely called from a different subdir.
-#             Therefore, store the flags internally in the cache, for future use in different
-#             parts of the src tree.
-# Also, strip leading/trailing spaces
+# *APPEND* scream flags to homme flags
+set (HOMME_C_FLAGS       ${HOMME_C_FLAGS} ${TEMP_C_FLAGS})
+set (HOMME_CXX_FLAGS     ${HOMME_CXX_FLAGS} ${TEMP_CXX_FLAGS})
+set (HOMME_Fortran_FLAGS ${HOMME_Fortran_FLAGS} ${TEMP_F_FLAGS})
 
-string (STRIP "${HOMME_C_FLAGS}"       HOMME_C_FLAGS       )
-string (STRIP "${HOMME_CXX_FLAGS}"     HOMME_CXX_FLAGS     )
-string (STRIP "${HOMME_Fortran_FLAGS}" HOMME_Fortran_FLAGS )
-string (STRIP "${HOMME_LINKER_FLAGS}"  HOMME_LINKER_FLAGS  )
-set (HOMME_C_FLAGS ${HOMME_C_FLAGS} CACHE INTERNAL "")
-set (HOMME_CXX_FLAGS ${HOMME_CXX_FLAGS} CACHE INTERNAL "")
-set (HOMME_Fortran_FLAGS ${HOMME_Fortran_FLAGS} CACHE INTERNAL "")
-set (HOMME_LINKER_FLAGS ${HOMME_LINKER_FLAGS} CACHE INTERNAL "")
+# A bunch of string manipulation to get homme compiler/link flags correctly
+# forwarded to our libs. Here are the takeaways:
+#
+# - we need to store HOMME_<LANG>_FLAGS in the cache, since CreateDynamicsLib
+#   may be called from somewhere else in the src tree, and those vars would
+#   otherwise get out of scope
+# - We need to turn the strings into lists, by replacing ' ' with ';'
+# - The hard one: target_compile_options performs 'de-duplication' of repeated flags,
+#   meaning that '-D A -D B' is turned into '-D A B'. For fp model on Intel, this
+#   would cause "-fp-model X -fp-model Y" to be turned into "-fp-model X Y",
+#   which the compiler does not like. Thankfully, there is a remedy, albeit a bit ugly:
+#   prepend the flag to be kept (even if repeated) with 'SHELL: '.
+
+string (REPLACE " " ";" HOMME_C_FLAGS_TMP       "${HOMME_C_FLAGS}")
+string (REPLACE " " ";" HOMME_CXX_FLAGS_TMP     "${HOMME_CXX_FLAGS}")
+string (REPLACE " " ";" HOMME_Fortran_FLAGS_TMP "${HOMME_Fortran_FLAGS}")
+string (REPLACE " " ";" HOMME_LINKER_FLAGS_TMP  "${HOMME_LINKER_FLAGS}")
+string(REGEX REPLACE "-fp-model;(fast|fast=1|fast=2|strict|precise|source|consistent);" "SHELL:-fp-model \\1;" HOMME_C_FLAGS_TMP       "${HOMME_C_FLAGS_TMP}")
+string(REGEX REPLACE "-fp-model;(fast|fast=1|fast=2|strict|precise|source|consistent);" "SHELL:-fp-model \\1;" HOMME_CXX_FLAGS_TMP     "${HOMME_CXX_FLAGS_TMP}")
+string(REGEX REPLACE "-fp-model;(fast|fast=1|fast=2|strict|precise|source|consistent);" "SHELL:-fp-model \\1;" HOMME_Fortran_FLAGS_TMP "${HOMME_Fortran_FLAGS_TMP}")
+set (HOMME_C_FLAGS "${HOMME_C_FLAGS_TMP}" CACHE INTERNAL "")
+set (HOMME_CXX_FLAGS "${HOMME_CXX_FLAGS_TMP}" CACHE INTERNAL "")
+set (HOMME_Fortran_FLAGS "${HOMME_Fortran_FLAGS_TMP}" CACHE INTERNAL "")
+set (HOMME_LINKER_FLAGS "${HOMME_LINKER_FLAGS_TMP}" CACHE INTERNAL "")
 
 #######################################################################
 #     Macro to create dyn lib with specific compile-time options      #
@@ -122,9 +144,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     else ()
       target_link_libraries(${hommeLibName} "${HOMME_LINKER_FLAGS}")
     endif ()
-    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:C>:${HOMME_C_FLAGS}>)
-    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${HOMME_CXX_FLAGS}>)
-    target_compile_options (${hommeLibName} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${HOMME_Fortran_FLAGS}>)
+    target_compile_options (${hommeLibName} BEFORE PRIVATE $<$<COMPILE_LANGUAGE:C>:${HOMME_C_FLAGS}>)
+    target_compile_options (${hommeLibName} BEFORE PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${HOMME_CXX_FLAGS}>)
+    target_compile_options (${hommeLibName} BEFORE PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${HOMME_Fortran_FLAGS}>)
 
     #####################################
     ###     Build SCREAM library      ###
