@@ -145,7 +145,7 @@ contains
 
     ! Exit early if no valid land points
     if ( all(amask == 0) )then
-       if (masterproc) write(iulog,*) trim(subname)//': no valid land points do NOT run clm'
+       if (masterproc) write(iulog,*) trim(subname)//': no valid land points do NOT run elm'
        noland = .true.
        return
     end if

@@ -622,7 +622,7 @@ contains
                write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
                write(iulog,*) '      check_finidat_pct_consistency = .false.'
                write(iulog,*) '    in user_nl_elm'
-               write(iulog,*) '    In this case, CLM will take the weights from the initial conditions file.'
+               write(iulog,*) '    In this case, ELM will take the weights from the initial conditions file.'
                write(iulog,*) ' '
                call endrun(decomp_index=p, elmlevel=namep, msg=errMsg(__FILE__, __LINE__))
             end if

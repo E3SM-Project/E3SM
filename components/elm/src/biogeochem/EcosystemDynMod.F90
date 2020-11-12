@@ -589,7 +589,7 @@ contains
        call t_startf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
        if(.not.use_elm_interface) then
-            ! directly run clm-bgc
+            ! directly run elm-bgc
             ! if (use_elm_interface & use_elm_bgc), then CNDecomAlloc is called in clm_driver
             call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &

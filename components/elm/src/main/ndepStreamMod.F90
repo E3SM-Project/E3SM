@@ -115,7 +115,7 @@ contains
 
    call elm_domain_mct (bounds, dom_elm)
 
-   call shr_strdata_create(sdat,name="clmndep",    &
+   call shr_strdata_create(sdat,name="elmndep",    &
         pio_subsystem=pio_subsystem,               & 
         pio_iotype=shr_pio_getiotype(inst_name),   &
         mpicom=mpicom, compid=comp_id,             &
@@ -142,7 +142,7 @@ contains
 	taxmode='extend'                           )
 
    if (masterproc) then
-      call shr_strdata_print(sdat,'CLMNDEP data')
+      call shr_strdata_print(sdat,'ELMNDEP data')
    endif
 
  end subroutine ndep_init

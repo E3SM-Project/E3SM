@@ -367,7 +367,7 @@ contains
        ! if the driver is a startup type
        if ( override_nsrest /= nsrest )then
            if ( override_nsrest /= nsrBranch .and. nsrest /= nsrStartup )then
-              call endrun(msg= ' ERROR: can ONLY override clm start-type ' // &
+              call endrun(msg= ' ERROR: can ONLY override elm start-type ' // &
                    'to branch type and ONLY if driver is a startup type'// &
                    errMsg(__FILE__, __LINE__))
            end if
@@ -977,9 +977,9 @@ contains
           write(iulog,*) '   Longwave radiation will NOT be downscaled'
        endif
        if (glc_do_dynglacier) then
-          write(iulog,*) '   glc CLM glacier areas and topography WILL evolve dynamically'
+          write(iulog,*) '   glc ELM glacier areas and topography WILL evolve dynamically'
        else
-          write(iulog,*) '   glc CLM glacier areas and topography will NOT evolve dynamically'
+          write(iulog,*) '   glc ELM glacier areas and topography will NOT evolve dynamically'
        end if
        if (glc_smb) then
           write(iulog,*) '   glc surface mass balance will be passed to ice sheet model'

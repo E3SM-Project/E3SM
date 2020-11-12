@@ -999,7 +999,7 @@ contains
                  elseif (use_elm_bgc) then
                     call t_startf('elm-bgc via interface')
                     ! -------------------------------------------------------------------------
-                    ! run clm-bgc (SoilLittDecompAlloc) through interface
+                    ! run elm-bgc (SoilLittDecompAlloc) through interface
                     ! STEP-2: (1) pass data from elm_interface_data to SoilLittDecompAlloc
                     ! STEP-2: (2) run SoilLittDecompAlloc
                     ! STEP-2: (3) update elm_interface_data from SoilLittDecompAlloc

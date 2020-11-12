@@ -266,7 +266,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer nf
-    character(len=*),parameter :: subname = 'CLM_hist_printflds'
+    character(len=*),parameter :: subname = 'ELM_hist_printflds'
     !-----------------------------------------------------------------------
 
     if (masterproc) then

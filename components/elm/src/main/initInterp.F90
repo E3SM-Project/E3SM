@@ -130,7 +130,7 @@ contains
     !--------------------------------------------------------------------
 
     if (masterproc) then
-       write (iulog,*) '**** Mapping clm initial data from input ',trim(filei),&
+       write (iulog,*) '**** Mapping elm initial data from input ',trim(filei),&
             '  to output ',trim(fileo),' ****'
     end if
 

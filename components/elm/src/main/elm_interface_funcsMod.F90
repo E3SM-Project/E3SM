@@ -118,8 +118,8 @@ module elm_interface_funcsMod
   ! if (use_elm_interface .and. use_elm_bgc)
   public    :: elm_bgc_run              ! STEP-2:   elm_interface_data  -> clm-bgc module -> elm_interface_data    ; called in clm_driver
   private   :: elm_bgc_get_data         ! STEP-2.1: elm_interface_data  -> clm-bgc module                          ; called in elm_bgc_run
-                                        ! STEP-2.2: run clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
-  private   :: elm_bgc_update_data      ! STEP-2.3: clm-bgc module-> elm_interface_data                            ; called in elm_bgc_run
+                                        ! STEP-2.2: eun clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
+  private   :: elm_bgc_update_data      ! STEP-2.3: elm-bgc module-> elm_interface_data                            ; called in elm_bgc_run
   public    :: update_bgc_data_elm2elm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
 
   ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran

@@ -258,12 +258,12 @@ contains
     end if
 
     ! ------------------------------------------------------------------------
-    ! Merge CFTs into the list of crops that CLM knows how to model
+    ! Merge CFTs into the list of crops that ELM knows how to model
     ! ------------------------------------------------------------------------
 
     if (verbose .and. masterproc) then
        write(iulog, *) trim(subname) // ' merging wheat, barley, and rye into temperate cereals'
-       write(iulog, *) trim(subname) // ' clm knows how to model corn, temperate cereals, and soybean'
+       write(iulog, *) trim(subname) // ' elm knows how to model corn, temperate cereals, and soybean'
        write(iulog, *) trim(subname) // ' all other crops are lumped with the generic crop pft'
     end if
 
