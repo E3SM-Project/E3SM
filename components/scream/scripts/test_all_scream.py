@@ -20,7 +20,7 @@ class TestAllScream(object):
     ###########################################################################
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
-                 custom_cmake_opts=(), custom_env_vars=(), tests=(),
+                 custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
@@ -38,6 +38,7 @@ class TestAllScream(object):
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
         self._custom_env_vars         = custom_env_vars
+        self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
         self._integration_test        = integration_test
@@ -100,8 +101,10 @@ class TestAllScream(object):
         #    Deduce compilers if needed/possible   #
         ############################################
 
-        # Setup the env on this machine
-        setup_mach_env(self._machine)
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine)
 
         if self._cxx_compiler is None:
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)

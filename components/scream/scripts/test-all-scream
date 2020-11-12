@@ -5,6 +5,10 @@ Drive ctest testing of scream for a complete set of tests. This will be our
 gold standard to determine if the code is working or not on the current platform.
 
 Run from $scream-repo/components/scream
+
+IMPORTANT: the default behavior of this script *changes your environment*,
+           by loading machine-specific modules and setting machine-specific
+           env vars. To prevent this behavior, use --preserve-env flag.
 """
 
 from utils import check_minimum_python_version
@@ -27,9 +31,13 @@ OR
     > cd $scream_repo/components/scream
     > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin
 
-    \033[1;32m# Run all tests on current machine with custom flags\033[0m
+    \033[1;32m# Run all tests on current machine with custom flags *using machine's default environment* \033[0m
     > cd $scream_repo/components/scream
     > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
+
+    \033[1;32m# Run all tests on current machine with custom flags *but preserving user environment* \033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/test-all-scream --cxx-compiler $(which mpicxx) --f90-compiler --preserve-env $(which mpifort) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -65,6 +73,8 @@ OR
 
     parser.add_argument("-e", "--custom-env-vars", action="append", default=[],
         help="Extra custom environment variables to be used. These will override (if applicable) whatever was found in machine_specs. Each -e flag supports a single env var, so to pass multiple env var, do -e ""KEY1=VALUE1"" -e ""KEY2=VALUE2"" ")
+    parser.add_argument("--preserve-env", action="store_true",
+                        help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
         help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
