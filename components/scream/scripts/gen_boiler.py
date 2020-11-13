@@ -2000,7 +2000,7 @@ template struct Functions<Real,DefaultDevice>;
 
             if needs_rewrite:
                 with filepath.open("w") as fd:
-                    fd.write("\n".join(orig_lines))
+                    fd.write("\n".join(orig_lines) + "\n")
 
                 print("SUCCESS")
 
