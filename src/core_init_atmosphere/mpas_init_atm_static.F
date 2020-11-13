@@ -34,7 +34,7 @@
 
  interface
     subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
-                            scalefactor, wordsize, status) bind(C)
+                            wordsize, status) bind(C)
        use iso_c_binding, only : c_char, c_int, c_float, c_ptr
        character (c_char), dimension(*), intent(in) :: fname
        type (c_ptr), value :: rarray
@@ -43,7 +43,6 @@
        integer (c_int), intent(in), value :: nz
        integer (c_int), intent(in), value :: isigned
        integer (c_int), intent(in), value :: endian
-       real (c_float), intent(in), value :: scalefactor
        integer (c_int), intent(in), value :: wordsize
        integer (c_int), intent(inout) :: status
     end subroutine read_geogrid
@@ -88,6 +87,7 @@
  integer,dimension(:),allocatable  :: nhs
  integer,dimension(:,:),allocatable:: ncat
       
+ real(kind=RKIND), pointer :: scalefactor_ptr
  real(kind=c_float):: scalefactor
  real(kind=c_float),dimension(:,:,:),pointer,contiguous :: rarray
  type(c_ptr) :: rarray_ptr
@@ -340,6 +340,8 @@
  call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
  call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
  call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor_ptr)
+ scalefactor = scalefactor_ptr
 
  do iCell = 1, nCells
      !
@@ -429,6 +431,7 @@
 
  do iCell = 1, nCells
     ter(iCell) = real(ter_integer(iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+    ter(iCell) = ter(iCell) * scalefactor
  end do
 
  deallocate(ter_integer)
@@ -772,8 +775,9 @@
  call mpas_f_to_c_string(fname, c_fname)
 
  call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned, endian, &
-                   scalefactor,wordsize,istatus)
+                   wordsize,istatus)
  call init_atm_check_read_error(istatus, fname)
+ rarray(:,:,:) = rarray(:,:,:) * scalefactor
  soiltemp_1deg(-2:180,-2:183) = rarray(1:183,1:186,1)
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
@@ -782,8 +786,9 @@
  call mpas_f_to_c_string(fname, c_fname)
 
  call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                        scalefactor,wordsize,istatus)
+                   wordsize,istatus)
  call init_atm_check_read_error(istatus,fname)
+ rarray(:,:,:) = rarray(:,:,:) * scalefactor
  soiltemp_1deg(181:363,-2:183) = rarray(4:186,1:186,1)
 
  interp_list(1) = FOUR_POINT
@@ -860,8 +865,9 @@
           call mpas_f_to_c_string(fname, c_fname)
 
           call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            scalefactor,wordsize,istatus)
+                            wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
+          rarray(:,:,:) = rarray(:,:,:) * scalefactor
 
           iPoint = 1
           do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
@@ -956,8 +962,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor,wordsize,istatus)
+                      wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     maxsnowalb(-2:180,-2:183) = rarray(1:183,1:186,1)
 
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
@@ -966,8 +973,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor,wordsize,istatus)
+                      wordsize,istatus)
     call init_atm_check_read_error(istatus, fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     maxsnowalb(181:363,-2:183) = rarray(4:186,1:186,1)
 
     interp_list(1) = FOUR_POINT
@@ -1054,8 +1062,9 @@
           call mpas_f_to_c_string(fname, c_fname)
 
           call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            scalefactor,wordsize,istatus)
+                            wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
+          rarray(:,:,:) = rarray(:,:,:) *  scalefactor
 
           iPoint = 1
           do j=1,ny
@@ -1152,8 +1161,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor,wordsize,istatus)
+                      wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
 
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
@@ -1162,8 +1172,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor,wordsize,istatus)
+                      wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
 
     do iCell = 1,nCells
@@ -1250,8 +1261,9 @@
           call mpas_f_to_c_string(fname, c_fname)
 
           call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                            scalefactor,wordsize,istatus)
+                            wordsize,istatus)
           call init_atm_check_read_error(istatus, fname)
+          rarray(:,:,:) = rarray(:,:,:) * scalefactor
 
           iPoint = 1
           do j=supersample_fac * 3 + 1, supersample_fac * (ny-3)
@@ -1352,8 +1364,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor, wordsize, istatus)
+                      wordsize, istatus)
     call init_atm_check_read_error(istatus,fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
 
     write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
@@ -1362,8 +1375,9 @@
     call mpas_f_to_c_string(fname, c_fname)
 
     call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                      scalefactor,wordsize,istatus)
+                      wordsize,istatus)
     call init_atm_check_read_error(istatus,fname)
+    rarray(:,:,:) = rarray(:,:,:) * scalefactor
     vegfra(1251:2503,-2:1253,1:12) = rarray(4:1256,1:1256,1:12)
 
     do iCell = 1,nCells
