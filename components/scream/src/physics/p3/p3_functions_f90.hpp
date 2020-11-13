@@ -790,39 +790,35 @@ struct P3MainData : public PhysicsTestData
 struct IceSupersatConservationData {
   // Inputs
   Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt;
-  
+
   // Inputs/Outputs
   Real qidep, qinuc;
-  
-  
 };
+
 struct NcConservationData {
   // Inputs
   Real nc, nc_selfcollect_tend, dt;
-  
+
   // Inputs/Outputs
   Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
-  
-  
 };
+
 struct NrConservationData {
   // Inputs
   Real nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt;
-  
+
   // Inputs/Outputs
   Real nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend;
-  
-  
 };
+
 struct NiConservationData {
   // Inputs
   Real ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt;
-  
+
   // Inputs/Outputs
   Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
-  
-  
 };
+
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);

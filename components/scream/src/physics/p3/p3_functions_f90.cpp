@@ -197,7 +197,7 @@ void p3_main_part1_c(
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
-  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, 
+  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
   Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
@@ -741,8 +741,8 @@ void p3_main_part1(P3MainPart1Data& d)
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.do_predict_nc, d.do_prescribed_CCN,
     d.dt,
-    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.latent_heat_vapor, 
-    d.latent_heat_sublim, d.latent_heat_fusion, 
+    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.latent_heat_vapor,
+    d.latent_heat_sublim, d.latent_heat_fusion,
     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
     d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
     d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
@@ -770,7 +770,7 @@ void p3_main_part2(P3MainPart2Data& d)
   p3_init();
   p3_main_part2_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
-    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, 
+    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar,
     d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
     d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
@@ -2744,7 +2744,7 @@ void p3_main_part1_f(
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
-  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, 
+  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
   Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
@@ -2829,7 +2829,7 @@ void p3_main_part1_f(
     P3F::p3_main_part1(
       team, nk, do_predict_nc, do_prescribed_CCN, dt,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, nccn_prescribed_d, exner_d, inv_exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d,
-      inv_cld_frac_r_d, latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d, 
+      inv_cld_frac_r_d, latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d,
       t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
       acn_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
@@ -3183,37 +3183,37 @@ Int p3_main_f(
     nccn_prescribed_d      (temp_d[counter++]),
     ni_activated_d         (temp_d[counter++]),
     dpres_d                (temp_d[counter++]), //5
-    exner_d                (temp_d[counter++]), 
+    exner_d                (temp_d[counter++]),
     cld_frac_i_d           (temp_d[counter++]),
     cld_frac_l_d           (temp_d[counter++]),
     cld_frac_r_d           (temp_d[counter++]),
     inv_qc_relvar_d        (temp_d[counter++]), //10
-    qc_d                   (temp_d[counter++]), 
+    qc_d                   (temp_d[counter++]),
     nc_d                   (temp_d[counter++]),
     qr_d                   (temp_d[counter++]),
     nr_d                   (temp_d[counter++]),
     qi_d                   (temp_d[counter++]), //15
-    qm_d                   (temp_d[counter++]), 
+    qm_d                   (temp_d[counter++]),
     ni_d                   (temp_d[counter++]),
     bm_d                   (temp_d[counter++]),
     qv_d                   (temp_d[counter++]),
     th_atm_d               (temp_d[counter++]), //20
-    qv_prev_d              (temp_d[counter++]), 
+    qv_prev_d              (temp_d[counter++]),
     t_prev_d               (temp_d[counter++]),
     diag_eff_radius_qc_d   (temp_d[counter++]),
     diag_eff_radius_qi_d   (temp_d[counter++]),
     rho_qi_d               (temp_d[counter++]), //25
-    mu_c_d                 (temp_d[counter++]),  
+    mu_c_d                 (temp_d[counter++]),
     lamc_d                 (temp_d[counter++]),
     qv2qi_depos_tend_d     (temp_d[counter++]),
     precip_total_tend_d    (temp_d[counter++]),
     nevapr_d               (temp_d[counter++]), //30
-    qr_evap_tend_d         (temp_d[counter++]), 
+    qr_evap_tend_d         (temp_d[counter++]),
     liq_ice_exchange_d     (temp_d[counter++]),
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]),
     precip_liq_flux_d      (temp_d[counter++]), //35
-    precip_ice_flux_d      (temp_d[counter++]), 
+    precip_ice_flux_d      (temp_d[counter++]),
     precip_liq_surf_temp_d (temp_d[counter++]),
     precip_ice_surf_temp_d (temp_d[counter++]); //38
 

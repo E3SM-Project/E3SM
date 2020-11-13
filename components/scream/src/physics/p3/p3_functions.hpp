@@ -263,7 +263,7 @@ struct Functions
                                    const Spack& cld_frac_i, Spack& qc2qr_accret_tend, Spack& qr2qv_evap_tend,
                                    Spack& qc2qr_autoconv_tend, Spack& nc_accret_tend, Spack& nc_selfcollect_tend,
                                    Spack& nc2nr_autoconv_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend,
-                                   Spack& ncautr, 
+                                   Spack& ncautr,
                                    Spack& qi2qv_sublim_tend, Spack& nr_ice_shed_tend, Spack& qc2qi_hetero_freeze_tend,
                                    Spack& qr2qi_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& qi2qr_melt_tend,
                                    Spack& qc2qi_collect_tend, Spack& qr2qi_immers_freeze_tend, Spack& ni2nr_melt_tend,
@@ -490,7 +490,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
-    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
+    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
     Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
     const Smask& context = Smask(true) );
 
@@ -511,14 +511,14 @@ struct Functions
   KOKKOS_FUNCTION
   static void get_cloud_dsd2(
     const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, 
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1,
     const Smask& context = Smask(true) );
 
   // Computes and returns rain size distribution parameters
   KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r, 
+    Spack& lamr, Spack& cdistr, Spack& logn0r,
     const Smask& context = Smask(true) );
 
   // Calculates rime density
@@ -587,7 +587,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
-    const Spack& qr_incld, const Spack& rhofacr, 
+    const Spack& qr_incld, const Spack& rhofacr,
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
 
@@ -662,7 +662,7 @@ struct Functions
   static void rain_evap_instant_tend(const Spack& ssat_r, const Spack& ab,
 				     const Spack& tau_r,
 				     Spack& tend, const Smask& context=Smask(true));
-  
+
   // TODO (comments)
   KOKKOS_FUNCTION
   static void evaporate_rain(const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qi_incld,
