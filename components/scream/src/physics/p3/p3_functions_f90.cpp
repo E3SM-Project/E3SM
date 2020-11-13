@@ -2720,37 +2720,50 @@ void cloud_water_conservation_f(Real qc, Real dt, Real* qc2qr_autoconv_tend, Rea
   *qidep = t_h(7);
 }
 
-void rain_water_conservation_f(Real qr_, Real qc2qr_autoconv_tend_, Real qc2qr_accret_tend_, Real qi2qr_melt_tend_, Real qc2qr_ice_shed_tend_,
-  Real dt, Real* qr2qv_evap_tend_, Real* qr2qi_collect_tend_, Real* qr2qi_immers_freeze_tend_)
+void rain_water_conservation_f(Real qr, Real qc2qr_autoconv_tend, Real qc2qr_accret_tend, Real qi2qr_melt_tend, Real qc2qr_ice_shed_tend, Real dt, Real* qr2qv_evap_tend, Real* qrcol, Real* qr2qi_immers_freeze_tend)
 {
-  using P3F = Functions<Real, HostDevice>;
-  using Spack   = typename P3F::Spack;
+  using PF = Functions<Real, DefaultDevice>;
 
-  Spack qr(qr_), qc2qr_autoconv_tend(qc2qr_autoconv_tend_), qc2qr_accret_tend(qc2qr_accret_tend_), qi2qr_melt_tend(qi2qr_melt_tend_),
-        qc2qr_ice_shed_tend(qc2qr_ice_shed_tend_), qr2qv_evap_tend(*qr2qv_evap_tend_);
-  Spack qr2qi_collect_tend(*qr2qi_collect_tend_), qr2qi_immers_freeze_tend(*qr2qi_immers_freeze_tend_);
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
 
-  P3F::rain_water_conservation(qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend);
-  *qr2qv_evap_tend_ = qr2qv_evap_tend[0];
-  *qr2qi_collect_tend_ = qr2qi_collect_tend[0];
-  *qr2qi_immers_freeze_tend_ = qr2qi_immers_freeze_tend[0];
+  view_1d t_d("t_d", 3);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qr2qi_immers_freeze_tend(*qr2qi_immers_freeze_tend), local_qr2qv_evap_tend(*qr2qv_evap_tend), local_qrcol(*qrcol);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack qc2qr_accret_tend_(qc2qr_accret_tend), qc2qr_autoconv_tend_(qc2qr_autoconv_tend), qc2qr_ice_shed_tend_(qc2qr_ice_shed_tend), qi2qr_melt_tend_(qi2qr_melt_tend), qr_(qr), qr2qi_immers_freeze_tend_(local_qr2qi_immers_freeze_tend), qr2qv_evap_tend_(local_qr2qv_evap_tend), qrcol_(local_qrcol);
+    PF::rain_water_conservation(qr_, qc2qr_autoconv_tend_, qc2qr_accret_tend_, qi2qr_melt_tend_, qc2qr_ice_shed_tend_, dt, qr2qv_evap_tend_, qrcol_, qr2qi_immers_freeze_tend_);
+    t_d(0) = qr2qi_immers_freeze_tend_[0];
+    t_d(1) = qr2qv_evap_tend_[0];
+    t_d(2) = qrcol_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *qr2qi_immers_freeze_tend = t_h(0);
+  *qr2qv_evap_tend = t_h(1);
+  *qrcol = t_h(2);
 }
 
-void ice_water_conservation_f(Real qi_, Real qv2qi_vapdep_tend_, Real qv2qi_nucleat_tend_, Real qc2qi_berg_tend_, Real qr2qi_collect_tend_, Real qc2qi_collect_tend_,
-  Real qr2qi_immers_freeze_tend_, Real qc2qi_hetero_freeze_tend_, Real dt, Real* qi2qv_sublim_tend_, Real* qi2qr_melt_tend_)
+void ice_water_conservation_f(Real qi, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol, Real qr2qi_immers_freeze_tend, Real qc2qi_hetero_freeze_tend, Real dt, Real* qi2qv_sublim_tend, Real* qi2qr_melt_tend)
 {
-  using P3F = Functions<Real, HostDevice>;
-  using Spack   = typename P3F::Spack;
+  using PF = Functions<Real, DefaultDevice>;
 
-  Spack qi(qi_), qv2qi_vapdep_tend(qv2qi_vapdep_tend_), qv2qi_nucleat_tend(qv2qi_nucleat_tend_), qc2qi_berg_tend(qc2qi_berg_tend_),
-        qr2qi_collect_tend(qr2qi_collect_tend_), qc2qi_collect_tend(qc2qi_collect_tend_);
-  Spack qr2qi_immers_freeze_tend(qr2qi_immers_freeze_tend_), qc2qi_hetero_freeze_tend(qc2qi_hetero_freeze_tend_),
-        qi2qv_sublim_tend(*qi2qv_sublim_tend_), qi2qr_melt_tend(*qi2qr_melt_tend_);
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
 
-  P3F::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend,
-       qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt, qi2qv_sublim_tend, qi2qr_melt_tend);
-  *qi2qv_sublim_tend_ = qi2qv_sublim_tend[0];
-  *qi2qr_melt_tend_ = qi2qr_melt_tend[0];
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qi2qr_melt_tend(*qi2qr_melt_tend), local_qi2qv_sublim_tend(*qi2qv_sublim_tend);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack qc2qi_hetero_freeze_tend_(qc2qi_hetero_freeze_tend), qccol_(qccol), qi_(qi), qi2qr_melt_tend_(local_qi2qr_melt_tend), qi2qv_sublim_tend_(local_qi2qv_sublim_tend), qiberg_(qiberg), qidep_(qidep), qinuc_(qinuc), qr2qi_immers_freeze_tend_(qr2qi_immers_freeze_tend), qrcol_(qrcol);
+    PF::ice_water_conservation(qi_, qidep_, qinuc_, qiberg_, qrcol_, qccol_, qr2qi_immers_freeze_tend_, qc2qi_hetero_freeze_tend_, dt, qi2qv_sublim_tend_, qi2qr_melt_tend_);
+    t_d(0) = qi2qr_melt_tend_[0];
+    t_d(1) = qi2qv_sublim_tend_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *qi2qr_melt_tend = t_h(0);
+  *qi2qv_sublim_tend = t_h(1);
 }
 
 void p3_main_part1_f(
