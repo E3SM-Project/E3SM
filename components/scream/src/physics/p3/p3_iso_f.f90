@@ -625,6 +625,12 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
  end subroutine p3_main_f
 
+  subroutine ice_supersat_conservation_f(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real) , intent(inout) :: qidep, qinuc
+    real(kind=c_real) , value, intent(in) :: cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt
+  end subroutine ice_supersat_conservation_f
 end interface
 
 end module p3_iso_f

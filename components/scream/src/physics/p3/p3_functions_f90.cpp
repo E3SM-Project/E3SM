@@ -234,6 +234,7 @@ void p3_main_c(
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev, Real* elapsed_s);
 
+void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -829,6 +830,11 @@ void p3_main(P3MainData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void ice_supersat_conservation(IceSupersatConservationData& d)
+{
+  p3_init();
+  ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt);
+}
 // end _c impls
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3256,5 +3262,9 @@ Int p3_main_f(
   return elapsed_microsec;
 }
 
+void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt)
+{
+  // TODO
+}
 } // namespace p3
 } // namespace scream

@@ -963,6 +963,8 @@ struct Functions
     const P3HistoryOnly& history_only,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
+  KOKKOS_FUNCTION
+  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Spack& dt);
 }; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
@@ -1015,6 +1017,7 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_incloud_mixingratios_impl.hpp"
 # include "p3_subgrid_variance_scaling_impl.hpp"
 # include "p3_main_impl.hpp"
+# include "p3_ice_supersat_conservation_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // P3_FUNCTIONS_HPP

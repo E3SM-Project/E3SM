@@ -56,6 +56,7 @@ if (NOT CUDA_BUILD)
     p3_incloud_mixingratios.cpp
     p3_subgrid_variance_scaling.cpp
     p3_main.cpp
+    p3_ice_supersat_conservation.cpp
   ) # P3 ETI SRCS
 endif()
 
