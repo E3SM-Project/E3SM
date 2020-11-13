@@ -1,485 +1,343 @@
 #include <catch2/catch.hpp>
 
-#include "share/ekat_pack.hpp"
-#include "share/field/field.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
-#include "share/util/scream_test_utils.hpp"
+#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "share/field/field.hpp"
+#include "share/grid/se_grid.hpp"
+#include "share/grid/point_grid.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/Comm.hpp"
-#include "mpi/Connectivity.hpp"
-#include "mpi/MpiContext.hpp"
+
+#include "dynamics/homme/homme_dimensions.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 #include <random>
 #include <numeric>
+
+extern "C" {
+// These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
+void init_cube_geometry_f90 (const int& ne_in);
+void cleanup_geometry_f90 ();
+}
 
 namespace {
 
 TEST_CASE("remap", "") {
 
-  // +---------------------------------------------+
-  // |  We assume four elements, and the global id |
-  // |  of columns is as follows                   |
-  // +---------------------------------------------+
-  //
-  //        Elem 0               Elem 1
-  //
-  //         (E)                  (S)
-  //     15-16-17-12          12-13-14-15
-  //      |  |  |  |           |  |  |  |
-  //     28-29-30-31          31-34-35-28
-  //  (N) |  |  |  | (S)   (E) |  |  |  | (W)
-  //     24-25-26-27          27-32-33-24
-  //      |  |  |  |           |  |  |  |
-  //      3-22-23--0           0--1--2--3
-  //         (W)                  (N)
-  //  
-  //         (E)                  (N)
-  //      3 22-23--0           0--1--2--3
-  //      |  |  |  |           |  |  |  |
-  //      7-20-21--4           4--5--6--7
-  //  (N) |  |  |  | (S)   (W) |  |  |  | (E)
-  //     11-18-19--8           8--9-10-11
-  //      |  |  |  |           |  |  |  |
-  //     15-16-17-12          12-13-14-15
-  //         (W)                  (S)
-  //
-  //        Elem 3               Elem 2
-  //
-  // so that, e.g., the W edge of elem 2 is shared with the S edge of elem 3
-  // Note: This is a 'torus' configuration, where moving along the 'long' circle
-  //       you see the element pairs 0-1 and 2-3, while moving along the 'short'
-  //       circle you see the element pairs 0-3 and 1-2
-
   using namespace scream;
   using namespace ShortFieldTagsNames;
 
   // Some type defs
-  using Device = DefaultDevice;
   using PackType = ekat::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
-  using Remapper = PhysicsDynamicsRemapper<Homme::Real,Device>;
-  using RPDF = std::uniform_real_distribution<Real>;
+  using Remapper = PhysicsDynamicsRemapper<Homme::Real>;
   using IPDF = std::uniform_int_distribution<int>;
+  using FID = FieldIdentifier;
+  using FL  = FieldLayout;
 
   std::random_device rd;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   std::mt19937_64 engine(seed);
-  RPDF pdf(-1.0,1.0);
 
-  // Get or create a comm
-  Homme::Comm& comm = Homme::MpiContext::singleton().get_comm();
+  // We'll use this extensively, so let's use a short ref name
+  auto& c = Homme::Context::singleton();
+
+  // Set a value for qsize that is not the full qsize_d
+  auto& sp = c.create<Homme::SimulationParams>();
+  sp.qsize = std::max(HOMMEXX_QSIZE_D/2,1);
+
+  // Create a comm
+  auto& comm = c.create<Homme::Comm>();
   comm.reset_mpi_comm(MPI_COMM_WORLD);
 
-  const int world_size = comm.size();
-  const int world_rank = comm.rank();
-  if (world_size!=1 && world_size!=2 && world_size!=4) {
-    // The test runs only with 1 or 2 ranks
-    REQUIRE (false);
-  }
+  // Init a simple cubed geometry
+  constexpr int ne = 2;
+  constexpr int nlev = HOMMEXX_NUM_LEV;
+  constexpr int np   = HOMMEXX_NP;
 
-  // Global counters
-  constexpr int num_elems = 4;
+  if (!is_parallel_inited_f90()) {
+    auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
+    init_parallel_f90(comm_f);
+  }
+  init_cube_geometry_f90(ne);
 
   // Local counters
-  const int num_local_elems = num_elems / world_size;
-  int num_local_columns = -1;
-  switch(world_size) {
-    case 1:
-      num_local_columns = 36;
-      break;
-    case 2:
-      num_local_columns = (world_rank==0 ? 24 : 12);
-      break;
-    case 4:
-      switch (world_rank) {
-        case 0:
-          num_local_columns = 16;
-          break;
-        case 1: // Fallthrough
-        case 2:
-          num_local_columns = 8;
-          break;
-        case 3:
-          num_local_columns = 4;
-          break;
-      }
-      break;
-  }
-  EKAT_REQUIRE_MSG(num_local_columns>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
-
-  auto get_elem_pid = [&](const int elem_gid)->int {
-    switch (world_size) {
-      case 1: return 0;
-      case 2: return elem_gid / 2;
-      case 4: return elem_gid;
-    }
-    return -1;
-  };
-  auto get_elem_lid = [&](const int elem_gid)->int {
-    return elem_gid - get_elem_pid(elem_gid)*num_local_elems;
-  };
+  const int num_local_elems = get_num_owned_elems_f90();
+  const int num_local_cols = get_num_owned_columns_f90();
+  EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Create the columns global id mappings
-  typename SEGrid::dofs_list_type p_dofs("p dofs",num_local_columns);
-  typename SEGrid::dofs_list_type d_dofs("d dofs",num_local_elems*NP*NP);
-  typename SEGrid::dofs_map_type p2d("p2d",num_local_columns);
-  typename SEGrid::dofs_map_type d2p("d2p",num_local_elems*NP*NP);
+  typename AbstractGrid::dofs_list_type p_dofs("p dofs",num_local_cols);
+  typename AbstractGrid::dofs_list_type d_dofs("d dofs",num_local_elems*np*np);
 
-  auto h_p2d = Kokkos::create_mirror_view(p2d);
-  auto h_d2p = Kokkos::create_mirror_view(d2p);
+  typename AbstractGrid::lid_to_idx_map_type p_lid2idx("p_lid2idx",num_local_cols,1);
+  typename AbstractGrid::lid_to_idx_map_type d_lid2idx("d_lid2idx",num_local_elems*np*np,3);
+
   auto h_p_dofs = Kokkos::create_mirror_view(p_dofs);
   auto h_d_dofs = Kokkos::create_mirror_view(d_dofs);
+  auto h_p_lid2idx = Kokkos::create_mirror_view(p_lid2idx);
+  auto h_d_lid2idx = Kokkos::create_mirror_view(d_lid2idx);
 
-  int col_ids[4][16] = { 
-                         { 0, 27, 31, 12, 23, 26, 30, 17, 22, 25, 29, 16,  3, 24, 28, 15},
-                         {15, 14, 13, 12, 28, 35, 34, 31, 24, 33, 32, 27,  3,  2,  1,  0},
-                         {12, 13, 14, 15,  8,  9, 10, 11,  4,  5,  6,  7,  0,  1,  2,  3},
-                         {12,  8,  4,  0, 17, 19, 21, 23, 16, 18, 20, 22, 15, 11,  7,  3}
-                       };
-
-  std::vector<int> my_elems_gids (num_local_elems);
-  for (int i=0; i<num_local_elems; ++i) {
-    my_elems_gids[i] = world_rank*num_local_elems + i;
-  }
-
-  for (int ie=0,col_lid=0; ie<num_local_elems; ++ie) {
-    int elem_gid = ie + num_local_elems*world_rank;
-    for (int i=0; i<NP; ++i) {
-      for (int j=0; j<NP; ++j) {
-        const int idof = ie*NP*NP+i*NP+j;
-        const long col_gid = col_ids[elem_gid][i*NP+j];
-
-        h_d2p(idof,0) = ie;
-        h_d2p(idof,1) = i;
-        h_d2p(idof,2) = j;
-        h_d_dofs(idof) = col_gid;
-        
-        // Check if another element already owns the column
-        bool found = false;
-        for (int prev_elgid=0; prev_elgid<elem_gid; ++prev_elgid) {
-          auto start = &col_ids[prev_elgid][0];
-          auto end   = start+16;
-          auto it = std::find(start,end,col_gid);
-          if (it!=end) {
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          // I own this column
-          h_p2d(col_lid,0) = ie;
-          h_p2d(col_lid,1) = i;
-          h_p2d(col_lid,2) = j;
-          h_p_dofs(col_lid) = col_gid;
-          ++col_lid;
-        }
-      }
-    }
-  }
+  get_cols_gids_f90 (h_p_dofs.data(),true);
+  std::iota(h_p_lid2idx.data(),h_p_lid2idx.data()+h_p_lid2idx.size(),0);
+  get_cols_specs_f90 (h_d_dofs.data(),h_d_lid2idx.data(),false);
 
   Kokkos::deep_copy(p_dofs,h_p_dofs);
   Kokkos::deep_copy(d_dofs,h_d_dofs);
-  Kokkos::deep_copy(p2d,h_p2d);
-  Kokkos::deep_copy(d2p,h_d2p);
+  Kokkos::deep_copy(p_lid2idx,h_p_lid2idx);
+  Kokkos::deep_copy(d_lid2idx,h_d_lid2idx);
 
   // Create the physics and dynamics grids
-  auto phys_grid = std::make_shared<SEGrid>(p2d,p_dofs,"Physics",GridType::SE_NodeBased);
-  auto dyn_grid  = std::make_shared<SEGrid>(d2p,d_dofs,"Dynamics",GridType::SE_CellBased);
+  auto phys_grid = std::make_shared<PointGrid>("Physics", p_dofs, nlev);
+  auto dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_local_elems, np, nlev);
 
-  // Create connectivity, and add the only connection
-  // Note: catch2 runs this routine several times, but the connectivity can only be init-ed once, so check first.
-  std::shared_ptr<Homme::Connectivity> connectivity = Homme::MpiContext::singleton().get_connectivity();
-
-  constexpr auto NORTH = Homme::etoi(Homme::ConnectionName::NORTH);
-  constexpr auto SOUTH = Homme::etoi(Homme::ConnectionName::SOUTH);
-  constexpr auto EAST  = Homme::etoi(Homme::ConnectionName::EAST);
-  constexpr auto WEST  = Homme::etoi(Homme::ConnectionName::WEST);
-  constexpr auto NEAST = Homme::etoi(Homme::ConnectionName::NEAST);
-  constexpr auto NWEST = Homme::etoi(Homme::ConnectionName::NWEST);
-  constexpr auto SEAST = Homme::etoi(Homme::ConnectionName::SEAST);
-  constexpr auto SWEST = Homme::etoi(Homme::ConnectionName::SWEST);
-
-  if (!connectivity->is_finalized()) {
-    connectivity->set_comm(comm);
-    connectivity->set_num_elements(num_local_elems);
-    if (get_elem_pid(0)==world_rank) {
-      connectivity->add_connection(get_elem_lid(0),0,SOUTH,get_elem_pid(0),
-                                   get_elem_lid(1),1,EAST ,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(0),0,NORTH,get_elem_pid(0),
-                                   get_elem_lid(1),1,WEST ,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(0),0,WEST ,get_elem_pid(0),
-                                   get_elem_lid(3),3,EAST ,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(0),0,EAST ,get_elem_pid(0),
-                                   get_elem_lid(3),3,WEST ,get_elem_pid(3));
-
-      connectivity->add_connection(get_elem_lid(0),0,SEAST,get_elem_pid(0),
-                                   get_elem_lid(2),2,SWEST,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,NWEST,get_elem_pid(0),
-                                   get_elem_lid(2),2,NEAST,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,SWEST,get_elem_pid(0),
-                                   get_elem_lid(2),2,NWEST,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,NEAST,get_elem_pid(0),
-                                   get_elem_lid(2),2,SEAST,get_elem_pid(2));
-    }
-    if (get_elem_pid(1)==world_rank) {
-      connectivity->add_connection(get_elem_lid(1),1,EAST ,get_elem_pid(1),
-                                   get_elem_lid(0),0,SOUTH,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(1),1,WEST ,get_elem_pid(1),
-                                   get_elem_lid(0),0,NORTH,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(1),1,NORTH,get_elem_pid(1),
-                                   get_elem_lid(2),2,NORTH,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(1),1,SOUTH,get_elem_pid(1),
-                                   get_elem_lid(2),2,SOUTH,get_elem_pid(2));
-
-      connectivity->add_connection(get_elem_lid(1),1,SEAST,get_elem_pid(1),
-                                   get_elem_lid(3),3,SWEST,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,NWEST,get_elem_pid(1),
-                                   get_elem_lid(3),3,NEAST,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,NEAST,get_elem_pid(1),
-                                   get_elem_lid(3),3,SEAST,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,SWEST,get_elem_pid(1),
-                                   get_elem_lid(3),3,NWEST,get_elem_pid(3));
-    }
-    if (get_elem_pid(2)==world_rank) {
-      connectivity->add_connection(get_elem_lid(2),2,NORTH,get_elem_pid(2),
-                                   get_elem_lid(1),1,NORTH,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(2),2,SOUTH,get_elem_pid(2),
-                                   get_elem_lid(1),1,SOUTH,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(2),2,WEST ,get_elem_pid(2),
-                                   get_elem_lid(3),3,SOUTH,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(2),2,EAST ,get_elem_pid(2),
-                                   get_elem_lid(3),3,NORTH,get_elem_pid(3));
-
-      connectivity->add_connection(get_elem_lid(2),2,NWEST,get_elem_pid(2),
-                                   get_elem_lid(0),0,SWEST,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,SEAST,get_elem_pid(2),
-                                   get_elem_lid(0),0,NEAST,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,NEAST,get_elem_pid(2),
-                                   get_elem_lid(0),0,NWEST,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,SWEST,get_elem_pid(2),
-                                   get_elem_lid(0),0,SEAST,get_elem_pid(0));
-    }
-    if (get_elem_pid(3)==world_rank) {
-      connectivity->add_connection(get_elem_lid(3),3,EAST ,get_elem_pid(3),
-                                   get_elem_lid(0),0,WEST ,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(3),3,WEST ,get_elem_pid(3),
-                                   get_elem_lid(0),0,EAST ,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(3),3,SOUTH,get_elem_pid(3),
-                                   get_elem_lid(2),2,WEST ,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(3),3,NORTH,get_elem_pid(3),
-                                   get_elem_lid(2),2,EAST ,get_elem_pid(2));
-
-      connectivity->add_connection(get_elem_lid(3),3,SEAST,get_elem_pid(3),
-                                   get_elem_lid(1),1,NEAST,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,NWEST,get_elem_pid(3),
-                                   get_elem_lid(1),1,SWEST,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,NEAST,get_elem_pid(3),
-                                   get_elem_lid(1),1,NWEST,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,SWEST,get_elem_pid(3),
-                                   get_elem_lid(1),1,SEAST,get_elem_pid(1));
-    }
-    connectivity->finalize(/* sanity check = */ false);
-  }
+  dyn_grid->set_dofs(d_dofs,d_lid2idx);
 
   constexpr int NVL = HOMMEXX_NUM_PHYSICAL_LEV;
   constexpr int NTL = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int NTQ = HOMMEXX_Q_NUM_TIME_LEVELS;
   constexpr int NQ  = HOMMEXX_QSIZE_D;
-  const int ne = num_local_elems;
-  const int nc = num_local_columns;
-  const auto units = units::m;  // Placeholder units (we don't care about units here)
+  const int nle = num_local_elems;
+  const int nlc = num_local_cols;
+  const auto units = ekat::units::m;  // Placeholder units (we don't care about units here)
+
+  const int np1 = IPDF(0,NTL-1)(engine);
+  const int np1_qdp = IPDF(0,NTQ-1)(engine);
+
+  c.create_if_not_there<Homme::TimeLevel>();
+  auto& tl = c.get<Homme::TimeLevel>();
+  tl.np1 = np1;
+  tl.nm1 = (np1+1) % NTL;
+  tl.n0  = (np1+2) % NTL;
+  tl.np1_qdp = np1_qdp;
+  tl.n0_qdp  = (np1_qdp+1) % NTQ;
+
+  // Note on prefixes: s=scalar, v=vector, ss=scalar state, vs=vector_state, ts=tracer state
 
   // Create tags and dimensions
-  std::vector<FieldTag> scalar_2d_dyn_tags        = {EL,          GP, GP    };
-  std::vector<FieldTag> vector_2d_dyn_tags        = {EL,     CMP, GP, GP    };
-  std::vector<FieldTag> scalar_3d_dyn_tags        = {EL,          GP, GP, VL};
-  std::vector<FieldTag> vector_3d_dyn_tags        = {EL,     CMP, GP, GP, VL};
-  std::vector<FieldTag> scalar_state_3d_dyn_tags  = {EL, TL,      GP, GP, VL};
-  std::vector<FieldTag> vector_state_3d_dyn_tags  = {EL, TL, CMP, GP, GP, VL};
+  std::vector<FieldTag> s_2d_dyn_tags   = {EL,          GP, GP    };
+  std::vector<FieldTag> v_2d_dyn_tags   = {EL,     CMP, GP, GP    };
+  std::vector<FieldTag> s_3d_dyn_tags   = {EL,          GP, GP, VL};
+  std::vector<FieldTag> v_3d_dyn_tags   = {EL,     CMP, GP, GP, VL};
+  std::vector<FieldTag> ss_3d_dyn_tags  = {EL, TL,      GP, GP, VL};
+  std::vector<FieldTag> vs_3d_dyn_tags  = {EL, TL, CMP, GP, GP, VL};
 
-  std::vector<FieldTag> scalar_2d_phys_tags       = {COL         };
-  std::vector<FieldTag> vector_2d_phys_tags       = {COL, CMP    };
-  std::vector<FieldTag> scalar_3d_phys_tags       = {COL,      VL};
-  std::vector<FieldTag> vector_3d_phys_tags       = {COL, CMP, VL};
-  std::vector<FieldTag> vector_state_3d_phys_tags = {COL, CMP, VL};
-  std::vector<FieldTag> scalar_state_3d_phys_tags = {COL,      VL};
+  std::vector<FieldTag> s_2d_phys_tags  = {COL         };
+  std::vector<FieldTag> v_2d_phys_tags  = {COL, CMP    };
+  std::vector<FieldTag> s_3d_phys_tags  = {COL,      VL};
+  std::vector<FieldTag> v_3d_phys_tags  = {COL, CMP, VL};
+  std::vector<FieldTag> vs_3d_phys_tags = {COL, CMP, VL};
+  std::vector<FieldTag> ss_3d_phys_tags = {COL,      VL};
 
-  std::vector<int> scalar_2d_dyn_dims        = {ne,          NP, NP     };
-  std::vector<int> vector_2d_dyn_dims        = {ne,       2, NP, NP     };
-  std::vector<int> scalar_3d_dyn_dims        = {ne,          NP, NP, NVL};
-  std::vector<int> vector_3d_dyn_dims        = {ne,       2, NP, NP, NVL};
-  std::vector<int> scalar_state_3d_dyn_dims  = {ne, NTL,     NP, NP, NVL};
-  std::vector<int> vector_state_3d_dyn_dims  = {ne, NTL,  2, NP, NP, NVL};
-  std::vector<int> tracer_state_3d_dyn_dims  = {ne, NTQ, NQ, NP, NP, NVL};
+  std::vector<int> s_2d_dyn_dims   = {nle,          np, np     };
+  std::vector<int> v_2d_dyn_dims   = {nle,       2, np, np     };
+  std::vector<int> s_3d_dyn_dims   = {nle,          np, np, NVL};
+  std::vector<int> v_3d_dyn_dims   = {nle,       2, np, np, NVL};
+  std::vector<int> ss_3d_dyn_dims  = {nle, NTL,     np, np, NVL};
+  std::vector<int> vs_3d_dyn_dims  = {nle, NTL,  2, np, np, NVL};
+  std::vector<int> ts_3d_dyn_dims  = {nle, NTQ, NQ, np, np, NVL};
 
-  std::vector<int> scalar_2d_phys_dims       = {nc              };
-  std::vector<int> vector_2d_phys_dims       = {nc,       2     };
-  std::vector<int> scalar_3d_phys_dims       = {nc,          NVL};
-  std::vector<int> vector_3d_phys_dims       = {nc,       2, NVL};
-  std::vector<int> scalar_state_3d_phys_dims = {nc,     NVL};
-  std::vector<int> vector_state_3d_phys_dims = {nc,  2, NVL};
-  std::vector<int> tracer_state_3d_phys_dims = {nc, NQ, NVL};
+  std::vector<int> s_2d_phys_dims  = {nlc         };
+  std::vector<int> v_2d_phys_dims  = {nlc,  2     };
+  std::vector<int> s_3d_phys_dims  = {nlc,     NVL};
+  std::vector<int> v_3d_phys_dims  = {nlc,  2, NVL};
+  std::vector<int> ss_3d_phys_dims = {nlc,     NVL};
+  std::vector<int> vs_3d_phys_dims = {nlc,  2, NVL};
+  std::vector<int> ts_3d_phys_dims = {nlc, NQ, NVL};
 
   // Create identifiers
-  FieldIdentifier scalar_2d_dyn_fid  ("scalar_2d_dynamics", FieldLayout(scalar_2d_dyn_tags,  scalar_2d_dyn_dims), units, dyn_grid->name());
-  FieldIdentifier vector_2d_dyn_fid  ("vector_2d_dynamics", FieldLayout(vector_2d_dyn_tags,  vector_2d_dyn_dims), units, dyn_grid->name());
-  FieldIdentifier scalar_3d_dyn_fid  ("scalar_3d_dynamics", FieldLayout(scalar_3d_dyn_tags,  scalar_3d_dyn_dims), units, dyn_grid->name());
-  FieldIdentifier vector_3d_dyn_fid  ("vector_3d_dynamics", FieldLayout(vector_3d_dyn_tags,  vector_3d_dyn_dims), units, dyn_grid->name());
-  FieldIdentifier scalar_state_3d_dyn_fid ("scalar_state_3d_dynamics", FieldLayout(scalar_state_3d_dyn_tags, scalar_state_3d_dyn_dims),units, dyn_grid->name());
-  FieldIdentifier vector_state_3d_dyn_fid ("vector_state_3d_dynamics", FieldLayout(vector_state_3d_dyn_tags, vector_state_3d_dyn_dims),units, dyn_grid->name());
-  FieldIdentifier tracer_state_3d_dyn_fid ("tracer_state_3d_dynamics", FieldLayout(vector_state_3d_dyn_tags, tracer_state_3d_dyn_dims),units, dyn_grid->name());
+  const auto dgn = dyn_grid->name();
+  const auto pgn = phys_grid->name();
+  FID s_2d_dyn_fid  ("s_2d_dyn", FL(s_2d_dyn_tags,  s_2d_dyn_dims), units, dgn);
+  FID v_2d_dyn_fid  ("v_2d_dyn", FL(v_2d_dyn_tags,  v_2d_dyn_dims), units, dgn);
+  FID s_3d_dyn_fid  ("s_3d_dyn", FL(s_3d_dyn_tags,  s_3d_dyn_dims), units, dgn);
+  FID v_3d_dyn_fid  ("v_3d_dyn", FL(v_3d_dyn_tags,  v_3d_dyn_dims), units, dgn);
+  FID ss_3d_dyn_fid ("ss_3d_dyn", FL(ss_3d_dyn_tags, ss_3d_dyn_dims),units, dgn);
+  FID vs_3d_dyn_fid ("vs_3d_dyn", FL(vs_3d_dyn_tags, vs_3d_dyn_dims),units, dgn);
+  FID ts_3d_dyn_fid ("ts_3d_dyn", FL(vs_3d_dyn_tags, ts_3d_dyn_dims),units, dgn);
 
-  FieldIdentifier scalar_2d_phys_fid ("scalar_2d_physics",  FieldLayout(scalar_2d_phys_tags, scalar_2d_phys_dims),units, phys_grid->name());
-  FieldIdentifier vector_2d_phys_fid ("vector_2d_physics",  FieldLayout(vector_2d_phys_tags, vector_2d_phys_dims),units, phys_grid->name());
-  FieldIdentifier scalar_3d_phys_fid ("scalar_3d_physics",  FieldLayout(scalar_3d_phys_tags, scalar_3d_phys_dims),units, phys_grid->name());
-  FieldIdentifier vector_3d_phys_fid ("vector_3d_physics",  FieldLayout(vector_3d_phys_tags, vector_3d_phys_dims),units, phys_grid->name());
-  FieldIdentifier scalar_state_3d_phys_fid ("scalar_state_3d_physics", FieldLayout(scalar_state_3d_phys_tags, scalar_state_3d_phys_dims),units, phys_grid->name());
-  FieldIdentifier vector_state_3d_phys_fid ("vector_state_3d_physics", FieldLayout(vector_state_3d_phys_tags, vector_state_3d_phys_dims),units, phys_grid->name());
-  FieldIdentifier tracer_state_3d_phys_fid ("tracer_state_3d_physics", FieldLayout(vector_state_3d_phys_tags, tracer_state_3d_phys_dims),units, phys_grid->name());
+  FID s_2d_phys_fid ("s_2d_phys",  FL(s_2d_phys_tags, s_2d_phys_dims),units, pgn);
+  FID v_2d_phys_fid ("v_2d_phys",  FL(v_2d_phys_tags, v_2d_phys_dims),units, pgn);
+  FID s_3d_phys_fid ("s_3d_phys",  FL(s_3d_phys_tags, s_3d_phys_dims),units, pgn);
+  FID v_3d_phys_fid ("v_3d_phys",  FL(v_3d_phys_tags, v_3d_phys_dims),units, pgn);
+  FID ss_3d_phys_fid ("ss_3d_phys", FL(ss_3d_phys_tags, ss_3d_phys_dims),units, pgn);
+  FID vs_3d_phys_fid ("vs_3d_phys", FL(vs_3d_phys_tags, vs_3d_phys_dims),units, pgn);
+  FID ts_3d_phys_fid ("ts_3d_phys", FL(vs_3d_phys_tags, ts_3d_phys_dims),units, pgn);
 
   // Create fields
-  Field<Real,Device> scalar_2d_field_phys (scalar_2d_phys_fid);
-  Field<Real,Device> vector_2d_field_phys (vector_2d_phys_fid);
-  Field<Real,Device> scalar_3d_field_phys (scalar_3d_phys_fid);
-  Field<Real,Device> vector_3d_field_phys (vector_3d_phys_fid);
-  Field<Real,Device> scalar_state_3d_field_phys (scalar_state_3d_phys_fid);
-  Field<Real,Device> vector_state_3d_field_phys (vector_state_3d_phys_fid);
-  Field<Real,Device> tracer_state_3d_field_phys (tracer_state_3d_phys_fid);
+  Field<Real> s_2d_field_phys (s_2d_phys_fid);
+  Field<Real> v_2d_field_phys (v_2d_phys_fid);
+  Field<Real> s_3d_field_phys (s_3d_phys_fid);
+  Field<Real> v_3d_field_phys (v_3d_phys_fid);
+  Field<Real> ss_3d_field_phys (ss_3d_phys_fid);
+  Field<Real> vs_3d_field_phys (vs_3d_phys_fid);
+  Field<Real> ts_3d_field_phys (ts_3d_phys_fid);
 
-  Field<Real,Device> scalar_2d_field_dyn(scalar_2d_dyn_fid);
-  Field<Real,Device> vector_2d_field_dyn(vector_2d_dyn_fid);
-  Field<Real,Device> scalar_3d_field_dyn(scalar_3d_dyn_fid);
-  Field<Real,Device> vector_3d_field_dyn(vector_3d_dyn_fid);
-  Field<Real,Device> scalar_state_3d_field_dyn (scalar_state_3d_dyn_fid);
-  Field<Real,Device> vector_state_3d_field_dyn (vector_state_3d_dyn_fid);
-  Field<Real,Device> tracer_state_3d_field_dyn (tracer_state_3d_dyn_fid);
+  Field<Real> s_2d_field_dyn(s_2d_dyn_fid);
+  Field<Real> v_2d_field_dyn(v_2d_dyn_fid);
+  Field<Real> s_3d_field_dyn(s_3d_dyn_fid);
+  Field<Real> v_3d_field_dyn(v_3d_dyn_fid);
+  Field<Real> ss_3d_field_dyn (ss_3d_dyn_fid);
+  Field<Real> vs_3d_field_dyn (vs_3d_dyn_fid);
+  Field<Real> ts_3d_field_dyn (ts_3d_dyn_fid);
 
-  // Request allocation to fit packs of reals
-  scalar_2d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_2d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  scalar_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  scalar_state_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_state_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  tracer_state_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  // Request allocation to fit packs of reals for 3d views
+  s_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  v_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  ss_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  vs_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  ts_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
 
-  scalar_2d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_2d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  scalar_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  scalar_state_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vector_state_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  tracer_state_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  tracer_state_3d_field_dyn.get_header().set_extra_data("Is Tracer State", true);
+  s_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  v_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  ss_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  vs_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  ts_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  ts_3d_field_dyn.get_header().set_extra_data("Is Tracer State", true);
 
   // Allocate view
-  scalar_2d_field_phys.allocate_view();
-  vector_2d_field_phys.allocate_view();
-  scalar_3d_field_phys.allocate_view();
-  vector_3d_field_phys.allocate_view();
-  scalar_state_3d_field_phys.allocate_view();
-  vector_state_3d_field_phys.allocate_view();
-  tracer_state_3d_field_phys.allocate_view();
+  s_2d_field_phys.allocate_view();
+  v_2d_field_phys.allocate_view();
+  s_3d_field_phys.allocate_view();
+  v_3d_field_phys.allocate_view();
+  ss_3d_field_phys.allocate_view();
+  vs_3d_field_phys.allocate_view();
+  ts_3d_field_phys.allocate_view();
 
-  scalar_2d_field_dyn.allocate_view();
-  vector_2d_field_dyn.allocate_view();
-  scalar_3d_field_dyn.allocate_view();
-  vector_3d_field_dyn.allocate_view();
-  scalar_state_3d_field_dyn.allocate_view();
-  vector_state_3d_field_dyn.allocate_view();
-  tracer_state_3d_field_dyn.allocate_view();
+  s_2d_field_dyn.allocate_view();
+  v_2d_field_dyn.allocate_view();
+  s_3d_field_dyn.allocate_view();
+  v_3d_field_dyn.allocate_view();
+  ss_3d_field_dyn.allocate_view();
+  vs_3d_field_dyn.allocate_view();
+  ts_3d_field_dyn.allocate_view();
+
+  // Set extra data on tracers fields, so the remapper knows to grab the tracers timelevel
+  // from Homme's TimeLevel data structure (instead of the state timelevel)
+  ekat::any tracer;
+  tracer.reset<bool>(true);
+  ts_3d_field_dyn.get_header_ptr()->set_extra_data("Is Tracer State",tracer,false);
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
   remapper->registration_begins();
-  remapper->register_field(scalar_2d_field_phys, scalar_2d_field_dyn);
-  remapper->register_field(vector_2d_field_phys, vector_2d_field_dyn);
-  remapper->register_field(scalar_3d_field_phys, scalar_3d_field_dyn);
-  remapper->register_field(vector_3d_field_phys, vector_3d_field_dyn);
-  remapper->register_field(scalar_state_3d_field_phys, scalar_state_3d_field_dyn);
-  remapper->register_field(vector_state_3d_field_phys, vector_state_3d_field_dyn);
-  remapper->register_field(tracer_state_3d_field_phys, tracer_state_3d_field_dyn);
+  remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
+  remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
+  remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
+  remapper->register_field(v_3d_field_phys, v_3d_field_dyn);
+  remapper->register_field(ss_3d_field_phys, ss_3d_field_dyn);
+  remapper->register_field(vs_3d_field_phys, vs_3d_field_dyn);
+  remapper->register_field(ts_3d_field_phys, ts_3d_field_dyn);
   remapper->registration_ends();
-
-  const int np1 = IPDF(0,NTL-1)(engine);
-  const int np1_qdp = IPDF(0,NTQ-1)(engine);
-  {
-    auto& tl = Homme::Context::singleton().get_time_level();
-    tl.np1 = np1;
-    tl.nm1 = (np1+1) % NTL;
-    tl.n0  = (np1+2) % NTL;
-    tl.np1_qdp = np1_qdp;
-    tl.n0_qdp  = (np1_qdp+1) % NTQ;
-  }
 
   SECTION ("remap") {
 
     for (bool fwd : {true, false}) {
+      std::cout << " -> Remap " << (fwd ? " forward\n" : " backward\n");
 
-      // Generate random numbers
+      // Note: for the dyn->phys test to run correctly, the dynamics input v must be synced,
+      //       meaning that the values at the interface between two elements must match.
+      //       To do this, we initialize each entry in the dynamic v with the id
+      //       of the corresponding column.
+      //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
+
       if (fwd) {
-        ekat::genRandArray(scalar_2d_field_phys,  engine, pdf);
-        ekat::genRandArray(vector_2d_field_phys,  engine, pdf);
-        ekat::genRandArray(scalar_3d_field_phys,  engine, pdf);
-        ekat::genRandArray(vector_3d_field_phys,  engine, pdf);
+        auto s_2d_view = s_2d_field_phys.get_reshaped_view<Homme::Real*>();
+        auto v_2d_view = v_2d_field_phys.get_reshaped_view<Homme::Real**>();
+        auto s_3d_view = s_3d_field_phys.get_reshaped_view<Homme::Real**>();
+        auto v_3d_view = v_3d_field_phys.get_reshaped_view<Homme::Real***>();
+        auto ss_3d_view = ss_3d_field_phys.get_reshaped_view<Homme::Real**>();
+        auto vs_3d_view = vs_3d_field_phys.get_reshaped_view<Homme::Real***>();
+        auto ts_3d_view = ts_3d_field_phys.get_reshaped_view<Homme::Real***>();
 
-        ekat::genRandArray(scalar_state_3d_field_phys,  engine, pdf);
-        ekat::genRandArray(vector_state_3d_field_phys,  engine, pdf);
-        ekat::genRandArray(tracer_state_3d_field_phys,  engine, pdf);
+        auto h_s_2d_view = Kokkos::create_mirror_view(s_2d_view);
+        auto h_v_2d_view = Kokkos::create_mirror_view(v_2d_view);
+        auto h_s_3d_view = Kokkos::create_mirror_view(s_3d_view);
+        auto h_v_3d_view = Kokkos::create_mirror_view(v_3d_view);
+        auto h_ss_3d_view = Kokkos::create_mirror_view(ss_3d_view);
+        auto h_vs_3d_view = Kokkos::create_mirror_view(vs_3d_view);
+        auto h_ts_3d_view = Kokkos::create_mirror_view(ts_3d_view);
+        for (int idof=0; idof<num_local_cols; ++idof) {
+          auto gid = h_p_dofs(idof);
+          h_s_2d_view(idof) = gid;
+          h_v_2d_view(idof,0) = gid;
+          h_v_2d_view(idof,1) = gid;
+          for (int il=0; il<NVL; ++ il) {
+            h_s_3d_view(idof,il) = gid;
+            h_v_3d_view(idof,0,il) = gid;
+            h_v_3d_view(idof,1,il) = gid;
+
+            h_ss_3d_view(idof,il) = gid;
+            h_vs_3d_view(idof,0,il) = gid;
+            h_vs_3d_view(idof,1,il) = gid;
+            for (int iq=0; iq<NTQ; ++iq) {
+              h_ts_3d_view(idof,iq,il) = gid;
+            }
+          }
+        }
+        Kokkos::deep_copy(s_2d_view,h_s_2d_view);
+        Kokkos::deep_copy(v_2d_view,h_v_2d_view);
+        Kokkos::deep_copy(s_3d_view,h_s_3d_view);
+        Kokkos::deep_copy(v_3d_view,h_v_3d_view);
+
+        Kokkos::deep_copy(ss_3d_view,h_ss_3d_view);
+        Kokkos::deep_copy(vs_3d_view,h_vs_3d_view);
+        Kokkos::deep_copy(ts_3d_view,h_ts_3d_view);
       } else {
-        // Note: for the dyn->phys test to run correctly, the dynamics input vector must be synced,
-        //       meaning that the values at the interface between two elements must match.
-        //       To do this, we initialize each entry in the dynamic vector with the id
-        //       of the corresponding column.
-        auto scalar_2d_view = scalar_2d_field_dyn.get_reshaped_view<Homme::Real*   [NP][NP]     >();
-        auto vector_2d_view = vector_2d_field_dyn.get_reshaped_view<Homme::Real*[2][NP][NP]     >();
-        auto scalar_3d_view = scalar_3d_field_dyn.get_reshaped_view<Homme::Real*   [NP][NP][NVL]>();
-        auto vector_3d_view = vector_3d_field_dyn.get_reshaped_view<Homme::Real*[2][NP][NP][NVL]>();
-        auto scalar_state_3d_view = scalar_state_3d_field_dyn.get_reshaped_view<Homme::Real*[NTL]    [NP][NP][NVL]>();
-        auto vector_state_3d_view = vector_state_3d_field_dyn.get_reshaped_view<Homme::Real*[NTL] [2][NP][NP][NVL]>();
-        auto tracer_state_3d_view = tracer_state_3d_field_dyn.get_reshaped_view<Homme::Real*[NTQ][NQ][NP][NP][NVL]>();
+        auto s_2d_view = s_2d_field_dyn.get_reshaped_view<Homme::Real***>();
+        auto v_2d_view = v_2d_field_dyn.get_reshaped_view<Homme::Real****>();
+        auto s_3d_view = s_3d_field_dyn.get_reshaped_view<Homme::Real****>();
+        auto v_3d_view = v_3d_field_dyn.get_reshaped_view<Homme::Real*****>();
+        auto ss_3d_view = ss_3d_field_dyn.get_reshaped_view<Homme::Real*****>();
+        auto vs_3d_view = vs_3d_field_dyn.get_reshaped_view<Homme::Real******>();
+        auto ts_3d_view = ts_3d_field_dyn.get_reshaped_view<Homme::Real******>();
 
-        auto h_scalar_2d_view = Kokkos::create_mirror_view(scalar_2d_view);
-        auto h_vector_2d_view = Kokkos::create_mirror_view(vector_2d_view);
-        auto h_scalar_3d_view = Kokkos::create_mirror_view(scalar_3d_view);
-        auto h_vector_3d_view = Kokkos::create_mirror_view(vector_3d_view);
-        auto h_scalar_state_3d_view = Kokkos::create_mirror_view(scalar_state_3d_view);
-        auto h_vector_state_3d_view = Kokkos::create_mirror_view(vector_state_3d_view);
-        auto h_tracer_state_3d_view = Kokkos::create_mirror_view(tracer_state_3d_view);
+        auto h_s_2d_view = Kokkos::create_mirror_view(s_2d_view);
+        auto h_v_2d_view = Kokkos::create_mirror_view(v_2d_view);
+        auto h_s_3d_view = Kokkos::create_mirror_view(s_3d_view);
+        auto h_v_3d_view = Kokkos::create_mirror_view(v_3d_view);
+        auto h_ss_3d_view = Kokkos::create_mirror_view(ss_3d_view);
+        auto h_vs_3d_view = Kokkos::create_mirror_view(vs_3d_view);
+        auto h_ts_3d_view = Kokkos::create_mirror_view(ts_3d_view);
         for (int ie=0; ie<num_local_elems; ++ie) {
           for (int ip=0; ip<NP; ++ip) {
             for (int jp=0; jp<NP; ++jp) {
               const int idof = ie*NP*NP + ip*NP + jp;
-              h_scalar_2d_view(ie,ip,jp) = h_d_dofs(idof);
-              h_vector_2d_view(ie,0,ip,jp) = h_d_dofs(idof);
-              h_vector_2d_view(ie,1,ip,jp) = h_d_dofs(idof);
+              auto gid = h_d_dofs(idof);
+              h_s_2d_view(ie,ip,jp) = gid;
+              h_v_2d_view(ie,0,ip,jp) = gid;
+              h_v_2d_view(ie,1,ip,jp) = gid;
               for (int il=0; il<NVL; ++ il) {
-                h_scalar_3d_view(ie,ip,jp,il) = h_d_dofs(idof);
-                h_vector_3d_view(ie,0,ip,jp,il) = h_d_dofs(idof);
-                h_vector_3d_view(ie,1,ip,jp,il) = h_d_dofs(idof);
+                h_s_3d_view(ie,ip,jp,il) = gid;
+                h_v_3d_view(ie,0,ip,jp,il) = gid;
+                h_v_3d_view(ie,1,ip,jp,il) = gid;
 
                 for (int itl=0; itl<NTL; ++itl) {
-                  h_scalar_state_3d_view(ie,itl,ip,jp,il) = h_d_dofs(idof);
-                  h_vector_state_3d_view(ie,itl,0,ip,jp,il) = h_d_dofs(idof);
-                  h_vector_state_3d_view(ie,itl,1,ip,jp,il) = h_d_dofs(idof);
+                  h_ss_3d_view(ie,itl,ip,jp,il) = gid;
+                  h_vs_3d_view(ie,itl,0,ip,jp,il) = gid;
+                  h_vs_3d_view(ie,itl,1,ip,jp,il) = gid;
                 }
                 for (int itl=0; itl<NTQ; ++itl) {
                   for (int iq=0; iq<NTQ; ++iq) {
-                    h_tracer_state_3d_view(ie,itl,iq,ip,jp,il) = h_d_dofs(idof);
+                    h_ts_3d_view(ie,itl,iq,ip,jp,il) = gid;
                   }
                 }
               }
             }
           }
         }
-        Kokkos::deep_copy(scalar_2d_view,h_scalar_2d_view);
-        Kokkos::deep_copy(vector_2d_view,h_vector_2d_view);
-        Kokkos::deep_copy(scalar_3d_view,h_scalar_3d_view);
-        Kokkos::deep_copy(vector_3d_view,h_vector_3d_view);
+        Kokkos::deep_copy(s_2d_view,h_s_2d_view);
+        Kokkos::deep_copy(v_2d_view,h_v_2d_view);
+        Kokkos::deep_copy(s_3d_view,h_s_3d_view);
+        Kokkos::deep_copy(v_3d_view,h_v_3d_view);
 
-        Kokkos::deep_copy(scalar_state_3d_view,h_scalar_state_3d_view);
-        Kokkos::deep_copy(vector_state_3d_view,h_vector_state_3d_view);
-        Kokkos::deep_copy(tracer_state_3d_view,h_tracer_state_3d_view);
+        Kokkos::deep_copy(ss_3d_view,h_ss_3d_view);
+        Kokkos::deep_copy(vs_3d_view,h_vs_3d_view);
+        Kokkos::deep_copy(ts_3d_view,h_ts_3d_view);
       }
 
       // Remap
@@ -488,83 +346,136 @@ TEST_CASE("remap", "") {
       // Check
       {
         // 2d scalar
-        auto phys = Kokkos::create_mirror_view(scalar_2d_field_phys.template get_reshaped_view<Homme::Real*>());
-        auto dyn = Kokkos::create_mirror_view(scalar_2d_field_dyn.template get_reshaped_view<Homme::Real***>());
-        Kokkos::deep_copy(phys,scalar_2d_field_phys.template get_reshaped_view<Homme::Real*>());
-        Kokkos::deep_copy(dyn,scalar_2d_field_dyn.template get_reshaped_view<Homme::Real***>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          if (phys(icol)!=dyn(ie,ip,jp)) {
-              printf("p_in(%d) = %2.16f\n",icol,phys(icol));
-              printf("d_out(%d,%d,%d) = %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
+        auto phys = Kokkos::create_mirror_view(s_2d_field_phys.template get_reshaped_view<Homme::Real*>());
+        auto dyn = Kokkos::create_mirror_view(s_2d_field_dyn.template get_reshaped_view<Homme::Real***>());
+        Kokkos::deep_copy(phys,s_2d_field_phys.template get_reshaped_view<Homme::Real*>());
+        Kokkos::deep_copy(dyn,s_2d_field_dyn.template get_reshaped_view<Homme::Real***>());
+        
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
+                printf(" ** 2D Scalar ** \n");
+                printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
+                printf("expected: = %ld\n",h_d_dofs(idof));
+            }
+            REQUIRE (dyn(ie,ip,jp)==h_d_dofs(idof));
           }
-          REQUIRE (phys(icol)==dyn(ie,ip,jp));
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            if (phys(idof)!=h_p_dofs(idof)) {
+                printf(" ** 2D Scalar ** \n");
+                printf("  p_out(%d) = %2.16f\n",idof,phys(idof));
+                printf("  expected: = %ld\n",h_p_dofs(idof));
+            }
+            REQUIRE (phys(idof)==h_p_dofs(idof));
+          }
         }
       }
 
       {
         // 2d vector
-        auto phys = Kokkos::create_mirror_view(vector_2d_field_phys.template get_reshaped_view<Homme::Real**>());
-        auto dyn = Kokkos::create_mirror_view(vector_2d_field_dyn.template get_reshaped_view<Homme::Real****>());
-        Kokkos::deep_copy(phys,vector_2d_field_phys.template get_reshaped_view<Homme::Real**>());
-        Kokkos::deep_copy(dyn,vector_2d_field_dyn.template get_reshaped_view<Homme::Real****>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          for (int icomp=0; icomp<2; ++icomp) {
-            if (phys(icol,icomp)!=dyn(ie,icomp,ip,jp)) {
-                printf("p_in(%d,%d) = %2.16f\n",icol,icomp,phys(icol,icomp));
-                printf("d_out(%d,%d,%d,%d) = %2.16f\n",ie,icomp,ip,jp,dyn(ie,icomp,ip,jp));
+        auto phys = Kokkos::create_mirror_view(v_2d_field_phys.template get_reshaped_view<Homme::Real**>());
+        auto dyn = Kokkos::create_mirror_view(v_2d_field_dyn.template get_reshaped_view<Homme::Real****>());
+        Kokkos::deep_copy(phys,v_2d_field_phys.template get_reshaped_view<Homme::Real**>());
+        Kokkos::deep_copy(dyn,v_2d_field_dyn.template get_reshaped_view<Homme::Real****>());
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            for (int icomp=0; icomp<2; ++icomp) {
+              if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
+                  printf(" ** 2D Vector ** \n");
+                  printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,icomp,dyn(ie,icomp,ip,jp));
+                  printf("expected: = %ld\n",h_d_dofs(idof));
+              }
+              REQUIRE (dyn(ie,icomp,ip,jp)==h_d_dofs(idof));
             }
-            REQUIRE (phys(icol,icomp)==dyn(ie,icomp,ip,jp));
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int icomp=0; icomp<2; ++icomp) {
+              if (phys(idof,icomp)!=h_p_dofs(idof)) {
+                  printf(" ** 2D Vector ** \n");
+                  printf("p_out(%d, %d) = %2.16f\n",idof,icomp,phys(idof,icomp));
+                  printf("expected: = %ld\n",h_p_dofs(idof));
+              }
+              REQUIRE (phys(idof,icomp)==h_p_dofs(idof));
+            }
           }
         }
       }
 
       {
         // 3d scalar
-        auto phys = Kokkos::create_mirror_view(scalar_3d_field_phys.template get_reshaped_view<Homme::Real**>());
-        auto dyn = Kokkos::create_mirror_view(scalar_3d_field_dyn.template get_reshaped_view<Homme::Real****>());
-        Kokkos::deep_copy(phys,scalar_3d_field_phys.template get_reshaped_view<Homme::Real**>());
-        Kokkos::deep_copy(dyn,scalar_3d_field_dyn.template get_reshaped_view<Homme::Real****>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          for (int ilev=0; ilev<NVL; ++ilev) {
-            if (phys(icol,ilev)!=dyn(ie,ip,jp,ilev)) {
-                printf("p_in(%d,%d) = %2.16f\n",icol,ilev,phys(icol,ilev));
-                printf("d_out(%d,%d,%d,%d) = %2.16f\n",ie,ip,jp,ilev,dyn(ie,ip,jp,ilev));
+        auto phys = Kokkos::create_mirror_view(s_3d_field_phys.template get_reshaped_view<Homme::Real**>());
+        auto dyn = Kokkos::create_mirror_view(s_3d_field_dyn.template get_reshaped_view<Homme::Real****>());
+        Kokkos::deep_copy(phys,s_3d_field_phys.template get_reshaped_view<Homme::Real**>());
+        Kokkos::deep_copy(dyn,s_3d_field_dyn.template get_reshaped_view<Homme::Real****>());
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            for (int ilev=0; ilev<NVL; ++ilev) {
+              if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
+                  printf(" ** 3D Scalar ** \n");
+                  printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,ilev,dyn(ie,ip,jp,ilev));
+                  printf("expected: = %ld\n",h_d_dofs(idof));
+              }
+              REQUIRE (dyn(ie,ip,jp,ilev)==h_d_dofs(idof));
             }
-            REQUIRE (phys(icol,ilev)==dyn(ie,ip,jp,ilev));
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int ilev=0; ilev<NVL; ++ilev) {
+              if (phys(idof,ilev)!=h_p_dofs(idof)) {
+                  printf(" ** 3D Scalar ** \n");
+                  printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
+                  printf("expected: = %ld\n",h_p_dofs(idof));
+              }
+              REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
+            }
           }
         }
       }
 
       {
         // 3d vector
-        auto phys = Kokkos::create_mirror_view(vector_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        auto dyn = Kokkos::create_mirror_view(vector_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
-        Kokkos::deep_copy(phys,vector_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        Kokkos::deep_copy(dyn,vector_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          for (int icomp=0; icomp<2; ++icomp) {
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (phys(icol,icomp,ilev)!=dyn(ie,icomp,ip,jp,ilev)) {
-                  printf("p_in(%d,%d,%d) = %2.16f\n",icol,icomp,ilev,phys(icol,icomp,ilev));
-                  printf("d_out(%d,%d,%d,%d,%d) = %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,icomp,ip,jp,ilev));
+        auto phys = Kokkos::create_mirror_view(v_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        auto dyn = Kokkos::create_mirror_view(v_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
+        Kokkos::deep_copy(phys,v_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        Kokkos::deep_copy(dyn,v_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            for (int icomp=0; icomp<2; ++icomp) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
+                    printf(" ** 3D Vector ** \n");
+                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,icomp,ip,jp,ilev));
+                    printf("expected: = %ld\n",h_d_dofs(idof));
+                }
+                REQUIRE (dyn(ie,icomp,ip,jp,ilev)==h_d_dofs(idof));
               }
-              REQUIRE (phys(icol,icomp,ilev)==dyn(ie,icomp,ip,jp,ilev));
+            }
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int icomp=0; icomp<2; ++icomp) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
+                    printf(" ** 3D Vector ** \n");
+                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
+                    printf("expected: = %ld\n",h_p_dofs(idof));
+                }
+                REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
+              }
             }
           }
         }
@@ -572,45 +483,74 @@ TEST_CASE("remap", "") {
 
       {
         // 3d scalar state
-        const int itl = Homme::Context::singleton().get_time_level().np1;
-        auto phys = Kokkos::create_mirror_view(scalar_state_3d_field_phys.template get_reshaped_view<Homme::Real**>());
-        auto dyn = Kokkos::create_mirror_view(scalar_state_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
-        Kokkos::deep_copy(phys,scalar_state_3d_field_phys.template get_reshaped_view<Homme::Real**>());
-        Kokkos::deep_copy(dyn,scalar_state_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
+        const int itl = tl.np1;
+        auto phys = Kokkos::create_mirror_view(ss_3d_field_phys.template get_reshaped_view<Homme::Real**>());
+        auto dyn = Kokkos::create_mirror_view(ss_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
+        Kokkos::deep_copy(phys,ss_3d_field_phys.template get_reshaped_view<Homme::Real**>());
+        Kokkos::deep_copy(dyn,ss_3d_field_dyn.template get_reshaped_view<Homme::Real*****>());
+        if (fwd) {
           for (int ilev=0; ilev<NVL; ++ilev) {
-            if (phys(icol,ilev)!=dyn(ie,itl,ip,jp,ilev)) {
-                printf("p_in(%d,%d) = %2.16f\n",icol,ilev,phys(icol,ilev));
-                printf("d_out(%d,%d,%d,%d) = %2.16f\n",ie,ip,jp,ilev,dyn(ie,itl,ip,jp,ilev));
+            for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+              int ie = h_d_lid2idx(idof,0);
+              int ip = h_d_lid2idx(idof,1);
+              int jp = h_d_lid2idx(idof,2);
+              auto gid = h_d_dofs(idof);
+              if (dyn(ie,itl,ip,jp,ilev)!=gid) {
+                  printf(" ** 3D Scalar State ** \n");
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,itl,ip,jp,ilev,dyn(ie,itl,ip,jp,ilev));
+                  printf("expected: = %ld\n",gid);
+              }
+              REQUIRE (dyn(ie,itl,ip,jp,ilev)==gid);
             }
-            REQUIRE (phys(icol,ilev)==dyn(ie,itl,ip,jp,ilev));
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int ilev=0; ilev<NVL; ++ilev) {
+              if (phys(idof,ilev)!=h_p_dofs(idof)) {
+                  printf(" ** 3D Scalar State ** \n");
+                  printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
+                  printf("expected: = %ld\n",h_p_dofs(idof));
+              }
+              REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
+            }
           }
         }
       }
 
       {
         // 3d vector state
-        const int itl = Homme::Context::singleton().get_time_level().np1;
-        auto phys = Kokkos::create_mirror_view(vector_state_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        auto dyn = Kokkos::create_mirror_view(vector_state_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
-        Kokkos::deep_copy(phys,vector_state_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        Kokkos::deep_copy(dyn,vector_state_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          for (int icomp=0; icomp<2; ++icomp) {
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (phys(icol,icomp,ilev)!=dyn(ie,itl,icomp,ip,jp,ilev)) {
-                  printf("p_in(%d,%d,%d) = %2.16f\n",icol,icomp,ilev,phys(icol,icomp,ilev));
-                  printf("d_out(%d,%d,%d,%d,%d) = %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,itl,icomp,ip,jp,ilev));
+        const int itl = tl.np1;
+        auto phys = Kokkos::create_mirror_view(vs_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        auto dyn = Kokkos::create_mirror_view(vs_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
+        Kokkos::deep_copy(phys,vs_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        Kokkos::deep_copy(dyn,vs_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            for (int icomp=0; icomp<2; ++icomp) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (dyn(ie,itl,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
+                    printf(" ** 3D Vector State ** \n");
+                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,itl,icomp,ip,jp,ilev));
+                    printf("expected: = %ld\n",h_d_dofs(idof));
+                }
+                REQUIRE (dyn(ie,itl,icomp,ip,jp,ilev)==h_d_dofs(idof));
               }
-              REQUIRE (phys(icol,icomp,ilev)==dyn(ie,itl,icomp,ip,jp,ilev));
+            }
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int icomp=0; icomp<2; ++icomp) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
+                    printf(" ** 3D Vector State ** \n");
+                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
+                    printf("expected: = %ld\n",h_p_dofs(idof));
+                }
+                REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
+              }
             }
           }
         }
@@ -618,23 +558,38 @@ TEST_CASE("remap", "") {
 
       {
         // 3d tracer state
-        const int itl = Homme::Context::singleton().get_time_level().np1_qdp;
-        auto phys = Kokkos::create_mirror_view(tracer_state_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        auto dyn = Kokkos::create_mirror_view(tracer_state_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
-        Kokkos::deep_copy(phys,tracer_state_3d_field_phys.template get_reshaped_view<Homme::Real***>());
-        Kokkos::deep_copy(dyn,tracer_state_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
-        for (int icol=0; icol<num_local_columns; ++icol) {
-          auto elgp = Kokkos::subview(h_p2d,icol,Kokkos::ALL());
-          const int ie = elgp[0];
-          const int ip = elgp[1];
-          const int jp = elgp[2];
-          for (int iq=0; iq<2; ++iq) {
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (phys(icol,iq,ilev)!=dyn(ie,itl,iq,ip,jp,ilev)) {
-                  printf("p_in(%d,%d,%d) = %2.16f\n",icol,iq,ilev,phys(icol,iq,ilev));
-                  printf("d_out(%d,%d,%d,%d,%d) = %2.16f\n",ie,iq,ip,jp,ilev,dyn(ie,itl,iq,ip,jp,ilev));
+        const int itl = tl.np1_qdp;
+        auto phys = Kokkos::create_mirror_view(ts_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        auto dyn = Kokkos::create_mirror_view(ts_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
+        Kokkos::deep_copy(phys,ts_3d_field_phys.template get_reshaped_view<Homme::Real***>());
+        Kokkos::deep_copy(dyn,ts_3d_field_dyn.template get_reshaped_view<Homme::Real******>());
+        if (fwd) {
+          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+            int ie = h_d_lid2idx(idof,0);    
+            int ip = h_d_lid2idx(idof,1);    
+            int jp = h_d_lid2idx(idof,2);    
+            for (int iq=0; iq<2; ++iq) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (dyn(ie,itl,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
+                    printf(" ** 3D Tracer State ** \n");
+                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,iq,ip,jp,ilev,dyn(ie,itl,iq,ip,jp,ilev));
+                    printf("expected: = %ld\n",h_d_dofs(idof));
+                }
+                REQUIRE (dyn(ie,itl,iq,ip,jp,ilev)==h_d_dofs(idof));
               }
-              REQUIRE (phys(icol,iq,ilev)==dyn(ie,itl,iq,ip,jp,ilev));
+            }
+          }
+        } else {
+          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
+            for (int iq=0; iq<2; ++iq) {
+              for (int ilev=0; ilev<NVL; ++ilev) {
+                if (phys(idof,iq,ilev)!=h_p_dofs(idof)) {
+                    printf(" ** 3D Tracer State ** \n");
+                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,iq,ilev,phys(idof,iq,ilev));
+                    printf("expected: = %ld\n",h_p_dofs(idof));
+                }
+                REQUIRE (phys(idof,iq,ilev)==h_p_dofs(idof));
+              }
             }
           }
         }
@@ -646,7 +601,10 @@ TEST_CASE("remap", "") {
   remapper = nullptr;
 
   // Finalize Homme::MpiContext (deletes buffers manager)
-  Homme::MpiContext::finalize_singleton();
+  Homme::Context::finalize_singleton();
+
+  // Cleanup f90 structures
+  cleanup_geometry_f90();
 }
 
 } // anonymous namespace

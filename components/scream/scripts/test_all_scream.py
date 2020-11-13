@@ -20,7 +20,7 @@ class TestAllScream(object):
     ###########################################################################
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
-                 custom_cmake_opts=(), custom_env_vars=(), tests=(),
+                 custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
@@ -38,6 +38,7 @@ class TestAllScream(object):
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
         self._custom_env_vars         = custom_env_vars
+        self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
         self._integration_test        = integration_test
@@ -99,6 +100,11 @@ class TestAllScream(object):
         ############################################
         #    Deduce compilers if needed/possible   #
         ############################################
+
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine)
 
         if self._cxx_compiler is None:
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)
@@ -317,20 +323,34 @@ class TestAllScream(object):
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
+
+        # Ctest only needs config options, and doesn't need the leading 'cmake '
         result  = "{}-C {}".format("" if for_ctest else "cmake ", self.get_machine_file())
-        result += " -DCMAKE_CXX_COMPILER={}".format(self._cxx_compiler)
-        result += " -DCMAKE_C_COMPILER={}".format(self._c_compiler)
-        result += " -DCMAKE_Fortran_COMPILER={}".format(self._f90_compiler)
+
+        # Test-specific cmake options
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 
+        # User-requested config options
+        custom_opts_keys = []
         for custom_opt in self._custom_cmake_opts:
+            expect ("=" in custom_opt, "Error! Syntax error in custom cmake options. Should be `VAR_NAME=VALUE`.")
             if "=" in custom_opt:
                 name, value = custom_opt.split("=", 1)
                 # Some effort is needed to ensure quotes are perserved
                 result += " -D{}='{}'".format(name, value)
-            else:
-                result += " -D{}".format(custom_opt)
+                custom_opts_keys.append(name)
+
+        # Common config options (unless already specified by the user)
+        if "CMAKE_CXX_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_CXX_COMPILER={}".format(self._cxx_compiler)
+        if "CMAKE_C_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_C_COMPILER={}".format(self._c_compiler)
+        if "CMAKE_Fortran_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_Fortran_COMPILER={}".format(self._f90_compiler)
+
+        if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
+            result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
 
         return result
 
@@ -571,9 +591,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
-
-        # Setup the env on this machine
-        setup_mach_env(self._machine)
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:

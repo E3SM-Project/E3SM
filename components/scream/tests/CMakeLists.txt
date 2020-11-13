@@ -2,7 +2,8 @@
 if (NOT ${SCREAM_BASELINES_ONLY})
   if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
     add_subdirectory(scream_homme_dyn_ut_nlev72_qsize4)
-    add_subdirectory(scream_homme_dyn_p3)
+    # coupling of homme with other procs is not yet ready
+    # add_subdirectory(scream_homme_dyn_p3)
   endif()
 
   add_subdirectory(scream_p3)

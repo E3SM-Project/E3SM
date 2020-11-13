@@ -12,15 +12,17 @@ IF (NOT DEFINED PROJECT_NAME)
   SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
-  # Build executables/tests
-  SET (HOMME_BUILD_EXECS TRUE)
+  # By default, build executables/tests, and do not build 'library-style' targets
+  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." ON)
+  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." OFF)
 ELSE ()
   # Manually enable languages, in case they were not enabled by host project
   ENABLE_LANGUAGE(C)
   ENABLE_LANGUAGE(Fortran)
 
-  # Do not build executables/tests
-  SET (HOMME_BUILD_EXECS FALSE)
+  # By default, do not build executables/tests, and build 'library-style' targets
+  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." OFF)
+  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." ON)
 ENDIF ()
 
 INCLUDE(FortranCInterface)
@@ -40,13 +42,15 @@ IF (${HOMME_BUILD_EXECS})
   ENDIF()
 ENDIF()
 
-#option to build without pio and any netcdf in homme (no mesh runs either),
-#by default is not on.
-IF(NOT DEFINED BUILD_HOMME_WITHOUT_PIOLIBRARY)
-  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
-ENDIF()
+# Option to build without pio and any netcdf in homme (no mesh runs either)
+# The default is not on (meaning HAVE pio support) if we build any exec.
+IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY OFF CACHE BOOL "")
+ELSE ()
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
+ENDIF ()
+
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
-  ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
 ENDIF()
 
@@ -191,8 +195,8 @@ IF (${HOMME_USE_KOKKOS})
   ENDIF()
 
   # Execution space parameters. 8 is a nice size for V100.
-  SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE INT "Minimum number of warps to get 100% occoupancy on GPU")
-  SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 16 CACHE INT "Maximum number of warps to get 100% occoupancy on GPU")
+  SET (HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8 CACHE STRING "Minimum number of warps to get 100% occoupancy on GPU")
+  SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 16 CACHE STRING "Maximum number of warps to get 100% occoupancy on GPU")
 
   # An option to allow to use GPU pointers for MPI calls. The value of this option is irrelevant for CPU/KNL builds.
   OPTION (HOMMEXX_MPI_ON_DEVICE "Whether we want to use device pointers for MPI calls (relevant only for GPU builds)" ON)
@@ -218,9 +222,16 @@ ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
 
-  IF(${HOMME_FIND_BLASLAPACK})
+  IF(HOMME_FIND_BLASLAPACK)
     FIND_PACKAGE(BLAS REQUIRED)
     FIND_PACKAGE(LAPACK REQUIRED)
+
+    # Set libraries in cache, so they are accessible also from outside the Homme project.
+    # That's the case if the host project adds the homme subdir from folder foo/bar1, but
+    # then calls createExecLib from foo/bar2 (non cache variables would not survive outside bar1)
+    # Note: an alternative would be to wrap them in a cmake target, but that's more complicated.
+    SET (BLAS_LIBRARIES "${BLAS_LIBRARIES}" CACHE INTERNAL "")
+    SET (LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" CACHE INTERNAL "")
   ELSE()
     SET(HOMME_FIND_BLASLAPACK FALSE)
   ENDIF()

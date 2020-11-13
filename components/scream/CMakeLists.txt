@@ -93,6 +93,7 @@ else()
 endif ()
 
 ### Scream configuration options>
+set(DEFAULT_MAX_RANKS 4)
 set(DEFAULT_MAX_THREADS 16)
 set(DEFAULT_MIMIC_GPU FALSE)
 set(DEFAULT_FPE FALSE)
@@ -102,6 +103,8 @@ if (CUDA_BUILD)
   # On the GPU, the pack size must be 1
   set(DEFAULT_PACK_SIZE 1)
   set(DEFAULT_MAX_THREADS 1)
+  # Limit to 1 rank, cause parallel builds testing might limit the number of available gpus
+  set(DEFAULT_MAX_RANKS 1)
 else()
   if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
     set(DEFAULT_MIMIC_GPU TRUE)
@@ -175,6 +178,7 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 # Scream test configuration options
 set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
 set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
+set(SCREAM_TEST_MAX_RANKS ${DEFAULT_MAX_RANKS} CACHE STRING "Upper limit on ranks for mpi tests")
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
@@ -230,7 +234,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURREN
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 
 if (CIME_BUILD)
-  if ("${SCREAM_DYN_TARGET}" STREQUAL "preqx_kokkos")
+  if (SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
     set (SCREAM_DYNAMICS_DYCORE "Homme")
   endif()
 endif()

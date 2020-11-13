@@ -128,13 +128,16 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     m_atm_process_group->set_computed_field(m_field_repo->get_field(id));
   }
 
-  // Note: remappers should be setup *after* fields have been set in the atm processes,
-  //       just in case some atm proc sets some extra data in the field header,
-  //       that some remappers may actually need.
-  m_atm_process_group->setup_remappers(*m_field_repo);
-
   // Initialize the processes
   m_atm_process_group->initialize(t0);
+
+  // Note 1: remappers should be setup *after* fields have been set in the atm processes,
+  //       just in case some atm proc sets some extra data in the field header,
+  //       that some remappers may actually need.
+  // Note 2: setup the remapper *after* atm procs are fully init-ed. This allows
+  //         dynamics to complete its initialization, which is needed by the
+  //         phys-dyn remapper (which uses homme's mpi infrastructure).
+  m_atm_process_group->setup_remappers(*m_field_repo);
 
   // Initialize atm inputs
   init_atm_inputs ();
