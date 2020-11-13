@@ -10,5 +10,5 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(homme_pd_remap
       "homme_pd_remap_tests.cpp;test_geometry_mod.F90"
       "scream_share;${dynLibName}"
-      MPI_RANKS 1 4)
+      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 endif()
