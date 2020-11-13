@@ -1015,6 +1015,6 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_incloud_mixingratios_impl.hpp"
 # include "p3_subgrid_variance_scaling_impl.hpp"
 # include "p3_main_impl.hpp"
-#endif
+#endif // KOKKOS_ENABLE_CUDA
 
 #endif // P3_FUNCTIONS_HPP

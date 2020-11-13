@@ -435,4 +435,4 @@ struct Functions
 # include "shoc_shoc_main_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
-#endif
+#endif // SHOC_FUNCTIONS_HPP
