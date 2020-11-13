@@ -637,6 +637,12 @@ subroutine  update_prognostic_ice_f(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
     real(kind=c_real) , value, intent(in) :: nc, nc_selfcollect_tend, dt
     real(kind=c_real) , intent(inout) :: nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend
   end subroutine nc_conservation_f
+  subroutine nr_conservation_f(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real) , value, intent(in) :: nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt
+    real(kind=c_real) , intent(inout) :: nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend
+  end subroutine nr_conservation_f
 end interface
 
 end module p3_iso_f

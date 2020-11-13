@@ -98,6 +98,7 @@ struct UnitWrap {
     struct TestP3Main;
     struct TestIceSupersatConservation;
     struct TestNcConservation;
+    struct TestNrConservation;
   };
 
 };
