@@ -1435,6 +1435,7 @@ contains
       integer :: iEdge, iCell, k, i, nCells
 
       real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
+      integer, dimension(:, :), pointer :: edgeSignOnCell
 
       ! Scratch Arrays
       ! projectedSSH: projected SSH at a new time
@@ -1453,6 +1454,8 @@ contains
         vertAleTransportTop=0.0_RKIND
         return
       end if
+
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       ncells = nCellsAll
 
