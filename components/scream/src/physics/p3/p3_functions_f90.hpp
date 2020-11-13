@@ -80,7 +80,6 @@ struct P3InitAFortranData
     collect_table_vals("P3InitAFortranData::collect_table_vals")
   {}
 };
-void p3_init_a(P3InitAFortranData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -93,7 +92,6 @@ struct LookupIceData
   Int  dumi, dumjj, dumii, dumzz;
   Real dum1, dum4, dum5, dum6;
 };
-void find_lookuptable_indices_1a(LookupIceData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -106,7 +104,6 @@ struct LookupIceDataB
   Int dumj;
   Real dum3;
 };
-void find_lookuptable_indices_1b(LookupIceDataB& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +116,6 @@ struct AccessLookupTableData
   // Outputs
   Real proc;
 };
-void access_lookup_table(AccessLookupTableData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -133,7 +129,6 @@ struct AccessLookupTableCollData
   // Outputs
   Real proc;
 };
-void access_lookup_table_coll(AccessLookupTableCollData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -152,8 +147,6 @@ struct BackToCellAverageData
   void randomize();
 };
 
-void back_to_cell_average(BackToCellAverageData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PreventIceOverdepletionData
@@ -164,8 +157,6 @@ struct PreventIceOverdepletionData
   //output
   Real qv2qi_vapdep_tend, qi2qv_sublim_tend;
 };
-
-void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -178,8 +169,6 @@ struct CloudWaterConservationData
   Real qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
 };
 
-void cloud_water_conservation(CloudWaterConservationData& d);
-
 struct RainWaterConservationData
 {
   // inputs
@@ -189,8 +178,6 @@ struct RainWaterConservationData
   Real qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend;
 };
 
-void rain_water_conservation(RainWaterConservationData& d);
-
 struct IceWaterConservationData
 {
   //inputs
@@ -199,8 +186,6 @@ struct IceWaterConservationData
   //output
   Real qi2qv_sublim_tend, qi2qr_melt_tend;
 };
-
-void ice_water_conservation(IceWaterConservationData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -213,8 +198,6 @@ struct CalcRimeDensityData
   Real vtrmi1, rho_qm_cloud;
 };
 
-void calc_rime_density(CalcRimeDensityData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CldliqImmersionFreezingData
@@ -225,8 +208,6 @@ struct CldliqImmersionFreezingData
   // output
   Real qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend;
 };
-
-void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -239,8 +220,6 @@ struct RainImmersionFreezingData
   Real qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend;
 };
 
-void rain_immersion_freezing(RainImmersionFreezingData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DropletSelfCollectionData
@@ -252,8 +231,6 @@ struct DropletSelfCollectionData
   Real nc_selfcollect_tend;
 };
 
-void droplet_self_collection(DropletSelfCollectionData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CloudRainAccretionData
@@ -264,8 +241,6 @@ struct CloudRainAccretionData
   // output
   Real qc2qr_accret_tend, nc_accret_tend;
 };
-
-void cloud_rain_accretion(CloudRainAccretionData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -283,10 +258,7 @@ struct CloudWaterAutoconversionData
   Real ncautr;
 };
 
-void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
-
 
 struct RainSelfCollectionData
 {
@@ -297,8 +269,6 @@ struct RainSelfCollectionData
   Real nr_selfcollect_tend;
 };
 
-void rain_self_collection(RainSelfCollectionData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ImposeMaxTotalNiData{
@@ -308,7 +278,6 @@ struct ImposeMaxTotalNiData{
   //input
   Real max_total_ni, inv_rho_local;
 };
-void impose_max_total_ni(ImposeMaxTotalNiData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -321,8 +290,6 @@ struct IceMeltingData
   Real qi2qr_melt_tend,ni2nr_melt_tend;
 };
 
-void ice_melting(IceMeltingData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SubgridVarianceScalingData
@@ -331,8 +298,6 @@ struct SubgridVarianceScalingData
   Real relvar,expon;
   // no outputs - is a function
 };
-
-Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -344,7 +309,6 @@ struct GetCloudDsd2Data
   // Outputs
   Real nc_out, mu_c, nu, lamc, cdist, cdist1;
 };
-void get_cloud_dsd2(GetCloudDsd2Data& d);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -356,7 +320,6 @@ struct GetRainDsd2Data
   // Outputs
   Real nr_out, lamr, mu_r, cdistr, logn0r;
 };
-void get_rain_dsd2(GetRainDsd2Data& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -383,7 +346,6 @@ struct CalcUpwindData : public PhysicsTestData
 
   void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
 };
-void calc_first_order_upwind_step(CalcUpwindData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -402,7 +364,6 @@ struct GenSedData : public CalcUpwindData
   PTD_DATA_COPY_CTOR(GenSedData, 10);
   PTD_ASSIGN_OP(GenSedData, 11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
 };
-void generalized_sedimentation(GenSedData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -428,7 +389,6 @@ struct CloudSedData : public PhysicsTestData
 
   Int nk() const { return dim1; }
 };
-void cloud_sedimentation(CloudSedData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -453,8 +413,6 @@ struct IceSedData : public PhysicsTestData
 
   Int nk() const { return dim1; }
 };
-
-void ice_sedimentation(IceSedData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -481,8 +439,6 @@ struct RainSedData : public PhysicsTestData
   Int nk() const { return dim1; }
 };
 
-void rain_sedimentation(RainSedData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CalcBulkRhoRimeData
@@ -496,7 +452,6 @@ struct CalcBulkRhoRimeData
   // Outputs
   Real rho_rime;
 };
-void calc_bulk_rho_rime(CalcBulkRhoRimeData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -518,7 +473,6 @@ struct HomogeneousFreezingData : public PhysicsTestData
 
   Int nk() const { return dim1; }
 };
-void homogeneous_freezing(HomogeneousFreezingData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -533,7 +487,6 @@ struct ComputeRainFallVelocityData
   // Outputs
   Real mu_r, lamr, V_qr, V_nr;
 };
-void compute_rain_fall_velocity(ComputeRainFallVelocityData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -545,8 +498,6 @@ struct GetTimeSpacePhysVarsData
   //Outs
   Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 };
-
-void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -562,8 +513,6 @@ struct P3UpdatePrognosticIceData
   Real th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr;
 };
 
-void update_prognostic_ice(P3UpdatePrognosticIceData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EvapRainData
@@ -575,8 +524,6 @@ struct EvapRainData
   //Outs
   Real qr2qv_evap_tend, nr_evap_tend;
 };
-
-void evaporate_rain(EvapRainData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -593,8 +540,6 @@ struct P3UpdatePrognosticLiqData
   Real th_atm, qv, qc, nc, qr, nr;
 };
 
-void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct IceDepSublimationData
@@ -606,8 +551,6 @@ struct IceDepSublimationData
   Real qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
 };
 
-void ice_deposition_sublimation(IceDepSublimationData& d);
-
 struct IceCldliqCollectionData
 {
   // Inputs
@@ -618,7 +561,6 @@ struct IceCldliqCollectionData
   Real qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc;
 
 };
-void ice_cldliq_collection(IceCldliqCollectionData& d);
 
 struct IceRainCollectionData
 {
@@ -630,7 +572,6 @@ struct IceRainCollectionData
   Real qr2qi_collect_tend, nr_collect_tend;
 
 };
-void ice_rain_collection(IceRainCollectionData& d);
 
 struct IceSelfCollectionData
 {
@@ -642,7 +583,6 @@ struct IceSelfCollectionData
   Real ni_selfcollect_tend;
 
 };
-void ice_self_collection(IceSelfCollectionData& d);
 
 struct IceRelaxationData
 {
@@ -652,7 +592,6 @@ struct IceRelaxationData
   // Outputs
   Real epsi, epsi_tot;
 };
-void ice_relaxation_timescale(IceRelaxationData& d);
 
 struct CalcLiqRelaxationData
 {
@@ -665,7 +604,6 @@ struct CalcLiqRelaxationData
   // This populates all input fields with test data within [0,1].
   void randomize();
 };
-void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
 
 struct IceNucleationData
 {
@@ -677,7 +615,6 @@ struct IceNucleationData
   // Outputs
   Real qv2qi_nucleat_tend, ni_nucleat_tend;
 };
-void ice_nucleation(IceNucleationData& d);
 
 struct IceWetGrowthData
 {
@@ -690,7 +627,6 @@ struct IceWetGrowthData
 
   Real qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend;
 };
-void ice_cldliq_wet_growth(IceWetGrowthData& d);
 
 struct LatentHeatData : public PhysicsTestData
 {
@@ -707,7 +643,6 @@ struct LatentHeatData : public PhysicsTestData
   PTD_DATA_COPY_CTOR(LatentHeatData, 4);
   PTD_ASSIGN_OP(LatentHeatData, 4, its, ite, kts, kte);
 };
-void get_latent_heat(LatentHeatData& d);
 
 struct CheckValuesData : public PhysicsTestData
 {
@@ -729,7 +664,6 @@ struct CheckValuesData : public PhysicsTestData
 
   Int nk() const { return dim1; }
 };
-void check_values(CheckValuesData& d);
 
 struct IncloudMixingData
 {
@@ -739,7 +673,6 @@ struct IncloudMixingData
   // Outputs
   Real qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld;
 };
-void calculate_incloud_mixingratios(IncloudMixingData& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -771,8 +704,6 @@ struct P3MainPart1Data : public PhysicsTestData
   Int nk() const { return dim1; }
 };
 
-void p3_main_part1(P3MainPart1Data& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct P3MainPart2Data : public PhysicsTestData
@@ -803,8 +734,6 @@ struct P3MainPart2Data : public PhysicsTestData
   Int nk() const { return dim1; }
 };
 
-void p3_main_part2(P3MainPart2Data& d);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct P3MainPart3Data : public PhysicsTestData
@@ -829,8 +758,6 @@ struct P3MainPart3Data : public PhysicsTestData
 
   Int nk() const { return dim1; }
 };
-
-void p3_main_part3(P3MainPart3Data& d);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -860,6 +787,55 @@ struct P3MainData : public PhysicsTestData
   PTD_ASSIGN_OP(P3MainData, 8, its, ite, kts, kte, it, dt, do_predict_nc, do_prescribed_CCN);
 };
 
+// Glue functions to call fortran from from C++ with the Data struct
+void p3_init_a(P3InitAFortranData& d);
+void find_lookuptable_indices_1a(LookupIceData& d);
+void find_lookuptable_indices_1b(LookupIceDataB& d);
+void access_lookup_table(AccessLookupTableData& d);
+void access_lookup_table_coll(AccessLookupTableCollData& d);
+void back_to_cell_average(BackToCellAverageData& d);
+void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
+void cloud_water_conservation(CloudWaterConservationData& d);
+void rain_water_conservation(RainWaterConservationData& d);
+void ice_water_conservation(IceWaterConservationData& d);
+void calc_rime_density(CalcRimeDensityData& d);
+void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
+void rain_immersion_freezing(RainImmersionFreezingData& d);
+void droplet_self_collection(DropletSelfCollectionData& d);
+void cloud_rain_accretion(CloudRainAccretionData& d);
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
+void rain_self_collection(RainSelfCollectionData& d);
+void impose_max_total_ni(ImposeMaxTotalNiData& d);
+void ice_melting(IceMeltingData& d);
+Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
+void get_cloud_dsd2(GetCloudDsd2Data& d);
+void get_rain_dsd2(GetRainDsd2Data& d);
+void calc_first_order_upwind_step(CalcUpwindData& d);
+void generalized_sedimentation(GenSedData& d);
+void cloud_sedimentation(CloudSedData& d);
+void ice_sedimentation(IceSedData& d);
+void rain_sedimentation(RainSedData& d);
+void calc_bulk_rho_rime(CalcBulkRhoRimeData& d);
+void homogeneous_freezing(HomogeneousFreezingData& d);
+void compute_rain_fall_velocity(ComputeRainFallVelocityData& d);
+void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
+void update_prognostic_ice(P3UpdatePrognosticIceData& d);
+void evaporate_rain(EvapRainData& d);
+void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
+void ice_deposition_sublimation(IceDepSublimationData& d);
+void ice_cldliq_collection(IceCldliqCollectionData& d);
+void ice_rain_collection(IceRainCollectionData& d);
+void ice_self_collection(IceSelfCollectionData& d);
+void ice_relaxation_timescale(IceRelaxationData& d);
+void calc_liq_relaxation_timescale(CalcLiqRelaxationData& d);
+void ice_nucleation(IceNucleationData& d);
+void ice_cldliq_wet_growth(IceWetGrowthData& d);
+void get_latent_heat(LatentHeatData& d);
+void check_values(CheckValuesData& d);
+void calculate_incloud_mixingratios(IncloudMixingData& d);
+void p3_main_part1(P3MainPart1Data& d);
+void p3_main_part2(P3MainPart2Data& d);
+void p3_main_part3(P3MainPart3Data& d);
 void p3_main(P3MainData& d);
 
 extern "C" { // _f function decls
