@@ -100,6 +100,7 @@ struct UnitWrap {
     struct TestNcConservation;
     struct TestNrConservation;
     struct TestNiConservation;
+    struct TestWaterVaporConservation;
   };
 
 };

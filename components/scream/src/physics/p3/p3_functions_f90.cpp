@@ -238,6 +238,7 @@ void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
+void water_vapor_conservation_c(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -852,6 +853,11 @@ void ni_conservation(NiConservationData& d)
 {
   p3_init();
   ni_conservation_c(d.ni, d.ni_nucleat_tend, d.nr2ni_immers_freeze_tend, d.nc2ni_immers_freeze_tend, d.dt, &d.ni2nr_melt_tend, &d.ni_sublim_tend, &d.ni_selfcollect_tend);
+}
+void water_vapor_conservation(WaterVaporConservationData& d)
+{
+  p3_init();
+  water_vapor_conservation_c(d.qv, &d.qidep, &d.qinuc, d.qi2qv_sublim_tend, d.qr2qv_evap_tend, d.dt);
 }
 // end _c impls
 
@@ -3309,19 +3315,123 @@ Int p3_main_f(
 
 void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt)
 {
-  // TODO
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qidep(*qidep), local_qinuc(*qinuc);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack cld_frac_i_(cld_frac_i), dt_(dt), latent_heat_sublim_(latent_heat_sublim), qidep_(local_qidep), qinuc_(local_qinuc), qv_(qv), qv_sat_i_(qv_sat_i), t_atm_(t_atm);
+    PF::ice_supersat_conservation(qidep_, qinuc_, cld_frac_i_, qv_, qv_sat_i_, latent_heat_sublim_, t_atm_, dt_);
+    t_d(0) = qidep_[0];
+    t_d(1) = qinuc_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *qidep = t_h(0);
+  *qinuc = t_h(1);
 }
+
 void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend)
 {
-  // TODO
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 4);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nc2ni_immers_freeze_tend(*nc2ni_immers_freeze_tend), local_nc2nr_autoconv_tend(*nc2nr_autoconv_tend), local_nc_accret_tend(*nc_accret_tend), local_nc_collect_tend(*nc_collect_tend);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack dt_(dt), nc_(nc), nc2ni_immers_freeze_tend_(local_nc2ni_immers_freeze_tend), nc2nr_autoconv_tend_(local_nc2nr_autoconv_tend), nc_accret_tend_(local_nc_accret_tend), nc_collect_tend_(local_nc_collect_tend), nc_selfcollect_tend_(nc_selfcollect_tend);
+    PF::nc_conservation(nc_, nc_selfcollect_tend_, dt_, nc_collect_tend_, nc2ni_immers_freeze_tend_, nc_accret_tend_, nc2nr_autoconv_tend_);
+    t_d(0) = nc2ni_immers_freeze_tend_[0];
+    t_d(1) = nc2nr_autoconv_tend_[0];
+    t_d(2) = nc_accret_tend_[0];
+    t_d(3) = nc_collect_tend_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *nc2ni_immers_freeze_tend = t_h(0);
+  *nc2nr_autoconv_tend = t_h(1);
+  *nc_accret_tend = t_h(2);
+  *nc_collect_tend = t_h(3);
 }
+
 void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend)
 {
-  // TODO
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 4);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nr2ni_immers_freeze_tend(*nr2ni_immers_freeze_tend), local_nr_collect_tend(*nr_collect_tend), local_nr_evap_tend(*nr_evap_tend), local_nr_selfcollect_tend(*nr_selfcollect_tend);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack dt_(dt), nc2nr_autoconv_tend_(nc2nr_autoconv_tend), ncshdc_(ncshdc), ni2nr_melt_tend_(ni2nr_melt_tend), nr_(nr), nr2ni_immers_freeze_tend_(local_nr2ni_immers_freeze_tend), nr_collect_tend_(local_nr_collect_tend), nr_evap_tend_(local_nr_evap_tend), nr_ice_shed_tend_(nr_ice_shed_tend), nr_selfcollect_tend_(local_nr_selfcollect_tend);
+    PF::nr_conservation(nr_, ni2nr_melt_tend_, nr_ice_shed_tend_, ncshdc_, nc2nr_autoconv_tend_, dt_, nr_collect_tend_, nr2ni_immers_freeze_tend_, nr_selfcollect_tend_, nr_evap_tend_);
+    t_d(0) = nr2ni_immers_freeze_tend_[0];
+    t_d(1) = nr_collect_tend_[0];
+    t_d(2) = nr_evap_tend_[0];
+    t_d(3) = nr_selfcollect_tend_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *nr2ni_immers_freeze_tend = t_h(0);
+  *nr_collect_tend = t_h(1);
+  *nr_evap_tend = t_h(2);
+  *nr_selfcollect_tend = t_h(3);
 }
+
 void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend)
 {
-  // TODO
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 3);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_ni2nr_melt_tend(*ni2nr_melt_tend), local_ni_selfcollect_tend(*ni_selfcollect_tend), local_ni_sublim_tend(*ni_sublim_tend);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack dt_(dt), nc2ni_immers_freeze_tend_(nc2ni_immers_freeze_tend), ni_(ni), ni2nr_melt_tend_(local_ni2nr_melt_tend), ni_nucleat_tend_(ni_nucleat_tend), ni_selfcollect_tend_(local_ni_selfcollect_tend), ni_sublim_tend_(local_ni_sublim_tend), nr2ni_immers_freeze_tend_(nr2ni_immers_freeze_tend);
+    PF::ni_conservation(ni_, ni_nucleat_tend_, nr2ni_immers_freeze_tend_, nc2ni_immers_freeze_tend_, dt_, ni2nr_melt_tend_, ni_sublim_tend_, ni_selfcollect_tend_);
+    t_d(0) = ni2nr_melt_tend_[0];
+    t_d(1) = ni_selfcollect_tend_[0];
+    t_d(2) = ni_sublim_tend_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *ni2nr_melt_tend = t_h(0);
+  *ni_selfcollect_tend = t_h(1);
+  *ni_sublim_tend = t_h(2);
 }
+
+void water_vapor_conservation_f(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt)
+{
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 2);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_qidep(*qidep), local_qinuc(*qinuc);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack dt_(dt), qi2qv_sublim_tend_(qi2qv_sublim_tend), qidep_(local_qidep), qinuc_(local_qinuc), qr2qv_evap_tend_(qr2qv_evap_tend), qv_(qv);
+    PF::water_vapor_conservation(qv_, qidep_, qinuc_, qi2qv_sublim_tend_, qr2qv_evap_tend_, dt_);
+    t_d(0) = qidep_[0];
+    t_d(1) = qinuc_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *qidep = t_h(0);
+  *qinuc = t_h(1);
+}
+
 } // namespace p3
 } // namespace scream

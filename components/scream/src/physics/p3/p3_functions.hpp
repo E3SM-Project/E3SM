@@ -971,6 +971,8 @@ struct Functions
   static void nr_conservation(const Spack& nr, const Spack& ni2nr_melt_tend, const Spack& nr_ice_shed_tend, const Spack& ncshdc, const Spack& nc2nr_autoconv_tend, const Spack& dt, Spack& nr_collect_tend, Spack& nr2ni_immers_freeze_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend);
   KOKKOS_FUNCTION
   static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Spack& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend);
+  KOKKOS_FUNCTION
+  static void water_vapor_conservation(const Spack& qv, Spack& qidep, Spack& qinuc, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Spack& dt);
 }; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
@@ -1027,6 +1029,7 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_nc_conservation_impl.hpp"
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
+# include "p3_water_vapor_conservation_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // P3_FUNCTIONS_HPP
