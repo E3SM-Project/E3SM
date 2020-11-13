@@ -19,7 +19,7 @@ submit       = True
 # continue_run = True
 
 ### run duration and resubmission (remember to set continue_run)
-
+stop_opt,stop_n,resub='ndays',10,0
 
 ### same settings for all runs
 # compset = 'F-MMFXX'
@@ -49,8 +49,6 @@ rad_nx  = 2
 # timestamp = '20201030g'; # same as a, but with USE_ORIG_FFT
 # timestamp = '20201030h' # after cherry picking Matt's commit that update literal precision - MISSING COMMITS!!!
 # timestamp = '20201030i' # after cherry picking Matt's commit that update literal precision
-
-stop_opt,stop_n,resub='ndays',10,0
 
 # timestamp = '20201105' # new batch - timestep output - includes precision fixes - new MMF_CPL_TOP option - print_energy_errors=true
 
@@ -87,8 +85,9 @@ timestamp = '20201105c' # new indexing fixes from standalone and valgrind sessio
 ### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32',timestamp] )
 ### arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_72','CRMNZ_58','CRMNX_32',timestamp] )
 
-arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )       #!!!#
+# arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32',timestamp] )       #!!!#
 
+arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_50','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
 # arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','CPL-TOP',timestamp] )
 # arch,compset='GNUGPU','F-MMFXX-AQP1';case='.'.join(case_list+[arch,grid,compset,'NLEV_50','CRMNZ_46','CRMNX_32','CRMNY_32','OLD-FFT',timestamp] )
 

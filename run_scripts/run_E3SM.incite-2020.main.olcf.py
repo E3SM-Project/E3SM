@@ -19,8 +19,8 @@ submit       = True
 continue_run = True
 
 ### run duration and resubmission (remember to set continue_run)
-stop_opt,stop_n,resub = 'ndays',73*3,6
-# stop_opt,stop_n,resub = 'ndays',10,1
+# stop_opt,stop_n,resub = 'ndays',73*3,6
+stop_opt,stop_n,resub = 'ndays',10,0
 
 ### same settings for all runs
 compset = 'F-MMFXX'
@@ -34,18 +34,18 @@ rad_nx  = 2
 ### time stamps for distinguishing different settings
 # timestamp = '20200930' # star with rad_nx/ny=4
 # timestamp = '20201002' # reduced rad columns to rad_nx/ny=2
-timestamp = '20201006' # after rebase with master to bring in EAM name changes
+# timestamp = '20201006' # after rebase with master to bring in EAM name changes
 # timestamp = '20201016' # restart to reproduce restart issues
-
-### common parts of the case name
-case_list = ['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32']
+timestamp = '20201112' # new batch of runs after finding indexing bug in scalar diffusion
 
 ### specific case names and task/node settings
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32','MOMFB',timestamp] )
-# num_nodes=1000; task_per_node=12; case = '.'.join(case_list+['CRMNY_32',timestamp] )
-num_nodes= 150; task_per_node=48; case = '.'.join(case_list+[timestamp] )
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32','MOMFB',timestamp] )
+# case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32','CRMNY_32',timestamp] )
+case = '.'.join(['INCITE2020',arch,grid,compset,'NLEV_50','CRMNX_32',timestamp] )
 
-# Impose wall limits for Summits
+num_nodes = 1013 if 'CRMNY' in case else 145
+
+# Impose wall limits for Summit
 # if num_nodes>=  1: walltime =  '2:00'
 # if num_nodes>= 46: walltime =  '6:00'
 # if num_nodes>= 92: walltime = '12:00'
@@ -79,7 +79,7 @@ if 'dtime' in locals(): ncpl  = 86400 / dtime
 num_dyn = ne*ne*6
 
 if 'task_per_node' not in locals():
-   if arch=='GNUCPU': task_per_node = 84
+   if arch=='GNUCPU': task_per_node = 48
    if arch=='GNUGPU': task_per_node = 12
 #-------------------------------------------------------------------------------
 # Define run command
