@@ -287,6 +287,27 @@ UT_ARG_DATA2 = [
     ("ball2", "integer", "out", ("shcol",)),
 ]
 
+UT_ARG_DATA_ALL_SCALAR = [
+    ("foo1", "real", "in", None),
+    ("foo2", "real", "in", None),
+    ("bar1", "real", "inout", None),
+    ("bar2", "real", "inout", None),
+    ("baz1", "real", "out", None),
+    ("baz2", "real", "out", None),
+    ("gag1", "integer", "in", None),
+    ("gag2", "integer", "in", None),
+    ("gal1", "integer", "inout", None),
+    ("gal2", "integer", "inout", None),
+    ("bal1", "integer", "out", None),
+    ("bal2", "integer", "out", None),
+    ("bit1", "logical", "in", None),
+    ("bit2", "logical", "in", None),
+    ("gut1", "logical", "inout", None),
+    ("gut2", "logical", "inout", None),
+    ("gat1", "logical", "out", None),
+    ("gat2", "logical", "out", None),
+]
+
 #
 # Free functions
 #
@@ -940,6 +961,50 @@ def needs_transpose(arg_data):
     return False
 
 ###############################################################################
+def split_by_intent(arg_data):
+###############################################################################
+    """
+    Take arg data and split into three lists of names based on intent: [inputs], [intouts], [outputs]
+
+    >>> split_by_intent(UT_ARG_DATA)
+    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'gag', 'bag', 'val', 'shcol', 'nlev', 'nlevi'], ['baz'], ['bab1', 'bab2', 'ball1', 'ball2'])
+    """
+    inputs, inouts, outputs = [], [], []
+    for name, _, intent, _ in arg_data:
+        if intent == "in":
+            inputs.append(name)
+        elif intent == "inout":
+            inouts.append(name)
+        elif intent == "out":
+            outputs.append(name)
+        else:
+            expect(False, "Unhandled intent: {}".format(intent))
+
+    return inputs, inouts, outputs
+
+###############################################################################
+def split_by_type(arg_data):
+###############################################################################
+    """
+    Take arg data and split into three lists of names based on type: [reals], [ints], [logicals]
+
+    >>> split_by_type(UT_ARG_DATA)
+    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'gag', 'baz'], ['bag', 'bab1', 'bab2', 'shcol', 'nlev', 'nlevi', 'ball1', 'ball2'], ['val'])
+    """
+    reals, ints, logicals = [], [], []
+    for name, argtype, _, _ in arg_data:
+        if argtype == "real":
+            reals.append(name)
+        elif argtype == "integer":
+            ints.append(name)
+        elif argtype == "logical":
+            logicals.append(name)
+        else:
+            expect(False, "Unhandled argtype: {}".format(argtype))
+
+    return reals, ints, logicals
+
+###############################################################################
 def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
     """
@@ -1590,16 +1655,181 @@ class GenBoiler(object):
           // TODO
         }
         <BLANKLINE>
+        >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
+        void fake_sub_f(Real foo1, Real foo2, Real* bar1, Real* bar2, Real* baz1, Real* baz2, Int gag1, Int gag2, Int* gal1, Int* gal2, Int* bal1, Int* bal2, bool bit1, bool bit2, bool* gut1, bool* gut2, bool* gat1, bool* gat2)
+        {
+        #if 0
+          using PF = Functions<Real, DefaultDevice>;
+        <BLANKLINE>
+          using Spack   = typename PF::Spack;
+          using view_1d = typename PF::view_1d<Real>;
+          using iview_1d = typename PF::view_1d<Int>;
+          using bview_1d = typename PF::view_1d<bool>;
+        <BLANKLINE>
+          view_1d t_d("t_d", 4);
+          const auto t_h = Kokkos::create_mirror_view(t_d);
+        <BLANKLINE>
+          iview_1d it_d("it_d", 4);
+          const auto it_h = Kokkos::create_mirror_view(it_d);
+        <BLANKLINE>
+          bview_1d bt_d("bt_d", 4);
+          const auto bt_h = Kokkos::create_mirror_view(bt_d);
+        <BLANKLINE>
+          Real local_bar1(*bar1), local_bar2(*bar2);
+          Int local_gal1(*gal1), local_gal2(*gal2);
+          bool local_gut1(*gut1), local_gut2(*gut2);
+          Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+            Spack bar1_(local_bar1), bar2_(local_bar2), foo1_(foo1), foo2_(foo2), baz1_(), baz2_();
+            Int bal1_(), bal2_(), gal1_(local_gal1), gal2_(local_gal2);
+            bool gat1_(), gat2_(), gut1_(local_gut1), gut2_(local_gut2);
+            PF::fake_sub(foo1_, foo2_, bar1_, bar2_, baz1_, baz2_, gag1, gag2, gal1_, gal2_, bal1_, bal2_, bit1, bit2, gut1_, gut2_, gat1_, gat2_);
+            t_d(0) = bar1_[0];
+            t_d(1) = bar2_[0];
+            t_d(2) = baz1_[0];
+            t_d(3) = baz2_[0];
+            it_d(0) = bal1_;
+            it_d(1) = bal2_;
+            it_d(2) = gal1_;
+            it_d(3) = gal2_;
+            bt_d(0) = gat1_;
+            bt_d(1) = gat2_;
+            bt_d(2) = gut1_;
+            bt_d(3) = gut2_;
+          });
+          Kokkos::deep_copy(t_h, t_d);
+          Kokkos::deep_copy(it_h, it_d);
+          Kokkos::deep_copy(bt_h, bt_d);
+          *bar1 = t_h(0);
+          *bar2 = t_h(1);
+          *baz1 = t_h(2);
+          *baz2 = t_h(3);
+          *bal1 = it_h(0);
+          *bal2 = it_h(1);
+          *gal1 = it_h(2);
+          *gal2 = it_h(3);
+          *gat1 = bt_h(0);
+          *gat2 = bt_h(1);
+          *gut1 = bt_h(2);
+          *gut2 = bt_h(3);
+        #endif
+        <BLANKLINE>
+        }
+        <BLANKLINE>
         """
-        decl = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
+        arg_names = [item[ARG_NAME] for item in arg_data]
+        decl      = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
-        # TODO - is it possible to fill-out some or all of the implementation?
+        impl = ""
+        if has_arrays(arg_data):
+            # TODO
+            impl += "  // TODO"
+        else:
+            inputs, inouts, outputs = split_by_intent(arg_data)
+            reals, ints, logicals   = split_by_type(arg_data)
+            all_inputs = inputs + inouts
+            all_outputs = inouts + outputs
+
+            oreals = list(sorted(set(all_outputs) & set(reals)))
+            oints  = list(sorted(set(all_outputs) & set(ints)))
+            obools = list(sorted(set(all_outputs) & set(logicals)))
+
+            ireals = list(sorted(set(all_inputs) & set(reals)))
+
+            ioreals = list(sorted(set(inouts) & set(reals)))
+            ioints  = list(sorted(set(inouts) & set(ints)))
+            iobools = list(sorted(set(inouts) & set(logicals)))
+
+            ooreals = list(sorted(set(outputs) & set(reals)))
+
+            # set up basics
+            impl += "#if 0\n" # There's no way to guarantee this code compiles
+            impl += "  using PF = Functions<Real, DefaultDevice>;\n"
+            impl += "\n"
+            impl += "  using Spack   = typename PF::Spack;\n"
+
+            prefix_list  = ["", "i", "b"]
+            type_list    = ["Real", "Int", "bool"]
+            ktype_list   = ["Spack", "Int", "bool"]
+
+            # make necessary view types
+            for output_group, prefix_char, typename in zip([oreals, oints, obools], prefix_list, type_list):
+                if output_group:
+                    impl += "  using {}view_1d = typename PF::view_1d<{}>;\n".format(prefix_char, typename)
+
+            impl += "\n"
+
+            # make output views for host and device
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                if output_group:
+                    impl += '  {0}view_1d {0}t_d("{0}t_d", {1});\n'.format(prefix_char, len(output_group))
+                    impl += "  const auto {0}t_h = Kokkos::create_mirror_view({0}t_d);\n".format(prefix_char)
+                    impl += "\n"
+
+            # inout data must be derefenced before the kernel
+            for io_group, typename in zip([ioreals, ioints, iobools], type_list):
+                if io_group:
+                    impl += "  {} {};\n".format(typename, ", ".join(["local_{0}(*{0})".format(item) for item in io_group]))
+
+            # start a kernel
+            impl += "  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {\n"
+
+            # Declare output temporaries for non-reals. We need temporaries for all reals, including
+            # inputs to convert them to Spacks. This code will need to be manually corrected for reals that should
+            # not be packed (like dt)
+            for output_group, typename in zip([list(ireals) + list(ooreals), oints, obools], ktype_list):
+                if output_group:
+                    impl += "    {} ".format(typename)
+                    temp_cons = []
+                    for item in output_group:
+                        if item in inouts:
+                            temp_cons.append("{0}_(local_{0})".format(item))
+                        elif item in outputs:
+                            temp_cons.append("{0}_()".format(item))
+                        else:
+                            temp_cons.append("{0}_({0})".format(item))
+
+                    impl += "{};\n".format(", ".join(temp_cons))
+
+            # Make cxx call
+            kernel_arg_names = []
+            for arg_name in arg_names:
+                if arg_name in inputs and arg_name not in reals:
+                    kernel_arg_names.append(arg_name)
+                else:
+                    kernel_arg_names.append(arg_name + "_")
+
+            impl += "    PF::{}({});\n".format(sub, ", ".join(kernel_arg_names))
+
+            # Load output data into views
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                for idx, item in enumerate(output_group):
+                    if output_group == oreals:
+                        impl += "    {}t_d({}) = {}_[0];\n".format(prefix_char, idx, item)
+                    else:
+                        impl += "    {}t_d({}) = {}_;\n".format(prefix_char, idx, item)
+
+            # finish kernel
+            impl += "  });\n"
+
+            # copy outputs back to host
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                if output_group:
+                    impl += "  Kokkos::deep_copy({0}t_h, {0}t_d);\n".format(prefix_char)
+
+            # copy from views into pointer args
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                for idx, item in enumerate(output_group):
+                    impl += "  *{} = {}t_h({});\n".format(item, prefix_char, idx)
+
+            impl += "#endif\n"
+
         result = \
 """{decl}
 {{
-  // TODO
+{impl}
 }}
-""".format(decl=decl)
+""".format(decl=decl, impl=impl)
         return result
 
     ###########################################################################
