@@ -86,8 +86,8 @@ module micro_p3
      real(rtype), dimension(:), pointer :: p
   end type realptr
 
-  logical :: Koby_fixes=.true. !PMC hack for using conservation checks not ported to C++ yet in DY2.
-  
+  logical :: Koby_fixes=.false. !PMC hack for using conservation checks not ported to C++ yet in DY2.
+
 contains
 
   SUBROUTINE p3_init(lookup_file_dir,version_p3)
