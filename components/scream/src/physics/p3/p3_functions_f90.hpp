@@ -796,6 +796,15 @@ struct IceSupersatConservationData {
   
   
 };
+struct NcConservationData {
+  // Inputs
+  Real nc, nc_selfcollect_tend, dt;
+  
+  // Inputs/Outputs
+  Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
+  
+  
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);
@@ -848,6 +857,7 @@ void p3_main_part3(P3MainPart3Data& d);
 void p3_main(P3MainData& d);
 
 void ice_supersat_conservation(IceSupersatConservationData& d);
+void nc_conservation(NcConservationData& d);
 extern "C" { // _f function decls
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
@@ -1076,6 +1086,7 @@ Int p3_main_f(
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 
 void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
+void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 } // end _f function decls
 
 }  // namespace p3

@@ -34,6 +34,7 @@ set(P3_TESTS_SRCS
   p3_incloud_mixingratios_unit_tests.cpp
   p3_main_unit_tests.cpp
     p3_ice_supersat_conservation_tests.cpp
+    p3_nc_conservation_tests.cpp
  ) # P3_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
