@@ -958,4 +958,12 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
     call nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend)
   end subroutine nr_conservation_c
+  subroutine ni_conservation_c(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend) bind(C)
+    use micro_p3, only : ni_conservation
+
+    real(kind=c_real) , value, intent(in) :: ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt
+    real(kind=c_real) , intent(inout) :: ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend
+
+    call ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend)
+  end subroutine ni_conservation_c
 end module p3_iso_c

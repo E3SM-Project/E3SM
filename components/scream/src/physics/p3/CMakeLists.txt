@@ -59,6 +59,7 @@ if (NOT CUDA_BUILD)
     p3_ice_supersat_conservation.cpp
     p3_nc_conservation.cpp
     p3_nr_conservation.cpp
+    p3_ni_conservation.cpp
   ) # P3 ETI SRCS
 endif()
 

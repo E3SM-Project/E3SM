@@ -814,6 +814,15 @@ struct NrConservationData {
   
   
 };
+struct NiConservationData {
+  // Inputs
+  Real ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt;
+  
+  // Inputs/Outputs
+  Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
+  
+  
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);
@@ -868,6 +877,7 @@ void p3_main(P3MainData& d);
 void ice_supersat_conservation(IceSupersatConservationData& d);
 void nc_conservation(NcConservationData& d);
 void nr_conservation(NrConservationData& d);
+void ni_conservation(NiConservationData& d);
 extern "C" { // _f function decls
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
@@ -1098,6 +1108,7 @@ Int p3_main_f(
 void ice_supersat_conservation_f(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
 void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
 void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
+void ni_conservation_f(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
 } // end _f function decls
 
 }  // namespace p3
