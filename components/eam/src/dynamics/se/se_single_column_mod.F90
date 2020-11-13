@@ -156,7 +156,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: Qt,dt
     real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
     real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
-    real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
+    real (kind=real_kind), dimension(nlev) :: temp_tend, dummy2, forecast_t, forecast_u, forecast_v
     real (kind=real_kind) :: forecast_ps
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
@@ -205,19 +205,19 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     stateQin2(:,:) = stateQin_qfcst(:,:)        
 
     if (.not. use_3dfrc) then
-      dummy1(:) = 0.0_real_kind
+      temp_tend(:) = 0.0_real_kind
     else
-      dummy1(:) = elem(ie)%derived%fT(i,j,:)
+      temp_tend(:) = elem(ie)%derived%fT(i,j,:)
     endif
     dummy2(:) = 0.0_real_kind
     forecast_ps = elem(ie)%state%ps_v(i,j,t1)
 
 #ifdef MODEL_THETA_L
-    ! At first time step the forcing term is set to the
+    ! At first time step the tendency term is set to the
     !  initial condition temperature profile.  Do NOT use
     !  as it will cause temperature profile to blow up.
     if ( is_first_step() ) then
-      dummy1(:) = 0.0
+      temp_tend(:) = 0.0
     endif
 #endif
 
@@ -227,14 +227,15 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
            temperature(i,j,:),temperature(i,j,:),&
-           forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
+           forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
            stateQin_qfcst,p(i,j,:),stateQin1,1)
 
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 
 #ifdef MODEL_THETA_L
     ! If running theta-l model then the forecaste temperature needs
-    !   to be converted back to potential temperature on floating levels.
+    !   to be converted back to potential temperature on floating levels, 
+    !   which is what dp_coulping expects
     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
     elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
                 (Rgas*exner(i,j,:))
