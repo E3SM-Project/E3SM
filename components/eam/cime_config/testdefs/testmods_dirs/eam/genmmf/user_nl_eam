@@ -1,0 +1,11 @@
+!generic mmf
+transport_alg=0
+se_nsplit=4
+dt_remap_factor=1
+dt_tracer_factor=1
+hypervis_subcycle_q=1
+hypervis_subcycle=3
+hypervis_subcycle_tom=0
+
+
+
