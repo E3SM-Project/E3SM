@@ -899,10 +899,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
 !!!!!! OG redefine ptend%s to conserve TE
 !!!!!! gw only uses ptend%u,v, no heat flx
-#undef NEWGW
+!#define OLDGW
 !#define NEWGW
-#ifndef NEWGW
+#define NEWGW2
 
+#ifdef OLDGW
 !!! old code
 !turn this one on to have bfb tests
         ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
@@ -911,14 +912,21 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ttgw(:,k) = ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
-#else
+#endif
+#ifdef NEWGW
         ptend%s(:ncol,k) =   -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
         ttgw(:,k) = ptend%s(:ncol,k) 
 #endif
+#ifdef(OLDGW OR NEWGW)
         ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
-
+#endif
      end do
+
+#ifdef NEWGW2
+        call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
+             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+#endif
 
      do m = 1, pcnst
         do k = 1, pver
