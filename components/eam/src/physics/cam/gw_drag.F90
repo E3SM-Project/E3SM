@@ -918,7 +918,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
         ttgw(:,k) = ptend%s(:ncol,k) 
 #endif
-#ifdef(OLDGW OR NEWGW)
+#if defined (OLDGW) ||  defined (NEWGW)
         ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
 #endif
      end do
