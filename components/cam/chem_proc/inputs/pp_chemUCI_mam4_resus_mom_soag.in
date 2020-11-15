@@ -20,7 +20,7 @@ SPECIES
   NO3
   N2O5
   HNO3
-  HNO4
+  HO2NO2
   PAN -> CH3CO3NO2
   CO
   C2H6
@@ -98,7 +98,7 @@ Solution Classes
 
  Implicit
    O3, OH, HO2, H2O2, CH2O, CH3O2, CH3OOH
-   NO, NO2, NO3, N2O5, HNO3, HNO4, PAN
+   NO, NO2, NO3, N2O5, HNO3, HO2NO2, PAN
    C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
    ISOP, ISOPO2, MVKMACR, MVKO2
    DMS, SO2, H2SO4, SOAG
@@ -136,9 +136,9 @@ CHEMISTRY
   [jn2o5_b]   N2O5 + hv -> NO + O3 + NO3
 *  [jn2o5]     N2O5 + hv -> NO2 + NO3
   [jhno3]     HNO3 + hv -> NO2 + OH
-  [jho2no2_a] HNO4 + hv -> OH + NO3
-  [jho2no2_b] HNO4 + hv -> NO2 + HO2
-*  [jho2no2]   HNO4 + hv -> 0.67*NO2 + 0.67*HO2 + 0.33*OH + 0.33*NO3
+  [jho2no2_a] HO2NO2 + hv -> OH + NO3
+  [jho2no2_b] HO2NO2 + hv -> NO2 + HO2
+*  [jho2no2]   HO2NO2 + hv -> 0.67*NO2 + 0.67*HO2 + 0.33*OH + 0.33*NO3
   [jch3cho]   CH3CHO + hv -> CH3O2 + HO2 + CO
   [jpan]      PAN + hv -> CH3CO3 + NO2
   [jacet]     CH3COCH3 + hv -> 0.67*CH3CO3 + 1.33*CH3O2 + 0.33*CO
@@ -187,17 +187,17 @@ CHEMISTRY
    NO2 + O3 -> NO3 + O2                           ; 1.200E-13, -2450
    OH + NO3 -> HO2 + NO2                          ; 2.200e-11, 0
    NO + NO3 -> 2.*NO2                             ; 1.500e-11, 170
-   HNO4 + OH -> NO2 + H2O + O2                    ; 1.300E-12, 380
+   HO2NO2 + OH -> NO2 + H2O + O2                  ; 1.300E-12, 380
    HNO3 + OH -> NO3 + H2O                         ; 2.400E-14, 460
 *   fix needed to add this bimolec rate, missing from the one below
 [uci6] HNO3 + OH -> NO3 + H2O
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
    NO2 + OH + M -> HNO3 + M                       ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
-[HNO4f]  NO2 + HO2 + M -> HNO4 + M                ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
+[HO2NO2f]  NO2 + HO2 + M -> HO2NO2 + M            ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
 [N2O5f]  NO2 + NO3 + M -> N2O5 + M                ; 2.40E-30, 3.0,  1.60E-12,-0.1, 0.6
 [PANf]   CH3CO3 + NO2 + M -> PAN + M              ; 9.70E-29, 5.6,  9.30E-12, 1.5, 0.6
-[uci7]   HNO4 -> HO2 + NO2                        ; 2.10E-27, 10900
-*     k[uci7] -> k[HNO4] / k[uci7]
+[uci7]   HO2NO2 -> HO2 + NO2                      ; 2.10E-27, 10900
+*     k[uci7] -> k[HO2NO2] / k[uci7]
 [uci8]   N2O5 -> NO2 + NO3                        ; 5.80E-27, 10840
 *     k[uci8] -> k[N2O5] / k[uci8]
 [uci9]   PAN -> CH3CO3 + NO2                      ; 9.00E-29, 14000
