@@ -26,7 +26,7 @@ module llnl_O1D_to_2OH_adj
 !-chemUCI
   integer :: jo1dU_ndx
   integer :: uci1_ndx, uci2_ndx, uci3_ndx, uci4_ndx, uci5_ndx, uci6_ndx, uci7_ndx, uci8_ndx, uci9_ndx
-  integer :: HNO4f_ndx, N2O5f_ndx, PANf_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
+  integer :: HO2NO2f_ndx, N2O5f_ndx, PANf_ndx, ucih1_ndx, ucih2_ndx, ucih3_ndx
 
 
 contains
@@ -46,22 +46,22 @@ contains
 !
 !-chemUCI
 !
-    jo1dU_ndx        = get_rxt_ndx( 'jo1dU' ) ! O3 + hv -> O(1D) + O2
-    uci1_ndx         = get_rxt_ndx( 'uci1' )  ! O3(O1D) + H2O -> 2 OH
-    uci2_ndx         = get_rxt_ndx( 'uci2' )  ! O3(O1D) + H2 -> OH _ HO2
-    uci3_ndx         = get_rxt_ndx( 'uci3' )  ! O3(O1D) + CH4 -> OH + CH3OO
-    uci4_ndx         = get_rxt_ndx( 'uci4' )  ! HO2 + HO2 + M
-    uci5_ndx         = get_rxt_ndx( 'uci5' )  ! HO2 + HO2
-    uci6_ndx         = get_rxt_ndx( 'uci6' )  ! OH + HNO3
-    uci7_ndx         = get_rxt_ndx( 'uci7' )  ! HNO4r thermal decomp
-    uci8_ndx         = get_rxt_ndx( 'uci8' )  ! N2O5r thermal
-    uci9_ndx         = get_rxt_ndx( 'uci9' )  ! PANr thermal
-    HNO4f_ndx        = get_rxt_ndx( 'HNO4f' ) ! HNO4 formation
-    N2O5f_ndx        = get_rxt_ndx( 'N2O5f' ) ! N2O5 formation
-    PANf_ndx         = get_rxt_ndx( 'PANf' )  ! PAN formation
-    ucih1_ndx        = get_rxt_ndx( 'ucih1' ) ! N2O5 + ASAD (het chem)
-    ucih2_ndx        = get_rxt_ndx( 'ucih2' ) ! NO3 + ASAD
-    ucih3_ndx        = get_rxt_ndx( 'ucih3' ) ! HO2 + ASAD
+    jo1dU_ndx        = get_rxt_ndx( 'jo1dU' )   ! O3 + hv -> O(1D) + O2
+    uci1_ndx         = get_rxt_ndx( 'uci1' )    ! O3(O1D) + H2O -> 2 OH
+    uci2_ndx         = get_rxt_ndx( 'uci2' )    ! O3(O1D) + H2 -> OH _ HO2
+    uci3_ndx         = get_rxt_ndx( 'uci3' )    ! O3(O1D) + CH4 -> OH + CH3OO
+    uci4_ndx         = get_rxt_ndx( 'uci4' )    ! HO2 + HO2 + M
+    uci5_ndx         = get_rxt_ndx( 'uci5' )    ! HO2 + HO2
+    uci6_ndx         = get_rxt_ndx( 'uci6' )    ! OH + HNO3
+    uci7_ndx         = get_rxt_ndx( 'uci7' )    ! HO2NO2r thermal decomp
+    uci8_ndx         = get_rxt_ndx( 'uci8' )    ! N2O5r thermal
+    uci9_ndx         = get_rxt_ndx( 'uci9' )    ! PANr thermal
+    HO2NO2f_ndx      = get_rxt_ndx( 'HO2NO2f' ) ! HO2NO2 formation
+    N2O5f_ndx        = get_rxt_ndx( 'N2O5f' )   ! N2O5 formation
+    PANf_ndx         = get_rxt_ndx( 'PANf' )    ! PAN formation
+    ucih1_ndx        = get_rxt_ndx( 'ucih1' )   ! N2O5 + ASAD (het chem)
+    ucih2_ndx        = get_rxt_ndx( 'ucih2' )   ! NO3 + ASAD
+    ucih3_ndx        = get_rxt_ndx( 'ucih3' )   ! HO2 + ASAD
 
     if (masterproc) then
        write (iulog,*) 'O1D_to_2OH_adj_init: Found j2oh index in O1D_to_2OH_adj_init of   ', jo1d_ndx
@@ -180,10 +180,10 @@ contains
           rxt(:,k,uci6_ndx) = ko(:)*kinf(:)/(ko(:) + kinf(:))
        endif
 
-! thermal decomposition rates for HNO4(uci7), N2O5(uci8), and PAN(uci9)
+! thermal decomposition rates for HO2NO2(uci7), N2O5(uci8), and PAN(uci9)
        if( uci7_ndx > 0 ) then
-          if ( HNO4f_ndx > 0 ) then
-             rxt(:,k,uci7_ndx) = rxt(:,k,HNO4f_ndx)/rxt(:,k,uci7_ndx)
+          if ( HO2NO2f_ndx > 0 ) then
+             rxt(:,k,uci7_ndx) = rxt(:,k,HO2NO2f_ndx)/rxt(:,k,uci7_ndx)
           else
              rxt(:,k,uci7_ndx) = 0._r8
           endif
