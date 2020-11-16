@@ -22,8 +22,8 @@ set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
 set(HOMME_ENABLE_COMPOSE     OFF CACHE BOOL "")
-set(HOMME_FIND_BLASLAPACK    ON  CACHE BOOL "")
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
+
 # We DON'T want homme's pio support, so force this option
 set(BUILD_HOMME_WITHOUT_PIOLIBRARY ON  CACHE BOOL "" FORCE)
 
@@ -139,7 +139,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
     )
 
-    if(${CMAKE_VERSION} VERSION_GREATER "3.13.0")
+    # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
+    # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details
+    if(${CMAKE_VERSION} VERSION_GREATER "3.17.0")
       target_link_options(${hommeLibName} PRIVATE "${HOMME_LINKER_FLAGS}")
     else ()
       target_link_libraries(${hommeLibName} "${HOMME_LINKER_FLAGS}")
