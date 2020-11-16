@@ -38,7 +38,11 @@ module mo_gas_phase_chemdr
 !-----------Added by MS for diurnal oxidants-----------------------------
   logical :: inv_o3, inv_oh, inv_no3, inv_ho2
   integer :: id_o3, id_oh, id_no3, id_ho2
+#if ( defined MAM_SOA_VBS )
   logical :: diurnal_offline_oxidants = .true.
+#else
+  logical :: diurnal_offline_oxidants = .false.
+#endif
 !------------------------------------------------------------------------
 
 contains
