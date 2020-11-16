@@ -11,7 +11,8 @@ module RtmHistFile
   use RunoffMod     , only : rtmCTL, Tunit
   use RtmVar        , only : rtmlon, rtmlat, spval, ispval, secspday, frivinp_rtm, &   
                              iulog, nsrest, caseid, inst_suffix, nsrStartup, nsrBranch, & 
-                             ctitle, version, hostname, username, conventions, source
+                             ctitle, version, hostname, username, conventions, source, &
+                             isgrid2d
   use RtmFileUtils  , only : get_filename, getfil
   use RtmTimeManager, only : get_nstep, get_curr_date, get_curr_time, get_ref_date, &
                              get_prev_time, get_prev_date, is_last_step
@@ -219,7 +220,7 @@ contains
     !----------------------------------------------------------
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Initializing RTM history files'
+       write(iulog,*)  trim(subname),' Initializing MOSART history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -285,7 +286,7 @@ contains
     end do
 
     if (masterproc) then
-       write(iulog,*)  trim(subname),' Successfully initialized RTM history files'
+       write(iulog,*)  trim(subname),' Successfully initialized MOSART history files'
        write(iulog,'(72a1)') ("-",i=1,60)
        call shr_sys_flush(iulog)
     endif
@@ -441,16 +442,16 @@ contains
     end if
 
     if (masterproc) then
-       write(iulog,*) 'There will be a total of ',ntapes,'RTM  history tapes'
+       write(iulog,*) 'There will be a total of ',ntapes,'MOSART  history tapes'
        do t=1,ntapes
           write(iulog,*)
           if (rtmhist_nhtfrq(t) == 0) then
-             write(iulog,*)'RTM History tape ',t,' write frequency is MONTHLY'
+             write(iulog,*)'MOSART History tape ',t,' write frequency is MONTHLY'
           else
-             write(iulog,*)'RTM History tape ',t,' write frequency = ',rtmhist_nhtfrq(t)
+             write(iulog,*)'MOSART History tape ',t,' write frequency = ',rtmhist_nhtfrq(t)
           endif
-          write(iulog,*)'Number of time samples on RTM history tape ',t,' is ',rtmhist_mfilt(t)
-          write(iulog,*)'Output precision on RTM history tape ',t,'=',rtmhist_ndens(t)
+          write(iulog,*)'Number of time samples on MOSART history tape ',t,' is ',rtmhist_mfilt(t)
+          write(iulog,*)'Output precision on MOSART history tape ',t,'=',rtmhist_ndens(t)
           write(iulog,*)
        end do
        call shr_sys_flush(iulog)
@@ -657,7 +658,7 @@ contains
           call shr_sys_flush(iulog)
        end if
        call ncd_pio_createfile(lnfid, trim(locfnh(t)))
-       call ncd_putatt(lnfid, ncd_global, 'title', 'RTM History file information' )
+       call ncd_putatt(lnfid, ncd_global, 'title', 'MOSART History file information' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
           "NOTE: None of the variables are weighted by land fraction!" )
     else
@@ -668,7 +669,7 @@ contains
        end if
        call ncd_pio_createfile(lnfid, trim(locfnhr(t)))
        call ncd_putatt(lnfid, ncd_global, 'title', &
-            'RTM Restart History information, required to continue a simulation' )
+            'MOSART Restart History information, required to continue a simulation' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
             "This entire file NOT needed for startup or branch simulations")
     end if
@@ -677,31 +678,33 @@ contains
     ! about the data set. Global attributes are information about the
     ! data set as a whole, as opposed to a single variable
 
-    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
+    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
+    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
+    call ncd_putatt(lnfid, ncd_global, 'git_version' , trim(version))
     call getdatetime(curdate, curtime)
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
-    call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
-    call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
-    call ncd_putatt(lnfid, ncd_global, 'version' , trim(version))
-
-    str = &
-    '$Id: histFileMod.F90 36692 2012-04-27 18:39:55Z tcraig $'
-    call ncd_putatt(lnfid, ncd_global, 'revision_id', trim(str))
-    call ncd_putatt(lnfid, ncd_global, 'case_title', trim(ctitle))
-    call ncd_putatt(lnfid, ncd_global, 'case_id', trim(caseid))
+    call ncd_putatt(lnfid, ncd_global, 'institution_id' , 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
+             'e3sm-data-support@listserv.llnl.gov')
+    call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)
-    call ncd_putatt(lnfid, ncd_global, 'RTM_input_dataset', trim(str))
+    call ncd_putatt(lnfid, ncd_global, 'MOSART_input_dataset', trim(str))
 
     ! Define dimensions.
     ! Time is an unlimited dimension. Character string is treated as an array of characters.
 
     ! Global uncompressed dimensions (including non-land points)
     numrtm     = rtmCTL%numr
-    call ncd_defdim( lnfid, 'lon', rtmlon    , dimid)
-    call ncd_defdim( lnfid, 'lat', rtmlat    , dimid)
+    if (isgrid2d) then
+      call ncd_defdim( lnfid, 'lon',      rtmlon, dimid)
+      call ncd_defdim( lnfid, 'lat',      rtmlat, dimid)
+    else
+      call ncd_defdim( lnfid, 'gridcell', rtmlon, dimid)
+    endif
     call ncd_defdim( lnfid, 'allrof', numrtm    , dimid)
 
     call ncd_defdim(lnfid, 'string_length', 8, strlen_dimid)
@@ -805,18 +808,33 @@ contains
        call ncd_defvar(nfid(t), 'date_written', ncd_char, 2, dim2id, varid)
        call ncd_defvar(nfid(t), 'time_written', ncd_char, 2, dim2id, varid)
 
-       call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
-            long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
-       call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
-            long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
-       call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
-            long_name='runoff mask', units='unitless', ncid=nfid(t))
-       call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='runoff grid area', units='m2', ncid=nfid(t))
-       call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
-       call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       if (isgrid2d) then
+         call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
+              long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
+         call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
+              long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+         call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
+              long_name='runoff mask', units='unitless', ncid=nfid(t))
+         call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='runoff grid area', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       else
+         call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='gridcell',       &
+              long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
+         call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='gridcell',       &
+              long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+         call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='gridcell',             &
+              long_name='runoff mask', units='unitless', ncid=nfid(t))
+         call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='gridcell',      &
+              long_name='runoff grid area', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='gridcell', &
+              long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='gridcell',&
+              long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       endif
 
     else if (mode == 'write') then
 
@@ -1007,10 +1025,18 @@ contains
                    call shr_sys_abort()
                 end select
                 
-                call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
-                     dim1name='lon', dim2name='lat', dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                if (isgrid2d) then
+                  call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
+                       dim1name='lon', dim2name='lat', dim3name='time',                &
+                       long_name=long_name, units=units, cell_method=avgstr,           &
+                       missing_value=spval, fill_value=spval)
+                else
+                  call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
+                       dim1name='gridcell', dim2name='time',                           &
+                       long_name=long_name, units=units, cell_method=avgstr,           &
+                       missing_value=spval, fill_value=spval)
+                endif
+
              end do
                 
              ! Exit define model
@@ -1210,13 +1236,21 @@ contains
                 long_name_acc  =  trim(long_name) // " accumulator number of samples"
                 nacs           => tape(t)%hlist(f)%nacs
                 hbuf           => tape(t)%hlist(f)%hbuf
-               
-                call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
-                     dim1name='lon', dim2name='lat', &
-                     long_name=trim(long_name), units=trim(units))
-                call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
-                     dim1name='lon', dim2name='lat', &
-                     long_name=trim(long_name_acc), units=trim(units_acc))
+                
+                if (isgrid2d) then
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
+                       dim1name='lon', dim2name='lat', &
+                       long_name=trim(long_name), units=trim(units))
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
+                       dim1name='lon', dim2name='lat', &
+                       long_name=trim(long_name_acc), units=trim(units_acc))
+                else
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
+                       dim1name='gridcell', long_name=trim(long_name), units=trim(units))
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
+                       dim1name='gridcell', long_name=trim(long_name_acc), units=trim(units_acc))
+                endif
+                
              end do
           endif
 

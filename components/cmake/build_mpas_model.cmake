@@ -1,5 +1,8 @@
 function(build_mpas_models)
 
+  # fix for new kokkos version; undo when mpas uses new kokkos build infrastructure
+  set(USE_KOKKOS FALSE)
+
   file(GLOB MPASCONFS "${BUILDCONF}/mpas*conf" "${BUILDCONF}/maliconf")
 
   foreach(ITEM IN LISTS MPASCONFS)
@@ -25,6 +28,9 @@ function(build_mpas_models)
   if (USE_ALBANY)
     set(ALBANY True)
   endif()
+
+  # set CIME source path relative to components
+  set(CIMESRC_PATH "../cime/src")
 
   if (CORES)
     add_subdirectory("mpas-source/src")

@@ -22,11 +22,11 @@ namespace scream
  *  there is no need to actually access the data.
  */
 
-template<typename ScalarType, typename DeviceType>
-class IdentityRemapper : public AbstractRemapper<ScalarType,DeviceType>
+template<typename RealType>
+class IdentityRemapper : public AbstractRemapper<RealType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using base_type       = AbstractRemapper<RealType>;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;

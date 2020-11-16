@@ -8,7 +8,7 @@ namespace scream
 
 /*
  *  A remapper representing the chaining of two remappers
- *  
+ *
  *  This remapper is rather simple: like InverseRemapper,
  *  it delegates all the work to the underlying remapper(s).
  *  The only additional duty of this remapper is to create
@@ -22,11 +22,11 @@ namespace scream
  *        to create this remapper, and then only interact with
  *        the combo remapper.
  */
-template<typename ScalarType, typename DeviceType>
-class ComboRemapper : public AbstractRemapper<ScalarType,DeviceType>
+template<typename RealType>
+class ComboRemapper : public AbstractRemapper<RealType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using base_type       = AbstractRemapper<RealType>;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;

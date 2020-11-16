@@ -28,6 +28,9 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     static constexpr Int nlev     = 4;
     static constexpr auto nlevi   = nlev + 1;
 
+    // Propert tests for SHOC subroutine
+    //   calc_shoc_vertflux
+
     //NOTE: This routine does not compute the vertical fluxes
     // for boundary points.  Input Grid values that are never used
     // are set to ZERO so as not to confuse the test data
@@ -51,7 +54,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     //   of 1) and unstable boundary layer, 2) well mixed
     //   layer and 3) conditionally stable layer.
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialzie data structure for bridging to F90
     SHOCVertfluxData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.

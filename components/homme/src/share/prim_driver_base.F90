@@ -27,8 +27,11 @@ module prim_driver_base
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
 #ifndef CAM
+#ifndef SCREAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
+#endif
+! For SCREAM, we might do unit tests, so enable setting of initial conditions
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
@@ -147,6 +150,9 @@ contains
     use quadrature_mod, only : test_gauss, test_gausslobatto
     use repro_sum_mod,  only : repro_sum_defaultopts, repro_sum_setopts
     use time_mod,       only : nmax, time_at
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use common_io_mod,  only : homme_pio_init
+#endif
     !
     ! Inputs
     !
@@ -169,6 +175,9 @@ contains
     else
        total_nelem = CubeElemCount()
     end if
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    call homme_pio_init(par%rank,par%comm)
+#endif
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
@@ -542,7 +551,7 @@ contains
     use parallel_mod,   only : parallel_t
     use control_mod,    only : runtype, restartfreq, transport_alg
     use bndry_mod,      only : sort_neighbor_buffer_mapping
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use restart_io_mod, only : RestFile,readrestart
 #endif
 
@@ -574,7 +583,7 @@ contains
     !  This routines initalizes a Restart file.  This involves:
     !      I)  Setting up the MPI datastructures
     ! ==========================================================
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     if(restartfreq > 0 .or. runtype>=1)  then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
@@ -843,7 +852,7 @@ contains
        call abortmp('Error: only cube topology supported for primaitve equations')
     endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 
     ! =================================
     ! HOMME stand alone initialization
@@ -938,11 +947,6 @@ contains
     ! advective and viscious CFL estimates
     ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
-
-    ! smooth elem%phis if requested.
-    if (smooth_phis_numcycle>0) &
-          call smooth_topo_datasets(elem,hybrid,nets,nete)
-
 
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
@@ -1474,6 +1478,7 @@ contains
     enddo
 #endif
   endif
+
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1514,6 +1519,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,            only : bfb_pow
+#endif
 #endif
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1660,7 +1668,11 @@ contains
       endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#ifdef HOMMEXX_BFB_TESTING
+         exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
+#else
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+#endif
       enddo
    endif
    
@@ -1686,8 +1698,6 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
-     
-
 
   end subroutine applyCAMforcing_tracers
   
@@ -1810,7 +1820,7 @@ contains
 
 
     subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle
+    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1830,8 +1840,11 @@ contains
     enddo
     
     minf=-9e9
-    if (hybrid%masterthread) &
+    if (hybrid%masterthread) then
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
+       write(iulog,'(a,i10)')  " smooth_phis_numcycle =",smooth_phis_numcycle
+       write(iulog,'(a,e13.5)')" smooth_phis_nudt =",smooth_phis_nudt
+    endif
     call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
 
 

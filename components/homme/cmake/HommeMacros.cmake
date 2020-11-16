@@ -113,6 +113,9 @@ macro(createTestExec execName execType macroNP macroNC
 
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+  ENDIF()
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -137,7 +140,7 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
-    link_to_kokkos(${execName})
+    TARGET_LINK_LIBRARIES(${execName} kokkos)
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
@@ -164,15 +167,101 @@ macro(createTestExec execName execType macroNP macroNC
 
 
   IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${execName} sundials_farkode)
+    TARGET_LINK_LIBRARIES(${execName} sundials_farkode_mod)
     TARGET_LINK_LIBRARIES(${execName} sundials_arkode)
-    TARGET_LINK_LIBRARIES(${execName} sundials_nvecserial)
-    TARGET_LINK_LIBRARIES(${execName} sundials_fnvecserial)
   ENDIF ()
 
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)
+
+# Create a library instead of an executable, so Homme can be used by
+# another cmake project as a dycore library
+macro(createExecLib libName execType libSrcs inclDirs macroNP
+                    macroPLEV macroWITH_ENERGY macroQSIZE_D)
+
+  # Set the include directories
+  SET(modulesDir "${CMAKE_CURRENT_BINARY_DIR}/${libName}_modules")
+
+  MESSAGE(STATUS "Building ${libName} library derived from ${execType} with:")
+  MESSAGE(STATUS "  NP = ${macroNP}")
+  MESSAGE(STATUS "  PLEV = ${macroPLEV}")
+  MESSAGE(STATUS "  QSIZE_D = ${macroQSIZE_D}")
+  MESSAGE(STATUS "  ENERGY = ${macroWITH_ENERGY}")
+
+  # Set the variable to the macro variables
+  SET(NUM_POINTS ${macroNP})
+  SET(NUM_PLEV ${macroPLEV})
+
+  IF (${macroWITH_ENERGY})
+    SET(ENERGY_DIAGNOSTICS TRUE)
+  ELSE()
+    SET(ENERGY_DIAGNOSTICS)
+  ENDIF ()
+
+  IF (${macroQSIZE_D})
+    SET(QSIZE_D ${macroQSIZE_D})
+  ELSE()
+    SET(QSIZE_D)
+  ENDIF ()
+
+  # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in)
+  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
+  SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+  # First configure the file (which formats the file as C)
+  HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
+
+  ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+
+  ADD_LIBRARY(${libName} ${libSrcs})
+  TARGET_INCLUDE_DIRECTORIES (${libName} PUBLIC ${inclDirs} ${modulesDir} ${CMAKE_CURRENT_BINARY_DIR})
+  SET_TARGET_PROPERTIES(${libName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
+  SET_TARGET_PROPERTIES(${libName} PROPERTIES LINKER_LANGUAGE Fortran)
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+  ENDIF()
+
+
+  IF (CXXLIB_SUPPORTED_CACHE)
+    MESSAGE(STATUS "   Linking Fortran with -cxxlib")
+    TARGET_LINK_LIBRARIES(${libName} -cxxlib)
+  ENDIF ()
+
+  STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
+  IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
+    TARGET_LINK_LIBRARIES(${libName} ittnotify)
+  ENDIF ()
+
+  TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+  IF (HOMME_USE_KOKKOS)
+    TARGET_LINK_LIBRARIES(${libName} kokkos)
+  ENDIF ()
+
+  IF (NOT HOMME_USE_MKL)
+    IF (NOT HOMME_FIND_BLASLAPACK)
+      TARGET_LINK_LIBRARIES(${libName} lapack blas)
+    ENDIF()
+  ENDIF()
+
+  IF (HAVE_EXTRAE)
+    TARGET_LINK_LIBRARIES(${libName} ${Extrae_LIBRARY})
+  ENDIF ()
+
+  IF (HOMME_USE_TRILINOS)
+    TARGET_LINK_LIBRARIES(${libName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+  ENDIF()
+
+  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
+    TARGET_LINK_LIBRARIES(${libName} sundials_farkode)
+    TARGET_LINK_LIBRARIES(${libName} sundials_arkode)
+    TARGET_LINK_LIBRARIES(${libName} sundials_nvecserial)
+    TARGET_LINK_LIBRARIES(${libName} sundials_fnvecserial)
+  ENDIF ()
+
+endmacro(createExecLib)
 
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
@@ -228,7 +317,7 @@ macro (setUpTestDir TEST_DIR)
   copyDirFiles(${TEST_DIR})
   copyDirFiles(${THIS_BASELINE_TEST_DIR})
 
-  # Create a run script
+  # Create a template TEST.sh for a run script
   SET(THIS_TEST_SCRIPT ${TEST_DIR}/${TEST_NAME}.sh)
 
   FILE(WRITE  ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash\n")
@@ -256,7 +345,29 @@ macro (setUpTestDir TEST_DIR)
     ENDIF ()
   ENDIF ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
+  FILE(APPEND ${THIS_TEST_SCRIPT} "EXEC=${EXEC_NAME}\n")
+
+  #not making it more general due to jsrun, p9/gpu, loading modules...
+  if (HOMME_MACHINE MATCHES "summit-gpu")
+    #cmake 3.17
+    #foreach(varn varv IN ZIP_LISTS ${varnames} ${varvals})
+    #  file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
+    #  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+    #endforeach()
+
+    list(LENGTH varnames len1)
+    math(EXPR len2 "${len1} - 1")
+
+    foreach(val RANGE ${len2})
+      list(GET varnames ${val} varn)
+      list(GET varvals ${val} varv)
+      file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+    endforeach()
+  endif()
+
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES})
     GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)
@@ -441,29 +552,52 @@ endmacro(printTestSummary)
 macro (set_homme_tests_parameters testFile profile)
 #example on how to customize tests lengths
 #  if ("${testFile}" MATCHES ".*-moist.*")
-  if ("${testFile}" MATCHES ".*-tensorhv-*")
+
+#theta tests for kokkos targets
+#HV scaled at 3.0 rate: 
+#ne30 1e15, ne2 3.4e18, ne4 4.2e17
+#ne6 1.25e17, ne13 1.23e16, ne1024 2.5e10
+  if ("${testFile}" MATCHES "theta-f")
     if ("${profile}" STREQUAL "dev")
       set (HOMME_TEST_NE 2)
       set (HOMME_TEST_NDAYS 1)
+      set (HOMME_TEST_NU 3.4e18)
     elseif ("${profile}" STREQUAL "short")
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 3)
+      set (HOMME_TEST_NE 6)
+      set (HOMME_TEST_NDAYS 1) #should be 9 but for GB reduce
+      set (HOMME_TEST_NU 1.25e17)
     else ()
-      set (HOMME_TEST_NE 12)
-      set (HOMME_TEST_NDAYS 3)
+      set (HOMME_TEST_NE 13)
+      set (HOMME_TEST_NDAYS 1) #should be 9 but for GB reduce
+      set (HOMME_TEST_NU 1.2e16)
     endif ()
-  else ()
-    if ("${profile}" STREQUAL "dev")
-      set (HOMME_TEST_NE 2)
-      set (HOMME_TEST_NDAYS 1)
-    elseif ("${profile}" STREQUAL "short")
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 9)
+#preqx tests for kokkos targets
+  elseif ("${testFile}" MATCHES "preqx-nlev")
+    if ("${testFile}" MATCHES ".*-tensorhv-*")
+      if ("${profile}" STREQUAL "dev")
+        set (HOMME_TEST_NE 2)
+        set (HOMME_TEST_NDAYS 1)
+      elseif ("${profile}" STREQUAL "short")
+        set (HOMME_TEST_NE 4)
+        set (HOMME_TEST_NDAYS 3)
+      else ()
+        set (HOMME_TEST_NE 12)
+        set (HOMME_TEST_NDAYS 3)
+      endif ()
     else ()
-      set (HOMME_TEST_NE 12)
-      set (HOMME_TEST_NDAYS 9)
-    endif ()
-  endif()
+      if ("${profile}" STREQUAL "dev")
+        set (HOMME_TEST_NE 2)
+        set (HOMME_TEST_NDAYS 1)
+      elseif ("${profile}" STREQUAL "short")
+        set (HOMME_TEST_NE 4)
+        set (HOMME_TEST_NDAYS 9)
+      else ()
+        set (HOMME_TEST_NE 12)
+        set (HOMME_TEST_NDAYS 9)
+      endif ()
+    endif()
+  endif ()
+
 endmacro ()
 
 # Macro to create the individual tests
@@ -479,7 +613,11 @@ macro(createTest testFile)
 
   IF (DEFINED PROFILE)
     set_homme_tests_parameters(${testFile} ${PROFILE})
-    set (TEST_NAME "${TEST_NAME}-ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+    if ("${TEST_NAME}" MATCHES "theta-f")
+      set (TEST_NAME "${TEST_NAME}-ne${HOMME_TEST_NE}-nu${HOMME_TEST_NU}-ndays${HOMME_TEST_NDAYS}")
+    elseif ("${TEST_NAME}" MATCHES "preqx-nlev")
+      set (TEST_NAME "${TEST_NAME}-ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+    endif()
   ENDIF ()
 
   FILE(GLOB NAMELIST_FILES ${NAMELIST_FILES})
@@ -564,7 +702,9 @@ macro(createTest testFile)
     ADD_DEPENDENCIES(baseline ${EXEC_NAME})
 
     # Force cprnc to be built when the individual test is run
-    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+    IF (TARGET cprnc)
+      ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+    ENDIF()
 
     # This helped in some builds on GPU, where the test hanged for a VERY long time
     IF (NOT "${TIMEOUT}" STREQUAL "")
@@ -603,6 +743,7 @@ function (make_profiles_up_to profile profiles)
   elseif ("${profile_ci}" STREQUAL "short")
     list (APPEND tmp "dev")
     list (APPEND tmp "short")
+
   elseif ("${profile_ci}" STREQUAL "nightly")
     list (APPEND tmp "dev")
     list (APPEND tmp "short")
@@ -622,7 +763,12 @@ MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
     set (PROFILE ${testProfile})
     INCLUDE (${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${TEST_FILE_F90})
 
-    SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+    if ("${TEST}" MATCHES "theta-f")
+      SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-nu${HOMME_TEST_NU}-ndays${HOMME_TEST_NDAYS}")
+    elseif ("${TEST}" MATCHES "preqx-nlev")
+      SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+    endif ()
+
     SET (F90_TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}")
     SET (CXX_TEST_NAME "${TEST}-kokkos-${TEST_NAME_SUFFIX}")
     SET (F90_DIR ${HOMME_BINARY_DIR}/tests/${F90_TEST_NAME})

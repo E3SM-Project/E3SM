@@ -39,11 +39,13 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  For this function we test several one layer columns
 
     // PBL height [m]
-    static constexpr Real pblh[shcol] = {1000.0, 400.0, 10.0, 500.0, 300.0};
+    static constexpr Real pblh[shcol] = {1000, 400, 10, 500, 300};
     // Integrated convective velocity [m3/s3]
-    static constexpr Real conv_vel[shcol] = {10.0, -3.5, 0.1, -100.0, -0.4};
+    static constexpr Real conv_vel[shcol] = {10, -3.5, 0.1, -100, -0.4};
+    // Upper bound of expected result [s]
+    static constexpr Real tscale_upper = 10000;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCConvtimeData SDS(shcol);
 
     // Test that the inputs are reasonable.
@@ -69,6 +71,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     // Make sure that timescale is positive always
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.tscale[s] > 0.0);
+      REQUIRE(SDS.tscale[s] < tscale_upper);
     }
 
     // SECOND TEST
@@ -106,8 +109,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  column, that the tscale is larger
     for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
-	REQUIRE(SDS.conv_vel[s] < SDS.conv_vel[s+1]);
+        REQUIRE(SDS.conv_vel[s] < SDS.conv_vel[s+1]);
       }
+    }
+
+    // Make sure bounds fall in reasonable range
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.tscale[s] < tscale_upper);
+      REQUIRE(SDS.tscale[s] > 0);
     }
 
     // THIRD TEST
@@ -145,14 +154,69 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     //  neighboring column, that the PBL depth is larger
     for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
-	REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
+        REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
       }
     }
+
+    // Make sure bounds fall in reasonable range
+    for (Int s = 0; s < shcol; ++s){
+      REQUIRE(SDS.tscale[s] < tscale_upper);
+      REQUIRE(SDS.tscale[s] > 0);
+    }
+
   }
 
   static void run_bfb()
   {
-    // TODO
+    SHOCConvtimeData SDS_f90[] = {
+      //           shcol, nlev
+      SHOCConvtimeData(12),
+      SHOCConvtimeData(10),
+      SHOCConvtimeData(7),
+      SHOCConvtimeData(2)
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCConvtimeData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCConvtimeData SDS_cxx[] = {
+      SHOCConvtimeData(SDS_f90[0]),
+      SHOCConvtimeData(SDS_f90[1]),
+      SHOCConvtimeData(SDS_f90[2]),
+      SHOCConvtimeData(SDS_f90[3])
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      compute_conv_time_shoc_length(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      compute_conv_time_shoc_length_f(d.shcol(),d.pblh,d.conv_vel,d.tscale);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCConvtimeData& d_f90 = SDS_f90[i];
+      SHOCConvtimeData& d_cxx = SDS_cxx[i];
+      for (Int c = 0; c < d_f90.dim1; ++c) {
+        REQUIRE(d_f90.conv_vel[c] == d_cxx.conv_vel[c]);
+        REQUIRE(d_f90.tscale[c] == d_cxx.tscale[c]);
+      }
+    }
   }
 };
 

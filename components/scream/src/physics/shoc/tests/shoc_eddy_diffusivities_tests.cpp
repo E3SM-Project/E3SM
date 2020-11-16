@@ -43,21 +43,21 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //  are DIFFERENT
 
     // Monin Obukov length [m]
-    static constexpr Real obklen_reg[shcol] = {-1.0, 1.0};
+    static constexpr Real obklen_reg[shcol] = {-1, 1};
     // PBL depth [m]
-    static constexpr Real pblh = 1000.0;
+    static constexpr Real pblh = 1000;
     // zt_grid [m]
-    static constexpr Real zt_grid = 200.0;
+    static constexpr Real zt_grid = 200;
     // SHOC Mixing length [m]
-    static constexpr Real shoc_mix_reg = 1000.0;
+    static constexpr Real shoc_mix_reg = 1000;
     // Shear term [s-2]
     static constexpr Real sterm_zt_reg = 0.1;
     // Return to isotropy timescale [s]
-    static constexpr Real isotropy_reg = 500.0;
+    static constexpr Real isotropy_reg = 500;
     // Turbulent kinetic energy [m2/s2]
     static constexpr Real tke_reg = 0.4;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEddydiffData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -70,29 +70,29 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       SDS.pblh[s] = pblh;
       SDS.obklen[s] = obklen_reg[s];
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_reg;
-	SDS.zt_grid[offset] = zt_grid;
-	SDS.shoc_mix[offset] = shoc_mix_reg;
-	SDS.sterm_zt[offset] = sterm_zt_reg;
-	SDS.isotropy[offset] = isotropy_reg;
+        SDS.tke[offset] = tke_reg;
+        SDS.zt_grid[offset] = zt_grid;
+        SDS.shoc_mix[offset] = shoc_mix_reg;
+        SDS.sterm_zt[offset] = sterm_zt_reg;
+        SDS.isotropy[offset] = isotropy_reg;
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.pblh[s] > 0.0);
+      REQUIRE(SDS.pblh[s] > 0);
       // Make sure point we are testing is within PBL
       REQUIRE(SDS.zt_grid[s] < SDS.pblh[s]);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// Should be greater than zero
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.zt_grid[offset] > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.isotropy[offset] > 0.0);
-	REQUIRE(SDS.sterm_zt[offset] > 0.0);
+        const auto offset = n + s * nlev;
+        // Should be greater than zero
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] > 0);
+        REQUIRE(SDS.sterm_zt[offset] > 0);
       }
     }
 
@@ -102,11 +102,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     // Check to make sure the answers in the columns are different
     for(Int s = 0; s < shcol-1; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * nlev;
-	REQUIRE(SDS.tk[offset] != SDS.tk[offsets]);
-	REQUIRE(SDS.tkh[offset] != SDS.tkh[offsets]);
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        REQUIRE(SDS.tk[offset] != SDS.tk[offsets]);
+        REQUIRE(SDS.tkh[offset] != SDS.tkh[offsets]);
       }
     }
 
@@ -117,13 +117,13 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //   shear term should produce larger diffusivity values.
 
     // Monin Obukov length [m]
-    static constexpr Real obklen_stab[shcol] = {1.0, 1.0};
+    static constexpr Real obklen_stab[shcol] = {1, 1};
     // SHOC Mixing length [m]
-    static constexpr Real shoc_mix_stab[shcol] = {500.0, 550.0};
+    static constexpr Real shoc_mix_stab[shcol] = {100, 150};
     // Shear term [s-2]
     static constexpr Real sterm_zt_stab[shcol] = {0.1, 0.2};
     // Return to isotropy timescale [s]
-    static constexpr Real isotropy_stab = 500.0;
+    static constexpr Real isotropy_stab = 500;
     // Turbulent kinetic energy [m2/s2]
     static constexpr Real tke_stab = 0.4;
 
@@ -140,26 +140,26 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       // Column only input
       SDS.obklen[s] = obklen_stab[s];
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_stab;
-	SDS.shoc_mix[offset] = shoc_mix_stab[s];
-	SDS.sterm_zt[offset] = sterm_zt_stab[s];
-	SDS.isotropy[offset] = isotropy_stab;
+        SDS.tke[offset] = tke_stab;
+        SDS.shoc_mix[offset] = shoc_mix_stab[s];
+        SDS.sterm_zt[offset] = sterm_zt_stab[s];
+        SDS.isotropy[offset] = isotropy_stab;
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       // Make sure we are testing stable boundary layer
-      REQUIRE(SDS.obklen[s] > 0.0);
+      REQUIRE(SDS.obklen[s] > 0);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// Should be greater than zero
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.isotropy[offset] > 0.0);
-	REQUIRE(SDS.sterm_zt[offset] > 0.0);
+        const auto offset = n + s * nlev;
+        // Should be greater than zero
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] > 0);
+        REQUIRE(SDS.sterm_zt[offset] > 0);
       }
     }
 
@@ -170,14 +170,14 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //   when the length scale and shear term are larger
     for(Int s = 0; s < shcol-1; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * nlev;
-	if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] &
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] &
             SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]){
           REQUIRE(SDS.tk[offset] < SDS.tkh[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
-	}
+        }
       }
     }
 
@@ -187,13 +187,13 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //   inputs are modified.
 
     // Monin Obukov length [m]
-    static constexpr Real obklen_ustab[shcol] = {-1.0, -1.0};
+    static constexpr Real obklen_ustab[shcol] = {-1, -1};
     // SHOC Mixing length [m]
-    static constexpr Real shoc_mix_ustab = 500.0;
+    static constexpr Real shoc_mix_ustab = 500;
     // Shear term [s-2]
     static constexpr Real sterm_zt_ustab = 0.1;
     // Return to isotropy timescale [s]
-    static constexpr Real isotropy_ustab[shcol] = {500.0, 550.0};
+    static constexpr Real isotropy_ustab[shcol] = {500, 550};
     // Turbulent kinetic energy [m2/s2]
     static constexpr Real tke_ustab[shcol] = {0.4, 0.5};
 
@@ -210,26 +210,26 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
       // Column only input
       SDS.obklen[s] = obklen_ustab[s];
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.tke[offset] = tke_ustab[s];
-	SDS.shoc_mix[offset] = shoc_mix_ustab;
-	SDS.sterm_zt[offset] = sterm_zt_ustab;
-	SDS.isotropy[offset] = isotropy_ustab[s];
+        SDS.tke[offset] = tke_ustab[s];
+        SDS.shoc_mix[offset] = shoc_mix_ustab;
+        SDS.sterm_zt[offset] = sterm_zt_ustab;
+        SDS.isotropy[offset] = isotropy_ustab[s];
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       // Make sure we are testing unstable boundary layer
-      REQUIRE(SDS.obklen[s] < 0.0);
+      REQUIRE(SDS.obklen[s] < 0);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
-	// Should be greater than zero
-	REQUIRE(SDS.tke[offset] > 0.0);
-	REQUIRE(SDS.shoc_mix[offset] > 0.0);
-	REQUIRE(SDS.isotropy[offset] > 0.0);
-	REQUIRE(SDS.sterm_zt[offset] > 0.0);
+        const auto offset = n + s * nlev;
+        // Should be greater than zero
+        REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.shoc_mix[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] > 0);
+        REQUIRE(SDS.sterm_zt[offset] > 0);
       }
     }
 
@@ -240,14 +240,14 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     //  in the columns where isotropy and tke are smaller
     for(Int s = 0; s < shcol-1; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * nlev;
-	if (SDS.tke[offset] < SDS.tke[offsets] &
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.tke[offset] < SDS.tke[offsets] &
             SDS.isotropy[offset] < SDS.isotropy[offsets]){
           REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
-	}
+        }
       }
     }
   }

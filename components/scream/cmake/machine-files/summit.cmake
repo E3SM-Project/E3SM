@@ -3,4 +3,4 @@ set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/c
 include (${EKAT_MACH_FILES_PATH}/kokkos/nvidia-v100.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/cuda.cmake)
 
-set(SCREAM_DEFAULT_MPIRUN_EXE "jsrun" CACHE STRING "")
+set(SCREAM_MPIRUN_EXE "jsrun" CACHE STRING "")

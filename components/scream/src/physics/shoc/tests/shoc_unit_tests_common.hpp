@@ -53,6 +53,7 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestCalcShocVertflux;
+    struct TestShocDiagObklen;
     struct TestImpCompTmpi;
     struct TestImpDpInverse;
     struct TestImpSfcFluxes;
@@ -82,7 +83,6 @@ struct UnitWrap {
     struct TestFtermInputThirdMoms;
     struct TestFtermdiagThirdMoms;
     struct TestOmegadiagThirdMoms;
-    struct TestW3diagThirdMoms;
     struct TestXYdiagThirdMoms;
     struct TestCompShocConvTime;
     struct TestCompShocConvVel;
@@ -92,7 +92,7 @@ struct UnitWrap {
     struct TestShocCompDiagThird;
     struct TestShocDiagThird;
     struct TestShocLinearInt;
-    struct TestShocPdfTildatoReal;
+    struct TestShocPdfTildetoReal;
     struct TestShocVVParameters;
     struct TestShocThlParameters;
     struct TestShocQwParameters;
@@ -107,6 +107,13 @@ struct UnitWrap {
     struct TestShocPdfCompBuoyFlux;
     struct TestSecondMomUbycond;
     struct TestPblintdInitPot;
+    struct TestDiagSecondMomentsLbycond;
+    struct TestDiagSecondMoments;
+    struct TestDiagSecondShocMoments;
+    struct TestPblintdCldCheck;
+    struct TestComputeShocVapor;
+    struct TestUpdatePrognosticsImplicit;
+    struct TestShocMain;
   };
 
 };

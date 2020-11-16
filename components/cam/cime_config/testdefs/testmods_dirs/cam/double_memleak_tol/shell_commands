@@ -1,2 +1,0 @@
-#!/bin/bash
-./xmlchange PRERUN_SCRIPT="$CIMEROOT/../components/cam/cime_config//testdefs/testmods_dirs/cam/double_memleak_tol/memleak_tol.sh"

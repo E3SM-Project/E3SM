@@ -30,7 +30,7 @@ SET(HOMME_TESTS
   thetanh-TC-nudiv.cmake
   thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
-  templates.cmake
+  hommetool.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})
@@ -60,11 +60,31 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   #Note: we run both a cprnc on the output nc files AND
   #      a comparison of the values of diagnostic quantities
   #      on the raw output files
-  IF (${ENABLE_PREQX_KOKKOS_BFB_TESTS})
+  IF (${HOMMEXX_BFB_TESTING})
     SET (PREQX_COMPARE_F_C_TEST
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1
     preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6
     preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1
     )
+  ENDIF ()
+ENDIF()
+
+IF (BUILD_HOMME_THETA_KOKKOS)
+  SET(HOMME_THETA_TESTS_WITH_PROFILE_1
+     theta-f0-tt5-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt5-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
+     theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
+  )
+  set(HOMME_THETA_TESTS_WITH_PROFILE "")
+  FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
+    LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE
+        ${JJ}.cmake
+        ${JJ}-kokkos.cmake
+    )
+  ENDFOREACH()
+  IF (HOMMEXX_BFB_TESTING)
+    SET (THETA_COMPARE_F_C_TEST ${HOMME_THETA_TESTS_WITH_PROFILE_1})
   ENDIF ()
 ENDIF()

@@ -2,6 +2,8 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
+#include "share/field/field_property_check.hpp"
+#include "share/util/pointer_list.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_type_traits.hpp"
@@ -18,19 +20,15 @@ struct is_scream_field : public std::false_type {};
 
 // ======================== FIELD ======================== //
 
-// A field should be composed of metadata info (the header) and a pointer to the view
-// TODO: make a FieldBase class, without the view (just meta-data), without templating on
-//       the device type. Then make Field inherit from FieldBase, templating it on the
-//       device type. This way, we can pass FieldBase around, and the individual atm
-//       atm processes will try to cast to Field<Real,MyDeviceType>. This way, we can
-//       allow different atm processes to run on different device types.
-
-template<typename ScalarType, typename Device>
+// A field is composed of metadata info (the header) and a pointer to a view.
+// Fields are always stored as 1D arrays of real-valued data. The associated
+// view can be reshaped as needed to match a desired layout for a given client.
+template<typename RealType>
 class Field {
 public:
 
-  using value_type           = ScalarType;
-  using device_type          = Device;
+  using value_type           = RealType;
+  using device_type          = DefaultDevice;
   using header_type          = FieldHeader;
   using identifier_type      = header_type::identifier_type;
   using view_type            = typename KokkosTypes<device_type>::template view<value_type*>;
@@ -38,12 +36,20 @@ public:
   using const_value_type     = typename std::add_const<value_type>::type;
   using non_const_value_type = typename std::remove_const<value_type>::type;
 
-  using field_type           = Field<value_type, device_type>;
-  using const_field_type     = Field<const_value_type, device_type>;
-  using nonconst_field_type  = Field<non_const_value_type, device_type>;
+  using field_type           = Field<value_type>;
+  using const_field_type     = Field<const_value_type>;
+  using nonconst_field_type  = Field<non_const_value_type>;
 
-  // Statically check that ScalarType is not an array.
-  static_assert(view_type::Rank==1, "Error! ScalarType should not be an array type.\n");
+  // Statically check that RealType is not an array.
+  static_assert(view_type::Rank==1, "Error! RealType should not be an array type.\n");
+
+  // A Field maintains a list of shared_ptrs to FieldPropertyChecks that can
+  // determine whether it satisfies certain properties. We use the PointerList
+  // class to provide simple access to the property checks.
+  using property_check_type = FieldPropertyCheck<RealType>;
+  using property_check_list = PointerList<std::shared_ptr<property_check_type>,
+                                           property_check_type>;
+  using property_check_iterator = typename property_check_list::iterator;
 
   // Constructor(s)
   Field () = default;
@@ -51,11 +57,11 @@ public:
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
-  Field (const Field<SrcDT,device_type>& src);
+  Field (const Field<SrcDT>& src);
 
   // Assignment: allows const->const, nonconst->nonconst, and nonconst->const copies
   template<typename SrcDT>
-  Field& operator= (const Field<SrcDT,device_type>& src);
+  Field& operator= (const Field<SrcDT>& src);
 
   // ---- Getters and const methods---- //
   const header_type& get_header () const { return *m_header; }
@@ -66,6 +72,20 @@ public:
 
   // Returns a const_field_type copy of this field
   const_field_type get_const () const { return const_field_type(*this); }
+
+  // Adds a propery check to this field.
+  void add_property_check(std::shared_ptr<property_check_type> property_check) {
+    m_prop_checks->append(property_check);
+  }
+
+  // These (forward) iterators allow access to the set of property checks on the
+  // field.
+  property_check_iterator property_check_begin() const {
+    return m_prop_checks->begin();
+  }
+  property_check_iterator property_check_end() const {
+    return m_prop_checks->end();
+  }
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -93,32 +113,36 @@ protected:
 
   // Keep track of whether the field has been allocated
   bool                            m_allocated;
+
+  // List of property checks for this field.
+  std::shared_ptr<property_check_list> m_prop_checks;
 };
 
-template<typename ScalarType, typename DeviceType>
-struct is_scream_field<Field<ScalarType,DeviceType>> : public std::true_type {};
+template<typename RealType>
+struct is_scream_field<Field<RealType> > : public std::true_type {};
 
 // ================================= IMPLEMENTATION ================================== //
 
-template<typename ScalarType, typename Device>
-Field<ScalarType,Device>::
+template<typename RealType>
+Field<RealType>::
 Field (const identifier_type& id)
  : m_header    (new header_type(id))
  , m_allocated (false)
+ , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's value_type.
   m_header->get_alloc_properties().request_value_type_allocation<value_type>();
 }
 
-template<typename ScalarType, typename Device>
-template<typename SrcScalarType>
-Field<ScalarType,Device>::
-Field (const Field<SrcScalarType,Device>& src)
+template<typename RealType>
+template<typename SrcRealType>
+Field<RealType>::
+Field (const Field<SrcRealType>& src)
  : m_header    (src.get_header_ptr())
  , m_view      (src.get_view())
  , m_allocated (src.is_allocated())
 {
-  using src_field_type = Field<SrcScalarType,Device>;
+  using src_field_type = Field<SrcRealType>;
 
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -131,11 +155,11 @@ Field (const Field<SrcScalarType,Device>& src)
                 "Error! Cannot create a nonconst field from a const field.\n");
 }
 
-template<typename ScalarType, typename Device>
-template<typename SrcScalarType>
-Field<ScalarType,Device>&
-Field<ScalarType,Device>::
-operator= (const Field<SrcScalarType,Device>& src) {
+template<typename RealType>
+template<typename SrcRealType>
+Field<RealType>&
+Field<RealType>::
+operator= (const Field<SrcRealType>& src) {
 
   using src_field_type = typename std::remove_reference<decltype(src)>::type;
 #ifndef CUDA_BUILD // TODO Figure out why nvcc isn't like this bit of code.
@@ -171,10 +195,10 @@ operator= (const Field<SrcScalarType,Device>& src) {
   return *this;
 }
 
-template<typename ScalarType, typename Device>
+template<typename RealType>
 template<typename DT>
-ekat::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
-Field<ScalarType,Device>::get_reshaped_view () const {
+ekat::Unmanaged<typename KokkosTypes<DefaultDevice>::template view<DT> >
+Field<RealType>::get_reshaped_view () const {
   // The dst value types
   using DstValueType = typename ekat::ValueType<DT>::type;
 
@@ -193,7 +217,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
-  using DstView = ekat::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
+  using DstView = ekat::Unmanaged<typename KokkosTypes<DefaultDevice>::template view<DT> >;
   typename DstView::traits::array_layout kokkos_layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
@@ -216,8 +240,8 @@ Field<ScalarType,Device>::get_reshaped_view () const {
   return DstView (reinterpret_cast<DstValueType*>(m_view.data()),kokkos_layout);
 }
 
-template<typename ScalarType, typename Device>
-void Field<ScalarType,Device>::allocate_view ()
+template<typename RealType>
+void Field<RealType>::allocate_view ()
 {
   // Not sure if simply returning would be safe enough. Re-allocating
   // would definitely be error prone (someone may have already gotten

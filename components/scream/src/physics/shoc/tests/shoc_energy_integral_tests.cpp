@@ -42,18 +42,18 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Define host model dry static energy [J kg-1]
     static constexpr Real host_dse[nlev] = {350e3, 325e3, 315e3, 310e3, 300e3};
-    // Defin the pressure difference [hPa] (converted to Pa later)
-    static constexpr Real pdel[nlev]={100.0, 75.0, 50.0, 25.0, 10.0};
+    // Defin the pressure difference [Pa]
+    static constexpr Real pdel[nlev]={100e2, 75e2, 50e2, 25e2, 10e2};
     // Define zonal wind on nlev grid [m/s]
-    static constexpr Real u_wind[nlev] = {-4.0, -4.0, -3.0, -1.0, -2.0};
+    static constexpr Real u_wind[nlev] = {-4, -4, -3, -1, -2};
     // Define meridional wind on nlev grid [m/s]
-    static constexpr Real v_wind[nlev] = {1.0, 2.0, 3.0, 4.0, 5.0};
-    // Define the total water mixing ratio [g/kg] (converted to kg/kg later)
-    static constexpr Real rtm[nlev] = {7.0, 9.0, 11.0, 15.0, 20.0};
+    static constexpr Real v_wind[nlev] = {1, 2, 3, 4, 5};
+    // Define the total water mixing ratio [kg/kg]
+    static constexpr Real rtm[nlev] = {7e-3, 9e-3, 11e-3, 15e-3, 20e-3};
     // Define cloud mixing ratio [g/kg] (converted to kg/kg later)
-    static constexpr Real rcm[nlev] = {0.001, 0.01, 0.04, 0.002, 0.001};
+    static constexpr Real rcm[nlev] = {1e-6, 1e-5, 4e-5, 2e-6, 1e-6};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergyintData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -64,23 +64,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	// Add one degree K in the second column
-	SDS.host_dse[offset] = s+host_dse[n];
+        // Add one degree K in the second column
+        SDS.host_dse[offset] = s+host_dse[n];
 
-	// convert to [kg/kg]
-	// Force the first column of cloud liquid
-	//   to be zero!
-	SDS.rcm[offset] = s*rcm[n]/1000.0;
-	SDS.rtm[offset] = rtm[n]/1000.0;
+        // Force the first column of cloud liquid
+        //   to be zero!
+        SDS.rcm[offset] = s*rcm[n];
+        SDS.rtm[offset] = rtm[n];
 
-	// convert to Pa
-	SDS.pdel[offset] = pdel[n]*100.0;
+        // convert to Pa
+        SDS.pdel[offset] = pdel[n];
 
-	// Increase winds with increasing columns
-	SDS.u_wind[offset] = (1.0+s)*u_wind[n];
-	SDS.v_wind[offset] = (1.0+s)*v_wind[n];
+        // Increase winds with increasing columns
+        SDS.u_wind[offset] = (1.0+s)*u_wind[n];
+        SDS.v_wind[offset] = (1.0+s)*v_wind[n];
       }
     }
 
@@ -88,22 +87,22 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.host_dse[offset] > 0.0);
-	REQUIRE(SDS.rcm[offset] >= 0.0);
-	REQUIRE(SDS.rtm[offset] > 0.0);
+        REQUIRE(SDS.host_dse[offset] > 0);
+        REQUIRE(SDS.rcm[offset] >= 0);
+        REQUIRE(SDS.rtm[offset] > 0);
 
-	// make sure the two columns are different and
-	//  as expected for the relevant variables
-	if (s == 0){
+        // make sure the two columns are different and
+        //  as expected for the relevant variables
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
           REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
           REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
-          REQUIRE(SDS.rcm[offset] == 0.0);
+          REQUIRE(SDS.rcm[offset] == 0);
           REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
-	}
+        }
       }
     }
 
@@ -113,23 +112,75 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     // Check test
     for(Int s = 0; s < shcol; ++s) {
       // Verify relevant integrals are reasonable
-      REQUIRE(SDS.se_int[s] > 0.0);
-      REQUIRE(SDS.ke_int[s] > 0.0);
-      REQUIRE(SDS.wv_int[s] > 0.0);
-      REQUIRE(SDS.wl_int[s] >= 0.0);
+      REQUIRE(SDS.se_int[s] > 0);
+      REQUIRE(SDS.ke_int[s] > 0);
+      REQUIRE(SDS.wv_int[s] > 0);
+      REQUIRE(SDS.wl_int[s] >= 0);
       // Do column comparison tests
       if (s == 0){
-	REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
-	REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
-	REQUIRE(SDS.wl_int[s] == 0.0);
-	REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
+        REQUIRE(SDS.ke_int[s+1] > SDS.ke_int[s]);
+        REQUIRE(SDS.wl_int[s+1] > SDS.wl_int[s]);
+        REQUIRE(SDS.wl_int[s] == 0);
+        REQUIRE(SDS.se_int[s+1] > SDS.se_int[s]);
       }
     }
   }
 
   static void run_bfb()
   {
-    // TODO
+    SHOCEnergyintData SDS_f90[] = {
+      //               shcol, nlev
+      SHOCEnergyintData(10, 71),
+      SHOCEnergyintData(10, 12),
+      SHOCEnergyintData(7,  16),
+      SHOCEnergyintData(2, 7),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCEnergyintData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCEnergyintData SDS_cxx[] = {
+      SHOCEnergyintData(SDS_f90[0]),
+      SHOCEnergyintData(SDS_f90[1]),
+      SHOCEnergyintData(SDS_f90[2]),
+      SHOCEnergyintData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      shoc_energy_integrals(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      shoc_energy_integrals_f(d.shcol(), d.nlev(), d.host_dse, d.pdel,
+                              d.rtm, d.rcm, d.u_wind, d.v_wind,
+                              d.se_int, d.ke_int, d.wv_int, d.wl_int);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCEnergyintData& d_f90 = SDS_f90[i];
+      SHOCEnergyintData& d_cxx = SDS_cxx[i];
+      for (Int c = 0; c < d_f90.dim1; ++c) {
+        REQUIRE(d_f90.se_int[c] == d_cxx.se_int[c]);
+        REQUIRE(d_f90.ke_int[c] == d_cxx.ke_int[c]);
+        REQUIRE(d_f90.wv_int[c] == d_cxx.wv_int[c]);
+        REQUIRE(d_f90.wl_int[c] == d_cxx.wl_int[c]);
+      }
+    }
   }
 };
 

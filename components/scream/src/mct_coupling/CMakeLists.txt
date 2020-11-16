@@ -21,10 +21,9 @@ if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
   set (SCREAM_NP 4 CACHE STRING "The number of Gauss points per element.")
   set (SCREAM_NUM_TRACERS 4 CACHE STRING "The max number of tracers.")
   set (SCREAM_USE_PIO FALSE CACHE STRING "Whether Homme can use PIO.")
-  set (SCREAM_USE_ENERGY FALSE CACHE STRING "Whether Homme has extra energy checks.")
 
   add_definitions(-DHOMME_WITHOUT_PIOLIBRARY)
-  CreateDynamicsLib (${SCREAM_DYN_TARGET} ${SCREAM_NP} ${SCREAM_NUM_VERTICAL_LEV} ${SCREAM_NUM_TRACERS} ${SCREAM_USE_PIO} ${SCREAM_USE_ENERGY})
+  CreateDynamicsLib (${SCREAM_DYN_TARGET} ${SCREAM_NP} ${SCREAM_NUM_VERTICAL_LEV} ${SCREAM_NUM_TRACERS})
 
   target_include_directories (
     ${dynLibName}
@@ -49,7 +48,7 @@ set(ATM_SRC
   scream_scorpio_interface.F90
   scream_scorpio_interface.cpp
   scream_scorpio_interface_iso_c2f.F90
-  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
 )
 
 if (USE_ESMF_LIB)

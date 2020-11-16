@@ -49,37 +49,72 @@ function(build_model COMP_CLASS COMP_NAME)
   # Cam needs some special handling for cosp and turning off opts for some files
   #-------------------------------------------------------------------------------
 
-  if (COMP_NAME STREQUAL "cam")
+  if (COMP_NAME STREQUAL "eam")
     # These RRTMG files take an extraordinarily long time to compile with optimization.
     # Until mods are made to read the data from files, just remove optimization from
     # their compilation.
-    set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
+    set(NOOPT_FILES "eam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;eam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
     if (USE_COSP)
-      include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
+      include(${PROJECT_SOURCE_DIR}/eam/src/physics/cosp2/Cosp.cmake)
+    endif()
+
+    # If YAKL is needed, then set YAKL CMake vars
+    if (USE_YAKL)
+      # ARCH can be CUDA, HIP, or unset
+      if (USE_CUDA)
+        set(ARCH "CUDA")
+        # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
+        # We can't have duplicate flags with nvcc, so we only specify CPPDEFS,
+        # and the rest is up to CUDAFLAGS
+        set(YAKL_CXX_FLAGS "${CPPDEFS}")
+      else()
+        # For normal C++ compilers duplicate flags are fine, the last ones win typically
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
+        set(ARCH "")
+      endif()
+      message(STATUS "Building YAKL")
+      # Build YAKL as a static library
+      # YAKL_HOME is YAKL's source directlry
+      set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
+      # YAKL_BIN is where we're placing the YAKL library
+      set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
+      # YAKL_CUB_HOME is where Nvidia's cub repo lives (submodule)
+      if (USE_CUDA)
+        set(YAKL_CUB_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub)
+      endif()
+      # Build the YAKL static library
+      add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
+      # Add both YAKL source and YAKL binary directories to the include paths
+      include_directories(${YAKL_HOME} ${YAKL_BIN})
+    endif()
+
+    # if samxx is needed, build samxx as a static library
+    if (USE_SAMXX)
+      message(STATUS "Building SAMXX")
+      # SAMXX_HOME is where the samxx source code lives
+      set(SAMXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/crm/samxx)
+      # SAMXX_BIN is where the samxx library will live
+      set(SAMXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/samxx)
+      # Build the static samxx library
+      add_subdirectory(${SAMXX_HOME} ${SAMXX_BIN})
+      # Add samxx F90 files to the main E3SM build
+      set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/samxx/cpp_interface_mod.F90
+                             cmake/atm/../../eam/src/physics/crm/samxx/params.F90
+                             cmake/atm/../../eam/src/physics/crm/samxx/crm_ecpp_output_module.F90 )
     endif()
 
   endif()
 
   #-------------------------------------------------------------------------------
-  # create list of component libraries - hard-wired for current ccsm components
+  # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
-
-  if (CIME_MODEL STREQUAL "cesm")
-    if (COMP_LND STREQUAL "clm")
-      set(USE_SHARED_CLM TRUE)
-    else()
-      set(USE_SHARED_CLM FALSE)
-    endif()
-  else()
-    set(USE_SHARED_CLM FALSE)
-  endif()
 
   if (NOT USE_SHARED_CLM)
     set(LNDOBJDIR "${EXEROOT}/lnd/obj")
     set(LNDLIBDIR "${LIBROOT}")
-    if (COMP_LND STREQUAL "clm")
-      set(LNDLIB "libclm.a")
+    if (COMP_LND STREQUAL "elm")
+      set(LNDLIB "libelm.a")
     else()
       set(LNDLIB "liblnd.a")
     endif()
@@ -125,17 +160,30 @@ function(build_model COMP_CLASS COMP_NAME)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
-  # Flags are slightly different for different fortran extensions
+  # Set compiler flags for source files
   foreach (SOURCE_FILE IN LISTS SOURCES)
-    # Cosp manages its own flags
-    if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-      get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-      if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-        e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
-      elseif(SOURCE_EXT STREQUAL ".f90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
-      elseif(SOURCE_EXT STREQUAL ".F90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+
+    # Set flags based on file extension. File extensions may change if the globs used by
+    # gather_sources changes.
+    if (SOURCE_EXT STREQUAL ".c")
+      e3sm_add_flags("${SOURCE_FILE}" "${CFLAGS}")
+    elseif (SOURCE_EXT STREQUAL ".cpp")
+      e3sm_add_flags("${SOURCE_FILE}" "${CXXFLAGS}")
+    else()
+      # This is a fortran source
+      e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS}")
+
+      # Cosp manages its own flags
+      if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+        # Flags are slightly different for different fortran extensions
+        if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+          e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
+        elseif (SOURCE_EXT STREQUAL ".f90")
+          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
+        elseif (SOURCE_EXT STREQUAL ".F90")
+          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+        endif()
       endif()
     endif()
   endforeach()
@@ -153,7 +201,7 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
+    e3sm_deoptimize_file("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
   endforeach()
 
   #-------------------------------------------------------------------------------
@@ -192,6 +240,17 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
+    if (COMP_NAME STREQUAL "eam")
+      if (USE_YAKL)
+        target_link_libraries(${TARGET_NAME} PRIVATE yakl)
+      endif()
+      if (USE_SAMXX)
+        target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      endif()
+    endif()
+    if (USE_KOKKOS)
+      target_link_libraries (${TARGET_NAME} Kokkos::kokkos)
+    endif ()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered

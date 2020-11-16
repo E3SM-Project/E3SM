@@ -166,7 +166,7 @@ void P3Microphysics::finalize_impl()
 }
 
 // =========================================================================================
-void P3Microphysics::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
   for (auto& fid : m_required_fields) {
     field_repo.register_field(fid);
   }
@@ -175,7 +175,7 @@ void P3Microphysics::register_fields (FieldRepository<Real, device_type>& field_
   }
 }
 
-void P3Microphysics::set_required_field_impl (const Field<const Real, device_type>& f) {
+void P3Microphysics::set_required_field_impl (const Field<const Real>& f) {
   // Store a copy of the field. We need this in order to do some tracking checks
   // at the beginning of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
@@ -189,7 +189,7 @@ void P3Microphysics::set_required_field_impl (const Field<const Real, device_typ
   add_me_as_customer(f);
 }
 
-void P3Microphysics::set_computed_field_impl (const Field<      Real, device_type>& f) {
+void P3Microphysics::set_computed_field_impl (const Field<      Real>& f) {
   // Store a copy of the field. We need this in order to do some tracking updates
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr

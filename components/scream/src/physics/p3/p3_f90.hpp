@@ -21,16 +21,17 @@ struct FortranData {
   using Array3 = typename KT::template lview<Scalar***>;
 
   bool do_predict_nc;
+  bool do_prescribed_CCN;
   const Int ncol, nlev;
 
   // In
   Real dt;
   Int it;
-  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
+  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
     ni, qm, bm, dpres, exner, qv_prev, t_prev;
   // Out
   Array1 precip_liq_surf, precip_ice_surf;
-  Array2 diag_eff_rad_qc, diag_eff_rad_qi, rho_qi, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
+  Array2 diag_eff_radius_qc, diag_eff_radius_qi, rho_qi, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
          precip_liq_flux, precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;
@@ -62,7 +63,9 @@ private:
 };
 
 void p3_init();
-void p3_main(const FortranData& d, bool use_fortran=false);
+
+// Returns number of microseconds of p3_main execution
+Int p3_main(const FortranData& d, bool use_fortran=false);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are

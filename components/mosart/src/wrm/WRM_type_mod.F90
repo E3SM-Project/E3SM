@@ -32,6 +32,7 @@ MODULE WRM_type_mod
      integer :: TotalDemandFlag  ! Flag to indicate if the demand includes irrigation and non irrigation demands
      integer :: GroundWaterFlag  ! Flag to know if demand needs to be separated with GW-SW
      integer :: ExternalDemandFlag  ! Flag to decide where does the demand come from, external files or ELM
+     integer :: DamConstructionFlag  ! Flag to indicate if the dam construction year is considered
 
      character(len=256) :: paraFile         ! the path of the parameter files
      character(len=256) :: demandPath       ! the path of the water demand data
@@ -78,6 +79,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: MaxStorTarget(:)  ! (nd)
 
      integer , pointer :: YEAR(:)           ! (nd) year dam was constructed and operationnal
+     integer , pointer :: active_stage(:)   ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity) 
      integer , pointer :: use_Irrig(:)      ! (nd) reservoir purpose irrigation 
      integer , pointer :: use_Elec(:)       ! (nd) hydropower
      integer , pointer :: use_FCon(:)       ! (nd) flood control
@@ -95,6 +97,44 @@ MODULE WRM_type_mod
      integer , pointer :: MthStFC(:)        ! (nd) month showing the strat of the flood control
      integer , pointer :: MthNdFC(:)        ! (nd) month showing the stop of the flood control
      integer , pointer :: MthFCtrack(:)     ! (nd) track if within FC or not                
+	! reservoir stratification
+     integer , pointer :: grandid(:)        ! (nd) GRaND dam id
+     real(r8), pointer :: geometry(:)       ! (nd) numeric code assigned for reservoir  geometry 1=Rectangular_prism; 2=Rectangular_wedge; 3=Rectangular_bowl; 4=Parabolic_wedge;5=Elliptical_bowl
+     real(r8), pointer :: Length_r(:)       ! (nd) mean length of reseervoir (can be diffent from Length)
+     real(r8), pointer :: Width_r(:)       	! (nd) mean width of reseervoir
+     real(r8), pointer :: V_errs(:)       	! (nd) storage error of assumed geometry (%)
+     real(r8), pointer :: A_errs(:)       	! (nd) surface area error of assumed geometry (%)
+     real(r8), pointer :: C_as(:)       	! (nd) correction coefficient for surface area
+     real(r8), pointer :: C_vs(:)       	! (nd) correction coefficient for storage
+     real(r8), pointer :: V_dfs(:)      	! (nd) storage difference of assumed geometry (mcm)
+     real(r8), pointer :: A_dfs(:)       	! (nd) surface area difference of assumed geometry (km2)
+     real(r8), pointer :: V_str(:)      	! (nd) storage geometry  was calculated (mcm)
+     real(r8), pointer :: A_str(:)       	! (nd) surface area geometry was calculated (km2)
+     integer , pointer :: d_ns(:)       	! (nd) initial number of layers for stratification model
+     integer , pointer :: t_cnt(:)      	! (nd) timestep counter to skip warmup period for stability
+     real(r8), pointer :: d_zi(:,:)       	! (nd,ndesc=500+1) descritized depth for depth-area-storage relationship
+     real(r8), pointer :: a_di(:,:)       	! (nd,ndesc) descritized area for depth-area-storage relationship
+     real(r8), pointer :: v_zti(:,:)       	! (nd,ndesc) descritized storage for depth-area-storage relationship
+     real(r8), pointer :: d_z(:,:)       	! (nd,nlayers=30) Depth at z from bottom (m)
+     real(r8), pointer :: d_z0(:,:)       	! (nd,nlayers=30) Initial depth at z from bottom (m)
+     real(r8), pointer :: d_v(:,:)       	! (nd,nlayers) Reservoir volume change at layer (m^3)
+     real(r8), pointer :: a_d(:,:)       	! (nd,nlayers) Area at depth z (km2)
+     real(r8), pointer :: a_d0(:,:)       	! (nd,nlayers) Initial area at depth z (km2)
+     real(r8), pointer :: v_zt(:,:)       	! (nd,nlayers) Reservoir volume at depth z (m^3)
+     real(r8), pointer :: v_zt0(:,:)       	! (nd,nlayers) Initial reservoir volume at depth z (m^3)
+     real(r8), pointer :: dd_z(:,:)       	! (nd,nlayers) Layer depth(m)
+     real(r8), pointer :: m_zo(:,:)       	! (nd,nlayers) Reservoir beginning mass at depth z (kg)
+     real(r8), pointer :: m_zn(:,:)       	! (nd,nlayers) Reservoir ending mass at depth z (kg)
+     real(r8), pointer :: v_zo(:,:)       	! (nd,nlayers) Reservoir beginning volume at depth z (m^3)
+     real(r8), pointer :: v_zn(:,:)       	! (nd,nlayers) Reservoir ending volume at depth z (m^3)
+     real(r8), pointer :: out_lc(:)      	! (nd) outlet location (% in decimal)
+     integer,  pointer :: purpose(:)      	! (nd) reservoir purpose to estimate outlet location
+     real(r8), pointer :: temp_resrv(:,:)   ! (nd,nlayers) reservoir temperature with max 30 layers [K]
+     real(r8), pointer :: resrv_surf(:)   	! (b:e) reservoir surface temperature [K]
+     real(r8), pointer :: resrv_out(:)    	! (b:e) reservoir outflow temperature [K]	 
+     real(r8), pointer :: d_resrv(:) 		! (nd) reservoir depth updated on each timestep [m]
+     real(r8), pointer :: h_resrv(:) 		! (nd) reservoir initial depth[m]
+     real(r8), pointer :: ddz_local(:)      ! (nd) initlal layer thickness to be used to calculate layer thickness limit
   end type WRMspatialunit
 
   ! status and flux variables for liquid water

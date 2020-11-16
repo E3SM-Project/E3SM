@@ -16,13 +16,13 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_rain_fall_velocity(
   const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
-  const Spack& qr_incld, const Spack& cld_frac_r, const Spack& rhofacr,
+  const Spack& qr_incld, const Spack& rhofacr,
   Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
   const Smask& context)
 {
   Table3 table;
   Spack tmp1, tmp2; //ignore
-  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, cld_frac_r, context);
+  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, context);
 
   if (context.any()) {
     lookup(mu_r, lamr, table, context);
@@ -109,7 +109,7 @@ void Functions<S,D>
         const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
         if (qr_gt_small.any()) {
           compute_rain_fall_velocity(vn_table_vals, vm_table_vals,
-                                     qr_incld(pk), cld_frac_r(pk), rhofacr(pk),
+                                     qr_incld(pk), rhofacr(pk),
                                      nr_incld(pk), mu_r(pk), lamr(pk),
 				     V_qr(pk), V_nr(pk), qr_gt_small);
 	  

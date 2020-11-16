@@ -357,172 +357,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- Redi_isopycnal_mixing -->
-
-<entry id="config_use_Redi" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, Redi isopycnal mixing is turned on
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_kappa" type="real"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-The Redi diffusion coefficient
-
-Valid values: Positive real numbers
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_set_RediKappa_to_GMKappa" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true RediKappa is forced to be equal to gmBolusKappa
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_maximum_slope" type="real"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)
-
-Valid values: positive real numbers, but small
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_closure" type="char*1024"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported.
-
-Valid values: 'constant', 'data', 'match_GM'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_use_slope_taper" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_use_surface_taper" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, Redi slope is tapered near sfc based on Large et al 1997
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_use_N2_based_taper" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true apply the N2 limiting of Danabasoglu and Marshall 2007
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_N2_limit_term1" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, the N2 limiting is applied to the horizontal diffusion term
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- GM_eddy_parameterization -->
-
-<entry id="config_use_GM" type="logical"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-If true, the standard GM for the tracer advection and mixing is turned on.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_kappa" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant.
-
-Valid values: MISSING POSSIBLE VALUES
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_closure" type="char*1024"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997
-
-Valid values: 'N2_dependent', 'constant', 'visbeck'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_baroclinic_mode" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-baroclinic wave mode chosen for the ferrari et al 2010 calculation
-
-Valid values: small positive numbers
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_visbeck_alpha" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-scaling factor on the visbeck diffusivity parameterization
-
-Valid values: small positive numbers
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_visbeck_min_depth" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum depth for calculation of vertical average
-
-Valid values: values between zero and bottom depth
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_visbeck_max_depth" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum depth for calculation of vertical average
-
-Valid values: values between zero and bottom depth
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_visbeck_min_kappa" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum value of bolus diffusivity for visbeck scheme
-
-Valid values: values around 100s
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_visbeck_max_kappa" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum value of bolus diffusivity for visbeck scheme
-
-Valid values: values around 100s
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_min_stratification_ratio" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio.
-
-Valid values: small positive reals
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_constant_gravWaveSpeed" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
-
-Valid values: Positive real numbers
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- mesoscale_eddy_parameterizations -->
 
 <entry id="config_eddying_resolution_taper" type="char*1024"
@@ -546,6 +380,188 @@ Default: Defined in namelist_defaults.xml
 Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- Redi_isopycnal_mixing -->
+
+<entry id="config_use_Redi" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, Redi isopycnal mixing is turned on
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_closure" type="char*1024"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Control what type of function is used for Redi $\kappa$.
+
+Valid values: 'constant', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_constant_kappa" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'.
+
+Valid values: Positive real numbers.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_maximum_slope" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)
+
+Valid values: positive real numbers, but small
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_slope_taper" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_surface_taper" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, Redi slope is tapered near sfc based on Large et al 1997
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_N2_based_taper_enable" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true apply the N2 limiting of Danabasoglu and Marshall 2007
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_N2_based_taper_min" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007
+
+Valid values: greater than zero and less than 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_N2_based_taper_limit_term1" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, the N2 lim iting is applied to the horizontal diffusion term
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- GM_eddy_parameterization -->
+
+<entry id="config_use_GM" type="logical"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+If true, the standard GM for the tracer advection and mixing is turned on.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_closure" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling
+
+Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_constant_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_constant_gravWaveSpeed" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
+
+Valid values: Positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_spatially_variable_min_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'.
+
+Valid values: values around 100s
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_spatially_variable_max_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'.
+
+Valid values: values around 100s
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_spatially_variable_baroclinic_mode" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+baroclinic wave mode chosen for the Ferrari et al 2010 calculation. Used for all choices of config_GM_closure other than 'constant'.
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Visbeck_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+scaling factor on the Visbeck diffusivity parameterization
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Visbeck_max_depth" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum depth for calculation of vertical average
+
+Valid values: values between zero and bottom depth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_EG_riMin" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum Richardson number to prevent overly large bolus Kappa values
+
+Valid values: numbers greater than zero
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_EG_kappa_factor" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+factor to scale diffusivity for Eden Greatbach scheme
+
+Valid values: small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_EG_Rossby_factor" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+factor multiplying the Rossby length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
+
+Valid values: small values greater than or equal to one
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_EG_Rhines_factor" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
+
+Valid values: small positive values less than equal to one
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -611,11 +627,11 @@ Valid values: Any non-negative real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_cvmix_background" type="logical"
+<entry id="config_cvmix_background_scheme" type="char*1024"
 	category="cvmix" group="cvmix">
-If true, background diffusivity and viscosity is computed using CVMix
+Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity
 
-Valid values: True or False
+Valid values: 'constant', 'BryanLewis', and 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -632,6 +648,38 @@ Default: Defined in namelist_defaults.xml
 Background vertical viscosity applied to horizontal velocity
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_bl1" type="real"
+	category="cvmix" group="cvmix">
+near surface diffusivity for the Bryan and Lewis (1979) profile
+
+Valid values: small positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_bl2" type="real"
+	category="cvmix" group="cvmix">
+increase in diffusivity at depth for Bryan Lewis (1979) scheme
+
+Valid values: small positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_transitionDepth" type="real"
+	category="cvmix" group="cvmix">
+depth at which the diffusivity transitions to the higher value
+
+Valid values: positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_BryanLewis_transitionWidth" type="real"
+	category="cvmix" group="cvmix">
+width of transition in Bryan Lewis (1979) scheme
+
+Valid values: positive real numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -910,6 +958,14 @@ Default: Defined in namelist_defaults.xml
 
 <!-- forcing -->
 
+<entry id="config_use_variable_drag" type="logical"
+	category="forcing" group="forcing">
+Controls if variable drag is enabled.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_bulk_wind_stress" type="logical"
 	category="forcing" group="forcing">
 Controls if zonal and meridional components of windstress are used to build surface wind stress.
@@ -985,6 +1041,105 @@ Default: Defined in namelist_defaults.xml
 Depth over which to apply penetrating SW to sfcBuoyancyFlux
 
 Valid values: Real Values greater than zero less than bottomDepth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tidal_potential_forcing -->
+
+<entry id="config_use_tidal_potential_forcing" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_tidal_potential_reference_time" type="char*1024"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Timestamp describing the time used to initialize nodal factors.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_M2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the M2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_S2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the S2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_N2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the N2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_K2" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the K2 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_K1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the K1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_O1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the O1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_Q1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the Q1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_tidal_potential_forcing_P1" type="logical"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Controls if tidal potential forcing for the P1 constituent is used.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_tidal_potential_ramp" type="real"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Number of days over which the tidal potential forcing is ramped
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_and_loading_beta" type="real"
+	category="tidal_potential_forcing" group="tidal_potential_forcing">
+Coefficient for SAL scalar approximation
+
+Valid values: 0.0 to turn off, 0.09 is typical value to use for scalar approximation
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1256,6 +1411,22 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_implicit_bottom_drag_variable" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, spatially-variable implicit bottom drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_implicit_bottom_drag_variable_mannings" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_explicit_bottom_drag" type="logical"
 	category="bottom_drag" group="bottom_drag">
 If true, explicit bottom drag is used on the momentum equation.
@@ -1315,7 +1486,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_open_ocean_freezing_temperature_coeff_0" type="real"
 	category="eos" group="eos">
-The freezing temperature at zero pressure in open ocean.
+The freezing temperature at zero pressure and salinity in open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1331,7 +1502,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_open_ocean_freezing_temperature_coeff_p" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to the (limited) pressure in the freezing temperature in the open ocean.
+The coefficient for the term proportional to the pressure in the freezing temperature in the open ocean.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1345,17 +1516,17 @@ Valid values: Any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_open_ocean_freezing_temperature_reference_pressure" type="real"
+<entry id="config_open_ocean_freezing_temperature_coeff_mushy_az1_liq" type="real"
 	category="eos" group="eos">
-The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in the open ocean.
+The coefficient for the mushy sea-ice physics term az1_liq in the open ocean.
 
-Valid values: Any positive real number
+Valid values: Any non-positive number
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_land_ice_cavity_freezing_temperature_coeff_0" type="real"
 	category="eos" group="eos">
-The freezing temperature at zero pressure in land-ice cavities.
+The freezing temperature at zero pressure and salinity in land-ice cavities.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1371,7 +1542,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_land_ice_cavity_freezing_temperature_coeff_p" type="real"
 	category="eos" group="eos">
-The coefficient for the term proportional to the (limited) pressure in the freezing temperature in land-ice cavities.
+The coefficient for the term proportional to the pressure in the freezing temperature in land-ice cavities.
 
 Valid values: Any real number
 Default: Defined in namelist_defaults.xml
@@ -1382,14 +1553,6 @@ Default: Defined in namelist_defaults.xml
 The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities.
 
 Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_cavity_freezing_temperature_reference_pressure" type="real"
-	category="eos" group="eos">
-The reference pressure above which the freezing temperature is equal to config_freezing_temperature_coeff_0 in land-ice cavities.
-
-Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5082,6 +5245,391 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_AM_mixedLayerHeatBudget_write_on_startup" type="logical"
 	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
 Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_sedimentFluxIndex -->
+
+<entry id="config_AM_sedimentFluxIndex_enable" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+If true, ocean analysis member sedimentFluxIndex is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_compute_on_startup" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_write_on_startup" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_compute_interval" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Time stamp for frequency of computation of the sedimentFluxIndex analysis member.
+
+Valid values: Any time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_output_stream" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+Name of stream the sedimentFluxIndex analysis member should be tied to
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_directory" type="char*1024"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+subdirectory to write text files (might useful)
+
+Valid values: any valid directory name
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentFluxIndex_use_lat_lon_coords" type="logical"
+	category="AM_sedimentFluxIndex" group="AM_sedimentFluxIndex">
+If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_sedimentTransport -->
+
+<entry id="config_AM_sedimentTransport_enable" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+If true, ocean analysis member sedimentTransport is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_compute_on_startup" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_write_on_startup" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_compute_interval" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Time stamp for frequency of computation of the sedimentTransport analysis member.
+
+Valid values: Any time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_output_stream" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Name of stream the sedimentTransport analysis member should be tied to
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_directory" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+subdirectory to write text files (might useful)
+
+Valid values: any valid directory name
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_size" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+dimaeter of a spherical sediment particle
+
+Valid values: 1e-4 ~1e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_ws_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of different settling velocity formulae
+
+Valid values: VanRijn1993, Soulsby1997, Cheng1997, Goldstein-Coco2013
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_bedld_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of diffrent sediment bedload transport formulae
+
+Valid values: Soulsby-Damgaard, Meyer-Peter-Mueller, Engelund-Hansen
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_SSC_ref_formula" type="char*1024"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+options of diffrent near-bottom suspended sediment concentration formulae
+
+Valid values: Lee2004, Goldstein2014,Zyserman-Fredsoe1994
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_drag_coefficient" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+drag coefficient used for bottom shear stress computation
+
+Valid values: any values between 1~2.5e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_erate" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+bed surface erosion rate
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_tau_ce" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+critical shear for erosion
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_tau_cd" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+critical shear for deposition
+
+Valid values: any positive values
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_Manning_coef" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Manning roughness coefficient
+
+Valid values: any positive values,typical values are between 0.012 and 0.025, Kerr et al., 2013
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_porosity" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+sediment porosity
+
+Valid values: any positive value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_water_density" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+water density
+
+Valid values: any positive value between 1000 and 1030
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_grain_density" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+sediment density
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_alpha" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+A parameter related to the sediment property, with typical values of O(1e-4~1e-3)
+
+Valid values: 1e-4 ~1e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_kinematic_viscosity" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+kinematic viscosity of the fluild
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_vertical_diffusion_coefficient" type="real"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+vertical diffsuion coefficient
+
+Valid values: any positive value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_bedload" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if bedload transport is to be computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_suspended" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+Logical flag determining if suspended transport is to be computed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_sedimentTransport_use_lat_lon_coords" type="logical"
+	category="AM_sedimentTransport" group="AM_sedimentTransport">
+If true, latitude/longitude coordinates are output for eddy census. Otherwise x/y/z coordinates are used. Ignored if not on a sphere.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_harmonicAnalysis -->
+
+<entry id="config_AM_harmonicAnalysis_enable" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+If true, ocean analysis member harmonicAnalysis is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_compute_interval" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining how often harmonic analysis computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_start" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining when harmonic analysis begins
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_end" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Timestamp determining when harmonic analysis ends
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_output_stream" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Name of the stream that the harmonicAnalysis analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_restart_stream" type="char*1024"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Name of the stream that the harmonicAnalysis analysis member restart informaion should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_compute_on_startup" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_write_on_startup" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_M2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if M2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_S2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if S2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_N2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if N2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_K2" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if K2 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_K1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if K1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_O1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if O1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_Q1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if Q1 constituent is used in harmonic analysis
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_harmonicAnalysis_use_P1" type="logical"
+	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
+Controls if P1 constituent is used in harmonic analysis
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

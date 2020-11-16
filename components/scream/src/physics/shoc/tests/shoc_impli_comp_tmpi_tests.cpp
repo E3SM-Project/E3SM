@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     // Define timestep [s]
     static constexpr Real dtime = 300;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCComptmpiData SDS(shcol, nlevi, dtime);
 
     // Test that the inputs are reasonable.
@@ -55,28 +55,28 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     // Fill in test data on zi_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         // Feed second column SMALLER dz values
-	SDS.dz_zi[offset] = dz_zi[n]/(1+s);
-	SDS.rho_zi[offset] = rho_zi[n];
+        SDS.dz_zi[offset] = dz_zi[n]/(1+s);
+        SDS.rho_zi[offset] = rho_zi[n];
       }
     }
 
     // Check that the inputs make sense
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
         const auto offsets = n + (1+s)*nlevi;
-	// make sure that density is in reasonable bounds
+        // make sure that density is in reasonable bounds
         REQUIRE( (SDS.rho_zi[offset] > 0 && SDS.rho_zi[offset] < 1.5) );
         // Make sure top level dz_zi value is zero
-	if (n == 0){
-          REQUIRE(SDS.dz_zi[offset] == 0.0);
-	}
-	// Otherwise, should be greater than zero
-	else{
-          REQUIRE(SDS.dz_zi[offset] > 0.0);
+        if (n == 0){
+          REQUIRE(SDS.dz_zi[offset] == 0);
+        }
+        // Otherwise, should be greater than zero
+        else{
+          REQUIRE(SDS.dz_zi[offset] > 0);
           // Verify that the second column has smaller dz values
           if (s < shcol-1){
             REQUIRE(SDS.dz_zi[offset] > SDS.dz_zi[offsets]);
@@ -117,7 +117,53 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCComptmpiData f90_data[] = {
+      //          shcol, nlevi, dtime
+      SHOCComptmpiData(10, 72, 1),
+      SHOCComptmpiData(10, 13, 10),
+      SHOCComptmpiData(7,  17, 125),
+      SHOCComptmpiData(2,   8, 300)
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCComptmpiData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCComptmpiData cxx_data[] = {
+      SHOCComptmpiData(f90_data[0]),
+      SHOCComptmpiData(f90_data[1]),
+      SHOCComptmpiData(f90_data[2]),
+      SHOCComptmpiData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      compute_tmpi(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      compute_tmpi_f(d.nlevi(), d.shcol(), d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCComptmpiData& d_f90 = f90_data[i];
+      SHOCComptmpiData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
+      }
+    }
   }
 };
 

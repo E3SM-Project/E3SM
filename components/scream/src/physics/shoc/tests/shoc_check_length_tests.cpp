@@ -24,6 +24,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
   static void run_property()
   {
+    static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
+    static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
 
@@ -36,14 +38,14 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     //  corrects these erroneous values.
 
     // Define the host grid box size x-direction [m]
-    static constexpr Real host_dx = 3000.0;
+    static constexpr Real host_dx = 3000;
     // Defin the host grid box size y-direction [m]
-    static constexpr Real host_dy = 5000.0;
+    static constexpr Real host_dy = 5000;
     // Define mixing length [m]
     //   In profile include values of zero and very large values
-    Real shoc_mix[nlev] = {50000.0, 4000.0, 2000.0, 0.0, 500.0};
+    Real shoc_mix[nlev] = {50000, 4000, 2000, 0, 500};
 
-    // Initialize data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCMixcheckData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -68,8 +70,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
     // Be sure that relevant variables are greater than zero
     for(Int s = 0; s < shcol; ++s) {
-      REQUIRE(SDS.host_dx[s] > 0.0);
-      REQUIRE(SDS.host_dy[s] > 0.0);
+      REQUIRE(SDS.host_dx[s] > 0);
+      REQUIRE(SDS.host_dy[s] > 0);
     }
 
     // Call the fortran implementation
@@ -81,7 +83,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
         const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] > 0.0);
+        REQUIRE(SDS.shoc_mix[offset] >= minlen);
+        REQUIRE(SDS.shoc_mix[offset] <= maxlen);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
       }
     }
@@ -89,7 +92,54 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
   static void run_bfb()
   {
-    // TODO
+    SHOCMixcheckData SDS_f90[] = {
+      //             shcol, nlev
+      SHOCMixcheckData(10, 71),
+      SHOCMixcheckData(10, 12),
+      SHOCMixcheckData(7,  16),
+      SHOCMixcheckData(2, 7),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCMixcheckData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCMixcheckData SDS_cxx[] = {
+      SHOCMixcheckData(SDS_f90[0]),
+      SHOCMixcheckData(SDS_f90[1]),
+      SHOCMixcheckData(SDS_f90[2]),
+      SHOCMixcheckData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      check_length_scale_shoc_length(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      check_length_scale_shoc_length_f(d.nlev(),d.shcol(),d.host_dx,d.host_dy,d.shoc_mix);
+      d.transpose<ekat::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCMixcheckData& d_f90 = SDS_f90[i];
+      SHOCMixcheckData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+      }
+    }
   }
 };
 

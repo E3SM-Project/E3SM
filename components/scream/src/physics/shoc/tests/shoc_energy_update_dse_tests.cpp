@@ -37,17 +37,17 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     //   dse if all other inputs are equal.
 
     // Liquid water potential temperature [K]
-    static constexpr Real thlm[nlev] = {350.0, 325.0, 315.0, 310.0, 300.0};
+    static constexpr Real thlm[nlev] = {350, 325, 315, 310, 300};
     // Exner function [-]
     static constexpr Real exner[nlev] = {0.1, 0.3, 0.5, 0.7, 1.0};
-    // Cloud condensate [g/kg] (converted to kg/kg when input)
-    static constexpr Real shoc_ql[nlev] = {0.005, 0.08, 0.04, 0.03, 0.001};
+    // Cloud condensate [kg/kg]
+    static constexpr Real shoc_ql[nlev] = {5e-6, 8e-5, 4e-4, 3e-4, 1e-6};
     // Mid-point heights [m]
-    static constexpr Real zt_grid[nlev] = {9000.0, 6000.0, 4000.0, 2000.0, 1000.0};
+    static constexpr Real zt_grid[nlev] = {9000, 6000, 4000, 2000, 1000};
     // Surface geopotential
-    static constexpr Real phis = 100.0;
+    static constexpr Real phis = 100;
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCEnergydseData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
@@ -59,16 +59,15 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for(Int s = 0; s < shcol; ++s) {
       SDS.phis[s] = phis;
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	SDS.thlm[offset] = thlm[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.exner[offset] = exner[n];
+        SDS.thlm[offset] = thlm[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.exner[offset] = exner[n];
 
-	// convert to [kg/kg]
-	// Force the first column of cloud liquid
-	//   to be zero!
-	SDS.shoc_ql[offset] = s*shoc_ql[n]/1000.0;
+        // Force the first column of cloud liquid
+        //   to be zero!
+        SDS.shoc_ql[offset] = s*shoc_ql[n];
 
       }
     }
@@ -78,27 +77,27 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.phis[s] >= 0.0);
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.thlm[offset] > 0.0);
-	REQUIRE(SDS.shoc_ql[offset] >= 0.0);
-	REQUIRE(SDS.exner[offset] > 0.0);
-	REQUIRE(SDS.zt_grid[offset] >= 0.0);
+        REQUIRE(SDS.thlm[offset] > 0);
+        REQUIRE(SDS.shoc_ql[offset] >= 0);
+        REQUIRE(SDS.exner[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] >= 0);
 
-	// make sure the two columns are different and
-	//  as expected for the relevant variables
-	if (s == 0){
+        // make sure the two columns are different and
+        //  as expected for the relevant variables
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
 
-          REQUIRE(SDS.shoc_ql[offset] == 0.0);
+          REQUIRE(SDS.shoc_ql[offset] == 0);
           REQUIRE(SDS.shoc_ql[offsets] > SDS.shoc_ql[offset]);
-	}
+        }
 
-	// Check that heights and thlm increase upward
-	if (n < nlev-1){
-          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
-	  REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0.0);
-	}
+        // Check that heights and thlm increase upward
+        if (n < nlev-1){
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+          REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0);
+        }
 
       }
     }
@@ -109,20 +108,20 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     // Check test
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
-	// Verify dse is reasonable
-	REQUIRE(SDS.host_dse[offset] > 0.0);
+        const auto offset = n + s * nlev;
+        // Verify dse is reasonable
+        REQUIRE(SDS.host_dse[offset] > 0);
 
-	// Verify that dse increases with height upward
-	if (n < nlev-1){
-          REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0.0);
-	}
+        // Verify that dse increases with height upward
+        if (n < nlev-1){
+          REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
+        }
 
-	// Verify that dse is greater in points with condensate loading
-	if (s == 0){
+        // Verify that dse is greater in points with condensate loading
+        if (s == 0){
           const auto offsets = n + (s+1) * nlev;
-	  REQUIRE(SDS.host_dse[offsets] > SDS.host_dse[offset]);
-	}
+          REQUIRE(SDS.host_dse[offsets] > SDS.host_dse[offset]);
+        }
       }
     }
   }

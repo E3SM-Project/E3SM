@@ -1,15 +1,15 @@
-#include "share/grid/simple_grid.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream {
 
 // === A dummy physics grids for this test === //
 
-template<typename ScalarType, typename DeviceType>
-class DummyPhysicsGridRemapper : public AbstractRemapper<ScalarType,DeviceType>
+template<typename RealType>
+class DummyPhysicsGridRemapper : public AbstractRemapper<RealType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using base_type       = AbstractRemapper<RealType>;
   using grid_type       = typename base_type::grid_type;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
@@ -23,10 +23,10 @@ public:
     const auto& g1n = grid1->name();
     const auto& g2n = grid2->name();
 
-    auto g1 = std::dynamic_pointer_cast<const SimpleGrid>(grid1);
-    auto g2 = std::dynamic_pointer_cast<const SimpleGrid>(grid2);
+    auto g1 = std::dynamic_pointer_cast<const PointGrid>(grid1);
+    auto g2 = std::dynamic_pointer_cast<const PointGrid>(grid2);
     EKAT_REQUIRE_MSG (static_cast<bool>(g1) && static_cast<bool>(g2),
-                      "Error! This dummy remapper only works with SimpleGrid.\n");
+                      "Error! This dummy remapper only works with PointGrid.\n");
 
     EKAT_REQUIRE_MSG((g1n=="Physics_fwd" && g2n=="Physics_bwd") ||
                      (g1n=="Physics_bwd" && g2n=="Physics_fwd"),

@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestImpSfcStress {
     // Surface wind, meridional direction [m/s]
     static constexpr Real v_wind_sfc[shcol] = {-10, 2, 20, 0, 1};
 
-    // Initialzie data structure for bridgeing to F90
+    // Initialize data structure for bridging to F90
     SHOCImplsrfstressData SDS(shcol);
 
     // Test that the inputs are reasonable.

@@ -27,6 +27,22 @@ if (NOT MOD_SUFFIX)
   set(MOD_SUFFIX "mod")
 endif()
 
+# Look for -crm samxx in the CAM_CONFIG_OPTS CIME variable
+# If it's found, then enable USE_SAMXX
+string(FIND "${CAM_CONFIG_OPTS}" "-crm samxx" HAS_SAMXX)
+if (NOT HAS_SAMXX EQUAL -1)
+  # The following is for the SAMXX code:
+  set(USE_SAMXX TRUE)
+endif()
+
+# If samxx is being used, then YAKL must be used as well
+set(USE_YAKL ${USE_SAMXX})
+
+# If YAKL is being used, then we need to enable USE_CXX
+if (${USE_YAKL})
+  set(USE_CXX TRUE)
+endif()
+
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
@@ -213,12 +229,30 @@ if (USE_ALBANY)
 endif()
 
 if (USE_KOKKOS)
-  include(${INSTALL_SHAREDPATH}/kokkos_generated_settings.cmake)
-  string (REPLACE ";" " " KOKKOS_CXXFLAGS_STR "${KOKKOS_CXXFLAGS}")
-  string (REPLACE ";" " " KOKKOS_LDFLAGS_STR "${KOKKOS_LDFLAGS}")
-  set(SLIBS "${SLIBS} ${KOKKOS_LIBS_LIST}")
-  set(CXXFLAGS "${CXXFLAGS} ${KOKKOS_CXXFLAGS_STR}")
-  set(CXX_LDFLAGS "${CXX_LDFLAGS} ${KOKKOS_LDFLAGS_STR}")
+  # LB 09/04/20
+  #  The best thing to do would be to simply use ${INSTALL_SHAREDPATH}, and
+  #  let cmake search the proper subfolder based on system/cmake configuration.
+  #  True. HOWEVER, the subfolder `kokkos` in that directory (where kokkos is
+  #  built) happens to contain KokkosConfig.cmake, and this is picked up by
+  #  cmake. It would be ok, but this file says to include the cmake file
+  #  ${Kokkos_CMAKE_DIR}/KokkosTargets.cmake, where Kokkos_CMAKE_DIR is that
+  #  same directory, which, unfortunately, does NOT contain that file.
+  #  If we could somehow force cmake to look FIRST in ${INSTALL_SHAREDPATH}/lib64/cmake
+  #  (and similar), then it would be great. The reason why I'm not a huge fan
+  #  of this is that I'm hardcoding the suffix where kokkos puts its cmake configs,
+  #  which can be highly OS and cmake-version dependent. If for some reason kokkos
+  #  does not put its pkg config stuff in lib/cmake/ or lib64/cmkae, then the search
+  #  will fall back on ${INSTALL_SHAREDPATH} (and its subfolders), which will again
+  #  cause the problem described above.
+  #  For more info, see cmake details on this subject at
+  #   https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
+  # NOTE: a possible solution would be to name the kokkos build folder differently,
+  #       like 'kokkos-bld', so that cmake won't pick it up.
+  find_package(Kokkos REQUIRED
+               PATHS ${INSTALL_SHAREDPATH}/lib/cmake
+                     ${INSTALL_SHAREDPATH}/lib64/cmake
+                     ${INSTALL_SHAREDPATH}
+               NO_DEFAULT_PATH)
 endif()
 
 # JGF: No one seems to be using this
@@ -467,7 +501,4 @@ set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
 #------------------------------------------------------------------------------
 # Set key cmake vars
 #------------------------------------------------------------------------------
-set(CMAKE_Fortran_FLAGS "${FFLAGS}" PARENT_SCOPE)
-set(CMAKE_C_FLAGS "${CFLAGS}" PARENT_SCOPE)
-set(CMAKE_CXX_FLAGS "${CXXFLAGS}" PARENT_SCOPE)
 set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)

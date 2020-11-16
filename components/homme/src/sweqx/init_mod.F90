@@ -82,6 +82,8 @@ contains
     ! -------------------------------
     use coordinate_systems_mod, only : sphere_tri_area
     ! --------------------------------
+    use common_io_mod, only : homme_pio_init
+    ! --------------------------------
 
 
     implicit none
@@ -133,6 +135,7 @@ contains
     call t_startf('init')
 
     call readnl(par)
+    call homme_pio_init(par%rank,par%comm)
 
     if (par%masterproc) then
 

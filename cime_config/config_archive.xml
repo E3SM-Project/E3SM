@@ -1,6 +1,6 @@
 <components version="2.0">
 
-  <comp_archive_spec compname="cam" compclass="atm">
+  <comp_archive_spec compname="eam" compclass="atm">
     <rest_file_extension>[ri]</rest_file_extension>
     <rest_file_extension>rh\d*</rest_file_extension>
     <rest_file_extension>rs</rest_file_extension>
@@ -9,23 +9,23 @@
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
+      <rpointer_content>$CASE.eam$NINST_STRING.r.$DATENAME.nc </rpointer_content>
     </rpointer>
     <test_file_names>
       <tfile disposition="copy">rpointer.atm</tfile>
       <tfile disposition="copy">rpointer.atm_9999</tfile>
-      <tfile disposition="copy">casename.cam.r.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">casename.cam.rh4.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.cam.h0.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">casename.cam.h0.1976-01-01-00000.nc.base</tfile>
-      <tfile disposition="move">casename.cam_0002.e.postassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.cam_0002.e.preassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">casename.cam.i.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">anothercasename.cam.i.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.eam.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.eam.rh4.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.eam.h0.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">casename.eam.h0.1976-01-01-00000.nc.base</tfile>
+      <tfile disposition="move">casename.eam_0002.e.postassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.eam_0002.e.preassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.eam.i.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">anothercasename.eam.i.1976-01-01-00000.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="clm" compclass="lnd">
+  <comp_archive_spec compname="elm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
     <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
@@ -33,18 +33,18 @@
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.lnd$NINST_STRING</rpointer_file>
-      <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <rpointer_content>./$CASE.elm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
     </rpointer>
     <test_file_names>
       <tfile disposition="copy">rpointer.lnd</tfile>
       <tfile disposition="copy">rpointer.lnd_9999</tfile>
-      <tfile disposition="copy">casename.clm2.r.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">casename.clm2.rh4.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.clm2.h0.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">casename.clm2.h0.1976-01-01-00000.nc.base</tfile>
-      <tfile disposition="move">casename.clm2_0002.e.postassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="move">casename.clm2_0002.e.preassim.1976-01-01-00000.nc</tfile>
-      <tfile disposition="ignore">anothercasename.clm2.i.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.elm.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.elm.rh4.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.elm.h0.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">casename.elm.h0.1976-01-01-00000.nc.base</tfile>
+      <tfile disposition="move">casename.elm_0002.e.postassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.elm_0002.e.preassim.1976-01-01-00000.nc</tfile>
+      <tfile disposition="ignore">anothercasename.elm.i.1976-01-01-00000.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 

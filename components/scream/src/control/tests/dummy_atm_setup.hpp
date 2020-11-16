@@ -11,14 +11,13 @@ namespace scream {
 
 void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) {
   using namespace scream;
-  using device_type = DefaultDevice;
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("physics_fwd",&create_atmosphere_process<DummyProcess<device_type,2,true>>);
-  proc_factory.register_product("physics_bwd",&create_atmosphere_process<DummyProcess<device_type,4,false>>);
+  proc_factory.register_product("physics_fwd",&create_atmosphere_process<DummyProcess<2,true>>);
+  proc_factory.register_product("physics_bwd",&create_atmosphere_process<DummyProcess<4,false>>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
@@ -28,13 +27,13 @@ void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) 
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
-  auto dummy_grid_fwd = std::make_shared<SimpleGrid>("Physics_fwd",num_cols,nvl,comm);
-  auto dummy_grid_bwd = std::make_shared<SimpleGrid>("Physics_bwd",num_cols,nvl,comm);
+  auto dummy_grid_fwd = std::make_shared<PointGrid>(create_point_grid("Physics_fwd",num_cols,nvl,comm));
+  auto dummy_grid_bwd = std::make_shared<PointGrid>(create_point_grid("Physics_bwd",num_cols,nvl,comm));
 
   upgm.set_grid(dummy_grid_fwd);
   upgm.set_grid(dummy_grid_bwd);
   upgm.set_reference_grid("Physics_fwd");
-  using remapper_type = DummyPhysicsGridRemapper<Real,device_type>;
+  using remapper_type = DummyPhysicsGridRemapper<Real>;
   upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_fwd,dummy_grid_bwd));
   upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_bwd,dummy_grid_fwd));
 }

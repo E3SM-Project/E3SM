@@ -7,14 +7,15 @@ my @groups = qw(run_modes
                 hmix_del2
                 hmix_del4
                 hmix_leith
+                mesoscale_eddy_parameterizations
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
-                mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
                 forcing
                 coupling
                 shortwaveradiation
+                tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes
                 advection
@@ -64,4 +65,7 @@ my @groups = qw(run_modes
                 am_mocstreamfunction
                 am_oceanheatcontent
                 am_mixedlayerheatbudget
+                am_sedimentfluxindex
+                am_sedimenttransport
+                am_harmonicanalysis
                 );

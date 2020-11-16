@@ -3,7 +3,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-                           get_mach_baseline_root_dir, setup_mach_env
+                           get_mach_baseline_root_dir, setup_mach_env, \
+                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
 
 check_minimum_python_version(3, 4)
 
@@ -17,15 +18,16 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
-                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
-                 custom_cmake_opts=(), custom_env_vars=(), tests=(),
+    def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
+                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+                 custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
-        self._cxx                     = cxx
-        self._kokkos                  = kokkos
+        self._cxx_compiler            = cxx_compiler
+        self._f90_compiler            = f90_compiler
+        self._c_compiler              = c_compiler
         self._submit                  = submit
         self._parallel                = parallel
         self._fast_fail               = fast_fail
@@ -36,6 +38,7 @@ class TestAllScream(object):
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
         self._custom_env_vars         = custom_env_vars
+        self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
         self._integration_test        = integration_test
@@ -53,12 +56,15 @@ class TestAllScream(object):
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
 
-        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
+        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("EKAT_DEFAULT_BFB", "ON")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_DOUBLE_PRECISION", "False")],
+                                           ("SCREAM_DOUBLE_PRECISION", "False"),
+                                           ("EKAT_DEFAULT_BFB", "ON")],
                                   "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
                                            ("SCREAM_PACK_SIZE", "1"),
-                                           ("SCREAM_SMALL_PACK_SIZE", "1")]}
+                                           ("SCREAM_SMALL_PACK_SIZE", "1"),
+                                           ("EKAT_DEFAULT_BFB", "ON")]}
 
         self._test_full_names = { "dbg" : "full_debug",
                                   "sp"  : "full_sp_debug",
@@ -86,12 +92,30 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        if not self._kokkos:
-            expect(self._machine, "If no kokkos provided, must provide machine name for internal kokkos build")
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
         print_last_commit(git_ref=self._original_branch)
+
+        ############################################
+        #    Deduce compilers if needed/possible   #
+        ############################################
+
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine)
+
+        if self._cxx_compiler is None:
+            self._cxx_compiler = get_mach_cxx_compiler(self._machine)
+        if self._f90_compiler is None:
+            self._f90_compiler = get_mach_f90_compiler(self._machine)
+        if self._c_compiler is None:
+            self._c_compiler = get_mach_c_compiler(self._machine)
+
+        self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
+        self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
+        self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
 
         ###################################
         #      Compute baseline info      #
@@ -299,22 +323,34 @@ class TestAllScream(object):
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
-        if self._kokkos:
-            kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
-        else:
-            kokkos_cmake = "-C {}".format(self.get_machine_file())
 
-        result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
+        # Ctest only needs config options, and doesn't need the leading 'cmake '
+        result  = "{}-C {}".format("" if for_ctest else "cmake ", self.get_machine_file())
+
+        # Test-specific cmake options
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 
+        # User-requested config options
+        custom_opts_keys = []
         for custom_opt in self._custom_cmake_opts:
+            expect ("=" in custom_opt, "Error! Syntax error in custom cmake options. Should be `VAR_NAME=VALUE`.")
             if "=" in custom_opt:
                 name, value = custom_opt.split("=", 1)
                 # Some effort is needed to ensure quotes are perserved
                 result += " -D{}='{}'".format(name, value)
-            else:
-                result += " -D{}".format(custom_opt)
+                custom_opts_keys.append(name)
+
+        # Common config options (unless already specified by the user)
+        if "CMAKE_CXX_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_CXX_COMPILER={}".format(self._cxx_compiler)
+        if "CMAKE_C_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_C_COMPILER={}".format(self._c_compiler)
+        if "CMAKE_Fortran_COMPILER" not in custom_opts_keys:
+            result += " -DCMAKE_Fortran_COMPILER={}".format(self._f90_compiler)
+
+        if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
+            result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
 
         return result
 
@@ -555,9 +591,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
-
-        # Setup the env on this machine
-        setup_mach_env(self._machine)
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:
