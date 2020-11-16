@@ -189,7 +189,7 @@
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
-                        description="When coupling damage to rheology, we do not allow it to fall below this value. For example, if damage = 0.9, then stiffnessFactor is 1 - damage = 0.1. But if we set config_damage_stiffness_min = 0.5, then stiffnessFactor can only be allowd as 0.5"
+                        description="The minimum value the stiffnessFactor can take due to evolving damage when stiffnessFactor is calculated from damage (config_damage_rheology_coupling=.true.). Used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then stiffnessFactor is 1 - damage = 0.1. But if we set config_damage_stiffness_min = 0.5, then stiffnessFactor can only be allowd as 0.5"
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
@@ -1070,7 +1070,7 @@ is the value of that variable from the *previous* time level!
                 <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="n∗ denotes the usual parameter n from Glen’s flow law, adjusted by including the ratio of the principal horizontal strain rates:  epsilon Dot_yy / epsilon Dot_xx"
                 />
-            <var name="visc" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
+            <var name="effectiveViscosity" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
                      description="effective viscosity"
                 />
                 <var name="epsmax" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
@@ -1395,68 +1395,44 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
-       <var name="meanFlowParamAField" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
+       <var name="meanFlowParamAVar" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
 	       description="depth averaged flow parameter A"
 	       persistence="scratch"
 	       />
-	  <!--var name="viscField" type="real" dimensions="nCells" units="Pa s"
-	       description="effective viscosity"
-	       persistence="scratch"
-	       /-->
-      <var name="sigmaxyField" type="real" dimensions="nCells" units="Pa"
+      <var name="sigmaxyVar" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayxField" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmayxVar" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaxxField" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmaxxVar" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayyField" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmayyVar" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaminField" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmaminVar" type="real" dimensions="nCells" units="Pa"
 	       description="minimum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="sigmamaxField" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmamaxVar" type="real" dimensions="nCells" units="Pa"
 	       description="maximum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="alphaField" type="real" dimensions="nCells" units="none"
+	  <var name="alphaVar" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"
 	       persistence="scratch"
 	       />
-	  <!--var name="epsmaxField" type="real" dimensions="nCells" units="s^{-1}"
-	       description="strain rate corresponding to sigmamax"
-	       persistence="scratch"
-	       /-->
-	  <!--var name="nstarField" type="real" dimensions="nCells" units="none"
-	       description="adjusted flow law parameter n"
-	       persistence="scratch"
-	       /-->
-	  <!--var name="s0Field" type="real" dimensions="nCells" units="none"
-	       description="a ratio between hydeostatic pressure and the largest principal stress"
-	       persistence="scratch"
-	       /-->
-	  <!--var name="damageSourceField" type="real" dimensions="nCells" units="s^{-1}"
-	       description="damage source"
-	       persistence="scratch"
-	       /-->
-	  <var name="ddamagedtField" type="real" dimensions="nCells" units="s^{-1}"
+	  <var name="ddamagedtVar" type="real" dimensions="nCells" units="s^{-1}"
           description="d(damage) / dt"
 	       persistence="scratch"
 	       />
-       <var name="forceField" type="real" dimensions="nCells" units="s^{-1}"
+       <var name="envForceVar" type="real" dimensions="nCells" units="s^{-1}"
 	       description="environmental forcing for damage production"
-	       persistence="scratch"
-	       />
-	  <var name="thicknessField" type="real" dimensions="nCells" units="none"
-	       description="update halo for thickness (nCells)"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"

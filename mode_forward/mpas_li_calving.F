@@ -1260,7 +1260,11 @@ module li_calving
 !
 !    routine damagecalving
 !
-!> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory 
+!> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory. 
+!> We can use two options: "calving_rate" or "threshold".
+!> If we use "calving_rate", the calving front retreats by removing ice at a speed of k * damage,
+!> where k is a calving parameter. If we use "threshold", the ice at the calving front will be completely
+!> gone if the damage is above the threshold.
 !> \author Tong Zhang
 !> \date   May. 2019
 !> \details Connect calving with the damage model
@@ -1427,7 +1431,7 @@ module li_calving
 !
 !> \author Tong Zhang
 !> \date   May. 2019
-!> \details calulate the damage tracer 
+!> \details calulate the damage tracer for floating ice shelves (damage at grounded ice is constrained as 0) 
 !> Bassis, Jeremy N., and Y. Ma. "Evolution of basal crevasses links ice shelf stability to ocean forcing." 
 !> Earth and Planetary Science Letters 409 (2015): 203-211.
 
@@ -1479,7 +1483,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: ddamagedt
-      real (kind=RKIND), dimension(:), pointer :: s0, nstar, epsmax, visc, sigmamax
+      real (kind=RKIND), dimension(:), pointer :: s0, nstar, epsmax, effectiveViscosity, sigmamax
       real (kind=RKIND), dimension(:), pointer :: damageSource
       real (kind=RKIND), dimension(:), pointer :: damage_nye
       real (kind=RKIND), dimension(:), pointer :: damageMax
@@ -1488,41 +1492,22 @@ module li_calving
            config_ice_density,            & ! ice density
            config_ocean_density             ! ocean density
 
-      real (kind=RKIND), save :: rhoi    ! ice density (kg m^{-3}), copied from config_ice_density
-      real (kind=RKIND), save :: rhoo    ! ocean density (kg m^{-3}), copied from config_ocean_density
-
-      type (field1dReal), pointer :: meanFlowParamAField
+      type (field1dReal), pointer :: meanFlowParamAVar
       real, dimension(:), pointer :: meanFlowParamA
-      !type (field1dReal), pointer :: viscField
-      !real, dimension(:), pointer :: visc
-      type (field1dReal), pointer :: sigmayxField
+      type (field1dReal), pointer :: sigmayxVar
       real, dimension(:), pointer :: sigmayx
-      type (field1dReal), pointer :: sigmaxyField
+      type (field1dReal), pointer :: sigmaxyVar
       real, dimension(:), pointer :: sigmaxy
-      type (field1dReal), pointer :: sigmaxxField
+      type (field1dReal), pointer :: sigmaxxVar
       real, dimension(:), pointer :: sigmaxx
-      type (field1dReal), pointer :: sigmayyField
+      type (field1dReal), pointer :: sigmayyVar
       real, dimension(:), pointer :: sigmayy
-      type (field1dReal), pointer :: sigmaminField
+      type (field1dReal), pointer :: sigmaminVar
       real, dimension(:), pointer :: sigmamin
-      !type (field1dReal), pointer :: sigmamaxField
-      !real, dimension(:), pointer :: sigmamax
-      type (field1dReal), pointer :: alphaField
+      type (field1dReal), pointer :: alphaVar
       real, dimension(:), pointer :: alpha
-      !type (field1dReal), pointer :: epsmaxField
-      !real, dimension(:), pointer :: epsmax
-      !type (field1dReal), pointer :: nstarField
-      !real, dimension(:), pointer :: nstar
-      !type (field1dReal), pointer :: s0Field
-      !real, dimension(:), pointer :: s0
-      !type (field1dReal), pointer :: damageSourceField
-      !real, dimension(:), pointer :: damageSource
-      !type (field1dReal), pointer :: ddamagedtField
-      !real, dimension(:), pointer :: ddamagedt
-      type (field1dReal), pointer :: forceField
-      real, dimension(:), pointer :: force
-
-      ! TZ: we can comment out the scratch field as above and redefine it in Registry.xml if we want to see it in the output nc file
+      type (field1dReal), pointer :: envForceVar
+      real, dimension(:), pointer :: envForce
 
       integer, dimension(:), pointer :: cellMask
       type (field1dInteger), pointer :: calvingFrontMaskField
@@ -1549,6 +1534,8 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
       call mpas_pool_get_config(liConfigs, 'config_damage_use_constant_A', config_damage_use_constant_A)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
 
       ! block loop
       block => domain % blocklist
@@ -1585,21 +1572,15 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 's0', s0)
          call mpas_pool_get_array(geometryPool, 'nstar', nstar)
          call mpas_pool_get_array(geometryPool, 'epsmax', epsmax)
-         call mpas_pool_get_array(geometryPool, 'visc', visc)
+         call mpas_pool_get_array(geometryPool, 'effectiveViscosity', effectiveViscosity)
          call mpas_pool_get_array(geometryPool, 'sigmamax', sigmamax)
          call mpas_pool_get_array(geometryPool, 'damageSource', damageSource)
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
 
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
-         call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
-         call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
          call mpas_pool_get_array(velocityPool, 'eMax', eMax)
          call mpas_pool_get_array(velocityPool, 'eMin', eMin)
-         call mpas_pool_get_array(velocityPool, 'exx', exx)
-         call mpas_pool_get_array(velocityPool, 'exy', exy)
-         call mpas_pool_get_array(velocityPool, 'eyx', eyx)
-         call mpas_pool_get_array(velocityPool, 'eyy', eyy)
          call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
@@ -1607,112 +1588,79 @@ module li_calving
 
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
 
-         call mpas_pool_get_field(scratchPool, 'iceCellMask2',  calvingFrontMaskField)
-         call mpas_allocate_scratch_field(calvingFrontMaskField, .true.)
-         calvingFrontMask => calvingFrontMaskField % array
+         call mpas_pool_get_field(scratchPool, 'iceCellMask2',  calvingFrontMaskVar)
+         call mpas_allocate_scratch_field(calvingFrontMaskVar, .true.)
+         calvingFrontMask => calvingFrontMaskVar % array
 
-         call mpas_pool_get_field(scratchPool, 'meanFlowParamAField',  meanFlowParamAField)
-         call mpas_allocate_scratch_field(meanFlowParamAField, .true.)
-         meanFlowParamA => meanFlowParamAField % array
+         call mpas_pool_get_field(scratchPool, 'meanFlowParamAVar',  meanFlowParamAVar)
+         call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
+         meanFlowParamA => meanFlowParamAVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaxyField', sigmaxyField )
-         call mpas_allocate_scratch_field(sigmaxyField, .true.)
-         sigmaxy => sigmaxyField % array
+         call mpas_pool_get_field(scratchPool, 'sigmaxyVar', sigmaxyVar )
+         call mpas_allocate_scratch_field(sigmaxyVar, .true.)
+         sigmaxy => sigmaxyVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmayxField', sigmayxField )
-         call mpas_allocate_scratch_field(sigmayxField, .true.)
-         sigmayx => sigmayxField % array
+         call mpas_pool_get_field(scratchPool, 'sigmayxVar', sigmayxVar )
+         call mpas_allocate_scratch_field(sigmayxVar, .true.)
+         sigmayx => sigmayxVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaxxField', sigmaxxField )
-         call mpas_allocate_scratch_field(sigmaxxField, .true.)
-         sigmaxx => sigmaxxField % array
+         call mpas_pool_get_field(scratchPool, 'sigmaxxVar', sigmaxxVar )
+         call mpas_allocate_scratch_field(sigmaxxVar, .true.)
+         sigmaxx => sigmaxxVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmayyField', sigmayyField )
-         call mpas_allocate_scratch_field(sigmayyField, .true.)
-         sigmayy => sigmayyField % array
+         call mpas_pool_get_field(scratchPool, 'sigmayyVar', sigmayyVar )
+         call mpas_allocate_scratch_field(sigmayyVar, .true.)
+         sigmayy => sigmayyVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaminField', sigmaminField )
-         call mpas_allocate_scratch_field(sigmaminField, .true.)
-         sigmamin => sigmaminField % array
+         call mpas_pool_get_field(scratchPool, 'sigmaminVar', sigmaminVar )
+         call mpas_allocate_scratch_field(sigmaminVar, .true.)
+         sigmamin => sigmaminVar % array
 
-         !call mpas_pool_get_field(scratchPool, 'sigmamaxField', sigmamaxField )
-         !call mpas_allocate_scratch_field(sigmamaxField, .true.)
-         !sigmamax => sigmamaxField % array
+         call mpas_pool_get_field(scratchPool, 'alphaVar', alphaVar )
+         call mpas_allocate_scratch_field(alphaVar, .true.)
+         alpha => alphaVar % array
 
-         call mpas_pool_get_field(scratchPool, 'alphaField', alphaField )
-         call mpas_allocate_scratch_field(alphaField, .true.)
-         alpha => alphaField % array
+         call mpas_pool_get_field(scratchPool, 'envForceVar', envForceVar )
+         call mpas_allocate_scratch_field(envForceVar, .true.)
+         envForce => envForceVar % array
 
-         !call mpas_pool_get_field(scratchPool, 'epsmaxField', epsmaxField )
-         !call mpas_allocate_scratch_field(epsmaxField, .true.)
-         !epsmax => epsmaxField % array
-
-         !call mpas_pool_get_field(scratchPool, 'nstarField', nstarField )
-         !call mpas_allocate_scratch_field(nstarField, .true.)
-         !nstar => nstarField % array
-
-         !call mpas_pool_get_field(scratchPool, 's0Field', s0Field )
-         !call mpas_allocate_scratch_field(s0Field, .true.)
-         !s0 => s0Field % array
-
-         !call mpas_pool_get_field(scratchPool, 'damageSourceField', damageSourceField )
-         !call mpas_allocate_scratch_field(damageSourceField, .true.)
-         !damageSource => damageSourceField % array
-
-         !call mpas_pool_get_field(scratchPool, 'ddamagedtField', ddamagedtField )
-         !call mpas_allocate_scratch_field(ddamagedtField, .true.)
-         !ddamagedt => ddamagedtField % array
-
-         call mpas_pool_get_field(scratchPool, 'forceField', forceField )
-         call mpas_allocate_scratch_field(forceField, .true.)
-         force => forceField % array
-
-
-         call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
-         call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
-         rhoi = config_ice_density
-         rhoo = config_ocean_density
-
-
-         call li_compute_gradient_2d(meshPool, uReconstructX(1,:), exx, exy, err_tmp)
+         call calculate_strain_rates(meshPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
-         call li_compute_gradient_2d(meshPool, uReconstructY(1,:), eyx, eyy, err_tmp)
-         err = ior(err, err_tmp)
+         call mpas_pool_get_array(velocityPool, 'exx', exx)
+         call mpas_pool_get_array(velocityPool, 'eyy', eyy)
+         call mpas_pool_get_array(velocityPool, 'exy', exy)
+         call mpas_pool_get_array(velocityPool, 'eyx', eyx)
 
          call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
          err = ior(err, err_tmp)
 
-
          meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)
          ! calculate the depth-averaged flow parameter A
 
-         !call mpas_log_write("meanFlowParamA: Min=$r, Max=$r", &
-         !           realArgs=(/minval(meanFlowParamA), maxval(meanFlowParamA)/))
-
          if (config_damage_use_constant_A) then
              where (thickness == 0.0_RKIND)
-                 visc = 0.0_RKIND
+                 effectiveViscosity = 0.0_RKIND
              elsewhere
-                 visc =
+                 effectiveViscosity =
                  0.5_RKIND*stiffnessFactor*config_default_flowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
                  exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
              endwhere
          else
              where (thickness == 0.0_RKIND)
-                 visc = 0.0_RKIND
+                 effectiveViscosity = 0.0_RKIND
              elsewhere
-                 visc = 0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
+                 effectiveViscosity = 0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
                  exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
              endwhere
          end if
          ! recover effective viscosity from vel. and temp. fields
 
-         sigmaxy(:) = 2.0_RKIND*visc(:)*(exy(:)+eyx(:))/2.0_RKIND
-         sigmayx(:) = 2.0_RKIND*visc(:)*(eyx(:)+exy(:))/2.0_RKIND
+         sigmaxy(:) = 2.0_RKIND*effectiveViscosity(:)*(exy(:)+eyx(:))/2.0_RKIND
+         sigmayx(:) = 2.0_RKIND*effectiveViscosity(:)*(eyx(:)+exy(:))/2.0_RKIND
 
-         sigmaxx(:) = 2.0_RKIND*visc(:)*exx(:)
-         sigmayy(:) = 2.0_RKIND*visc(:)*eyy(:)
+         sigmaxx(:) = 2.0_RKIND*effectiveViscosity(:)*exx(:)
+         sigmayy(:) = 2.0_RKIND*effectiveViscosity(:)*eyy(:)
          !deviatoric stress
 
          sigmamin(:) =
@@ -1727,13 +1675,15 @@ module li_calving
              s0 = 0.0_RKIND
          elsewhere
              alpha = sigmamin / sigmamax
-             epsmax = sigmamax / (2.0_RKIND*visc)
-             s0 = rhoi*(rhoo-rhoi)*gravity*thickness/(2.0_RKIND*sigmamax*rhoo)
+             epsmax = sigmamax / (2.0_RKIND*effectiveViscosity)
+             s0 =
+             config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness/(2.0_RKIND*sigmamax*config_ocean_density)
          endwhere
              
          !alpha(:) = sigmamin(:) / (sigmamax(:))
-         !epsmax(:) = sigmamax(:) / (2.0d0*visc(:))
-         !s0(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
+         !epsmax(:) = sigmamax(:) / (2.0d0*effectiveViscosity(:))
+         !s0(:) =
+         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*sigmamax(:)*config_ocean_density)
           ! Compute the hydrostatic to tensile stress ratio
           ! These commented lines are doing the same thing as the above where loop. Which is better?
 
@@ -1741,7 +1691,8 @@ module li_calving
          12.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)/(4.0_RKIND*(1.0_RKIND+alpha(:)+alpha(:)**2.0_RKIND)+6.0_RKIND*alpha(:)**2.0_RKIND) 
           ! Compute the effective flow law exponent
 
-         !s0(:) = rhoi*(rhoo-rhoi)*gravity*thickness(:)/(2.0d0*sigmamax(:)*rhoo)
+         !s0(:) =
+         !config_ice_density*(config_ocean_density-config_ice_density)*gravity*thickness(:)/(2.0d0*sigmamax(:)*config_ocean_density)
           ! Compute the hydrostatic to tensile stress ratio
 
          !do iCell = 1, nCells
@@ -1755,22 +1706,22 @@ module li_calving
          if (thickness(iCell) == 0.0_RKIND) then
              damageSource(iCell) = 0.0_RKIND
          else
-             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/rhoi/(thickness(iCell))
+             damageSource(iCell) = nstar(iCell) * (1.0_RKIND-s0(iCell))*epsmax(iCell)-floatingBasalMassBal(iCell)/config_ice_density/(thickness(iCell))
          endif
          enddo
 
          !seconds = daysSinceStart*24.0*3600.0
 
-         ! below is the force for the manufacured experiments
-         !force(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         ! below is the envForce for the manufacured experiments
+         !envForce(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
-         !force(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         !envForce(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
-         ! set force to zero if not manufactured
-         force(:) = 0.0_RKIND
+         ! set envForce to zero if none
+         envForce(:) = 0.0_RKIND
 
-         ddamagedt(:) = damageSource(:) * damage(:) + force(:)
+         ddamagedt(:) = damageSource(:) * damage(:) + envForce(:)
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
@@ -1781,7 +1732,7 @@ module li_calving
              if (thickness(iCell) == 0.0_RKIND) then
                  damage_nye(iCell) = 0.0_RKIND
              else
-                 damage_nye(iCell) = (2.0+alpha(iCell)) * sigmamax(iCell) / (gravity*(rhoo-rhoi)*thickness(iCell))
+                 damage_nye(iCell) = (2.0+alpha(iCell)) * sigmamax(iCell) / (gravity*(config_ocean_density-config_ice_density)*thickness(iCell))
              endif
          enddo
          !damage_nye(:) = 0.5
@@ -1805,6 +1756,7 @@ module li_calving
                 damage(iCell) = 1.0_RKIND
             end if
          end do
+         ! damage is always larger than the Nye value for initialization of damage evolution.
 
 
          !do iCell = 1, nCells
@@ -1818,6 +1770,8 @@ module li_calving
                 damage(iCell) = 0.0_RKIND
             end if
          end do
+         ! the damage of grouned ice is kept as 0, 
+         ! as the strain rate calculation is only valid for ice shelf
 
          do iCell = 1, nCells
             if (li_mask_is_grounding_line(cellMask(iCell))) then
@@ -1868,21 +1822,20 @@ module li_calving
         ! temporary message output in the log file
 
 
-         call mpas_deallocate_scratch_field(calvingFrontMaskField, .true.)
-         call mpas_deallocate_scratch_field(meanFlowParamAField, .true.)
-         !call mpas_deallocate_scratch_field(viscField, .true.)
-         call mpas_deallocate_scratch_field(sigmaxxField, .true.)
-         call mpas_deallocate_scratch_field(sigmayyField, .true.)
-         call mpas_deallocate_scratch_field(sigmaminField, .true.)
-         !call mpas_deallocate_scratch_field(sigmamaxField, .true.)
-         call mpas_deallocate_scratch_field(alphaField, .true.)
-         !call mpas_deallocate_scratch_field(epsmaxField, .true.)
-         !call mpas_deallocate_scratch_field(nstarField, .true.)
-         !call mpas_deallocate_scratch_field(s0Field, .true.)
-         !call mpas_deallocate_scratch_field(damageSourceField, .true.)
-         !call mpas_deallocate_scratch_field(ddamagedtField, .true.)
-         call mpas_deallocate_scratch_field(forceField, .true.)
-         ! call mpas_deallocate_scratch_field(damageField, .true.)
+         call mpas_deallocate_scratch_field(calvingFrontMaskVar, .true.)
+         call mpas_deallocate_scratch_field(meanFlowParamAVar, .true.)
+         call mpas_deallocate_scratch_field(sigmaxxVar, .true.)
+         call mpas_deallocate_scratch_field(sigmayyVar, .true.)
+         call mpas_deallocate_scratch_field(sigmaminVar, .true.)
+         !call mpas_deallocate_scratch_field(sigmamaxVar, .true.)
+         call mpas_deallocate_scratch_field(alphaVar, .true.)
+         !call mpas_deallocate_scratch_field(epsmaxVar, .true.)
+         !call mpas_deallocate_scratch_field(nstarVar, .true.)
+         !call mpas_deallocate_scratch_field(s0Var, .true.)
+         !call mpas_deallocate_scratch_field(damageSourceVar, .true.)
+         !call mpas_deallocate_scratch_field(ddamagedtVar, .true.)
+         call mpas_deallocate_scratch_field(envForceVar, .true.)
+         ! call mpas_deallocate_scratch_field(damageVar, .true.)
 
          block => block % next
              
