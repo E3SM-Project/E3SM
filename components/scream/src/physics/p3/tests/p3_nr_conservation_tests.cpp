@@ -17,35 +17,66 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
 
   static void run_bfb()
   {
-    NrConservationData f90_data[] = {
+    NrConservationData f90_data[max_pack_size] = {
       // TODO
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(NrConservationData);
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
-    // inout data is in original state
-    NrConservationData cxx_data[] = {
-      // TODO
-    };
+    // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
 
-    // Assume all data is in C layout
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // inout data is in original state
+    view_1d<NrConservationData> cxx_device("cxx_device", max_pack_size);
+    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Get data from fortran
     for (auto& d : f90_data) {
-      // expects data in C layout
       nr_conservation(d);
     }
 
-    // Get data from cxx
-    for (auto& d : cxx_data) {
-      nr_conservation_f(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
-    }
+    // Get data from cxx. Run nr_conservation from a kernel and copy results back to host
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-    // Verify BFB results, all data should be in C layout
+      // Init pack inputs
+      Spack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        nc2nr_autoconv_tend[s] = cxx_device(vs).nc2nr_autoconv_tend;
+        ncshdc[s] = cxx_device(vs).ncshdc;
+        ni2nr_melt_tend[s] = cxx_device(vs).ni2nr_melt_tend;
+        nr[s] = cxx_device(vs).nr;
+        nr2ni_immers_freeze_tend[s] = cxx_device(vs).nr2ni_immers_freeze_tend;
+        nr_collect_tend[s] = cxx_device(vs).nr_collect_tend;
+        nr_evap_tend[s] = cxx_device(vs).nr_evap_tend;
+        nr_ice_shed_tend[s] = cxx_device(vs).nr_ice_shed_tend;
+        nr_selfcollect_tend[s] = cxx_device(vs).nr_selfcollect_tend;
+      }
+
+      Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, cxx_device(0).dt, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
+
+      // Copy spacks back into cxx_device view
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        cxx_device(vs).nr2ni_immers_freeze_tend = nr2ni_immers_freeze_tend[s];
+        cxx_device(vs).nr_collect_tend = nr_collect_tend[s];
+        cxx_device(vs).nr_evap_tend = nr_evap_tend[s];
+        cxx_device(vs).nr_selfcollect_tend = nr_selfcollect_tend[s];
+      }
+
+    });
+
+    Kokkos::deep_copy(cxx_host, cxx_device);
+
+    // Verify BFB results
     for (Int i = 0; i < num_runs; ++i) {
       NrConservationData& d_f90 = f90_data[i];
-      NrConservationData& d_cxx = cxx_data[i];
+      NrConservationData& d_cxx = cxx_host[i];
       REQUIRE(d_f90.nr_collect_tend == d_cxx.nr_collect_tend);
       REQUIRE(d_f90.nr2ni_immers_freeze_tend == d_cxx.nr2ni_immers_freeze_tend);
       REQUIRE(d_f90.nr_selfcollect_tend == d_cxx.nr_selfcollect_tend);
