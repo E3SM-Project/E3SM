@@ -839,21 +839,38 @@ void ice_supersat_conservation(IceSupersatConservationData& d)
   p3_init();
   ice_supersat_conservation_c(&d.qidep, &d.qinuc, d.cld_frac_i, d.qv, d.qv_sat_i, d.latent_heat_sublim, d.t_atm, d.dt);
 }
+
 void nc_conservation(NcConservationData& d)
 {
   p3_init();
   nc_conservation_c(d.nc, d.nc_selfcollect_tend, d.dt, &d.nc_collect_tend, &d.nc2ni_immers_freeze_tend, &d.nc_accret_tend, &d.nc2nr_autoconv_tend);
 }
+
 void nr_conservation(NrConservationData& d)
 {
   p3_init();
   nr_conservation_c(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
 }
+
 void ni_conservation(NiConservationData& d)
 {
   p3_init();
   ni_conservation_c(d.ni, d.ni_nucleat_tend, d.nr2ni_immers_freeze_tend, d.nc2ni_immers_freeze_tend, d.dt, &d.ni2nr_melt_tend, &d.ni_sublim_tend, &d.ni_selfcollect_tend);
 }
+
+void WaterVaporConservationData::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  qv                = data_dist(generator);
+  qi2qv_sublim_tend = data_dist(generator);
+  qr2qv_evap_tend   = data_dist(generator);
+  dt                = data_dist(generator);
+  qidep             = data_dist(generator);
+  qinuc             = data_dist(generator);
+}
+
 void water_vapor_conservation(WaterVaporConservationData& d)
 {
   p3_init();

@@ -15,8 +15,15 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::water_vapor_conservation(const Spack& qv, Spack& qidep, Spack& qinuc, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Spack& dt)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  const auto qv_avail = qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt;
+  const auto qv_sink  = (qidep + qinuc)*dt;
+
+  const auto active = qv_sink > qv_avail && qv_sink > 1.e-20;
+  if (active.any()) {
+    const auto ratio = qv_avail / qv_sink;
+    qidep.set(active, qidep*ratio);
+    qinuc.set(active, qinuc*ratio);
+  }
 }
 
 } // namespace p3

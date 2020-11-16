@@ -822,12 +822,13 @@ struct NiConservationData {
 struct WaterVaporConservationData {
   // Inputs
   Real qv, qi2qv_sublim_tend, qr2qv_evap_tend, dt;
-  
+
   // Inputs/Outputs
   Real qidep, qinuc;
-  
-  
+
+  void randomize();
 };
+
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);
