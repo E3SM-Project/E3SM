@@ -858,6 +858,67 @@ void ni_conservation(NiConservationData& d)
   ni_conservation_c(d.ni, d.ni_nucleat_tend, d.nr2ni_immers_freeze_tend, d.nc2ni_immers_freeze_tend, d.dt, &d.ni2nr_melt_tend, &d.ni_sublim_tend, &d.ni_selfcollect_tend);
 }
 
+void IceSupersatConservationData::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  cld_frac_i         = data_dist(generator);
+  qv                 = data_dist(generator);
+  qv_sat_i           = data_dist(generator);
+  latent_heat_sublim = data_dist(generator);
+  t_atm              = data_dist(generator);
+  dt                 = data_dist(generator);
+  qidep              = data_dist(generator);
+  qinuc              = data_dist(generator);
+}
+
+void NcConservationData::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  nc                       = data_dist(generator);
+  nc_selfcollect_tend      = data_dist(generator);
+  dt                       = data_dist(generator);
+  nc_collect_tend          = data_dist(generator);
+  nc2ni_immers_freeze_tend = data_dist(generator);
+  nc_accret_tend           = data_dist(generator);
+  nc2nr_autoconv_tend      = data_dist(generator);
+}
+
+void NrConservationData::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  nr                       = data_dist(generator);
+  ni2nr_melt_tend          = data_dist(generator);
+  nr_ice_shed_tend         = data_dist(generator);
+  ncshdc                   = data_dist(generator);
+  nc2nr_autoconv_tend      = data_dist(generator);
+  dt                       = data_dist(generator);
+  nr_collect_tend          = data_dist(generator);
+  nr2ni_immers_freeze_tend = data_dist(generator);
+  nr_selfcollect_tend      = data_dist(generator);
+  nr_evap_tend             = data_dist(generator);
+}
+
+void NiConservationData::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  ni                       = data_dist(generator);
+  ni_nucleat_tend          = data_dist(generator);
+  nr2ni_immers_freeze_tend = data_dist(generator);
+  nc2ni_immers_freeze_tend = data_dist(generator);
+  dt                       = data_dist(generator);
+  ni2nr_melt_tend          = data_dist(generator);
+  ni_sublim_tend           = data_dist(generator);
+  ni_selfcollect_tend      = data_dist(generator);
+}
+
 void WaterVaporConservationData::randomize()
 {
   std::default_random_engine generator;

@@ -794,7 +794,7 @@ struct IceSupersatConservationData {
   // Inputs/Outputs
   Real qidep, qinuc;
 
-  void randomize() {}
+  void randomize();
 };
 
 struct NcConservationData {
@@ -804,7 +804,7 @@ struct NcConservationData {
   // Inputs/Outputs
   Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
 
-  void randomize() {}
+  void randomize();
 };
 
 struct NrConservationData {
@@ -814,7 +814,7 @@ struct NrConservationData {
   // Inputs/Outputs
   Real nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend;
 
-  void randomize() {}
+  void randomize();
 };
 
 struct NiConservationData {
@@ -824,7 +824,7 @@ struct NiConservationData {
   // Inputs/Outputs
   Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
 
-  void randomize() {}
+  void randomize();
 };
 
 struct WaterVaporConservationData {
