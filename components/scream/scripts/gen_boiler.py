@@ -1119,6 +1119,14 @@ def group_data(arg_data, filter_out_intent=None):
     [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')]
     OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
     OrderedDict([(('shcol',), ['bag', 'ball1', 'ball2'])])
+    >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA_ALL_SCALAR)]))
+    []
+    []
+    []
+    []
+    [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')]
+    OrderedDict()
+    OrderedDict()
     """
     scalars  = []
 
@@ -1995,7 +2003,7 @@ class GenBoiler(object):
               Spack baz1(0), baz2(0);
         <BLANKLINE>
         <BLANKLINE>
-              fake_sub(cxx_device(0).('bar1', 'Real'), cxx_device(0).('bar2', 'Real'), cxx_device(0).('baz1', 'Real'), cxx_device(0).('baz2', 'Real'), cxx_device(0).('gal1', 'Int'), cxx_device(0).('gal2', 'Int'), cxx_device(0).('bal1', 'Int'), cxx_device(0).('bal2', 'Int'), cxx_device(0).('gut1', 'bool'), cxx_device(0).('gut2', 'bool'), cxx_device(0).('gat1', 'bool'), cxx_device(0).('gat2', 'bool'));
+              fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
         <BLANKLINE>
               // Copy spacks back into cxx_device view
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -2142,7 +2150,8 @@ class GenBoiler(object):
       Spack {};
 """.format(", ".join(["{}(0)".format(ooreal) for ooreal in ooreals]))
 
-            func_call = "{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar in scalars]))
+            scalars = group_data(arg_data)[4]
+            func_call = "{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar, _ in scalars]))
 
             spack_output_to_dview = ""
             if oreals:
