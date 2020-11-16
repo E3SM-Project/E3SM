@@ -829,7 +829,7 @@ subroutine dp_inverse(nlev, shcol, rho_zt, dz_zt, rdp_zt)
 
 end subroutine dp_inverse
 
-pure function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, &
+function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, &
      vw_sfc, u_wind_sfc, v_wind_sfc) result (ksrf)
 
   !intent-ins
@@ -869,15 +869,15 @@ pure function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, &
      taux         = rho*uw ! stress in N/m2
      tauy         = rho*vw ! stress in N/m2
      ! compute the wind speed
-     ws           = max(sqrt(u_wind_sfc(i)**2._rtype + v_wind_sfc(i)**2._rtype),wsmin)
-     tau          = sqrt( taux**2._rtype + tauy**2._rtype )
+     ws           = max(bfb_sqrt(bfb_square(u_wind_sfc(i)) + bfb_square(v_wind_sfc(i))),wsmin)
+     tau          = bfb_sqrt(bfb_square(taux) + bfb_square(tauy))
      ksrf(i)      = max(tau/ws, ksrfmin)
   enddo
 
   return
 end function impli_srf_stress_term
 
-pure function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_sfc)
+function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_sfc)
 
   !intent-ins
   integer,     intent(in) :: shcol
@@ -900,8 +900,8 @@ pure function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_sfc)
   do i = 1, shcol
      uw           = uw_sfc(i)
      vw           = vw_sfc(i)
-     ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
-     wtke_sfc(i) = ustar**3
+     ustar        = max(bfb_sqrt(bfb_sqrt(bfb_square(uw) + bfb_square(vw))),ustarmin)
+     wtke_sfc(i) = bfb_cube(ustar)
   enddo
 
   return
