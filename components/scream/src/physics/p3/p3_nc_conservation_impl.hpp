@@ -13,7 +13,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Spack& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend)
+void Functions<S,D>::nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend)
 {
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed

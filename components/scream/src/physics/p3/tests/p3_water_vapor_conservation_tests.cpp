@@ -17,35 +17,60 @@ struct UnitWrap::UnitTest<D>::TestWaterVaporConservation {
 
   static void run_bfb()
   {
-    WaterVaporConservationData f90_data[] = {
+    WaterVaporConservationData f90_data[max_pack_size] = {
       // TODO
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(WaterVaporConservationData);
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
-    // inout data is in original state
-    WaterVaporConservationData cxx_data[] = {
-      // TODO
-    };
+    // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
 
-    // Assume all data is in C layout
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // inout data is in original state
+    view_1d<WaterVaporConservationData> cxx_device("cxx_device", max_pack_size);
+    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Get data from fortran
     for (auto& d : f90_data) {
-      // expects data in C layout
       water_vapor_conservation(d);
     }
 
-    // Get data from cxx
-    for (auto& d : cxx_data) {
-      water_vapor_conservation_f(d.qv, &d.qidep, &d.qinuc, d.qi2qv_sublim_tend, d.qr2qv_evap_tend, d.dt);
-    }
+    // Get data from cxx. Run water_vapor_conservation from a kernel and copy results back to host
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-    // Verify BFB results, all data should be in C layout
+      // Init pack inputs
+      Spack qi2qv_sublim_tend, qidep, qinuc, qr2qv_evap_tend, qv;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qi2qv_sublim_tend[s] = cxx_device(vs).qi2qv_sublim_tend;
+        qidep[s] = cxx_device(vs).qidep;
+        qinuc[s] = cxx_device(vs).qinuc;
+        qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
+        qv[s] = cxx_device(vs).qv;
+      }
+
+      Functions::water_vapor_conservation(qv, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, cxx_device(0).dt);
+
+      // Copy spacks back into cxx_device view
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        cxx_device(vs).qidep = qidep[s];
+        cxx_device(vs).qinuc = qinuc[s];
+      }
+
+    });
+
+    Kokkos::deep_copy(cxx_host, cxx_device);
+
+    // Verify BFB results
     for (Int i = 0; i < num_runs; ++i) {
       WaterVaporConservationData& d_f90 = f90_data[i];
-      WaterVaporConservationData& d_cxx = cxx_data[i];
+      WaterVaporConservationData& d_cxx = cxx_host[i];
       REQUIRE(d_f90.qidep == d_cxx.qidep);
       REQUIRE(d_f90.qinuc == d_cxx.qinuc);
 

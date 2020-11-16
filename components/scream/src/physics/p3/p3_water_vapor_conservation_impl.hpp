@@ -13,7 +13,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::water_vapor_conservation(const Spack& qv, Spack& qidep, Spack& qinuc, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Spack& dt)
+void Functions<S,D>::water_vapor_conservation(const Spack& qv, Spack& qidep, Spack& qinuc, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Real& dt)
 {
   const auto qv_avail = qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt;
   const auto qv_sink  = (qidep + qinuc)*dt;

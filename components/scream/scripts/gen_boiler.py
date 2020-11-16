@@ -2003,7 +2003,7 @@ class GenBoiler(object):
               Spack baz1(0), baz2(0);
         <BLANKLINE>
         <BLANKLINE>
-              fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
+              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
         <BLANKLINE>
               // Copy spacks back into cxx_device view
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -2020,7 +2020,7 @@ class GenBoiler(object):
             // Verify BFB results
             for (Int i = 0; i < num_runs; ++i) {
               FakeSubData& d_f90 = f90_data[i];
-              FakeSubData& d_cxx = cxx_data[i];
+              FakeSubData& d_cxx = cxx_host[i];
               REQUIRE(d_f90.bar1 == d_cxx.bar1);
               REQUIRE(d_f90.bar2 == d_cxx.bar2);
               REQUIRE(d_f90.baz1 == d_cxx.baz1);
@@ -2151,7 +2151,7 @@ class GenBoiler(object):
 """.format(", ".join(["{}(0)".format(ooreal) for ooreal in ooreals]))
 
             scalars = group_data(arg_data)[4]
-            func_call = "{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar, _ in scalars]))
+            func_call = "Functions::{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar, _ in scalars]))
 
             spack_output_to_dview = ""
             if oreals:
@@ -2200,7 +2200,7 @@ class GenBoiler(object):
     // Verify BFB results
     for (Int i = 0; i < num_runs; ++i) {{
       {data_struct}& d_f90 = f90_data[i];
-      {data_struct}& d_cxx = cxx_data[i];
+      {data_struct}& d_cxx = cxx_host[i];
 {check_scalars}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
