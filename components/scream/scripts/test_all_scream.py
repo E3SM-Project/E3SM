@@ -21,7 +21,7 @@ class TestAllScream(object):
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
+                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
@@ -41,17 +41,31 @@ class TestAllScream(object):
         self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
+        self._work_dir                = work_dir
         self._integration_test        = integration_test
         self._dry_run                 = dry_run
         self._must_generate_baselines = False
-        self._testing_dir             = "ctest-build"
 
         ############################################
         #  Sanity checks and helper structs setup  #
         ############################################
 
-        expect (not self._baseline_dir or self._testing_dir != self._baseline_dir,
-                "Error! For your safety, do NOT use 'ctest-build' to store baselines. Move them to a different directory.")
+        # Compute root dir
+        if not self._root_dir:
+            self._root_dir = pathlib.Path(__file__).resolve().parent.parent
+        else:
+            self._root_dir = pathlib.Path(self._root_dir).resolve()
+            expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
+                   "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
+
+        if self._work_dir is not None:
+            expect(pathlib.Path(self._work_dir).absolute().is_dir(),
+                   "Error! Work directory '{}' does not exist.".format(self._work_dir))
+        else:
+            self._work_dir = self._root_dir.absolute().joinPath("ctest-build")
+
+        expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
+                "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory of that works).".format(self._work_dir))
 
         expect(not (self._baseline_ref and self._baseline_dir),
                "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
@@ -77,14 +91,6 @@ class TestAllScream(object):
                 expect(t in self._test_full_names,
                        "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
-
-        # Compute root dir
-        if not self._root_dir:
-            self._root_dir = pathlib.Path(__file__).resolve().parent.parent
-        else:
-            self._root_dir = pathlib.Path(self._root_dir).resolve()
-            expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
-                   "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
 
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
@@ -121,7 +127,7 @@ class TestAllScream(object):
         #      Compute baseline info      #
         ###################################
 
-        default_baselines_root_dir = pathlib.Path(self._testing_dir,"baselines")
+        default_baselines_root_dir = pathlib.Path(self._work_dir,"baselines")
         if self._baseline_dir is None:
             if self._baseline_ref is None:
                 # Compute baseline ref
@@ -256,7 +262,7 @@ class TestAllScream(object):
     ###############################################################################
     def get_test_dir(self, test):
     ###############################################################################
-        return pathlib.Path(self._root_dir, self._testing_dir, self._test_full_names[test])
+        return pathlib.Path(self._work_dir, self._test_full_names[test])
 
     ###############################################################################
     def get_preexisting_baseline(self, test):
@@ -425,7 +431,8 @@ class TestAllScream(object):
         for key, value in extra_configs:
             result += "-D{}={} ".format(key, value)
 
-        result += "-DBUILD_NAME_MOD={} ".format(name)
+        work_dir = pathlib.Path(self._work_dir).joinpath(name)
+        result += "-DBUILD_WORK_DIR={} ".format(work_dir)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
