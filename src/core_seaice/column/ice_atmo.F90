@@ -129,6 +129,7 @@
 
       real (kind=dbl_kind) :: &
          ustar , & ! ustar (m/s)
+         ustar_prev , & ! ustar_prev (m/s)
          tstar , & ! tstar
          qstar , & ! qstar
          rdn   , & ! sqrt of neutral exchange coefficient (momentum)
@@ -256,7 +257,13 @@
       ! iterate to converge on Z/L, ustar, tstar and qstar
       !------------------------------------------------------------
 
-      do k = 1, natmiter
+      ustar_prev = c2 * ustar
+
+      k = 0
+      do while (abs(ustar - ustar_prev)/ustar > 0 .and. k <= natmiter)
+
+         ustar_prev = ustar
+         k = k + 1
 
          ! compute stability & evaluate all stability functions
          hol = vonkar * gravit * zlvl &
