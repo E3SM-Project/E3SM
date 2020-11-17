@@ -480,7 +480,7 @@ sub read_namelist_definition {
   my $phys = "elm";
   my @nl_definition_files = ( "$cfgdir/namelist_files/namelist_definition_drv.xml",
                               "$cfgdir/namelist_files/namelist_definition_drv_flds.xml",
-                              "$cfgdir/namelist_files/namelist_definition_clm4_5.xml" );
+                              "$cfgdir/namelist_files/namelist_definition.xml" );
   foreach my $nl_defin_file  ( @nl_definition_files ) {
     (-f "$nl_defin_file")  or  fatal_error("Cannot find namelist definition file \"$nl_defin_file\"\n");
 
@@ -537,7 +537,7 @@ sub read_namelist_defaults {
   my $phys = "elm";
   # The namelist defaults file contains default values for all required namelist variables.
   my @nl_defaults_files = ( "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_overall.xml",
-                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_clm4_5.xml",
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults.xml",
                             "$drvblddir/namelist_files/namelist_defaults_drv.xml",
                             "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml" );
 

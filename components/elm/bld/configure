@@ -198,7 +198,7 @@ my $phys = "elm";
 # Check for the physics specific configuration definition file.
 #my $phys_string = $phys->as_filename();
 
-my $config_def_file = "config_definition_clm4_5.xml";
+my $config_def_file = "config_definition.xml";
 (-f "$cfgdir/config_files/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
     \"$cfgdir/config_files\" **
