@@ -47,7 +47,7 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_restore_damage
+   public :: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_maintain_broken_ice
 
    !--------------------------------------------------------------------
    !
@@ -1466,6 +1466,7 @@ module li_calving
       real(kind=RKIND), pointer :: config_calving_eigencalving_parameter_scalar_value
       real(kind=RKIND), pointer :: config_damage_restore_threshold, config_damage_calving_threshold
       logical, pointer :: config_damage_use_constant_A
+      character, pointer :: config_damage_gl_setting
       real(kind=RKIND), pointer :: config_default_flowParamA 
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
       logical, pointer :: config_print_calving_info
@@ -1534,6 +1535,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
       call mpas_pool_get_config(liConfigs, 'config_damage_use_constant_A', config_damage_use_constant_A)
+      call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
 
@@ -1773,32 +1775,47 @@ module li_calving
          ! the damage of grouned ice is kept as 0, 
          ! as the strain rate calculation is only valid for ice shelf
 
-         do iCell = 1, nCells
-            if (li_mask_is_grounding_line(cellMask(iCell))) then
-                
-                damage_downstream = 0.0_RKIND
-                n_damage_downstream = 0
-                do iNeighbor = 1, nEdgesOnCell(iCell)
-                    jCell = cellsOnCell(iNeighbor, iCell)
-                    if (li_mask_is_floating_ice(cellMask(jCell))) then
-                       
-                        damage_downstream = damage_downstream + damage(jCell)
-                        n_damage_downstream =  n_damage_downstream + 1
+         if (trim(config_damage_gl_setting) == 'extra') then
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    
+                    damage_downstream = 0.0_RKIND
+                    n_damage_downstream = 0
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                           
+                            damage_downstream = damage_downstream + damage(jCell)
+                            n_damage_downstream =  n_damage_downstream + 1
+                        end if
+                    end do
+
+                    damage(iCell) = damage_downstream
+
+                    if (n_damage_downstream == 0) then
+                        damage(iCell) = 0.0_RKIND
+                    else
+                        damage(iCell) = damage_downstream / n_damage_downstream
                     end if
-                end do
 
-                damage(iCell) = damage_downstream
-
-                if (n_damage_downstream == 0) then
-                    damage(iCell) = 0.0_RKIND
-                else
-                    damage(iCell) = damage_downstream / n_damage_downstream
                 end if
+            end do
+            ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf 
 
-            end if
-        end do
-        ! set the damage for a cell at the GL to the average damage value for its neighbor cells downstream on the ice shelf 
+        elseif (trim(config_damage_gl_setting) == "nye") then
                         
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                            damage(jCell) = damage_nye(jCell)
+                        end if
+                    end do
+                end if
+            end do
+        endif
+        ! always set the damage at the first floating cells to the Nye value
 
         if (.true.) then
 
@@ -1845,7 +1862,7 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine li_restore_damage
+!    routine li_maintain_broken_ice
 !
 !> \author Tong Zhang
 !> \date   Oct. 2019
@@ -1855,7 +1872,7 @@ module li_calving
 !>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_restore_threshold.
 !-----------------------------------------------------------------------
 
-   subroutine li_restore_damage(domain, err)
+   subroutine li_maintain_broken_ice(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1883,8 +1900,10 @@ module li_calving
       real(kind=RKIND), pointer :: config_damage_stiffness_min
       logical, pointer :: config_damage_rheology_coupling
       logical, pointer :: config_print_calving_info
+      character, pointer :: config_damage_gl_setting
       real (kind=RKIND), dimension(:), pointer :: damage
       real (kind=RKIND), dimension(:), pointer :: damageMax
+      real (kind=RKIND), dimension(:), pointer :: damage_nye
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
 
 
@@ -1900,6 +1919,7 @@ module li_calving
 
       call mpas_pool_get_config(liConfigs, 'config_damage_stiffness_min', config_damage_stiffness_min)
       call mpas_pool_get_config(liConfigs, 'config_damage_rheology_coupling', config_damage_rheology_coupling)
+      call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
 
       ! block loop
       block => domain % blocklist
@@ -1919,6 +1939,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'damageMax', damageMax)
+         call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
 
@@ -1950,29 +1971,44 @@ module li_calving
             end if
          end do
 
-         do iCell = 1, nCells
-            if (li_mask_is_grounding_line(cellMask(iCell))) then
-                damage_downstream = 0.0_RKIND
-                n_damage_downstream = 0
-                do iNeighbor = 1, nEdgesOnCell(iCell)
-                    jCell = cellsOnCell(iNeighbor, iCell)
-                    if (li_mask_is_floating_ice(cellMask(jCell))) then
-                        
-                        damage_downstream = damage_downstream + damage(jCell)
-                        n_damage_downstream =  n_damage_downstream + 1
+         if (trim(config_damage_gl_setting) == 'extra') then
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    damage_downstream = 0.0_RKIND
+                    n_damage_downstream = 0
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                            
+                            damage_downstream = damage_downstream + damage(jCell)
+                            n_damage_downstream =  n_damage_downstream + 1
+                        end if
+                    end do
+
+                    damage(iCell) = damage_downstream
+
+                    if (n_damage_downstream == 0) then
+                        damage(iCell) = 0.0_RKIND
+                    else
+                        damage(iCell) = damage_downstream / n_damage_downstream
                     end if
-                end do
 
-                damage(iCell) = damage_downstream
-
-                if (n_damage_downstream == 0) then
-                    damage(iCell) = 0.0_RKIND
-                else
-                    damage(iCell) = damage_downstream / n_damage_downstream
                 end if
+            end do
 
-            end if
-        end do
+        elseif (trim(config_damage_gl_setting) == 'nye') then
+             do iCell = 1, nCells
+                if (li_mask_is_grounding_line(cellMask(iCell))) then
+                    do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if (li_mask_is_floating_ice(cellMask(jCell))) then
+                            damage(jCell) = damage_nye(jCell)
+                        end if
+                    end do
+                end if
+            end do
+            ! always set the damage at the first floating cells to the Nye value
+        endif
 
         if (config_damage_rheology_coupling) then
             do iCell = 1, nCells
@@ -1990,7 +2026,7 @@ module li_calving
              
       enddo
 
-   end subroutine li_restore_damage 
+   end subroutine li_maintain_broken_ice
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

@@ -172,8 +172,8 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
-		<nml_option name="config_restore_damage" type="logical" default_value=".false." units="unitless"
-                        description="If true, then turn on the restore_damage function."
+		<nml_option name="config_maintain_broken_ice" type="logical" default_value=".false." units="unitless"
+                        description="If true, then turn on the li_maintain_broken_ice function."
 		            possible_values=".true. or .false."
                 />
 		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
@@ -199,6 +199,10 @@
                 <nml_option name="config_damage_use_constant_A" type="logical" default_value=".false." units="unitless"
                         description="If true, then we use constant A (i.e., config_default_flowParamA) in the damage calculation."
 	                possible_values=".true. or .false."
+		/>
+		        <nml_option name="config_damage_gl_setting" type="character" default_value="none" units="unitless"
+		                description="Selection of the method for damage setting near the grounding line"
+		            possible_values="'nye', 'extra'"
 		/>
 		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
 		                description="Selection of the method for damage calving"
