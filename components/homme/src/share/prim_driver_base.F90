@@ -1351,7 +1351,7 @@ contains
          ! Update floating temperature based prescribed LS vertical velocity,
          !  but don't update tracers at this point
          scm_update_T = .true.
-         call prim_step_scm(elem, nets_in, nete_in, dt, tl, hvcoord, scm_update_T)
+         call prim_step_scm(elem, 1, 1, dt, tl, hvcoord, scm_update_T)
        endif
 
        if (dt_remap_factor == 0) then
@@ -1387,9 +1387,11 @@ contains
     enddo
     call t_stopf("prim_step_dyn")
 
-    ! Update tracers based on LS vertical velocity
-    scm_update_T = .false.
-    call prim_step_scm(elem, nets_in, nete_in, dt, tl, hvcoord, scm_update_T)
+    if (single_column) then
+      ! Update tracers based on LS vertical velocity
+      scm_update_T = .false.
+      call prim_step_scm(elem, 1, 1, dt, tl, hvcoord, scm_update_T)
+    endif
     
     if (qsize > 0 .and. .not. single_column) then
        call t_startf("PAT_remap")
