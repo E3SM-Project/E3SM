@@ -616,6 +616,9 @@ void Functions<S,D>
 
     prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, range_mask, not_skip_all);
 
+    water_vapor_conservation(qv(k),qv2qi_vapdep_tend,qv2qi_nucleat_tend,qi2qv_sublim_tend,qr2qv_evap_tend,dt, not_skip_all);
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt, not_skip_all);
+
     // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
     //          cannot possibly overdeplete qv
 
@@ -633,6 +636,13 @@ void Functions<S,D>
     ice_water_conservation(
       qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
       qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
+
+    nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
+                    nc_accret_tend, nc2nr_autoconv_tend, not_skip_all);
+    nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,
+                    nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
+    ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,
+                    ni_sublim_tend,ni_selfcollect_tend, not_skip_all);
 
     //---------------------------------------------------------------------------------
     // update prognostic microphysics and thermodynamics variables

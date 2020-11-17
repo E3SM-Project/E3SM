@@ -17,9 +17,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation {
 
   static void run_bfb()
   {
-    IceSupersatConservationData f90_data[max_pack_size] = {
-      // TODO
-    };
+    IceSupersatConservationData f90_data[max_pack_size];
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(IceSupersatConservationData);
 

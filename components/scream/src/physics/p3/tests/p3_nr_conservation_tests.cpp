@@ -17,9 +17,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation {
 
   static void run_bfb()
   {
-    NrConservationData f90_data[max_pack_size] = {
-      // TODO
-    };
+    NrConservationData f90_data[max_pack_size];
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(NrConservationData);
 

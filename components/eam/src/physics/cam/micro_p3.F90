@@ -86,8 +86,6 @@ module micro_p3
      real(rtype), dimension(:), pointer :: p
   end type realptr
 
-  logical :: Koby_fixes=.false. !PMC hack for using conservation checks not ported to C++ yet in DY2.
-
 contains
 
   SUBROUTINE p3_init(lookup_file_dir,version_p3)
@@ -817,10 +815,8 @@ contains
 
       call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qidep, qi2qv_sublim_tend)
 
-      if (Koby_fixes) then
-         call water_vapor_conservation(qv(k),qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,dt)
-         call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt)
-      end if
+      call water_vapor_conservation(qv(k),qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,dt)
+      call ice_supersat_conservation(qidep,qinuc,cld_frac_i(k),qv(k),qv_sat_i(k),latent_heat_sublim(k),th_atm(k)/exner(k),dt)
 
       ! cloud
       call cloud_water_conservation(qc(k), dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, &
@@ -834,14 +830,12 @@ contains
       call ice_water_conservation(qi(k), qidep, qinuc, qiberg, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, &
            dt, qi2qv_sublim_tend, qi2qr_melt_tend)
 
-      if (Koby_fixes) then
-         call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
-              nc_accret_tend, nc2nr_autoconv_tend)
-         call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,&
-              nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
-         call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,&
-              ni_sublim_tend,ni_selfcollect_tend)
-      end if
+      call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
+           nc_accret_tend, nc2nr_autoconv_tend)
+      call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,&
+           nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
+      call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,&
+           ni_sublim_tend,ni_selfcollect_tend)
 
       !---------------------------------------------------------------------------------
       ! update prognostic microphysics and thermodynamics variables
@@ -2903,7 +2897,7 @@ subroutine ice_supersat_conservation(qidep,qinuc,cld_frac_i,qv,qv_sat_i,latent_h
   if (qv_sink > qsmall .and. cld_frac_i > 1.0e-20_rtype) then
      ! --- Available water vapor for deposition/nucleation
      qv_avail = (qv - qv_sat_i) / &
-          (1.0_rtype + latent_heat_sublim**2.0_rtype*qv_sat_i / (cp*rv*T_atm**2.0_rtype) ) / dt
+          (1.0_rtype + bfb_square(latent_heat_sublim)*qv_sat_i / (cp*rv*bfb_square(T_atm)) ) / dt
 
      ! --- Only excess water vapor can be limited
      qv_avail = max(qv_avail,0.0_rtype)
