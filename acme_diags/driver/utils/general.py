@@ -68,18 +68,22 @@ def get_name_and_yrs(parameters, dataset, season=''):
             # TODO: Or is this ref_name?
             name_yrs = parameters.reference_name
 
+    yrs_averaged = get_yrs(dataset, season)
+    name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+    
+    return name_yrs
+
+
+def get_yrs(dataset, season=''):
     if dataset.is_climo():
         try:
             yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
-            name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
         except:
             print("No 'yrs_averaged' exists in the global attributes.")
     else:
         start_yr, end_yr = dataset.get_start_and_end_years()
         yrs_averaged = '{}-{}'.format(start_yr, end_yr)
-        name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
-    
-    return name_yrs
+    return yrs_averaged
 
 
 def convert_to_pressure_levels(mv, plevs, dataset, var, season):
