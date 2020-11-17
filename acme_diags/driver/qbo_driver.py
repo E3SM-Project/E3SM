@@ -154,6 +154,9 @@ def run_diag(parameter):
     region = '5S5N'
     test_data = utils.dataset.Dataset(parameter, test=True)
     ref_data = utils.dataset.Dataset(parameter, ref=True)
+    # Get the years of the data.
+    parameter.test_yrs = utils.general.get_yrs(test_data)
+    parameter.ref_yrs = utils.general.get_yrs(ref_data)
     for variable in variables:
         if parameter.print_statements:
             print('Variable={}'.format(variable))

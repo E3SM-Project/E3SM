@@ -69,14 +69,16 @@ def plot(period_new, parameter, test, ref):
     x = dict(axis_range=[0, months], axis_scale='linear', data=x_test, label=' ')
     y = dict(axis_range=[100, 1], axis_scale='log', data=y_test, label='hPa')
     z = dict(data=test['qbo'].T)
-    ax0 = plot_panel(0, fig, 'contourf', label_size, '{} U 5S-5N'.format(test['name']), x, y, z=z,
+    title ='{} U 5S-5N ({})'.format(test['name'], parameter.test_yrs)
+    ax0 = plot_panel(0, fig, 'contourf', label_size, title, x, y, z=z,
                plot_colors=cmap2, color_levels=color_levels0, color_ticks=[-50, -25, -5, 5, 25, 50])
 
     # Panel 1 (Middle Left)
     x = dict(axis_range=[0, months], axis_scale='linear', data=x_ref, label='month')
     y = dict(axis_range=[100, 1], axis_scale='log', data=y_ref, label='hPa')
     z = dict(data=ref['qbo'].T)
-    ax1 = plot_panel(1, fig, 'contourf', label_size, '{} U 5S-5N'.format(ref['name']), x, y, z=z,
+    title = '{} U 5S-5N ({})'.format(ref['name'], parameter.ref_yrs)
+    ax1 = plot_panel(1, fig, 'contourf', label_size, title, x, y, z=z,
                plot_colors=cmap2, color_levels=color_levels0, color_ticks=[-50, -25, -5, 5, 25, 50])
     # Panel 2 (Top/Middle Right)
     # TODO: Are the test/ref values correct for data, data_label, data2, data2_label??
@@ -84,13 +86,15 @@ def plot(period_new, parameter, test, ref):
              data2=test['amplitude'][:], data2_label=test['name'], label='Amplitude (m/s)')
     y = dict(axis_range=[100, 1], axis_scale='log', data=ref['level'][:],
              data2=test['level'][:], label='Pressure (hPa)')
-    ax2 = plot_panel(2, fig, 'line', label_size, 'QBO Amplitude \n (period = 20-40 months)', x, y)
+    title = 'QBO Amplitude \n (period = 20-40 months)'
+    ax2 = plot_panel(2, fig, 'line', label_size, title, x, y)
     # Panel 3 (Bottom)
     x = dict(axis_range=[0, 50], axis_scale='linear', data=period_new, data_label=ref['name'],
              data2=period_new, data2_label=test['name'], label='Period (months)')
     y = dict(axis_range=[-1, 25], axis_scale='linear', data=ref['amplitude_new'],
              data2=test['amplitude_new'], label='Amplitude (m/s)')
-    ax3 = plot_panel(3, fig, 'line', label_size, 'QBO Spectral Density (Eq. 18-22 hPa zonal winds)', x, y)
+    title = 'QBO Spectral Density (Eq. 18-22 hPa zonal winds)'
+    ax3 = plot_panel(3, fig, 'line', label_size, title, x, y)
     plt.tight_layout()
 
     # Figure title
