@@ -57,6 +57,7 @@ set (SCREAM_LIBS
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
+target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
 # Set f90 compiled modules dir
 set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)

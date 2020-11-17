@@ -72,7 +72,7 @@ function(CreateUnitTest target_name target_srcs scream_libs)
     COMPILER_FLAGS " ${CreateUnitTest_COMPILER_FLAGS}"
     COMPILER_C_FLAGS " ${CreateUnitTest_COMPILER_C_FLAGS}"
     COMPILER_CXX_FLAGS " ${CreateUnitTest_COMPILER_CXX_FLAGS}"
-    COMPILER_F_FLAGS " ${CreateUnitTest_COMPILER_F_FLAGS}"
+    COMPILER_F_FLAGS " ${CreateUnitTest_COMPILER_F_FLAGS} ${SCREAM_Fortran_FLAGS}"
     INCLUDE_DIRS " ${TEST_INCLUDE_DIRS}"
     LIBS " ${test_libs}"
     LIBS_DIRS " ${SCREAM_TPL_LIBRARY_DIRS}"

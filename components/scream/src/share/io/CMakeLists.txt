@@ -16,12 +16,9 @@ set (SCREAM_CIME_LIBS
 
 # Create io lib
 add_library(scream_io ${SCREAM_SCORPIO_SRCS})
-
-# Set f90 compiled modules dir
-set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-# Link libraries
+set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(scream_io PUBLIC scream_share ${SCREAM_CIME_LIBS})
+target_compile_options(scream_io PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
 if (NOT SCREAM_LIBS_ONLY)
   add_subdirectory(tests)

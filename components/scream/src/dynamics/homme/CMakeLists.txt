@@ -177,6 +177,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_link_libraries(${dynLibName} scream_share ${hommeLibName})
+    target_compile_options(${dynLibName} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
     set_target_properties (${dynLibName}
       PROPERTIES
