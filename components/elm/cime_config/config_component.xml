@@ -13,7 +13,7 @@
     <desc>Name of land component</desc>
   </entry>
 
-  <entry id="CLM_CONFIG_OPTS" >
+  <entry id="ELM_CONFIG_OPTS" >
     <type>char</type>
     <default_value></default_value>
     <values modifier='additive'>
@@ -33,7 +33,7 @@
       This is an advanced flag and should only be used by expert users.</desc>
   </entry>
 
-  <entry id="CLM_NML_USE_CASE">
+  <entry id="ELM_NML_USE_CASE">
     <type>char</type>
     <default_value>UNSET</default_value>
     <values>
@@ -96,7 +96,7 @@
 
   <!-- CLM_BLDNML_OPTS is not additive, we must list all possible combinations -->
   <!-- ERROR: the node below is never matched, see bug 2025 -->
-  <entry id="CLM_BLDNML_OPTS">
+  <entry id="ELM_BLDNML_OPTS">
     <type>char</type>
     <default_value></default_value>
     <values>
@@ -131,7 +131,7 @@
     <desc>ELM build-namelist options</desc>
   </entry>
 
-  <entry id="CLM_CO2_TYPE">
+  <entry id="ELM_CO2_TYPE">
     <type>char</type>
     <valid_values>constant,diagnostic,prognostic</valid_values>
     <!--list>1</list-->
@@ -159,7 +159,7 @@
       This is an advanced flag and should only be used by expert users.</desc>
   </entry>
 
-  <entry id="CLM_NAMELIST_OPTS">
+  <entry id="ELM_NAMELIST_OPTS">
     <type>char</type>
     <default_value></default_value>
     <group>run_component_clm</group>
@@ -173,7 +173,7 @@
       This is an advanced flag and should only be used by expert users.</desc>
   </entry>
 
-  <entry id="CLM_ACCELERATED_SPINUP">
+  <entry id="ELM_ACCELERATED_SPINUP">
     <type>char</type>
     <valid_values>on,off</valid_values>
     <default_value>off</default_value>
@@ -183,7 +183,7 @@
     </desc>
   </entry>
 
-  <entry id="CLM_USRDAT_NAME">
+  <entry id="ELM_USRDAT_NAME">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_component_clm</group>
@@ -194,7 +194,7 @@
       This is an advanced flag and should only be used by expert users.</desc>
   </entry>
 
-  <entry id="CLM_FORCE_COLDSTART">
+  <entry id="ELM_FORCE_COLDSTART">
     <type>char</type>
     <valid_values>on,off</valid_values>
     <default_value>off</default_value>
