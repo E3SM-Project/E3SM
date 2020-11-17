@@ -17,11 +17,10 @@
     <type>char</type>
     <default_value></default_value>
     <values modifier='additive'>
-      <value compset="_ELM"                >-phys clm4_5</value>
-      <value compset="_ELM50"                >-phys clm5_0</value>
-      <value compset="_ELM%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
-      <value compset="1950_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
-      <value compset="2010_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="_ELM"                >-phys elm</value>
+      <value compset="_ELM%[^_]*BC" >-phys elm -cppdefs -DMODAL_AER</value>
+      <value compset="1950_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys elm -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="2010_EAM%CMIP6-[LH]R[^_]*_ELM%[^_]*BC"                >-phys elm -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>

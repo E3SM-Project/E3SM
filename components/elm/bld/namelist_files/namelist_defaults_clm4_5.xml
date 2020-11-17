@@ -66,8 +66,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <albice glc_nec="36">0.60,0.40</albice>
 
 <!-- Default urban air conditioning/heating and wasteheat -->
-<urban_hac phys="clm5_0" >ON_WASTEHEAT</urban_hac>
-<urban_hac phys="clm4_5" >ON</urban_hac>
+<urban_hac phys="elm" >ON</urban_hac>
 
 <!-- Default urban traffic flux -->
 <urban_traffic>.false.</urban_traffic>

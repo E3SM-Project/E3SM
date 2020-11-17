@@ -95,10 +95,10 @@ OPTIONS
                                 CLM Biogeochemistry mode
                                 sp    = Satellite Phenology (SP)
                                 cn    = Carbon Nitrogen model (CN)
-                                        (or CLM45CN if phys=clm4_5/clm5_0, use_cn=true)
+                                        (ELMCN use_cn=true)
                                 bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
                                         CENTURY decomposition
-                                        (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
+                                        (or ELMBGC use_cn=true, use_vertsoilc=true,
                                          use_century_decomp=true, use_nitrif_denitrif=true, use_lch4=true,
                                          and use_snicar_ad=true, use_dynroot)
                                         This toggles on the namelist variables:
@@ -440,7 +440,6 @@ sub check_for_perl_utils {
   require Build::NamelistDefinition;
   require Build::NamelistDefaults;
   require Build::Namelist;
-  require config_files::clm_phys_vers;
   require SetupTools;
 }
 
@@ -479,10 +478,10 @@ sub read_namelist_definition {
 
   # The namelist definition file contains entries for all namelist
   # variables that can be output by build-namelist.
-  my $phys = $physv->as_filename( );
+  my $phys = "elm";
   my @nl_definition_files = ( "$cfgdir/namelist_files/namelist_definition_drv.xml",
                               "$cfgdir/namelist_files/namelist_definition_drv_flds.xml",
-                              "$cfgdir/namelist_files/namelist_definition_$phys.xml" );
+                              "$cfgdir/namelist_files/namelist_definition_clm4_5.xml" );
   foreach my $nl_defin_file  ( @nl_definition_files ) {
     (-f "$nl_defin_file")  or  fatal_error("Cannot find namelist definition file \"$nl_defin_file\"\n");
 
@@ -536,10 +535,10 @@ sub read_envxml_case_files {
 sub read_namelist_defaults {
   my ($drvblddir, $opts, $nl_flags, $cfg, $physv) = @_;
 
-  my $phys = $physv->as_filename( );
+  my $phys = "elm";
   # The namelist defaults file contains default values for all required namelist variables.
   my @nl_defaults_files = ( "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_overall.xml",
-                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_$phys.xml",
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_clm4_5.xml",
                             "$drvblddir/namelist_files/namelist_defaults_drv.xml",
                             "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml" );
 
@@ -659,7 +658,6 @@ sub process_namelist_commandline_options {
   # : res, mask, rcp, sim_year, sim_year_range, and bgc_spinup.
   #
   # NOTE: cfg only needs to be passed to functions that work with
-  # clm4_0 compile time functionality!
 
   my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
 
@@ -762,10 +760,10 @@ sub setup_cmdl_fates_mode {
   my $val;
   my $var = "bgc_mode";
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") || $nl_flags->{'crop'} eq "on" ) {
+  if ( $nl_flags->{'crop'} eq "on" ) {
     if ( $nl_flags->{$var} eq "ed" ) {
-       # ED is not a clm4_0 option and should not be used with crop and not with clm4_0
-       fatal_error("** Cannot turn ed mode on with crop or with clm4_0 physics.\n" );
+       # ED should not be used with crop
+       fatal_error("** Cannot turn ed mode on with crop.\n" );
     }
   } elsif ($nl_flags->{"bgc_mode"} eq "ed" && $nl_flags->{"use_fates"} ne ".true.") {
     fatal_error("DEV_ERROR: internal logic error: bgc_mode = ed and use_fates = false.\n");
@@ -872,10 +870,10 @@ sub setup_cmdl_betr_mode {
   $val = $opts->{$var};
   $nl_flags->{'betr_mode'} = $val;
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") || $nl_flags->{'crop'} eq "on" ) {
+  if ( $nl_flags->{'crop'} eq "on" ) {
       if ( $nl_flags->{$var} == 1 ) {
-	  # BeTR is not a clm4_0 option and should not be used with crop and not with clm4_0
-	  fatal_error("** Cannot turn betr mode on with crop or with clm4_0 physics.\n" );
+	  # BeTR should not be used with crop
+	  fatal_error("** Cannot turn betr mode on with crop \n" );
       }
   } else {
 
@@ -964,12 +962,7 @@ sub setup_cmdl_bgc {
   $val = $opts->{$var};
   $nl_flags->{'bgc_mode'} = $val;
   
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    if ( $nl_flags->{'bgc_mode'} ne "default" ) {
-      fatal_error("-bgc option used with clm4_0 physics. -bgc can ONLY be used with clm4_5/clm5_0 physics");
-    }
-    $nl_flags->{'bgc_mode'} = $cfg->get($var);
-  } else {
+  {
     my $var = "bgc_mode";
     if ( $nl_flags->{$var} eq "default" ) {
        $nl_flags->{$var} = $defaults->get_value($var);
@@ -1078,13 +1071,11 @@ sub setup_cmdl_nitrif_denitrif {
   my $val = $opts->{$var};
 
   if ( $val eq 1 ) {
-    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
-      fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5");
-    } else {
+    {
 
       $var = "bgc_mode";
       if ($nl_flags->{$var} eq "sp") {
-        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn|bgc");
+        fatal_error("-nitrif_denitrif option can ONLY be used for elm with -bgc cn|bgc");
       } else {
 
         $var = "use_nitrif_denitrif";
@@ -1113,20 +1104,11 @@ sub setup_cmdl_methane {
   my $val = $opts->{$var};
 
   if ( $val eq 1 ) {
-    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
-      fatal_error("-methane option can ONLY be used with clm4_5");
-    } else {
-    }
-  }
-
-  if ( $val eq 1 ) {
-    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
-      fatal_error("-methane option can ONLY be used for clm4_5");
-    } else {
+    {
 
       $var = "bgc_mode";
       if ($nl_flags->{$var} eq "sq") {
-        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn|bgc");
+        fatal_error("-methane option can ONLY be used for elm with -bgc cn|bgc");
       } else {
 
         $val = $nl_flags->{'use_nitrif_denitrif'};
@@ -1163,13 +1145,11 @@ sub setup_cmdl_nutrient {
   my $var = "nutrient";
   my $val = $opts->{$var};
 
-  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
-    fatal_error("-nutrient option used without clm4_5 physics.");
-  } else {
+  {
     if ($val ne "default"){
 
       if ($nl_flags->{"bgc_mode"} eq "sp"){
-        fatal_error("-nutrient nutrient_option can ONLY be used with clm4_5 with -bgc cn|bgc");
+        fatal_error("-nutrient nutrient_option can ONLY be used with elm with -bgc cn|bgc");
       } else {
 
         if ($val eq "c"){
@@ -1282,13 +1262,11 @@ sub setup_cmdl_nutrient_comp {
 
   $nl_flags->{'nu_com'} = "";
 
-  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
-    fatal_error("-nutrient_comp_pathway used without clm4_5 physics.");
-  } else {
+  {
     if ($val ne "default"){
 
       if ($nl_flags->{"bgc_mode"} eq "sp"){
-        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn|bgc");
+        fatal_error("-nutrient_comp_pathway option can ONLY be used with elm with -bgc cn|bgc");
       } else {
 
         if ($val eq "rd"){
@@ -1348,13 +1326,11 @@ sub setup_cmdl_soil_decomp {
   my $var = "soil_decomp";
   my $val = $opts->{$var};
 
-  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
-    fatal_error("-soil_decomp used without clm4_5 physics.");
-  } else {
+  {
     if ($val ne "default"){
 
       if ($nl_flags->{"bgc_mode"} eq "sp"){
-        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn|bgc");
+        fatal_error("-soil_decomp option can ONLY be used with elm with -bgc cn|bgc");
       } else {
 
         if ($val eq "ctc"){
@@ -1399,12 +1375,7 @@ sub setup_cmdl_crop {
   $nl_flags->{'use_crop'} = ".false.";
   my $val;
   my $var = "crop";
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    $nl_flags->{'crop'} = $cfg->get($var);
-    if ( $nl_flags->{'crop'} eq "on" ) {
-      $nl_flags->{'use_crop'} = ".true.";
-    }
-  } else {
+  {
     $val = $opts->{$var};
     $nl_flags->{'crop'} = $val;
     if ( $nl_flags->{'crop'} eq 1 ) {
@@ -1442,10 +1413,7 @@ sub setup_cmdl_maxpft {
 
   my $val;
   my $var = "maxpft";
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    $nl_flags->{'maxpft'} = $cfg->get($var);
-    # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
-  } else {
+  {
     my %maxpatchpft;
     $maxpatchpft{'.true.'}   = 25;
     $maxpatchpft{'.false.'} = 17;
@@ -1536,16 +1504,7 @@ sub setup_cmdl_irrigation {
     fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
   }
   verbose_message("Irrigation $val");
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    if ( $nl_flags->{'irrig'} =~ /$TRUE/i && $nl_flags->{'use_crop'} eq ".true." ) {
-      fatal_error("You've turned on both irrigation and crop.\n" .
-                  "Irrigation is only applied to generic crop currently,\n" .
-                  "which negates it's practical usage.\n." .
-                  "We also have a known problem when both are on " .
-                  "(see bug 1326 in the components/clm/doc/KnownBugs file)\n" .
-                  "both irrigation and crop can NOT be on.\n");
-    }
-  } else {
+  {
     if ( defined($nl->get_value("irrigate")) && $nl->get_value("irrigate") ne $nl_flags->{'irrig'} ) {
       my $irrigate = $nl->get_value("irrigate");
       fatal_error("The namelist value 'irrigate=$irrigate' contradicts the command line option '-irrig=$val'");
@@ -1588,12 +1547,7 @@ sub setup_cmdl_bgc_spinup {
   my $var;
   $nl_flags->{'spinup'} = undef;
   $nl_flags->{'bgc_spinup'} = undef;
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    $nl_flags->{'spinup'} = $cfg->get('spinup');
-    if ($opts->{"bgc_spinup"} ne "default") {
-      fatal_error("bgc_spinup can not be controlled from the namelist in CLM 4.0. Try configure using CLM_CONFIG_OPTS (-spinup).");
-    }
-  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5")) {
+  {
     $var = "bgc_spinup";
     if ( $opts->{$var} ne "default" ) {
       $val = $opts->{$var};
@@ -1618,9 +1572,7 @@ sub setup_cmdl_bgc_spinup {
     }
   }
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    $val = $nl_flags->{'spinup'};
-  } else {
+  {
     $val = $nl_flags->{'bgc_spinup'};
   }
   verbose_message("CLM CN bgc_spinup mode is $val");
@@ -1700,12 +1652,7 @@ sub setup_cmdl_dynamic_vegetation {
   my $var = "dynamic_vegetation";
   $val = $opts->{$var};
   $nl_flags->{'dynamic_vegetation'} = $val;
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    # not applicable
-    if ( $nl_flags->{'dynamic_vegetation'}eq 1) {
-       fatal_error("** Turn dynamic_vegetation mode on with CLM_CONFIG_OPTS (-bgc cndv) for clm4_0 physics.\n" );
-    }
-  } else {
+  {
     if ( ($nl_flags->{'dynamic_vegetation'} eq 1 ) && ($nl_flags->{'bgc_mode'} eq "sp") ) {
       fatal_error("** Cannot turn dynamic_vegetation mode on with bgc=sp.\n" .
                   "**\n" .
@@ -1742,12 +1689,7 @@ sub setup_cmdl_vichydro {
   my $var = "vichydro";
   $val = $opts->{$var};
   $nl_flags->{'vichydro'} = $val;
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    # not relevant in clm4_0
-    if ( $nl_flags->{'vichydro'}eq 1) {
-       fatal_error("** Cannot turn vichydro on with clm4_0 physics.\n" );
-    }
-  } else {
+  {
     if ($nl_flags->{'vichydro'} eq 1) {
       message("Using VIC hydrology for runoff calculations.");
     }
@@ -1899,10 +1841,8 @@ sub process_namelist_commandline_use_case {
     $settings{'sim_year'}       = $nl_flags->{'sim_year'};
     $settings{'sim_year_range'} = $nl_flags->{'sim_year_range'};
     $settings{'phys'}           = $nl_flags->{'phys'};
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+    {
       $settings{'use_cn'}         = $nl_flags->{'use_cn'};
-    } else {
-      $settings{'bgc'}         = $nl_flags->{'bgc_mode'};
     }
     # Loop over the variables specified in the use case.
     # Add each one to the namelist.
@@ -2045,7 +1985,7 @@ sub setup_logic_site_specific {
   # site specific requirements
   my ($nl_flags, $definition, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     # res check prevents polluting the namelist with an unnecessary
     # false variable for every run
     if ($nl_flags->{'res'} eq "1x1_vancouverCAN") {
@@ -2056,7 +1996,7 @@ sub setup_logic_site_specific {
     }
   }
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     # res check prevents polluting the namelist with an unnecessary
     # false variable for every run
     if ($nl_flags->{'res'} eq "1x1_mexicocityMEX") {
@@ -2067,13 +2007,13 @@ sub setup_logic_site_specific {
     }
   }
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'res'} eq "1x1_smallvilleIA") {
+  if ( $nl_flags->{'res'} eq "1x1_smallvilleIA") {
     if ($nl_flags->{'use_cn'} ne ".true." || $nl_flags->{'use_crop'} ne ".true.") {
       fatal_error("1x1_smallvilleIA grids must use a compset with CN and CROP turned on.\n");
     }
   }
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'res'} eq "1x1_numaIA") {
+  if ( $nl_flags->{'res'} eq "1x1_numaIA") {
     if ($nl_flags->{'use_cn'} ne ".true." || $nl_flags->{'use_crop'} ne ".true.") {
       fatal_error("1x1_numaIA grids must use a compset with CN and CROP turned on.\n");
     }
@@ -2137,7 +2077,7 @@ sub setup_logic_co2_type {
 sub setup_logic_irrigate {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     if ( $nl_flags->{'use_crop'} eq ".true." ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'irrigate', 'val'=>$nl_flags->{'irrig'});
     }
@@ -2250,7 +2190,7 @@ sub setup_logic_glacier {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $envxml_ref, $physv) = @_;
 
   my $clm_upvar = "GLC_TWO_WAY_COUPLING";
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
      # glc_do_dynglacier is set via GLC_TWO_WAY_COUPLING; it cannot be set via
      # user_nl_clm (this is because we might eventually want the coupler and glc
      # to also respond to GLC_TWO_WAY_COUPLING, by not bothering to send / map
@@ -2263,11 +2203,6 @@ sub setup_logic_glacier {
         fatal_error("glc_do_dynglacier can only be set via the env variable $clm_upvar: it can NOT be set in user_nl_clm\n");
      }
 
-  } else {
-     # Otherwise if CLM4.0 physics and GLC_TWO_WAY_COUPLING is TRUE -- trigger an error
-     if ( logical_to_fortran($envxml_ref->{$clm_upvar})  =~ /$TRUE/i ) {
-        fatal_error( "clm4_0 physics are being used, but $clm_upvar variable is set to true. $clm_upvar can ONLY be set for physics after clm4_5" );
-     }
   }
 
   my $var = "maxpatch_glcmec";
@@ -2304,7 +2239,7 @@ sub setup_logic_glacier {
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flndtopo'  , 'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'} );
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fglcmask'  , 'hgrid'=>$nl_flags->{'res'});
 
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+    {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'glcmec_downscale_rain_snow_convert');
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'glcmec_downscale_longwave');
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'glc_snow_persistence_max_days');
@@ -2358,13 +2293,11 @@ sub setup_logic_params_file {
   # parameters.
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'paramfile', 
                 'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );
    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon',
                 'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );   
-  } else {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fpftcon');
   }
 }
 
@@ -2374,12 +2307,7 @@ sub setup_logic_create_crop_landunit {
   # Create crop land unit
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    if ( $nl_flags->{'crop'} eq "on" ) {
-      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit' );
-    }
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 'irrig'=>$nl_flags->{'irrig'} );
-  } else {
+  {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 'use_crop'=>$nl_flags->{'use_crop'});
   }
 }
@@ -2389,12 +2317,8 @@ sub setup_logic_create_crop_landunit {
 sub setup_logic_humanindex {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'calc_human_stress_indices');
-  } else {
-     if ( defined($nl->get_value('calc_human_stress_indices')) ) {
-        fatal_error( "calc_human_stress_indices can NOT be set, for physics versions less than clm4_5" );
-     }
   }
 }
 
@@ -2412,7 +2336,7 @@ sub setup_logic_urban {
 sub setup_logic_soilstate {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'more_vertlayers', 'hgrid'=>$nl_flags->{'res'} );
     $nl_flags->{'more_vert'} = $nl->get_value('more_vertlayers');
   }
@@ -2429,11 +2353,6 @@ sub setup_logic_use_dynroot {
   my $use_dynroot = $nl->get_value('use_dynroot');
 
   if ( $use_dynroot eq ".true.") {
-
-    # use_dynroot not supported for CLM4_0 physics
-    if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-      fatal_error("use_dynroot option used with clm4_0 physics. use_dynroot can ONLY be used with clm4_5/clm5_0 physics");
-    }
 
     # use_dynroot not supported for SP mode
     if ( $nl_flags->{'bgc_mode'} eq "sp" ) {
@@ -2464,7 +2383,7 @@ sub setup_logic_demand {
   $settings{'irrig'}          = $nl_flags->{'irrig'};
   $settings{'rcp'}            = $nl_flags->{'rcp'};
   $settings{'glc_nec'}        = $nl_flags->{'glc_nec'};
-  if ( $physv->as_long() >= $physv->as_long("clm4_5")) {
+  {
     # necessary for demand to be set correctly (flanduse_timeseries requires
     # use_crop, maybe other options require other flags?)!
     $settings{'use_cn'}              = $nl_flags->{'use_cn'};
@@ -2524,16 +2443,7 @@ sub setup_logic_surface_dataset {
   }
   $flanduse_timeseries = $nl_flags->{'flanduse_timeseries'};
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    if ($flanduse_timeseries ne "null" && $nl_flags->{'bgc_mode'} eq "cndv" ) {
-        fatal_error( "dynamic PFT's (setting flanduse_timeseries) are incompatible with dynamic vegetation ('-bgc cndv' in CLM_CONFIG_OPTS)." );
-    }
-
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsurdat',
-                'hgrid'=>$nl_flags->{'res'},
-                'sim_year'=>$nl_flags->{'sim_year'}, 'irrig'=>$nl_flags->{'irrig'},
-                'crop'=>$nl_flags->{'crop'}, 'glc_nec'=>$nl_flags->{'glc_nec'});
-  } else{
+  {
     if ($flanduse_timeseries ne "null" && $nl_flags->{'use_cndv'} =~ /$TRUE/i ) {
         fatal_error( "dynamic PFT's (setting flanduse_timeseries) are incompatible with dynamic vegetation (use_cndv=.true)." );
     }
@@ -2573,14 +2483,7 @@ sub setup_logic_initial_conditions {
       if ( $nl_flags->{'use_crop'} eq ".true." ) {
         fatal_error("using ignore_ic_date is incompatable with crop!");
       }
-      if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-        add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
-                    'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
-                    'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
-                    'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
-                    'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
-                    'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
-      } else {
+      {
 	my $nu_com_val = $nl_flags->{'nu_com'};
 	if ($nu_com_val eq "") {
 	  $nu_com_val = "RD";
@@ -2600,14 +2503,7 @@ sub setup_logic_initial_conditions {
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } elsif ($opts->{'ignore_ic_year'}) {
-      if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-        add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
-                    'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
-                    'ic_md'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
-                    'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
-                    'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
-                    'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
-      } else {
+      {
 	my $nu_com_val = $nl_flags->{'nu_com'};
 	if ($nu_com_val eq "") {
 	  $nu_com_val = "RD";
@@ -2627,14 +2523,7 @@ sub setup_logic_initial_conditions {
                     'irrigate'=>$nl_flags->{'irrigate'} );
       }
     } else {
-      if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-        add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
-                    'hgrid'=>$nl_flags->{'res'}, 'mask'=>$nl_flags->{'mask'},
-                    'ic_ymd'=>$ic_date, 'nofail'=>$nofail, 'flanduse_timeseries'=>$nl_flags->{'flanduse_timeseries'},
-                    'sim_year'=>$nl_flags->{'sim_year'}, 'maxpft'=>$nl_flags->{'maxpft'},
-                    'irrig'=>$nl_flags->{'irrig'}, 'glc_nec'=>$nl_flags->{'glc_nec'},
-                    'crop'=>$nl_flags->{'crop'}, 'bgc'=>$nl_flags->{'bgc_mode'} );
-      } else {
+      {
 	my $nu_com_val = $nl_flags->{'nu_com'};
 	if ($nu_com_val eq "") {
 	  $nu_com_val = "RD";
@@ -2690,7 +2579,7 @@ sub setup_logic_do_transient_pfts {
 
    my $var = 'do_transient_pfts';
    
-   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+   {
       # Start by assuming a default value of '.true.'. Then check a number of
       # conditions under which do_transient_pfts cannot be true. Under these
       # conditions: (1) set default value to '.false.'; (2) make sure that the
@@ -2749,7 +2638,7 @@ sub setup_logic_do_transient_crops {
 
    my $var = 'do_transient_crops';
 
-   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+   {
       # Start by assuming a default value of '.true.'. Then check a number of
       # conditions under which do_transient_crops cannot be true. Under these
       # conditions: (1) set default value to '.false.'; (2) make sure that the
@@ -2813,7 +2702,7 @@ sub setup_logic_do_harvest {
    
    my $var = 'do_harvest';
 
-   if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+   {
       # Start by assuming a default value of '.true.'. Then check a number of
       # conditions under which do_harvest cannot be true. Under these
       # conditions: (1) set default value to '.false.'; (2) make sure that the
@@ -2862,7 +2751,7 @@ sub setup_logic_do_harvest {
 sub setup_logic_bgc_spinup {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5")) {
+  {
     if ( $nl_flags->{'bgc_mode'} ne "sp" ) {
       # only set bgc_spinup state if CN is on.
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'spinup_state', 'bgc_spinup'=>$nl_flags->{'bgc_spinup'} );
@@ -2900,11 +2789,7 @@ sub setup_logic_supplemental_nitrogen {
     }
     
     if ( $suplnitro =~ /ALL/i ) {
-      if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'spinup'} ne "normal" ) {
-        fatal_error("There is no need to use a spinup mode when supplemental Nitrogen is on for all PFT's, as these modes spinup Nitrogen\n" .
-                    "when spinup != normal you can NOT set supplemental Nitrogen (suplnitro) to ALL\n");
-      }
-      if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_spinup'} ne "off" ) {
+      if ( $nl_flags->{'bgc_spinup'} ne "off" ) {
         warning("There is no need to use a bgc_spinup mode when supplemental Nitrogen is on for all PFT's, as these modes spinup Nitrogen\n");
       }
     }
@@ -3056,27 +2941,7 @@ sub setup_logic_nitrogen_deposition {
   # Nitrogen deposition for bgc=CN
   #
 
-  if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'}, 
-                'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
-                'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
-                'sim_year_range'=>$nl_flags->{'sim_year_range'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_ndep', 'phys'=>$nl_flags->{'phys'},
-                'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
-                'sim_year_range'=>$nl_flags->{'sim_year_range'});
-
-    # Set align year, if first and last years are different
-    if ( $nl->get_value('stream_year_first_ndep') != $nl->get_value('stream_year_last_ndep') ) {
-      add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_ndep', 'sim_year'=>$nl_flags->{'sim_year'},
-                  'sim_year_range'=>$nl_flags->{'sim_year_range'});
-    }
-
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_ndep', 'phys'=>$nl_flags->{'phys'},
-                'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
-                'hgrid'=>"1.9x2.5" );
-
-  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+  if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
@@ -3116,28 +2981,7 @@ sub setup_logic_phosphorus_deposition {
   # Phosphorus deposition for bgc=CN
   #
 
- # if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
- #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
- #               'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
- #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
- #               'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
- #               'sim_year_range'=>$nl_flags->{'sim_year_range'});
- #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_pdep', 'phys'=>$nl_flags->{'phys'},
- #               'bgc'=>$nl_flags->{'bgc_mode'}, 'sim_year'=>$nl_flags->{'sim_year'},
- #               'sim_year_range'=>$nl_flags->{'sim_year_range'});
-
-    # Set align year, if first and last years are different
- #   if ( $nl->get_value('stream_year_first_pdep') != $nl->get_value('stream_year_last_pdep') ) {
- #     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'model_year_align_pdep', 'sim_year'=>$nl_flags->{'sim_year'},
- #                 'sim_year_range'=>$nl_flags->{'sim_year_range'});
- #   }
-
- #   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_pdep', 'phys'=>$nl_flags->{'phys'},
- #               'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
- #               'hgrid'=>"1.9x2.5" );
-
- # } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} ne "sp" ) {
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},
@@ -3171,10 +3015,10 @@ sub setup_logic_phosphorus_deposition {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_popd_streams {
-  # population density streams require clm4_5/clm5_0 and CN/BGC
+  # population density streams require elm and CN/BGC
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'popdensmapalgo', 'hgrid'=>$nl_flags->{'res'} );
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_popdens', 'phys'=>$nl_flags->{'phys'},
@@ -3208,10 +3052,10 @@ sub setup_logic_popd_streams {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_lightning_streams {
-  # lightning streams require clm4_5/clm5_0 and CN/BGC
+  # lightning streams require elm and CN/BGC
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'lightngmapalgo', 'use_cn'=>$nl_flags->{'use_cn'},
                   'hgrid'=>$nl_flags->{'res'} );
@@ -3283,10 +3127,10 @@ sub setup_logic_megan {
 #-------------------------------------------------------------------------------
 
 sub setup_logic_lai_streams {
-  # lai streams require clm4_5/clm5_0
+  # lai streams require elm
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+  {
     if ( $nl_flags->{'use_crop'} eq ".true." && $nl_flags->{'use_lai_streams'} eq ".true." ) {
       fatal_error("turning use_lai_streams on is incompatable with use_crop set to true.");
     }
@@ -3332,7 +3176,7 @@ sub setup_logic_snowpack {
   #
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  if ($physv->as_long() >= $physv->as_long("clm4_5")) {
+  {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'nlevsno');
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'h2osno_max');
   }
@@ -3345,7 +3189,7 @@ sub setup_logic_pflotran {
     #
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-    if ( $physv->as_long() >= $physv->as_long("clm4_5")) {
+    {
 
       if ( $nl_flags->{'use_pflotran'}  eq '.true.' ) {
         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_inputdir' );
@@ -3367,7 +3211,7 @@ sub setup_logic_fates {
     #
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-    if ($physv->as_long() >= $physv->as_long("clm4_5") && value_is_true( $nl_flags->{'use_fates'})  ) {
+    if ( value_is_true( $nl_flags->{'use_fates'})  ) {
  	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'} );
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_logging',            'use_fates'=>$nl_flags->{'use_fates'});
@@ -3401,14 +3245,7 @@ sub write_output_files {
 
   # CLM component
   my @groups;
-  if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    @groups = qw(elm_inparm);
-    # Eventually only list namelists that are actually used when CN on
-    #if ( $nl_flags->{'bgc_mode'}  eq "cn" ) {
-      push @groups, "ndepdyn_nml";
-      push @groups, "pdepdyn_nml";
-    #}
-  } else {
+  {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm 
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
                  elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm);
@@ -3421,7 +3258,7 @@ sub write_output_files {
     if ( $nl_flags->{'use_lch4'}  eq ".true." ) {
       push @groups, "ch4par_in";
     }
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
+    {
       push @groups, "elm_humanindex_inparm";
     }
   }
@@ -4074,7 +3911,7 @@ sub main {
   check_for_perl_utils($nl_flags{'cfgdir'});
   my $cfg = read_configure_definition($nl_flags{'cfgdir'}, \%opts);
 
-  my $physv = config_files::clm_phys_vers->new( $cfg->get('phys') );
+  my $physv = "elm";
   my $cesmroot   = abs_path( "$nl_flags{'cfgdir'}/../../../");
   my $definition = read_namelist_definition($cfgdir, \%opts, \%nl_flags, $physv);
   my $defaults   = read_namelist_defaults($cfgdir, \%opts, \%nl_flags, $cfg, $physv);
