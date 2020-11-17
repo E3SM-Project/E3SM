@@ -333,6 +333,16 @@ class TestAllScream(object):
         # Ctest only needs config options, and doesn't need the leading 'cmake '
         result  = "{}-C {}".format("" if for_ctest else "cmake ", self.get_machine_file())
 
+        # Netcdf should be available. But if the user is doing a testing session
+        # where all netcdf-related code is disabled, he/she should be able to run
+        # even if no netcdf is available
+        stat, f_path, err = run_cmd("nf-config --prefix")
+        if stat == 0:
+            result += " -DNetCDF_Fortran_PATHS={}".format(f_path)
+        stat, c_path, err = run_cmd("nc-config --prefix")
+        if stat == 0:
+            result += " -DNetCDF_C_PATHS={}".format(c_path)
+
         # Test-specific cmake options
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
