@@ -5,137 +5,31 @@ module prim_driver_mod
 
   use prim_driver_base,     only: deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only: prim_init1, prim_finalize
+  use kinds,                only : real_kind
+  use dimensions_mod,       only : qsize, nelemd, np, qsize
+  use element_mod,          only : element_t
+  use prim_driver_base,     only : deriv1, smooth_topo_datasets
+  use prim_cxx_driver_base, only : prim_init1, prim_finalize
 
   implicit none
 
   public :: prim_init2
   public :: prim_run_subcycle
+  public :: prim_init_elements_views
+  public :: prim_init_grid_views
+  public :: prim_init_geopotential_views
+  public :: prim_init_state_views
+  public :: prim_init_ref_states_views
+  public :: prim_init_diags_views
 
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
-    use iso_c_binding,    only : c_loc, c_ptr, c_bool, C_NULL_CHAR
-    use control_mod,      only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
-                                 nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
-                                 hypervis_order, hypervis_subcycle, hypervis_scaling,    &
-                                 ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                                 use_cpstar, transport_alg, theta_hydrostatic_mode,      &
-                                 dcmip16_mu, theta_advect_form, test_case, MAX_STRING_LEN
-    use dimensions_mod,   only : qsize, nelemd, np, qsize
-    use element_mod,      only : element_t
-    use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
-                                 elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
-                                 elem_state_Q, elem_state_Qdp,                         &
-                                 elem_theta_ref, elem_dp_ref, elem_phi_ref,            &
-                                 elem_accum_kener, elem_accum_pener, elem_accum_iener, &
-                                 elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass
     use hybrid_mod,       only : hybrid_t
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
-    use kinds,            only : real_kind
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
-
-    interface
-      subroutine init_reference_element_c (deriv_ptr, mass_ptr) bind(c)
-        use iso_c_binding, only : c_ptr
-        !
-        ! Inputs
-        !
-        type (c_ptr), intent(in) :: deriv_ptr, mass_ptr
-      end subroutine init_reference_element_c
-      subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
-                                           qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
-                                           hypervis_order, hypervis_subcycle, hypervis_scaling,          &
-                                           dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
-                                           disable_diagnostics, use_cpstar, use_semi_lagrange_transport, &
-                                           theta_hydrostatic_mode, test_case_name) bind(c)
-        use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
-        !
-        ! Inputs
-        !
-        integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
-        integer(kind=c_int),  intent(in) :: state_frequency, qsize
-        real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
-        integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle
-        integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
-        logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
-        logical(kind=c_bool), intent(in) :: use_semi_lagrange_transport, theta_hydrostatic_mode
-        type(c_ptr), intent(in) :: test_case_name
-      end subroutine init_simulation_params_c
-      subroutine init_elements_c (nelemd) bind(c)
-        use iso_c_binding, only : c_int
-        !
-        ! Inputs
-        !
-        integer (kind=c_int), intent(in) :: nelemd
-      end subroutine init_elements_c
-      subroutine init_functors_c () bind(c)
-      end subroutine init_functors_c
-      subroutine init_elements_2d_c (ie, D_ptr, Dinv_ptr, elem_fcor_ptr,      &
-                                     elem_spheremp_ptr, elem_rspheremp_ptr,   &
-                                     elem_metdet_ptr, elem_metinv_ptr,        &
-                                     phis_ptr, gradphis_ptr,                  &
-                                     tensorvisc_ptr, vec_sph2cart_ptr) bind(c)
-        use iso_c_binding, only : c_ptr, c_int
-        !
-        ! Inputs
-        !
-        integer (kind=c_int), intent(in) :: ie
-        type (c_ptr) , intent(in) :: D_ptr, Dinv_ptr, elem_fcor_ptr
-        type (c_ptr) , intent(in) :: elem_spheremp_ptr, elem_rspheremp_ptr
-        type (c_ptr) , intent(in) :: elem_metdet_ptr, elem_metinv_ptr, phis_ptr, gradphis_ptr
-        type (c_ptr) , intent(in) :: tensorvisc_ptr, vec_sph2cart_ptr
-      end subroutine init_elements_2d_c
-      subroutine init_diagnostics_c (elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, &
-                                     elem_accum_q1mass_ptr, elem_accum_iener_ptr,                 &
-                                     elem_accum_kener_ptr, elem_accum_pener_ptr) bind(c)
-        use iso_c_binding, only : c_ptr
-        !
-        ! Inputs
-        !
-        type (c_ptr), intent(in) :: elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr
-        type (c_ptr), intent(in) :: elem_accum_q1mass_ptr, elem_accum_iener_ptr
-        type (c_ptr), intent(in) :: elem_accum_kener_ptr, elem_accum_pener_ptr
-      end subroutine init_diagnostics_c
-      subroutine init_elements_states_c (elem_state_v_ptr, elem_state_w_i, elem_state_vtheta_dp_ptr, &
-                                         elem_state_phinh_i, elem_state_dp3d_ptr,                    &
-                                         elem_state_Qdp_ptr, elem_state_ps_v_ptr) bind(c)
-        use iso_c_binding, only : c_ptr
-        !
-        ! Inputs
-        !
-        type (c_ptr) :: elem_state_v_ptr, elem_state_w_i, elem_state_vtheta_dp_ptr
-        type (c_ptr) :: elem_state_phinh_i, elem_state_dp3d_ptr
-        type (c_ptr) :: elem_state_Qdp_ptr, elem_state_ps_v_ptr
-      end subroutine init_elements_states_c
-      subroutine init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr) bind(c)
-        use iso_c_binding, only : c_ptr
-        !
-        ! Inputs
-        !
-        type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
-      end subroutine init_reference_states_c
-      subroutine init_boundary_exchanges_c () bind(c)
-      end subroutine init_boundary_exchanges_c
-      subroutine init_hvcoord_c (ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr) bind(c)
-        use iso_c_binding , only : c_ptr, c_double
-        !
-        ! Inputs
-        !
-        real (kind=c_double),  intent(in) :: ps0
-        type (c_ptr),          intent(in) :: hybrid_am_ptr, hybrid_ai_ptr
-        type (c_ptr),          intent(in) :: hybrid_bm_ptr, hybrid_bi_ptr
-      end subroutine init_hvcoord_c
-      subroutine init_time_level_c(nm1,n0,np1,nstep,nstep0) bind(c)
-        use iso_c_binding, only: c_int
-        !
-        ! Inputs
-        !
-        integer(kind=c_int), intent(in) :: nm1, n0, np1, nstep, nstep0
-      end subroutine init_time_level_c
-    end interface
-
     !
     ! Inputs
     !
@@ -145,38 +39,50 @@ contains
     type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
     integer,            intent(in)            :: nets     ! starting thread element number (private)
     integer,            intent(in)            :: nete     ! ending thread element number   (private)
-    !
-    ! Locals
-    !
-    integer :: ie
-    logical (kind=c_bool) :: use_semi_lagrange_transport
-    real (kind=real_kind), target :: dvv (np,np)
-
-    real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
-    real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_fcor, elem_spheremp
-    real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet, elem_state_phis
-    real (kind=real_kind), target, dimension(np,np,2)       :: elem_gradphis
-    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
-
-    type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
-    type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
-    type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
-    type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
-    type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr, elem_state_phis_ptr, elem_gradphis_ptr
-    type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
-    type (c_ptr) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
-    type (c_ptr) :: elem_state_q_ptr, elem_state_Qdp_ptr
-    type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
-    type (c_ptr) :: elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
-    type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
-    character(len=MAX_STRING_LEN), target :: test_name
 
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
 
+    ! Init the c data structures
+    call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
+
+    !Init the kokkos functors (and their boundary exchanges)
+    call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
+  end subroutine prim_init2
+
+  subroutine prim_create_c_data_structures (tl, hvcoord, mp)
+    use iso_c_binding, only : c_loc, c_ptr, c_bool, C_NULL_CHAR
+    use theta_f2c_mod, only : init_reference_element_c, init_simulation_params_c, &
+                              init_time_level_c, init_hvcoord_c, init_elements_c
+    use time_mod,      only : TimeLevel_t
+    use hybvcoord_mod, only : hvcoord_t
+    use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
+                              nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
+                              hypervis_order, hypervis_subcycle, hypervis_scaling,    &
+                              ftype, prescribed_wind, moisture, disable_diagnostics,  &
+                              use_cpstar, transport_alg, theta_hydrostatic_mode,      &
+                              dcmip16_mu, theta_advect_form, test_case, MAX_STRING_LEN
+    !
+    ! Input(s)
+    !
+    type (TimeLevel_t),       intent(in) :: tl
+    type (hvcoord_t), target, intent(in) :: hvcoord
+    real (kind=real_kind),    intent(in) :: mp(np,np)
+    !
+    ! Local(s)
+    !
+    integer :: ie
+    logical (kind=c_bool) :: use_semi_lagrange_transport
+    real (kind=real_kind), target :: dvv (np,np), elem_mp(np,np)
+    type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
+    character(len=MAX_STRING_LEN), target :: test_name
+
     ! Initialize the C++ reference element structure (i.e., pseudo-spectral deriv matrix and ref element mass matrix)
     dvv = deriv1%dvv
-    elem_mp = elem(1)%mp
+    elem_mp = mp
     call init_reference_element_c(c_loc(dvv),c_loc(elem_mp))
 
     ! Fill the simulation params structures in C++
@@ -207,7 +113,31 @@ contains
     ! Initialize the C++ elements structure
     call init_elements_c (nelemd)
 
-    ! Initialize the 2d element arrays in C++
+  end subroutine prim_create_c_data_structures
+
+  subroutine prim_init_grid_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use theta_f2c_mod, only : init_elements_2d_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
+    real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_fcor, elem_spheremp
+    real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet
+    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+
+    type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
+    type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
+    type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr
+    type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
+
+    integer :: ie
+
     elem_D_ptr            = c_loc(elem_D)
     elem_Dinv_ptr         = c_loc(elem_Dinv)
     elem_fcor_ptr         = c_loc(elem_fcor)
@@ -217,8 +147,6 @@ contains
     elem_metinv_ptr       = c_loc(elem_metinv)
     elem_tensorvisc_ptr   = c_loc(elem_tensorvisc)
     elem_vec_sph2cart_ptr = c_loc(elem_vec_sph2cart)
-    elem_state_phis_ptr   = c_loc(elem_state_phis)
-    elem_gradphis_ptr     = c_loc(elem_gradphis)
 
     do ie=1,nelemd
       elem_D            = elem(ie)%D
@@ -228,19 +156,63 @@ contains
       elem_rspheremp    = elem(ie)%rspheremp
       elem_metdet       = elem(ie)%metdet
       elem_metinv       = elem(ie)%metinv
-      elem_state_phis   = elem(ie)%state%phis
-      elem_gradphis     = elem(ie)%derived%gradphis
       elem_tensorvisc   = elem(ie)%tensorVisc
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       call init_elements_2d_c (ie-1,                                      &
                                elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr,  &
                                elem_spheremp_ptr, elem_rspheremp_ptr,     &
                                elem_metdet_ptr, elem_metinv_ptr,          &
-                               elem_state_phis_ptr, elem_gradphis_ptr,    &
                                elem_tensorvisc_ptr, elem_vec_sph2cart_ptr)
     enddo
+  end subroutine prim_init_grid_views
 
-    ! Initialize the 3d element arrays in C++
+  subroutine prim_init_geopotential_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use theta_f2c_mod, only : init_geopotential_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis
+    real (kind=real_kind), target, dimension(np,np,2)       :: elem_gradphis
+
+    type (c_ptr) :: elem_state_phis_ptr, elem_gradphis_ptr
+
+    integer :: ie
+
+    elem_state_phis_ptr   = c_loc(elem_state_phis)
+    elem_gradphis_ptr     = c_loc(elem_gradphis)
+
+    do ie=1,nelemd
+      elem_state_phis   = elem(ie)%state%phis
+      elem_gradphis     = elem(ie)%derived%gradphis
+      call init_geopotential_c (ie-1, elem_state_phis_ptr, elem_gradphis_ptr)
+    enddo
+  end subroutine prim_init_geopotential_views
+
+  subroutine prim_init_state_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use element_state, onlY : elem_state_dp3d, elem_state_phinh_i, elem_state_ps_v, &
+                              elem_state_qdp, elem_state_v,                         &
+                              elem_state_vtheta_dp, elem_state_w_i
+    use theta_f2c_mod, only : init_elements_states_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+
+    type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
+    type (c_ptr) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
+    type (c_ptr) :: elem_state_Qdp_ptr
+
     elem_state_v_ptr         = c_loc(elem_state_v)
     elem_state_w_i_ptr       = c_loc(elem_state_w_i)
     elem_state_vtheta_dp_ptr = c_loc(elem_state_vtheta_dp)
@@ -251,17 +223,46 @@ contains
     call init_elements_states_c (elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr)
+  end subroutine prim_init_state_views
 
-    ! Initialize the reference states in C++
-    elem_theta_ref_ptr         = c_loc(elem_theta_ref)
-    elem_dp_ref_ptr            = c_loc(elem_dp_ref)
-    elem_phi_ref_ptr           = c_loc(elem_phi_ref)
+  subroutine prim_init_ref_states_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use element_state, onlY : elem_theta_ref, elem_dp_ref, elem_phi_ref
+    use theta_f2c_mod, only : init_reference_states_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
+
+    elem_theta_ref_ptr = c_loc(elem_theta_ref)
+    elem_dp_ref_ptr    = c_loc(elem_dp_ref)
+    elem_phi_ref_ptr   = c_loc(elem_phi_ref)
     call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr)
+  end subroutine prim_init_ref_states_views
 
-    ! Initialize the C++ functors in the C++ context
-    call init_functors_c ()
+  subroutine prim_init_diags_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use element_state, onlY : elem_accum_iener, elem_accum_kener, elem_accum_pener, &
+                              elem_accum_q1mass, elem_accum_qmass, elem_accum_qvar, &
+                              elem_state_q
+    use theta_f2c_mod, only : init_diagnostics_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    type (c_ptr) :: elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
+    type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
+    type (c_ptr) :: elem_state_q_ptr
 
-    ! Initialize the diagnostics arrays in C++
     elem_state_q_ptr         = c_loc(elem_state_q)
     elem_accum_qvar_ptr      = c_loc(elem_accum_qvar)
     elem_accum_qmass_ptr     = c_loc(elem_accum_qmass)
@@ -272,17 +273,47 @@ contains
     call init_diagnostics_c (elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, &
                              elem_accum_q1mass_ptr, elem_accum_iener_ptr,                 &
                              elem_accum_kener_ptr, elem_accum_pener_ptr)
+  end subroutine prim_init_diags_views
+
+  subroutine prim_init_elements_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+
+    ! Initialize the grid-related views in C++
+    call prim_init_grid_views (elem)
+
+    ! Initialize phis/gradphis views in C++
+    call prim_init_geopotential_views (elem)
+
+    ! Initialize the 3d states views in C++
+    call prim_init_state_views (elem)
+
+    ! Initialize the reference states in C++
+    call prim_init_ref_states_views (elem)
+
+    ! Initialize the diagnostics arrays in C++
+    call prim_init_diags_views (elem)
+  end subroutine prim_init_elements_views
+
+  subroutine prim_init_kokkos_functors ()
+    use theta_f2c_mod, only : init_functors_c, init_boundary_exchanges_c
+
+    ! Initialize the C++ functors in the C++ context
+    call init_functors_c ()
 
     ! Initialize boundary exchange structure in C++
     call init_boundary_exchanges_c ()
 
-  end subroutine prim_init2
+  end subroutine prim_init_kokkos_functors
 
   subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
     use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics
     use dimensions_mod, only : nelemd
-    use element_mod,    only : element_t
     use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
                                elem_state_Qdp, elem_state_Q, elem_derived_omega_p,     &
@@ -294,43 +325,12 @@ contains
     use time_mod,       only : timelevel_t, nextOutputStep, nsplit
     use control_mod,    only : statefreq
     use parallel_mod,   only : abortmp
-    use perf_mod,       only: t_startf, t_stopf
-    use prim_state_mod, only: prim_printstate
-    interface
-
-      subroutine push_forcing_to_c(FM, FVTheta, FT, FPHI, FQ) bind(c)
-        use iso_c_binding,  only: c_double
-        use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize_d
-        !
-        ! Inputs
-        !
-         real (kind=c_double), intent(in) :: FM(np,np,3,nlev,nelemd)
-         real (kind=c_double), intent(in) :: FVTheta(np,np,nlev,nelemd), FT(np,np,nlev,nelemd)
-         real (kind=c_double), intent(in) :: FPHI(np,np,nlevp,nelemd), FQ(np,np,nlev,qsize_d,nelemd)
-      end subroutine push_forcing_to_c
-
-      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
-        use iso_c_binding, only: c_int, c_double
-        !
-        ! Inputs
-        !
-        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
-        real (kind=c_double), intent(in) :: tstep
-      end subroutine prim_run_subcycle_c
-
-
-      subroutine cxx_push_results_to_f90(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
-                                         elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
-                                         elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr) bind(c)
-        use iso_c_binding , only : c_ptr
-        !
-        ! Inputs
-        !
-        type (c_ptr), intent(in) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
-        type (c_ptr), intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
-        type (c_ptr), intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
-      end subroutine cxx_push_results_to_f90
-    end interface
+    use perf_mod,       only : t_startf, t_stopf
+    use prim_state_mod, only : prim_printstate
+    use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
+#ifndef SCREAM
+    use theta_f2c_mod,  only : push_forcing_to_c
+#endif
     !
     ! Inputs
     !
@@ -368,10 +368,14 @@ contains
       compute_diagnostics = .false.
     endif
 
+#ifndef SCREAM
+    ! Scream already computes all forcing using the same pointers
+    ! stored in Hommexx, so the forcing is already up to date
     call t_startf('push_to_cxx')
     call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                            elem_derived_FPHI, elem_derived_FQ)
     call t_stopf('push_to_cxx')
+#endif
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
@@ -411,13 +415,11 @@ contains
 
 
   subroutine setup_element_pointers (elem)
-    use element_mod,    only : element_t
     use element_state,  only : allocate_element_arrays, elem_state_v, elem_state_w_i, elem_state_vtheta_dp, &
                                elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, elem_state_phis,       & 
                                elem_state_Qdp, elem_state_Q, elem_derived_omega_p,                          &
                                elem_accum_pener, elem_accum_kener, elem_accum_iener,                        &
                                elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass
-    use dimensions_mod, only : nelemd
     !
     ! Inputs
     !

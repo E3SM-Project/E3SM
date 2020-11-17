@@ -292,7 +292,6 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagHyperPreExchange, const TeamMember &team) const {
-    using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
 
     KernelVariables kv(team, m_tu);

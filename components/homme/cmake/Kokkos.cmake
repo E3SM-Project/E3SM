@@ -1,4 +1,4 @@
-set (KOKKOS_INSTALLATION_NEEDED FALSE CACHE LOGICAL "")
+set (KOKKOS_INSTALLATION_NEEDED FALSE CACHE BOOL "")
 if (NOT DEFINED E3SM_KOKKOS_PATH)
   # Build kokkos submodule if user did not specify KOKKOS_PATH.
   set (KOKKOS_SRC ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
