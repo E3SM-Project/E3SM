@@ -473,6 +473,10 @@ class TestAllScream(object):
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
+        else:
+            # Clean up the directory, by removing everything but the 'data' subfolder
+            run_cmd_no_fail("find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
+                            from_dir=test_dir,verbose=True)
 
         return True
 
