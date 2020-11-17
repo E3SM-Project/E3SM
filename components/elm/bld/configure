@@ -119,7 +119,7 @@ my $commandline = "$cfgdir/configure @ARGV";
 # Parse command-line options.
 my %opts = (
 	    cache       => "config_cache.xml",
-            phys        => "clm4_0",
+            phys        => "elm",
             nofire      => undef,
             noio        => undef,
             clm_root    => undef,
@@ -395,19 +395,13 @@ if ($usr_cppdefs and $print>=2) { print "Default and user CPP definitions: \'$us
 # determined by the configuration parameters that have been set above.  They will be appended to
 # the CPP definitions that were explicitly set in the defaults file or by the user on the commandline.
 my $cfg_cppdefs = '';
-#if ($phys->as_long() >= $phys->as_long("clm4_5") ) {
-  # clm4_5 cppdefs -- SHOULD NOT BE ANY!
-  if ( $cfg_cppdefs ne '' ) {
-    die <<"EOF";
+# elm cppdefs -- SHOULD NOT BE ANY!
+if ( $cfg_cppdefs ne '' ) {
+  die <<"EOF";
 ** CPP definitions should be empty for clm5_0 and is NOT **
 EOF
-  }
-#} else {
-#  # this should NOT happen
-#  die <<"EOF";
-#** Bad CLM physics version **
-#EOF
-#}
+}
+
 # CPP defines to put on Makefile
 my $make_cppdefs = "$usr_cppdefs $cfg_cppdefs";
 
@@ -468,7 +462,6 @@ sub write_filepath_cesmbld
          print $fh "../SourceMods/src.elm\n";
     }
 
-    {
 	# source root
 	my $srcdir = "$clm_root/src";
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
@@ -500,20 +493,20 @@ sub write_filepath_cesmbld
 		     "external_models/emi/src/emi_data_definition",
 		     "external_models/emi/src/emi_data_exchange",
 		     "external_models/emi/src/emi_data_types",
-                     "external_models/sbetr/src/betr/betr_core",
-                     "external_models/sbetr/src/betr/betr_dtype",
-                     "external_models/sbetr/src/betr/betr_bgc",
-                     "external_models/sbetr/src/betr/betr_grid",
-                     "external_models/sbetr/src/betr/betr_para",
-                     "external_models/sbetr/src/betr/betr_main",
-                     "external_models/sbetr/src/betr/betr_math",
-                     "external_models/sbetr/src/betr/betr_rxns",
-                     "external_models/sbetr/src/betr/betr_util",
-                     "external_models/sbetr/src/driver/shared",
-                     "external_models/sbetr/src/driver/alm",
-                     "external_models/sbetr/src/Applications/app_util",
-                     "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
-                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
+         "external_models/sbetr/src/betr/betr_core",
+         "external_models/sbetr/src/betr/betr_dtype",
+         "external_models/sbetr/src/betr/betr_bgc",
+         "external_models/sbetr/src/betr/betr_grid",
+         "external_models/sbetr/src/betr/betr_para",
+         "external_models/sbetr/src/betr/betr_main",
+         "external_models/sbetr/src/betr/betr_math",
+         "external_models/sbetr/src/betr/betr_rxns",
+         "external_models/sbetr/src/betr/betr_util",
+         "external_models/sbetr/src/driver/shared",
+         "external_models/sbetr/src/driver/alm",
+         "external_models/sbetr/src/Applications/app_util",
+         "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
+         "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
 		     "utils", 
 		     "cpl" );
 
@@ -523,9 +516,7 @@ sub write_filepath_cesmbld
 	    } else {
 		die "** source directory does not exist: $srcdir/$dir\n";
 	    }
-	}
-    }
-
+	  }
 
     $fh->close;
 }
