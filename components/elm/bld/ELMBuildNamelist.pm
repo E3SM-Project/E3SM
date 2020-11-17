@@ -25,7 +25,7 @@
 # 2015-09-30  X.Shi            Add pdep streams capability 
 #--------------------------------------------------------------------------------------------
 
-package CLMBuildNamelist;
+package ELMBuildNamelist;
 
 require 5;
 
