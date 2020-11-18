@@ -29,6 +29,11 @@ real(r8),parameter :: wavenum_high(nbndsw) = & ! in cm^-1
   (/3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, 8050._r8, &
    12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8, 2600._r8/)
 
+! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+integer, parameter, dimension(14), public :: rrtmg_to_rrtmgp_swbands = (/ &
+   14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
+/)
+
 ! Solar irradiance at 1 A.U. in W/m^2 assumed by radiation code
 ! Rescaled so that sum is precisely 1368.22 and fractional amounts sum to 1.0
 real(r8), parameter :: solar_ref_band_irradiance(nbndsw) = & 
@@ -129,8 +134,10 @@ integer, parameter, public :: ot_length = 32
 public :: rad_gas_index
 
 public :: get_number_sw_bands, &
-          get_sw_spectral_boundaries, &
+          get_sw_spectral_boundaries, 
           get_lw_spectral_boundaries, &
+          get_sw_spectral_midpoints, &
+          get_lw_spectral_midpoints, &
           get_ref_solar_band_irrad, &
           get_ref_total_solar_irrad, &
           get_solar_band_fraction_irrad
@@ -233,6 +240,40 @@ subroutine get_sw_spectral_boundaries(low_boundaries, high_boundaries, units)
    end select
 
 end subroutine get_sw_spectral_boundaries
+
+subroutine get_sw_spectral_midpoints(band_midpoints, units)
+   character(len=*), intent(in) :: units
+   real(r8), intent(out) :: band_midpoints(nswbands)
+   real(r8), dimension(nswbands) :: lower_bounds, upper_bounds
+   integer :: i
+
+   ! Get band limits
+   call get_sw_spectral_boundaries(lower_bounds, upper_bounds, units)
+
+   ! Compute band midpoints
+   band_midpoints = 0._r8
+   do i = 1,nswbands
+      band_midpoints(i) = (lower_bounds(i) + upper_bounds(i)) / 2._r8
+   end do
+end subroutine get_sw_spectral_midpoints
+
+!----------------------------------------------------------------------------
+
+subroutine get_lw_spectral_midpoints(band_midpoints, units)
+   character(len=*), intent(in) :: units
+   real(r8), intent(out) :: band_midpoints(nlwbands)
+   real(r8), dimension(nlwbands) :: lower_bounds, upper_bounds
+   integer :: i
+
+   ! Get band limits
+   call get_lw_spectral_boundaries(lower_bounds, upper_bounds, units)
+
+   ! Compute band midpoints
+   band_midpoints = 0._r8
+   do i = 1,nlwbands
+      band_midpoints(i) = (lower_bounds(i) + upper_bounds(i)) / 2._r8
+   end do
+end subroutine get_lw_spectral_midpoints
 
 !------------------------------------------------------------------------------
 integer function rad_gas_index(gasname)
