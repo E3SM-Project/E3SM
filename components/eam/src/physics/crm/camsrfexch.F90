@@ -922,6 +922,17 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
 
    call phys_getopts(use_MAML_out  = use_MAML)
+   
+   cam_out%pbot(1:ncol)         = state%pmid(1:ncol,pver)
+   cam_out%zbot(1:ncol)         = state%zm  (1:ncol,pver)
+   cam_out%qbot(1:ncol,2:pcnst) = state%q   (1:ncol,pver,2:pcnst)
+   psm1        (1:ncol,lchnk)   = state%ps(1:ncol)
+   srfrpdel    (1:ncol,lchnk)   = state%rpdel(1:ncol,pver)
+   cam_out%co2diag(1:ncol)      = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
+   if (co2_transport()) then
+      cam_out%co2prog(1:ncol) = state%q(1:ncol,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
+   end if
+   
    if(.not.use_MAML) then
       ! for default MMF, without MAML
    
@@ -933,31 +944,14 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
          vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
          cam_out%tbot(i)  = state%t(i,pver)
          cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
-         cam_out%zbot(i)  = state%zm(i,pver)
+         cam_out%qbot(i,1)= state%q(i,pver,1) 
          cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
          cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
-         cam_out%pbot(i)  = state%pmid(i,pver)
          cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
-         psm1(i,lchnk)    = state%ps(i)
-         srfrpdel(i,lchnk)= state%rpdel(i,pver)
-       end do
-      do m = 1, pcnst
-        do i = 1, ncol
-           cam_out%qbot(i,m) = state%q(i,pver,m) 
-        end do
-      end do
-
-      cam_out%co2diag(:ncol) = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
-      if (co2_transport()) then
-         do i=1,ncol
-            cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
-         end do
-      end if
       !
       ! Precipation and snow rates from shallow convection, deep convection and stratiform processes.
       ! Compute total convective and stratiform precipitation and snow rates
       !
-      do i=1,ncol
          cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
          cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
          cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
@@ -976,7 +970,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
       ! therefore, copy all manually
       do i = 1, ncol
          cam_out%tbot_mi(i,:) = cam_out%tbot(i)
-         cam_out%tbot_mi(i,:) = cam_out%tbot(i)
+         cam_out%thbot_mi(i,:) = cam_out%thbot(i)
          cam_out%ubot_mi(i,:) = cam_out%ubot(i)
          cam_out%vbot_mi(i,:) = cam_out%vbot(i)
          do m = 1,pcnst
@@ -1026,13 +1020,13 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
 
       do j=1,num_inst_atm
          cam_out%tbot_mi  (1:ncol,j)   = crm_t(1:ncol,j,1,1)
+         cam_out%thbot_mi (1:ncol,j)   = cam_out%tbot_mi(1:ncol,j) * state%exner(1:ncol,pver) ! potential temperature
          cam_out%qbot_mi  (1:ncol,1,j) = crm_qv(1:ncol,j,1,1)
          ! u and v will use CRM value (must transform because of CRM orientation)
          cam_out%ubot_mi  (1:ncol,j)   = crm_u(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) - crm_v(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
          cam_out%vbot_mi  (1:ncol,j)   = crm_v(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) + crm_u(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
          cam_out%precc_mi (1:ncol,j)   = crm_pcp(1:ncol,j,1)  
          cam_out%precsc_mi(1:ncol,j)   = crm_snw(1:ncol,j,1)
-         cam_out%thbot_mi (1:ncol,j)   = cam_out%tbot_mi(1:ncol,j) * state%exner(1:ncol,pver) ! potential temperature
          cam_out%rho_mi   (1:ncol,j)   = cam_out%pbot(1:ncol)/(rair*cam_out%tbot_mi(1:ncol,j))  ! air density
       end do 
 
@@ -1043,10 +1037,14 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
       avgfac = 1._r8/real(num_inst_atm,r8)
       ! Initialize again just to be sure
       cam_out%tbot = 0.
+      cam_out%thbot = 0.
+      cam_out%qbot(:,1) = 0.
       cam_out%precsc = 0.
       cam_out%precsl = 0.
       cam_out%precc = 0.
       cam_out%precl = 0.
+      cam_out%ubot = 0.
+      cam_out%vbot = 0.
 
       ! for non-MAML, num_inst_atm = avgfac = 1
       print*,'cam_export()'
@@ -1054,13 +1052,18 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
       do i = 1,ncol
          do j = 1,num_inst_atm
             print*,'i:',i,'j:',j,'tbot_mi:',cam_out%tbot_mi(i,j),'avgfac:',avgfac
-            cam_out%tbot(i)  = cam_out%tbot(i)+cam_out%tbot_mi(i,j)*avgfac
+            cam_out%tbot(i)   = cam_out%tbot(i)   + cam_out%tbot_mi(i,j)  *avgfac
+            cam_out%thbot(i)  = cam_out%thbot(i)  + cam_out%thbot_mi(i,j) *avgfac
+            cam_out%qbot(i,1) = cam_out%qbot(i,1) + cam_out%qbot_mi(i,1,j)*avgfac
+            cam_out%ubot(i)   = cam_out%ubot(i)   + cam_out%ubot_mi(i,j)  *avgfac
+            cam_out%vbot(i)   = cam_out%vbot(i)   + cam_out%vbot_mi(i,j)  *avgfac
+            cam_out%rho(i)    = cam_out%rho(i)    + cam_out%rho_mi(i,j)   *avgfac
             print*,'i:',i,'j:',j,'precsc_mi:',cam_out%precsc_mi(i,j),'avgfac:',avgfac
-            cam_out%precsc(i) = cam_out%precsc(i)+cam_out%precsc_mi(i,j)*avgfac
+            cam_out%precsc(i) = cam_out%precsc(i) + cam_out%precsc_mi(i,j)*avgfac
             print*,'i:',i,'j:',j,'precsl_mi:',cam_out%precsl_mi(i,j),'avgfac:',avgfac
-            cam_out%precsl(i)= cam_out%precsl(i)+cam_out%precsl_mi(i,j)*avgfac
-            cam_out%precc(i) = cam_out%precc(i)+cam_out%precc_mi(i,j)*avgfac
-            cam_out%precl(i) = cam_out%precl(i)+cam_out%precl_mi(i,j)*avgfac
+            cam_out%precsl(i) = cam_out%precsl(i) + cam_out%precsl_mi(i,j)*avgfac
+            cam_out%precc(i)  = cam_out%precc(i)  + cam_out%precc_mi(i,j) *avgfac
+            cam_out%precl(i)  = cam_out%precl(i)  + cam_out%precl_mi(i,j) *avgfac
          end do
       end do! i = 1, ncol
    end if ! .not.use_MAML

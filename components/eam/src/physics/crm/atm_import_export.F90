@@ -103,11 +103,11 @@ contains
              cam_in(c)%asdif_mi(i,1) = cam_in(c)%asdif(i)
              cam_in(c)%aldif_mi(i,1) = cam_in(c)%aldif(i)
          !! Jungmin
-         if(masterproc) then
-            write(iulog,'("atm_import: num_inst_index=",I3," inst_index=",I3," c=",I3," icol=",I3," cam_in(c)%asdir(icol)=",F7.5," cam_in(c)%asdir_mi(icol)=",F7.5 &
-                           " cam_in(c)%aldir(icol)=",F7.5," cam_in(c)%aldir_mi(icol,1)=",F7.5)') &
-                           num_inst_atm,inst_index,c,i,cam_in(c)%asdir(i),cam_in(c)%asdir_mi(i,1),cam_in(c)%aldir(i),cam_in(c)%aldir_mi(i,1)
-         end if
+         !if(masterproc) then
+         !   write(iulog,'("atm_import: num_inst_index=",I3," inst_index=",I3," c=",I3," icol=",I3," cam_in(c)%asdir(icol)=",F7.5," cam_in(c)%asdir_mi(icol)=",F7.5 &
+         !                  " cam_in(c)%aldir(icol)=",F7.5," cam_in(c)%aldir_mi(icol,1)=",F7.5)') &
+         !                  num_inst_atm,inst_index,c,i,cam_in(c)%asdir(i),cam_in(c)%asdir_mi(i,1),cam_in(c)%aldir(i),cam_in(c)%aldir_mi(i,1)
+         !end if
          !! Jungmin
          else  
              ! For MMF-MAML
@@ -322,10 +322,10 @@ contains
           a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd_mi(i,inst_index)
 
           !! Jungmin
-          if(masterproc) then
-             write(iulog,'("ATM_EXPORT: inst_index=",I3," index_a2x_Faxa_lwdn=",I3," ig=",I3," c=",I3," i=",I3," cam_out(c)%flwds_mi(i,inst_index)=",F7.3," a2x=",F7.3)') &
-             inst_index,index_a2x_Faxa_lwdn,ig,c,i,cam_out(c)%flwds_mi(i,inst_index),a2x(index_a2x_Faxa_lwdn,ig)
-          end if              
+          !if(masterproc) then
+          !   write(iulog,'("ATM_EXPORT: inst_index=",I3," index_a2x_Faxa_lwdn=",I3," ig=",I3," c=",I3," i=",I3," cam_out(c)%flwds_mi(i,inst_index)=",F7.3," a2x=",F7.3)') &
+          !   inst_index,index_a2x_Faxa_lwdn,ig,c,i,cam_out(c)%flwds_mi(i,inst_index),a2x(index_a2x_Faxa_lwdn,ig)
+          !end if              
 
           ! aerosol deposition fluxes
           a2x(index_a2x_Faxa_bcphidry,ig) = cam_out(c)%bcphidry(i)

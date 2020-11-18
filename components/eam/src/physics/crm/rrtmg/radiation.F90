@@ -1592,7 +1592,13 @@ end function radiation_nextsw_cday
              do icol = 1 , ncol
                i_rad = (ii-1) / (num_inst_atm/crm_nx_rad) + 1
                j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
-
+               !! Jungmin
+               if(masterproc) then
+                  write(iulog,'("RADIATION.F90: num_inst_atm=",I3,"  crm_nx_rad=",I3," crm_ny_rad=",I3," i_rad=",I3," j_rad=",I3," icol=",I3)') &
+                  num_inst_atm,crm_nx_rad,crm_ny_rad,i_rad,j_rad,icol
+               end if   
+               !! Jungmin
+               
                aldir_col(icol,i_rad,j_rad) = aldir_col(icol,i_rad,j_rad) + cam_in%aldir_mi(icol,ii)
                aldif_col(icol,i_rad,j_rad) = aldif_col(icol,i_rad,j_rad) + cam_in%aldif_mi(icol,ii)
                asdir_col(icol,i_rad,j_rad) = asdir_col(icol,i_rad,j_rad) + cam_in%asdir_mi(icol,ii)
