@@ -1,0 +1,84 @@
+asp_tests.o : asp_tests.F90 hybrid_mod.o element_mod.o physical_constants.o cube_mod.o element_state.o parallel_mod.o kinds.o element_ops.o hybvcoord_mod.o control_mod.o dimensions_mod.o prim_si_mod.o 
+baroclinic_inst_mod.o : baroclinic_inst_mod.F90 kinds.o element_ops.o global_norms_mod.o viscosity_mod.o hybvcoord_mod.o coordinate_systems_mod.o control_mod.o dimensions_mod.o quadrature_mod.o hybrid_mod.o element_state.o physical_constants.o element_mod.o 
+bndry_mod.o : bndry_mod.F90 bndry_mod_base.o 
+bndry_mod_base.o : bndry_mod_base.F90 element_mod.o edgetype_mod.o hybrid_mod.o control_mod.o dimensions_mod.o coordinate_systems_mod.o thread_mod.o schedtype_mod.o edge_mod.o kinds.o perf_mod.o parallel_mod.o 
+cg_mod.o : cg_mod.F90 dimensions_mod.o parallel_mod.o global_norms_mod.o kinds.o reduction_mod.o hybrid_mod.o 
+common_io_mod.o : common_io_mod.F90 control_mod.o parallel_mod.o 
+common_movie_mod.o : common_movie_mod.F90 control_mod.o time_mod.o common_io_mod.o 
+compose_mod.o : compose_mod.F90 dimensions_mod.o control_mod.o repro_sum_mod.o coordinate_systems_mod.o parallel_mod.o gridgraph_mod.o perf_mod.o kinds.o element_mod.o element_state.o scalable_grid_init_mod.o 
+compose_test_mod.o : compose_test_mod.F90 element_state.o element_mod.o derivative_mod.o compose_mod.o time_mod.o domain_mod.o gllfvremap_mod.o hybrid_mod.o dimensions_mod.o gllfvremap_util_mod.o control_mod.o sl_advection.o coordinate_systems_mod.o thread_mod.o hybvcoord_mod.o reduction_mod.o kinds.o perf_mod.o global_norms_mod.o parallel_mod.o 
+control_mod.o : control_mod.F90 physical_constants.o kinds.o parallel_mod.o 
+coordinate_systems_mod.o : coordinate_systems_mod.F90 physical_constants.o kinds.o parallel_mod.o 
+cube_mod.o : cube_mod.F90 repro_sum_mod.o control_mod.o dimensions_mod.o coordinate_systems_mod.o kinds.o gridgraph_mod.o parallel_mod.o physical_constants.o element_mod.o spacecurve_mod.o quadrature_mod.o 
+dcmip12_wrapper.o : dcmip12_wrapper.F90 hybvcoord_mod.o control_mod.o dimensions_mod.o parallel_mod.o global_norms_mod.o kinds.o element_ops.o mtests.o dcmip2012_test1_conv.o physical_constants.o dcmip2012_test1_2_3.o element_mod.o dcmip2012_test4.o element_state.o hybrid_mod.o time_mod.o derivative_mod.o 
+dcmip16_wrapper.o : dcmip16_wrapper.F90 parallel_mod.o kinds.o perf_mod.o reduction_mod.o edge_mod.o element_ops.o hybvcoord_mod.o control_mod.o dimensions_mod.o bndry_mod.o hybrid_mod.o dcmip12_wrapper.o gllfvremap_mod.o time_mod.o derivative_mod.o element_mod.o physical_constants.o element_state.o 
+dcmip2012_test1_2_3.o : dcmip2012_test1_2_3.F90 control_mod.o 
+dcmip2012_test1_conv.o : dcmip2012_test1_conv.F90 physical_constants.o 
+dcmip2012_test4.o : dcmip2012_test4.F90  
+dcmip2016-baroclinic.o : dcmip2016-baroclinic.F90 physical_constants.o 
+dcmip2016-kessler.o : dcmip2016-kessler.F90 physical_constants.o 
+dcmip2016-physics-z.o : dcmip2016-physics-z.F90 physical_constants.o 
+dcmip2016-supercell.o : dcmip2016-supercell.F90 physical_constants.o 
+dcmip2016-terminator.o : dcmip2016-terminator.F90  
+dcmip2016-tropical-cyclone.o : dcmip2016-tropical-cyclone.F90  
+derivative_mod.o : derivative_mod.F90 derivative_mod_base.o 
+derivative_mod_base.o : derivative_mod_base.F90 quadrature_mod.o physical_constants.o element_mod.o parallel_mod.o kinds.o dimensions_mod.o control_mod.o 
+dimensions_mod.o : dimensions_mod.F90  
+dof_mod.o : dof_mod.F90 quadrature_mod.o element_mod.o edgetype_mod.o kinds.o edge_mod.o parallel_mod.o bndry_mod.o coordinate_systems_mod.o dimensions_mod.o 
+domain_mod.o : domain_mod.F90 perf_mod.o 
+edge_mod.o : edge_mod.F90 edge_mod_base.o 
+edge_mod_base.o : edge_mod_base.F90 edgetype_mod.o element_mod.o thread_mod.o coordinate_systems_mod.o control_mod.o dimensions_mod.o perf_mod.o kinds.o schedtype_mod.o parallel_mod.o 
+edgetype_mod.o : edgetype_mod.F90 coordinate_systems_mod.o dimensions_mod.o kinds.o 
+element_mod.o : element_mod.F90 kinds.o gridgraph_mod.o coordinate_systems_mod.o dimensions_mod.o edgetype_mod.o element_state.o 
+element_ops.o : element_ops.F90 perf_mod.o kinds.o parallel_mod.o prim_si_mod.o physics_mod.o control_mod.o dimensions_mod.o hybvcoord_mod.o hybrid_mod.o element_state.o element_mod.o physical_constants.o 
+element_state.o : element_state.F90 kinds.o dimensions_mod.o 
+gllfvremap_mod.o : gllfvremap_mod.F90 domain_mod.o hybrid_mod.o quadrature_mod.o derivative_mod.o physical_constants.o element_mod.o prim_advection_base.o cube_mod.o viscosity_mod.o parallel_mod.o global_norms_mod.o element_ops.o kinds.o edge_mod.o reduction_mod.o coordinate_systems_mod.o repro_sum_mod.o dimensions_mod.o control_mod.o thread_mod.o hybvcoord_mod.o bndry_mod.o 
+gllfvremap_util_mod.o : gllfvremap_util_mod.F90 common_io_mod.o hybrid_mod.o gllfvremap_mod.o prim_driver_base.o physical_constants.o element_mod.o edge_mod.o reduction_mod.o kinds.o element_ops.o global_norms_mod.o interpolate_driver_mod.o parallel_mod.o bndry_mod.o prim_advance_mod.o hybvcoord_mod.o control_mod.o dimensions_mod.o coordinate_systems_mod.o 
+global_norms_mod.o : global_norms_mod.F90 control_mod.o dimensions_mod.o repro_sum_mod.o mesh_mod.o bndry_mod.o parallel_mod.o reduction_mod.o edge_mod.o kinds.o element_mod.o physical_constants.o edgetype_mod.o element_state.o time_mod.o hybrid_mod.o quadrature_mod.o 
+gridgraph_mod.o : gridgraph_mod.F90 params_mod.o control_mod.o dimensions_mod.o kinds.o parallel_mod.o 
+held_suarez_mod.o : held_suarez_mod.F90 dimensions_mod.o coordinate_systems_mod.o physics_mod.o hybvcoord_mod.o element_ops.o kinds.o physical_constants.o element_mod.o element_state.o time_mod.o hybrid_mod.o common_io_mod.o 
+hybrid_mod.o : hybrid_mod.F90 parallel_mod.o 
+hybvcoord_mod.o : hybvcoord_mod.F90 kinds.o control_mod.o dimensions_mod.o physical_constants.o 
+interp_movie_mod.o : interp_movie_mod.F90 element_mod.o physical_constants.o common_io_mod.o derivative_mod.o hybrid_mod.o time_mod.o hybvcoord_mod.o dimensions_mod.o control_mod.o interpolate_mod.o perf_mod.o kinds.o element_ops.o dcmip16_wrapper.o parallel_mod.o viscosity_mod.o 
+interpolate_driver_mod.o : interpolate_driver_mod.F90 dof_mod.o interpolate_mod.o dimensions_mod.o control_mod.o interp_movie_mod.o bndry_mod.o parallel_mod.o viscosity_mod.o edge_mod.o kinds.o edgetype_mod.o element_mod.o hybrid_mod.o common_io_mod.o 
+interpolate_mod.o : interpolate_mod.F90 dimensions_mod.o control_mod.o coordinate_systems_mod.o mesh_mod.o parallel_mod.o kinds.o cube_mod.o physical_constants.o element_mod.o quadrature_mod.o 
+kinds.o : kinds.F90 shr_kind_mod.o 
+ll_mod.o : ll_mod.F90  
+mass_matrix_mod.o : mass_matrix_mod.F90 dimensions_mod.o bndry_mod.o parallel_mod.o kinds.o edge_mod.o edgetype_mod.o element_mod.o quadrature_mod.o 
+mesh_mod.o : mesh_mod.F90 parallel_mod.o gridgraph_mod.o kinds.o coordinate_systems_mod.o control_mod.o dimensions_mod.o params_mod.o spacecurve_mod.o element_mod.o physical_constants.o cube_mod.o zoltan_mod.o 
+metagraph_mod.o : metagraph_mod.F90 gridgraph_mod.o kinds.o ll_mod.o 
+metis_mod.o : metis_mod.F90 kinds.o gridgraph_mod.o parallel_mod.o control_mod.o dimensions_mod.o params_mod.o 
+model_init_mod.o : model_init_mod.F90 element_mod.o derivative_mod.o time_mod.o hybrid_mod.o hybvcoord_mod.o 
+mtests.o : mtests.F90  
+namelist_mod.o : namelist_mod.F90 common_movie_mod.o time_mod.o params_mod.o common_io_mod.o physical_constants.o cube_mod.o cg_mod.o parallel_mod.o kinds.o dimensions_mod.o control_mod.o interpolate_mod.o thread_mod.o mesh_mod.o 
+parallel_mod.o : parallel_mod.F90 dimensions_mod.o kinds.o 
+params_mod.o : params_mod.F90  
+physical_constants.o : physical_constants.F90 kinds.o 
+physics_mod.o : physics_mod.F90 physical_constants.o kinds.o dimensions_mod.o 
+prim_advance_mod.o : prim_advance_mod.F90 bndry_mod.o prim_si_mod.o hybvcoord_mod.o dimensions_mod.o control_mod.o physics_mod.o reduction_mod.o edge_mod.o kinds.o perf_mod.o viscosity_base.o parallel_mod.o viscosity_mod.o edgetype_mod.o element_mod.o physical_constants.o derivative_mod.o test_mod.o hybrid_mod.o time_mod.o 
+prim_advection_base.o : prim_advection_base.F90 hybvcoord_mod.o interpolate_mod.o control_mod.o dimensions_mod.o bndry_mod.o parallel_mod.o viscosity_mod.o perf_mod.o kinds.o edge_mod.o element_ops.o edgetype_mod.o physical_constants.o element_mod.o hybrid_mod.o time_mod.o derivative_mod.o omp_config.h
+prim_advection_mod.o : prim_advection_mod.F90 hybrid_mod.o time_mod.o derivative_mod.o prim_advection_base.o element_mod.o parallel_mod.o kinds.o hybvcoord_mod.o control_mod.o dimensions_mod.o sl_advection.o 
+prim_driver_base.o : prim_driver_base.F90 reduction_mod.o schedtype_mod.o edge_mod.o gridgraph_mod.o kinds.o perf_mod.o mass_matrix_mod.o element_ops.o schedule_mod.o global_norms_mod.o parallel_mod.o prim_advection_mod.o viscosity_mod.o bndry_mod.o prim_restart_mod.o prim_advance_mod.o mesh_mod.o hybvcoord_mod.o thread_mod.o dof_mod.o control_mod.o dimensions_mod.o repro_sum_mod.o sl_advection.o prim_state_mod.o metis_mod.o compose_mod.o common_io_mod.o restart_io_mod.o spacecurve_mod.o params_mod.o test_mod.o derivative_mod.o namelist_mod.o quadrature_mod.o scalable_grid_init_mod.o hybrid_mod.o model_init_mod.o metagraph_mod.o vertremap_mod.o time_mod.o domain_mod.o zoltan_mod.o cube_mod.o element_mod.o physical_constants.o 
+prim_driver_mod.o : prim_driver_mod.F90 prim_driver_base.o 
+prim_main.o : prim_main.F90 common_movie_mod.o domain_mod.o time_mod.o parallel_mod.o hybrid_mod.o interpolate_driver_mod.o test_mod.o perf_mod.o restart_io_mod.o common_io_mod.o element_mod.o control_mod.o dimensions_mod.o hybvcoord_mod.o thread_mod.o prim_driver_mod.o compose_test_mod.o interp_movie_mod.o 
+prim_restart_mod.o : prim_restart_mod.F90 kinds.o parallel_mod.o dimensions_mod.o restart_io_mod.o element_state.o 
+prim_si_mod.o : prim_si_mod.F90 time_mod.o hybrid_mod.o element_mod.o physical_constants.o kinds.o global_norms_mod.o dimensions_mod.o control_mod.o hybvcoord_mod.o 
+prim_state_mod.o : prim_state_mod.F90 parallel_mod.o global_norms_mod.o viscosity_mod.o kinds.o perf_mod.o reduction_mod.o hybvcoord_mod.o physics_mod.o control_mod.o dimensions_mod.o prim_si_mod.o hybrid_mod.o time_mod.o element_mod.o physical_constants.o 
+quadrature_mod.o : quadrature_mod.F90 physical_constants.o kinds.o 
+reduction_mod.o : reduction_mod.F90 hybrid_mod.o thread_mod.o dimensions_mod.o parallel_mod.o kinds.o 
+repro_sum_mod.o : repro_sum_mod.F90 perf_mod.o shr_kind_mod.o parallel_mod.o shr_sys_mod.o 
+restart_io_mod.o : restart_io_mod.F90 schedtype_mod.o kinds.o perf_mod.o parallel_mod.o dimensions_mod.o control_mod.o time_mod.o element_state.o element_mod.o 
+scalable_grid_init_mod.o : scalable_grid_init_mod.F90 metagraph_mod.o spacecurve_mod.o cube_mod.o parallel_mod.o kinds.o gridgraph_mod.o control_mod.o dimensions_mod.o 
+schedtype_mod.o : schedtype_mod.F90 metagraph_mod.o 
+schedule_mod.o : schedule_mod.F90 element_mod.o metagraph_mod.o dimensions_mod.o parallel_mod.o kinds.o gridgraph_mod.o schedtype_mod.o 
+sl_advection.o : sl_advection.F90 perf_mod.o kinds.o edge_mod.o parallel_mod.o bndry_mod.o vertremap_base.o hybvcoord_mod.o coordinate_systems_mod.o interpolate_mod.o dimensions_mod.o control_mod.o compose_mod.o derivative_mod.o hybrid_mod.o time_mod.o element_state.o edgetype_mod.o physical_constants.o element_mod.o prim_advection_base.o 
+spacecurve_mod.o : spacecurve_mod.F90 gridgraph_mod.o kinds.o dimensions_mod.o 
+test_mod.o : test_mod.F90 held_suarez_mod.o hybvcoord_mod.o asp_tests.o dimensions_mod.o control_mod.o kinds.o dcmip16_wrapper.o element_ops.o parallel_mod.o element_state.o element_mod.o derivative_mod.o baroclinic_inst_mod.o hybrid_mod.o dcmip12_wrapper.o time_mod.o 
+thread_mod.o : thread_mod.F90  
+time_mod.o : time_mod.F90 kinds.o 
+vertremap_base.o : vertremap_base.F90 parallel_mod.o kinds.o perf_mod.o hybvcoord_mod.o dimensions_mod.o control_mod.o 
+vertremap_mod.o : vertremap_mod.F90 element_mod.o hybrid_mod.o vertremap_base.o hybvcoord_mod.o control_mod.o dimensions_mod.o kinds.o perf_mod.o parallel_mod.o 
+viscosity_base.o : viscosity_base.F90 edge_mod.o kinds.o perf_mod.o parallel_mod.o bndry_mod.o thread_mod.o dimensions_mod.o control_mod.o derivative_mod.o hybrid_mod.o edgetype_mod.o element_mod.o 
+viscosity_mod.o : viscosity_mod.F90 viscosity_preqx_base.o viscosity_base.o 
+viscosity_preqx_base.o : viscosity_preqx_base.F90 hybrid_mod.o derivative_mod.o edgetype_mod.o element_mod.o parallel_mod.o perf_mod.o kinds.o edge_mod.o dimensions_mod.o control_mod.o bndry_mod.o 
+zoltan_mod.o : zoltan_mod.F90 params_mod.o cube_mod.o parallel_mod.o gridgraph_mod.o kinds.o coordinate_systems_mod.o dimensions_mod.o control_mod.o 

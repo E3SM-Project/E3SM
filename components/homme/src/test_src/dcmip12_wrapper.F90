@@ -3,8 +3,9 @@
 
 
 #ifndef CAM
+#ifdef HAVE_CONFIG_H
 #include "config.h"
-
+#endif
 module dcmip12_wrapper
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
