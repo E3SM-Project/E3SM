@@ -21,6 +21,7 @@ use physics_types,   only: physics_state, physics_ptend
 use physconst,       only: cappa
 use time_manager,    only: get_nstep, is_first_restart_step
 use cam_abortutils,      only: endrun
+use cam_history_support, only: add_hist_coord
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
@@ -980,6 +981,8 @@ end function radiation_nextsw_cday
     integer :: icall                     ! index through climate/diagnostic radiation calls
     logical :: active_calls(0:N_DIAG)
 
+    integer :: icol,ilay                 ! index for column and radiation bands
+
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
 
 ! AeroCOM IND3 output +++mhwang
@@ -1786,9 +1789,6 @@ function reordered(array_in, new_indexing) result(array_out)
 
    ! Loop index
    integer :: ii
-
-   ! Check inputs
-   call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
 
    ! Reorder array based on input index mapping, which maps old indices to new
    do ii = 1,size(new_indexing)
