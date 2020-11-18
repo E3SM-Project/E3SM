@@ -1219,8 +1219,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qcltend(icrm,k) =      (qccln(icrm,k) - crm_input%qccl(icrm,k)) * icrm_run_time
       crm_output%qiltend(icrm,k) =      (qiiln(icrm,k) - crm_input%qiil(icrm,k)) * icrm_run_time
 #if defined(MMF_MOMENTUM_FEEDBACK)
-      crm_output%ultend(icrm,:) =       (uln  (icrm,k) - crm_input%ul  (icrm,k)) * icrm_run_time
-      crm_output%vltend(icrm,:) =       (vln  (icrm,k) - crm_input%vl  (icrm,k)) * icrm_run_time
+      crm_output%ultend(icrm,k) =       (uln  (icrm,k) - crm_input%ul  (icrm,k)) * icrm_run_time
+      crm_output%vltend(icrm,k) =       (vln  (icrm,k) - crm_input%vl  (icrm,k)) * icrm_run_time
 #endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
