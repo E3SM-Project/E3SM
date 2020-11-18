@@ -114,7 +114,7 @@ integer, parameter, public :: ot_length = 32
 public :: rad_gas_index
 
 public :: get_number_sw_bands, &
-          get_sw_spectral_boundaries, 
+          get_sw_spectral_boundaries, &
           get_lw_spectral_boundaries, &
           get_sw_spectral_midpoints, &
           get_lw_spectral_midpoints, &
@@ -257,40 +257,6 @@ subroutine get_sw_spectral_midpoints(band_midpoints, units)
    end do
 end subroutine get_sw_spectral_midpoints
       
-
-subroutine get_sw_spectral_midpoints(band_midpoints, units)
-   character(len=*), intent(in) :: units
-   real(r8), intent(out) :: band_midpoints(nswbands)
-   real(r8), dimension(nswbands) :: lower_bounds, upper_bounds
-   integer :: i
-
-   ! Get band limits
-   call get_sw_spectral_boundaries(lower_bounds, upper_bounds, units)
-
-   ! Compute band midpoints
-   band_midpoints = 0._r8
-   do i = 1,nswbands
-      band_midpoints(i) = (lower_bounds(i) + upper_bounds(i)) / 2._r8
-   end do
-end subroutine get_sw_spectral_midpoints
-
-!----------------------------------------------------------------------------
-
-subroutine get_lw_spectral_midpoints(band_midpoints, units)
-   character(len=*), intent(in) :: units
-   real(r8), intent(out) :: band_midpoints(nlwbands)
-   real(r8), dimension(nlwbands) :: lower_bounds, upper_bounds
-   integer :: i
-
-   ! Get band limits
-   call get_lw_spectral_boundaries(lower_bounds, upper_bounds, units)
-
-   ! Compute band midpoints
-   band_midpoints = 0._r8
-   do i = 1,nlwbands
-      band_midpoints(i) = (lower_bounds(i) + upper_bounds(i)) / 2._r8
-   end do
-end subroutine get_lw_spectral_midpoints
 
 !------------------------------------------------------------------------------
 integer function rad_gas_index(gasname)
