@@ -1089,7 +1089,7 @@ def gen_struct_members(arg_data):
 def group_data(arg_data, filter_out_intent=None):
 ###############################################################################
     r"""
-    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]})
+    Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
 
     >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA)]))
     ['shcol']
@@ -1097,14 +1097,16 @@ def group_data(arg_data, filter_out_intent=None):
     ['ntracers']
     ['shcol', 'nlev', 'nlevi', 'ntracers']
     [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')]
-    OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz', 'vals']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
+    OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
     OrderedDict([(('shcol',), ['bag', 'ball1', 'ball2'])])
+    OrderedDict([(('shcol',), ['vals'])])
     >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA_ALL_SCALAR)]))
     []
     []
     []
     []
     [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')]
+    OrderedDict()
     OrderedDict()
     OrderedDict()
     """
@@ -1129,6 +1131,7 @@ def group_data(arg_data, filter_out_intent=None):
     all_dims = list(OrderedDict([(item, None) for item in (fst_dims + snd_dims + trd_dims)]))
     real_data = OrderedDict()
     int_data = OrderedDict()
+    bool_data = OrderedDict()
 
     for name, argtype, intent, dims in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
@@ -1141,10 +1144,13 @@ def group_data(arg_data, filter_out_intent=None):
             elif argtype == "integer":
                 int_data.setdefault(dims, []).append(name)
 
-            else:
+            elif argtype == "real":
                 real_data.setdefault(dims, []).append(name)
 
-    return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data
+            else:
+                bool_data.setdefault(dims, []).append(name)
+
+    return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
 
 ###############################################################################
 def gen_struct_api(physics, struct_name, arg_data):
@@ -1154,11 +1160,11 @@ def gen_struct_api(physics, struct_name, arg_data):
 
     >>> print("\n".join(gen_struct_api("shoc", "DataSubName", UT_ARG_DATA)))
     DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-      PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }}, {{ &foo1, &foo2, &baz, &vals }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+      PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}, {{ &vals }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
     <BLANKLINE>
     PTDG_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
-    _, _, _, all_dims, scalars, real_data, int_data = group_data(arg_data)
+    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data)
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -1170,15 +1176,13 @@ def gen_struct_api(physics, struct_name, arg_data):
     dim_cxx_vec = []
     real_vec = []
     int_vec = []
-    for dims, reals in real_data.items():
-        dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
-        real_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in reals])))
+    bool_vec = []
+    for data, data_vec in zip([real_data, int_data, bool_data], [real_vec, int_vec, bool_vec]):
+        for dims, items in data.items():
+            dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
+            data_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in items])))
 
-    for dims, ints in int_data.items():
-        dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
-        int_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in ints])))
-
-    parent_call = "  PhysicsTestData({{{}}}, {{{}}}, {{{}}})".format(", ".join(dim_cxx_vec), ", ".join(real_vec), ", ".join(int_vec))
+    parent_call = "  PhysicsTestData({{{}}}, {{{}}}, {{{}}}, {{{}}})".format(", ".join(dim_cxx_vec), ", ".join(real_vec), ", ".join(int_vec), ", ".join(bool_vec))
 
     parent_call += ", {}".format(", ".join(["{0}({0}_)".format(name) for name, _ in cons_args]))
 
@@ -1499,7 +1503,7 @@ class GenBoiler(object):
           Int *ball1, *ball2;
         <BLANKLINE>
           FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
-            PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }}, {{ &foo1, &foo2, &baz, &vals }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
+            PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}, {{ &vals }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
         <BLANKLINE>
           PTDG_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         };
@@ -1930,7 +1934,7 @@ class GenBoiler(object):
       d.randomize();
     }"""
 
-        _, _, _, _, scalars, real_data, int_data = group_data(arg_data, filter_out_intent="in")
+        _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
             check_scalars += "      REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
@@ -1944,11 +1948,12 @@ class GenBoiler(object):
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
 
             all_data = OrderedDict(real_data)
-            for k, v in int_data.items():
-                if k in all_data:
-                    all_data[k].extend(v)
-                else:
-                    all_data[k] = v
+            for type_data in [int_data, bool_data]:
+                for k, v in type_data.items():
+                    if k in all_data:
+                        all_data[k].extend(v)
+                    else:
+                        all_data[k] = v
 
             for _, data in all_data.items():
                 check_arrays += "      for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
