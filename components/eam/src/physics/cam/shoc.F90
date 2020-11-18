@@ -693,10 +693,9 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: flux_dummy(shcol)
   real(rtype) :: ksrf(shcol), wtke_sfc(shcol)
 
-  real(rtype) :: ca(shcol,nlev) ! superdiagonal for solver
-  real(rtype) :: cc(shcol,nlev) ! subdiagonal for solver
-  real(rtype) :: denom(shcol,nlev) ! denominator in solver
-  real(rtype) :: ze(shcol,nlev)
+  real(rtype) :: du(shcol,nlev) ! Superdiagonal for solver
+  real(rtype) :: dl(shcol,nlev) ! Factorized subdiagonal for solver
+  real(rtype) :: d(shcol,nlev)  ! Factorized diagonal for solver
 
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
@@ -725,32 +724,32 @@ subroutine update_prognostics_implicit( &
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
-     ksrf,ca,cc,denom,ze)
+     ksrf,du,dl,d)
 
   ! march u_wind one step forward using implicit solver
-  call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,u_wind)
+  call vd_shoc_solve(shcol,nlev,du,dl,d,u_wind)
 
   ! march v_wind one step forward using implicit solver
-  call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,v_wind)
+  call vd_shoc_solve(shcol,nlev,du,dl,d,v_wind)
 
-! Call decomp for thermo variables
+  ! Call decomp for thermo variables
   flux_dummy(:) = 0._rtype ! fluxes applied explicitly, so zero fluxes out
                            ! for implicit solver decomposition
   call vd_shoc_decomp(shcol,nlev,nlevi,tkh_zi,tmpi,rdp_zt,dtime,&
-     flux_dummy,ca,cc,denom,ze)
+     flux_dummy,du,dl,d)
 
   ! march temperature one step forward using implicit solver
-  call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,thetal)
+  call vd_shoc_solve(shcol,nlev,du,dl,d,thetal)
 
   ! march total water one step forward using implicit solver
-  call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,qw)
+  call vd_shoc_solve(shcol,nlev,du,dl,d,qw)
 
   ! march tke one step forward using implicit solver
-  call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,tke)
+  call vd_shoc_solve(shcol,nlev,du,dl,d,tke)
 
   ! march tracers one step forward using implicit solver
   do p=1,num_tracer
-    call vd_shoc_solve(shcol,nlev,nlevi,ca,cc,denom,ze,tracer(:shcol,:nlev,p))
+    call vd_shoc_solve(shcol,nlev,du,dl,d,tracer(:shcol,:nlev,p))
   enddo
 
   return
@@ -3358,14 +3357,15 @@ subroutine shoc_length(&
 end subroutine shoc_length
 
 !==============================================================
-! Subroutine to determine superdiagonal and subdiagonal coeffs of
-! the tridiagonal diffusion matrix.
+! Subroutine to determine superdiagonal and the factorized
+! subdiagonal and diagonal coeffs for solving the
+! tridiagonal diffusion matrix.
 
 subroutine vd_shoc_decomp( &
          shcol,nlev,nlevi,&          ! Input
          kv_term,tmpi,rdp_zt,dtime,& ! Input
          flux, &                     ! Input
-         ca,cc,denom,ze)             ! Output
+         du,dl,d)                    ! Output
 
   implicit none
 
@@ -3390,54 +3390,48 @@ subroutine vd_shoc_decomp( &
 
 ! OUTPUT VARIABLES
   ! superdiagonal
-  real(rtype), intent(out) :: ca(shcol,nlev)
-  ! subdiagonal
-  real(rtype), intent(out) :: cc(shcol,nlev)
-  ! 1./(1.+ca(k)+cc(k)-cc(k)*ze(k-1))
-  real(rtype), intent(out) :: denom(shcol,nlev)
-  ! Term in tri-diag. matrix system
-  real(rtype), intent(out) :: ze(shcol,nlev)
+  real(rtype), intent(out) :: du(shcol,nlev)
+  ! Factorized version of subdiagonal
+  real(rtype), intent(out) :: dl(shcol,nlev)
+  ! Factorized version of diagonal
+  real(rtype), intent(out) :: d(shcol,nlev)
 
 ! LOCAL VARIABLES
   integer :: i, k
 
-  ! Determine superdiagonal (ca(k)) and subdiagonal (cc(k)) coeffs of the
-  ! tridiagonal diffusion matrix. The diagonal elements  (cb=1+ca+cc) are
-  ! a combination of ca and cc; they are not required by the solver.
-
-  do k=nlev-1,1,-1
+  ! Determine superdiagonal (du) and subdiagonal (dl) coeffs of the
+  ! tridiagonal diffusion matrix.
+  do k=1,nlev-1
     do i=1,shcol
-      ca(i,k) = kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k)
-      cc(i,k+1) = kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k+1)
+      du(i,k)   = -1._rtype * kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k)
+      dl(i,k+1) = -1._rtype * kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k+1)
     enddo
   enddo
 
-  ! The bottom element of the upper diagonal (ca) is zero (not used).
-  ! The subdiagonal (cc) is not needed in the solver.
+  ! The bottom element of the superdiagonal (du) and the top element of
+  ! the subdiagonal (dl) is set to zero (not included in linear system).
+  du(:,nlev) = 0._rtype
+  dl(:,1)    = 0._rtype
 
-  ca(:,nlev) = 0._rtype
-
-  ! Calculate e(k). This term is required in the solution of the
-  ! tridiagonal matrix as defined by the implicit diffusion equation.
-
+  ! Compute the diagonal and perform Thomas factorization. The diagonal
+  ! elements are a combination of du and dl (d=1-du-dl). Surface fluxes
+  ! are applied explicitly in the diagonal at the top level.
   do i=1,shcol
-    denom(i,nlev) = 1._rtype/ &
-      (1._rtype + cc(i,nlev) + flux(i)*dtime*ggr*rdp_zt(i,nlev))
-    ze(i,nlev) = cc(i,nlev) * denom(i,nlev)
+    d(i,1) = 1._rtype - du(i,1)
   enddo
-
-  do k=nlev-1,2,-1
+  do k=2,nlev-1
     do i=1,shcol
-      denom(i,k) = 1._rtype/ &
-        (1._rtype + ca(i,k) + cc(i,k) - &
-    ca(i,k) * ze(i,k+1))
-      ze(i,k) = cc(i,k) * denom(i,k)
+      d(i,k) = 1._rtype - du(i,k) - dl(i,k)
+
+      dl(i,k) = dl(i,k)/d(i,k-1)
+      d (i,k) = d (i,k) - dl(i,k)*du(i,k-1)
     enddo
   enddo
-
   do i=1,shcol
-    denom(i,1) = 1._rtype/ &
-      (1._rtype + ca(i,1) - ca(i,1) * ze(i,2))
+    d(i,nlev) = 1._rtype - dl(i,nlev) + flux(i)*dtime*ggr*rdp_zt(i,nlev)
+
+    dl(i,nlev) = dl(i,nlev)/d(i,nlev-1)
+    d (i,nlev) = d (i,nlev) - dl(i,nlev)*du(i,nlev-1)
   enddo
 
   return
@@ -3446,34 +3440,23 @@ end subroutine vd_shoc_decomp
 
 !==============================================================
 ! Subroutine to solve the implicit vertical diffsion equation
-! with zero flux boundary conditions.  Actual surface fluxes
-! should be applied explicitly.  Procedure for solution of the
+! with zero flux boundary conditions. Actual surface fluxes
+! should be applied explicitly. Procedure for solution of the
 ! implicit equation follows Richtmeyer and Morton (1967, pp 198-200).
-! The equation solved is
 !
-!     -ca(k)*q(k+1) + cb(k)*q(k) - cc(k)*q(k-1) = d(k),
-!
-! where d(k) is the input profile and q(k) is the output profile
-!
-! The solution has the form
-!
-!     q(k) = ze(k)*q(k-1) + zf(k)
-!
-!     ze(k) = cc(k) * dnom(k)
-!
-!     zf(k) = [d(k) + ca(k)*zf(k+1)] * dnom(k)
-!
-!     dnom(k) = 1/[cb(k) - ca(k)*ze(k+1)]
-!             = 1/[1 + ca(k) + cc(k) - ca(k)*ze(k+1)]
+! Here, du is the superdiagonal and dl and d are the factorized
+! version of the subdiagonal and diagonal using the Thomas algorithm.
+! This subroutine takes in an input profile var and solves using the
+! remainder of the Thomas algorithm. The solution is stored in var.
 !
 ! Note that the same routine is used for temperature, momentum and
-! tracers, and that input variables are replaced.
+! tracers.
 ! ---------------------------------------------------------------
 
 subroutine vd_shoc_solve(&
-         shcol,nlev,nlevi,&   ! Input
-         ca,cc,denom,ze,&     ! Input
-         var)                 ! Input/Output
+         shcol,nlev,& ! Input
+         du,dl,d,&    ! Input
+         var)         ! Input/Output
 
   implicit none
 
@@ -3482,49 +3465,31 @@ subroutine vd_shoc_solve(&
   integer, intent(in) :: shcol
   ! number of mid-point levels
   integer, intent(in) :: nlev
-  ! number of levels on the interface
-  integer, intent(in) :: nlevi
   ! superdiagonal
-  real(rtype), intent(in) :: ca(shcol,nlev)
-  ! subdiagonal
-  real(rtype), intent(in) :: cc(shcol,nlev)
-  ! 1./(1.+ca(k)+cc(k)-cc(k)*ze(k-1))
-  real(rtype), intent(in) :: denom(shcol,nlev)
-  ! Term in tri-diag. matrix system
-  real(rtype), intent(in) :: ze(shcol,nlev)
+  real(rtype), intent(in) :: du(shcol,nlev)
+  ! Factorized version of subdiagonal
+  real(rtype), intent(in) :: dl(shcol,nlev)
+  ! Factorized version of diagonal
+  real(rtype), intent(in) :: d(shcol,nlev)
 
 ! IN/OUT VARIABLES
   real(rtype), intent(inout) :: var(shcol,nlev)
 
 ! LOCAL VARIABLES
   integer :: i, k
-  ! Term in tri-diag solution
-  real(rtype) :: zf(shcol,nlev)
 
-
-  ! Calculate zf(k). Terms zf(k) and ze(k) are required in solution of
-  ! tridiagonal matrix defined by implicit diffusion equation.
-  ! Note that only levels ntop through nbot need be solved for.
-
-  do i=1,shcol
-    zf(i,nlev) = var(i,nlev) * denom(i,nlev)
-  enddo
-
-  do k=nlev-1,1,-1
-    do i=1,shcol
-      zf(i,k) = (var(i,k) + ca(i,k) * zf(i,k+1)) * denom(i,k)
-    enddo
-  enddo
-
-  ! Perform back substitution
-
-  do i=1,shcol
-    var(i,1) = zf(i,1)
-  enddo
-
+  ! Solve using Thomas algorithm
   do k=2,nlev
     do i=1,shcol
-      var(i,k) = zf(i,k) + ze(i,k)*var(i,k-1)
+      var(i,k) = var(i,k) - dl(i,k)*var(i,k-1)
+    enddo
+  enddo
+  do i=1,shcol
+    var(i,nlev) = var(i,nlev)/d(i,nlev)
+  enddo
+  do k=nlev,2,-1
+    do i=1,shcol
+      var(i,k-1) = (var(i,k-1) - du(i,k-1)*var(i,k))/d(i,k-1)
     enddo
   enddo
 
