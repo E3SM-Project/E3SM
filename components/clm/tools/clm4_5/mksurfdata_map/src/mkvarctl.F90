@@ -51,8 +51,9 @@ module mkvarctl
   character(len=256), public :: mksrf_fgrvl      = ' '  ! soil gravel content file name
   character(len=256), public :: mksrf_fslp10     = ' '  ! slope percentile file name
   character(len=256), public :: mksrf_fero       = ' '  ! ELM-Erosion parameters data file name
+  character(len=256), public :: mksrf_ffert      = ' '  ! crop fertilizer data file name
 
-  integer           , public :: numpft         = 16   ! number of plant types
+  integer           , public :: numpft         = 24   ! number of plant types
 
   character(len=256), public :: map_fpft        = ' ' ! Mapping file for PFT
   character(len=256), public :: map_flakwat     = ' ' ! Mapping file for lake water
@@ -79,6 +80,7 @@ module mkvarctl
   character(len=256), public :: map_fgrvl       = ' ' ! Mapping file for soil gravel content
   character(len=256), public :: map_fslp10      = ' ' ! Mapping file for slope percentile
   character(len=256), public :: map_fero        = ' ' ! Mapping file for ELM-Erosion parameters
+  character(len=256), public :: map_ffert       = ' ' ! Mapping file for crop fertilizer
 !
 ! Variables to override data read in with
 ! (all_urban is mostly for single-point mode, but could be used for sensitivity studies)
