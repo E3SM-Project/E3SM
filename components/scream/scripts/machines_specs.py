@@ -40,7 +40,7 @@ MACHINE_METADATA = {
                   48,
                   48,
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
-    "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
+    "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi lapack python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -q pdebug",
                   44,
