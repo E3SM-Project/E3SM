@@ -34,7 +34,6 @@ module ocn_diagnostics
    use ocn_gm
    use ocn_equation_of_state
    use ocn_thick_ale
-   use ocn_diagnostics_routines
    use ocn_diagnostics_variables
    use ocn_mesh
 
@@ -55,14 +54,15 @@ module ocn_diagnostics
    !--------------------------------------------------------------------
 
    public :: ocn_diagnostic_solve, &
+             ocn_relativeVorticity_circulation, &
              ocn_vert_transport_velocity_top, &
              ocn_fuperp, &
              ocn_filter_btr_mode_tend_vel, &
              ocn_reconstruct_gm_vectors, &
-             ocn_diagnostics_init, &
              ocn_compute_kpp_input_fields, &
              ocn_validate_state, &
-             ocn_build_log_filename
+             ocn_build_log_filename, &
+             ocn_diagnostics_init
 
    !--------------------------------------------------------------------
    !
@@ -277,6 +277,97 @@ contains
       call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}
+
+!***********************************************************************
+!
+!  routine ocn_relativeVorticity_circulation
+!
+!> \brief   Computes relative vorticity and circulation
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    November 2013
+!> \details
+!>  Computes relative vorticity and circulation
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         relativeVorticity
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         circulation
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iVertex, iEdge, i, k
+      integer, pointer :: nEdges, nVertices, vertexDegree
+      integer, dimension(:), pointer :: maxLevelVertexBot
+      integer, dimension(:,:), pointer :: edgesOnVertex, edgeSignOnVertex
+
+      real (kind=RKIND) :: invAreaTri1, r_tmp
+      real (kind=RKIND), dimension(:), pointer :: &
+              dcEdge, areaTriangle
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
+
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+      err = 0
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
+      do iVertex = 1, nVertices
+         circulation(:, iVertex) = 0.0_RKIND
+         relativeVorticity(:, iVertex) = 0.0_RKIND
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
+         do i = 1, vertexDegree
+            iEdge = edgesOnVertex(i, iVertex)
+            do k = 1, maxLevelVertexBot(iVertex)
+              r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
+
+              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
+              relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_relativeVorticity_circulation!}}}
 
 !***********************************************************************
 !
@@ -1651,54 +1742,6 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_diagnostics_init
-!
-!> \brief   Initializes flags used within diagnostics routines.
-!> \author  Mark Petersen
-!> \date    4 November 2011
-!> \details
-!>  This routine initializes flags related to quantities computed within
-!>  other diagnostics routines.
-!
-!-----------------------------------------------------------------------
-   subroutine ocn_diagnostics_init(domain, err)!{{{
-      type(domain_type), intent(in) :: domain
-      integer, intent(out) :: err !< Output: Error flag
-
-      err = 0
-
-      jenkinsOn = .false.
-      hollandJenkinsOn = .false.
-      if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
-         jenkinsOn = .true.
-      else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
-         hollandJenkinsOn = .true.
-      end if
-
-      if(config_include_KE_vertex) then
-         ke_vertex_flag = 1
-         ke_cell_flag = 0
-      else
-         ke_vertex_flag = 0
-         ke_cell_flag = 1
-      endif
-
-      if (trim(config_time_integrator) == 'RK4') then
-         ! For RK4, PV includes f: PV = (eta+f)/h.
-         fCoef = 1
-      elseif (trim(config_time_integrator) == 'split_explicit' &
-        .or.trim(config_time_integrator) == 'unsplit_explicit') then
-          ! For split explicit, PV is eta/h because the Coriolis term
-          ! is added separately to the momentum tendencies.
-          fCoef = 0
-      end if
-
-      call ocn_diagnostics_variables_init(domain, jenkinsOn, hollandJenkinsOn, err)
-
-    end subroutine ocn_diagnostics_init!}}}
-
-!***********************************************************************
-!
 !  routine ocn_compute_KPP_input_fields
 !
 !> \brief
@@ -2780,6 +2823,54 @@ contains
       write(unitNumber, *) '        Max: ', maxValue
 
    end subroutine ocn_write_field_statistics
+
+!***********************************************************************
+!
+!  routine ocn_diagnostics_init
+!
+!> \brief   Initializes flags used within diagnostics routines.
+!> \author  Mark Petersen
+!> \date    4 November 2011
+!> \details
+!>  This routine initializes flags related to quantities computed within
+!>  other diagnostics routines.
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostics_init(domain, err)!{{{
+      type(domain_type), intent(in) :: domain
+      integer, intent(out) :: err !< Output: Error flag
+
+      err = 0
+
+      jenkinsOn = .false.
+      hollandJenkinsOn = .false.
+      if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
+         jenkinsOn = .true.
+      else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
+         hollandJenkinsOn = .true.
+      end if
+
+      if(config_include_KE_vertex) then
+         ke_vertex_flag = 1
+         ke_cell_flag = 0
+      else
+         ke_vertex_flag = 0
+         ke_cell_flag = 1
+      endif
+
+      if (trim(config_time_integrator) == 'RK4') then
+         ! For RK4, PV includes f: PV = (eta+f)/h.
+         fCoef = 1
+      elseif (trim(config_time_integrator) == 'split_explicit' &
+        .or.trim(config_time_integrator) == 'unsplit_explicit') then
+          ! For split explicit, PV is eta/h because the Coriolis term
+          ! is added separately to the momentum tendencies.
+          fCoef = 0
+      end if
+
+      call ocn_diagnostics_variables_init(domain, jenkinsOn, hollandJenkinsOn, err)
+
+    end subroutine ocn_diagnostics_init!}}}
 
 !***********************************************************************
 
