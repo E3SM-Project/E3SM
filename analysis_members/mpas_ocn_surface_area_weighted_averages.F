@@ -27,7 +27,6 @@ module ocn_surface_area_weighted_averages
    use mpas_log
 
    use ocn_constants
-   use ocn_diagnostics_routines
 
    implicit none
    private

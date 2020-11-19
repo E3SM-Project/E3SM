@@ -27,7 +27,6 @@ module ocn_mixed_layer_heat_budget
    use mpas_log
 
    use ocn_constants
-   use ocn_diagnostics_routines
 
    implicit none
    private
