@@ -16,7 +16,8 @@ SET_TO_VIEWER = {
     'area_mean_time_series': area_mean_time_series_viewer.create_viewer,
     'enso_diags': enso_diags_viewer.create_viewer,
     'qbo': qbo_viewer.create_viewer,
-    'streamflow': streamflow_viewer.create_viewer
+    'streamflow': streamflow_viewer.create_viewer,
+    'diurnal_cycle': default_viewer.create_viewer
 }
 
 def create_index(root_dir, title_and_url_list):

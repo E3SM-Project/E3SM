@@ -401,6 +401,7 @@ def cosp_histogram_standardize(cld):
 
 derived_variables = {
     'PRECT': OrderedDict([
+        (('PRECT',), lambda pr: convert_units(rename(pr),target_units="mm/day")),
         (('pr',), lambda pr: qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),

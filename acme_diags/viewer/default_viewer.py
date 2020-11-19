@@ -20,6 +20,7 @@ SET_TO_NAME = {
     'lat_lon': 'Latitude-Longitude contour maps',
     'polar': 'Polar contour maps',
     'cosp_histogram': 'CloudTopHeight-Tau joint histograms',
+    'diurnal_cycle': 'Diurnal cycle phase maps',
 }
 
 # The ordering of the columns in the viewer.
