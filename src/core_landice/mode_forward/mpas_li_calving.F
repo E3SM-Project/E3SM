@@ -47,7 +47,7 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_maintain_broken_ice
+   public :: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_preserve_high_damage
 
    !--------------------------------------------------------------------
    !
@@ -1464,8 +1464,7 @@ module li_calving
       type (mpas_pool_type), pointer :: velocityPool
       type (mpas_pool_type), pointer :: scratchPool
       real(kind=RKIND), pointer :: config_calving_eigencalving_parameter_scalar_value
-      real(kind=RKIND), pointer :: config_damage_restore_threshold, config_damage_calving_threshold
-      logical, pointer :: config_damage_use_constant_A
+      real(kind=RKIND), pointer :: config_damage_preserve_threshold, config_damage_calving_threshold
       character, pointer :: config_damage_gl_setting
       real(kind=RKIND), pointer :: config_default_flowParamA 
       character (len=StrKIND), pointer :: config_calving_eigencalving_parameter_source
@@ -1507,8 +1506,6 @@ module li_calving
       real, dimension(:), pointer :: sigmamin
       type (field1dReal), pointer :: alphaVar
       real, dimension(:), pointer :: alpha
-      type (field1dReal), pointer :: envForceVar
-      real, dimension(:), pointer :: envForce
 
       integer, dimension(:), pointer :: cellMask
       type (field1dInteger), pointer :: calvingFrontMaskField
@@ -1531,13 +1528,13 @@ module li_calving
                config_calving_eigencalving_parameter_scalar_value)
       call mpas_pool_get_config(liConfigs, 'config_calving_eigencalving_parameter_source', config_calving_eigencalving_parameter_source)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-      call mpas_pool_get_config(liConfigs, 'config_damage_restore_threshold', config_damage_restore_threshold)
+      call mpas_pool_get_config(liConfigs, 'config_damage_preserve_threshold', config_damage_preserve_threshold)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
-      call mpas_pool_get_config(liConfigs, 'config_damage_use_constant_A', config_damage_use_constant_A)
       call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_damage_rheology_coupling', config_damage_rheology_coupling)
 
       ! block loop
       block => domain % blocklist
@@ -1622,9 +1619,6 @@ module li_calving
          call mpas_allocate_scratch_field(alphaVar, .true.)
          alpha => alphaVar % array
 
-         call mpas_pool_get_field(scratchPool, 'envForceVar', envForceVar )
-         call mpas_allocate_scratch_field(envForceVar, .true.)
-         envForce => envForceVar % array
 
          call calculate_strain_rates(meshPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
@@ -1640,22 +1634,12 @@ module li_calving
          meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)
          ! calculate the depth-averaged flow parameter A
 
-         if (config_damage_use_constant_A) then
-             where (thickness == 0.0_RKIND)
-                 effectiveViscosity = 0.0_RKIND
-             elsewhere
-                 effectiveViscosity =
-                 0.5_RKIND*stiffnessFactor*config_default_flowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
-                 exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
-             endwhere
-         else
-             where (thickness == 0.0_RKIND)
-                 effectiveViscosity = 0.0_RKIND
-             elsewhere
-                 effectiveViscosity = 0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
-                 exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
-             endwhere
-         end if
+         where (thickness == 0.0_RKIND)
+             effectiveViscosity = 0.0_RKIND
+         elsewhere
+             effectiveViscosity = 0.5_RKIND*stiffnessFactor*meanFlowParamA**(-1.0_RKIND/3.0_RKIND)*(sqrt(exx**2.0_RKIND+eyy**2.0_RKIND +
+             exx*eyy + 0.25_RKIND*(exy+eyx)**2.0_RKIND))**((1.0_RKIND-3.0_RKIND)/3.0_RKIND)
+         endwhere
          ! recover effective viscosity from vel. and temp. fields
 
          sigmaxy(:) = 2.0_RKIND*effectiveViscosity(:)*(exy(:)+eyx(:))/2.0_RKIND
@@ -1714,16 +1698,13 @@ module li_calving
 
          !seconds = daysSinceStart*24.0*3600.0
 
-         ! below is the envForce for the manufacured experiments
-         !envForce(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         ! below is the cases for the manufacured experiments
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*(1+epsmax(:)*seconds)*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
-         !envForce(:) = -0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
+         !ddamagedt(:) = damageSource(:)*damage(:) - 0.44/2.0 * (uReconstructX(1,:)/1000.0*exp(-uReconstructX(1,:)*seconds/1000.0) +    &
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
-         ! set envForce to zero if none
-         envForce(:) = 0.0_RKIND
-
-         ddamagedt(:) = damageSource(:) * damage(:) + envForce(:)
+         ddamagedt(:) = damageSource(:) * damage(:)
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
@@ -1741,7 +1722,7 @@ module li_calving
          ! temporarily set damage_nye to a constant value, 0.8
 
          do iCell = 1, nCells
-            if (damage(iCell) > config_damage_restore_threshold) then
+            if (damage(iCell) > config_damage_preserve_threshold) then
                 damageMax(iCell) = damage(iCell)
             end if
          end do
@@ -1817,6 +1798,17 @@ module li_calving
         endif
         ! always set the damage at the first floating cells to the Nye value
 
+        if (config_damage_rheology_coupling) then
+            do iCell = 1, nCells
+                if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+                    stiffnessFactor(iCell) = 1.0_RKIND - damage(iCell)
+                    if (stiffnessFactor(iCell) < config_damage_stiffness_min) then
+                        stiffnessFactor(iCell) = config_damage_stiffness_min
+                    end if
+                end if
+            end do
+        end if
+
         if (.true.) then
 
              call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
@@ -1851,7 +1843,6 @@ module li_calving
          !call mpas_deallocate_scratch_field(s0Var, .true.)
          !call mpas_deallocate_scratch_field(damageSourceVar, .true.)
          !call mpas_deallocate_scratch_field(ddamagedtVar, .true.)
-         call mpas_deallocate_scratch_field(envForceVar, .true.)
          ! call mpas_deallocate_scratch_field(damageVar, .true.)
 
          block => block % next
@@ -1862,17 +1853,17 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine li_maintain_broken_ice
+!    routine li_preserve_high_damage
 !
 !> \author Tong Zhang
 !> \date   Oct. 2019
-!> \details restore the damage to the original value before advection if it exceeds some large number
-!>          (config_damage_restore_threshold). For example, if config_damage_restore_threshold = 0.5, 
+!> \details preserve the damage to the original value before advection if it exceeds some large number
+!>          (config_damage_preserve_threshold). For example, if config_damage_preserve_threshold = 0.5, 
 !>          then the localtions with damage > 0.5 on the ice shelf will not heal.
-!>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_restore_threshold.
+!>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_preserve_threshold.
 !-----------------------------------------------------------------------
 
-   subroutine li_maintain_broken_ice(domain, err)
+   subroutine li_preserve_high_damage(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -1948,7 +1939,7 @@ module li_calving
                 damage(iCell) = damageMax(iCell)
             end if
          end do
-         ! put the damageMax value back to restore the damage value (no heal)
+         ! put the damageMax value back to preserve the damage value (no heal)
 
          where (damage < 0.0_RKIND)
              damage = 0.0_RKIND
@@ -2026,7 +2017,7 @@ module li_calving
              
       enddo
 
-   end subroutine li_maintain_broken_ice
+   end subroutine li_preserve_high_damage
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

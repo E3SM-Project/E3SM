@@ -29,7 +29,7 @@ module li_time_integration_fe
    use mpas_log
 
    use li_advection
-   use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_maintain_broken_ice_
+   use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_preserve_high_damage
    use li_thermal, only: li_thermal_solver
    use li_iceshelf_melt
    use li_diagnostic_vars
@@ -106,13 +106,13 @@ module li_time_integration_fe
 
       logical, pointer :: config_restore_calving_front
       logical, pointer :: config_calculate_damage
-      logical, pointer :: config_maintain_broken_ice
+      logical, pointer :: config_preserve_high_damage
 
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
-      call mpas_pool_get_config(liConfigs, 'config_maintain_broken_ice',config_maintain_broken_ice)
+      call mpas_pool_get_config(liConfigs, 'config_preserve_high_damage',config_preserve_high_damage)
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -147,12 +147,12 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
 
-! === maintain broken ice ===========
-      if (config_maintain_broken_ice) then
-          call mpas_timer_start("maintain broken ice")
-          call li_maintain_broken_ice(domain, err_tmp)
+! === preserve high damage ===========
+      if (config_preserve_high_damage) then
+          call mpas_timer_start("preserve high damage")
+          call li_preserve_high_damage(domain, err_tmp)
           err = ior(err, err_tmp)
-          call mpas_timer_stop("maintain broken ice")
+          call mpas_timer_stop("preserve high damage")
       endif
 
 ! === Update subglacial hydrology  ===========

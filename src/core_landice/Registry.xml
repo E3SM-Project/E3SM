@@ -172,16 +172,16 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
-		<nml_option name="config_maintain_broken_ice" type="logical" default_value=".false." units="unitless"
-                        description="If true, then turn on the li_maintain_broken_ice function."
+		<nml_option name="config_preserve_high_damage" type="logical" default_value=".false." units="unitless"
+                        description="If true, then turn on the li_preserve_high_damage function."
 		            possible_values=".true. or .false."
                 />
 		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
                         description="If true, then turn on the calculate_damage function."
 		            possible_values=".true. or .false."
                 />
-                <nml_option name="config_damage_restore_threshold" type="real" default_value="0.0" units="unitless"
-                        description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_restore_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to 0.6 if non-damaged ice is transported from upstream. If we set config_damage_restore_threshold to 0 (default), then it will just not play a role in pratical."
+                <nml_option name="config_damage_preserve_threshold" type="real" default_value="0.0" units="unitless"
+                        description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_preserve_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to a smaller number if non-damaged ice is transported from upstream. If we set config_damage_preserve_threshold to 0 (default), then it will just not play a role in pratical."
 	                possible_values="real value between 0 and 1"
 		/>
                 <nml_option name="config_damage_calving_threshold" type="real" default_value="1.0" units="unitless"
@@ -194,10 +194,6 @@
 		/>
                 <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
                         description="If true, then we change stiffnessFactor to 1-damage during the run."
-	                possible_values=".true. or .false."
-		/>
-                <nml_option name="config_damage_use_constant_A" type="logical" default_value=".false." units="unitless"
-                        description="If true, then we use constant A (i.e., config_default_flowParamA) in the damage calculation."
 	                possible_values=".true. or .false."
 		/>
 		        <nml_option name="config_damage_gl_setting" type="character" default_value="none" units="unitless"
@@ -616,13 +612,6 @@
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
 			<var name="damage"/>
-			<var name="ddamagedt"/>
-			<var name="s0"/>
-			<var name="nstar"/>
-			<var name="epsmax"/>
-			<var name="sigmamax"/>
-			<var name="visc"/>
-			<var name="source"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
@@ -717,13 +706,7 @@
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
 			<var name="damage"/>
-			<var name="ddamagedt"/>
-			<var name="s0"/>
-			<var name="nstar"/>
-			<var name="epsmax"/>
-			<var name="sigmamax"/>
-			<var name="visc"/>
-			<var name="source"/>
+			<var name="damageMax"/>
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
                         <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
@@ -1399,44 +1382,40 @@ is the value of that variable from the *previous* time level!
 	       description="generic work array with dimensions of (nCells)"
 	       persistence="scratch"
 	       />
-       <var name="meanFlowParamAVar" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
+      <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
 	       description="depth averaged flow parameter A"
 	       persistence="scratch"
 	       />
-      <var name="sigmaxyVar" type="real" dimensions="nCells" units="Pa"
+      <var name="sigmaxy" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayxVar" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmayx" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaxxVar" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmaxx" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xx"
 	       persistence="scratch"
 	       />
-	  <var name="sigmayyVar" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmayy" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yy"
 	       persistence="scratch"
 	       />
-	  <var name="sigmaminVar" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmamin" type="real" dimensions="nCells" units="Pa"
 	       description="minimum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="sigmamaxVar" type="real" dimensions="nCells" units="Pa"
+	  <var name="sigmamax" type="real" dimensions="nCells" units="Pa"
 	       description="maximum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="alphaVar" type="real" dimensions="nCells" units="none"
+	  <var name="alpha" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"
 	       persistence="scratch"
 	       />
-	  <var name="ddamagedtVar" type="real" dimensions="nCells" units="s^{-1}"
+	  <var name="ddamagedt" type="real" dimensions="nCells" units="s^{-1}"
           description="d(damage) / dt"
-	       persistence="scratch"
-	       />
-       <var name="envForceVar" type="real" dimensions="nCells" units="s^{-1}"
-	       description="environmental forcing for damage production"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"
