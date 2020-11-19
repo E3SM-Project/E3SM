@@ -870,7 +870,7 @@ contains
              else
                 call seq_io_write(hist_file, &
                      time_units=time_units, time_cal=calendar, time_val=avg_time, &
-                     whead=whead, wdata=wdata, tbnds=tbnds)
+                     whead=whead, wdata=wdata, nt=1, tbnds=tbnds)
              endif
              if (atm_present .and. histavg_atm) then
                 gsmap => component_get_gsmap_cx(atm(1))
