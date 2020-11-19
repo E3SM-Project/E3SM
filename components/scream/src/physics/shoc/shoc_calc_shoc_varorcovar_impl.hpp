@@ -11,13 +11,13 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_shoc_varorcovar(
   const MemberType&            team,
-  const Int&                   nlev, 
+  const Int&                   nlev,
   const Scalar& tunefac,
-  const uview_1d<const Spack>& isotropy_zi, 
+  const uview_1d<const Spack>& isotropy_zi,
   const uview_1d<const Spack>& tkh_zi,
   const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& invar1, 
-  const uview_1d<const Spack>& invar2, 
+  const uview_1d<const Spack>& invar1,
+  const uview_1d<const Spack>& invar2,
   const uview_1d<Spack>&       varorcovar)
 {
   const Int nlev_pack = ekat::npack<Spack>(nlev);
