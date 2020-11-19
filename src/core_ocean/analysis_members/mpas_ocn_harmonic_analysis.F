@@ -35,7 +35,6 @@ module ocn_harmonic_analysis
    use mpas_constants
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
    use ocn_vel_tidal_potential, only: char_array,tidal_constituent_factors
 
    implicit none

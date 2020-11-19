@@ -27,7 +27,6 @@ module ocn_test_compute_interval
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_diagnostics_routines
 
    implicit none
    private

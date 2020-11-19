@@ -45,7 +45,6 @@ module ocn_eddy_product_variables
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private

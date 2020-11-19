@@ -30,7 +30,6 @@ module ocn_eliassen_palm
    use mpas_constants
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
    use ocn_equation_of_state
 
    implicit none

@@ -55,7 +55,6 @@ module ocn_TEM_PLATE
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private

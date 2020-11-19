@@ -28,7 +28,6 @@ module ocn_zonal_mean
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private

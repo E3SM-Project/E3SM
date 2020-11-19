@@ -27,7 +27,6 @@ module ocn_transect_transport
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private

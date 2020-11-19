@@ -29,7 +29,6 @@ module ocn_water_mass_census
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private
