@@ -4,8 +4,7 @@ namespace scream {
 namespace shoc {
 
 /*
- * Explicit instantiation for doing update_prognostics_implicit on Reals using the
- * default device.
+ * Explicit instantiation for using the default device.
  */
 
 template struct Functions<Real,DefaultDevice>;

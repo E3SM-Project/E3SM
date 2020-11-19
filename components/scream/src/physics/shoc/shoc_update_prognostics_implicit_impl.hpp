@@ -13,11 +13,156 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-KOKKOS_FUNCTION
-void Functions<S,D>::update_prognostics_implicit(const Int& shcol, const Int& nlev, const Int& nlevi, const Int& num_tracer, const Spack& dtime, const uview_1d<const Spack>& dz_zt, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& rho_zt, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& wtracer_sfc, const uview_1d<Spack>& thetal, const uview_1d<Spack>& qw, const uview_1d<Spack>& tracer, const uview_1d<Spack>& tke, const uview_1d<Spack>& u_wind, const uview_1d<Spack>& v_wind)
+void Functions<S,D>::update_prognostics_implicit(
+  const MemberType&            team,
+  const Int&                   nlev,
+  const Int&                   nlevi,
+  const Int&                   num_tracer,
+  const Scalar&                dtime,
+  const uview_1d<const Spack>& dz_zt,
+  const uview_1d<const Spack>& dz_zi,
+  const uview_1d<const Spack>& rho_zt,
+  const uview_1d<const Spack>& zt_grid,
+  const uview_1d<const Spack>& zi_grid,
+  const uview_1d<const Spack>& tk,
+  const uview_1d<const Spack>& tkh,
+  const Scalar&                uw_sfc,
+  const Scalar&                vw_sfc,
+  const Scalar&                wthl_sfc,
+  const Scalar&                wqw_sfc,
+  const uview_1d<const Spack>& wtracer_sfc,
+  const uview_1d<Spack>&       rdp_zt,
+  const uview_1d<Spack>&       tmpi,
+  const uview_1d<Spack>&       tkh_zi,
+  const uview_1d<Spack>&       tk_zi,
+  const uview_1d<Spack>&       rho_zi,
+  const uview_1d<Scalar>&      du,
+  const uview_1d<Scalar>&      dl,
+  const uview_1d<Scalar>&      d,
+  const uview_2d<Spack>&       X1,
+  const uview_2d<Spack>&       X2,
+  const uview_1d<Spack>&       thetal,
+  const uview_1d<Spack>&       qw,
+  const uview_2d<Spack>&       tracer,
+  const uview_1d<Spack>&       tke,
+  const uview_1d<Spack>&       u_wind,
+  const uview_1d<Spack>&       v_wind)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  const auto last_nlev_pack = (nlev-1)/Spack::n;
+  const auto last_nlev_indx = (nlev-1)%Spack::n;
+  const auto last_nlevi_pack = (nlevi-1)/Spack::n;
+  const auto last_nlevi_indx = (nlevi-1)%Spack::n;
+
+  // linearly interpolate tkh, tk, and air density onto the interface grids
+  linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
+  linear_interp(team,zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,0);
+  linear_interp(team,zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,0);
+
+  // Define the tmpi variable, which is really dt*(g*rho)**2/dp
+  // at interfaces. Substitue dp = g*rho*dz in the above equation
+  compute_tmpi(team, nlevi, dtime, rho_zi, dz_zi, tmpi);
+
+  // compute 1/dp term, needed in diffusion solver
+  dp_inverse(team, nlev, rho_zt, dz_zt, rdp_zt);
+  team.team_barrier();
+
+  // compute terms needed for the implicit surface stress (ksrf)
+  // and tke flux calc (wtke_sfc)
+  Scalar ksrf, wtke_sfc;
+  {
+    const auto wsmin = 1;
+    const auto ksrfmin = 1e-4;
+    const auto ustarmin = 0.01;
+
+    const auto rho = rho_zi(last_nlevi_pack)[last_nlevi_indx];
+    const auto uw = uw_sfc;
+    const auto vw = vw_sfc;
+
+    const auto taux = rho*uw;
+    const auto tauy = rho*vw;
+
+    const auto u_wind_sfc = u_wind(last_nlev_pack)[last_nlev_indx];
+    const auto v_wind_sfc = v_wind(last_nlev_pack)[last_nlev_indx];
+
+    const auto ws = ekat::impl::max(std::sqrt((u_wind_sfc*u_wind_sfc) + v_wind_sfc*v_wind_sfc), sp(wsmin));
+    const auto tau = std::sqrt(taux*taux + tauy*tauy);
+    ksrf = ekat::impl::max(tau/ws, sp(ksrfmin));
+
+    const auto ustar = ekat::impl::max(std::sqrt(std::sqrt(uw*uw + vw*vw)), sp(ustarmin));
+    wtke_sfc = ustar*ustar*ustar;
+  }
+
+  // compute surface fluxes for liq. potential temp, water and tke
+  {
+    const auto cmnfac = dtime*(C::gravit*rho_zi(last_nlevi_pack)[last_nlevi_indx]*rdp_zt(last_nlev_pack)[last_nlev_indx]);
+    Kokkos::single(Kokkos::PerTeam(team), [&] () {
+      thetal(last_nlev_pack)[last_nlev_indx] += cmnfac*wthl_sfc;
+      qw(last_nlev_pack)[last_nlev_indx] += cmnfac*wqw_sfc;
+      tke(last_nlev_pack)[last_nlev_indx] += cmnfac*wtke_sfc;
+    });
+
+    const auto tracer_sfc = Kokkos::subview(tracer, nlev-1, Kokkos::ALL());
+    const Int num_tracer_pack = ekat::npack<Spack>(num_tracer);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_tracer_pack), [&] (const Int& p) {
+      tracer_sfc(p) += cmnfac*wtracer_sfc(p);
+    });
+  }
+
+  // Store RHS values in X1 and X2
+  team.team_barrier();
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+    const auto k_view_indx = k/Spack::n;
+    const auto k_pack_indx = k%Spack::n;
+
+    X1(k,0)[0] = u_wind(k_view_indx)[k_pack_indx];
+    X1(k,1/Spack::n)[1%Spack::n] = v_wind(k_view_indx)[k_pack_indx];
+
+    X2(k,0)[0] = thetal(k_view_indx)[k_pack_indx];
+    X2(k,1/Spack::n)[1%Spack::n] = qw(k_view_indx)[k_pack_indx];
+    X2(k,2/Spack::n)[2%Spack::n] = tke(k_view_indx)[k_pack_indx];
+    for (Int p=0; p<num_tracer; ++p) {
+      X2(k,(3+p)/Spack::n)[(3+p)%Spack::n] = tracer(k, p/Spack::n)[p%Spack::n];
+    }
+  });
+
+  // march u_wind and v_wind one step forward using implicit solver
+  {
+    // Call decomp for momentum variables
+    vd_shoc_decomp(team, nlev, tk_zi, tmpi, rdp_zt, dtime, ksrf, du, dl, d);
+
+    // Solve
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, X1);
+  }
+
+  // march temperature, total water, tke,and tracers one step forward using implicit solver
+  {
+    // Call decomp for thermo variables. Fluxes applied explicitly, so zero
+    // fluxes out for implicit solver decomposition.
+    team.team_barrier();
+    vd_shoc_decomp(team, nlev, tkh_zi, tmpi, rdp_zt, dtime, 0, du, dl, d);
+
+    // Solve
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, X2);
+  }
+
+  // Copy RHS values from X1 and X2
+  team.team_barrier();
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+    const auto k_view_indx = k/Spack::n;
+    const auto k_pack_indx = k%Spack::n;
+
+    u_wind(k_view_indx)[k_pack_indx] = X1(k,0)[0];
+    v_wind(k_view_indx)[k_pack_indx] = X1(k,1/Spack::n)[1%Spack::n];
+
+    thetal(k_view_indx)[k_pack_indx] = X2(k,0)[0];
+    qw(k_view_indx)[k_pack_indx] = X2(k,1/Spack::n)[1%Spack::n];
+    tke(k_view_indx)[k_pack_indx] = X2(k,2/Spack::n)[2%Spack::n];
+    for (Int p=0; p<num_tracer; ++p) {
+      tracer(k, p/Spack::n)[p%Spack::n] = X2(k,(3+p)/Spack::n)[(3+p)%Spack::n];
+    }
+  });
 }
 
 } // namespace shoc
