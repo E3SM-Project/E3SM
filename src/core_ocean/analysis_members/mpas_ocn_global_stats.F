@@ -27,7 +27,6 @@ module ocn_global_stats
 
    use ocn_constants
    use ocn_config
-   use ocn_diagnostics_routines
 
    implicit none
    private
