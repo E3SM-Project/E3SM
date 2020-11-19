@@ -7,10 +7,11 @@
 #include "share/grid/point_grid.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
-#include "mpi/Comm.hpp"
 
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 
+#include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 
@@ -19,7 +20,7 @@
 
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
-void init_cube_geometry_f90 (const int& ne_in);
+void set_test_params_f90 (const int& ne_in);
 void cleanup_geometry_f90 ();
 }
 
@@ -37,11 +38,22 @@ TEST_CASE("remap", "") {
   using FID = FieldIdentifier;
   using FL  = FieldLayout;
 
+  // Create a comm
+  ekat::Comm comm(MPI_COMM_WORLD);
+
   std::random_device rd;
   const unsigned int catchRngSeed = Catch::rngSeed();
   const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
-  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  if (comm.am_i_root()) {
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  }
   std::mt19937_64 engine(seed);
+
+  // Init homme context
+  if (!is_parallel_inited_f90()) {
+    auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
+    init_parallel_f90(comm_f);
+  }
 
   // We'll use this extensively, so let's use a short ref name
   auto& c = Homme::Context::singleton();
@@ -50,53 +62,33 @@ TEST_CASE("remap", "") {
   auto& sp = c.create<Homme::SimulationParams>();
   sp.qsize = std::max(HOMMEXX_QSIZE_D/2,1);
 
-  // Create a comm
-  auto& comm = c.create<Homme::Comm>();
-  comm.reset_mpi_comm(MPI_COMM_WORLD);
-
-  // Init a simple cubed geometry
+  // Set parameters
   constexpr int ne = 2;
-  constexpr int nlev = HOMMEXX_NUM_LEV;
-  constexpr int np   = HOMMEXX_NP;
+  set_test_params_f90 (ne);
 
-  if (!is_parallel_inited_f90()) {
-    auto comm_f = MPI_Comm_c2f(MPI_COMM_WORLD);
-    init_parallel_f90(comm_f);
-  }
-  init_cube_geometry_f90(ne);
+  // Create the grids
+  ekat::ParameterList params;
+  DynamicsDrivenGridsManager gm(comm,params);
+  std::set<std::string> grids_names = {"Physics","GLL"};
+  gm.build_grids(grids_names,"Physics");
 
   // Local counters
-  const int num_local_elems = get_num_owned_elems_f90();
-  const int num_local_cols = get_num_owned_columns_f90();
+  const int num_local_elems = get_num_local_elems_f90();
+  const int num_local_cols = get_num_local_columns_f90();
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
-  // Create the columns global id mappings
-  typename AbstractGrid::dofs_list_type p_dofs("p dofs",num_local_cols);
-  typename AbstractGrid::dofs_list_type d_dofs("d dofs",num_local_elems*np*np);
+  // Get physics and dynamics grids, and their dofs
+  auto phys_grid = gm.get_grid("Physics");
+  auto dyn_grid  = gm.get_grid("Dynamics");
+  auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
+  auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());
+  auto h_d_lid2idx = Kokkos::create_mirror_view(dyn_grid->get_lid_to_idx_map());
+  Kokkos::deep_copy(h_p_dofs,phys_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_dofs,dyn_grid->get_dofs_gids());
+  Kokkos::deep_copy(h_d_lid2idx,dyn_grid->get_lid_to_idx_map());
 
-  typename AbstractGrid::lid_to_idx_map_type p_lid2idx("p_lid2idx",num_local_cols,1);
-  typename AbstractGrid::lid_to_idx_map_type d_lid2idx("d_lid2idx",num_local_elems*np*np,3);
-
-  auto h_p_dofs = Kokkos::create_mirror_view(p_dofs);
-  auto h_d_dofs = Kokkos::create_mirror_view(d_dofs);
-  auto h_p_lid2idx = Kokkos::create_mirror_view(p_lid2idx);
-  auto h_d_lid2idx = Kokkos::create_mirror_view(d_lid2idx);
-
-  get_cols_gids_f90 (h_p_dofs.data(),true);
-  std::iota(h_p_lid2idx.data(),h_p_lid2idx.data()+h_p_lid2idx.size(),0);
-  get_cols_specs_f90 (h_d_dofs.data(),h_d_lid2idx.data(),false);
-
-  Kokkos::deep_copy(p_dofs,h_p_dofs);
-  Kokkos::deep_copy(d_dofs,h_d_dofs);
-  Kokkos::deep_copy(p_lid2idx,h_p_lid2idx);
-  Kokkos::deep_copy(d_lid2idx,h_d_lid2idx);
-
-  // Create the physics and dynamics grids
-  auto phys_grid = std::make_shared<PointGrid>("Physics", p_dofs, nlev);
-  auto dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_local_elems, np, nlev);
-
-  dyn_grid->set_dofs(d_dofs,d_lid2idx);
-
+  // Get some dimensions for Homme
+  constexpr int np  = HOMMEXX_NP;
   constexpr int NVL = HOMMEXX_NUM_PHYSICAL_LEV;
   constexpr int NTL = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int NTQ = HOMMEXX_Q_NUM_TIME_LEVELS;
@@ -237,7 +229,9 @@ TEST_CASE("remap", "") {
   SECTION ("remap") {
 
     for (bool fwd : {true, false}) {
-      std::cout << " -> Remap " << (fwd ? " forward\n" : " backward\n");
+      if (comm.am_i_root()) {
+        std::cout << " -> Remap " << (fwd ? " forward\n" : " backward\n");
+      }
 
       // Note: for the dyn->phys test to run correctly, the dynamics input v must be synced,
       //       meaning that the values at the interface between two elements must match.
@@ -359,7 +353,7 @@ TEST_CASE("remap", "") {
             if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
-                printf("expected: = %ld\n",h_d_dofs(idof));
+                printf("expected: = %d\n",h_d_dofs(idof));
             }
             REQUIRE (dyn(ie,ip,jp)==h_d_dofs(idof));
           }
@@ -368,7 +362,7 @@ TEST_CASE("remap", "") {
             if (phys(idof)!=h_p_dofs(idof)) {
                 printf(" ** 2D Scalar ** \n");
                 printf("  p_out(%d) = %2.16f\n",idof,phys(idof));
-                printf("  expected: = %ld\n",h_p_dofs(idof));
+                printf("  expected: = %d\n",h_p_dofs(idof));
             }
             REQUIRE (phys(idof)==h_p_dofs(idof));
           }
@@ -390,7 +384,7 @@ TEST_CASE("remap", "") {
               if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
                   printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,icomp,dyn(ie,icomp,ip,jp));
-                  printf("expected: = %ld\n",h_d_dofs(idof));
+                  printf("expected: = %d\n",h_d_dofs(idof));
               }
               REQUIRE (dyn(ie,icomp,ip,jp)==h_d_dofs(idof));
             }
@@ -401,7 +395,7 @@ TEST_CASE("remap", "") {
               if (phys(idof,icomp)!=h_p_dofs(idof)) {
                   printf(" ** 2D Vector ** \n");
                   printf("p_out(%d, %d) = %2.16f\n",idof,icomp,phys(idof,icomp));
-                  printf("expected: = %ld\n",h_p_dofs(idof));
+                  printf("expected: = %d\n",h_p_dofs(idof));
               }
               REQUIRE (phys(idof,icomp)==h_p_dofs(idof));
             }
@@ -424,7 +418,7 @@ TEST_CASE("remap", "") {
               if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
                   printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,ilev,dyn(ie,ip,jp,ilev));
-                  printf("expected: = %ld\n",h_d_dofs(idof));
+                  printf("expected: = %d\n",h_d_dofs(idof));
               }
               REQUIRE (dyn(ie,ip,jp,ilev)==h_d_dofs(idof));
             }
@@ -435,7 +429,7 @@ TEST_CASE("remap", "") {
               if (phys(idof,ilev)!=h_p_dofs(idof)) {
                   printf(" ** 3D Scalar ** \n");
                   printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
-                  printf("expected: = %ld\n",h_p_dofs(idof));
+                  printf("expected: = %d\n",h_p_dofs(idof));
               }
               REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
             }
@@ -459,7 +453,7 @@ TEST_CASE("remap", "") {
                 if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
                     printf(" ** 3D Vector ** \n");
                     printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,icomp,ip,jp,ilev));
-                    printf("expected: = %ld\n",h_d_dofs(idof));
+                    printf("expected: = %d\n",h_d_dofs(idof));
                 }
                 REQUIRE (dyn(ie,icomp,ip,jp,ilev)==h_d_dofs(idof));
               }
@@ -472,7 +466,7 @@ TEST_CASE("remap", "") {
                 if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
                     printf(" ** 3D Vector ** \n");
                     printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
-                    printf("expected: = %ld\n",h_p_dofs(idof));
+                    printf("expected: = %d\n",h_p_dofs(idof));
                 }
                 REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
               }
@@ -498,7 +492,7 @@ TEST_CASE("remap", "") {
               if (dyn(ie,itl,ip,jp,ilev)!=gid) {
                   printf(" ** 3D Scalar State ** \n");
                   printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,itl,ip,jp,ilev,dyn(ie,itl,ip,jp,ilev));
-                  printf("expected: = %ld\n",gid);
+                  printf("expected: = %d\n",gid);
               }
               REQUIRE (dyn(ie,itl,ip,jp,ilev)==gid);
             }
@@ -509,7 +503,7 @@ TEST_CASE("remap", "") {
               if (phys(idof,ilev)!=h_p_dofs(idof)) {
                   printf(" ** 3D Scalar State ** \n");
                   printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
-                  printf("expected: = %ld\n",h_p_dofs(idof));
+                  printf("expected: = %d\n",h_p_dofs(idof));
               }
               REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
             }
@@ -534,7 +528,7 @@ TEST_CASE("remap", "") {
                 if (dyn(ie,itl,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
                     printf(" ** 3D Vector State ** \n");
                     printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,itl,icomp,ip,jp,ilev));
-                    printf("expected: = %ld\n",h_d_dofs(idof));
+                    printf("expected: = %d\n",h_d_dofs(idof));
                 }
                 REQUIRE (dyn(ie,itl,icomp,ip,jp,ilev)==h_d_dofs(idof));
               }
@@ -547,7 +541,7 @@ TEST_CASE("remap", "") {
                 if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
                     printf(" ** 3D Vector State ** \n");
                     printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
-                    printf("expected: = %ld\n",h_p_dofs(idof));
+                    printf("expected: = %d\n",h_p_dofs(idof));
                 }
                 REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
               }
@@ -573,7 +567,7 @@ TEST_CASE("remap", "") {
                 if (dyn(ie,itl,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
                     printf(" ** 3D Tracer State ** \n");
                     printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,iq,ip,jp,ilev,dyn(ie,itl,iq,ip,jp,ilev));
-                    printf("expected: = %ld\n",h_d_dofs(idof));
+                    printf("expected: = %d\n",h_d_dofs(idof));
                 }
                 REQUIRE (dyn(ie,itl,iq,ip,jp,ilev)==h_d_dofs(idof));
               }
@@ -586,7 +580,7 @@ TEST_CASE("remap", "") {
                 if (phys(idof,iq,ilev)!=h_p_dofs(idof)) {
                     printf(" ** 3D Tracer State ** \n");
                     printf("p_out(%d,%d,%d) = %2.16f\n",idof,iq,ilev,phys(idof,iq,ilev));
-                    printf("expected: = %ld\n",h_p_dofs(idof));
+                    printf("expected: = %d\n",h_p_dofs(idof));
                 }
                 REQUIRE (phys(idof,iq,ilev)==h_p_dofs(idof));
               }
@@ -600,7 +594,7 @@ TEST_CASE("remap", "") {
   // Delete remapper before finalizing the mpi context, since the remapper has some MPI stuff in it
   remapper = nullptr;
 
-  // Finalize Homme::MpiContext (deletes buffers manager)
+  // Finalize Homme::Context
   Homme::Context::finalize_singleton();
 
   // Cleanup f90 structures

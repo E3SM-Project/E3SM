@@ -8,12 +8,12 @@ Atmosphere Processes:
   Schedule Type: Sequential
   Process 0:
     Process Name: Dynamics
-    Grid: SE Dynamics
+    Grid: Dynamics
   Process 1:
     Process Name: P3
-    Grid: SE Physics
+    Grid: Physics GLL
 
 Grids Manager:
   Type: Dynamics Driven
-  Reference Grid: SE Physics
+  Reference Grid: Physics GLL
 ...

@@ -176,6 +176,7 @@ contains
 
   subroutine prim_finalize_f90 () bind(c)
     use homme_context_mod,    only: is_model_inited, elem, dom_mt, par
+    use homme_grid_mod,       only: finalize_geometry_f90
     use prim_cxx_driver_base, only: prim_finalize
 
     if (.not. is_model_inited) then
@@ -199,6 +200,8 @@ contains
     call t_finalizef()
 
     is_model_inited = .false.
+
+    call finalize_geometry_f90()
 
   end subroutine prim_finalize_f90
 
