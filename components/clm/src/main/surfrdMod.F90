@@ -863,7 +863,7 @@ contains
     !     Handle generic crop types for file format where they are on their own
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch
+    use clm_varsur      , only : fert_cft, fert_p_cft, wt_nat_patch
     use clm_varpar      , only : cft_size, cft_lb, natpft_lb
     ! !ARGUMENTS:
     implicit none
@@ -891,15 +891,27 @@ contains
     if (.not. readvar) call endrun( msg=' ERROR: PCT_CFT NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
 
     if ( cft_size > 0 )then
-       call ncd_io(ncid=ncid, varname='CONST_FERTNITRO_CFT', flag='read', data=fert_cft, &
+       call ncd_io(ncid=ncid, varname='NFERT', flag='read', data=fert_cft, &
                dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           if ( masterproc ) &
-                write(iulog,*) ' WARNING: CONST_FERTNITRO_CFT NOT on surfdata file zero out'
+                write(iulog,*) ' WARNING: NFERT NOT on surfdata file zero out'
           fert_cft = 0.0_r8
        end if
     else
        fert_cft = 0.0_r8
+    end if
+
+    if ( cft_size > 0 )then
+       call ncd_io(ncid=ncid, varname='PFERT', flag='read', data=fert_p_cft, &
+               dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) then
+          if ( masterproc ) &
+                write(iulog,*) ' WARNING: PFERT NOT on surfdata file zero out'
+          fert_p_cft = 0.0_r8
+       end if
+    else
+       fert_p_cft = 0.0_r8
     end if
 
     allocate( array2D(begg:endg,1:natpft_size) )
@@ -918,7 +930,7 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch
+    use clm_varsur      , only : fert_cft, fert_p_cft, wt_nat_patch
     use clm_varpar      , only : natpft_size, cft_size, natpft_lb
     ! !ARGUMENTS:
     implicit none
@@ -934,11 +946,9 @@ contains
     SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg, natpft_size-1+natpft_lb/)), errMsg(__FILE__, __LINE__))
 
     call check_dim(ncid, 'natpft', natpft_size)
-    ! If cft_size == 0, then we expect to be running with a surface dataset
-    ! that does
+    ! If cft_size == 0, then we expect to be running with a surface dataset that does
     ! NOT have a PCT_CFT array (or CONST_FERTNITRO_CFT array), and thus does not have a 'cft' dimension.
-    ! Make sure
-    ! that's the case.
+    ! Make sure that's the case.
     call ncd_inqdid(ncid, 'cft', dimid, cft_dim_exists)
     if (cft_dim_exists) then
        call endrun( msg= ' ERROR: unexpectedly found cft dimension on dataset when cft_size=0'// &
@@ -946,15 +956,25 @@ contains
                ' must also have a separate crop landunit, and vice versa)'//&
                errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='CONST_FERTNITRO_CFT', flag='read', data=fert_cft, &
+    call ncd_io(ncid=ncid, varname='NFERT', flag='read', data=fert_cft, &
             dim1name=grlnd, readvar=readvar)
     if (readvar) then
-       call endrun( msg= ' ERROR: unexpectedly found CONST_FERTNITRO_CFT on dataset when cft_size=0'// &
+       call endrun( msg= ' ERROR: unexpectedly found NFERT on dataset when cft_size=0'// &
                ' (if the surface dataset has a separate crop landunit, then the code'// &
                ' must also have a separate crop landunit, and vice versa)'//&
                errMsg(__FILE__, __LINE__))
     end if
     fert_cft = 0.0_r8
+
+   call ncd_io(ncid=ncid, varname='PFERT', flag='read', data=fert_p_cft, &
+            dim1name=grlnd, readvar=readvar)
+    if (readvar) then
+       call endrun( msg= ' ERROR: unexpectedly found PFERT on dataset when cft_size=0'// &
+               ' (if the surface dataset has a separate crop landunit, then the code'// &
+               ' must also have a separate crop landunit, and vice versa)'//&
+               errMsg(__FILE__, __LINE__))
+    end if
+    fert_p_cft = 0.0_r8
 
     call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
          dim1name=grlnd, readvar=readvar)

@@ -38,6 +38,7 @@ module CropType
      logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
      integer , pointer :: harvdate_patch          (:)   ! patch harvest date
      real(r8), pointer :: fertnitro_patch         (:)   ! patch fertilizer nitrogen
+     real(r8), pointer :: fertphosp_patch         (:)   ! patch fertilizer phosphorus
 
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
      real(r8), pointer :: gddtsoi_patch           (:)   ! patch growing degree-days from planting (top two soil layers) (ddays)
@@ -126,6 +127,7 @@ contains
     allocate(this%cropplant_patch        (begp:endp)) ; this%cropplant_patch        (:) = .false.
     allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1) 
     allocate(this%fertnitro_patch        (begp:endp)) ; this%fertnitro_patch        (:) = spval
+    allocate(this%fertphosp_patch        (begp:endp)) ; this%fertphosp_patch        (:) = spval
     allocate(this%gddplant_patch         (begp:endp)) ; this%gddplant_patch         (:) = spval
     allocate(this%gddtsoi_patch          (begp:endp)) ; this%gddtsoi_patch          (:) = spval
     allocate(this%crpyld_patch           (begp:endp)) ; this%crpyld_patch           (:) = spval
@@ -169,6 +171,16 @@ contains
     !-----------------------------------------------------------------------
     
     begp = bounds%begp; endp = bounds%endp
+
+    this%fertnitro_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FERTNITRO', units='gN/m2/yr', &
+         avgflag='A', long_name='Nitrogen fertilizer for each crop', &
+         ptr_patch=this%fertnitro_patch, default='inactive')
+
+    this%fertphosp_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FERTPHOSP', units='gP/m2/yr', &
+         avgflag='A', long_name='Phosphorus fertilizer for each crop', &
+         ptr_patch=this%fertphosp_patch, default='inactive')
 
     this%gddplant_patch(begp:endp) = spval
     call hist_addfld1d (fname='GDDPLANT', units='ddays', &

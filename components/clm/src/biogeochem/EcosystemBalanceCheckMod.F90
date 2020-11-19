@@ -625,6 +625,8 @@ contains
          ! calculate total column-level inputs
          col_pinputs(c) = primp_to_labilep(c) + supplement_to_sminp(c)
 
+         if (crop_prog) col_pinputs(c) = col_pinputs(c) + fert_p_to_sminp(c)
+
          do p = col_pp%pfti(c), col_pp%pftf(c)
             if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
                 col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)

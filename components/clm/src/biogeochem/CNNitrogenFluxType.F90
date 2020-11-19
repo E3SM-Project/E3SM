@@ -176,7 +176,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: deadstemn_storage_to_xfer_patch           (:)     ! patch dead stem N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: livecrootn_storage_to_xfer_patch          (:)     ! patch live coarse root N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: deadcrootn_storage_to_xfer_patch          (:)     ! patch dead coarse root N shift storage to transfer (gN/m2/s)
-     real(r8), pointer :: fert_patch                                (:)     ! patch applied fertilizer (gN/m2/s)
+     real(r8), pointer :: fert_patch                               (:)     ! patch applied fertilizer (gN/m2/s)
      real(r8), pointer :: fert_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
      real(r8), pointer :: soyfixn_patch                             (:)     ! patch soybean fixed N (gN/m2/s)
 

@@ -13,7 +13,7 @@ module clm_initializeMod
   use clm_varctl       , only : create_glacier_mec_landunit, iulog
   use clm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14, use_fates, use_betr, use_fan  
   use clm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
-  use clm_varsur       , only : fert_cft
+  use clm_varsur       , only : fert_cft,fert_p_cft
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
@@ -231,7 +231,8 @@ contains
     allocate (urban_valid  (begg:endg                      ))
     allocate (wt_nat_patch (begg:endg, natpft_lb:natpft_ub ))
     allocate (wt_cft       (begg:endg, cft_lb:cft_ub       ))
-    allocate (fert_cft     (begg:endg, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg, natpft_lb:cft_ub       ))
+    allocate (fert_p_cft   (begg:endg, natpft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg, maxpatch_glcmec))

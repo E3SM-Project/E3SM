@@ -1368,8 +1368,9 @@ contains
 
          leaf_long          =>    veg_vp%leaf_long                           , & ! Input:  [real(r8) (:) ]  leaf longevity (yrs)
          leafcn             =>    veg_vp%leafcn                              , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
-         fertnitro          =>    veg_vp%fertnitro                           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
-
+         manunitro          =>    veg_vp%manunitro                           , & ! Input:  max manure to apply (kgN/m2)
+         fertnitro          =>    crop_vars%fertnitro_patch                  , & ! Input:  [real(r8) (:) ]  max N fertilizer to be applied in total (kgN/m2)
+         fertphosp          =>    crop_vars%fertphosp_patch                  , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
          t_ref2m_min        =>    veg_es%t_ref2m_min         , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10                =>    veg_es%t_a10               , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a5tmin             =>    veg_es%t_a5min             , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
@@ -1412,7 +1413,8 @@ contains
          leafcp             =>    veg_vp%leafcp                              , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
          leafp_xfer         =>    veg_ps%leafp_xfer      , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
          crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
-         fert               =>    veg_nf%fert               , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         fert               =>    veg_nf%fert               , & ! Output: [real(r8) (:) ]  (gN/m2/s) N fertilizer applied each timestep
+         fert_p             =>    veg_pf%fert_p             , & ! Output: [real(r8) (:) ]  (gP/m2/s) P fertilizer applied each timestep
          cvt                =>    crop_vars%cvt_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average CV precip
          cvp                =>    crop_vars%cvp_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV temp
          xt_bar             =>    crop_vars%xt_bar_patch                  , & ! Output:  [real(r8) ):)]  exp weighted moving average average monthly temp
@@ -1779,7 +1781,8 @@ contains
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                  fert(p) = ((manunitro(ivt(p)) + fertnitro(p)) * 1000._r8)  / fert_counter(p)
+                  fert_p(p) = (fertphosp(p) * 1000._r8) / fert_counter(p)
                else
                   ! this ensures no re-entry to onset of phase2
                   ! b/c onset_counter(p) = onset_counter(p) - dt

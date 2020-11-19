@@ -46,6 +46,7 @@ module PhosphorusDynamicsMod
   public :: PhosphorusBiochemMin
   public :: PhosphorusLeaching
   public :: PhosphorusBiochemMin_balance
+  public :: PhosphorusFert
 
   !-----------------------------------------------------------------------
 
@@ -777,5 +778,40 @@ contains
     end associate
 
   end subroutine PhosphorusBiochemMin_balance
+
+  !-----------------------------------------------------------------------
+  subroutine PhosphorusFert(bounds, num_soilc, filter_soilc, &
+       phosphorusflux_vars)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update the phosphorus fertilizer for crops
+    ! All fertilizer goes into the soil mineral P pool.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)       , intent(in)    :: bounds
+    integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,fc                 ! indices
+    !-----------------------------------------------------------------------
+
+    associate(&
+         fert_p          =>    veg_pf%fert_p          , & ! Input:  [real(r8) (:)] phosphorus fertilizer rate (gN/m2/s)                
+         fert_p_to_sminp =>    col_pf%fert_p_to_sminp   & ! Output: [real(r8) (:)]                                                    
+         )
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+           fert_p(bounds%begp:bounds%endp), &
+           fert_p_to_sminp(bounds%begc:bounds%endc))
+
+    end associate
+
+  end subroutine PhosphorusFert
+
+
 
 end module PhosphorusDynamicsMod

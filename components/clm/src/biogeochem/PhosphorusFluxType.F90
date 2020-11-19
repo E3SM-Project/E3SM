@@ -178,8 +178,8 @@ module PhosphorusFluxType
      real(r8), pointer :: deadstemp_storage_to_xfer_patch           (:)     ! patch dead stem P shift storage to transfer (gP/m2/s)
      real(r8), pointer :: livecrootp_storage_to_xfer_patch          (:)     ! patch live coarse root P shift storage to transfer (gP/m2/s)
      real(r8), pointer :: deadcrootp_storage_to_xfer_patch          (:)     ! patch dead coarse root P shift storage to transfer (gP/m2/s)
-     real(r8), pointer :: fert_p_patch                                (:)     ! patch applied fertilizer (gP/m2/s)
-     real(r8), pointer :: fert_p_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
+     real(r8), pointer :: fert_p_patch                              (:)     ! patch applied fertilizer (gP/m2/s)
+     real(r8), pointer :: fert_p_counter_patch                      (:)     ! patch >0 fertilize; <=0 not
 
      ! turnover of livewood to deadwood, with retranslocation 
      real(r8), pointer :: livestemp_to_deadstemp_patch              (:)     ! patch live stem P turnover (gP/m2/s)
@@ -196,8 +196,7 @@ module PhosphorusFluxType
 
      ! deposition fluxes
      real(r8), pointer :: pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
-     real(r8), pointer :: fert_p_to_sminp_col                            (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
-
+     real(r8), pointer :: fert_p_to_sminp_col                       (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
      ! phenology: litterfall and crop fluxes
      real(r8), pointer :: phenology_p_to_litr_met_p_col             (:,:)   ! col P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
      real(r8), pointer :: phenology_p_to_litr_cel_p_col             (:,:)   ! col P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)

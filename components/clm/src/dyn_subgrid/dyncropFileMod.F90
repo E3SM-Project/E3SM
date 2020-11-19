@@ -31,13 +31,14 @@ module dyncropFileMod
   type(dyn_file_type), target      :: dyncrop_file ! information for the file containing transient crop data
   type(dyn_var_time_uninterp_type) :: wtcrop       ! weight of the crop landunit
   type(dyn_var_time_uninterp_type) :: wtcft        ! weight of each CFT relative to the crop landunit
-  type(dyn_var_time_uninterp_type) :: fertcft      ! fertilizer of each CFT
+  type(dyn_var_time_uninterp_type) :: nfertcft     ! nitrogen fertilizer of each CFT
+  type(dyn_var_time_uninterp_type) :: pfertcft     ! phosphorus fertilizer of each PFT
 
   ! Names of variables on file
   character(len=*), parameter :: crop_varname = 'PCT_CROP'
   character(len=*), parameter :: cft_varname  = 'PCT_CFT'
-  character(len=*), parameter :: fert_varname  = 'FERTNITRO_CFT'
-
+  character(len=*), parameter :: nfert_varname  = 'FERTNITRO_CFT'
+  character(len=*), parameter :: pfert_varname  = 'FERTPHOSP_CFT'
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
   !---------------------------------------------------------------------------
@@ -100,8 +101,13 @@ contains
          dim1name=grlnd, conversion_factor=100._r8, &
          do_check_sums_equal_1=.true., data_shape=wtcft_shape)
     fertcft_shape = [num_points, cft_size]
-    fertcft = dyn_var_time_uninterp_type( &
-         dyn_file = dyncrop_file, varname=fert_varname, &
+    nfertcft = dyn_var_time_uninterp_type( &
+         dyn_file = dyncrop_file, varname=nfert_varname, &
+         dim1name=grlnd, conversion_factor=1._r8, &
+         do_check_sums_equal_1=.false., data_shape=fertcft_shape, &
+         allow_nodata=.true.)
+    pfertcft = dyn_var_time_uninterp_type( &
+         dyn_file = dyncrop_file, varname=pfert_varname, &
          dim1name=grlnd, conversion_factor=1._r8, &
          do_check_sums_equal_1=.false., data_shape=fertcft_shape, &
          allow_nodata=.true.)
@@ -137,7 +143,8 @@ contains
     integer               :: m,p,c,l,g      ! indices
     real(r8), allocatable :: wtcrop_cur(:)  ! current weight of the crop landunit
     real(r8), allocatable :: wtcft_cur(:,:) ! current cft weights
-    real(r8), allocatable :: fertcft_cur(:,:) ! current cft fertilizer
+    real(r8), allocatable :: nfertcft_cur(:,:) ! current cft n fertilizer
+    real(r8), allocatable :: pfertcft_cur(:,:) ! current cft p fertilizer
     logical , allocatable :: col_set(:)     ! whether we have set the weight for each column
     
     character(len=*), parameter :: subname = 'dyncrop_interp'
@@ -162,10 +169,13 @@ contains
     allocate(wtcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
     call wtcft%get_current_data(wtcft_cur)
 
-    allocate(fertcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
-    call fertcft%get_current_data(fertcft_cur)
+    allocate(nfertcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
+    call nfertcft%get_current_data(nfertcft_cur)
 
-    call collapse_crop_types(wtcft_cur, fertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
+    allocate(pfertcft_cur(bounds%begg:bounds%endg, cft_lb:cft_ub))
+    call pfertcft%get_current_data(pfertcft_cur)
+
+    call collapse_crop_types(wtcft_cur, nfertcft_cur, pfertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
 
     allocate(col_set(bounds%begc:bounds%endc))
     col_set(:) = .false.
@@ -188,13 +198,15 @@ contains
           end if
           
           col_pp%wtlunit(c) = wtcft_cur(g,m)
-	  crop_inst%fertnitro_patch(p) = fertcft_cur(g,m)
+	  crop_inst%fertnitro_patch(p) = nfertcft_cur(g,m)
+          crop_inst%fertphosp_patch(p) = pfertcft_cur(g,m)
           col_set(c) = .true.
        end if
     end do
 
     deallocate(wtcft_cur)
-    deallocate(fertcft_cur)
+    deallocate(nfertcft_cur)
+    deallocate(pfertcft_cur)
     deallocate(col_set)
 
   end subroutine dyncrop_interp
