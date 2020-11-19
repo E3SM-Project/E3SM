@@ -2863,6 +2863,7 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_sublim,inv_dt,   
 end subroutine prevent_ice_overdepletion
 
 subroutine water_vapor_conservation(qv,qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_tend,dt)
+  ! If water vapor sinks cause qv<0 by the end of the step, rescale them such that qv=0 at the end of the step
 
   implicit none
 
@@ -2914,7 +2915,7 @@ end subroutine ice_supersat_conservation
 
 subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
      nc_accret_tend, nc2nr_autoconv_tend)
-  !Make sure nc doesn't go below zero
+  !Make sure sinks of nc don't force end-of-step nc below 0. Rescale them if they do.
 
   implicit none
 
@@ -2938,7 +2939,7 @@ end subroutine nc_conservation
 
 subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,&
      nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
-  !Make sure nr doesn't go below zero
+  !Make sure sinks of nr don't force end-of-step nr below 0. Rescale them if they do.
 
   implicit none
 
