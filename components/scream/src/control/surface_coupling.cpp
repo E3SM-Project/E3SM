@@ -4,7 +4,7 @@ namespace scream {
 namespace control {
 
 SurfaceCoupling::
-SurfaceCoupling (const std::shared_ptr<AbstractGrid>& grid)
+SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid)
  : m_state (RepoState::Clean)
 {
   EKAT_REQUIRE_MSG (grid!=nullptr, "Error! Invalid grid pointer.\n");

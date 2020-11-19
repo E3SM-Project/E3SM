@@ -27,21 +27,24 @@ do_create_remapper (const grid_ptr_type from_grid,
   return std::make_shared<IdentityRemapper<Real> >(from_grid);
 }
 
-void PhysicsOnlyGridsManager::build_grid (const std::string& grid_name) {
-  EKAT_REQUIRE_MSG (grid_name=="Physics Only" || grid_name=="Physics",
-                    "Error! Only 'Physics Only' (and, for convenience, 'Physics') grid supported for physics-only runs.\n"
-                    "       Requested grid: " + grid_name + "\n");
+void PhysicsOnlyGridsManager::
+build_grids (const std::set<std::string>& grid_names,
+             const std::string& reference_grid) {
+  for (const auto& gn : grid_names) {
+    EKAT_REQUIRE_MSG (gn=="Physics",
+                      "Error! Only 'Physics' grid supported for physics-only runs.\n"
+                      "       Requested grid: " + gn + "\n");
+  }
+  EKAT_REQUIRE_MSG (reference_grid=="Physics",
+                    "Error! Reference grid '" + reference_grid + "' is not supported by PhysicsOnlyGridsManager.\n");
 
   const auto& phys_only_gm_params = m_params.sublist("Physics Only");
   const int num_global_cols = phys_only_gm_params.get<int>("Number of global columns");
   const int num_vertical_lev = phys_only_gm_params.get<int>("Number of vertical levels");
 
-  auto grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_global_cols,num_vertical_lev,m_comm));
-  m_grids["Physics Only"] = m_grids["Physics"] = grid;
+  auto grid = create_point_grid("Physics",num_global_cols,num_vertical_lev,m_comm);
 
-  if (grid_name==m_params.get<std::string>("Reference Grid")) {
-    m_grids["Reference"] = get_grid(grid_name);
-  }
+  m_grids["Reference"] = m_grids["Physics"] = grid;
 }
 
 } // namespace physics

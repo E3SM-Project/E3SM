@@ -28,7 +28,7 @@ public:
   using cpl_data_ptr_type = double*;
 
   // The input grid is the one where import/export happens
-  SurfaceCoupling (const std::shared_ptr<AbstractGrid>& grid);
+  SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid);
 
   // This allocates some service views
   void set_num_fields (const int num_imports, const int num_exports);

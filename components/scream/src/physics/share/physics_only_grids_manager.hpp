@@ -24,13 +24,22 @@ public:
 
   std::string name () const { return "Physics-Only Grids Manager"; }
 
+  std::set<std::string> supported_grids () const {
+    std::set<std::string> gnames;
+
+    gnames.insert("Physics");
+
+    return gnames;
+  }
+
+  void build_grids (const std::set<std::string>& grid_names,
+                    const std::string& reference_grid);
+
 protected:
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
-
-  void build_grid (const std::string& grid_name);
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
