@@ -242,7 +242,7 @@ module ocn_forward_mode
 
       call ocn_tendency_init(err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_diagnostics_init(err_tmp)
+      call ocn_diagnostics_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
 
       call ocn_forcing_init(err_tmp)

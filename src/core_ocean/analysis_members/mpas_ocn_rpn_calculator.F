@@ -23,7 +23,6 @@ module ocn_rpn_calculator
   use mpas_stream_manager
 
   use ocn_constants
-  use ocn_diagnostics_routines
 
   implicit none
   private

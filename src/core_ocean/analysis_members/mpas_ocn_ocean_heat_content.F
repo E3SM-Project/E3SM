@@ -29,7 +29,6 @@ module ocn_ocean_heat_content
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_diagnostics_routines
 
    implicit none
    private
