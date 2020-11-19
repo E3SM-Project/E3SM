@@ -2097,7 +2097,7 @@ module ocn_time_integration_split
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
          if (config_use_GM) then
-            call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+            call ocn_reconstruct_gm_vectors(meshPool)
          end if
 
          block => block % next
