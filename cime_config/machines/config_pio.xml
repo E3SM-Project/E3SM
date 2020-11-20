@@ -34,7 +34,6 @@
   <entry id="PIO_ROOT">
     <values>
       <value>0</value>
-      <value mach="sandiatoss3" grid="a%ne30" compset=".*EAM.+MPAS.*">1</value>
     </values>
   </entry>
 
@@ -92,12 +91,11 @@
   </entry>
   -->
 
-  <entry id="PIO_BUFFER_SIZE_LIMIT">
+  <!--entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
-      <value MACH="sandiatoss3">1</value>
-      <value MACH="ghost">1</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
 
   <!--- uncomment and fill in relevant sections

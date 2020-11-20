@@ -153,7 +153,7 @@ _TESTS = {
             "PET.f45_g37_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S.allactive-mach-pet",
             "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
-            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
+            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S.allactive-force_pio_root1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.elm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
