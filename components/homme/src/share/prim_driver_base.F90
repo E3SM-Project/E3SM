@@ -1400,23 +1400,15 @@ contains
     call t_stopf("prim_diag")
   end subroutine run_diagnostics
 
-  subroutine set_tracer_transport_derived_values(elem, nets, nete, tl, single_column_in)
+  subroutine set_tracer_transport_derived_values(elem, nets, nete, tl)
     use control_mod,        only: nu_p, transport_alg
     use time_mod,           only: TimeLevel_t
 
     type(element_t),      intent(inout) :: elem(:)
     integer,              intent(in)    :: nets, nete
     type(TimeLevel_t),    intent(in)    :: tl
-    logical, optional,    intent(in)    :: single_column_in
 
     integer :: ie
-    logical :: single_column
-
-    if (.not. present(single_column_in)) then
-      single_column = .false.
-    else
-      single_column = single_column_in
-    endif
 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1425,9 +1417,7 @@ contains
     do ie = nets,nete
        elem(ie)%derived%eta_dot_dpdn = 0     ! mean vertical mass flux
        elem(ie)%derived%vn0 = 0              ! mean horizontal mass flux
-       ! If in single column mode we don't want to write over
-       !  the prescribed vertical velocity
-       if (.not. single_column) elem(ie)%derived%omega_p = 0
+       elem(ie)%derived%omega_p = 0
        if (nu_p > 0) then
           elem(ie)%derived%dpdiss_ave = 0
           elem(ie)%derived%dpdiss_biharmonic = 0
@@ -1776,7 +1766,6 @@ contains
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
     call set_prescribed_scm(elem,dt,tl)
 
-#ifndef MODEL_THETA_L
     do n=2,dt_tracer_factor
 
       call TimeLevel_update(tl,"leapfrog")
@@ -1786,10 +1775,9 @@ contains
       call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
 
       ! call the single column forcing
-      call set_prescribed_scm(elem,dt,tl,update_T)
+      call set_prescribed_scm(elem,dt,tl)
 
     enddo
-#endif
 
   end subroutine prim_step_scm
 
