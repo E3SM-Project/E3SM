@@ -133,6 +133,12 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("vertical therm")
 
+! === Compute new state for prognostic variables ==================================
+      call mpas_timer_start("advect thickness and tracers")
+      call advection_solver(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("advect thickness and tracers")
+
 ! === calculate damage ===========
       if (config_calculate_damage) then
           call mpas_timer_start("damage")
@@ -140,12 +146,6 @@ module li_time_integration_fe
           err = ior(err, err_tmp)
           call mpas_timer_stop("damage")
       endif
-
-! === Compute new state for prognostic variables ==================================
-      call mpas_timer_start("advect thickness and tracers")
-      call advection_solver(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("advect thickness and tracers")
 
 ! === preserve high damage ===========
       if (config_preserve_high_damage) then
