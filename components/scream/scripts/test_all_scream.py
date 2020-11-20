@@ -62,7 +62,7 @@ class TestAllScream(object):
             expect(pathlib.Path(self._work_dir).absolute().is_dir(),
                    "Error! Work directory '{}' does not exist.".format(self._work_dir))
         else:
-            self._work_dir = self._root_dir.absolute().joinPath("ctest-build")
+            self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
 
         expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
                 "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory of that works).".format(self._work_dir))
