@@ -12,9 +12,8 @@ Atmosphere Driver:
       Process Name: SHOC
       Grid:         Physics
   Grids Manager:
-    Type: Physics Only
+    Type: Dynamics Driven
     Reference Grid: Physics
-    Physics Only:
-      Number of global columns: 1024
-      Number of vertical levels: 128
+    Dynamics Driven:
+      Dynamics Namelist File Name: ./data/theta.nl
 ...

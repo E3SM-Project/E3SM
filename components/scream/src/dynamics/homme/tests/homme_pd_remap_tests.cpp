@@ -69,8 +69,8 @@ TEST_CASE("remap", "") {
   // Create the grids
   ekat::ParameterList params;
   DynamicsDrivenGridsManager gm(comm,params);
-  std::set<std::string> grids_names = {"Physics","GLL"};
-  gm.build_grids(grids_names,"Physics");
+  std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
+  gm.build_grids(grids_names,"Physics GLL");
 
   // Local counters
   const int num_local_elems = get_num_local_elems_f90();
@@ -78,7 +78,7 @@ TEST_CASE("remap", "") {
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Get physics and dynamics grids, and their dofs
-  auto phys_grid = gm.get_grid("Physics");
+  auto phys_grid = gm.get_grid("Physics GLL");
   auto dyn_grid  = gm.get_grid("Dynamics");
   auto h_p_dofs = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
   auto h_d_dofs = Kokkos::create_mirror_view(dyn_grid->get_dofs_gids());

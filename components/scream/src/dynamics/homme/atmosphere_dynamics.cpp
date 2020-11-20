@@ -15,7 +15,10 @@
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
+
+#ifndef SCREAM_CIME_BUILD
 #include "dynamics/homme/homme_inputs_initializer.hpp"
+#endif
 
 #include "ekat/ekat_assert.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
@@ -27,28 +30,9 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
  : m_params        (params)
  , m_dynamics_comm (comm)
 {
-  // Init homme context par struct
-  if (!is_parallel_inited_f90()) {
-    auto comm_f = MPI_Comm_c2f(comm.mpi_comm());
-    init_parallel_f90(comm_f);
-  }
-
-  // Load homme params from namelist
-  if (!is_params_inited_f90()) {
-    auto nl_fname = m_params.get<std::string>("Homme namelist filename","namelist.nl");
-    const char* nl_fname_c = nl_fname.c_str();
-    init_params_f90(nl_fname_c);
-  }
-
-  // Init homme geometry structures
-  if (!is_geometry_inited_f90()) {
-    init_geometry_f90();
-  }
-
-  // Init prim structures
-  if (!is_data_structures_inited_f90()) {
-    prim_init_data_structures_f90 ();
-  }
+#ifndef SCREAM_CIME_BUILD
+  m_initializer = create_field_initializer<HommeInputsInitializer>();
+#endif
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -112,15 +96,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
-
-  auto standalone = m_params.get<bool>("Initialize Inputs", false);
-  if (standalone) {
-    m_initializer = create_field_initializer<HommeInputsInitializer>();
-  }
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 {
+  // Init prim structures
+  // TODO: they should not be inited yet; should we error out if they are?
+  //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
+  if (!is_data_structures_inited_f90()) {
+    prim_init_data_structures_f90 ();
+  }
+
+
   // We need to set the pointers in the C++ views to the ones contained in the scream
   // Fields *before* they ever get copied/filled. In particular, we need to make sure
   // that the Elements and Tracers structures contain scream Field's views before:
@@ -227,6 +214,10 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   auto standalone = m_params.get<bool>("Initialize Inputs", false);
   if (standalone) {
+#ifdef SCREAM_CIME_BUILD
+    ekat::error::runtime_abort("Error! Homme should not initialize inputs in CIME builds.\n");
+#else
+    m_initializer->initialize_fields();
     for (auto& f : m_dyn_fields_in) {
       m_initializer->add_me_as_initializer(f.second);
       std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";
@@ -235,6 +226,7 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
       m_initializer->add_me_as_initializer(f.second);
     }
     m_initializer->initialize_fields();
+#endif
   } else {
     // Some I/O routine must have loaded initial states. Homme needs those values
     // to complete the model initialization. So, leverage Homme functions that

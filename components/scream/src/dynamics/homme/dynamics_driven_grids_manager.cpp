@@ -13,9 +13,22 @@ namespace scream
 {
 
 DynamicsDrivenGridsManager::
-DynamicsDrivenGridsManager (const ekat::Comm& /* comm */,
-                            const ekat::ParameterList& /* p */)
+DynamicsDrivenGridsManager (const ekat::Comm& comm,
+                            const ekat::ParameterList& p)
 {
+  if (!is_parallel_inited_f90()) {
+    // While we're here, we can init homme's parallel session
+    auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
+    init_parallel_f90 (fcomm);
+  }
+
+  if (!is_params_inited_f90()) {
+    // While we're here, we can init homme's parameters
+    const auto& ddgm = p.sublist("Dynamics Driven");
+    auto nlname = ddgm.get<std::string>("Dynamics Namelist File Name").c_str();
+    init_params_f90 (nlname);
+  }
+
   // Valid names for the dyn grid
   auto& gn = m_valid_grid_names;
 
@@ -99,9 +112,6 @@ build_grids (const std::set<std::string>& grid_names,
     }
   }
 
-  // Nobody should have init-ed the geometries yet. So error out if someone did.
-  EKAT_REQUIRE_MSG (!is_geometry_inited_f90(), "Error! Geometry was somehow already init-ed.\n");
-
   init_grids_f90 (pgN);
 
   // We know we need the dyn grid, so build it
@@ -153,6 +163,8 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
     dyn_grid->set_dofs (dofs, elgpgp);
     dyn_grid->set_geometry_data ("lat", lat);
     dyn_grid->set_geometry_data ("lon", lon);
+
+    m_grids["Dynamics"] = dyn_grid;
   }
 }
 
@@ -170,7 +182,7 @@ build_physics_grid (const std::string& name) {
     const int nlcols = get_num_local_columns_f90 ();
     const int ngcols = get_num_global_columns_f90 ();
 
-    auto phys_grid = std::make_shared<PointGrid>("Physics",ngcols,nlcols,nlev);
+    auto phys_grid = std::make_shared<PointGrid>(name,ngcols,nlcols,nlev);
 
     // Create the gids, coords, area views
     AbstractGrid::dofs_list_type dofs("phys dofs",nlcols);
@@ -195,6 +207,8 @@ build_physics_grid (const std::string& name) {
     phys_grid->set_geometry_data("lat",lat);
     phys_grid->set_geometry_data("lon",lon);
     phys_grid->set_geometry_data("area",area);
+
+    m_grids[name] = phys_grid;
   }
 }
 

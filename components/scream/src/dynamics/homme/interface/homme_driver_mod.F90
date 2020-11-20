@@ -41,7 +41,7 @@ contains
     if (is_data_structures_inited) then
       call abortmp ("Error! prim_init_data_structures_f90 was already called.\n")
     elseif (.not. is_geometry_inited) then
-      call abortmp ("Error! 'homme_init_geometry_f90 was not called yet.\n")
+      call abortmp ("Error! 'homme_init_grids_f90 was not called yet.\n")
     endif
 
     print *, "Initing prim data structures..."

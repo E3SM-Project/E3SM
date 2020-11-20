@@ -8,10 +8,11 @@ module geometry_interface_mod
 contains
 
   subroutine set_test_params_f90 (ne_in) bind(c)
-    use iso_c_binding,  only: c_int
-    use dimensions_mod, only: ne
-    use control_mod,    only: topology, cubed_sphere_map, partmethod
-    use params_mod,     only: SFCURVE
+    use iso_c_binding,     only: c_int
+    use dimensions_mod,    only: ne
+    use control_mod,       only: topology, cubed_sphere_map, partmethod
+    use params_mod,        only: SFCURVE
+    use homme_context_mod, only: is_params_inited
     !
     ! Inputs
     !
@@ -25,6 +26,7 @@ contains
     ! Set desired resolution
     ne = ne_in
 
+    is_params_inited = .true.
   end subroutine set_test_params_f90
 
   subroutine cleanup_geometry_f90 () bind(c)
