@@ -134,7 +134,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'damagecalving', 'mask'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'damagecalving', 'mask'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -151,6 +151,10 @@
                 <nml_option name="config_calving_eigencalving_parameter_scalar_value" type="real" default_value="3.14e16" units="m s"
 		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)"
 		            possible_values="any positive real number"
+		/>
+                    <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^{-1}"
+		            description="constant calving velocity specified in the namelist"
+		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
 		            description="Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)"
@@ -1038,6 +1042,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
+                />
+                <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
                 />
                 <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"

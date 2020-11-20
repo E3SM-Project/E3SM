@@ -1258,6 +1258,179 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!    routine specified_calving_velocity
+!
+!> \brief use a specified calving velocity given by input data
+!> \author Matthew Hoffman
+!> \date   Feb. 2018
+!> \details we can specify the calving velocity by i) a constant value 
+!> given by config_calving_velocity_const in namelist and ii) source data
+!> speficied by input netCDF data (e.g., landice_grid.nc)
+!-----------------------------------------------------------------------
+   subroutine specified_calving_velocity(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: scratchPool
+      logical, pointer :: config_print_calving_info
+      real(kind=RKIND), pointer :: config_calving_thickness
+      real(kind=RKIND), pointer :: config_calving_velocity_const
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocity
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocityData
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: calvingFrontMask
+      real (kind=RKIND), pointer :: deltat  !< time step (s)
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor
+      logical :: dynamicNeighbor
+      real(kind=RKIND) :: calvingSubtotal
+      integer :: err_tmp
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
+      call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_calving_velocity_const', config_calving_velocity_const)
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+
+         ! get dimensions
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+         ! get fields
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'calvingFrontMask', calvingFrontMask)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocityData', calvingVelocityData)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+
+         ! get parameter value
+         if (trim(config_calving_specified_source) == 'const') then
+             calvingVelocity = config_calving_velocity_const
+         elseif (trim(config_calving_spefified_source) == 'data') then
+             calvingVelocity = calvingVelocityData
+         else
+            err = 1
+            call mpas_log_write("Invalid value specified for option config_calving_specified_source" // &
+                  config_calving_specified_source, MPAS_LOG_ERR)
+         endif
+
+         if (config_print_calving_info) then
+            call mpas_log_write("calvingVelocity(m s) value range: Min=$r, Max=$r", &
+                    realArgs=(/minval(calvingVelocity), maxval(calvingVelocity)/))
+         endif
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Convert calvingVelocity to calvingThickness
+         call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+
+         ! === apply calving ===
+         thickness(:) = thickness(:) - calvingThickness(:)
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
+
+         !where ((li_mask_is_floating_ice(cellMask) .and. li_mask_is_dynamic_ice(cellMask) .and. &
+         ! thickness<config_calving_thickness))
+         ! The above commented version removed thin ice anywhere on the shelf.  In theory this seemed preferable,
+         ! but in practice it has the tendency to create 'holes' in relatively stagnant areas of ice shelves along
+         ! the grounding line.  Once these holes developed they would grow and eventually collapse the shelf from behind.
+
+         ! This criteria below only remove too-thin ice at the new calving front,
+         ! meaning just one 'row' of cells per timestep.  This could be expanded to continue
+         ! removing ice backward until all connected too-thin ice has been removed.
+         ! Tests of the current implementation show reasonable behavior.
+         do iCell = 1, nCells
+            if (calvingFrontMask(iCell) == 1 .and. thickness(iCell) < config_calving_thickness) then
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+               thickness(iCell) = 0.0_RKIND
+            endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
+         ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
+         ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
+         calvingSubtotal = 0.0_RKIND
+         do iCell = 1, nCells
+           if (li_mask_is_floating_ice(cellMask(iCell))) then
+              ! check neighbors for dynamic ice (floating or grounded)
+              dynamicNeighbor = .false.
+              do iNeighbor = 1, nEdgesOnCell(iCell)
+                 jCell = cellsOnCell(iNeighbor, iCell)
+                 if (li_mask_is_dynamic_ice(cellMask(jCell))) dynamicNeighbor = .true.
+              enddo
+              if (.not. dynamicNeighbor) then  ! calve this ice
+                 calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                 thickness(iCell) = 0.0_RKIND
+                 calvingSubtotal = calvingSubtotal + calvingThickness(iCell) * areaCell(iCell)
+              endif
+           endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         call remove_small_islands(meshPool, geometryPool)
+
+         block => block % next
+      enddo
+
+   end subroutine specified_calving_velocity
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !    routine damagecalving
 !
 !> \brief Calve ice from the calving front based on the Bassis-Ma (2015) damage theory. 
