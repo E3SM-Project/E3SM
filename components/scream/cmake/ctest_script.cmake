@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.9)
 
 set(CTEST_BUILD_NAME "scream_unit_tests_${BUILD_NAME_MOD}")
 
-get_filename_component(working_dir ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
-set(CTEST_SOURCE_DIRECTORY "${working_dir}")
-set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build/${BUILD_NAME_MOD}")
+get_filename_component(SCREAM_ROOT ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
+set(CTEST_SOURCE_DIRECTORY "${SCREAM_ROOT}")
+set(CTEST_BINARY_DIRECTORY "${BUILD_WORK_DIR}")
 
 if(NOT DEFINED dashboard_model)
   set(dashboard_model Experimental)

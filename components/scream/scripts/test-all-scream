@@ -86,6 +86,9 @@ OR
                         help="The root directory of the scream src you want to test. "
                         "Default will be the scream src containing this script.")
 
+    parser.add_argument("-w", "--work-dir",
+        help="The work directory where all the building/testing will happen. Defaults to ${root_dir}/ctest-build")
+
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
 
