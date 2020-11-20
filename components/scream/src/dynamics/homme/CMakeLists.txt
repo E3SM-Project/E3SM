@@ -92,7 +92,6 @@ set (DynamicsLibsCreated   "" CACHE INTERNAL "List of created dynamics libraries
 #       and a scream dynamics one.
 macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
   if (NOT ${HOMME_TARGET} STREQUAL "theta-l_kokkos")
-    message ("HOMME TARGET: ${HOMME_TARGET}")
     message (FATAL_ERROR "Error! So far, SCREAM only supports 'theta-l_kokkos' as dynamics target.")
   endif()
 
@@ -124,6 +123,21 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     # Gather sources
     THETAL_KOKKOS_SETUP()
 
+    if (SCREAM_CIME_BUILD)
+      ### HACK ALERT! ###
+
+      # Remove shr_blah_mod.F90 from homme/utils/csm_share,
+      # since we use those from cime/src/share/util.
+      # Note: the cleanest thing is to mod homme, to use cime stuff
+      set (REMOVE_FILES)
+      foreach (file IN_LIST ${THETAL_DEPS})
+        if (file MATCHES "csm_share/shr_")
+          list (APPEND REMOVE_FILES ${file})
+        endif ()
+      endforeach()
+      list (REMOVE_ITEM THETAL_DEPS ${REMOVE_FILES})
+    endif ()
+
     # Re-set this, so that it is visible from wherever the macro is called
     set (HOMME_USE_KOKKOS TRUE)
 
@@ -131,6 +145,10 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     createExecLib (${hommeLibName} ${HOMME_TARGET} "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
                    ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
+    if (SCREAM_CIME_BUILD)
+      # Link to cime's csm_share lib
+      target_link_libraries (${hommeLibName} csm_share)
+    endif ()
 
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details

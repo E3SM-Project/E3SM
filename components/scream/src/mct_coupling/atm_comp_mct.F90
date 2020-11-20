@@ -1,21 +1,33 @@
 module atm_comp_mct
 
-  ! !USES:
-  use esmf
-  use mct_mod
-  use perf_mod
-  use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
-  use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_strdata_mod , only: shr_strdata_type
-  use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
-  use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
-  use shr_file_mod    , only: shr_file_freeunit
-  use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
-  use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
-  use seq_timemgr_mod , only: seq_timemgr_EClockGetData
-  use iso_c_binding   , only: c_int, c_double
+  ! Modules used acros atm_xyz_mct routines
+
+  ! shr mods
+  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8!, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+
+  ! seq mods
+  use seq_cdata_mod,    only: seq_cdata, seq_cdata_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata, seq_infodata_putdata
+  use seq_timemgr_mod,  only: seq_timemgr_EClockGetData
+
+  ! shr mods
+  use shr_file_mod,     only: shr_file_getlogunit, shr_file_setlogunit, shr_file_setio, &
+                              shr_file_getloglevel, shr_file_setloglevel
+  use shr_sys_mod,      only: shr_sys_flush
+
+  ! toolkits mods
+  use esmf,             only: ESMF_Clock
+  use mct_mod,          only: mct_aVect, mct_gsMap, mct_gGrid
+
+  ! use perf_mod
+  ! use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
+  ! use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
+  ! use shr_strdata_mod , only: shr_strdata_type
+  ! use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
+  ! use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
+  ! use shr_file_mod    , only: shr_file_freeunit
+  ! use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
+  ! use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
 
   ! !PUBLIC TYPES:
   implicit none
@@ -39,42 +51,37 @@ module atm_comp_mct
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
   character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: logunit             ! logging unit number
-  integer(IN)            :: compid              ! mct comp id
+  integer(IN)            :: ATM_ID              ! mct comp id
   real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
-  subroutine atm_init_mct( EClock, cdata, x2d, d2x, NLFilename )
-    use iso_c_binding, only: C_CHAR, C_NULL_CHAR
-    !
-    ! F90<->CXX interfaces
-    !
-    interface
-      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname,compid) bind(c)
-        use iso_c_binding, only: c_int, C_CHAR
-        !
-        ! Arguments
-        !
-        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm, compid
-        character(kind=C_CHAR), target, intent(in) :: yaml_fname(*)
-      end subroutine scream_init
-    end interface
+  subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
+    use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char
+    use scream_f2c_mod,     only: scream_init, scream_setup_surface_coupling
+    use scream_cpl_indices, only: scream_set_cpl_indices, num_exports, num_imports, &
+                                  names_x2a, names_a2x, index_x2a, index_a2x
+    use ekat_string_utils,  only: string_f2c
 
-    ! !DESCRIPTION: initialize dead atm model
+    use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
+    use seq_flds_mod,   only: seq_flds_a2x_fields, seq_flds_x2a_fields
+    use seq_comm_mct,   only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+    use shr_file_mod,   only: shr_file_getunit
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
-    type(mct_aVect)             , intent(inout) :: x2d, d2x
+    type(mct_aVect)             , intent(inout) :: x2a, a2x
     character(len=*), optional  , intent(in)    :: NLFilename ! Namelist filename
 
     !--- local variables ---
     type(seq_infodata_type), pointer :: infodata
-    type(mct_gsMap)        , pointer :: gsMap
-    type(mct_gGrid)        , pointer :: ggrid
+    type(mct_gsMap)        , pointer :: gsMap_atm
+    type(mct_gGrid)        , pointer :: dom_atm
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     integer(IN)                      :: nxg            ! global dim i-direction
@@ -84,25 +91,29 @@ CONTAINS
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
     integer (IN)                     :: start_tod, start_ymd
-    character(kind=C_CHAR,len=80)    :: yaml_fname = "data/scream_input.yaml"
+    integer                          :: lsize
+    type(c_ptr) :: x2a_ptr, a2x_ptr
+
+    ! TODO: read this from the namelist?
+    character(len=256)                :: yaml_fname = "data/scream_input.yaml"
+    character(kind=c_char,len=256), target :: yaml_fname_c
     !-------------------------------------------------------------------------------
 
-    ! Set cdata pointers to derived types (in coupler)
+    ! Grab some data from the cdata structure (coming from the coupler)
     call seq_cdata_setptrs(cdata, &
-         id=compid, &
+         id=ATM_ID, &
          mpicom=mpicom_atm, &
-         gsMap=gsmap, &
-         dom=ggrid, &
+         gsMap=gsmap_atm, &
+         dom=dom_atm, &
          infodata=infodata)
-
-    ! Obtain infodata variables
     call seq_infodata_getData(infodata, atm_phase=phase)
+
     if (phase > 1) RETURN
 
     ! Determine instance information
-    inst_name   = seq_comm_name(compid)
-    inst_index  = seq_comm_inst(compid)
-    inst_suffix = seq_comm_suffix(compid)
+    inst_name   = seq_comm_name(ATM_ID)
+    inst_index  = seq_comm_inst(ATM_ID)
+    inst_suffix = seq_comm_suffix(ATM_ID)
 
     if (phase == 1) then
        ! Determine communicator group
@@ -126,32 +137,29 @@ CONTAINS
     call shr_file_setLogUnit (logUnit)
 
     !----------------------------------------------------------------------------
-    ! Initialize xatm
+    ! Initialize atm
     !----------------------------------------------------------------------------
 
-    call dead_init_mct('atm', Eclock, x2d, d2x, &
-         seq_flds_x2a_fields, seq_flds_a2x_fields, &
-         gsmap, ggrid, gbuf, mpicom_atm, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
-
+    ! Init the AD
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-    !----------------------------------------------------------------------------
-    ! Initialize pio and scream
-    !----------------------------------------------------------------------------
-    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR, INT(compid, KIND=c_int))
-    !----------------------------------------------------------------------------
-    if (nxg == 0 .and. nyg == 0) then
-       atm_present = .false.
-       atm_prognostic = .false.
-    else
-       atm_present = .true.
-       atm_prognostic = .true.
-    end if
+    call string_f2c(yaml_fname,yaml_fname_c)
+    call scream_init (mpicom_atm, INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT), yaml_fname_c)
 
-    call seq_infodata_PutData( infodata, dead_comps=.true., &
-         atm_present=atm_present, &
-         atm_prognostic=atm_prognostic, &
-         atm_nx=nxg, atm_ny=nyg)
+    ! Init MCT gsMap
+    call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
+    lsize = mct_gsMap_lsize(gsMap_atm, mpicom_atm)
+
+    ! Init MCT domain structure
+    call atm_domain_mct (lsize, gsMap_atm, dom_atm)
+
+    ! Init import/export mct attribute vectors
+    call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
+    call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
+
+    ! Init surface coupling stuff in the AD
+    call scream_set_cpl_indices (x2a, a2x)
+    call scream_setup_surface_coupling (c_loc(names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), num_imports, &
+                                        c_loc(names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), num_exports)
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -165,20 +173,8 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_run_mct(EClock, cdata, x2d, d2x)
-
-    !
-    ! F90<->CXX interfaces
-    !
-    interface
-      subroutine scream_run (dt) bind(c)
-        use iso_c_binding, only: c_double
-        !
-        ! Arguments
-        !
-        real(kind=c_double), intent(in) :: dt
-      end subroutine scream_run
-    end interface
-    ! !DESCRIPTION: run method for dead atm model
+    use iso_c_binding,  only: c_double
+    use scream_f2c_mod, only: scream_run
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -208,8 +204,8 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
-    call dead_run_mct('atm', EClock, x2d, d2x, &
-       gsmap, ggrid, gbuf, mpicom_atm, compid, my_task, master_task, logunit)
+    ! call dead_run_mct('atm', EClock, x2d, d2x, &
+    !    gsmap, ggrid, gbuf, mpicom_atm, ATM_ID, my_task, master_task, logunit)
     dt_scream = 300.0
     call scream_run( dt_scream )
 
@@ -225,15 +221,7 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2d, d2x)
-    implicit none
-    !
-    ! F90<->CXX interfaces
-    !
-    interface
-      subroutine scream_finalize () bind(c)
-      end subroutine scream_finalize
-    end interface
-
+    use scream_f2c_mod, only: scream_finalize
 
     ! !DESCRIPTION: finalize method for dead model
 
@@ -250,10 +238,118 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------
-    call dead_final_mct('atm', my_task, master_task, logunit)
+    ! call dead_final_mct('atm', my_task, master_task, logunit)
     call scream_finalize()
 
   end subroutine atm_final_mct
   !===============================================================================
+
+  subroutine atm_Set_gsMap_mct( mpicom_atm, ATMID, GSMap_atm )
+    use iso_c_binding, only: c_int, c_loc
+    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+                              scream_get_local_cols_gids
+    use mct_mod,        only: mct_gsMap_init
+    !-------------------------------------------------------------------
+    !
+    ! Inputs
+    !
+    integer        , intent(in)  :: mpicom_atm
+    integer        , intent(in)  :: ATMID
+    type(mct_gsMap), intent(out) :: GSMap_atm
+    !
+    ! Local variables
+    !
+    integer(kind=c_int), allocatable, target :: col_gids(:)
+    integer(kind=c_int) :: num_local_cols, num_global_cols
+    !-------------------------------------------------------------------
+
+    ! Build the atmosphere grid numbering for MCT
+    ! NOTE:  Numbering scheme is: West to East and South to North
+    ! starting at south pole.  Should be the same as what's used in SCRIP
+    
+    ! Determine global seg map
+    num_local_cols  = scream_get_num_local_cols()
+    num_global_cols = scream_get_num_global_cols()
+
+    allocate(col_gids(num_local_cols))
+
+    call scream_get_local_cols_gids(c_loc(col_gids))
+
+    call mct_gsMap_init( gsMap_atm, col_gids, mpicom_atm, ATMID, &
+                         num_local_cols, num_global_cols)
+
+    deallocate(col_gids)
+
+  end subroutine atm_Set_gsMap_mct
+
+  subroutine atm_domain_mct( lsize, gsMap_atm, dom_atm )
+    use iso_c_binding,  only: c_loc
+    use mct_mod,        only: mct_gGrid_init, mct_gGrid_importIAttr, mct_gGrid_importRAttr, &
+                              mct_gsMap_orderedPoints
+    use seq_flds_mod,   only: seq_flds_dom_coord, seq_flds_dom_other
+    use shr_const_mod,  only: SHR_CONST_PI
+    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+
+    !-------------------------------------------------------------------
+    !
+    ! Arguments
+    !
+    integer        , intent(in)   :: lsize
+    type(mct_gsMap), intent(in)   :: gsMap_atm
+    type(mct_ggrid), intent(inout):: dom_atm  
+    !
+    ! Local Variables
+    !
+    integer  :: n,i,c,ncols           ! indices	
+    real(r8), pointer :: data1(:)
+    real(r8), pointer :: data2(:)     ! temporary
+    integer , pointer :: idata(:)     ! temporary
+
+    real(r8), parameter:: rad2deg = 180.0_r8 / SHR_CONST_PI
+    !-------------------------------------------------------------------
+
+    allocate(data1(lsize))
+    allocate(data2(lsize))
+
+    ! Initialize mct atm domain
+    call mct_gGrid_init( GGrid=dom_atm, CoordChars=trim(seq_flds_dom_coord), &
+                         OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+
+    ! Initialize attribute vector with special value
+    call mct_gsMap_orderedPoints(gsMap_atm, my_task, idata)
+    call mct_gGrid_importIAttr(dom_atm,'GlobGridNum',idata,lsize)
+    !
+    ! Determine domain (numbering scheme is: West to East and South to North to South pole)
+    ! ! Initialize attribute vector with special value
+    ! !
+    ! data(:) = -9999.0_R8 
+    ! call mct_gGrid_importRAttr(dom_atm,"lat"  ,data,lsize) 
+    ! call mct_gGrid_importRAttr(dom_atm,"lon"  ,data,lsize) 
+    ! call mct_gGrid_importRAttr(dom_atm,"area" ,data,lsize) 
+    ! call mct_gGrid_importRAttr(dom_atm,"aream",data,lsize) 
+    ! data(:) = 0.0_R8     
+    ! call mct_gGrid_importRAttr(dom_atm,"mask" ,data,lsize) 
+    ! data(:) = 1.0_R8
+    ! call mct_gGrid_importRAttr(dom_atm,"frac" ,data,lsize)
+
+    ! Fill in correct values for domain components
+    call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
+    call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize) 
+    data1(:) = data1(:) * rad2deg
+    data2(:) = data2(:) * rad2deg
+
+    call scream_get_cols_area(c_loc(data1))
+    call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize) 
+
+    ! Mask and frac are both exactly 1
+    data1 = 1.0
+    call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize) 
+
+    ! Aream is computed by mct, so give invalid initial value
+    data1 = -9999.0_R8
+    call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize) 
+  end subroutine atm_domain_mct
 
 end module atm_comp_mct
