@@ -38,6 +38,9 @@ class AtmosphereDriver
 {
 public:
 
+  // The default dtor is fine.
+  ~AtmosphereDriver () = default;
+
   // The initialization method should:
   //   1) create all the subcomponents needed, given the current simulation parameters
   //   2) initialize all the subcomponents

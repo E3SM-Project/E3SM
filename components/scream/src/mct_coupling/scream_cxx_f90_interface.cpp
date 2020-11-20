@@ -180,6 +180,9 @@ void scream_finalize (/* args ? */) {
 
     // Clean up also P3 stuff
     scream::p3::P3GlobalForFortran::deinit();
+
+    // Clean up the context
+    scream::ScreamContext::singleton().clean_up();
   });
 }
 
