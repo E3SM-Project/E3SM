@@ -8,6 +8,8 @@
 
 <!-- SCM is configured with ne4 grid, but we want settings for an ne30 simulation -->
 <nu dyn_target="theta-l" hgrid="ne4np4"  >  1.0e15    </nu>
-<se_tstep dyn_target="theta-l" hgrid="ne4np4"  >   300      </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne4np4"  >   1800      </se_tstep>
+<dt_remap_factor dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_remap_factor>
+<dt_tracer_factor dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_tracer_factor>
 
 </namelist_defaults>

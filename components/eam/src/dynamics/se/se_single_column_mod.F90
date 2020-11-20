@@ -184,8 +184,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
 #ifdef MODEL_THETA_L
       ! If using the theta-l dycore then need to get the exner function
-      !   and floating levels "dp", so we can convert the SCM forecasted
-      !   temperature back potential temperature on floating levels.
+      !   and reference levels "dp", so we can convert the SCM forecasted
+      !   temperature back potential temperature on reference levels.
       dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
           dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
@@ -233,9 +233,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 
 #ifdef MODEL_THETA_L
-    ! If running theta-l model then the forecaste temperature needs
-    !   to be converted back to potential temperature on floating levels, 
-    !   which is what dp_coulping expects
+    ! If running theta-l model then the forecast temperature needs
+    !   to be converted back to potential temperature on reference levels, 
+    !   which is what dp_coupling expects
     call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
     elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
                 (Rgas*exner(i,j,:))

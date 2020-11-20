@@ -1125,7 +1125,7 @@ contains
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &
-             compute_diagnostics, single_column)
+             compute_diagnostics)
     end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1254,8 +1254,7 @@ contains
 
   end subroutine prim_step
 
-  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &
-                                compute_diagnostics, single_column)
+  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
     use control_mod,        only: ftype, nu_p, dt_tracer_factor, dt_remap_factor, prescribed_wind, transport_alg
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
@@ -1275,21 +1274,10 @@ contains
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
     logical,              intent(in)    :: compute_diagnostics
-    logical,              intent(in)    :: single_column
 
     real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
-    integer :: ie, q, k, n, n0_qdp, np1_qdp, nets_in, nete_in
+    integer :: ie, q, k, n, n0_qdp, np1_qdp
     logical :: compute_diagnostics_it, apply_forcing
-
-    logical :: scm_update_T
-
-    if (single_column) then
-      nets_in=1
-      nete_in=1
-    else
-      nets_in=nets
-      nete_in=nete
-    endif
 
     dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
@@ -1317,7 +1305,7 @@ contains
        enddo
     end if
 
-    call set_tracer_transport_derived_values(elem, nets, nete, tl, single_column)
+    call set_tracer_transport_derived_values(elem, nets, nete, tl)
 
     call t_startf("prim_step_dyn")
     do n = 1, dt_tracer_factor
@@ -1344,15 +1332,8 @@ contains
           end if
        end if
 
-       if (.not. single_column) then
-         call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
-              compute_diagnostics_it)
-       else
-         ! Update floating temperature based prescribed LS vertical velocity,
-         !  but don't update tracers at this point
-         scm_update_T = .true.
-         call prim_step_scm(elem, 1, 1, dt, tl, hvcoord, scm_update_T)
-       endif
+       call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
+            compute_diagnostics_it)
 
        if (dt_remap_factor == 0) then
           ! Set np1_qdp to -1. Since dt_remap == 0, the only part of
@@ -1376,10 +1357,8 @@ contains
                 end do
              else
                 ! Set np1_qdp to -1 to remap dynamics variables but
-                ! not tracers
-                call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, &
-		                    -1, nets_in, nete_in)
-
+                ! not tracers.
+                call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, -1, nets, nete)
              end if
           end if
        end if
@@ -1387,13 +1366,7 @@ contains
     enddo
     call t_stopf("prim_step_dyn")
 
-    if (single_column) then
-      ! Update tracers based on LS vertical velocity
-      scm_update_T = .false.
-      call prim_step_scm(elem, 1, 1, dt, tl, hvcoord, scm_update_T)
-    endif
-    
-    if (qsize > 0 .and. .not. single_column) then
+    if (qsize > 0) then
        call t_startf("PAT_remap")
        call Prim_Advec_Tracers_remap(elem, deriv1, hvcoord, hybrid, dt_q, tl, nets, nete)
        call t_stopf("PAT_remap")
@@ -1406,7 +1379,7 @@ contains
 
     ! Remap tracers.
     if (qsize > 0) then
-       call sl_vertically_remap_tracers(hybrid, elem, nets_in, nete_in, tl, dt_q)
+       call sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
     end if
   end subroutine prim_step_flexible
 
@@ -1737,7 +1710,7 @@ contains
   end subroutine applyCAMforcing_tracers
   
   
-  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord, update_T_in)
+  subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
   !
   !   prim_step version for single column model (SCM)
   !   Here we simply want to compute the floating level tendency
@@ -1773,29 +1746,11 @@ contains
     integer,              intent(in)    :: nete     ! ending thread element number   (private)
     real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
     type(TimeLevel_t),    intent(inout) :: tl
-    logical, optional,    intent(in)    :: update_T_in ! update temperature?
 
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
-    logical :: update_T, update_Q
-    
-    ! Determine if we are updating T or Q
-    if (.not. present(update_T_in)) then
-      ! If there is no optional argument present, then assume we 
-      !   are in preqx dycore where this routine is called only
-      !   for Q tracers
-      update_T = .false.
-      update_Q = .true.
-    else
-      ! Else we only update Q if not T and vice versa since 
-      !   since this routine is called in different locations
-      !   in the theta-l code for T and Q respectively
-      update_T = update_T_in
-      if (update_T_in) update_Q = .false.
-      if (.not. update_T_in) update_Q = .true.
-    endif
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1819,34 +1774,21 @@ contains
     ! ===============
     
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
-    call set_prescribed_scm(elem,dt,tl,update_T)
+    call set_prescribed_scm(elem,dt,tl)
 
-    if (update_Q) then
-      do n=2,dt_tracer_factor
+#ifndef MODEL_THETA_L
+    do n=2,dt_tracer_factor
 
-        call TimeLevel_update(tl,"leapfrog")
-        if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+      call TimeLevel_update(tl,"leapfrog")
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
 
-        ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-        call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
+      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
 
-        ! call the single column forcing
-        call set_prescribed_scm(elem,dt,tl,update_T)
+      ! call the single column forcing
+      call set_prescribed_scm(elem,dt,tl,update_T)
 
-      enddo
-    endif
-
-#ifdef MODEL_THETA_L
-    ! If using theta-l model and updating Q, the dp3d variable is used as the
-    !   reference height for the remap routine, thus reset this here.
-    if (update_Q) then
-      do ie=nets,nete
-        do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%np1)= ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
-        enddo
-      enddo
-    endif
+    enddo
 #endif
 
   end subroutine prim_step_scm
@@ -1920,7 +1862,7 @@ contains
     end subroutine smooth_topo_datasets
     
   !_____________________________________________________________________
-  subroutine set_prescribed_scm(elem,dt,tl,update_T)
+  subroutine set_prescribed_scm(elem,dt,tl)
   
     ! Update the floating levels based on the prescribed
     !  large scale vertical velocity for single column model
@@ -1933,21 +1875,11 @@ contains
     type (element_t),      intent(inout), target  :: elem(:) 
     real (kind=real_kind), intent(in)             :: dt
     type (TimeLevel_t)   , intent(in)             :: tl
-    logical,               intent(in)             :: update_T
     
     real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
     
     integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
-    logical :: update_Q
-
-    ! Determine if we are updating T or Q
-    !  If updating T, then don't update Q and vice versa
-    if (update_T) then
-      update_Q = .false.
-    else
-      update_Q = .true.
-    endif  
 
     n0    = tl%n0
     np1   = tl%np1
@@ -1955,42 +1887,30 @@ contains
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
     
     do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)
     enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev)
     
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k)) 
-#ifdef MODEL_THETA_L
-      ! If updating Q and using the theta-l dycore the dp_star (floating
-      !   levels) are stored in divdp.  Thus feed in the latest predicted
-      !   floating level here.
-      if (update_Q) then
-        elem(1)%derived%divdp(:,:,k) =  elem(1)%state%dp3d(:,:,k,np1)
-      endif
-#endif
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
     enddo
 
     ! If running theta_l model then the floating potential temperature
     !   needs to be updated with the new floating levels
 #ifdef MODEL_THETA_L
-    if (update_T) then
-      do k=1,nlev
-        elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
-                      elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
-      enddo
-    endif
+    do k=1,nlev
+      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
+                elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
+    enddo
 #endif
 
-    if (update_Q) then
-      do p=1,qsize
-        do k=1,nlev
-          elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*&
-            elem(1)%state%dp3d(:,:,k,np1)
-        enddo
+    do p=1,qsize
+      do k=1,nlev
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*&
+          elem(1)%state%dp3d(:,:,k,np1)
       enddo
-    endif
+    enddo
     
   end subroutine set_prescribed_scm
     
