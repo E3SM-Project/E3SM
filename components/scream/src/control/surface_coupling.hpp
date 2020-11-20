@@ -2,6 +2,7 @@
 #define SCREAM_SURFACE_COUPLING_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_repository.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/scream_types.hpp"
 
@@ -28,7 +29,8 @@ public:
   using cpl_data_ptr_type = double*;
 
   // The input grid is the one where import/export happens
-  SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid);
+  SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
+                   const FieldRepository<Real>& repo);
 
   // This allocates some service views
   void set_num_fields (const int num_imports, const int num_exports);
@@ -36,11 +38,9 @@ public:
   // Register import/export scream fields
   void register_import (const std::string& fname,
                         const int cpl_idx,
-                        const import_field_type& field,
                         const int vecComp = -1);
   void register_export (const std::string& fname,
                         const int cpl_idx,
-                        const import_field_type& field,
                         const int vecComp = -1);
 
   // Marks the end of the registration phase. Here, we check that there are no
@@ -84,7 +84,9 @@ protected:
     int col_size;
 
     // Offset to surface field from the column start. Should be 0 for scalar fields, but
-    // may be non-zero for vector quantities (depending on what component we extract)
+    // may be non-zero for vector quantities for which we import/export the 2nd (or larger)
+    // component (the layout would be something like (num_cols,2,num_levs), so the 1st
+    // entry to import export would be at index num_levs.
     int col_offset;
 
     // Pointer to the scream field device memory
@@ -94,30 +96,29 @@ protected:
   using import_value_type  = import_field_type::value_type;
   using export_value_type  = export_field_type::value_type;
 
-  // Packed, device-friendly verson of the fields above
+  // Packed, device-friendly verson of the helper structures above
   view_1d<device_type,Info<import_value_type>>  m_scream_imports_dev;
   view_1d<device_type,Info<export_value_type>>  m_scream_exports_dev;
   decltype(m_scream_imports_dev)::HostMirror    m_scream_imports_host;
   decltype(m_scream_exports_dev)::HostMirror    m_scream_exports_host;
 
-  // The type for device and host view storing a 2d array with dims (num_cols,num_cols).
+  // The type for device and host view storing a 2d array with dims (num_cols,num_fields).
   // The field idx strides faster, since that's what mct does (so we can "view" the
   // pointer to the whole x2a and a2x arrays from Fortran)
-  using imports_dview_type = KokkosTypes<device_type>::view_2d<double>;
-  using imports_hview_type = ekat::Unmanaged<KokkosTypes<host_device_type>::view_2d<double>>;
+  using cpl_dview_type = view_2d<device_type,double>;
+  using cpl_hview_type = ekat::Unmanaged<view_2d<host_device_type,double>>;
 
-  using exports_dview_type = KokkosTypes<device_type>::view_2d<double>;
-  using exports_hview_type = ekat::Unmanaged<KokkosTypes<host_device_type>::view_2d<double>>;
+  cpl_dview_type       m_cpl_imports_view_d;
+  cpl_hview_type       m_cpl_imports_view_h;
 
-  imports_dview_type       m_cpl_imports_view_d;
-  imports_hview_type       m_cpl_imports_view_h;
-
-  exports_dview_type       m_cpl_exports_view_d;
-  exports_hview_type       m_cpl_exports_view_h;
+  cpl_dview_type       m_cpl_exports_view_d;
+  cpl_hview_type       m_cpl_exports_view_h;
 
   // The following is only stored for debug/inspection routines
   std::set<FieldIdentifier>  m_imports_fids;
   std::set<FieldIdentifier>  m_exports_fids;
+
+  const FieldRepository<Real>& m_field_repo;
 
   int           m_num_imports;
   int           m_num_exports;

@@ -4,10 +4,13 @@ namespace scream {
 namespace control {
 
 SurfaceCoupling::
-SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid)
- : m_state (RepoState::Clean)
+SurfaceCoupling (const std::shared_ptr<const AbstractGrid>& grid,
+                 const FieldRepository<Real>& repo)
+ : m_field_repo (repo)
+ , m_state (RepoState::Clean)
 {
   EKAT_REQUIRE_MSG (grid!=nullptr, "Error! Invalid grid pointer.\n");
+
   m_num_cols  = grid->get_num_local_dofs();
   m_grid_name = grid->name();
 
@@ -39,7 +42,6 @@ set_num_fields (const int num_imports, const int num_exports)
 void SurfaceCoupling::
 register_import(const std::string& fname,
                 const int cpl_idx,
-                const import_field_type& field,
                 const int vecComp)
 {
   // Two separate checks rather than state==Open, so we can print more specific error messages
@@ -52,15 +54,10 @@ register_import(const std::string& fname,
   EKAT_REQUIRE_MSG(m_num_imports<m_scream_imports_host.extent_int(0),
                      "Error! Imports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
-  // Check that input field is valid
+  // Get the field, and check that is valid
+  import_field_type field = m_field_repo.get_field(fname,m_grid_name);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
   
-  const std::string& fgn = field.get_header().get_identifier().get_grid_name();
-  EKAT_REQUIRE_MSG (fgn==m_grid_name,
-                      "Error! Input field is defined on the wrong grid:\n"
-                      "         expected grid name: " + m_grid_name + "\n"
-                      "         field grid name: " + fgn + "\n");
-
   EKAT_REQUIRE_MSG(cpl_idx>=0, "Error! Input cpl_idx is negative.\n");
 
   // Check that this cpl_idx wasn't already registered
@@ -107,6 +104,7 @@ register_import(const std::string& fname,
       EKAT_ERROR_MSG("Error! Unsupported field rank for import field '" + fname + "'.\n");
   }
 
+  // Store the identifier of this field, for debug purposes
   m_imports_fids.insert(field.get_header().get_identifier());
 
   // Update number of imports stored
@@ -116,7 +114,6 @@ register_import(const std::string& fname,
 void SurfaceCoupling::
 register_export (const std::string& fname,
                  const int cpl_idx,
-                 const import_field_type& field,
                  const int vecComp)
 {
   // Two separate checks rather than state==Open, so we can print more specific error messages
@@ -129,7 +126,8 @@ register_export (const std::string& fname,
   EKAT_REQUIRE_MSG(m_num_exports<m_scream_exports_host.extent_int(0),
                      "Error! Exports view is already full. Did you call 'set_num_fields' with the wrong arguments?\n");
 
-  // Check that input field is valid
+  // Get the field, and check that is valid
+  export_field_type field = m_field_repo.get_field(fname,m_grid_name);
   EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
 
   const std::string& fgn = field.get_header().get_identifier().get_grid_name();
@@ -186,6 +184,7 @@ register_export (const std::string& fname,
       EKAT_ERROR_MSG("Error! Unsupported field rank for import field '" + fname + "'.\n");
   }
 
+  // Store the identifier of this field, for debug purposes
   m_exports_fids.insert(field.get_header().get_identifier());
 
   // Update number of exports stored
