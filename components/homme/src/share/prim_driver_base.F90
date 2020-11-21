@@ -1124,8 +1124,7 @@ contains
     else
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
-      call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, &
-             compute_diagnostics)
+      call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
     end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
