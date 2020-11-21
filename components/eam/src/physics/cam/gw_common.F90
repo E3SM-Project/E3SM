@@ -398,7 +398,7 @@ subroutine momentum_energy_conservation_shift_ds(ncol, tend_level, dt, taucd, &
   do k = minval(tend_level)+1, pver
      where (k > tend_level)
         dsdt(:ncol,k) = -dE
-        ttgw(:,k) = -dE
+        ttgw(:ncol,k) = -dE
      end where
   end do
 
@@ -473,7 +473,7 @@ subroutine momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
   do k = minval(tend_level)+1, pver
      where (k > tend_level)
         dsdt(:ncol,k) = dsdt(:ncol,k)-dE
-        ttgw(:,k) = ttgw(:,k)-dE
+        ttgw(:ncol,k) = ttgw(:ncol,k)-dE
      end where
   end do
 
@@ -490,7 +490,7 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   integer, intent(in) :: ncol
   integer, intent(in) :: tend_level(ncol)
   real(r8), intent(in) :: dt
-  real(r8), intent(in) :: pint(ncol,pver)
+  real(r8), intent(in) :: pint(ncol,pver+1)
   real(r8), intent(in) :: pdel(ncol,pver)
   real(r8), intent(in) :: u(ncol,pver)
   real(r8), intent(in) :: v(ncol,pver)
@@ -501,7 +501,10 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   real(r8), intent(inout) :: dsdt(:,:)
   ! Local variables.
   integer :: i, k
-  real(r8) :: dz(ncol), dE(ncol), ut_dz(ncol), vt_dz(ncol)
+  real(r8) :: dE(ncol)
+
+
+!!!! LOOPS!!!
 
   ! Net gain/loss of total energy in the column.
   dE = 0.0_r8
@@ -512,16 +515,27 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   end do
 
   do i = 1, ncol
-     dE(i) = dE(i)/(pint(i,pver)-pint(i,tend_level(i)))
+     !dE(i) = dE(i)/(pint(i,pver)-pint(i,tend_level(i)))
+     !dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)))
+     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,1))
   end do
 
+#if 0
   ! Subtract net gain/loss of total energy below source level.
   do k = minval(tend_level)+1, pver
      where (k > tend_level)
-        dsdt(:ncol,k) = -dE
-        ttgw(:,k) = -dE
+        dsdt(:ncol,k) = -dE(:ncol)
      end where
   end do
+#endif
+
+#if 1
+  do i = 1, ncol
+  do k = 1, pver
+     dsdt(i,k) = -dE(i)
+  end do
+  end do
+#endif
 
 end subroutine momentum_energy_fix
 

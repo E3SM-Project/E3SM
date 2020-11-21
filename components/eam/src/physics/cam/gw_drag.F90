@@ -945,6 +945,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call momentum_energy_fix(ncol, tend_level, dt, pint, dpm, u, v, ptend%u, ptend%v, ptend%s)
 
      do k = 1, pver
+        ttgw(:ncol,k) = ptend%s(:ncol,k) 
         ttgw(:ncol,k) = ttgw(:ncol,k) / cpairv(:ncol, k, lchnk)
      end do
 #endif
