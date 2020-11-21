@@ -129,10 +129,12 @@ namespace scream {
 struct PhysicsTestDataGeneric
 {
   // dims -> the dimensions of real data should come before dimensions of int data
+  //         and the dims of int data should come before bool data
   PhysicsTestDataGeneric(
     const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
     const std::vector<std::vector<Real**> > reals, // vector of pointers to real* members
-    const std::vector<std::vector<Int**> > ints);  // vector of pointers to int* members
+    const std::vector<std::vector<Int**> > ints = {},  // vector of pointers to int* members
+    const std::vector<std::vector<bool**> > bools = {}); // vector of pointers to bool* members
 
   Int total(void* member) const;
 
@@ -219,7 +221,7 @@ struct PhysicsTestDataGeneric
   void init_ptrs();
   std::pair<size_t, size_t> get_index(void* member) const;
 
-  std::vector<std::vector<Int> >    m_dims;  // list of dims of data, reals come before ints
+  std::vector<std::vector<Int> >    m_dims;  // list of dims of data, reals come before ints which come before bools
   std::vector<std::vector<Real**> > m_reals; // list of real data ptrs. idx here will match m_dims idx
   std::vector<std::vector<Int**> >  m_ints;  // lits of integer data ptrs. idx here will match m_dims[m_reals.size() + idx]
   std::vector<Int>  m_totals;    // list of totals, same index space as m_dims

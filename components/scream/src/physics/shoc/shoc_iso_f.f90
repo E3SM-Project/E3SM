@@ -416,6 +416,16 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: shoc_mix, isotropy, w_sec, wqls_sec, brunt, shoc_ql2
     real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3
   end subroutine shoc_main_f
+  subroutine pblintd_height_f(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, u, v, thv
+    real(kind=c_real) , intent(in), dimension(shcol) :: ustar, thv_ref
+    real(kind=c_real) , intent(out), dimension(shcol) :: pblh
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: rino
+    logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
+  end subroutine pblintd_height_f
 end interface
 
 end module shoc_iso_f

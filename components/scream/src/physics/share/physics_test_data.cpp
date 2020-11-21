@@ -12,7 +12,8 @@ namespace scream {
 PhysicsTestDataGeneric::PhysicsTestDataGeneric(
   const std::vector<std::vector<Int> >& dims,
   const std::vector<std::vector<Real**> > reals,
-  const std::vector<std::vector<Int**> > ints) :
+  const std::vector<std::vector<Int**> > ints,
+  const std::vector<std::vector<bool**> > bools) :
   m_dims(dims),
   m_reals(reals),
   m_ints(ints),

@@ -869,6 +869,23 @@ struct ShocMainData : public PhysicsTestDataGeneric {
   
   PTDG_STD_DEF(ShocMainData, 6, shcol, nlev, nlevi, num_qtracers, dtime, nadv);
 };
+struct PblintdHeightData : public PhysicsTestDataGeneric {
+  // Inputs
+  Int shcol, nlev;
+  Real *z, *u, *v, *ustar, *thv, *thv_ref;
+  
+  // Inputs/Outputs
+  Real *rino;
+  bool *check;
+  
+  // Outputs
+  Real *pblh;
+  
+  PblintdHeightData(Int shcol_, Int nlev_) :
+    PhysicsTestDataGeneric({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z, &u, &v, &thv, &rino }, { &ustar, &thv_ref, &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_) {}
+  
+  PTDG_STD_DEF(PblintdHeightData, 2, shcol, nlev);
+};
 // Glue functions to call fortran from from C++ with the Data struct
 void shoc_grid                                      (SHOCGridData &d);
 void shoc_diag_obklen                               (SHOCObklenData &d);
@@ -933,6 +950,7 @@ void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
 
 void shoc_main(ShocMainData& d);
+void pblintd_height(PblintdHeightData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -1004,6 +1022,7 @@ void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi,
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
 void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2);
+void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 } // end _f function decls
 
 }  // namespace shoc
