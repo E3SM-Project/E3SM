@@ -96,6 +96,11 @@ struct UnitWrap {
     struct TestCheckValues;
     struct TestIncloudMixing;
     struct TestP3Main;
+    struct TestIceSupersatConservation;
+    struct TestNcConservation;
+    struct TestNrConservation;
+    struct TestNiConservation;
+    struct TestWaterVaporConservation;
   };
 
 };

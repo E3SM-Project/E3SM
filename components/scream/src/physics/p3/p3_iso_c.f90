@@ -1,4 +1,4 @@
-module micro_p3_iso_c
+module p3_iso_c
   use iso_c_binding
   implicit none
 
@@ -82,7 +82,7 @@ contains
             array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
             array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
        if (.not. ok) then
-          print *, 'micro_p3_iso_c::p3_init: One or more table files exists but gave a read error.'
+          print *, 'p3_iso_c::p3_init: One or more table files exists but gave a read error.'
           info = -1
        end if
     end if
@@ -97,7 +97,7 @@ contains
             array_io_write(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
             array_io_write(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
        if (.not. ok) then
-          print *, 'micro_p3_iso_c::p3_init: Error when writing table files.'
+          print *, 'p3_iso_c::p3_init: Error when writing table files.'
           info = -1
        end if
     end if
@@ -934,4 +934,44 @@ subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,
 
  end subroutine p3_main_part3_c
 
-end module micro_p3_iso_c
+  subroutine ice_supersat_conservation_c(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt) bind(C)
+    use micro_p3, only : ice_supersat_conservation
+
+    real(kind=c_real) , intent(inout) :: qidep, qinuc
+    real(kind=c_real) , value, intent(in) :: cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt
+
+    call ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt)
+  end subroutine ice_supersat_conservation_c
+  subroutine nc_conservation_c(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend) bind(C)
+    use micro_p3, only : nc_conservation
+
+    real(kind=c_real) , value, intent(in) :: nc, nc_selfcollect_tend, dt
+    real(kind=c_real) , intent(inout) :: nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend
+
+    call nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend)
+  end subroutine nc_conservation_c
+  subroutine nr_conservation_c(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend) bind(C)
+    use micro_p3, only : nr_conservation
+
+    real(kind=c_real) , value, intent(in) :: nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt
+    real(kind=c_real) , intent(inout) :: nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend
+
+    call nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend)
+  end subroutine nr_conservation_c
+  subroutine ni_conservation_c(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend) bind(C)
+    use micro_p3, only : ni_conservation
+
+    real(kind=c_real) , value, intent(in) :: ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt
+    real(kind=c_real) , intent(inout) :: ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend
+
+    call ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend)
+  end subroutine ni_conservation_c
+  subroutine water_vapor_conservation_c(qv, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, dt) bind(C)
+    use micro_p3, only : water_vapor_conservation
+
+    real(kind=c_real) , value, intent(in) :: qv, qi2qv_sublim_tend, qr2qv_evap_tend, dt
+    real(kind=c_real) , intent(inout) :: qidep, qinuc
+
+    call water_vapor_conservation(qv, qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, dt)
+  end subroutine water_vapor_conservation_c
+end module p3_iso_c

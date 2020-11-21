@@ -263,7 +263,7 @@ struct Functions
                                    const Spack& cld_frac_i, Spack& qc2qr_accret_tend, Spack& qr2qv_evap_tend,
                                    Spack& qc2qr_autoconv_tend, Spack& nc_accret_tend, Spack& nc_selfcollect_tend,
                                    Spack& nc2nr_autoconv_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend,
-                                   Spack& ncautr, 
+                                   Spack& ncautr,
                                    Spack& qi2qv_sublim_tend, Spack& nr_ice_shed_tend, Spack& qc2qi_hetero_freeze_tend,
                                    Spack& qr2qi_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& qi2qr_melt_tend,
                                    Spack& qc2qi_collect_tend, Spack& qr2qi_immers_freeze_tend, Spack& ni2nr_melt_tend,
@@ -490,7 +490,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
-    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
+    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
     Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
     const Smask& context = Smask(true) );
 
@@ -511,14 +511,14 @@ struct Functions
   KOKKOS_FUNCTION
   static void get_cloud_dsd2(
     const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, 
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1,
     const Smask& context = Smask(true) );
 
   // Computes and returns rain size distribution parameters
   KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r, 
+    Spack& lamr, Spack& cdistr, Spack& logn0r,
     const Smask& context = Smask(true) );
 
   // Calculates rime density
@@ -587,7 +587,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
-    const Spack& qr_incld, const Spack& rhofacr, 
+    const Spack& qr_incld, const Spack& rhofacr,
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
 
@@ -662,7 +662,7 @@ struct Functions
   static void rain_evap_instant_tend(const Spack& ssat_r, const Spack& ab,
 				     const Spack& tau_r,
 				     Spack& tend, const Smask& context=Smask(true));
-  
+
   // TODO (comments)
   KOKKOS_FUNCTION
   static void evaporate_rain(const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qi_incld,
@@ -963,6 +963,21 @@ struct Functions
     const P3HistoryOnly& history_only,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
+
+  KOKKOS_FUNCTION
+  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& latent_heat_sublim, const Spack& t_atm, const Real& dt, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void nr_conservation(const Spack& nr, const Spack& ni2nr_melt_tend, const Spack& nr_ice_shed_tend, const Spack& ncshdc, const Spack& nc2nr_autoconv_tend, const Real& dt, Spack& nr_collect_tend, Spack& nr2ni_immers_freeze_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void water_vapor_conservation(const Spack& qv, Spack& qv2qi_vapdep_tend, Spack& qv2qi_nucleat_tend, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Real& dt, const Smask& context = Smask(true));
 }; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
@@ -1015,6 +1030,11 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_incloud_mixingratios_impl.hpp"
 # include "p3_subgrid_variance_scaling_impl.hpp"
 # include "p3_main_impl.hpp"
-#endif
+# include "p3_ice_supersat_conservation_impl.hpp"
+# include "p3_nc_conservation_impl.hpp"
+# include "p3_nr_conservation_impl.hpp"
+# include "p3_ni_conservation_impl.hpp"
+# include "p3_water_vapor_conservation_impl.hpp"
+#endif // KOKKOS_ENABLE_CUDA
 
 #endif // P3_FUNCTIONS_HPP
