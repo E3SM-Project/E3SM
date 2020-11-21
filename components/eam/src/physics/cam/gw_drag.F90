@@ -924,8 +924,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      end do
 
 #ifdef NEWGW2
-        call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
-             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+     call momentum_energy_fix(ncol, tend_level, dt, &
+          pint, dpm, u, v, ptend%u, ptend%v, ptend%s)
+
+     do k = 1, pver
+        ttgw(:ncol,k) = ttgw(:ncol,k) / cpairv(:ncol, k, lchnk)
+     end do
 #endif
 
      do m = 1, pcnst

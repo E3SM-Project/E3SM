@@ -318,6 +318,226 @@ subroutine momentum_energy_conservation(ncol, tend_level, dt, taucd, &
 
 end subroutine momentum_energy_conservation
 
+
+
+
+
+
+
+
+
+!==========================================================================
+
+!version with shifted pint and correct dS
+subroutine momentum_energy_conservation3(ncol, tend_level, dt, taucd, &
+     pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
+
+  ! C.-C. Chen, momentum & energy conservation
+
+  integer, intent(in) :: ncol
+  integer, intent(in) :: tend_level(ncol)
+  real(r8), intent(in) :: dt
+  real(r8), intent(in) :: taucd(ncol,0:pver,4)
+  real(r8), intent(in) :: pint(ncol,pver+1)
+  real(r8), intent(in) :: pdel(ncol,pver)
+  real(r8), intent(in) :: u(ncol,pver)
+  real(r8), intent(in) :: v(ncol,pver)
+  ! The following are assumed-shape because, for now, CAM is passing them
+  ! with size pcols.
+  real(r8), intent(inout) :: dudt(:,:)
+  real(r8), intent(inout) :: dvdt(:,:)
+  real(r8), intent(inout) :: dsdt(:,:)
+  real(r8), intent(inout) :: utgw(ncol,pver)
+  real(r8), intent(inout) :: vtgw(ncol,pver)
+  real(r8), intent(inout) :: ttgw(ncol,pver)
+  ! Local variables.
+  integer :: i, k
+  real(r8) :: dz(ncol), dE(ncol), ut_dz(ncol), vt_dz(ncol)
+
+  ! Total mass from ground to source level: rho*dz = dp/gravit
+  dz = 0.0_r8
+  do k = pver, minval(tend_level)+1, -1
+     where (k > tend_level)
+        dz = dz + pdel(:,k)/gravit
+     end where
+  end do
+
+  ! Tendency for U & V below source level.
+  do i = 1, ncol
+     ut_dz(i) = -(taucd(i,tend_level(i), east) + &
+          taucd(i,tend_level(i), west))/dz(i)
+     vt_dz(i) = -(taucd(i,tend_level(i),north) + &
+          taucd(i,tend_level(i),south))/dz(i)
+  end do
+
+  do k = minval(tend_level)+1, pver
+     where (k > tend_level)
+        dudt(:ncol,k) = dudt(:ncol,k)+ut_dz
+        dvdt(:ncol,k) = dvdt(:ncol,k)+vt_dz
+        utgw(:,k) = utgw(:,k)+ut_dz
+        vtgw(:,k) = vtgw(:,k)+vt_dz
+     end where
+  end do
+
+  ! Net gain/loss of total energy in the column.
+  dE = 0.0_r8
+  do k = 1, pver
+     dE = dE + pdel(:,k) * (dsdt(:ncol,k) + &
+          dudt(:ncol,k)*(u(:,k)+dudt(:ncol,k)*0.5_r8*dt) + &
+          dvdt(:ncol,k)*(v(:,k)+dvdt(:ncol,k)*0.5_r8*dt) )
+  end do
+
+  do i = 1, ncol
+     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)))
+  end do
+
+  ! Subtract net gain/loss of total energy below source level.
+  do k = minval(tend_level)+1, pver
+     where (k > tend_level)
+        dsdt(:ncol,k) = -dE
+        ttgw(:,k) = -dE
+     end where
+  end do
+
+end subroutine momentum_energy_conservation3
+
+!==========================================================================
+
+!version with shifted pint
+subroutine momentum_energy_conservation2(ncol, tend_level, dt, taucd, &
+     pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
+
+  ! C.-C. Chen, momentum & energy conservation
+
+  integer, intent(in) :: ncol
+  integer, intent(in) :: tend_level(ncol)
+  real(r8), intent(in) :: dt
+  real(r8), intent(in) :: taucd(ncol,0:pver,4)
+  real(r8), intent(in) :: pint(ncol,pver+1)
+  real(r8), intent(in) :: pdel(ncol,pver)
+  real(r8), intent(in) :: u(ncol,pver)
+  real(r8), intent(in) :: v(ncol,pver)
+  ! The following are assumed-shape because, for now, CAM is passing them
+  ! with size pcols.
+  real(r8), intent(inout) :: dudt(:,:)
+  real(r8), intent(inout) :: dvdt(:,:)
+  real(r8), intent(inout) :: dsdt(:,:)
+  real(r8), intent(inout) :: utgw(ncol,pver)
+  real(r8), intent(inout) :: vtgw(ncol,pver)
+  real(r8), intent(inout) :: ttgw(ncol,pver)
+  ! Local variables.
+  integer :: i, k
+  real(r8) :: dz(ncol), dE(ncol), ut_dz(ncol), vt_dz(ncol)
+
+  ! Total mass from ground to source level: rho*dz = dp/gravit
+  dz = 0.0_r8
+  do k = pver, minval(tend_level)+1, -1
+     where (k > tend_level)
+        dz = dz + pdel(:,k)/gravit
+     end where
+  end do
+
+  ! Tendency for U & V below source level.
+  do i = 1, ncol
+     ut_dz(i) = -(taucd(i,tend_level(i), east) + &
+          taucd(i,tend_level(i), west))/dz(i)
+     vt_dz(i) = -(taucd(i,tend_level(i),north) + &
+          taucd(i,tend_level(i),south))/dz(i)
+  end do
+
+  do k = minval(tend_level)+1, pver
+     where (k > tend_level)
+        dudt(:ncol,k) = dudt(:ncol,k)+ut_dz
+        dvdt(:ncol,k) = dvdt(:ncol,k)+vt_dz
+        utgw(:,k) = utgw(:,k)+ut_dz
+        vtgw(:,k) = vtgw(:,k)+vt_dz
+     end where
+  end do
+
+  ! Net gain/loss of total energy in the column.
+  dE = 0.0_r8
+  do k = 1, pver
+     dE = dE + pdel(:,k) * (dsdt(:ncol,k) + &
+          dudt(:ncol,k)*(u(:,k)+dudt(:ncol,k)*0.5_r8*dt) + &
+          dvdt(:ncol,k)*(v(:,k)+dvdt(:ncol,k)*0.5_r8*dt) )
+  end do
+
+  do i = 1, ncol
+     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)))
+  end do
+
+  ! Subtract net gain/loss of total energy below source level.
+  do k = minval(tend_level)+1, pver
+     where (k > tend_level)
+        dsdt(:ncol,k) = dsdt(:ncol,k)-dE
+        ttgw(:,k) = ttgw(:,k)-dE
+     end where
+  end do
+
+end subroutine momentum_energy_conservation2
+
+
+
+
+!==========================================================================
+
+!just a buttered fix
+subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvdt, dsdt)
+
+  integer, intent(in) :: ncol
+  integer, intent(in) :: tend_level(ncol)
+  real(r8), intent(in) :: dt
+  real(r8), intent(in) :: pint(ncol,pver)
+  real(r8), intent(in) :: pdel(ncol,pver)
+  real(r8), intent(in) :: u(ncol,pver)
+  real(r8), intent(in) :: v(ncol,pver)
+  ! The following are assumed-shape because, for now, CAM is passing them
+  ! with size pcols.
+  real(r8), intent(inout) :: dudt(:,:)
+  real(r8), intent(inout) :: dvdt(:,:)
+  real(r8), intent(inout) :: dsdt(:,:)
+  ! Local variables.
+  integer :: i, k
+  real(r8) :: dz(ncol), dE(ncol), ut_dz(ncol), vt_dz(ncol)
+
+  ! Net gain/loss of total energy in the column.
+  dE = 0.0_r8
+  do k = 1, pver
+     dE = dE + pdel(:,k) * ( &
+          dudt(:ncol,k)*(u(:,k)+dudt(:ncol,k)*0.5_r8*dt) + &
+          dvdt(:ncol,k)*(v(:,k)+dvdt(:ncol,k)*0.5_r8*dt) )
+  end do
+
+  do i = 1, ncol
+     dE(i) = dE(i)/(pint(i,pver)-pint(i,tend_level(i)))
+  end do
+
+  ! Subtract net gain/loss of total energy below source level.
+  do k = minval(tend_level)+1, pver
+     where (k > tend_level)
+        dsdt(:ncol,k) = -dE
+        ttgw(:,k) = -dE
+     end where
+  end do
+
+end subroutine momentum_energy_fix
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 !==========================================================================
 
 subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
