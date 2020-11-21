@@ -47,7 +47,7 @@ OR
     parser.add_argument("-f90","--f90-compiler", help="F90 compiler", default=None)
     parser.add_argument("--c-compiler", help="C compiler", default=None)
 
-    parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
+    parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad")
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Launch the different build types stacks in parallel")
 
