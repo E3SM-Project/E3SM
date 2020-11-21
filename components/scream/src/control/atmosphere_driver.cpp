@@ -159,8 +159,20 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     }
   }
 
-  // Init surface coupling
-  init_surface_coupling ();
+#if defined(SCREAM_CIME_BUILD)
+  // If this is a CIME build, we need to prepare the surface coupling
+  m_surface_coupling = std::make_shared<SurfaceCoupling>(m_grids_manager->get_reference_grid(),*m_field_repo);
+#endif
+
+  if (!m_surface_coupling) {
+    // Standalone runs *may* require initialization of atm inputs.
+    init_atm_inputs ();
+
+    // In standalone runs, we already have everything we need for the dag,
+    // so we can proceed to do its inspection. Any unmet dependency in
+    // the dag at this point has to be treated as an error.
+    inspect_atm_dag ();
+  }
 
 #ifdef SCREAM_DEBUG
   create_bkp_field_repo();
@@ -249,13 +261,6 @@ void AtmosphereDriver::register_groups () {
   lambda( m_atm_process_group->get_updated_groups() );
 }
 
-void AtmosphereDriver::init_surface_coupling () {
-#if defined(SCREAM_CIME_BUILD)
-  // If this is a CIME build, we need to prepare the surface coupling
-  m_surface_coupling = std::make_shared<SurfaceCoupling>(m_grids_manager->get_reference_grid(),*m_field_repo);
-#endif
-}
-
 void AtmosphereDriver::init_atm_inputs () {
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
   for (const auto& input : atm_inputs) {
@@ -300,19 +305,23 @@ void AtmosphereDriver::init_atm_inputs () {
   }
 }
 
-void AtmosphereDriver::inspect_atm_dag () {
+void AtmosphereDriver::inspect_atm_dag () const {
 
-  if (m_surface_coupling && m_surface_coupling->get_repo_state()!=RepoState::Closed) {
-    std::cout << "[Atm Driver]: atm dag skipped, since surface coupling (SC) not yet completed.\n"
-              << "              Make sure you call 'inspect_atm_dag' after SC setup is completed.\n";
-  }
+  // Sanity checks
+  EKAT_REQUIRE_MSG (!(m_surface_coupling && (m_field_initializers.size()>0)),
+      "Error! You cannot have surface coupling *and* field initializers.\n"
+      "       In CIME runs, you only have the former, while in standalone runs you can only have the latter.\n");
+
+  EKAT_REQUIRE_MSG ( !m_surface_coupling || m_surface_coupling->get_repo_state()==RepoState::Closed,
+      "Error! You cannot inspect the dag if the surface coupling has been fully initialized.\n");
 
   AtmProcDAG dag;
 
   // First, add all atm processes
   dag.create_dag(*m_atm_process_group,m_field_repo);
 
-  // Then, add all field initializers (if any)
+  // Then, add all field initializers (if any) and surface coupling (if any).
+  // Recall that at most one of these two steps can be non-trivial.
   for (const auto& it : m_field_initializers) {
     dag.add_field_initializer(*it.lock());
   }
@@ -325,8 +334,13 @@ void AtmosphereDriver::inspect_atm_dag () {
 
   // Finally, we can proceed with checking the dag
   auto& deb_pl = m_atm_params.sublist("Debug");
+  int verb_lvl = -1;
+  if (deb_pl.isParameter("Atmosphere DAG Verbosity Level")) {
+    verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level");
+  }
+
   if (dag.has_unmet_dependencies()) {
-    const int err_verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",int(AtmProcDAG::VERB_MAX));
+    const int err_verb_lev = verb_lvl >=0 ? verb_lvl : int(AtmProcDAG::VERB_MAX);
     dag.write_dag("error_atm_dag.dot",err_verb_lev);
     EKAT_ERROR_MSG("Error! There are unmet dependencies in the atmosphere internal dag.\n"
                    "       Use the graphviz package to inspect the dependency graph:\n"
@@ -336,8 +350,7 @@ void AtmosphereDriver::inspect_atm_dag () {
   }
 
   // If requested, write a dot file for visualization
-  const int verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",0);
-  dag.write_dag("scream_atm_dag.dot",verb_lev);
+  dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
 }
 
 #ifdef SCREAM_DEBUG

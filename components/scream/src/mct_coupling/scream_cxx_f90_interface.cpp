@@ -159,6 +159,11 @@ void scream_setup_surface_coupling (
     }
 
     sc->registration_ends(cpl_x2a_ptr, cpl_a2x_ptr);
+
+    // At this point, the atm dag *should* be completed, so we can ask
+    // the ad to proceed to do its inspection. Any unmet dependency in
+    // the dag at this point has to be treated as an error.
+    ad.inspect_atm_dag();
   });
 }
 
