@@ -1764,18 +1764,18 @@ contains
     
     call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
     call set_prescribed_scm(elem,dt,tl)
-
+    
     do n=2,dt_tracer_factor
-
+ 
       call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
 
-      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
-
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
+      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel      
+      
       ! call the single column forcing
       call set_prescribed_scm(elem,dt,tl)
-
+      
     enddo
 
   end subroutine prim_step_scm
