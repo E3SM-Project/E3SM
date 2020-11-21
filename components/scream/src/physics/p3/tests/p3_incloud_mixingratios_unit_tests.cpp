@@ -78,7 +78,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
       const Int offset = i * Spack::n;
 
-     // Init pack inputs
+      // Init pack inputs
       Spack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc[s]             = self_device(vs).qc;

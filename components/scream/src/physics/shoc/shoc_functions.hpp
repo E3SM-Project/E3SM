@@ -438,4 +438,4 @@ struct Functions
 # include "shoc_pblintd_height_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
-#endif
+#endif // SHOC_FUNCTIONS_HPP
