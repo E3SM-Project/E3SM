@@ -570,7 +570,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Location-dependent cpair
   use physconst,  only: cpairv
   use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof
+       gw_drag_prof, momentum_energy_conservation_shift, momentum_energy_conservation_shift_ds, &
+       momentum_energy_fix
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
@@ -744,6 +745,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Non-orographic background gravity wave spectra
   !------------------------------------------------------------------------
 
+
+
+!#define OLDGW
+!#define NEWGW
+#define NEWGW2
+
+
+
+
   if (do_spectral_waves) then
 
      egwdffi_tot = 0._r8
@@ -790,9 +800,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         end do
 
 
+#ifndef NEWGW2
         ! C.-C. Chen, momentum & energy conservation
         call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+#endif
+#ifdef NEWGW2
+        call momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
+             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+#endif
 
         call gw_spec_outflds(beres_pf, lchnk, ncol, pgwv, c, u, v, &
              xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
@@ -853,9 +869,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k)
         end do
 
+#ifndef NEWGW2
         ! C.-C. Chen, momentum & energy conservation
         call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+#endif
+#ifdef NEWGW2
+        call momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
+             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
+#endif
 
         call gw_spec_outflds(cm_pf, lchnk, ncol, pgwv, c, u, v, &
              xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
@@ -897,12 +919,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
         ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
 
-!!!!!! OG redefine ptend%s to conserve TE
-!!!!!! gw only uses ptend%u,v, no heat flx
-!#define OLDGW
-!#define NEWGW
-#define NEWGW2
-
 #ifdef OLDGW
 !!! old code
 !turn this one on to have bfb tests
@@ -923,14 +939,17 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 #endif
      end do
 
+
+
 #ifdef NEWGW2
-     call momentum_energy_fix(ncol, tend_level, dt, &
-          pint, dpm, u, v, ptend%u, ptend%v, ptend%s)
+     call momentum_energy_fix(ncol, tend_level, dt, pint, dpm, u, v, ptend%u, ptend%v, ptend%s)
 
      do k = 1, pver
         ttgw(:ncol,k) = ttgw(:ncol,k) / cpairv(:ncol, k, lchnk)
      end do
 #endif
+
+
 
      do m = 1, pcnst
         do k = 1, pver

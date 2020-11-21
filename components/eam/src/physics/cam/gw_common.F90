@@ -14,6 +14,9 @@ save
 public :: gw_common_init
 public :: gw_prof
 public :: momentum_energy_conservation
+public :: momentum_energy_conservation_shift_ds
+public :: momentum_energy_conservation_shift
+public :: momentum_energy_fix
 public :: gw_drag_prof
 
 public :: pver, pgwv
@@ -329,7 +332,7 @@ end subroutine momentum_energy_conservation
 !==========================================================================
 
 !version with shifted pint and correct dS
-subroutine momentum_energy_conservation3(ncol, tend_level, dt, taucd, &
+subroutine momentum_energy_conservation_shift_ds(ncol, tend_level, dt, taucd, &
      pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
 
   ! C.-C. Chen, momentum & energy conservation
@@ -399,12 +402,12 @@ subroutine momentum_energy_conservation3(ncol, tend_level, dt, taucd, &
      end where
   end do
 
-end subroutine momentum_energy_conservation3
+end subroutine momentum_energy_conservation_shift_ds
 
 !==========================================================================
 
 !version with shifted pint
-subroutine momentum_energy_conservation2(ncol, tend_level, dt, taucd, &
+subroutine momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
      pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
 
   ! C.-C. Chen, momentum & energy conservation
@@ -474,7 +477,7 @@ subroutine momentum_energy_conservation2(ncol, tend_level, dt, taucd, &
      end where
   end do
 
-end subroutine momentum_energy_conservation2
+end subroutine momentum_energy_conservation_shift
 
 
 
