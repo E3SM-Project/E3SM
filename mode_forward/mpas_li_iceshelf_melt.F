@@ -1297,20 +1297,15 @@ module li_iceshelf_melt
            
             submergedFaceArea = waterDepth * oceanEdgeLength
                 
-                if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
+            if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
                 ! Calculate ice front melt rate at each cell
                faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
-                         + B) * (TFocean(iCell) + addTFocean)**betaTF / secPerDay
-                elseif (trim(config_front_mass_bal_grounded) == 'uniform') then   
+                         + B) *  max(0.0_RKIND, TFocean(iCell) + addTFocean)**betaTF / secPerDay
+            elseif (trim(config_front_mass_bal_grounded) == 'uniform') then   
                    faceMeltSpeed(iCell) = config_uniform_face_melt_rate
-                endif
-                faceMeltRateApplied(iCell) = faceMeltSpeed(iCell) * submergedFaceArea ! m^3 s^-1
-            else 
-                groundedMarineMarginMask(iCell) = 0
-                faceMeltRateApplied(iCell) = 0.0_RKIND     
-                faceMeltSpeed(iCell) = 0.0_RKIND
-            endif           
+            endif
+
          enddo
 
          call mpas_log_write("calling apply_front_ablation_velocity")
@@ -1323,6 +1318,7 @@ module li_iceshelf_melt
 
          ! Apply facemelt: open the Ark
          thickness(:) = thickness(:) - faceMeltingThickness(:)
+         faceMeltRateApplied = faceMeltingThickness(:) * areaCell(:) / deltat     
 
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
