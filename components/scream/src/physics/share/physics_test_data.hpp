@@ -126,8 +126,149 @@ struct SHOCGridData : public PhysicsTestData {
 namespace scream {
 
 // Fully Generic Data struct for multi-dimensions reals and ints
-struct PhysicsTestDataGeneric
+class PhysicsTestDataGeneric
 {
+  template <typename T>
+  struct PTDImpl
+  {
+    template <typename Iterator>
+    PTDImpl( Iterator dims_begin, Iterator dims_end,
+             const std::vector<std::vector<T**> >& members_list) :
+      m_dims_list(dims_begin, dims_end),
+      m_members_list(members_list),
+      m_totals(m_dims_list.size(), 0)
+    {
+      EKAT_REQUIRE_MSG(m_dims_list.size() == m_members_list.size(),
+                       "Length of member lists did not match length of dimensions");
+
+      // Compute totals
+      Int total_total = 0;
+      for (size_t i = 0; i < m_dims_list.size(); ++i) {
+        const auto& dims    = m_dims_list[i];
+        const auto& members = m_members_list[i];
+
+        Int total = 1;
+        for (const auto& dim : dims) {
+          total *= dim;
+        }
+        m_totals[i] = total;
+        const Int num_members = members.size();
+        total_total += (total * num_members);
+      }
+
+      m_data.resize(total_total, T());
+
+      init_ptrs();
+    }
+
+    std::pair<size_t, size_t> get_index(T* member) const
+    {
+      for (size_t i = 0; i < m_members_list.size(); ++i) {
+        for (size_t j = 0; j < m_members_list[i].size(); ++j) {
+          if (*(m_members_list[i][j]) == member) {
+            return std::make_pair(i, j);
+          }
+        }
+      }
+      return std::make_pair(-1, -1);
+    }
+
+    Int total(const size_t& index) const
+    {
+      EKAT_ASSERT(index < m_totals.size());
+      return m_totals[index];
+    }
+
+    template <typename Gen, typename Dist>
+    void randomize(Gen& generator, Dist& dist)
+    {
+      for (auto& item : m_data) {
+        item = static_cast<T>(dist(generator));
+      }
+    }
+
+    template <typename Gen, typename Dist>
+    void randomize(Gen& generator, Dist& dist, const std::pair<size_t, size_t>& index)
+    {
+      const Int total = total(index.first);
+      T* member = *(m_members_list[index.first][index.second]);
+      for (Int i = 0; i < total; ++i) {
+        member[i] = static_cast<T>(dist(generator));
+      }
+    }
+
+    void init_ptrs()
+    {
+      Int offset = 0;
+      for (size_t i = 0; i < m_members_list.size(); ++i) {
+        const Int total     = m_totals[i];
+        const auto& members = m_members_list[i];
+
+        for (auto& member : members) {
+          *member = m_data.data() + offset;
+          offset += total;
+        }
+      }
+    }
+
+    void assignment_impl(const PTDImpl<T>& rhs)
+    {
+      EKAT_REQUIRE_MSG(m_members.size() == rhs.m_members.size(),
+                       "Assignment between incompatible PhysicsTestData");
+
+      m_dims_list = rhs.m_dim_list;
+      m_data      = rhs.m_data;
+      m_totals    = rhs.m_totals;
+
+      init_ptrs();
+    }
+
+    template <ekat::TransposeDirection::Enum D>
+    void transpose()
+    {
+      Int offset = 0;
+      std::vector<T> new_data(m_data);
+
+      for (size_t i = 0; i < m_dims_list.size(); ++i) {
+        const auto& dims      = m_dims_list[i];
+        const auto& members   = m_members_list[i];
+        const Int num_members = members.size();
+        const Int total       = m_totals[i];
+
+        if (dims.size() > 1) { // no need to transpose 1d data
+          if (dims.size() == 2) {
+            for (auto member : members) {
+              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1]);
+              offset += total;
+            }
+          }
+          else if (dims.size() == 3) {
+            for (auto member : members) {
+              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1], dims[2]);
+              offset += total;
+            }
+          }
+          else {
+            EKAT_REQUIRE_MSG(false, "Data dimension > 3 not currently supported");
+          }
+        }
+        else {
+          offset += (total * num_members);
+        }
+      }
+
+      m_data = new_data;
+    }
+
+  private:
+    std::vector<std::vector<Int> m_dims_list;    // list of dims, one per unique set of dims
+    std::vector<std::vector<T**> m_members_list; // list of member pointers, same outer index space as m_dims_list
+    std::vector<T>               m_data;         // the member data in a flat vector
+    std::vector<Int>             m_totals;       // total sizes of each set of data, same index space as m_dims_list
+  };
+
+ public:
+
   // dims -> the dimensions of real data should come before dimensions of int data
   //         and the dims of int data should come before bool data
   PhysicsTestDataGeneric(
@@ -136,9 +277,9 @@ struct PhysicsTestDataGeneric
     const std::vector<std::vector<Int**> > ints = {},  // vector of pointers to int* members
     const std::vector<std::vector<bool**> > bools = {}); // vector of pointers to bool* members
 
-  Int total(void* member) const;
-
-  Int dim(void* member, size_t dim_idx) const;
+  Int total(const Real* member) const { return m_reals.total(get_index(member).first); }
+  Int total(const Int* member) const  { return m_ints.total(get_index(member).first); }
+  Int total(const bool* member) const { return m_bools.total(get_index(member).first); }
 
   // Delete this to block subclasses getting the default impls, which would be incorrect
   PhysicsTestDataGeneric(const PhysicsTestDataGeneric &rhs) = delete;
@@ -156,61 +297,15 @@ struct PhysicsTestDataGeneric
   template <ekat::TransposeDirection::Enum D>
   void transpose()
   {
-    std::vector<Real> real_data(m_real_data);
-    std::vector<Int>  int_data(m_int_data);
-    Int real_offset = 0;
-    Int int_offset = 0;
-
-    for (size_t i = 0; i < m_dims.size(); ++i) {
-      Int* current_offset = i < m_reals.size() ? &real_offset : &int_offset;
-      const Int num_members = i < m_reals.size() ? m_reals[i].size() : m_ints[i-m_reals.size()].size();
-
-      if (m_dims[i].size() > 1) { // no need to transpose 1d data
-        if (m_dims[i].size() == 2) {
-          if (i < m_reals.size()) {
-            for (size_t j = 0; j < m_reals[i].size(); ++j) {
-              ekat::transpose<D>(*(m_reals[i][j]), real_data.data() + *current_offset, m_dims[i][0], m_dims[i][1]);
-              *current_offset += m_totals[i];
-            }
-          }
-          else {
-            for (size_t j = 0; j < m_ints[i-m_reals.size()].size(); ++j) {
-              ekat::transpose<D>(*(m_ints[i-m_reals.size()][j]), int_data.data() + *current_offset, m_dims[i][0], m_dims[i][1]);
-              *current_offset += m_totals[i];
-            }
-          }
-        }
-        else if (m_dims[i].size() == 3) {
-          if (i < m_reals.size()) {
-            for (size_t j = 0; j < m_reals[i].size(); ++j) {
-              ekat::transpose<D>(*(m_reals[i][j]), real_data.data() + *current_offset, m_dims[i][0], m_dims[i][1], m_dims[i][2]);
-              *current_offset += m_totals[i];
-            }
-          }
-          else {
-            for (size_t j = 0; j < m_ints[i-m_reals.size()].size(); ++j) {
-              ekat::transpose<D>(*(m_ints[i-m_reals.size()][j]), int_data.data() + *current_offset, m_dims[i][0], m_dims[i][1], m_dims[i][2]);
-              *current_offset += m_totals[i];
-            }
-          }
-        }
-        else {
-          EKAT_REQUIRE_MSG(false, "Data dimension > 3 not currently supported");
-        }
-      }
-      else {
-        (*current_offset) += (m_totals[i] * num_members);
-      }
-    }
+    m_reals.transpose<D>();
+    m_ints.transpose<D>();
+    m_bools.transpose<D>();
 
     // Shift the indices. We might not be able to make the assumption that int data represented indices
-    for (size_t i = 0; i < int_data.size(); ++i) {
-      int_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
-      EKAT_ASSERT_MSG(int_data[i] >= 0, "Bad index: " << int_data[i]);
+    for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
+      m_ints.m_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
+      EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
     }
-
-    m_real_data = real_data;
-    m_int_data  = int_data;
   }
 
  protected:
@@ -218,15 +313,14 @@ struct PhysicsTestDataGeneric
   PhysicsTestDataGeneric& assignment_impl(const PhysicsTestDataGeneric& rhs);
 
  private:
-  void init_ptrs();
-  std::pair<size_t, size_t> get_index(void* member) const;
 
-  std::vector<std::vector<Int> >    m_dims;  // list of dims of data, reals come before ints which come before bools
-  std::vector<std::vector<Real**> > m_reals; // list of real data ptrs. idx here will match m_dims idx
-  std::vector<std::vector<Int**> >  m_ints;  // lits of integer data ptrs. idx here will match m_dims[m_reals.size() + idx]
-  std::vector<Int>  m_totals;    // list of totals, same index space as m_dims
-  std::vector<Real> m_real_data; // all real data
-  std::vector<Int>  m_int_data;  // all int data
+  std::pair<size_t, size_t> get_index(const Real* member) const { return m_reals.get_index(member); }
+  std::pair<size_t, size_t> get_index(const Int* member)  const { return m_reals.get_index(member); }
+  std::pair<size_t, size_t> get_index(const bool* member) const { return m_reals.get_index(member); }
+
+  PTDImpl<Real> m_reals; // manage real data with this member
+  PTDImpl<Int>  m_ints;  // manage int data with this member
+  PTDImpl<bool> m_bools; // manage bool data with this member
 };
 
 // Base class for common test data setup
