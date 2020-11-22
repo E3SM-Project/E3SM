@@ -152,6 +152,10 @@
 		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)"
 		            possible_values="any positive real number"
 		/>
+		<nml_option name="config_calving_specified_source" type="character" default_value="const" units="none"
+		            description="method of specified calving velocity"
+		            possible_values="'const' (constant calving velocity), 'data' (calving velocity given by data input)"
+		/>
                     <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^{-1}"
 		            description="constant calving velocity specified in the namelist"
 		            possible_values="Any positive real value"
@@ -616,6 +620,7 @@
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
 			<var name="damage"/>
+			<var name="calvingVelocityData"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
@@ -710,6 +715,7 @@
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
 			<var name="damage"/>
+			<var name="calvingVelocityData"/>
 			<var name="damageMax"/>
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>

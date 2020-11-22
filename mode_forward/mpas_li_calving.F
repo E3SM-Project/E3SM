@@ -1295,6 +1295,7 @@ module li_calving
       logical, pointer :: config_print_calving_info
       real(kind=RKIND), pointer :: config_calving_thickness
       real(kind=RKIND), pointer :: config_calving_velocity_const
+      real(kind=RKIND), pointer :: config_calving_specified_source
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: calvingVelocityData
       real (kind=RKIND), dimension(:), pointer :: angleEdge
@@ -1318,6 +1319,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
       call mpas_pool_get_config(liConfigs, 'config_calving_velocity_const', config_calving_velocity_const)
+      call mpas_pool_get_config(liConfigs, 'config_calving_specified_source', config_calving_specified_source)
 
       ! block loop
       block => domain % blocklist
@@ -1349,7 +1351,7 @@ module li_calving
          ! get parameter value
          if (trim(config_calving_specified_source) == 'const') then
              calvingVelocity = config_calving_velocity_const
-         elseif (trim(config_calving_spefified_source) == 'data') then
+         elseif (trim(config_calving_specified_source) == 'data') then
              calvingVelocity = calvingVelocityData
          else
             err = 1
