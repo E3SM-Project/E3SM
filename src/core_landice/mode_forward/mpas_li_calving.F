@@ -1381,9 +1381,19 @@ module li_calving
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
                                          vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress
-             elseif ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
+             elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
                                          vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
+             !if gloating VM threshold is zero, remove floating ice
+             elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .eq. 0.0_RKIND &
+                       .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
+                thickness(iCell) = 0.0_RKIND
+                ! update mask
+                call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+                err = ior(err, err_tmp)
+
+                call remove_small_islands(meshPool, geometryPool)
+
              endif
           enddo
 
