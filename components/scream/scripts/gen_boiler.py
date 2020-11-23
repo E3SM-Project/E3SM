@@ -1508,6 +1508,7 @@ class GenBoiler(object):
           PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         };
         <BLANKLINE>
+        <BLANKLINE>
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         struct_members   = "\n  ".join(gen_struct_members(arg_data))
@@ -1520,6 +1521,7 @@ class GenBoiler(object):
 """struct {struct_name}{inheritance} {{
   {struct_members}{api}
 }};
+
 """.format(struct_name=struct_name, inheritance=inheritance, struct_members=struct_members, api=api)
         return result
 
