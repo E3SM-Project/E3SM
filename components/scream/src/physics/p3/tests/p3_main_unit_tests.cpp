@@ -389,9 +389,9 @@ static void run_bfb_p3_main()
   }
 
   for (Int i = 0; i < num_runs; ++i) {
-    const auto tot = isds_fortran[i].total1x2();
     const auto& df90 = isds_fortran[i];
     const auto& dcxx = isds_fortran[i];
+    const auto tot = isds_fortran[i].total(df90.qc);
     for (Int t = 0; t < tot; ++t) {
       REQUIRE(df90.qc[t]                == dcxx.qc[t]);
       REQUIRE(df90.nc[t]                == dcxx.nc[t]);

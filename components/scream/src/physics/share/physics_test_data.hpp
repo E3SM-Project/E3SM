@@ -52,6 +52,7 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ZEROES8 PTD_ZEROES7, 0
 #define PTD_ZEROES9 PTD_ZEROES8, 0
 #define PTD_ZEROES10 PTD_ZEROES9, 0
+#define PTD_ZEROES11 PTD_ZEROES10, 0
 
 #define PTD_ZEROES(a) PTD_ZEROES##a
 

@@ -14,18 +14,6 @@
 // Bridge functions to call fortran version of shoc functions from C++
 //
 
-#define SHOC_DIM_RENAME1 PTD_DIM_RENAME(1, shcol)
-#define SHOC_DIM_RENAME2 PTD_DIM_RENAME(2, shcol, nlev)
-#define SHOC_DIM_RENAME3 PTD_DIM_RENAME(3, shcol, nlev, nlevi)
-
-#define SHOC_NO_SCALAR(name, dim) \
-  PTD_STD_DEF(name, dim, 0);                      \
-  SHOC_DIM_RENAME##dim
-
-#define SHOC_SCALARS(name, dim, num_scalars, ...)       \
-  PTD_STD_DEF(name, dim, num_scalars, __VA_ARGS__);     \
-  SHOC_DIM_RENAME##dim
-
 namespace scream {
 namespace shoc {
 
