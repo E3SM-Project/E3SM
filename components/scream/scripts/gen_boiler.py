@@ -1162,7 +1162,7 @@ def gen_struct_api(physics, struct_name, arg_data):
     DataSubName(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
       PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}, {{ &vals }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
     <BLANKLINE>
-    PTDG_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+    PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
     _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data)
 
@@ -1190,7 +1190,7 @@ def gen_struct_api(physics, struct_name, arg_data):
     result.append(parent_call)
     result.append("")
 
-    result.append("PTDG_STD_DEF({}, {}, {});".\
+    result.append("PTD_STD_DEF({}, {}, {});".\
                   format(struct_name, len(cons_args), ", ".join([name for name, _ in cons_args])))
 
     return result
@@ -1505,7 +1505,7 @@ class GenBoiler(object):
           FakeSubData(Int shcol_, Int nlev_, Int nlevi_, Int ntracers_, Real gag_, Int bab1_, Int bab2_, bool val_) :
             PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, nlev_, ntracers_ }, { shcol_ }, { shcol_ }}, {{ &foo1, &foo2, &baz }, { &bar1, &bar2 }, { &bak1, &bak2 }, { &tracerd1, &tracerd2 }}, {{ &bag, &ball1, &ball2 }}, {{ &vals }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), ntracers(ntracers_), gag(gag_), bab1(bab1_), bab2(bab2_), val(val_) {}
         <BLANKLINE>
-          PTDG_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
+          PTD_STD_DEF(FakeSubData, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
         };
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
