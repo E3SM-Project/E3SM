@@ -9,7 +9,7 @@
 
 namespace scream {
 
-PhysicsTestDataGeneric::PhysicsTestDataGeneric(
+PhysicsTestData::PhysicsTestData(
   const std::vector<std::vector<Int> >& dims,
   const std::vector<std::vector<Real**> >& reals,
   const std::vector<std::vector<Int**> >& ints,
@@ -20,7 +20,7 @@ PhysicsTestDataGeneric::PhysicsTestDataGeneric(
 {
 }
 
-PhysicsTestDataGeneric& PhysicsTestDataGeneric::assignment_impl(const PhysicsTestDataGeneric& rhs)
+PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
 {
   m_reals.assignment_impl(rhs.m_reals);
   m_ints.assignment_impl(rhs.m_ints);
@@ -29,7 +29,7 @@ PhysicsTestDataGeneric& PhysicsTestDataGeneric::assignment_impl(const PhysicsTes
   return *this;
 }
 
-void PhysicsTestDataGeneric::randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges)
+void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges)
 {
   std::default_random_engine generator;
   std::uniform_real_distribution<Real> default_real_dist(0.0, 1.0);
@@ -72,41 +72,6 @@ void PhysicsTestDataGeneric::randomize(const std::vector<std::pair<void*, std::p
       }
     }
   }
-}
-
-PhysicsTestData::PhysicsTestData(Int dim1_, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  PhysicsTestData(dim1_, 0, 0, {}, {}, ptrs_c, idx_c)
-{}
-
-PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  PhysicsTestData(dim1_, dim2_, 0, ptrs, {}, ptrs_c, idx_c) {}
-
-PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
-                                 const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-                                 const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c,
-                                 const std::vector<Real**>& ptrs_3d) :
-  PhysicsTestDataGeneric({ {dim1_, dim2_}, {dim1_, dim3_}, {dim1_},  {dim1_, dim2_, dim3_}, {dim1_} },
-                         { {ptrs},         {ptrs_i},       {ptrs_c}, {ptrs_3d} },         { {idx_c} } ),
-  dim1(dim1_),
-  dim2(dim2_),
-  dim3(dim3_),
-  m_total(dim1 * dim2),
-  m_totali(dim1 * dim3),
-  m_total3d(dim1 * dim2 * dim3)
-{}
-
-PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
-{
-  PhysicsTestDataGeneric::assignment_impl(rhs);
-
-  dim1       = rhs.dim1;
-  dim2       = rhs.dim2;
-  dim3       = rhs.dim3;
-  m_total    = rhs.m_total;
-  m_totali   = rhs.m_totali;
-  m_total3d  = rhs.m_total3d;
-
-  return *this;
 }
 
 } // namespace scream

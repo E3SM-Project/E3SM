@@ -74,59 +74,14 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
-#define PTD_DIM_RENAME1(ndim1)                                              Int ndim1() const { return dim1; }
-#define PTD_DIM_RENAME2(ndim1, ndim2)        PTD_DIM_RENAME1(ndim1);        Int ndim2() const { return dim2; }
-#define PTD_DIM_RENAME3(ndim1, ndim2, ndim3) PTD_DIM_RENAME2(ndim1, ndim2); Int ndim3() const { return dim3; }
-
-#define PTD_DIM_RENAME(num_args, ...)           \
-  PTD_DIM_RENAME##num_args(__VA_ARGS__)
-
-#define PTD_ADD_1_0 1
-#define PTD_ADD_1_1 2
-#define PTD_ADD_1_2 3
-#define PTD_ADD_1_3 4
-#define PTD_ADD_1_4 5
-#define PTD_ADD_1_5 6
-#define PTD_ADD_1_6 7
-#define PTD_ADD_1_7 8
-#define PTD_ADD_1_8 9
-#define PTD_ADD_1_9 10
-
-#define PTD_ADD_2_0 2
-#define PTD_ADD_2_1 3
-#define PTD_ADD_2_2 4
-#define PTD_ADD_2_3 5
-#define PTD_ADD_2_4 6
-#define PTD_ADD_2_5 7
-#define PTD_ADD_2_6 8
-#define PTD_ADD_2_7 9
-#define PTD_ADD_2_8 10
-#define PTD_ADD_2_9 11
-
-#define PTD_ADD_3_0 3
-#define PTD_ADD_3_1 4
-#define PTD_ADD_3_2 5
-#define PTD_ADD_3_3 6
-#define PTD_ADD_3_4 7
-#define PTD_ADD_3_5 8
-#define PTD_ADD_3_6 9
-#define PTD_ADD_3_7 10
-#define PTD_ADD_3_8 11
-#define PTD_ADD_3_9 12
-
-#define PTD_STD_DEF(name, dim, num_scalars, ...)        \
-  PTD_DATA_COPY_CTOR(name, PTD_ADD_##dim##_##num_scalars);  \
-  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
-
-// For PhysicsTestDataGeneric, the dimensions are also struct scalars
-#define PTDG_STD_DEF(name, num_scalars, ...) \
+#define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
   PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
 
 namespace scream {
 
 // Fully Generic Data struct for multi-dimensions reals and ints
-class PhysicsTestDataGeneric
+class PhysicsTestData
 {
   template <typename T>
   struct PTDImpl
@@ -277,7 +232,7 @@ class PhysicsTestDataGeneric
 
   // dims -> the dimensions of real data should come before dimensions of int data
   //         and the dims of int data should come before bool data
-  PhysicsTestDataGeneric(
+  PhysicsTestData(
     const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
     const std::vector<std::vector<Real**> >& reals, // vector of pointers to real* members
     const std::vector<std::vector<Int**> >& ints = {},  // vector of pointers to int* members
@@ -292,8 +247,8 @@ class PhysicsTestDataGeneric
   Int dim(const bool* member, const size_t& dim_idx) const { return m_bools.get_dim(get_index(member).first, dim_idx); }
 
   // Delete this to block subclasses getting the default impls, which would be incorrect
-  PhysicsTestDataGeneric(const PhysicsTestDataGeneric &rhs) = delete;
-  PhysicsTestDataGeneric &operator=(const PhysicsTestDataGeneric &rhs) = delete;
+  PhysicsTestData(const PhysicsTestData &rhs) = delete;
+  PhysicsTestData &operator=(const PhysicsTestData &rhs) = delete;
 
   // Initialize with random values. The default range is 0..1
   // To use non-default ranges, you'll need to provide a pair of pairs, mapping
@@ -320,7 +275,7 @@ class PhysicsTestDataGeneric
 
  protected:
 
-  PhysicsTestDataGeneric& assignment_impl(const PhysicsTestDataGeneric& rhs);
+  PhysicsTestData& assignment_impl(const PhysicsTestData& rhs);
 
  private:
 
@@ -331,44 +286,6 @@ class PhysicsTestDataGeneric
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int>  m_ints;  // manage int data with this member
   PTDImpl<char> m_bools; // manage bool data with this member, use chars internally to dodge vector<bool> specialization
-};
-
-// Base class for common test data setup
-struct PhysicsTestData : public PhysicsTestDataGeneric
-{
-  Int dim1, dim2, dim3;
-
-  PhysicsTestData(Int dim1_,
-                  const std::vector<Real**>& ptrs_c,     // [dim1]
-                  const std::vector<Int**>& idx_c = {}); // [dim1] (optional)
-
-  PhysicsTestData(Int dim1_, Int dim2_,
-                  const std::vector<Real**>& ptrs,        // [dim1 x dim2]
-                  const std::vector<Real**>& ptrs_c = {}, // [dim1] (optional)
-                  const std::vector<Int**>& idx_c = {});  // [dim1] (optional)
-
-  PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
-                  const std::vector<Real**>& ptrs,          // [dim1 x dim2]
-                  const std::vector<Real**>& ptrs_i,        // [dim1 x dim3]
-                  const std::vector<Real**>& ptrs_c = {},   // [dim1] (optional)
-                  const std::vector<Int**>& idx_c = {},     // [dim1] (optional)
-                  const std::vector<Real**>& ptrs_3d = {}); // [dim1 x dim2 x dim3] (optional)
-
-  Int total1x2() const { return m_total; }
-  Int total1x3() const { return m_totali; }
-  Int total3d()  const { return m_total3d; }
-
- protected:
-
-  PhysicsTestData& assignment_impl(const PhysicsTestData& rhs);
-
- private:
-  // Internals
-  Int m_total, m_totali, m_total3d;
-  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c, m_ptrs_3d;
-  std::vector<Int**> m_indices_c;
-  std::vector<Real> m_data;
-  std::vector<Int> m_idx_data;
 };
 
 }  // namespace scream
