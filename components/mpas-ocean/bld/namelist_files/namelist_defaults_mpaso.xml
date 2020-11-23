@@ -385,6 +385,7 @@
 <config_btr_si_preconditioner>'ras'</config_btr_si_preconditioner>
 <config_btr_si_tolerance>1.0e-9</config_btr_si_tolerance>
 <config_n_btr_si_outer_iter>2</config_n_btr_si_outer_iter>
+<config_btr_si_thread_match_mode>.false.</config_btr_si_thread_match_mode>
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>

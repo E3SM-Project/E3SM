@@ -347,6 +347,7 @@ add_default($nl, 'config_btr_solve_SSH2');
 add_default($nl, 'config_btr_si_preconditioner');
 add_default($nl, 'config_btr_si_tolerance');
 add_default($nl, 'config_n_btr_si_outer_iter');
+add_default($nl, 'config_btr_si_thread_match_mode');
 
 #####################################
 # Namelist group: ALE_vertical_grid #

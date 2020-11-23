@@ -1726,6 +1726,15 @@ Valid values: any positive integer, but typically 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_btr_si_thread_match_mode" type="logical"
+       category="semi_implicit_ts" group="semi_implicit_ts">
+If true, the semi-implicit method uses the Jacobi preconditioner
+with the bit-for-bit allreduce.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- ALE_vertical_grid -->
 
