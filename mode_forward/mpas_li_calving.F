@@ -1794,7 +1794,6 @@ module li_calving
          call mpas_allocate_scratch_field(alphaVar, .true.)
          alpha => alphaVar % array
 
-
          call calculate_strain_rates(meshPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
@@ -1973,17 +1972,6 @@ module li_calving
         endif
         ! always set the damage at the first floating cells to the Nye value
 
-        if (config_damage_rheology_coupling) then
-            do iCell = 1, nCells
-                if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
-                    stiffnessFactor(iCell) = 1.0_RKIND - damage(iCell)
-                    if (stiffnessFactor(iCell) < config_damage_stiffness_min) then
-                        stiffnessFactor(iCell) = config_damage_stiffness_min
-                    end if
-                end if
-            end do
-        end if
-
         if (.true.) then
 
              call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
@@ -2028,17 +2016,20 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine li_preserve_high_damage
+!    routine li_finalize_damage_after_advection
 !
 !> \author Tong Zhang
 !> \date   Oct. 2019
-!> \details preserve the damage to the original value before advection if it exceeds some large number
+!> \details This routine finalizes the damage calculation after advection by several ways: 1) set the damage at grounding line using
+!>          an extrapolation method or an Nye method.
+!>          2) preserve the damage to the original value before advection if it exceeds some large number
 !>          (config_damage_preserve_threshold). For example, if config_damage_preserve_threshold = 0.5, 
 !>          then the localtions with damage > 0.5 on the ice shelf will not heal.
 !>          Thus, if we turn on this function, we do not allow the damage to heal if damage > config_damage_preserve_threshold.
+!>           3) coupling rheology to damage if the option config_damage_rheology_coupling is set to True in namelist
 !-----------------------------------------------------------------------
 
-   subroutine li_preserve_high_damage(domain, err)
+   subroutine li_finalize_damage_after_advection(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -2065,6 +2056,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
       real(kind=RKIND), pointer :: config_damage_stiffness_min
       logical, pointer :: config_damage_rheology_coupling
+      logical, pointer :: config_preserve_damage
       logical, pointer :: config_print_calving_info
       character, pointer :: config_damage_gl_setting
       real (kind=RKIND), dimension(:), pointer :: damage
@@ -2086,6 +2078,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_damage_stiffness_min', config_damage_stiffness_min)
       call mpas_pool_get_config(liConfigs, 'config_damage_rheology_coupling', config_damage_rheology_coupling)
       call mpas_pool_get_config(liConfigs, 'config_damage_gl_setting', config_damage_gl_setting)
+      call mpas_pool_get_config(liConfigs, 'config_preserve_damage', config_preserve_damage)
 
       ! block loop
       block => domain % blocklist
@@ -2108,12 +2101,13 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'damage_nye', damage_nye)
          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
-
-         do iCell = 1, nCells
-            if (damage(iCell) < damageMax(iCell)) then
-                damage(iCell) = damageMax(iCell)
-            end if
-         end do
+         if (config_preserve_damage) then
+             do iCell = 1, nCells
+                if (damage(iCell) < damageMax(iCell)) then
+                    damage(iCell) = damageMax(iCell)
+                end if
+             end do
+         endif
          ! put the damageMax value back to preserve the damage value (no heal)
 
          where (damage < 0.0_RKIND)
@@ -2161,6 +2155,7 @@ module li_calving
 
                 end if
             end do
+            !set the damage at GL to the mean damage value for its neighboring floating cells
 
         elseif (trim(config_damage_gl_setting) == 'nye') then
              do iCell = 1, nCells
@@ -2192,7 +2187,7 @@ module li_calving
              
       enddo
 
-   end subroutine li_preserve_high_damage
+   end subroutine li_finalize_damage_after_advection
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
