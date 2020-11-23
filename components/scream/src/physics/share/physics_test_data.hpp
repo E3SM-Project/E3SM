@@ -161,7 +161,7 @@ class PhysicsTestDataGeneric
       init_ptrs();
     }
 
-    std::pair<size_t, size_t> get_index(T* member) const
+    std::pair<size_t, size_t> get_index(const T* member) const
     {
       for (size_t i = 0; i < m_members_list.size(); ++i) {
         for (size_t j = 0; j < m_members_list[i].size(); ++j) {
@@ -170,10 +170,17 @@ class PhysicsTestDataGeneric
           }
         }
       }
-      return std::make_pair(-1, -1);
+      return std::make_pair(std::string::npos, std::string::npos);
     }
 
-    Int total(const size_t& index) const
+    Int get_dim(const size_t& dims_index, const size_t& dim_index) const
+    {
+      EKAT_ASSERT(dims_index < m_dims_list.size());
+      EKAT_ASSERT(dim_index  < m_dims_list[dims_index].size());
+      return m_dims_list[dims_index][dim_index];
+    }
+
+    Int get_total(const size_t& index) const
     {
       EKAT_ASSERT(index < m_totals.size());
       return m_totals[index];
@@ -182,7 +189,7 @@ class PhysicsTestDataGeneric
     template <typename Gen, typename Dist>
     void randomize(Gen& generator, Dist& dist)
     {
-      for (auto& item : m_data) {
+      for (auto&& item : m_data) {
         item = static_cast<T>(dist(generator));
       }
     }
@@ -190,7 +197,7 @@ class PhysicsTestDataGeneric
     template <typename Gen, typename Dist>
     void randomize(Gen& generator, Dist& dist, const std::pair<size_t, size_t>& index)
     {
-      const Int total = total(index.first);
+      const Int total = get_total(index.first);
       T* member = *(m_members_list[index.first][index.second]);
       for (Int i = 0; i < total; ++i) {
         member[i] = static_cast<T>(dist(generator));
@@ -204,7 +211,7 @@ class PhysicsTestDataGeneric
         const Int total     = m_totals[i];
         const auto& members = m_members_list[i];
 
-        for (auto& member : members) {
+        for (auto member : members) {
           *member = m_data.data() + offset;
           offset += total;
         }
@@ -213,10 +220,10 @@ class PhysicsTestDataGeneric
 
     void assignment_impl(const PTDImpl<T>& rhs)
     {
-      EKAT_REQUIRE_MSG(m_members.size() == rhs.m_members.size(),
+      EKAT_REQUIRE_MSG(m_members_list.size() == rhs.m_members_list.size(),
                        "Assignment between incompatible PhysicsTestData");
 
-      m_dims_list = rhs.m_dim_list;
+      m_dims_list = rhs.m_dims_list;
       m_data      = rhs.m_data;
       m_totals    = rhs.m_totals;
 
@@ -260,11 +267,10 @@ class PhysicsTestDataGeneric
       m_data = new_data;
     }
 
-  private:
-    std::vector<std::vector<Int> m_dims_list;    // list of dims, one per unique set of dims
-    std::vector<std::vector<T**> m_members_list; // list of member pointers, same outer index space as m_dims_list
-    std::vector<T>               m_data;         // the member data in a flat vector
-    std::vector<Int>             m_totals;       // total sizes of each set of data, same index space as m_dims_list
+    std::vector<std::vector<Int> > m_dims_list;    // list of dims, one per unique set of dims
+    std::vector<std::vector<T**> > m_members_list; // list of member pointers, same outer index space as m_dims_list
+    std::vector<T>                 m_data;         // the member data in a flat vector
+    std::vector<Int>               m_totals;       // total sizes of each set of data, same index space as m_dims_list
   };
 
  public:
@@ -273,13 +279,17 @@ class PhysicsTestDataGeneric
   //         and the dims of int data should come before bool data
   PhysicsTestDataGeneric(
     const std::vector<std::vector<Int> >& dims, // vector of dimensions, each set of dimensions is a vector of Int
-    const std::vector<std::vector<Real**> > reals, // vector of pointers to real* members
-    const std::vector<std::vector<Int**> > ints = {},  // vector of pointers to int* members
-    const std::vector<std::vector<bool**> > bools = {}); // vector of pointers to bool* members
+    const std::vector<std::vector<Real**> >& reals, // vector of pointers to real* members
+    const std::vector<std::vector<Int**> >& ints = {},  // vector of pointers to int* members
+    const std::vector<std::vector<bool**> >& bools = {}); // vector of pointers to bool* members
 
-  Int total(const Real* member) const { return m_reals.total(get_index(member).first); }
-  Int total(const Int* member) const  { return m_ints.total(get_index(member).first); }
-  Int total(const bool* member) const { return m_bools.total(get_index(member).first); }
+  Int total(const Real* member) const { return m_reals.get_total(get_index(member).first); }
+  Int total(const Int* member) const  { return m_ints.get_total(get_index(member).first); }
+  Int total(const bool* member) const { return m_bools.get_total(get_index(member).first); }
+
+  Int dim(const Real* member, const size_t& dim_idx) const { return m_reals.get_dim(get_index(member).first, dim_idx); }
+  Int dim(const Int * member, const size_t& dim_idx) const { return m_ints.get_dim(get_index(member).first, dim_idx); }
+  Int dim(const bool* member, const size_t& dim_idx) const { return m_bools.get_dim(get_index(member).first, dim_idx); }
 
   // Delete this to block subclasses getting the default impls, which would be incorrect
   PhysicsTestDataGeneric(const PhysicsTestDataGeneric &rhs) = delete;
@@ -315,12 +325,12 @@ class PhysicsTestDataGeneric
  private:
 
   std::pair<size_t, size_t> get_index(const Real* member) const { return m_reals.get_index(member); }
-  std::pair<size_t, size_t> get_index(const Int* member)  const { return m_reals.get_index(member); }
-  std::pair<size_t, size_t> get_index(const bool* member) const { return m_reals.get_index(member); }
+  std::pair<size_t, size_t> get_index(const Int* member)  const { return m_ints.get_index(member); }
+  std::pair<size_t, size_t> get_index(const bool* member) const { return m_bools.get_index(reinterpret_cast<const char*>(member)); }
 
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int>  m_ints;  // manage int data with this member
-  PTDImpl<bool> m_bools; // manage bool data with this member
+  PTDImpl<char> m_bools; // manage bool data with this member, use chars internally to dodge vector<bool> specialization
 };
 
 // Base class for common test data setup

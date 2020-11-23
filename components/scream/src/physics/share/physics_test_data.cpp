@@ -11,29 +11,13 @@ namespace scream {
 
 PhysicsTestDataGeneric::PhysicsTestDataGeneric(
   const std::vector<std::vector<Int> >& dims,
-  const std::vector<std::vector<Real**> > reals,
-  const std::vector<std::vector<Int**> > ints,
-  const std::vector<std::vector<bool**> > bools) :
+  const std::vector<std::vector<Real**> >& reals,
+  const std::vector<std::vector<Int**> >& ints,
+  const std::vector<std::vector<bool**> >& bools) :
   m_reals(dims.begin(), dims.begin() + reals.size(), reals),
   m_ints(dims.begin() + reals.size(), dims.begin() + reals.size() + ints.size(), ints),
-  m_bools(dims.begin() + reals.size() + ints.size(), dims.end(), bools),
-{}
-
-std::pair<size_t, size_t> PhysicsTestDataGeneric::get_index(void* member) const
+  m_bools(dims.begin() + reals.size() + ints.size(), dims.end(), reinterpret_cast<const std::vector<std::vector<char**> >&>(bools))
 {
-  std::pair<size_t, size_t> search = m_reals.get_index(reinterpret_cast<Real*>(member));
-  if (search.first != -1) {
-    return search;
-  }
-  search = m_ints.get_index(reinterpret_cast<Int*>(member));
-  if (search.first != -1) {
-    return search;
-  }
-  search = m_bools.get_index(reinterpret_cast<bool*>(member));
-  if (search.first != -1) {
-    return search;
-  }
-  EKAT_REQUIRE_MSG(false, "No match for member");
 }
 
 PhysicsTestDataGeneric& PhysicsTestDataGeneric::assignment_impl(const PhysicsTestDataGeneric& rhs)
@@ -48,11 +32,14 @@ PhysicsTestDataGeneric& PhysicsTestDataGeneric::assignment_impl(const PhysicsTes
 void PhysicsTestDataGeneric::randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges)
 {
   std::default_random_engine generator;
+  std::uniform_real_distribution<Real> default_real_dist(0.0, 1.0);
+  std::uniform_int_distribution<Int> default_int_dist(0, 1);
+  std::uniform_int_distribution<Int> default_bool_dist(0, 1);
 
   // generate with default vals
-  m_reals.randomize(generator, std::uniform_real_distribution<Real>(0.0, 1.0));
-  m_ints.randomize(generator, std::uniform_int_distribution<Int>(0, 1));
-  m_bools.randomize(generator, std::uniform_int_distribution<Int>(0, 1));
+  m_reals.randomize(generator, default_real_dist);
+  m_ints.randomize(generator, default_int_dist);
+  m_bools.randomize(generator, default_bool_dist);
 
   // override defauls if user requested something specific
   for (const auto& p : ranges) {
@@ -62,12 +49,13 @@ void PhysicsTestDataGeneric::randomize(const std::vector<std::pair<void*, std::p
     void* member = p.first;
 
     const auto real_search = get_index(reinterpret_cast<Real*>(member));
-    if (real_search.first != -1) {
-      m_reals.randomize(generator, std::uniform_real_distribution(range.first, range.second), real_search);
+    if (real_search.first != std::string::npos) {
+      std::uniform_real_distribution<Real> real_dist(range.first, range.second);
+      m_reals.randomize(generator, real_dist, real_search);
     }
     else {
       const auto int_search = get_index(reinterpret_cast<Int*>(member));
-      if (int_search.first != -1) {
+      if (int_search.first != std::string::npos) {
         EKAT_REQUIRE_MSG(std::ceil(bottom_range) == bottom_range, "Use of non-round float for integer random range:" << bottom_range);
         EKAT_REQUIRE_MSG(std::ceil(top_range) == top_range, "Use of non-round float for integer random range:" << top_range);
         std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
@@ -76,7 +64,7 @@ void PhysicsTestDataGeneric::randomize(const std::vector<std::pair<void*, std::p
       }
       else {
         const auto bool_search = get_index(reinterpret_cast<bool*>(member));
-        EKAT_REQUIRE_MSG(bool_search.first != -1, "Failed to find member for randomization");
+        EKAT_REQUIRE_MSG(bool_search.first != std::string::npos, "Failed to find member for randomization");
         EKAT_REQUIRE_MSG(bottom_range == 0.0, "Use of non-zero for bottom of bool random range:" << bottom_range);
         EKAT_REQUIRE_MSG(top_range == 0.0, "Use of non-1 for top of bool random range:" << top_range);
         std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
