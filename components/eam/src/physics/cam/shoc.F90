@@ -2909,6 +2909,10 @@ end subroutine shoc_tke
 
 subroutine integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: integ_column_stability_f
+#endif
+
   implicit none
   !intent-ins
   integer,     intent(in) :: nlev, shcol
@@ -2925,6 +2929,13 @@ subroutine integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
 
   !local variables
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call integ_column_stability_f(nlev, shcol, dz_zt, pres, brunt, brunt_int)
+     return
+  endif
+#endif
 
   brunt_int(1:shcol) = 0._rtype
   do k = 1, nlev

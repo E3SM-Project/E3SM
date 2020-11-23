@@ -2311,6 +2311,12 @@ void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi,
   ekat::device_to_host<int, 1>({tmpi}, {shcol}, {nlevi}, out_views, true);
 }
 
+void integ_column_stability_f(Int nlev, Int shcol, Real *dz_zt,
+                              Real *pres, Real* brunt, Real *brunt_int)
+{
+}
+
+
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt)
 {
   using SHF = Functions<Real, DefaultDevice>;
