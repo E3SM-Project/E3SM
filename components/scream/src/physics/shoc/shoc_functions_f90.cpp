@@ -2358,7 +2358,7 @@ void integ_column_stability_f(Int nlev, Int shcol, Real *dz_zt,
       //declare output as a scalar
       Scalar brunt_int_s{0};
 
-      //SHF::integ_column_stability(team, nlev, dz_zt_s, pres_s, brunt_s, brunt_int_s);
+      SHF::integ_column_stability(team, nlev, dz_zt_s, pres_s, brunt_s, brunt_int_s);
 
       brunt_int_d(i)[0] = brunt_int_s;
 

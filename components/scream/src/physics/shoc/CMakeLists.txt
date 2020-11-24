@@ -57,6 +57,7 @@ if (NOT CUDA_BUILD)
     shoc_diag_third_shoc_moments.cpp
     shoc_assumed_pdf.cpp
     shoc_compute_tmpi.cpp
+    shoc_integ_column_stability.cpp
     shoc_dp_inverse.cpp
     shoc_shoc_main.cpp
   ) # SHOC ETI SRCS
