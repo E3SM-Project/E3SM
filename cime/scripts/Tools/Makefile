@@ -85,8 +85,9 @@ endif
 USE_GCAM := TRUE
 # These are needed for GCAM - need to have a USE_GCAM kind of tag here.
 ifeq ($(strip $(USE_GCAM)), TRUE)
-  # Hardcoded to my local directory on anvil.  Obviously not correct
-  XDIR := /blues/gpfs/home/ac.shippert/local/lib
+  # Hardcoded to my local directory on compy.  Obviously not correct
+  # XDIR := /blues/gpfs/home/ac.shippert/local/lib - anvil
+  XDIR := /qfs/people/crai556/xerces_intel_19.0.3/lib
 
   # Static link options
   #GLIBS := $(XDIR)/libxerces-c.a 
@@ -529,7 +530,9 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS+=$(CFLAGS)
+
+# Instead of appending CFLAGS, prepend it, so that the C++ standards overwrite 
+CXXFLAGS := $(CFLAGS) $(CXXFLAGS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
