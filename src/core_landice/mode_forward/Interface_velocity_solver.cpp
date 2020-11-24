@@ -1178,7 +1178,12 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
     int fCell = vertexToFCell[iV];
     bool isDynamicIceVertex = cellsMask_F[fCell] & dynamic_ice_bit_value;
 
-    if (isVertexBoundary[iV] && !isDynamicIceVertex) {
+    // Loop over boundary vertices to correctly extend relevant fields
+    // Note, isDynamicIceVertex is typically true in the interior of the FE mesh and false at the boundary
+    // However, isDynamicIceVertex can be false at interior points. This happens if there is narrow (one MPAS cell width) tongue
+    // without ice surrounded by ice. After the extension the tongue will be part of the FE mesh,
+    // and we need to properly extend the fields there as well.
+    if (!isDynamicIceVertex) {
       if(bedTopographyData[iV]<0) {
         // -- marine margin --
         // Identify the lowest elevation neighboring cell with ice
