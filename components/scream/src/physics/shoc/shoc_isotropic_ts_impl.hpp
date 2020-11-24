@@ -18,7 +18,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   shcol,
-  const uview_1d<const Spack>& brunt_int,
+  const Scalar&                brunt_int,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& a_diss,
   const uview_1d<const Spack>& brunt,
