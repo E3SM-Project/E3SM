@@ -287,6 +287,27 @@ UT_ARG_DATA2 = [
     ("ball2", "integer", "out", ("shcol",)),
 ]
 
+UT_ARG_DATA_ALL_SCALAR = [
+    ("foo1", "real", "in", None),
+    ("foo2", "real", "in", None),
+    ("bar1", "real", "inout", None),
+    ("bar2", "real", "inout", None),
+    ("baz1", "real", "out", None),
+    ("baz2", "real", "out", None),
+    ("gag1", "integer", "in", None),
+    ("gag2", "integer", "in", None),
+    ("gal1", "integer", "inout", None),
+    ("gal2", "integer", "inout", None),
+    ("bal1", "integer", "out", None),
+    ("bal2", "integer", "out", None),
+    ("bit1", "logical", "in", None),
+    ("bit2", "logical", "in", None),
+    ("gut1", "logical", "inout", None),
+    ("gut2", "logical", "inout", None),
+    ("gat1", "logical", "out", None),
+    ("gat2", "logical", "out", None),
+]
+
 #
 # Free functions
 #
@@ -940,6 +961,50 @@ def needs_transpose(arg_data):
     return False
 
 ###############################################################################
+def split_by_intent(arg_data):
+###############################################################################
+    """
+    Take arg data and split into three lists of names based on intent: [inputs], [intouts], [outputs]
+
+    >>> split_by_intent(UT_ARG_DATA)
+    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'gag', 'bag', 'val', 'shcol', 'nlev', 'nlevi'], ['baz'], ['bab1', 'bab2', 'ball1', 'ball2'])
+    """
+    inputs, inouts, outputs = [], [], []
+    for name, _, intent, _ in arg_data:
+        if intent == "in":
+            inputs.append(name)
+        elif intent == "inout":
+            inouts.append(name)
+        elif intent == "out":
+            outputs.append(name)
+        else:
+            expect(False, "Unhandled intent: {}".format(intent))
+
+    return inputs, inouts, outputs
+
+###############################################################################
+def split_by_type(arg_data):
+###############################################################################
+    """
+    Take arg data and split into three lists of names based on type: [reals], [ints], [logicals]
+
+    >>> split_by_type(UT_ARG_DATA)
+    (['foo1', 'foo2', 'bar1', 'bar2', 'bak1', 'bak2', 'gag', 'baz'], ['bag', 'bab1', 'bab2', 'shcol', 'nlev', 'nlevi', 'ball1', 'ball2'], ['val'])
+    """
+    reals, ints, logicals = [], [], []
+    for name, argtype, _, _ in arg_data:
+        if argtype == "real":
+            reals.append(name)
+        elif argtype == "integer":
+            ints.append(name)
+        elif argtype == "logical":
+            logicals.append(name)
+        else:
+            expect(False, "Unhandled argtype: {}".format(argtype))
+
+    return reals, ints, logicals
+
+###############################################################################
 def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
     """
@@ -1054,6 +1119,14 @@ def group_data(arg_data, filter_out_intent=None):
     [('gag', 'Real'), ('bab1', 'Int'), ('bab2', 'Int'), ('val', 'bool')]
     OrderedDict([(('shcol',), ['foo1', 'foo2', 'baz']), (('shcol', 'nlev'), ['bar1', 'bar2']), (('shcol', 'nlevi'), ['bak1', 'bak2']), (('shcol', 'nlev', 'ntracers'), ['tracerd1', 'tracerd2'])])
     OrderedDict([(('shcol',), ['bag', 'ball1', 'ball2'])])
+    >>> print("\n".join([str(item) for item in group_data(UT_ARG_DATA_ALL_SCALAR)]))
+    []
+    []
+    []
+    []
+    [('foo1', 'Real'), ('foo2', 'Real'), ('bar1', 'Real'), ('bar2', 'Real'), ('baz1', 'Real'), ('baz2', 'Real'), ('gag1', 'Int'), ('gag2', 'Int'), ('gal1', 'Int'), ('gal2', 'Int'), ('bal1', 'Int'), ('bal2', 'Int'), ('bit1', 'bool'), ('bit2', 'bool'), ('gut1', 'bool'), ('gut2', 'bool'), ('gat1', 'bool'), ('gat2', 'bool')]
+    OrderedDict()
+    OrderedDict()
     """
     scalars  = []
 
@@ -1590,16 +1663,181 @@ class GenBoiler(object):
           // TODO
         }
         <BLANKLINE>
+        >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
+        void fake_sub_f(Real foo1, Real foo2, Real* bar1, Real* bar2, Real* baz1, Real* baz2, Int gag1, Int gag2, Int* gal1, Int* gal2, Int* bal1, Int* bal2, bool bit1, bool bit2, bool* gut1, bool* gut2, bool* gat1, bool* gat2)
+        {
+        #if 0
+          using PF = Functions<Real, DefaultDevice>;
+        <BLANKLINE>
+          using Spack   = typename PF::Spack;
+          using view_1d = typename PF::view_1d<Real>;
+          using iview_1d = typename PF::view_1d<Int>;
+          using bview_1d = typename PF::view_1d<bool>;
+        <BLANKLINE>
+          view_1d t_d("t_d", 4);
+          const auto t_h = Kokkos::create_mirror_view(t_d);
+        <BLANKLINE>
+          iview_1d it_d("it_d", 4);
+          const auto it_h = Kokkos::create_mirror_view(it_d);
+        <BLANKLINE>
+          bview_1d bt_d("bt_d", 4);
+          const auto bt_h = Kokkos::create_mirror_view(bt_d);
+        <BLANKLINE>
+          Real local_bar1(*bar1), local_bar2(*bar2);
+          Int local_gal1(*gal1), local_gal2(*gal2);
+          bool local_gut1(*gut1), local_gut2(*gut2);
+          Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+            Spack bar1_(local_bar1), bar2_(local_bar2), foo1_(foo1), foo2_(foo2), baz1_(), baz2_();
+            Int bal1_(), bal2_(), gal1_(local_gal1), gal2_(local_gal2);
+            bool gat1_(), gat2_(), gut1_(local_gut1), gut2_(local_gut2);
+            PF::fake_sub(foo1_, foo2_, bar1_, bar2_, baz1_, baz2_, gag1, gag2, gal1_, gal2_, bal1_, bal2_, bit1, bit2, gut1_, gut2_, gat1_, gat2_);
+            t_d(0) = bar1_[0];
+            t_d(1) = bar2_[0];
+            t_d(2) = baz1_[0];
+            t_d(3) = baz2_[0];
+            it_d(0) = bal1_;
+            it_d(1) = bal2_;
+            it_d(2) = gal1_;
+            it_d(3) = gal2_;
+            bt_d(0) = gat1_;
+            bt_d(1) = gat2_;
+            bt_d(2) = gut1_;
+            bt_d(3) = gut2_;
+          });
+          Kokkos::deep_copy(t_h, t_d);
+          Kokkos::deep_copy(it_h, it_d);
+          Kokkos::deep_copy(bt_h, bt_d);
+          *bar1 = t_h(0);
+          *bar2 = t_h(1);
+          *baz1 = t_h(2);
+          *baz2 = t_h(3);
+          *bal1 = it_h(0);
+          *bal2 = it_h(1);
+          *gal1 = it_h(2);
+          *gal2 = it_h(3);
+          *gat1 = bt_h(0);
+          *gat2 = bt_h(1);
+          *gut1 = bt_h(2);
+          *gut2 = bt_h(3);
+        #endif
+        <BLANKLINE>
+        }
+        <BLANKLINE>
         """
-        decl = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
+        arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
+        arg_names = [item[ARG_NAME] for item in arg_data]
+        decl      = self.gen_cxx_f2c_bind_decl(phys, sub, force_arg_data=force_arg_data).rstrip(";")
 
-        # TODO - is it possible to fill-out some or all of the implementation?
+        impl = ""
+        if has_arrays(arg_data):
+            # TODO
+            impl += "  // TODO"
+        else:
+            inputs, inouts, outputs = split_by_intent(arg_data)
+            reals, ints, logicals   = split_by_type(arg_data)
+            all_inputs = inputs + inouts
+            all_outputs = inouts + outputs
+
+            oreals = list(sorted(set(all_outputs) & set(reals)))
+            oints  = list(sorted(set(all_outputs) & set(ints)))
+            obools = list(sorted(set(all_outputs) & set(logicals)))
+
+            ireals = list(sorted(set(all_inputs) & set(reals)))
+
+            ioreals = list(sorted(set(inouts) & set(reals)))
+            ioints  = list(sorted(set(inouts) & set(ints)))
+            iobools = list(sorted(set(inouts) & set(logicals)))
+
+            ooreals = list(sorted(set(outputs) & set(reals)))
+
+            # set up basics
+            impl += "#if 0\n" # There's no way to guarantee this code compiles
+            impl += "  using PF = Functions<Real, DefaultDevice>;\n"
+            impl += "\n"
+            impl += "  using Spack   = typename PF::Spack;\n"
+
+            prefix_list  = ["", "i", "b"]
+            type_list    = ["Real", "Int", "bool"]
+            ktype_list   = ["Spack", "Int", "bool"]
+
+            # make necessary view types
+            for output_group, prefix_char, typename in zip([oreals, oints, obools], prefix_list, type_list):
+                if output_group:
+                    impl += "  using {}view_1d = typename PF::view_1d<{}>;\n".format(prefix_char, typename)
+
+            impl += "\n"
+
+            # make output views for host and device
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                if output_group:
+                    impl += '  {0}view_1d {0}t_d("{0}t_d", {1});\n'.format(prefix_char, len(output_group))
+                    impl += "  const auto {0}t_h = Kokkos::create_mirror_view({0}t_d);\n".format(prefix_char)
+                    impl += "\n"
+
+            # inout data must be derefenced before the kernel
+            for io_group, typename in zip([ioreals, ioints, iobools], type_list):
+                if io_group:
+                    impl += "  {} {};\n".format(typename, ", ".join(["local_{0}(*{0})".format(item) for item in io_group]))
+
+            # start a kernel
+            impl += "  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {\n"
+
+            # Declare output temporaries for non-reals. We need temporaries for all reals, including
+            # inputs to convert them to Spacks. This code will need to be manually corrected for reals that should
+            # not be packed (like dt)
+            for output_group, typename in zip([list(ireals) + list(ooreals), oints, obools], ktype_list):
+                if output_group:
+                    impl += "    {} ".format(typename)
+                    temp_cons = []
+                    for item in output_group:
+                        if item in inouts:
+                            temp_cons.append("{0}_(local_{0})".format(item))
+                        elif item in outputs:
+                            temp_cons.append("{0}_()".format(item))
+                        else:
+                            temp_cons.append("{0}_({0})".format(item))
+
+                    impl += "{};\n".format(", ".join(temp_cons))
+
+            # Make cxx call
+            kernel_arg_names = []
+            for arg_name in arg_names:
+                if arg_name in inputs and arg_name not in reals:
+                    kernel_arg_names.append(arg_name)
+                else:
+                    kernel_arg_names.append(arg_name + "_")
+
+            impl += "    PF::{}({});\n".format(sub, ", ".join(kernel_arg_names))
+
+            # Load output data into views
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                for idx, item in enumerate(output_group):
+                    if output_group == oreals:
+                        impl += "    {}t_d({}) = {}_[0];\n".format(prefix_char, idx, item)
+                    else:
+                        impl += "    {}t_d({}) = {}_;\n".format(prefix_char, idx, item)
+
+            # finish kernel
+            impl += "  });\n"
+
+            # copy outputs back to host
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                if output_group:
+                    impl += "  Kokkos::deep_copy({0}t_h, {0}t_d);\n".format(prefix_char)
+
+            # copy from views into pointer args
+            for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
+                for idx, item in enumerate(output_group):
+                    impl += "  *{} = {}t_h({});\n".format(item, prefix_char, idx)
+
+            impl += "#endif\n"
+
         result = \
 """{decl}
 {{
-  // TODO
+{impl}
 }}
-""".format(decl=decl)
+""".format(decl=decl, impl=impl)
         return result
 
     ###########################################################################
@@ -1678,6 +1916,7 @@ class GenBoiler(object):
             static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
+            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
             for (auto& d : f90_data) {
               d.randomize();
             }
@@ -1720,6 +1959,83 @@ class GenBoiler(object):
         <BLANKLINE>
             }
           } // run_bfb
+        >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
+          static void run_bfb()
+          {
+            FakeSubData f90_data[max_pack_size] = {
+              // TODO
+            };
+        <BLANKLINE>
+            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
+        <BLANKLINE>
+            // Generate random input data
+            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+            for (auto& d : f90_data) {
+              d.randomize();
+            }
+        <BLANKLINE>
+            // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+            // inout data is in original state
+            view_1d<FakeSubData> cxx_device("cxx_device", max_pack_size);
+            const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+            std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+            Kokkos::deep_copy(cxx_device, cxx_host);
+        <BLANKLINE>
+            // Get data from fortran
+            for (auto& d : f90_data) {
+              fake_sub(d);
+            }
+        <BLANKLINE>
+            // Get data from cxx. Run fake_sub from a kernel and copy results back to host
+            Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+              const Int offset = i * Spack::n;
+        <BLANKLINE>
+              // Init pack inputs
+              Spack bar1, bar2, foo1, foo2;
+              for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+                bar1[s] = cxx_device(vs).bar1;
+                bar2[s] = cxx_device(vs).bar2;
+                foo1[s] = cxx_device(vs).foo1;
+                foo2[s] = cxx_device(vs).foo2;
+              }
+        <BLANKLINE>
+              // Init outputs
+              Spack baz1(0), baz2(0);
+        <BLANKLINE>
+        <BLANKLINE>
+              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
+        <BLANKLINE>
+              // Copy spacks back into cxx_device view
+              for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+                cxx_device(vs).bar1 = bar1[s];
+                cxx_device(vs).bar2 = bar2[s];
+                cxx_device(vs).baz1 = baz1[s];
+                cxx_device(vs).baz2 = baz2[s];
+              }
+        <BLANKLINE>
+            });
+        <BLANKLINE>
+            Kokkos::deep_copy(cxx_host, cxx_device);
+        <BLANKLINE>
+            // Verify BFB results
+            for (Int i = 0; i < num_runs; ++i) {
+              FakeSubData& d_f90 = f90_data[i];
+              FakeSubData& d_cxx = cxx_host[i];
+              REQUIRE(d_f90.bar1 == d_cxx.bar1);
+              REQUIRE(d_f90.bar2 == d_cxx.bar2);
+              REQUIRE(d_f90.baz1 == d_cxx.baz1);
+              REQUIRE(d_f90.baz2 == d_cxx.baz2);
+              REQUIRE(d_f90.gal1 == d_cxx.gal1);
+              REQUIRE(d_f90.gal2 == d_cxx.gal2);
+              REQUIRE(d_f90.bal1 == d_cxx.bal1);
+              REQUIRE(d_f90.bal2 == d_cxx.bal2);
+              REQUIRE(d_f90.gut1 == d_cxx.gut1);
+              REQUIRE(d_f90.gut2 == d_cxx.gut2);
+              REQUIRE(d_f90.gat1 == d_cxx.gat1);
+              REQUIRE(d_f90.gat2 == d_cxx.gat2);
+        <BLANKLINE>
+            }
+          } // run_bfb
         """
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         data_struct = get_data_struct_name(sub)
@@ -1727,42 +2043,45 @@ class GenBoiler(object):
         need_transpose = needs_transpose(arg_data)
         arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
 
-        gen_random = "" if not has_array else \
+        gen_random = \
 """
 
     // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
       d.randomize();
     }"""
-
-        c2f_transpose_code = "" if not need_transpose else \
-"""
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
-        f2c_transpose_code = "" if not need_transpose else \
-"""
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
 
         _, _, _, _, scalars, real_data, int_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
             check_scalars += "      REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
 
-        all_data = OrderedDict(real_data)
-        for k, v in int_data.items():
-            if k in all_data:
-                all_data[k].extend(v)
-            else:
-                all_data[k] = v
+        if has_array:
+            c2f_transpose_code = "" if not need_transpose else \
+"""
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout"""
+            f2c_transpose_code = "" if not need_transpose else \
+"""
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout"""
 
-        for _, data in all_data.items():
-            check_arrays += "      for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
-            for datum in data:
-                check_arrays += "        REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
-                check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
+            all_data = OrderedDict(real_data)
+            for k, v in int_data.items():
+                if k in all_data:
+                    all_data[k].extend(v)
+                else:
+                    all_data[k] = v
 
-            check_arrays += "      }\n"
+            for _, data in all_data.items():
+                check_arrays += "      for (Int k = 0; k < d_f90.total(d_f90.{}); ++k) {{\n".format(data[0])
+                for datum in data:
+                    check_arrays += "        REQUIRE(d_f90.total(d_f90.{orig}) == d_cxx.total(d_cxx.{name}));\n".format(orig=data[0], name=datum)
+                    check_arrays += "        REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
 
-        result = \
+                check_arrays += "      }\n"
+
+        if has_array:
+            result = \
 """  static void run_bfb()
   {{
     {data_struct} f90_data[] = {{
@@ -1804,6 +2123,94 @@ class GenBoiler(object):
                           arg_data_args=arg_data_args,
                           check_scalars=check_scalars,
                           check_arrays=check_arrays)
+        else:
+            inputs, inouts, outputs = split_by_intent(arg_data)
+            reals                   = split_by_type(arg_data)[0]
+            all_inputs              = inputs + inouts
+            all_outputs             = inouts + outputs
+
+            ireals  = list(sorted(set(all_inputs) & set(reals)))
+            oreals  = list(sorted(set(all_outputs) & set(reals)))
+            ooreals = list(sorted(set(outputs) & set(reals)))
+
+            spack_init = ""
+            if ireals:
+                spack_init = \
+"""// Init pack inputs
+      Spack {ireals};
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
+        {ireal_assigns}
+      }}
+""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = cxx_device(vs).{0};".format(ireal) for ireal in ireals]))
+
+            spack_output_init = ""
+            if ooreals:
+                spack_output_init = \
+"""// Init outputs
+      Spack {};
+""".format(", ".join(["{}(0)".format(ooreal) for ooreal in ooreals]))
+
+            scalars = group_data(arg_data)[4]
+            func_call = "Functions::{}({});".format(sub, ", ".join([(scalar if scalar in reals else "cxx_device(0).{}".format(scalar)) for scalar, _ in scalars]))
+
+            spack_output_to_dview = ""
+            if oreals:
+                spack_output_to_dview = \
+"""// Copy spacks back into cxx_device view
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
+        {}
+      }}
+""".format("\n        ".join(["cxx_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
+
+            result = \
+"""  static void run_bfb()
+  {{
+    {data_struct} f90_data[max_pack_size] = {{
+      // TODO
+    }};
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // inout data is in original state
+    view_1d<{data_struct}> cxx_device("cxx_device", max_pack_size);
+    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    Kokkos::deep_copy(cxx_device, cxx_host);
+
+    // Get data from fortran
+    for (auto& d : f90_data) {{
+      {sub}(d);
+    }}
+
+    // Get data from cxx. Run {sub} from a kernel and copy results back to host
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {{
+      const Int offset = i * Spack::n;
+
+      {spack_init}
+      {spack_output_init}
+
+      {func_call}
+
+      {spack_output_to_dview}
+    }});
+
+    Kokkos::deep_copy(cxx_host, cxx_device);
+
+    // Verify BFB results
+    for (Int i = 0; i < num_runs; ++i) {{
+      {data_struct}& d_f90 = f90_data[i];
+      {data_struct}& d_cxx = cxx_host[i];
+{check_scalars}
+    }}
+  }} // run_bfb""".format(data_struct=data_struct,
+                          sub=sub,
+                          gen_random=gen_random,
+                          check_scalars=check_scalars,
+                          spack_init=spack_init,
+                          spack_output_init=spack_output_init,
+                          func_call=func_call,
+                          spack_output_to_dview=spack_output_to_dview)
 
         return result
 
@@ -2000,7 +2407,7 @@ template struct Functions<Real,DefaultDevice>;
 
             if needs_rewrite:
                 with filepath.open("w") as fd:
-                    fd.write("\n".join(orig_lines))
+                    fd.write("\n".join(orig_lines) + "\n")
 
                 print("SUCCESS")
 

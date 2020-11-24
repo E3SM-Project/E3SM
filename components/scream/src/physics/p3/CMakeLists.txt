@@ -55,7 +55,13 @@ if (NOT CUDA_BUILD)
     p3_check_values.cpp
     p3_incloud_mixingratios.cpp
     p3_subgrid_variance_scaling.cpp
-    p3_main.cpp)
+    p3_main.cpp
+    p3_ice_supersat_conservation.cpp
+    p3_nc_conservation.cpp
+    p3_nr_conservation.cpp
+    p3_ni_conservation.cpp
+    p3_water_vapor_conservation.cpp
+  ) # P3 ETI SRCS
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

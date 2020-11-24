@@ -436,9 +436,14 @@ def cleanup_repo(orig_branch, orig_commit, repo=None):
 
     checkout_git_ref(orig_branch, repo=repo)
 
-    # Is this also a pointless check?
+    # This *can* happen. test_all_scream can merge origin/master into current branch.
+    # Checking out orig_branch doesn't do anything if we were on a branch (not detached
+    # head mode), since the branch tip moved with the master merge. In that case,
+    # what we really need is a hard reset to the original commit.
+    # NOTE: if you reset the branch, don't forget to re-update the modules!!
     if curr_commit != orig_commit:
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
+        update_submodules(repo=repo)
 
 ###############################################################################
 def get_cpu_core_count ():

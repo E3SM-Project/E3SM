@@ -385,6 +385,15 @@ struct Functions
     const uview_1d<Spack>&       tmpi);
 
   KOKKOS_FUNCTION
+  static void integ_column_stability(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& pres,
+    const uview_1d<const Spack>& brunt,
+    Scalar&                      brunt_int);
+
+  KOKKOS_FUNCTION
   static void dp_inverse(
     const MemberType&            team,
     const Int&                   nlev,
@@ -431,8 +440,9 @@ struct Functions
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
+# include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"
 # include "shoc_shoc_main_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
-#endif
+#endif // SHOC_FUNCTIONS_HPP
