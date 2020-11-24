@@ -55,10 +55,10 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     //   layer and 3) conditionally stable layer.
 
     // Initialzie data structure for bridging to F90
-    SHOCVertfluxData SDS(shcol, nlev, nlevi);
+    CalcShocVertfluxData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 
@@ -131,15 +131,15 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
   static void run_bfb()
   {
-    SHOCVertfluxData SDS_f90[] = {
+    CalcShocVertfluxData SDS_f90[] = {
       //               shcol, nlev, nlevi
-      SHOCVertfluxData(10, 71, 72),
-      SHOCVertfluxData(10, 12, 13),
-      SHOCVertfluxData(7,  16, 17),
-      SHOCVertfluxData(2, 7, 8),
+      CalcShocVertfluxData(10, 71, 72),
+      CalcShocVertfluxData(10, 12, 13),
+      CalcShocVertfluxData(7,  16, 17),
+      CalcShocVertfluxData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVertfluxData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVertfluxData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -148,11 +148,11 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCVertfluxData SDS_cxx[] = {
-      SHOCVertfluxData(SDS_f90[0]),
-      SHOCVertfluxData(SDS_f90[1]),
-      SHOCVertfluxData(SDS_f90[2]),
-      SHOCVertfluxData(SDS_f90[3]),
+    CalcShocVertfluxData SDS_cxx[] = {
+      CalcShocVertfluxData(SDS_f90[0]),
+      CalcShocVertfluxData(SDS_f90[1]),
+      CalcShocVertfluxData(SDS_f90[2]),
+      CalcShocVertfluxData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -167,15 +167,15 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+      calc_shoc_vertflux_f(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCVertfluxData& d_f90 = SDS_f90[i];
-      SHOCVertfluxData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+      CalcShocVertfluxData& d_f90 = SDS_f90[i];
+      CalcShocVertfluxData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.vertflux); ++k) {
         REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
       }
     }

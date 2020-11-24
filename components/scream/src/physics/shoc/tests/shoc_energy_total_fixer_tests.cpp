@@ -57,11 +57,11 @@ struct UnitWrap::UnitTest<D>::TestShocTotEnergyFixer {
     static constexpr Real wqw_sfc = 0.01;
 
     // Initialize data structure for bridging to F90
-    SHOCEnergytotData SDS(shcol, nlev, nlevi, dtime, nadv);
+    ShocEnergyTotalFixerData SDS(shcol, nlev, nlevi, dtime, nadv);
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.dtime == dtime && SDS.nadv == nadv) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi && SDS.dtime == dtime && SDS.nadv == nadv) );
     REQUIRE(shcol == 2);
     REQUIRE(nlevi == nlev+1);
 

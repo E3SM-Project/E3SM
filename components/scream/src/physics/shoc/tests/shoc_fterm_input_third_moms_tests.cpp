@@ -45,7 +45,7 @@ struct UnitWrap::UnitTest<D>::TestFtermInputThirdMoms {
     constexpr static Real thetal_zi = 300;
 
     // Initialize data structure for bridging to F90
-    SHOCFterminputthirdmomsData SDS;
+    FtermsInputForDiagThirdShocMomentData SDS;
 
     SDS.dz_zi = dz_zi;
     SDS.dz_zt = dz_zt;

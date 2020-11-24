@@ -62,10 +62,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     Real adiss_upper_bound = 1;
 
     // Initialize data structure for bridgeing to F90
-    SHOCAdvsgstkeData SDS(shcol, nlev, dtime);
+    AdvSgsTkeData SDS(shcol, nlev, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.dtime == dtime) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.dtime == dtime) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.

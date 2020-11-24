@@ -51,10 +51,10 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     static constexpr Real brunt_st[shcol] = {-4e-3, 4e-3};
 
     // Initialzie data structure for bridgeing to F90
-    SHOCIsotropicData SDS(shcol, nlev);
+    IsotropicTsData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.

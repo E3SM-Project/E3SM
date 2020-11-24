@@ -65,11 +65,11 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
     }
 
     // Initialize data structure for bridging to F90
-    SHOCSfcfluxesData SDS(shcol, num_tracer, dtime);
+    SfcFluxesData SDS(shcol, num_tracer, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol() == shcol);
-    REQUIRE(SDS.num_tracer() == num_tracer);
+    REQUIRE(SDS.shcol == shcol);
+    REQUIRE(SDS.num_tracer == num_tracer);
     REQUIRE(shcol > 1);
 
     // Fill in test data, column only
@@ -86,7 +86,7 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
 
       for (Int t = 0; t < num_tracer; ++t){
         const auto offset = t + s * num_tracer;
-        SDS.tracer[offset] = tracer_in[t];
+        SDS.wtracer[offset] = tracer_in[t];
         // Feed tracer flux random data from -100 to 100
         //   note this is different for every point
         SDS.wtracer_sfc[offset] = rand()% 200 + (-100);
@@ -159,13 +159,13 @@ struct UnitWrap::UnitTest<D>::TestImpSfcFluxes {
       for (Int t = 0; t < num_tracer; ++t){
         const auto offset = t + s * num_tracer;
         if (SDS.wtracer_sfc[offset] > 0){
-          REQUIRE(SDS.tracer[offset] > tracer_in[t]);
+          REQUIRE(SDS.wtracer[offset] > tracer_in[t]);
         }
         else if (SDS.wtracer_sfc[offset] < 0){
-          REQUIRE(SDS.tracer[offset] < tracer_in[t]);
+          REQUIRE(SDS.wtracer[offset] < tracer_in[t]);
         }
         else{
-          REQUIRE(SDS.tracer[offset] == tracer_in[t]);
+          REQUIRE(SDS.wtracer[offset] == tracer_in[t]);
         }
       }
 

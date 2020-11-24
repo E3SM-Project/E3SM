@@ -58,10 +58,10 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     static constexpr Real tke_reg = 0.4;
 
     // Initialize data structure for bridging to F90
-    SHOCEddydiffData SDS(shcol, nlev);
+    EddyDiffusivitiesData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.

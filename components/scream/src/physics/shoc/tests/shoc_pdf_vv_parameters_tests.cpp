@@ -40,7 +40,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
     static constexpr Real w3var_sym = 0;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFvvparamData SDS;
+    ShocAssumedPdfVvParametersData SDS;
 
     // Fill the test data
     SDS.w_first = w_first_sym;

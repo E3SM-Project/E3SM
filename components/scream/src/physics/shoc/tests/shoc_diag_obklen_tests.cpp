@@ -57,10 +57,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     static constexpr Real kbfs_bound = 10;
 
     // Initialize data structure for bridging to F90
-    SHOCObklenData SDS(shcol);
+    ShocDiagObklenData SDS(shcol);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 0);
 
     // Fill in test data, all one dimensional
@@ -163,15 +163,15 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
   static void run_bfb()
   {
-    SHOCObklenData SDS_f90[] = {
+    ShocDiagObklenData SDS_f90[] = {
       //             shcol
-      SHOCObklenData(12),
-      SHOCObklenData(10),
-      SHOCObklenData(7),
-      SHOCObklenData(2)
+      ShocDiagObklenData(12),
+      ShocDiagObklenData(10),
+      ShocDiagObklenData(7),
+      ShocDiagObklenData(2)
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCObklenData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocDiagObklenData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -180,11 +180,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCObklenData SDS_cxx[] = {
-      SHOCObklenData(SDS_f90[0]),
-      SHOCObklenData(SDS_f90[1]),
-      SHOCObklenData(SDS_f90[2]),
-      SHOCObklenData(SDS_f90[3])
+    ShocDiagObklenData SDS_cxx[] = {
+      ShocDiagObklenData(SDS_f90[0]),
+      ShocDiagObklenData(SDS_f90[1]),
+      ShocDiagObklenData(SDS_f90[2]),
+      ShocDiagObklenData(SDS_f90[3])
     };
 
     // Assume all data is in C layout
@@ -199,7 +199,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      shoc_diag_obklen_f(d.shcol(), d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+      shoc_diag_obklen_f(d.shcol, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
                          d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs,
                          d.obklen);
       d.transpose<ekat::TransposeDirection::f2c>();
@@ -207,9 +207,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCObklenData& d_f90 = SDS_f90[i];
-      SHOCObklenData& d_cxx = SDS_cxx[i];
-      for (Int s = 0; s < d_f90.dim1; ++s) {
+      ShocDiagObklenData& d_f90 = SDS_f90[i];
+      ShocDiagObklenData& d_cxx = SDS_cxx[i];
+      for (Int s = 0; s < d_f90.shcol; ++s) {
         REQUIRE(d_f90.ustar[s] == d_cxx.ustar[s]);
         REQUIRE(d_f90.kbfs[s] == d_cxx.kbfs[s]);
         REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);

@@ -40,10 +40,10 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
     static constexpr Real rho_zt[nlev] = {0.6, 0.8, 0.9, 1.0, 1.2};
 
     // Initialize data structure for bridging to F90
-    SHOCDpinverseData SDS(shcol, nlev);
+    DpInverseData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol == 2);
 
     // Fill in test data on zi_grid.
@@ -97,15 +97,15 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
 
   static void run_bfb()
   {
-    SHOCDpinverseData f90_data[] = {
+    DpInverseData f90_data[] = {
       //            shcol, nlev
-      SHOCDpinverseData(10, 71),
-      SHOCDpinverseData(10, 12),
-      SHOCDpinverseData(7,  16),
-      SHOCDpinverseData(2,   7)
+      DpInverseData(10, 71),
+      DpInverseData(10, 12),
+      DpInverseData(7,  16),
+      DpInverseData(2,   7)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCDpinverseData);
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(DpInverseData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -114,11 +114,11 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCDpinverseData cxx_data[] = {
-      SHOCDpinverseData(f90_data[0]),
-      SHOCDpinverseData(f90_data[1]),
-      SHOCDpinverseData(f90_data[2]),
-      SHOCDpinverseData(f90_data[3]),
+    DpInverseData cxx_data[] = {
+      DpInverseData(f90_data[0]),
+      DpInverseData(f90_data[1]),
+      DpInverseData(f90_data[2]),
+      DpInverseData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -132,15 +132,15 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      dp_inverse_f(d.nlev(), d.shcol(), d.rho_zt, d.dz_zt, d.rdp_zt);
+      dp_inverse_f(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCDpinverseData& d_f90 = f90_data[i];
-      SHOCDpinverseData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      DpInverseData& d_f90 = f90_data[i];
+      DpInverseData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.rdp_zt); ++k) {
         REQUIRE(d_f90.rdp_zt[k] == d_cxx.rdp_zt[k]);
       }
     }

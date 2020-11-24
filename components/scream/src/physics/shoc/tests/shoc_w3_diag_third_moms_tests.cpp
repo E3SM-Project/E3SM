@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestW3diagThirdMoms {
     constexpr static Real f5_test1 = 4;
 
     // Initialize data structure for bridging to F90
-    SHOCW3diagthirdmomsData SDS;
+    W3DiagThirdShocMomentData SDS;
 
     // Load up the data
     SDS.aa0 = aa0_test1;

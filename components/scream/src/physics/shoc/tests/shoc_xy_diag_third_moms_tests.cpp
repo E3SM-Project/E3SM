@@ -44,7 +44,7 @@ struct UnitWrap::UnitTest<D>::TestXYdiagThirdMoms {
     constexpr static Real f2_test1a = 30;
 
     // Initialize data structure for bridging to F90
-    SHOCXYdiagthirdmomsData SDS;
+    XYTermsDiagThirdShocMomentData SDS;
 
     // Load up the data
     SDS.buoy_sgs2 = buoy_sgs2;

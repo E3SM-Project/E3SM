@@ -45,10 +45,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     static constexpr Real brunt_sym[nlev] = {-0.5, -0.25, 0.0, 0.25, 0.5};
 
     // Initialize data structure for bridging to F90
-    SHOCColstabData SDS(shcol, nlev);
+    IntegColumnStabilityData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.

@@ -392,7 +392,7 @@ void impli_srf_stress_term(ImpliSrfStressTermData& d)
 
 void tke_srf_flux_term(TkeSrfFluxTermData& d)
 {
-  shoc_init(d.nlev, true); // single layer function
+  shoc_init(1, true); // single layer function
   tke_srf_flux_term_c(d.shcol, d.uw_sfc, d.vw_sfc, d.wtke_sfc);
 }
 
@@ -553,7 +553,7 @@ void clipping_diag_third_shoc_moments(ClippingDiagThirdShocMomentsData& d)
 void diag_second_moments_srf(DiagSecondMomentsSrfData& d)
 {
   shoc_init(1, true); // single level function
-  diag_second_moments_srf_c(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
+  shoc_diag_second_moments_srf_c(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
 }
 
 void linear_interp(LinearInterpData& d)
@@ -663,14 +663,14 @@ void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxDat
 void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
 {
   shoc_init(1, true); // single level function
-  diag_second_moments_ubycond_c(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
+  shoc_diag_second_moments_ubycond_c(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
 }
 
 void pblintd_init_pot(PblintdInitPotData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  pblintd_init_pot_c(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
+  shoc_pblintd_init_pot_c(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -678,7 +678,7 @@ void pblintd_cldcheck(PblintdCldcheckData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  pblintd_cldcheck_c(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
+  shoc_pblintd_cldcheck_c(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
