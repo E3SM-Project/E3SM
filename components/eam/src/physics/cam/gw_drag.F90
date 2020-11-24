@@ -484,6 +484,10 @@ subroutine gw_init()
 
   end if
 
+  if (masterproc) then
+     write (iulog,*) 'using GW energy fix1   =',use_gw_energy_fix1
+  end if
+
   ! Total temperature tendency output.
   call addfld ('TTGW',(/ 'lev' /), 'A','K/s', &
        'T tendency - gravity wave drag')
