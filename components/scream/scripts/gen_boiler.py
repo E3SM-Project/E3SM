@@ -1271,7 +1271,12 @@ def gen_struct_api(physics, struct_name, arg_data):
             dim_cxx_vec.append("{{ {} }}".format(", ".join(["{}_".format(item) for item in dims])))
             data_vec.append("{{ {} }}".format(", ".join(["&{}".format(item) for item in items])))
 
-    parent_call = "  PhysicsTestData({{{}}}, {{{}}}, {{{}}}, {{{}}})".format(", ".join(dim_cxx_vec), ", ".join(real_vec), ", ".join(int_vec), ", ".join(bool_vec))
+    parent_call = "  PhysicsTestData({{{}}}, {{{}}}".format(", ".join(dim_cxx_vec), ", ".join(real_vec))
+    if int_vec or bool_vec:
+        parent_call += ", {{{}}}".format(", ".join(int_vec))
+    if bool_vec:
+        parent_call += ", {{{}}}".format(", ".join(bool_vec))
+    parent_call += ")"
 
     parent_call += ", {}".format(", ".join(["{0}({0}_)".format(name) for name, _ in cons_args]))
 
