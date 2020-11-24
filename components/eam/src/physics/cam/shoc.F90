@@ -2933,10 +2933,6 @@ subroutine integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
      call integ_column_stability_f(nlev, shcol, dz_zt, pres, brunt, brunt_int)
-     do i = 1, shcol
-        write(102,*)i,brunt_int(i)
-     enddo
-
      return
   endif
 #endif
@@ -2950,9 +2946,6 @@ subroutine integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
      enddo
   enddo
 
-  do i = 1, shcol
-     write(103,*)i,brunt_int(i)
-  enddo
   return
 
 end subroutine integ_column_stability
