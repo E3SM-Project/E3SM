@@ -119,6 +119,7 @@ module mpas_log
       ! local variables
       !-----------------------------------------------------------------
       character(len=16) :: taskString  !< variable to build the task number as a string with appropriate zero padding
+      character(len=4) :: domainString  !< variable to store the domain number as a string with appropriate zero padding
       integer :: unitNumber !< local variable used to get a unit number
       character(len=strKind) :: proposedLogFileName, proposedErrFileName
       logical :: isOpen
@@ -175,6 +176,10 @@ module mpas_log
       mpas_log_info % taskID = domain % dminfo % my_proc_id
       mpas_log_info % nTasks = domain % dminfo % nprocs
 
+      ! Store the domain number
+      !   This will be used to number the log files
+      mpas_log_info % domainID = domain % domainID
+
       ! Set log file to be active or not based on master/nonmaster task and optimized/debug build
       !   * Optimized build: Only master task log is active
       !   * Debug build: All tasks active
@@ -206,8 +211,17 @@ module mpas_log
       else
          write(taskString, '(i9.9)') mpas_log_info % taskID
       end if
-      write(proposedLogFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".out"
-      write(proposedErrFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".err"
+
+      if ( mpas_log_info % domainID > 0 ) then
+         write(domainString, '(i4.4)') mpas_log_info % domainID
+         write(proposedLogFileName, fmt='(a, a, a, a, a, a, a)') &
+                                    "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".d", trim(domainString), ".out"
+         write(proposedErrFileName, fmt='(a, a, a, a, a, a, a)') &
+                                    "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".d", trim(domainString), ".err"
+      else
+         write(proposedLogFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".out"
+         write(proposedErrFileName, fmt='(a, a, a, a, a)') "log.", trim(mpas_log_info % coreName), ".", trim(taskString), ".err"
+      end if
 
       ! Set the log and err file names and unit numbers
       if (present(unitNumbers)) then
@@ -419,6 +433,9 @@ module mpas_log
          write(unitNumber, '(a)') '----------------------------------------------------------------------'
          write(unitNumber, '(a,a,a,a,a,i7.1,a,i7.1)') 'Beginning MPAS-', trim(mpas_log_info % coreName), ' ', &
             trim(logTypeString), ' Log File for task ', mpas_log_info % taskID, ' of ', mpas_log_info % nTasks
+         if ( mpas_log_info % domainID > 0 ) then
+            write(unitNumber, '(a,i7.1)') '    for domain ID ',  mpas_log_info % domainID
+         end if
          call date_and_time(date,time)
          write(unitNumber, '(a)') '    Opened at ' // date(1:4)//'/'//date(5:6)//'/'//date(7:8) // &
             ' ' // time(1:2)//':'//time(3:4)//':'//time(5:6)

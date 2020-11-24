@@ -82,6 +82,7 @@ module mpas_subdriver
       character(len=StrKIND) :: iotype
       logical :: streamsExists
       integer :: mesh_iotype
+      integer, save :: domainID = 0
 
       interface
          subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -151,6 +152,9 @@ module mpas_subdriver
       domain_ptr % core => corelist
 
       call mpas_allocate_domain(domain_ptr)
+
+      domain_ptr % domainID = domainID
+      domainID = domainID + 1
 
       !
       ! Initialize infrastructure
