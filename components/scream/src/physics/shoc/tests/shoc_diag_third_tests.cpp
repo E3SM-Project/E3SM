@@ -176,7 +176,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Load up new and increased TKE values
     for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
+      for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlevi;
 
         SDS.w_sec[offset] = 10*w_sec[n];
