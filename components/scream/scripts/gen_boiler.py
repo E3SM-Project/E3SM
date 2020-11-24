@@ -319,6 +319,28 @@ def get_subroutine_begin_regex(name):
     return re.compile(subroutine_begin_regex_str)
 
 ###############################################################################
+def get_function_begin_regex(name):
+###############################################################################
+    """
+    >>> get_function_begin_regex("fake_sub").match("function fake_sub(foo, bar) result(baz)").groups()[-1]
+    'baz'
+    >>> get_function_begin_regex("fake_sub").match("pure function fake_sub(foo, bar) result(baz)").groups()[-1]
+    'baz'
+    >>> get_function_begin_regex("fake_sub").match("pure function fake_sub() result(baz)").groups()[-1]
+    'baz'
+    >>> get_function_begin_regex("fake_sub").match("  pure  function  fake_sub ( foo, bar )   result (  baz)").groups()[-1]
+    'baz'
+    >>> bool(get_function_begin_regex("fake_sub").match("function fake_sub2(foo, bar) result(baz)"))
+    False
+    >>> bool(get_function_begin_regex("fake_sub").match("! function fake_sub(foo, bar) result(baz)"))
+    False
+    >>> bool(get_function_begin_regex("fake_sub").match("end function fake_sub"))
+    False
+    """
+    function_begin_regex_str = r"^\s*((pure\s+)?function)\s+{}\s*[(].*result\s*[(]\s*([^) ]+)".format(name)
+    return re.compile(function_begin_regex_str)
+
+###############################################################################
 def get_subroutine_end_regex(name):
 ###############################################################################
     """
@@ -330,8 +352,12 @@ def get_subroutine_end_regex(name):
     True
     >>> bool(get_subroutine_end_regex("fake_sub").match("!end  subroutine  fake_sub "))
     False
+    >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub"))
+    True
+    >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub_2"))
+    False
     """
-    subroutine_end_regex_str = r"^\s*end\s+subroutine\s+{}\s*$".format(name)
+    subroutine_end_regex_str = r"^\s*end\s+(subroutine|function)\s+{}\s*$".format(name)
     return re.compile(subroutine_end_regex_str)
 
 ###############################################################################
@@ -649,9 +675,35 @@ def get_arg_order(line):
 
     >>> get_arg_order("subroutine p3_set_tables( mu_r_user, revap_user,vn_user, vm_user )")
     ['mu_r_user', 'revap_user', 'vn_user', 'vm_user']
+    >>> get_arg_order("function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result(bar)")
+    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
+    >>> get_arg_order("pure function p3_set_tables( mu_r_user, revap_user,vn_user, vm_user ) result( bar)")
+    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
+    >>> get_arg_order("pure function p3_set_tables(mu_r_user,revap_user,vn_user,vm_user) result(bar)")
+    ['mu_r_user', 'revap_user', 'vn_user', 'vm_user', 'bar']
     """
-    args_raw = line.rstrip(")").split("(", maxsplit=1)[-1]
-    return [item.strip() for item in args_raw.split(",") if item]
+    tokens = line.split()
+    if tokens[0] == "function" or tokens[1] == "function":
+        first_paren = False
+        first_paren_contents = ""
+        for c in line:
+            if c == "(":
+                expect(not first_paren, "Bad line, multiple opening parens: {}".format(line))
+                first_paren = True
+            elif c == ")":
+                break
+            elif first_paren:
+                first_paren_contents += c
+
+        basic_args = [item.strip() for item in first_paren_contents.split(",") if item.strip()]
+
+        basic_args.append(line.rstrip(")").split(")")[-1].split("(")[-1].strip())
+        return basic_args
+
+    else:
+        # subroutine logic
+        args_raw = line.rstrip(")").split("(", maxsplit=1)[-1]
+        return [item.strip() for item in args_raw.split(",") if item.strip()]
 
 ARG_NAME, ARG_TYPE, ARG_INTENT, ARG_DIMS = range(4)
 ###############################################################################
@@ -759,33 +811,69 @@ def parse_origin(contents, subs):
     ...     ! so this section is commented out.
     ...     do i = 1,150
     ...   END SUBROUTINE p3_init_b
+    ...
+    ... function impli_srf_stress_term(shcol, rho_zi_sfc, uw_sfc, vw_sfc, u_wind_sfc, v_wind_sfc) result (ksrf)
+    ...   !intent-ins
+    ...   integer,     intent(in) :: shcol
+    ...
+    ...   !air density at interfaces [kg/m3]
+    ...   real(rtype), intent(in) :: rho_zi_sfc(shcol)
+    ...   !vertical zonal momentum flux at surface [m3/s3]
+    ...   real(rtype), intent(in) :: uw_sfc(shcol)
+    ...   !vertical meridional momentum flux at surface [m3/s3]
+    ...   real(rtype), intent(in) :: vw_sfc(shcol)
+    ...   !zonal wind [m/s]
+    ...   real(rtype), intent(in) :: u_wind_sfc(shcol)
+    ...   !meridional wind [m/s]
+    ...   real(rtype), intent(in) :: v_wind_sfc(shcol)
+    ...
+    ...   !function return value
+    ...   real(rtype) :: ksrf(shcol)
+    ...
+    ...   return foo
+    ...  end function impli_srf_stress_term
     ... '''
     >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
     ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
     ('p3_init_b', [])
+    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]))
+    ('impli_srf_stress_term', [('shcol', 'integer', 'in', None), ('rho_zi_sfc', 'real', 'in', ('shcol',)), ('uw_sfc', 'real', 'in', ('shcol',)), ('vw_sfc', 'real', 'in', ('shcol',)), ('u_wind_sfc', 'real', 'in', ('shcol',)), ('v_wind_sfc', 'real', 'in', ('shcol',)), ('ksrf', 'real', 'out', ('shcol',))])
     """
-    begin_regexes = [get_subroutine_begin_regex(sub) for sub in subs]
+    begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
+    begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
     arg_decl_regex = re.compile(r"^.+intent\s*[(]\s*(in|out|inout)\s*[)]")
 
     contents = normalize_f90(contents)
 
     db = {}
     active_sub = None
+    result_name = None
     arg_order = []
     arg_decls = []
     for line in contents.splitlines():
-        begin_match = None
-        for sub, begin_regex in zip(subs, begin_regexes):
-            begin_match = begin_regex.match(line)
-            if begin_match is not None:
+        for sub, begin_sub_regex, begin_func_regex in zip(subs, begin_sub_regexes, begin_func_regexes):
+            begin_sub_match = begin_sub_regex.match(line)
+            begin_func_match = begin_func_regex.match(line)
+            if begin_sub_match is not None:
                 expect(active_sub is None, "subroutine {} was still active when {} began".format(active_sub, sub))
                 active_sub = sub
                 arg_order = get_arg_order(line)
+            elif begin_func_match is not None:
+                expect(active_sub is None, "subroutine {} was still active when {} began".format(active_sub, sub))
+                active_sub = sub
+                arg_order = get_arg_order(line)
+                result_name = begin_func_match.groups()[-1]
 
         if active_sub:
             decl_match = arg_decl_regex.match(line)
             if decl_match is not None:
                 arg_decls.extend(parse_f90_args(line))
+            elif result_name:
+                result_decl_regex = re.compile(r".+::\s*{}([^\w]|$)".format(result_name))
+                result_decl_match = result_decl_regex.match(line)
+                if result_decl_match is not None:
+                    line = line.replace("::", " , intent(out) ::")
+                    arg_decls.extend(parse_f90_args(line))
 
             end_regex = get_subroutine_end_regex(active_sub)
             end_match = end_regex.match(line)
@@ -808,6 +896,7 @@ def parse_origin(contents, subs):
 
                 db[active_sub] = ordered_decls
                 active_sub = None
+                result_name = None
                 arg_decls = []
 
     return db
