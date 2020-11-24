@@ -39,19 +39,31 @@ public:
 
   virtual ~AbstractRemapper () = default;
 
+  // Call this before you begin registering fields with this remapper.
   void registration_begins ();
+
+  // This method registers a source field to be remapped to a target field.
   void register_field (const field_type& src, const field_type& tgt);
+
+  // This method registers a source field to be remapped to a target field
+  // using fields associated with the given field identifiers.
   void register_field (const identifier_type& src, const identifier_type& tgt);
+
+  // This method unregisters source and target fields associated with the given
+  // identifiers, indicating that they are no longer to be remapped.
   void unregister_field (const identifier_type& src, const identifier_type& tgt);
-  void registration_ends ();
 
   // Specify that all source fields belonging to the group identified by the
-  // given case-insensitive string be packed into a "packed" field (of rank 2)
-  // with the given target identifier. In the inverse mapping, these fields will
-  // be unpacked from the source field into their target fields in the same
-  // order in which they were packed.
-  void register_packing(const ci_string& group_name,
-                        const identifier_type& packed_tgt);
+  // given case-insensitive string be packed into a "packed" field with the
+  // given target identifier. The "packed" field must have a layout with a
+  // sufficient rank to accommodate the fields being packed into it. In the
+  // inverse mapping, these fields are unpacked from the source field into their
+  // target fields in the same order in which they were packed.
+  void register_packing (const ci_string& group_name,
+                         const identifier_type& packed_tgt);
+
+  // Call this to indicate that field registration is complete.
+  void registration_ends ();
 
   // The user is allowed to only provide identifiers in the registration phase.
   // In that case, fields have to be bound after registration is complete, and
