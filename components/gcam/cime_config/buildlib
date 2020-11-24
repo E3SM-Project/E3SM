@@ -26,8 +26,15 @@ print file "$CASEROOT/SourceMods/src.gcam \n";
 # This is absolutely not the right way to do this, but I currently do not
 # know how to include module includes in our build.  So this will add the
 # xerces, xqilla, and boost includes into the build path.
-print file "/blues/gpfs/home/ac.shippert/local/include \n";
-print file "/blues/gpfs/home/ac.shippert/local/src/boost_1_70_0 \n";
+#print file "/blues/gpfs/home/ac.shippert/local/include \n";
+#print file "/blues/gpfs/home/ac.shippert/local/src/boost_1_70_0 \n";
+
+# For compy:
+print file "/qfs/people/crai556/boost_intel_19.0.3/include \n";
+print file "/qfs/people/crai556/xerces_intel_19.0.3/include \n";
+
+print file "/qfs/people/crai556/boost_intel_19.0.3 \n";
+print file "/qfs/people/crai556/xerces_intel_19.0.3 \n";
 
 # Well, it seems that anything we put in tmp_filepath is both scanned for
 # source code files AND included in a -I$dir flag, so we just need to list all
