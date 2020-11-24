@@ -2383,10 +2383,10 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
 
-  Kokkos::Array<view_1d, 1> temp_1d;
+  Kokkos::Array<view_1d, 1> temp_1d; // for 1d array
 
   static constexpr Int num_arrays = 4;
-  Kokkos::Array<view_2d, num_arrays> temp_2d;
+  Kokkos::Array<view_2d, num_arrays> temp_2d; //for 2d arrays
   Kokkos::Array<int, num_arrays> dim1_sizes = {shcol, shcol, shcol, shcol};
   Kokkos::Array<int, num_arrays> dim2_sizes = {nlev,  nlev,  nlev,  nlev};
   Kokkos::Array<const Real*, num_arrays> ptr_array = {tke, a_diss, brunt, isotropy};
@@ -2395,13 +2395,15 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
   ekat::host_to_device({brunt_int}, shcol, temp_1d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d, true);
 
-  view_1d brunt_int_d(temp_1d[0]);//input
+  //inputs
+  view_1d brunt_int_d(temp_1d[0]);
 
   view_2d
-    tke_d     (temp_2d[0]),//input
-    a_diss_d  (temp_2d[1]),//input
-    brunt_d   (temp_2d[2]),//input
-    isotropy_d(temp_2d[3]);//output
+    tke_d     (temp_2d[0]),
+    a_diss_d  (temp_2d[1]),
+    brunt_d   (temp_2d[2]),
+    //output
+    isotropy_d(temp_2d[3]);
 
   const Int nk_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
@@ -2421,6 +2423,9 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       SHF::isotropic_ts(team, nlev, shcol, brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
     });
 
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> out_views = {isotropy_d};
+  ekat::device_to_host<int, 1>({isotropy}, {shcol}, {nlev}, out_views, true);
 
 }
 
