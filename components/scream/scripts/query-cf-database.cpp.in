@@ -1,9 +1,10 @@
 #include "ekat/util/ekat_string_utils.hpp"
 
 #include <yaml-cpp/yaml.h>
-#include <map>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 
 // Location of CF database YAML file.
 static const char* CF_STANDARD_NAME_FILE = "@PROJECT_SOURCE_DIR@/data/cf-standard-name-table.yaml";
@@ -189,6 +190,12 @@ void search_database(const std::map<std::string, std::string>& database,
       }
     }
   }
+
+  // Now sort the results from best to worst matches.
+  std::sort(results.begin(), results.end(),
+            [](const SearchResult& a, const SearchResult& b) {
+              return a.index > b.index;
+            });
 
   if (options.verbose) {
     fprintf(stdout, "Total results found: %ld\n\n", results.size());
