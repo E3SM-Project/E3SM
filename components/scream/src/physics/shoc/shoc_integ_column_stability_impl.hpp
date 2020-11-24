@@ -21,7 +21,7 @@ void Functions<S,D>
 
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  // Compute se_int
+  
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
 
@@ -31,7 +31,7 @@ void Functions<S,D>
     my_result.set(press_gt_troppress, dz_zt(k) * brunt(k));
 
     return my_result ;
-  }, brunt_int);
+    }, brunt_int);
 
 }
 

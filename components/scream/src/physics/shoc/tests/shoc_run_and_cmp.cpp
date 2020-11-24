@@ -94,11 +94,11 @@ static Int compare (const std::string& label, const Scalar* a,
 struct Baseline {
 
   // Number of iterations (nadv steps of size dtime per iteration).
-  const int num_iters = 10;
+  const int num_iters = 1;
 
   Baseline () {
     //                 ic, shcol, nlev, num_qtracers, nadv, dtime
-    params_.push_back({ic::Factory::standard, 8, 72, 3, 15, 150});
+    params_.push_back({ic::Factory::standard, 1, 3, 1, 1, 1});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
