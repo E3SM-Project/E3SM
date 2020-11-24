@@ -1556,6 +1556,8 @@ class GenBoiler(object):
           fake_sub_c(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
           d.transpose<ekat::TransposeDirection::f2c>();
         }
+        <BLANKLINE>
+        <BLANKLINE>
         """
         arg_data         = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_data_args    = ", ".join(gen_cxx_data_args(phys, arg_data))
@@ -1571,7 +1573,9 @@ class GenBoiler(object):
 {{
   {init_code}{transpose_code_1}
   {sub}_c({arg_data_args});{transpose_code_2}
-}}""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
+}}
+
+""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
         return result
 
     ###########################################################################
