@@ -112,10 +112,10 @@ struct ShocEnergyThresholdFixerData : public PhysicsTestData {
   Real *se_dis;
   Int *shoctop;
 
-  ShocEnergyThresholdFixerData(Int shcol_, Int nlevi_, Int nlev_) :
+  ShocEnergyThresholdFixerData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &pint }, { &tke }, { &te_a, &te_b, &se_dis }}, {{ &shoctop }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
 
-  PTD_STD_DEF(ShocEnergyThresholdFixerData, 3, shcol, nlevi, nlev);
+  PTD_STD_DEF(ShocEnergyThresholdFixerData, 3, shcol, nlev, nlevi);
 };
 
 struct ShocEnergyDseFixerData : public PhysicsTestData {
@@ -141,10 +141,10 @@ struct CalcShocVertfluxData : public PhysicsTestData {
   // Outputs
   Real *vertflux;
 
-  CalcShocVertfluxData(Int shcol_, Int nlevi_, Int nlev_) :
+  CalcShocVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &tkh_zi, &dz_zi, &vertflux }, { &invar }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
 
-  PTD_STD_DEF(CalcShocVertfluxData, 3, shcol, nlevi, nlev);
+  PTD_STD_DEF(CalcShocVertfluxData, 3, shcol, nlev, nlevi);
 };
 
 struct CalcShocVarorcovarData : public PhysicsTestData {
@@ -156,10 +156,10 @@ struct CalcShocVarorcovarData : public PhysicsTestData {
   // Inputs/Outputs
   Real *varorcovar;
 
-  CalcShocVarorcovarData(Int shcol_, Int nlevi_, Int nlev_, Real tunefac_) :
+  CalcShocVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
     PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &isotropy_zi, &tkh_zi, &dz_zi, &varorcovar }, { &invar1, &invar2 }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_), tunefac(tunefac_) {}
 
-  PTD_STD_DEF(CalcShocVarorcovarData, 4, shcol, nlevi, nlev, tunefac);
+  PTD_STD_DEF(CalcShocVarorcovarData, 4, shcol, nlev, nlevi, tunefac);
 };
 
 struct ComputeTmpiData : public PhysicsTestData {
@@ -287,10 +287,10 @@ struct ComputeShrProdData : public PhysicsTestData {
   // Outputs
   Real *sterm;
 
-  ComputeShrProdData(Int shcol_, Int nlevi_, Int nlev_) :
+  ComputeShrProdData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &dz_zi, &sterm }, { &u_wind, &v_wind }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
 
-  PTD_STD_DEF(ComputeShrProdData, 3, shcol, nlevi, nlev);
+  PTD_STD_DEF(ComputeShrProdData, 3, shcol, nlev, nlevi);
 };
 
 struct IsotropicTsData : public PhysicsTestData {
@@ -702,10 +702,10 @@ struct PblintdCldcheckData : public PhysicsTestData {
   // Inputs/Outputs
   Real *pblh;
 
-  PblintdCldcheckData(Int shcol_, Int nlevi_, Int nlev_) :
+  PblintdCldcheckData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }, { shcol_ }}, {{ &zi }, { &cldn }, { &pblh }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
 
-  PTD_STD_DEF(PblintdCldcheckData, 3, shcol, nlevi, nlev);
+  PTD_STD_DEF(PblintdCldcheckData, 3, shcol, nlev, nlevi);
 };
 
 struct DiagSecondMomentsLbycondData : public PhysicsTestData {
