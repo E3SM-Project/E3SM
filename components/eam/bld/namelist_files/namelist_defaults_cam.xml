@@ -1558,7 +1558,6 @@
 <!-- timesteps  -->
 <!-- ================================================================== -->
 <tstep_type > 5 </tstep_type>
-<se_tstep > -1 </se_tstep>
 <hypervis_subcycle > 1 </hypervis_subcycle>
 <dt_tracer_factor > 6 </dt_tracer_factor>
 <dt_remap_factor>  2  </dt_remap_factor>
@@ -1568,40 +1567,40 @@
 <rsplit > -1 </rsplit>
 <se_nsplit > -1 </se_nsplit>
 
-<se_tstep >                                       600 </se_tstep>
-<se_tstep hgrid="ne30np4" >  300 </se_tstep>
-<se_tstep hgrid="ne45np4" >  200 </se_tstep>
-<se_tstep hgrid="ne60np4" >  150 </se_tstep>
-<se_tstep hgrid="ne120np4">  75 </se_tstep>
-<se_tstep hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
-<se_tstep hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
-<se_tstep hgrid="ne0np4_conus_x4v1_lowcon"> 75 </se_tstep>
+<se_tstep >                  600 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne30np4" >  300 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne45np4" >  200 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne60np4" >  150 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 75 </se_tstep>
 
 
-<se_tstep            hgrid="ne240np4"> 37.5 </se_tstep>
-<dt_tracer_factor    hgrid="ne240np4"> 8    </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne240np4"> 8    </hypervis_subcycle_q>
+<se_tstep            dyn_target="theta-l" hgrid="ne240np4"> 37.5 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne240np4"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne240np4"> 8    </hypervis_subcycle_q>
 
-<se_tstep            hgrid="ne256np4"> 37.5 </se_tstep>
-<dt_tracer_factor    hgrid="ne256np4"> 8    </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne256np4"> 8    </hypervis_subcycle_q>
+<se_tstep            dyn_target="theta-l" hgrid="ne256np4"> 37.5 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne256np4"> 8    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne256np4"> 8    </hypervis_subcycle_q>
 
-<se_tstep            hgrid="ne512np4"> 18.75 </se_tstep>
-<dt_tracer_factor    hgrid="ne512np4"> 8     </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne512np4"> 8     </hypervis_subcycle_q>
+<se_tstep            dyn_target="theta-l" hgrid="ne512np4"> 18.75 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne512np4"> 8     </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne512np4"> 8     </hypervis_subcycle_q>
 
-<se_tstep            hgrid="ne1024np4"> 9.375 </se_tstep>
-<dt_tracer_factor    hgrid="ne1024np4"> 8     </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne1024np4"> 8     </hypervis_subcycle_q>
+<se_tstep            dyn_target="theta-l" hgrid="ne1024np4"> 9.375 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 8     </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8     </hypervis_subcycle_q>
 
 
-<hypervis_subcycle_tom hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
-<hypervis_subcycle_tom hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
-<hypervis_subcycle_tom hgrid="ne0np4_conus_x4v1"      > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_conus_x4v1"      > 3 </hypervis_subcycle_tom>
 
-<hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
-<hypervis_subcycle hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
-<hypervis_subcycle hgrid="ne0np4_antarcticax4v1"   > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"   > 2 </hypervis_subcycle>
 
 
 
@@ -1676,6 +1675,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 <!-- old interface, used by preqx.  timesteps controlled by se_nsplit, rsplit, qsplit -->
 <!-- se_tstep, dt_remap_factor, dt_tracer_factor set to -1 -->
+<se_tstep dyn_target="preqx"> -1 </se_tstep>
 <dt_tracer_factor dyn_target="preqx"> -1 </dt_tracer_factor>
 <dt_remap_factor  dyn_target="preqx">  -1  </dt_remap_factor>
 <hypervis_subcycle_q dyn_target="preqx"> 1 </hypervis_subcycle_q>
