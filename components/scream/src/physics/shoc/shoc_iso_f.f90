@@ -428,6 +428,14 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: shoc_mix, isotropy, w_sec, wqls_sec, brunt, shoc_ql2
     real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3
   end subroutine shoc_main_f
+  subroutine isotropic_ts_f(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nlev, shcol
+    real(kind=c_real) , intent(in), dimension(shcol) :: brunt_int
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: tke, a_diss, brunt
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: isotropy
+  end subroutine isotropic_ts_f
 end interface
 
 end module shoc_iso_f

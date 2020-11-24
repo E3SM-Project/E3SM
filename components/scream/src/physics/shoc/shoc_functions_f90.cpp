@@ -2369,6 +2369,10 @@ void integ_column_stability_f(Int nlev, Int shcol, Real *dz_zt,
   ekat::device_to_host<int,1>({brunt_int},shcol,inout_views);
 }
 
+void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke, Real* a_diss, Real* brunt, Real* isotropy)
+{
+  // TODO
+}
 
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt)
 {
