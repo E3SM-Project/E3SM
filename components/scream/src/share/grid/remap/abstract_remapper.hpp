@@ -15,7 +15,7 @@ namespace scream
 
 // An abstract interface for a remapper
 
-// A remapper is basically a functor, that, given two fields
+// A remapper is basically a functor, that, given two fields,
 // copies the first into the second, or viceversa. The copy must
 // account for different layouts and/or different mpi distributions.
 // This concept can be extended to remaps that involve interpolation,
@@ -32,6 +32,7 @@ public:
   using layout_type     = typename identifier_type::layout_type;
   using grid_type       = AbstractGrid;
   using grid_ptr_type   = std::shared_ptr<const grid_type>;
+  using ci_string       = ekat::CaseInsensitiveString;
 
   AbstractRemapper (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid);
@@ -43,6 +44,14 @@ public:
   void register_field (const identifier_type& src, const identifier_type& tgt);
   void unregister_field (const identifier_type& src, const identifier_type& tgt);
   void registration_ends ();
+
+  // Specify that all source fields belonging to the group identified by the
+  // given case-insensitive string be packed into a "packed" field (of rank 2)
+  // with the given target identifier. In the inverse mapping, these fields will
+  // be unpacked from the source field into their target fields in the same
+  // order in which they were packed.
+  void register_packing(const ci_string& group_name,
+                        const identifier_type& packed_tgt);
 
   // The user is allowed to only provide identifiers in the registration phase.
   // In that case, fields have to be bound after registration is complete, and
