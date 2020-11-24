@@ -318,14 +318,19 @@ add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
 
-#####################################
-# Namelist group: split_explicit_ts #
-#####################################
+########################################
+# Namelist group: split_timestep_share #
+########################################
 
 add_default($nl, 'config_n_ts_iter');
 add_default($nl, 'config_n_bcl_iter_beg');
 add_default($nl, 'config_n_bcl_iter_mid');
 add_default($nl, 'config_n_bcl_iter_end');
+
+#####################################
+# Namelist group: split_explicit_ts #
+#####################################
+
 add_default($nl, 'config_btr_dt');
 add_default($nl, 'config_n_btr_cor_iter');
 add_default($nl, 'config_vel_correction');
@@ -334,6 +339,14 @@ add_default($nl, 'config_btr_gam1_velWt1');
 add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
+
+####################################
+# Namelist group: semi_implicit_ts #
+####################################
+
+add_default($nl, 'config_btr_si_preconditioner');
+add_default($nl, 'config_btr_si_tolerance');
+add_default($nl, 'config_n_btr_si_outer_iter');
 
 #####################################
 # Namelist group: ALE_vertical_grid #
