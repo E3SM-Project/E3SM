@@ -6,15 +6,15 @@
 #include <cstdlib>
 
 // Location of CF database YAML file.
-static const char* CF_STANDARD_NAME_FILE = @PROJECT_SOURCE_DIR@ "/data/cf-standard-name-table.yaml";
-static const char* CF_SCREAM_NAME_FILE = @PROJECT_SOURCE_DIR@ "/data/cf-scream-name-table.yaml";
+static const char* CF_STANDARD_NAME_FILE = "@PROJECT_SOURCE_DIR@/data/cf-standard-name-table.yaml";
+static const char* CF_SCREAM_NAME_FILE = "@PROJECT_SOURCE_DIR@/data/cf-scream-name-table.yaml";
 
 // Default string similarity threshold;
 static const double SIMILARY_THRESH = 0.7;
 
 void usage(const char* prog) {
   fprintf(stderr, "%s: queries a CF database for the name of a field.\n", prog);
-  fprintf(stderr, "Usage:\n", prog);
+  fprintf(stderr, "Usage:\n");
   fprintf(stderr, "%s [options] <field_name>\n\n", prog);
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "-d          Retrieve the description of the given field\n");
@@ -46,7 +46,7 @@ struct SearchOptions {
 // Parses options, populating the arguments with values.
 void parse_options(int argc, char* argv[], std::string& field_name,
                    SearchOptions& options) {
-  for (int i = 1; i <= argc; ++i) {
+  for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '-') { // argument is a flag
       char flag = argv[i][1];
       if (flag == 'd') {
@@ -56,31 +56,31 @@ void parse_options(int argc, char* argv[], std::string& field_name,
           options.similarity_threshold = atof(argv[i+1]);
           i++;
         } else {
-          usage();
+          usage(argv[0]);
         }
       } else if (flag == 'b') {
         options.ignore_threshold = true;
       } else if (flag == 'n') {
         if (i < argc-1) {
-          options.max_results = atod(argv[i+1]);
+          options.max_results = atol(argv[i+1]);
           i++;
         } else {
-          usage();
+          usage(argv[0]);
         }
       } else if (flag == 'v') {
         options.verbose = true;
       } else {
         fprintf(stderr, "Unrecognized flag: %s\n", argv[i]);
-        usage();
+        usage(argv[0]);
       }
     } else {
-      options.field_name = std::string(argv[i]);
+      field_name = std::string(argv[i]);
     }
   }
 
   // Did we get everything we needed?
-  if (options.field_name.empty()) {
-    usage();
+  if (field_name.empty()) {
+    usage(argv[0]);
   }
 }
 
@@ -100,7 +100,7 @@ std::map<std::string, std::string> read_cf_database(const char* filename) {
       // Fetch the field's description if it has one.
       std::string description;
       if (field["description"]) {
-        desc = field["description"].as<std::string>();
+        description = field["description"].as<std::string>();
       }
       db[name] = description;
 
@@ -179,6 +179,7 @@ void report_results(const std::string& field_name,
               result.index);
     } else {
       fprintf(output_stream, "   %s\n", result.field_name.c_str());
+    }
 
     if (options.show_description) {
       fprintf(output_stream, "      %s\n", result.description.c_str());
@@ -189,10 +190,11 @@ void report_results(const std::string& field_name,
 int main(int argc, char* argv[]) {
 
   if (argc < 2) {
-    usage();
+    usage(argv[0]);
   }
 
   // Handle command-line options.
+  std::string field_name;
   SearchOptions options;
   parse_options(argc, argv, field_name, options);
 
@@ -203,12 +205,12 @@ int main(int argc, char* argv[]) {
 
   // Search each dictionary for the given field name, building a set of
   // results.
-  std::vector<NameAndDesc> results;
-  search_database(cf_std_fields, field_name, options, results, stdout);
-  search_database(cf_scr_fields, field_name, options, results, stdout);
+  std::vector<SearchResult> results;
+  search_database(cf_std_fields, field_name, options, results);
+//  search_database(cf_scr_fields, field_name, options, results);
 
   // Report back.
-  report_results(field_name, results, options);
+  report_results(field_name, results, options, stdout);
 
   return 0;
 }
