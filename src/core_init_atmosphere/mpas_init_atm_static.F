@@ -134,6 +134,7 @@
  real (kind=RKIND), dimension(:), pointer :: shdmin, shdmax
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
+ integer (kind=I8KIND), dimension(:,:), pointer :: albedo12m_int
  real (kind=RKIND) :: msgval, fillval
  real (kind=RKIND), pointer :: missing_value
  integer, pointer :: category_min, category_max
@@ -156,6 +157,7 @@
  integer (kind=I8KIND) :: i8val
  integer, pointer :: tile_bdr
  integer, pointer :: tile_nx, tile_ny, tile_nz
+ integer, pointer :: tile_z_start, tile_z_end
 
  logical :: all_pixels_mapped_to_halo_cells
  integer :: ierr
@@ -1313,15 +1315,130 @@
 
     ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
     if (ierr /= 0) then
-       call mpas_log_write('Error occurred when initalizing the interpolation of montly albedo (albedo12m)', &
+       call mpas_log_write('Error occurred when initalizing the interpolation of monthly albedo (albedo12m)', &
                             messageType=MPAS_LOG_CRIT)
     endif
 
+    call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+    call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+    call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+    call mpas_pool_get_config(mgr % pool, 'tile_z_start', tile_z_start)
+    call mpas_pool_get_config(mgr % pool, 'tile_z_end', tile_z_end)
+    call mpas_pool_get_config(mgr % pool, 'missing_value', missing_value)
+    call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor_ptr)
+    scalefactor = scalefactor_ptr
+
+    allocate(albedo12m_int(tile_z_start:tile_z_end, nCells))
+    allocate(nhs(nCells))
+    albedo12m_int(:,:) = 0
     albedo12m(:,:) = 0.0
+    nhs(:) = 0
+    fillval = 8.0
+
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            tile => null()
+            ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+            if (ierr /= 0 .or. .not. associated(tile)) then
+                call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+            end if
+
+            ierr = mgr % push_tile(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile % fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
+
+        do while (.not. mgr % is_stack_empty())
+            tile => mgr % pop_tile()
+
+            if (tile % is_processed) then
+                cycle
+            end if
+
+            call mpas_log_write('Processing tile: '//trim(tile % fname))
+
+            all_pixels_mapped_to_halo_cells = .true.
+
+            do j = supersample_fac * tile_bdr + 1, supersample_fac * (tile_ny + tile_bdr), 1
+                do i = supersample_fac * tile_bdr + 1, supersample_fac * (tile_nx + tile_bdr), 1
+
+                    ii = (i - 1) / supersample_fac + 1
+                    jj = (j - 1) / supersample_fac + 1
+
+                    call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt, supersample_fac)
+                    call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                    call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                    if (bdyMaskCell(res % id) < nBdyLayers) then
+                        if (landMask(res % id) == 1) then
+                            do k = tile_z_start, tile_z_end
+                                if (tile % tile(ii, jj, k) == missing_value) then
+                                    i8val = int(fillval, kind=I8KIND)
+                                else
+                                    i8val = int(tile % tile(ii,jj,k), kind=I8KIND)
+                                end if
+                                albedo12m_int(k, res % id) = albedo12m_int(k, res % id) + i8val
+                            end do
+                            nhs(res % id) = nhs(res % id) + 1
+                        end if
+
+                        if (res % id <= nCellsSolve) then
+                            all_pixels_mapped_to_halo_cells = .false.
+                        end if
+                    else
+                        if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                         nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+                            if (landMask(res % id) == 1) then
+                                do k = tile_z_start, tile_z_end
+                                    if (tile % tile(ii, jj, k) == missing_value) then
+                                        i8val = int(fillval, kind=I8KIND)
+                                    else
+                                        i8val = int(tile % tile(ii,jj,k), kind=I8KIND)
+                                    end if
+                                    albedo12m_int(k, res % id) = albedo12m_int(k, res % id) + i8val
+                                end do
+                                nhs(res % id) = nhs(res % id) + 1
+                            end if
+
+                            if (res % id <= nCellsSolve) then
+                                all_pixels_mapped_to_halo_cells = .false.
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+
+            tile % is_processed = .true.
+
+            if (.not. all_pixels_mapped_to_halo_cells) then
+                ierr = mgr % push_neighbors(tile)
+                if (ierr /= 0) then
+                    call mpas_log_write("error pushing the tile neighbors of: "//trim(tile%fname), messagetype=MPAS_LOG_CRIT)
+                end if
+            end if
+
+        end do
+    end do
+
+    do iCell = 1, nCells
+        if (nhs(iCell) == 0) then
+            albedo12m(:,iCell) = fillVal
+        else
+            albedo12m(:,iCell) = real(albedo12m_int(:,iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+            albedo12m(:,iCell) = albedo12m(:,iCell) * scalefactor
+        end if
+        if (lu_index(iCell) == isice_lu) then
+            albedo12m(:,iCell) = 70.0 ! TODO: Where does this come from?
+        endif
+    end do
+
+    deallocate(nhs)
+    deallocate(albedo12m_int)
 
     ierr = mgr % finalize()
     if (ierr /= 0) then
-       call mpas_log_write('Error occurred when finalizing the interpolation of montly albedo (albedo12m)', &
+       call mpas_log_write('Error occurred when finalizing the interpolation of monthly albedo (albedo12m)', &
                             messageType=MPAS_LOG_CRIT)
     endif
 
