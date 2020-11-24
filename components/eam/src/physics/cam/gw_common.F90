@@ -509,18 +509,19 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   ! Net gain/loss of total energy in the column.
   dE = 0.0_r8
   do k = 1, pver
-     dE = dE + pdel(:,k) * ( &
-          dudt(:ncol,k)*(u(:,k)+dudt(:ncol,k)*0.5_r8*dt) + &
-          dvdt(:ncol,k)*(v(:,k)+dvdt(:ncol,k)*0.5_r8*dt) )
+     dE(:ncol) = dE(:ncol) + pdel(:ncol,k) * ( &
+                dudt(:ncol,k)*(u(:,k)+dudt(:ncol,k)*0.5_r8*dt) + &
+                dvdt(:ncol,k)*(v(:,k)+dvdt(:ncol,k)*0.5_r8*dt) )
   end do
 
   do i = 1, ncol
      !dE(i) = dE(i)/(pint(i,pver)-pint(i,tend_level(i)))
-     !dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)))
-     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,1))
+     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)+1))
+     !dE(i) = dE(i)/(pint(i,pver+1)-pint(i,1))
   end do
 
-#if 0
+#if 1
+  dsdt = 0.0
   ! Subtract net gain/loss of total energy below source level.
   do k = minval(tend_level)+1, pver
      where (k > tend_level)
@@ -529,13 +530,31 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   end do
 #endif
 
-#if 1
+#if 0
   do i = 1, ncol
   do k = 1, pver
      dsdt(i,k) = -dE(i)
   end do
   end do
 #endif
+
+do i=1,ncol
+if (maxval(dudt(i,:)) > 0.0)then
+
+print *, 'du here is', dudt(i,:)
+print *, 'dv here is', dvdt(i,:)
+
+print *, 'tend here', tend_level(i)
+
+enddo
+
+
+!print *, 'tend_level(:ncol)',tend_level(:ncol)
+!print *, 'dudt(1,: )',dudt(1,: )
+!print *, 'dvdt(1,: )',dvdt(1,: )
+
+!stop
+
 
 end subroutine momentum_energy_fix
 
