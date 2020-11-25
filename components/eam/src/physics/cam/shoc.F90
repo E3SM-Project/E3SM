@@ -3112,11 +3112,6 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
      call isotropic_ts_f(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
-     do k = 1, nlev
-        do i = 1, shcol
-           write(102,*)i,k,isotropy(i,k)
-        enddo
-     enddo
      return
   endif
 #endif
@@ -3137,16 +3132,8 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
         ! Compute the return to isotropic timescale
         isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
-        !isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale))
      enddo
   enddo
-
-  do k = 1, nlev
-     do i = 1, shcol
-        write(103,*)i,k,isotropy(i,k)
-     enddo
-  enddo
-
 
   return
 
