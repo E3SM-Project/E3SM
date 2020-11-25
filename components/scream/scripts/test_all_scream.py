@@ -3,8 +3,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-                           get_mach_baseline_root_dir, setup_mach_env, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
+    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
+    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
 
 check_minimum_python_version(3, 4)
 
@@ -91,10 +91,9 @@ class TestAllScream(object):
                                   "fpe" : "debug_nopack_fpe"}
 
         if not self._tests:
-            is_cuda_machine = "OMPI_CXX" in os.environ
             # always do dbg and sp tests, do not do fpe test on CUDA
             self._tests = ["dbg", "sp"]
-            if not is_cuda_machine:
+            if not is_cuda_machine():
                 self._tests.append("fpe")
         else:
             for t in self._tests:
