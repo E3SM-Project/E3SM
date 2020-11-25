@@ -139,9 +139,12 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       // Note: in general, as of today, no atm process other than APG stores more than
       //       one grid, so this for loop is somewhat overkill. Still, it doesn't hurt.
       for (const auto& gname : atm_proc_grids) {
+        // Note: grid->name() might be different from gname. This happens if the GM
+        //       allows a few aliases for the same grid. So we store the remappers
+        //       with both gname and grid->name() as keys
         const auto grid = grids_manager->get_grid(gname);
-        remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
-        remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
+        remap_in[gname] = remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
+        remap_out[gname] = remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
         remap_in[grid->name()]->registration_begins();
         remap_out[grid->name()]->registration_begins();
       }
@@ -153,7 +156,12 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       // as input a copy of fid on the reference grid.
       // If fid is not on the reference grid, we add fid to our 'computed' fields.
       const bool is_ref_grid = (fid.get_grid_name()==ref_grid->name());
-      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[fid.get_grid_name()]);
+      const auto& remapper = remap_in[fid.get_grid_name()];
+
+      EKAT_REQUIRE_MSG (is_ref_grid || remapper,
+        "Error!  Missing remapper from " << fid.get_grid_name() << " to " << ref_grid->name() << ".\n");
+
+      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remapper);
 
       if (m_group_schedule_type==ScheduleType::Sequential) {
         // If the schedule is sequential, we do not add inputs if they are computed
@@ -175,7 +183,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
         computed.insert(fid.name());
         m_computed_fields.insert(fid);
 
-        remap_in[fid.get_grid_name()]->register_field(ref_fid,fid);
+        remapper->register_field(ref_fid,fid);
       }
     }
 

@@ -39,6 +39,12 @@ protected:
   void add_field (const field_type& f) {
     m_field = f;
   }
+
+  void add_field (const field_type& /* f */, const field_type& f_ref,
+                  const remapper_ptr_type& /* remapper */) {
+    // No need to remap anything, since it's trivial to init f_ref instead of f.
+    m_field = f_ref;
+  }
 };
 
 // Create a field initializer, and correctly set up the (weak) pointer to self.

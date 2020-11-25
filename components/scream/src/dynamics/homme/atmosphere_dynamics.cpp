@@ -49,8 +49,6 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   if (!is_data_structures_inited_f90()) {
     prim_init_data_structures_f90 ();
   }
-
-  m_initializer = create_field_initializer<HommeInputsInitializer>();
 }
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
@@ -70,7 +68,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
-  const auto dyn_grid_name = "SE Dynamics";
+  const auto dyn_grid_name = "Dynamics";
   const auto dyn_grid = grids_manager->get_grid(dyn_grid_name);
   const int ne = dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
@@ -114,6 +112,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
+
+  auto standalone = m_params.get<bool>("Initialize Inputs", false);
+  if (standalone) {
+    m_initializer = create_field_initializer<HommeInputsInitializer>();
+  }
 }
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
@@ -224,14 +227,14 @@ void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 
   auto standalone = m_params.get<bool>("Initialize Inputs", false);
   if (standalone) {
-    m_initializer->initialize_fields();
-    for (auto f : m_dyn_fields_in) {
+    for (auto& f : m_dyn_fields_in) {
       m_initializer->add_me_as_initializer(f.second);
       std::cout << "Added " << m_initializer->name() << " as initializer for " << f.second.get_header().get_identifier().name() << "\n";
     }
     for (auto f : m_dyn_fields_out) {
       m_initializer->add_me_as_initializer(f.second);
     }
+    m_initializer->initialize_fields();
   } else {
     // Some I/O routine must have loaded initial states. Homme needs those values
     // to complete the model initialization. So, leverage Homme functions that

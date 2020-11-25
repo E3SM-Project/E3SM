@@ -71,7 +71,7 @@ void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
   m_nodes.push_back(Node());
   auto& n = m_nodes.back();
   n.id = m_nodes.size()-1;
-  n.name = initializer.name();
+  n.name = initializer.name() + " (init only)";
   m_unmet_deps[n.id].clear();
 
   for (const auto& f : inited_fields) {
