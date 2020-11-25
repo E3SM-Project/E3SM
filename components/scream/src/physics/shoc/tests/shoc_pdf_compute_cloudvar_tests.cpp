@@ -63,16 +63,16 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
     REQUIRE(std_s2_large > std_s2_small);
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompcloudvarData SDS;
+    ShocAssumedPdfComputeCloudLiquidVarianceData SDS;
 
     // load the data for the first part of the test
     SDS.a = a;
     SDS.s1 = s1;
     SDS.ql1 = ql1;
-    SDS.C1 = C1;
+    SDS.c1 = C1;
     SDS.s2 = s2;
     SDS.ql2 = ql2;
-    SDS.C2 = C2;
+    SDS.c2 = C2;
     SDS.shoc_ql = shoc_ql;
 
     SDS.std_s1 = std_s1_small;
@@ -82,10 +82,10 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
     REQUIRE(SDS.a > 0);
     REQUIRE(SDS.a < 1);
     REQUIRE(SDS.s1 >= 0);
-    REQUIRE(SDS.C1 >= 0);
+    REQUIRE(SDS.c1 >= 0);
     REQUIRE(SDS.ql1 >= 0);
     REQUIRE(SDS.s2 >= 0);
-    REQUIRE(SDS.C2 >= 0);
+    REQUIRE(SDS.c2 >= 0);
     REQUIRE(SDS.ql2 >= 0);
     REQUIRE(SDS.shoc_ql >= 0);
     REQUIRE(SDS.std_s1 >= 0);

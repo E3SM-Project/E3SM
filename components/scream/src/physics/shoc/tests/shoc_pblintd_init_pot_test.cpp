@@ -25,39 +25,39 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
 
 static void run_pblintd_init_pot_bfb()
 {
-  SHOCPblintdInitPotData pblintd_init_pot_data_f90[] = {
+  PblintdInitPotData pblintd_init_pot_data_f90[] = {
     //                     shcol, nlev
-    SHOCPblintdInitPotData(36,  72),
-    SHOCPblintdInitPotData(72,  72),
-    SHOCPblintdInitPotData(128, 72),
-    SHOCPblintdInitPotData(256, 72),
+    PblintdInitPotData(36,  72),
+    PblintdInitPotData(72,  72),
+    PblintdInitPotData(128, 72),
+    PblintdInitPotData(256, 72),
   };
 
-  static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(SHOCPblintdInitPotData);
+  static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
 
   for (auto& d : pblintd_init_pot_data_f90) {
     d.randomize();
   }
 
-  SHOCPblintdInitPotData pblintd_init_pot_data_cxx[] = {
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[0]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[1]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[2]),
-    SHOCPblintdInitPotData(pblintd_init_pot_data_f90[3]),
+  PblintdInitPotData pblintd_init_pot_data_cxx[] = {
+    PblintdInitPotData(pblintd_init_pot_data_f90[0]),
+    PblintdInitPotData(pblintd_init_pot_data_f90[1]),
+    PblintdInitPotData(pblintd_init_pot_data_f90[2]),
+    PblintdInitPotData(pblintd_init_pot_data_f90[3]),
   };
 
   for (auto& d : pblintd_init_pot_data_f90) {
     // expects data in C layout
-    shoc_pblintd_init_pot(d);
+    pblintd_init_pot(d);
   }
 
   for (auto& d : pblintd_init_pot_data_cxx) {
-    shoc_pblintd_init_pot_f(d.shcol(), d.nlev(), d.thl, d.ql, d.q, d.thv);
+    shoc_pblintd_init_pot_f(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
-    Int shcol = pblintd_init_pot_data_cxx[i].shcol();
-    Int nlev  = pblintd_init_pot_data_cxx[i].nlev();
+    const Int shcol = pblintd_init_pot_data_cxx[i].shcol;
+    const Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
     for (Int j = 0; j < shcol; ++j ) {
       for (Int k = 0; k < nlev; ++k) {
         REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);

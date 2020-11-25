@@ -14,778 +14,717 @@
 // Bridge functions to call fortran version of shoc functions from C++
 //
 
-#define SHOC_DIM_RENAME1 PTD_DIM_RENAME(1, shcol)
-#define SHOC_DIM_RENAME2 PTD_DIM_RENAME(2, shcol, nlev)
-#define SHOC_DIM_RENAME3 PTD_DIM_RENAME(3, shcol, nlev, nlevi)
-
-#define SHOC_NO_SCALAR(name, dim) \
-  PTD_STD_DEF(name, dim, 0);                      \
-  SHOC_DIM_RENAME##dim
-
-#define SHOC_SCALARS(name, dim, num_scalars, ...)       \
-  PTD_STD_DEF(name, dim, num_scalars, __VA_ARGS__);     \
-  SHOC_DIM_RENAME##dim
-
 namespace scream {
 namespace shoc {
 
-//Create data structure to hold data for shoc_grid
-struct SHOCGridData : public PhysicsTestData {
+struct ShocGridData : public PhysicsTestData {
   // Inputs
+  Int shcol, nlev, nlevi;
   Real *zt_grid, *zi_grid, *pdel;
 
-  // In/out
+  // Outputs
   Real *dz_zt, *dz_zi, *rho_zt;
 
-  SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
+  ShocGridData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &zt_grid, &pdel, &dz_zt, &rho_zt }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(SHOCGridData, 3);
+  PTD_STD_DEF(ShocGridData, 3, shcol, nlev, nlevi);
 };
 
-struct SHOCObklenData : public PhysicsTestData {
+struct ShocDiagObklenData : public PhysicsTestData {
   // Inputs
-  Real *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *thl_sfc;
-  Real *cldliq_sfc, *qv_sfc;
+  Int shcol;
+  Real *uw_sfc, *vw_sfc, *wthl_sfc, *wqw_sfc, *thl_sfc, *cldliq_sfc, *qv_sfc;
 
   // Outputs
   Real *ustar, *kbfs, *obklen;
 
-  SHOCObklenData(Int shcol_) :
-  PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc, &thl_sfc, &cldliq_sfc, &qv_sfc, &ustar, &kbfs, &obklen}){}
+  ShocDiagObklenData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc, &thl_sfc, &cldliq_sfc, &qv_sfc, &ustar, &kbfs, &obklen }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCObklenData, 1);
-
+  PTD_STD_DEF(ShocDiagObklenData, 1, shcol);
 };
 
-//Create data structure to hold data for compute_tmpi
-struct SHOCComptmpiData : public PhysicsTestData {
-  //Inputs
+struct UpdateHostDseData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
+  Real *thlm, *shoc_ql, *exner, *zt_grid, *phis;
+
+  // Outputs
+  Real *host_dse;
+
+  UpdateHostDseData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &thlm, &shoc_ql, &exner, &zt_grid, &host_dse }, { &phis }}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(UpdateHostDseData, 2, shcol, nlev);
+};
+
+struct ShocEnergyFixerData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi, nadv;
+  Real dtime;
+  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt, *tke, *pint;
+
+  // Inputs/Outputs
+  Real *host_dse;
+
+  ShocEnergyFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt, &tke, &host_dse }, { &zi_grid, &pint }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_), nadv(nadv_) {}
+
+  PTD_STD_DEF(ShocEnergyFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
+};
+
+struct ShocEnergyIntegralsData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
+  Real *host_dse, *pdel, *rtm, *rcm, *u_wind, *v_wind;
+
+  // Outputs
+  Real *se_int, *ke_int, *wv_int, *wl_int;
+
+  ShocEnergyIntegralsData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind }, { &se_int, &ke_int, &wv_int, &wl_int }}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(ShocEnergyIntegralsData, 2, shcol, nlev);
+};
+
+struct ShocEnergyTotalFixerData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi, nadv;
+  Real dtime;
+  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
+
+  // Outputs
+  Real *te_a, *te_b;
+
+  ShocEnergyTotalFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_), nadv(nadv_) {}
+
+  PTD_STD_DEF(ShocEnergyTotalFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
+};
+
+struct ShocEnergyThresholdFixerData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *pint, *tke, *te_a, *te_b;
+
+  // Outputs
+  Real *se_dis;
+  Int *shoctop;
+
+  ShocEnergyThresholdFixerData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &pint }, { &tke }, { &te_a, &te_b, &se_dis }}, {{ &shoctop }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
+
+  PTD_STD_DEF(ShocEnergyThresholdFixerData, 3, shcol, nlev, nlevi);
+};
+
+struct ShocEnergyDseFixerData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
+  Real *se_dis;
+  Int *shoctop;
+
+  // Inputs/Outputs
+  Real *host_dse;
+
+  ShocEnergyDseFixerData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_ }}, {{ &se_dis }, { &host_dse }}, {{ &shoctop }}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(ShocEnergyDseFixerData, 2, shcol, nlev);
+};
+
+struct CalcShocVertfluxData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *tkh_zi, *dz_zi, *invar;
+
+  // Outputs
+  Real *vertflux;
+
+  CalcShocVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &tkh_zi, &dz_zi, &vertflux }, { &invar }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
+
+  PTD_STD_DEF(CalcShocVertfluxData, 3, shcol, nlev, nlevi);
+};
+
+struct CalcShocVarorcovarData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real tunefac;
+  Real *isotropy_zi, *tkh_zi, *dz_zi, *invar1, *invar2;
+
+  // Inputs/Outputs
+  Real *varorcovar;
+
+  CalcShocVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &isotropy_zi, &tkh_zi, &dz_zi, &varorcovar }, { &invar1, &invar2 }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_), tunefac(tunefac_) {}
+
+  PTD_STD_DEF(CalcShocVarorcovarData, 4, shcol, nlev, nlevi, tunefac);
+};
+
+struct ComputeTmpiData : public PhysicsTestData {
+  // Inputs
+  Int nlevi, shcol;
   Real dtime;
   Real *rho_zi, *dz_zi;
 
-  //Outputs
+  // Outputs
   Real *tmpi;
 
-  SHOCComptmpiData(Int shcol_, Int nlevi_, Real dtime_) :
-    PhysicsTestData(shcol_, nlevi_, {&rho_zi, &dz_zi, &tmpi}), dtime(dtime_) {}
+  ComputeTmpiData(Int shcol_, Int nlevi_, Real dtime_) :
+    PhysicsTestData({{ shcol_, nlevi_ }}, {{ &rho_zi, &dz_zi, &tmpi }}), shcol(shcol_), nlevi(nlevi_), dtime(dtime_) {}
 
-  PTD_STD_DEF(SHOCComptmpiData, 2, 1, dtime);
-  PTD_DIM_RENAME(2, shcol, nlevi);
+  PTD_STD_DEF(ComputeTmpiData, 3, shcol, nlevi, dtime);
+};
 
-}; // SHOCComptmpiData
-
-//Create data structure to hold data for dp_inverse
-struct SHOCDpinverseData : public PhysicsTestData {
-  //Inputs
+struct DpInverseData : public PhysicsTestData {
+  // Inputs
+  Int nlev, shcol;
   Real *rho_zt, *dz_zt;
 
-  //Outputs
+  // Outputs
   Real *rdp_zt;
 
-  SHOCDpinverseData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&rho_zt, &dz_zt, &rdp_zt}) {}
+  DpInverseData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &rho_zt, &dz_zt, &rdp_zt }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCDpinverseData, 2);
+  PTD_STD_DEF(DpInverseData, 2, shcol, nlev);
+};
 
-}; // SHOCDpinverseData
-
-//Create data structure to hold data for sfc_fluxes
-struct SHOCSfcfluxesData : public PhysicsTestData {
-  //Inputs
+struct SfcFluxesData : public PhysicsTestData {
+  // Inputs
+  Int shcol, num_tracer;
   Real dtime;
-  Real *rdp_zt_sfc, *rho_zi_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc, *wtracer_sfc;
+  Real *rho_zi_sfc, *rdp_zt_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc, *wtracer_sfc;
 
-  //In/Outputs
-  Real *thetal, *qw, *tke, *tracer;
+  // Inputs/Outputs
+  Real *thetal, *qw, *tke, *wtracer;
 
-  SHOCSfcfluxesData(Int shcol_, Int num_tracer_, Real dtime_) :
-    PhysicsTestData(shcol_, num_tracer_, {&wtracer_sfc, &tracer}, {&rdp_zt_sfc, &rho_zi_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke}), dtime(dtime_) {}
+  SfcFluxesData(Int shcol_, Int num_tracer_, Real dtime_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, num_tracer_ }}, {{ &rho_zi_sfc, &rdp_zt_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke }, { &wtracer_sfc, &wtracer }}), shcol(shcol_), num_tracer(num_tracer_), dtime(dtime_) {}
 
-    PTD_STD_DEF(SHOCSfcfluxesData, 2, 1, dtime);
-    PTD_DIM_RENAME(2, shcol, num_tracer)
+  PTD_STD_DEF(SfcFluxesData, 3, shcol, num_tracer, dtime);
+};
 
-}; // SHOCSfcfluxesData
-
-//Create data structure to hold data for impli_srf_stress_term
-struct SHOCImplsrfstressData : public PhysicsTestData {
-  //Inputs
+struct ImpliSrfStressTermData : public PhysicsTestData {
+  // Inputs
+  Int shcol;
   Real *rho_zi_sfc, *uw_sfc, *vw_sfc, *u_wind_sfc, *v_wind_sfc;
 
-  //Outputs
+  // Outputs
   Real *ksrf;
 
-  SHOCImplsrfstressData(Int shcol_) :
-    PhysicsTestData(shcol_, {&rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf}) {}
+  ImpliSrfStressTermData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCImplsrfstressData, 1);
+  PTD_STD_DEF(ImpliSrfStressTermData, 1, shcol);
+};
 
-}; // SHOCImplsrfstressData
-
-//Create data structure to hold data for tke_srf_flux_term
-struct SHOCTkesrffluxData : public PhysicsTestData {
-  //Inputs
+struct TkeSrfFluxTermData : public PhysicsTestData {
+  // Inputs
+  Int shcol;
   Real *uw_sfc, *vw_sfc;
 
-  //Outputs
+  // Outputs
   Real *wtke_sfc;
 
-  SHOCTkesrffluxData(Int shcol_) :
-    PhysicsTestData(shcol_, {&uw_sfc, &vw_sfc, &wtke_sfc}) {}
+  TkeSrfFluxTermData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &uw_sfc, &vw_sfc, &wtke_sfc }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCTkesrffluxData, 1);
+  PTD_STD_DEF(TkeSrfFluxTermData, 1, shcol);
+};
 
-}; // SHOCTkesrffluxData
-
-//Create data structure to hold data for check_tke
-struct SHOCCheckTkeData : public PhysicsTestData {
-
-  // Output
-  Real *tke;
-
-  SHOCCheckTkeData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&tke}) {}
-
-  SHOC_NO_SCALAR(SHOCCheckTkeData, 2);
-};//SHOCCheckTkeData
-
-//Create data structure to hold data for shoc_tke
-struct SHOCTkeData : public PhysicsTestData {
+struct IntegColumnStabilityData : public PhysicsTestData {
   // Inputs
-  Real dtime;
-  Real *wthv_sec, *shoc_mix, *dz_zi, *u_wind, *v_wind, *pblh;
-  Real *brunt, *obklen, *zt_grid, *zi_grid, *dz_zt, *pres;
-
-  // Output
-  Real *tke, *tkh, *tk, *isotropy;
-
-  SHOCTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &zt_grid, &brunt, &tke, &tk, &tkh, &isotropy}, {&dz_zi, &zi_grid}, {&obklen, &pblh}), dtime(dtime_) {}
-
-  SHOC_SCALARS(SHOCTkeData, 3, 1, dtime);
-};//SHOCTkeData
-
-//Create data structure to hold data for integ_column_stability
-struct SHOCColstabData : public PhysicsTestData {
-  // Inputs
+  Int nlev, shcol;
   Real *dz_zt, *pres, *brunt;
 
-  // Output
+  // Outputs
   Real *brunt_int;
 
-  SHOCColstabData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&dz_zt, &pres, &brunt}, {&brunt_int}) {}
+  IntegColumnStabilityData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &dz_zt, &pres, &brunt }, { &brunt_int }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCColstabData, 2);
-};//SHOCColstabData
+  PTD_STD_DEF(IntegColumnStabilityData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for compute_shr_prod
-struct SHOCTkeshearData : public PhysicsTestData {
+struct CheckTkeData : public PhysicsTestData {
   // Inputs
-  Real *dz_zi, *u_wind, *v_wind;
+  Int shcol, nlev;
 
-  // In/out
-  Real *sterm;
+  // Inputs/Outputs
+  Real *tke;
 
-  //functions to initialize data
-  SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&u_wind, &v_wind}, {&dz_zi, &sterm}) {}
+  CheckTkeData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &tke }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCTkeshearData, 3);
-};//SHOCTkeshearData
+  PTD_STD_DEF(CheckTkeData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for isotropic_ts
-struct SHOCIsotropicData : public PhysicsTestData {
+struct ShocTkeData : public PhysicsTestData {
   // Inputs
-  Real *tke, *a_diss, *brunt, *brunt_int;
+  Int shcol, nlev, nlevi;
+  Real dtime;
+  Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *u_wind, *v_wind, *brunt, *obklen, *zt_grid, *zi_grid, *pblh;
 
-  // Output
+  // Inputs/Outputs
+  Real *tke, *tk, *tkh;
+
+  // Outputs
   Real *isotropy;
 
-  //functions to initialize data
-  SHOCIsotropicData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&tke, &a_diss, &brunt, &isotropy}, {&brunt_int}) {}
+  ShocTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy }, { &dz_zi, &zi_grid }, { &obklen, &pblh }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
 
-  SHOC_NO_SCALAR(SHOCIsotropicData, 2);
-};//SHOCIsotropicData
+  PTD_STD_DEF(ShocTkeData, 4, shcol, nlev, nlevi, dtime);
+};
 
-//Create data structure to hold data for adv_sgs_tke
-struct SHOCAdvsgstkeData : public PhysicsTestData {
+struct ComputeShrProdData : public PhysicsTestData {
   // Inputs
+  Int nlevi, nlev, shcol;
+  Real *dz_zi, *u_wind, *v_wind;
+
+  // Outputs
+  Real *sterm;
+
+  ComputeShrProdData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }}, {{ &dz_zi, &sterm }, { &u_wind, &v_wind }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
+
+  PTD_STD_DEF(ComputeShrProdData, 3, shcol, nlev, nlevi);
+};
+
+struct IsotropicTsData : public PhysicsTestData {
+  // Inputs
+  Int nlev, shcol;
+  Real *brunt_int, *tke, *a_diss, *brunt;
+
+  // Outputs
+  Real *isotropy;
+
+  IsotropicTsData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &brunt_int }, { &tke, &a_diss, &brunt, &isotropy }}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(IsotropicTsData, 2, shcol, nlev);
+};
+
+struct AdvSgsTkeData : public PhysicsTestData {
+  // Inputs
+  Int nlev, shcol;
   Real dtime;
   Real *shoc_mix, *wthv_sec, *sterm_zt, *tk;
 
-  // In/out
+  // Inputs/Outputs
   Real *tke;
 
   // Outputs
   Real *a_diss;
 
-  //functions to initialize data
-  SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_) :
-    PhysicsTestData(shcol_, nlev_, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}), dtime(dtime_) {}
+  AdvSgsTkeData(Int shcol_, Int nlev_, Real dtime_) :
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss }}), shcol(shcol_), nlev(nlev_), dtime(dtime_) {}
 
-  SHOC_SCALARS(SHOCAdvsgstkeData, 2, 1, dtime);
-};//SHOCAdvsgstkeData
+  PTD_STD_DEF(AdvSgsTkeData, 3, shcol, nlev, dtime);
+};
 
-//Create data structure to hold data for eddy_diffusivities
-struct SHOCEddydiffData : public PhysicsTestData {
+struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
-  Real *pblh, *obklen, *zt_grid, *shoc_mix, *sterm_zt,
-        *isotropy, *tke;
+  Int nlev, shcol;
+  Real *obklen, *pblh, *zt_grid, *shoc_mix, *sterm_zt, *isotropy, *tke;
 
-  // Output
-  Real *tk, *tkh;
+  // Outputs
+  Real *tkh, *tk;
 
-  //functions to initialize data
-  SHOCEddydiffData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {&obklen, &pblh}) {}
+  EddyDiffusivitiesData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &obklen, &pblh }, { &zt_grid, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCEddydiffData, 2);
-};//SHOCEddydiffData
+  PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
+};
 
-
-//create data structure for update_host_dse
-struct SHOCEnergydseData : public PhysicsTestData {
+struct ShocLengthData : public PhysicsTestData {
   // Inputs
-  Real *thlm, *shoc_ql, *exner, *zt_grid, *phis;
-
-  // Output
-  Real *host_dse;
-
-  //functions to initialize data
-  SHOCEnergydseData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
-
-  SHOC_NO_SCALAR(SHOCEnergydseData, 2);
-};//SHOCEnergydseData
-
-//create data structure for shoc_energy_fixer
-struct SHOCEnergyfixerData : public PhysicsTestData {
-  // Inputs
-  Int nadv;
-  Real dtime;
-  Real *zt_grid, *zi_grid, *se_b, *wv_b, *pint;
-  Real *se_a, *ke_b, *wl_b, *ke_a, *tke;
-  Real *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
-
-  // Output
-  Real *host_dse;
-
-  //functions to initialize data
-  SHOCEnergyfixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Real nadv_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&host_dse, &zt_grid, &rho_zt, &tke}, {&zi_grid, &pint}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc}), nadv(nadv_), dtime(dtime_) {}
-
-  SHOC_SCALARS(SHOCEnergyfixerData, 3, 2, dtime, nadv);
-};//SHOCEnergyfixerData
-
-//create data structure for shoc_energy_integrals
-struct SHOCEnergyintData : public PhysicsTestData {
-  // Inputs
-  Real *host_dse, *pdel, *rtm, *rcm, *u_wind, *v_wind;
-
-  // Output
-  Real *se_int, *ke_int, *wv_int, *wl_int;
-
-  //functions to initialize data
-  SHOCEnergyintData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
-
-  SHOC_NO_SCALAR(SHOCEnergyintData, 2);
-};//SHOCEnergyintData
-
-//Create data structure for shoc_energy_total_fixer
-struct SHOCEnergytotData : public PhysicsTestData {
-  // Inputs
-  Int nadv;
-  Real dtime;
-  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a;
-  Real *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
-
-  // Output
-  Real *te_a, *te_b;
-
-  //functions to initialize data for shoc_energy_total_fixer
-  SHOCEnergytotData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), nadv(nadv_), dtime(dtime_) {}
-
-  SHOC_SCALARS(SHOCEnergytotData, 3, 2, dtime, nadv);
-};//SHOCEnergytotData
-
-//create data structure for shoc_energy_threshold_fixer
-struct SHOCEnergythreshfixerData : public PhysicsTestData {
-  // Inputs
-  Real *pint, *tke, *te_a, *te_b;
-
-  // In/out
-  Real *se_dis;
-  Int *shoctop;
-
-  //functions to initialize data
-  SHOCEnergythreshfixerData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&tke}, {&pint}, {&se_dis, &te_a, &te_b}, {&shoctop}) {}
-
-  SHOC_NO_SCALAR(SHOCEnergythreshfixerData, 3);
-};//SHOCEnergythreshfixerData
-
-//create data structure for shoc_energy_dse_fixer
-struct SHOCEnergydsefixerData : public PhysicsTestData {
-  // Inputs
-  Real *se_dis;
-  Int *shoctop;
-
-  // In/out
-  Real *host_dse;
-
-  //functions to initialize data
-  SHOCEnergydsefixerData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&host_dse}, {&se_dis}, {&shoctop}) {}
-
-  SHOC_NO_SCALAR(SHOCEnergydsefixerData, 2);
-};//SHOCEnergydsefixerData
-
-//Create data structure to hold data for calc_shoc_vertflux
-struct SHOCVertfluxData : public PhysicsTestData {
-  // Inputs
-  Real *tkh_zi, *dz_zi, *invar;
-
-  // In/out
-  Real *vertflux;
-
-  SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
-
-  SHOC_NO_SCALAR(SHOCVertfluxData, 3);
-}; //SHOCVertfluxData
-
-//Create data structure to hold data for calc_shoc_varorcovar
-struct SHOCVarorcovarData : public PhysicsTestData {
-  // Inputs
-  Real tunefac;
-  Real *tkh_zi, *dz_zi, *isotropy_zi, *invar1, *invar2;
-
-  // In/out
-  Real *varorcovar;
-
-  SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(tunefac_) {}
-
-  SHOC_SCALARS(SHOCVarorcovarData, 3, 1, tunefac);
-};//SHOCVarorcovarData
-
-//Create data structure to hold data for shoc_length
-struct SHOCLengthData : public PhysicsTestData {
-  // Inputs
-  Real *tke, *host_dx, *host_dy, *pblh, *zt_grid, *zi_grid;
-  Real *dz_zt, *dz_zi, *wthv_sec, *thetal, *thv;
+  Int shcol, nlev, nlevi;
+  Real *host_dx, *host_dy, *pblh, *tke, *zt_grid, *zi_grid, *dz_zt, *dz_zi, *thetal, *wthv_sec, *thv;
 
   // Outputs
   Real *brunt, *shoc_mix;
 
-  SHOCLengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&tke, &zt_grid, &dz_zt, &wthv_sec, &thetal, &thv, &brunt, &shoc_mix}, {&zi_grid, &dz_zi}, {&host_dx, &host_dy, &pblh}) {}
+  ShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &host_dx, &host_dy, &pblh }, { &tke, &zt_grid, &dz_zt, &thetal, &wthv_sec, &thv, &brunt, &shoc_mix }, { &zi_grid, &dz_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(SHOCLengthData, 3);
-};//SHOCLengthData
+  PTD_STD_DEF(ShocLengthData, 3, shcol, nlev, nlevi);
+};
 
-//Create data structure to hold data for compute_brunt_shoc_length
-struct SHOCBruntlengthData : public PhysicsTestData {
+struct ComputeBruntShocLengthData : public PhysicsTestData {
   // Inputs
+  Int nlev, nlevi, shcol;
   Real *dz_zt, *thv, *thv_zi;
 
-  // In/out
+  // Outputs
   Real *brunt;
 
-  SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&dz_zt, &thv, &brunt}, {&thv_zi}) {}
+  ComputeBruntShocLengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &dz_zt, &thv, &brunt }, { &thv_zi }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(SHOCBruntlengthData, 3);
-};//SHOCBruntlengthData
+  PTD_STD_DEF(ComputeBruntShocLengthData, 3, shcol, nlev, nlevi);
+};
 
-//Create data structure to hold data for compute_l_inf_shoc_length
-struct SHOCInflengthData : public PhysicsTestData {
+struct ComputeLInfShocLengthData : public PhysicsTestData {
   // Inputs
+  Int nlev, shcol;
   Real *zt_grid, *dz_zt, *tke;
 
-  // In/out
+  // Inputs/Outputs
   Real *l_inf;
 
-  SHOCInflengthData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &tke}, {&l_inf}) {}
+  ComputeLInfShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &zt_grid, &dz_zt, &tke }, { &l_inf }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCInflengthData, 2);
-};//SHOCInflengthData
+  PTD_STD_DEF(ComputeLInfShocLengthData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for compute_vel_shoc_length
-struct SHOCConvvelData : public PhysicsTestData {
+struct ComputeConvVelShocLengthData : public PhysicsTestData {
   // Inputs
+  Int nlev, shcol;
   Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
 
-  // In/out
+  // Inputs/Outputs
   Real *conv_vel;
 
-  SHOCConvvelData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &thv, &wthv_sec}, {&conv_vel, &pblh}) {}
+  ComputeConvVelShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh, &conv_vel }, { &zt_grid, &dz_zt, &thv, &wthv_sec }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCConvvelData, 2);
-};//SHOCConvvelData
+  PTD_STD_DEF(ComputeConvVelShocLengthData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for compute_conv_time_shoc_length
-struct SHOCConvtimeData : public PhysicsTestData {
+struct ComputeConvTimeShocLengthData : public PhysicsTestData {
   // Inputs
-  Real *pblh, *conv_vel;
+  Int shcol;
+  Real *pblh;
 
-  // In/out
-  Real *tscale;
+  // Inputs/Outputs
+  Real *conv_vel, *tscale;
 
-  SHOCConvtimeData(Int shcol_) :
-    PhysicsTestData(shcol_, {&conv_vel, &pblh, &tscale}) {}
+  ComputeConvTimeShocLengthData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &pblh, &conv_vel, &tscale }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCConvtimeData, 1);
-};//SHOCConvtimeData
+  PTD_STD_DEF(ComputeConvTimeShocLengthData, 1, shcol);
+};
 
-//Create data structure to hold data for compute_shoc_mix_shoc_length
-struct SHOCMixlengthData : public PhysicsTestData {
+struct ComputeShocMixShocLengthData : public PhysicsTestData {
   // Inputs
+  Int nlev, shcol;
   Real *tke, *brunt, *tscale, *zt_grid, *l_inf;
 
-  // In/out
+  // Outputs
   Real *shoc_mix;
 
-  SHOCMixlengthData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&tke, &brunt, &zt_grid, &shoc_mix}, {&l_inf, &tscale}) {}
+  ComputeShocMixShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &shoc_mix }, { &tscale, &l_inf }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCMixlengthData, 2);
-};//SHOCMixlengthData
+  PTD_STD_DEF(ComputeShocMixShocLengthData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for check_length_scale_shoc_length
-struct SHOCMixcheckData : public PhysicsTestData {
+struct CheckLengthScaleShocLengthData : public PhysicsTestData {
   // Inputs
+  Int nlev, shcol;
   Real *host_dx, *host_dy;
 
-  // In/out
+  // Inputs/Outputs
   Real *shoc_mix;
 
-  SHOCMixcheckData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&shoc_mix}, {&host_dx, &host_dy}) {}
+  CheckLengthScaleShocLengthData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &host_dx, &host_dy }, { &shoc_mix }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCMixcheckData, 2);
-};//SHOCMixcheckData
+  PTD_STD_DEF(CheckLengthScaleShocLengthData, 2, shcol, nlev);
+};
 
-//Create data structure to hold data for clipping_diag_third_shoc_moments
-struct SHOCClipthirdmomsData : public PhysicsTestData {
+struct FtermsInputForDiagThirdShocMomentData {
   // Inputs
-  Real *w_sec_zi;
-
-  // In/out
-  Real *w3;
-
-  SHOCClipthirdmomsData(Int shcol_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlevi_,{&w_sec_zi, &w3}){}
-
-  PTD_STD_DEF(SHOCClipthirdmomsData, 2, 0);
-  PTD_DIM_RENAME(2, shcol, nlevi);
-
-};//SHOCClipthirdmomsData
-
-struct SHOCAAdiagthirdmomsData
-{
-  // inputs
-  Real omega0, omega1, omega2, x0, x1, y0, y1;
-
-  // outputs
-  Real aa0, aa1;
-
-};
-
-struct SHOCFtermdiagthirdmomsData
-{
-  // inputs
-  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc;
-  Real wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec;
-  Real w_sec_kc, w_sec_zi, tke, tke_kc;
-
-  // outputs
-  Real f0, f1, f2, f3, f4, f5;
-
-};
-
-struct SHOCOmegadiagthirdmomsData
-{
-  // inputs
-  Real buoy_sgs2, f3, f4;
-
-  // outputs
-  Real omega0, omega1, omega2;
-
-};
-
-struct SHOCXYdiagthirdmomsData
-{
-  // inputs
-  Real buoy_sgs2, f0, f1, f2;
-
-  // outputs
-  Real x0, y0, x1, y1;
-
-};
-
-struct SHOCW3diagthirdmomsData
-{
-  // inputs
-  Real aa0, aa1, x0, x1, f5;
-
-  // outputs
-  Real w3;
-
-};
-
-struct SHOCFterminputthirdmomsData
-{
-  // inputs
   Real dz_zi, dz_zt, dz_zt_kc, isotropy_zi, brunt_zi, thetal_zi;
 
-  // outputs
+  // Outputs
   Real thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2;
-
 };
 
-struct SHOCSecondMomentSrfData : public PhysicsTestData {
+struct AaTermsDiagThirdShocMomentData {
   // Inputs
+  Real omega0, omega1, omega2, x0, x1, y0, y1;
+
+  // Outputs
+  Real aa0, aa1;
+};
+
+struct F0ToF5DiagThirdShocMomentData {
+  // Inputs
+  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec, w_sec_kc, w_sec_zi, tke, tke_kc;
+
+  // Outputs
+  Real f0, f1, f2, f3, f4, f5;
+};
+
+struct OmegaTermsDiagThirdShocMomentData {
+  // Inputs
+  Real buoy_sgs2, f3, f4;
+
+  // Outputs
+  Real omega0, omega1, omega2;
+};
+
+struct XYTermsDiagThirdShocMomentData {
+  // Inputs
+  Real buoy_sgs2, f0, f1, f2;
+
+  // Outputs
+  Real x0, y0, x1, y1;
+};
+
+struct W3DiagThirdShocMomentData {
+  // Inputs
+  Real aa0, aa1, x0, x1, f5;
+
+  // Outputs
+  Real w3;
+};
+
+struct ClippingDiagThirdShocMomentsData : public PhysicsTestData {
+  // Inputs
+  Int nlevi, shcol;
+  Real *w_sec_zi;
+
+  // Inputs/Outputs
+  Real *w3;
+
+  ClippingDiagThirdShocMomentsData(Int shcol_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }}, {{ &w_sec_zi, &w3 }}), shcol(shcol_), nlevi(nlevi_) {}
+
+  PTD_STD_DEF(ClippingDiagThirdShocMomentsData, 2, shcol, nlevi);
+};
+
+struct DiagSecondMomentsSrfData : public PhysicsTestData {
+  // Inputs
+  Int shcol;
   Real *wthl_sfc, *uw_sfc, *vw_sfc;
 
-  // out
+  // Outputs
   Real *ustar2, *wstar;
 
-  SHOCSecondMomentSrfData(Int shcol_) :
-    PhysicsTestData(shcol_, {&wthl_sfc, &uw_sfc, &vw_sfc, &ustar2, &wstar}) {}
+  DiagSecondMomentsSrfData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &wthl_sfc, &uw_sfc, &vw_sfc, &ustar2, &wstar }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCSecondMomentSrfData, 1);
+  PTD_STD_DEF(DiagSecondMomentsSrfData, 1, shcol);
 };
 
-//Create data structure to hold data for diag_third_shoc_moments
-struct SHOCDiagThirdMomData : public PhysicsTestData {
+struct LinearInterpData : public PhysicsTestData {
   // Inputs
-  Real *w_sec, *thl_sec, *wthl_sec, *tke;
-  Real *dz_zt, *dz_zi, *zt_grid, *zi_grid, *isotropy, *brunt;
-  Real *thetal;
-
-  // Output
-  Real *w3;
-
-  SHOCDiagThirdMomData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&w_sec, &tke, &dz_zt, &zt_grid, &brunt, &thetal, &isotropy}, {&thl_sec, &wthl_sec, &zi_grid, &dz_zi, &w3}) {}
-
-  SHOC_NO_SCALAR(SHOCDiagThirdMomData, 3);
-};//SHOCDiagThirdMomData
-
-//Create data structure to hold data for compute_diag_third_shoc_moment
-struct SHOCCompThirdMomData : public PhysicsTestData {
-  // Inputs
-  Real *w_sec, *thl_sec, *wthl_sec, *tke, *dz_zt;
-  Real *dz_zi, *isotropy_zi, *brunt_zi, *w_sec_zi;
-  Real *thetal_zi;
-
-  // Output
-  Real *w3;
-
-  SHOCCompThirdMomData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&w_sec, &tke, &dz_zt}, {&thl_sec, &wthl_sec, &isotropy_zi, &dz_zi, &brunt_zi, &w_sec_zi, &thetal_zi, &w3}) {}
-
-  SHOC_NO_SCALAR(SHOCCompThirdMomData, 3);
-};//SHOCCompThirdMomData
-
-//Create data structure to hold data for linear_interp
-struct SHOCLinearInterpData : public PhysicsTestData {
-  // Inputs
-  Real minthresh;
   Real *x1, *x2, *y1;
+  Int km1, km2, ncol;
+  Real minthresh;
 
-  // In/out
+  // Outputs
   Real *y2;
 
-  SHOCLinearInterpData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
+  LinearInterpData(Int ncol_, Int km1_, Int km2_, Real minthresh_) :
+    PhysicsTestData({{ ncol_, km1_ }, { ncol_, km2_ }}, {{ &x1, &y1 }, { &x2, &y2 }}), ncol(ncol_), km1(km1_), km2(km2_), minthresh(minthresh_) {}
 
-  SHOC_SCALARS(SHOCLinearInterpData, 3, 1, minthresh);
-};//SHOCLinearInterpData
+  PTD_STD_DEF(LinearInterpData, 4, ncol, km1, km2, minthresh);
+};
 
-//Create data structure to hold data for compute_shr_prod
-struct SHOCAssumedpdfData : public PhysicsTestData {
+struct DiagThirdShocMomentsData : public PhysicsTestData {
   // Inputs
-  Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec;
-  Real *wqw_sec, *qwthl_sec, *w3, *pres, *zt_grid, *zi_grid;
+  Int shcol, nlev, nlevi;
+  Real *w_sec, *thl_sec, *wthl_sec, *isotropy, *brunt, *thetal, *tke, *dz_zt, *dz_zi, *zt_grid, *zi_grid;
+
+  // Outputs
+  Real *w3;
+
+  DiagThirdShocMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &isotropy, &brunt, &thetal, &tke, &dz_zt, &zt_grid }, { &thl_sec, &wthl_sec, &dz_zi, &zi_grid, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+
+  PTD_STD_DEF(DiagThirdShocMomentsData, 3, shcol, nlev, nlevi);
+};
+
+struct ComputeDiagThirdShocMomentData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *w_sec, *thl_sec, *wthl_sec, *tke, *dz_zt, *dz_zi, *isotropy_zi, *brunt_zi, *w_sec_zi, *thetal_zi;
+
+  // Outputs
+  Real *w3;
+
+  ComputeDiagThirdShocMomentData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &tke, &dz_zt }, { &thl_sec, &wthl_sec, &dz_zi, &isotropy_zi, &brunt_zi, &w_sec_zi, &thetal_zi, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+
+  PTD_STD_DEF(ComputeDiagThirdShocMomentData, 3, shcol, nlev, nlevi);
+};
+
+struct ShocAssumedPdfData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec, *wqw_sec, *qwthl_sec, *w3, *pres, *zt_grid, *zi_grid;
 
   // Outputs
   Real *shoc_cldfrac, *shoc_ql, *wqls, *wthv_sec, *shoc_ql2;
 
-  //functions to initialize data
-  SHOCAssumedpdfData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2}, {&w3, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &zi_grid}) {}
+  ShocAssumedPdfData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2 }, { &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &w3, &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(SHOCAssumedpdfData, 3);
-};//SHOCAssumedpdfData
+  PTD_STD_DEF(ShocAssumedPdfData, 3, shcol, nlev, nlevi);
+};
 
-//Create data structure to hold data for shoc_assumed_pdf_tilde_to_real
-struct SHOCPDFtildeData
-{
-  // inputs
+struct ShocAssumedPdfTildeToRealData {
+  // Inputs
   Real w_first, sqrtw2;
 
-  // outputs
+  // Inputs/Outputs
   Real w1;
 };
 
-// Create data structure to hold data for shoc_assumed_pdf_vv_parameters
-struct SHOCPDFvvparamData
-{
-  // inputs
+struct ShocAssumedPdfVvParametersData {
+  // Inputs
   Real w_first, w_sec, w3var;
 
-  // outputs
-  Real Skew_w, w1_1, w1_2, w2_1, w2_2, a;
+  // Outputs
+  Real skew_w, w1_1, w1_2, w2_1, w2_2, a;
 };
 
-// Create data structure to hold data for shoc_assumed_pdf_thl_parameters
-struct SHOCPDFthlparamData
-{
-  // inputs
-  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a;
+struct ShocAssumedPdfThlParametersData {
+  // Inputs
+  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, skew_w, a;
   bool dothetal_skew;
 
-  // outputs
+  // Outputs
   Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
 };
 
-// Create data structure to hold data for shoc_assumed_pdf_qw_parameters
-struct SHOCPDFqwparamData
-{
-  // inputs
-  Real wqwsec, qwsec, sqrtw2, sqrtqt, qw_first, w1_1, w1_2, Skew_w, a;
+struct ShocAssumedPdfQwParametersData {
+  // Inputs
+  Real wqwsec, sqrtw2, skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a;
 
-  // outputs
+  // Outputs
   Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
 };
 
-// Create data structure to hold data for shoc_assumed_pdf_inplume_correlations
-struct SHOCPDFinplumeData
-{
-  // inputs
-  Real sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2;
-  Real qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2;
+struct ShocAssumedPdfInplumeCorrelationsData {
+  // Inputs
+  Real sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2, qwthlsec, qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2;
 
-  // outputs
+  // Outputs
   Real r_qwthl_1;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_temperature
-struct SHOCPDFcomptempData
-{
-  // inputs
+struct ShocAssumedPdfComputeTemperatureData {
+  // Inputs
   Real thl1, basepres, pval;
 
-  // outputs
-  Real Tl1;
+  // Outputs
+  Real tl1;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_qs
-struct SHOCPDFcompqsData
-{
-  // inputs
-  Real Tl1_1, Tl1_2, pval;
+struct ShocAssumedPdfComputeQsData {
+  // Inputs
+  Real tl1_1, tl1_2, pval;
 
-  // outputs
+  // Outputs
   Real qs1, beta1, qs2, beta2;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_s
-struct SHOCPDFcompsData
-{
-  // inputs
+struct ShocAssumedPdfComputeSData {
+  // Inputs
   Real qw1, qs1, beta, pval, thl2, qw2, sqrtthl2, sqrtqw2, r_qwthl;
 
-  // outputs
-  Real s, std_s, qn, C;
+  // Outputs
+  Real s, std_s, qn, c;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_sgs_liquid
-struct SHOCPDFcompsgsliqData
-{
-  // inputs
+struct ShocAssumedPdfComputeSgsLiquidData {
+  // Inputs
   Real a, ql1, ql2;
 
-  // outputs
+  // Outputs
   Real shoc_ql;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_cloud_liquid_variance
-struct SHOCPDFcompcloudvarData
-{
-  // inputs
-  Real a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql;
+struct ShocAssumedPdfComputeCloudLiquidVarianceData {
+  // Inputs
+  Real a, s1, ql1, c1, std_s1, s2, ql2, c2, std_s2, shoc_ql;
 
-  // outputs
+  // Outputs
   Real shoc_ql2;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_liquid_water_flux
-struct SHOCPDFcompliqfluxData
-{
-  // inputs
+struct ShocAssumedPdfComputeLiquidWaterFluxData {
+  // Inputs
   Real a, w1_1, w_first, ql1, w1_2, ql2;
 
-  // outputs
+  // Outputs
   Real wqls;
 };
 
-//Create data structure to hold data for shoc_assumed_pdf_compute_buoyancy_flux
-struct SHOCPDFcompbuoyfluxData
-{
-  // inputs
+struct ShocAssumedPdfComputeBuoyancyFluxData {
+  // Inputs
   Real wthlsec, epsterm, wqwsec, pval, wqls;
 
-  // outputs
+  // Outputs
   Real wthv_sec;
 };
 
-struct SHOCSecondMomentUbycondData : public PhysicsTestData {
+struct DiagSecondMomentsUbycondData : public PhysicsTestData {
+  // Inputs
+  Int shcol;
+
   // Outputs
-  Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec;
-  Real *uw_sec, *vw_sec, *wtke_sec;
+  Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec, *uw_sec, *vw_sec, *wtke_sec;
 
-  SHOCSecondMomentUbycondData(Int shcol_) :
-    PhysicsTestData(shcol_, {&thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec}) {}
+  DiagSecondMomentsUbycondData(Int shcol_) :
+    PhysicsTestData({{ shcol_ }}, {{ &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(SHOCSecondMomentUbycondData, 1);
+  PTD_STD_DEF(DiagSecondMomentsUbycondData, 1, shcol);
 };
 
-struct SHOCPblintdInitPotData : public PhysicsTestData {
-  // inputs
+struct PblintdInitPotData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
   Real *thl, *ql, *q;
 
-  // outputs
+  // Outputs
   Real *thv;
 
-  SHOCPblintdInitPotData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&thl, &ql, &q, &thv}) {}
+  PblintdInitPotData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &thl, &ql, &q, &thv }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(SHOCPblintdInitPotData, 2);
+  PTD_STD_DEF(PblintdInitPotData, 2, shcol, nlev);
+};
+
+struct PblintdCldcheckData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *zi, *cldn;
+
+  // Inputs/Outputs
+  Real *pblh;
+
+  PblintdCldcheckData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }, { shcol_ }}, {{ &zi }, { &cldn }, { &pblh }}), shcol(shcol_), nlevi(nlevi_), nlev(nlev_) {}
+
+  PTD_STD_DEF(PblintdCldcheckData, 3, shcol, nlev, nlevi);
 };
 
 struct DiagSecondMomentsLbycondData : public PhysicsTestData {
   // Inputs
+  Int shcol;
   Real *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *ustar2, *wstar;
 
   // Outputs
   Real *wthl_sec, *wqw_sec, *uw_sec, *vw_sec, *wtke_sec, *thl_sec, *qw_sec, *qwthl_sec;
 
   DiagSecondMomentsLbycondData(Int shcol_) :
-    PhysicsTestData(shcol_, {&wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &ustar2, &wstar, &wthl_sec, &wqw_sec, &uw_sec, &vw_sec, &wtke_sec, &thl_sec, &qw_sec, &qwthl_sec}) {}
+    PhysicsTestData({{ shcol_ }}, {{ &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &ustar2, &wstar, &wthl_sec, &wqw_sec, &uw_sec, &vw_sec, &wtke_sec, &thl_sec, &qw_sec, &qwthl_sec }}), shcol(shcol_) {}
 
-  SHOC_NO_SCALAR(DiagSecondMomentsLbycondData, 1)
+  PTD_STD_DEF(DiagSecondMomentsLbycondData, 1, shcol);
 };
+
 struct DiagSecondMomentsData : public PhysicsTestData {
   // Inputs
+  Int shcol, nlev, nlevi;
   Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *zt_grid, *zi_grid, *shoc_mix;
 
   // Inputs/Outputs
@@ -795,50 +734,40 @@ struct DiagSecondMomentsData : public PhysicsTestData {
   Real *w_sec;
 
   DiagSecondMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec},
-                   {&dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec}) {}
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(DiagSecondMomentsData, 3)
+  PTD_STD_DEF(DiagSecondMomentsData, 3, shcol, nlev, nlevi);
 };
+
 struct DiagSecondShocMomentsData : public PhysicsTestData {
   // Inputs
+  Int shcol, nlev, nlevi;
   Real *thetal, *qw, *u_wind, *v_wind, *tke, *isotropy, *tkh, *tk, *dz_zi, *zt_grid, *zi_grid, *shoc_mix, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc;
 
   // Outputs
   Real *thl_sec, *qw_sec, *wthl_sec, *wqw_sec, *qwthl_sec, *uw_sec, *vw_sec, *wtke_sec, *w_sec;
 
   DiagSecondShocMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec}, {&dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec}, {&wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc}) {}
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &thetal, &qw, &u_wind, &v_wind, &tke, &isotropy, &tkh, &tk, &zt_grid, &shoc_mix, &w_sec }, { &dz_zi, &zi_grid, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &uw_sec, &vw_sec, &wtke_sec }, { &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
 
-  SHOC_NO_SCALAR(DiagSecondShocMomentsData, 3)
-};
-
-struct SHOCPblintdCldCheckData : public PhysicsTestData {
-  // inputs
- Real *zi, *cldn;
-
- // outputs
-  Real *pblh;
-
-  SHOCPblintdCldCheckData(Int shcol_, Int nlev_, Int nlevi_) :
-     PhysicsTestData(shcol_, nlev_, nlevi_, {&cldn}, {&zi}, {&pblh}) {}
-
-  SHOC_NO_SCALAR(SHOCPblintdCldCheckData, 3);
+  PTD_STD_DEF(DiagSecondShocMomentsData, 3, shcol, nlev, nlevi);
 };
 
 struct ComputeShocVaporData : public PhysicsTestData {
   // Inputs
+  Int shcol, nlev;
   Real *qw, *ql;
 
   // Outputs
   Real *qv;
 
   ComputeShocVaporData(Int shcol_, Int nlev_) :
-    PhysicsTestData(shcol_, nlev_, {&qw, &ql, &qv}) {}
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &qw, &ql, &qv }}), shcol(shcol_), nlev(nlev_) {}
 
-  SHOC_NO_SCALAR(ComputeShocVaporData, 2)
+  PTD_STD_DEF(ComputeShocVaporData, 2, shcol, nlev);
 };
-struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
+
+struct UpdatePrognosticsImplicitData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi, num_tracer;
   Real dtime;
@@ -848,11 +777,12 @@ struct UpdatePrognosticsImplicitData : public PhysicsTestDataGeneric {
   Real *thetal, *qw, *tracer, *tke, *u_wind, *v_wind;
 
   UpdatePrognosticsImplicitData(Int shcol_, Int nlev_, Int nlevi_, Int num_tracer_, Real dtime_) :
-    PhysicsTestDataGeneric({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }, { shcol_, num_tracer_ }, { shcol_, nlev_, num_tracer_ }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &wtracer_sfc }, { &tracer }}, {}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }, { shcol_, num_tracer_ }, { shcol_, nlev_, num_tracer_ }}, {{ &dz_zt, &rho_zt, &zt_grid, &tk, &tkh, &thetal, &qw, &tke, &u_wind, &v_wind }, { &dz_zi, &zi_grid }, { &uw_sfc, &vw_sfc, &wthl_sfc, &wqw_sfc }, { &wtracer_sfc }, { &tracer }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_tracer(num_tracer_), dtime(dtime_) {}
 
-  PTDG_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
+  PTD_STD_DEF(UpdatePrognosticsImplicitData, 5, shcol, nlev, nlevi, num_tracer, dtime);
 };
-struct ShocMainData : public PhysicsTestDataGeneric {
+
+struct ShocMainData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi, nadv, num_qtracers;
   Real dtime;
@@ -865,74 +795,95 @@ struct ShocMainData : public PhysicsTestDataGeneric {
   Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2;
 
   ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_) :
-    PhysicsTestDataGeneric({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }}, {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh }, { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal, &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac, &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 }, { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec, &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 }, { &wtracer_sfc }, { &qtracers }}, {}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_), dtime(dtime_), nadv(nadv_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }}, {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh }, { &thv, &zt_grid, &pres, &pdel, &w_field, &exner, &host_dse, &tke, &thetal, &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac, &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 }, { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec, &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 }, { &wtracer_sfc }, { &qtracers }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), num_qtracers(num_qtracers_), dtime(dtime_), nadv(nadv_) {}
 
-  PTDG_STD_DEF(ShocMainData, 6, shcol, nlev, nlevi, num_qtracers, dtime, nadv);
+  PTD_STD_DEF(ShocMainData, 6, shcol, nlev, nlevi, num_qtracers, dtime, nadv);
 };
+
+struct PblintdHeightData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev;
+  Real *z, *u, *v, *ustar, *thv, *thv_ref;
+
+  // Inputs/Outputs
+  Real *rino;
+  bool *check;
+
+  // Outputs
+  Real *pblh;
+
+  PblintdHeightData(Int shcol_, Int nlev_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z, &u, &v, &thv, &rino }, { &ustar, &thv_ref, &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_) {}
+
+  PTD_STD_DEF(PblintdHeightData, 2, shcol, nlev);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
-void shoc_grid                                      (SHOCGridData &d);
-void shoc_diag_obklen                               (SHOCObklenData &d);
-void update_host_dse                                (SHOCEnergydseData &d);
-void shoc_energy_fixer                              (SHOCEnergyfixerData &d);
-void shoc_energy_integrals                          (SHOCEnergyintData &d);
-void shoc_energy_total_fixer                        (SHOCEnergytotData &d);
-void shoc_energy_threshold_fixer                    (SHOCEnergythreshfixerData &d);
-void shoc_energy_dse_fixer                          (SHOCEnergydsefixerData &d);
-void calc_shoc_vertflux                             (SHOCVertfluxData &d);
-void calc_shoc_varorcovar                           (SHOCVarorcovarData &d);
-void compute_tmpi                                   (SHOCComptmpiData &d);
-void dp_inverse                                     (SHOCDpinverseData &d);
-void sfc_fluxes                                     (SHOCSfcfluxesData &d);
-void impli_srf_stress_term                          (SHOCImplsrfstressData &d);
-void tke_srf_flux_term                              (SHOCTkesrffluxData &d);
-void integ_column_stability                         (SHOCColstabData &d);
-void check_tke                                      (SHOCCheckTkeData &d);
-void shoc_tke                                       (SHOCTkeData &d);
-void compute_shr_prod                               (SHOCTkeshearData &d);
-void isotropic_ts                                   (SHOCIsotropicData &d);
-void adv_sgs_tke                                    (SHOCAdvsgstkeData &d);
-void eddy_diffusivities                             (SHOCEddydiffData &d);
-void shoc_length                                    (SHOCLengthData &d);
-void compute_brunt_shoc_length                      (SHOCBruntlengthData &d);
-void compute_l_inf_shoc_length                      (SHOCInflengthData &d);
-void compute_conv_vel_shoc_length                   (SHOCConvvelData &d);
-void compute_conv_time_shoc_length                  (SHOCConvtimeData &d);
-void compute_shoc_mix_shoc_length                   (SHOCMixlengthData &d);
-void check_length_scale_shoc_length                 (SHOCMixcheckData &d);
-void fterms_input_for_diag_third_shoc_moment        (SHOCFterminputthirdmomsData &d);
-void aa_terms_diag_third_shoc_moment                (SHOCAAdiagthirdmomsData &d);
-void f0_to_f5_diag_third_shoc_moment                (SHOCFtermdiagthirdmomsData &d);
-void omega_terms_diag_third_shoc_moment             (SHOCOmegadiagthirdmomsData &d);
-void x_y_terms_diag_third_shoc_moment               (SHOCXYdiagthirdmomsData &d);
-void w3_diag_third_shoc_moment                      (SHOCW3diagthirdmomsData &d);
-void clipping_diag_third_shoc_moments               (SHOCClipthirdmomsData &d);
-void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d);
-void linear_interp                                  (SHOCLinearInterpData &d);
-void diag_third_shoc_moments                        (SHOCDiagThirdMomData &d);
-void compute_diag_third_shoc_moment                 (SHOCCompThirdMomData &d);
-void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
-void shoc_assumed_pdf_tilde_to_real                 (SHOCPDFtildeData &d);
-void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
-void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);
-void shoc_assumed_pdf_qw_parameters                 (SHOCPDFqwparamData &d);
-void shoc_assumed_pdf_inplume_correlations          (SHOCPDFinplumeData &d);
-void shoc_assumed_pdf_compute_temperature           (SHOCPDFcomptempData &d);
-void shoc_assumed_pdf_compute_qs                    (SHOCPDFcompqsData &d);
-void shoc_assumed_pdf_compute_s                     (SHOCPDFcompsData &d);
-void shoc_assumed_pdf_compute_sgs_liquid            (SHOCPDFcompsgsliqData &d);
-void shoc_assumed_pdf_compute_cloud_liquid_variance (SHOCPDFcompcloudvarData &d);
-void shoc_assumed_pdf_compute_liquid_water_flux     (SHOCPDFcompliqfluxData &d);
-void shoc_assumed_pdf_compute_buoyancy_flux         (SHOCPDFcompbuoyfluxData &d);
-void shoc_diag_second_moments_ubycond               (SHOCSecondMomentUbycondData& d);
-void shoc_pblintd_init_pot                          (SHOCPblintdInitPotData &d);
-void shoc_pblintd_cldcheck                          (SHOCPblintdCldCheckData& d);
+
+void shoc_grid                                      (ShocGridData& d);
+void shoc_diag_obklen                               (ShocDiagObklenData& d);
+void update_host_dse                                (UpdateHostDseData& d);
+void shoc_energy_fixer                              (ShocEnergyFixerData& d);
+void shoc_energy_integrals                          (ShocEnergyIntegralsData& d);
+void shoc_energy_total_fixer                        (ShocEnergyTotalFixerData& d);
+void shoc_energy_threshold_fixer                    (ShocEnergyThresholdFixerData& d);
+void shoc_energy_dse_fixer                          (ShocEnergyDseFixerData& d);
+void calc_shoc_vertflux                             (CalcShocVertfluxData& d);
+void calc_shoc_varorcovar                           (CalcShocVarorcovarData& d);
+void compute_tmpi                                   (ComputeTmpiData& d);
+void dp_inverse                                     (DpInverseData& d);
+void sfc_fluxes                                     (SfcFluxesData& d);
+void impli_srf_stress_term                          (ImpliSrfStressTermData& d);
+void tke_srf_flux_term                              (TkeSrfFluxTermData& d);
+void integ_column_stability                         (IntegColumnStabilityData& d);
+void check_tke                                      (CheckTkeData& d);
+void shoc_tke                                       (ShocTkeData& d);
+void compute_shr_prod                               (ComputeShrProdData& d);
+void isotropic_ts                                   (IsotropicTsData& d);
+void adv_sgs_tke                                    (AdvSgsTkeData& d);
+void eddy_diffusivities                             (EddyDiffusivitiesData& d);
+void shoc_length                                    (ShocLengthData& d);
+void compute_brunt_shoc_length                      (ComputeBruntShocLengthData& d);
+void compute_l_inf_shoc_length                      (ComputeLInfShocLengthData& d);
+void compute_conv_vel_shoc_length                   (ComputeConvVelShocLengthData& d);
+void compute_conv_time_shoc_length                  (ComputeConvTimeShocLengthData& d);
+void compute_shoc_mix_shoc_length                   (ComputeShocMixShocLengthData& d);
+void check_length_scale_shoc_length                 (CheckLengthScaleShocLengthData& d);
+void fterms_input_for_diag_third_shoc_moment        (FtermsInputForDiagThirdShocMomentData& d);
+void aa_terms_diag_third_shoc_moment                (AaTermsDiagThirdShocMomentData& d);
+void f0_to_f5_diag_third_shoc_moment                (F0ToF5DiagThirdShocMomentData& d);
+void omega_terms_diag_third_shoc_moment             (OmegaTermsDiagThirdShocMomentData& d);
+void x_y_terms_diag_third_shoc_moment               (XYTermsDiagThirdShocMomentData& d);
+void w3_diag_third_shoc_moment                      (W3DiagThirdShocMomentData& d);
+void clipping_diag_third_shoc_moments               (ClippingDiagThirdShocMomentsData& d);
+void diag_second_moments_srf                        (DiagSecondMomentsSrfData& d);
+void linear_interp                                  (LinearInterpData& d);
+void diag_third_shoc_moments                        (DiagThirdShocMomentsData& d);
+void compute_diag_third_shoc_moment                 (ComputeDiagThirdShocMomentData& d);
+void shoc_assumed_pdf                               (ShocAssumedPdfData& d);
+void shoc_assumed_pdf_tilde_to_real                 (ShocAssumedPdfTildeToRealData& d);
+void shoc_assumed_pdf_vv_parameters                 (ShocAssumedPdfVvParametersData& d);
+void shoc_assumed_pdf_thl_parameters                (ShocAssumedPdfThlParametersData& d);
+void shoc_assumed_pdf_qw_parameters                 (ShocAssumedPdfQwParametersData& d);
+void shoc_assumed_pdf_inplume_correlations          (ShocAssumedPdfInplumeCorrelationsData& d);
+void shoc_assumed_pdf_compute_temperature           (ShocAssumedPdfComputeTemperatureData& d);
+void shoc_assumed_pdf_compute_qs                    (ShocAssumedPdfComputeQsData& d);
+void shoc_assumed_pdf_compute_s                     (ShocAssumedPdfComputeSData& d);
+void shoc_assumed_pdf_compute_sgs_liquid            (ShocAssumedPdfComputeSgsLiquidData& d);
+void shoc_assumed_pdf_compute_cloud_liquid_variance (ShocAssumedPdfComputeCloudLiquidVarianceData& d);
+void shoc_assumed_pdf_compute_liquid_water_flux     (ShocAssumedPdfComputeLiquidWaterFluxData& d);
+void shoc_assumed_pdf_compute_buoyancy_flux         (ShocAssumedPdfComputeBuoyancyFluxData& d);
+void diag_second_moments_ubycond                    (DiagSecondMomentsUbycondData& d);
+void pblintd_init_pot                               (PblintdInitPotData& d);
+void pblintd_cldcheck                               (PblintdCldcheckData& d);
 void diag_second_moments_lbycond                    (DiagSecondMomentsLbycondData& d);
 void diag_second_moments                            (DiagSecondMomentsData& d);
 void diag_second_shoc_moments                       (DiagSecondShocMomentsData& d);
 void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
+void shoc_main                                      (ShocMainData& d);
+void pblintd_height                                 (PblintdHeightData& d);
 
-void shoc_main(ShocMainData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -1006,6 +957,7 @@ void integ_column_stability_f(Int nlev, Int shcol, Real *dz_zt,
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
 void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2);
+void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 } // end _f function decls
 
 }  // namespace shoc

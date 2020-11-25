@@ -52,11 +52,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
     }
 
     // Initialize data structure for bridging to F90
-    SHOCEnergythreshfixerData SDS(shcol, nlev, nlevi);
+    ShocEnergyThresholdFixerData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
-    REQUIRE(SDS.shcol() > 1);
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
+    REQUIRE(SDS.shcol > 1);
     REQUIRE(nlev+1 == nlevi);
 
     // Fill in test data on zt_grid.

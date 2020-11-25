@@ -40,10 +40,10 @@ struct UnitWrap::UnitTest<D>::TestImpTkeSfcStress {
     static constexpr Real vw_sfc[shcol] = {-0.01, -0.01, 0.3, 0, -0.3};
 
     // Initialize data structure for bridging to F90
-    SHOCTkesrffluxData SDS(shcol);
+    TkeSrfFluxTermData SDS(shcol);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 1);
 
     // Fill in test data, column only

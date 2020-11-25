@@ -72,7 +72,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Initialize data structure for bridging to F90
-    SHOCAssumedpdfData SDS(shcol, nlev, nlevi);
+    ShocAssumedPdfData SDS(shcol, nlev, nlevi);
 
     // Load input data
     for(Int s = 0; s < shcol; ++s) {
@@ -137,9 +137,9 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi() - SDS.nlev() == 1);
+    REQUIRE(SDS.nlevi - SDS.nlev == 1);
     // For this test we want exactly two columns
-    REQUIRE(SDS.shcol() == 2);
+    REQUIRE(SDS.shcol == 2);
 
     // Call the fortran implementation
     shoc_assumed_pdf(SDS);
@@ -395,15 +395,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
   static void run_bfb()
   {
-    SHOCAssumedpdfData SDS_f90[] = {
+    ShocAssumedPdfData SDS_f90[] = {
       //              shcol, nlev, nlevi
-      SHOCAssumedpdfData(10, 71, 72),
-      SHOCAssumedpdfData(10, 12, 13),
-      SHOCAssumedpdfData(7,  16, 17),
-      SHOCAssumedpdfData(2, 7, 8),
+      ShocAssumedPdfData(10, 71, 72),
+      ShocAssumedPdfData(10, 12, 13),
+      ShocAssumedPdfData(7,  16, 17),
+      ShocAssumedPdfData(2, 7, 8),
     };
 
-  static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCAssumedpdfData);
+  static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -412,11 +412,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCAssumedpdfData SDS_cxx[] = {
-      SHOCAssumedpdfData(SDS_f90[0]),
-      SHOCAssumedpdfData(SDS_f90[1]),
-      SHOCAssumedpdfData(SDS_f90[2]),
-      SHOCAssumedpdfData(SDS_f90[3]),
+    ShocAssumedPdfData SDS_cxx[] = {
+      ShocAssumedPdfData(SDS_f90[0]),
+      ShocAssumedPdfData(SDS_f90[1]),
+      ShocAssumedPdfData(SDS_f90[2]),
+      ShocAssumedPdfData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -431,7 +431,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      shoc_assumed_pdf_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.w_field,
+      shoc_assumed_pdf_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field,
                          d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec,
                          d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid,
                          d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
@@ -440,9 +440,9 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCAssumedpdfData& d_f90 = SDS_f90[i];
-      SHOCAssumedpdfData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      ShocAssumedPdfData& d_f90 = SDS_f90[i];
+      ShocAssumedPdfData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.wqls); ++k) {
         REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
         REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
         REQUIRE(d_f90.wqls[k] == d_cxx.wqls[k]);

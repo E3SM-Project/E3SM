@@ -38,7 +38,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
     static constexpr Real wstar[shcol] = {1, 0.5, 0, 0, 0};
     // Surface friction velocity [m4/s4]
     Real ustar2[shcol];
-    
+
     // establish reasonable bound for output checking
     static constexpr Real wtke_srf_ubound = 0.1; // [m3/s3]
 
@@ -66,7 +66,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
     }
 
     // Test that the inputs are reasonable
-    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 0);
 
     // Verify input is as expected
@@ -149,7 +149,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      diag_second_moments_lbycond_f(d.shcol(), d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, 
+      diag_second_moments_lbycond_f(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar,
          d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
     }
 
@@ -157,7 +157,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
     for (Int i = 0; i < num_runs; ++i) {
       DiagSecondMomentsLbycondData& d_f90 = f90_data[i];
       DiagSecondMomentsLbycondData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.dim1; ++k) {
+      for (Int k = 0; k < d_f90.shcol; ++k) {
         REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
         REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
         REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);

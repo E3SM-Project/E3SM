@@ -48,7 +48,7 @@ struct UnitWrap::UnitTest<D>::TestAAdiagThirdMoms {
     constexpr static Real y1_test1a = 375.69;
 
     // Initialize data structure for bridging to F90
-    SHOCAAdiagthirdmomsData SDS;
+    AaTermsDiagThirdShocMomentData SDS;
 
     // Load up the data
     SDS.omega0 = omega0;

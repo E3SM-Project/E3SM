@@ -41,7 +41,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     static constexpr Real ql2 = ql1;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompsgsliqData SDS;
+    ShocAssumedPdfComputeSgsLiquidData SDS;
 
     // Fill in the data
     SDS.a = a;

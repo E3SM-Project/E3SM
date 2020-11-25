@@ -50,13 +50,13 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     static constexpr Real v_wind_shr[nlev] = {1, 2, 3, 4, 5};
 
     // Initialize data structure for bridging to F90
-    SHOCTkeshearData SDS(shcol, nlev, nlevi);
+    ComputeShrProdData SDS(shcol, nlev, nlevi);
 
     // Define upper limit for reasonable bounds checking
     static constexpr Real sterm_upper_bound = 1e-2;
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 

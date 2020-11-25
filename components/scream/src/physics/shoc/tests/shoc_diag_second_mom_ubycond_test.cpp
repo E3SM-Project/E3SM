@@ -35,14 +35,14 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
     //  only outputs.  All outputs should be zero.
 
     // Initialize data structure for bridging to F90
-    SHOCSecondMomentUbycondData SDS(shcol);
+    DiagSecondMomentsUbycondData SDS(shcol);
 
     // Test that the inputs are reasonable
-    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 0);
 
     // Call the fortran implementation
-    shoc_diag_second_moments_ubycond(SDS);
+    diag_second_moments_ubycond(SDS);
 
     // Verify the result
     //  all output should be zero.
@@ -61,15 +61,15 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 
   static void run_bfb()
   {
-    SHOCSecondMomentUbycondData uby_fortran[] = {
+    DiagSecondMomentsUbycondData uby_fortran[] = {
       // shcol
-      SHOCSecondMomentUbycondData(128),
-      SHOCSecondMomentUbycondData(128),
-      SHOCSecondMomentUbycondData(128),
-      SHOCSecondMomentUbycondData(128),
+      DiagSecondMomentsUbycondData(128),
+      DiagSecondMomentsUbycondData(128),
+      DiagSecondMomentsUbycondData(128),
+      DiagSecondMomentsUbycondData(128),
     };
 
-    static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(SHOCSecondMomentUbycondData);
+    static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(DiagSecondMomentsUbycondData);
 
     for (auto& d : uby_fortran) {
       d.randomize();
@@ -77,25 +77,24 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCSecondMomentUbycondData uby_cxx[num_runs] = {
-      SHOCSecondMomentUbycondData(uby_fortran[0]),
-      SHOCSecondMomentUbycondData(uby_fortran[1]),
-      SHOCSecondMomentUbycondData(uby_fortran[2]),
-      SHOCSecondMomentUbycondData(uby_fortran[3]),
+    DiagSecondMomentsUbycondData uby_cxx[num_runs] = {
+      DiagSecondMomentsUbycondData(uby_fortran[0]),
+      DiagSecondMomentsUbycondData(uby_fortran[1]),
+      DiagSecondMomentsUbycondData(uby_fortran[2]),
+      DiagSecondMomentsUbycondData(uby_fortran[3]),
     };
 
     // Get data from fortran
     for (auto& d : uby_fortran) {
-      shoc_diag_second_moments_ubycond(d);
+      diag_second_moments_ubycond(d);
     }
 
     for (auto& d : uby_cxx) {
-      shoc_diag_second_moments_ubycond_f(d.shcol(), d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
+      shoc_diag_second_moments_ubycond_f(d.shcol, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
     }
 
-
     for (Int i = 0; i < num_runs; ++i) {
-      Int shcol = uby_cxx[i].shcol();
+      const Int shcol = uby_cxx[i].shcol;
       for (Int k = 0; k < shcol; ++k) {
         REQUIRE(uby_fortran[i].thl_sec[k]      == uby_cxx[i].thl_sec[k]);
         REQUIRE(uby_fortran[i].qw_sec[k]       == uby_cxx[i].qw_sec[k]);

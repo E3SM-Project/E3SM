@@ -60,6 +60,7 @@ if (NOT CUDA_BUILD)
     shoc_integ_column_stability.cpp
     shoc_dp_inverse.cpp
     shoc_shoc_main.cpp
+    shoc_pblintd_height.cpp
   ) # SHOC ETI SRCS
 endif()
 

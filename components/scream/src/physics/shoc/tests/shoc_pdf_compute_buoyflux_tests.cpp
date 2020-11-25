@@ -46,7 +46,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
     static constexpr Real wthv_sec_bound = 10;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompbuoyfluxData SDS;
+    ShocAssumedPdfComputeBuoyancyFluxData SDS;
 
     // Load input data
     SDS.wthlsec = wthlsec;

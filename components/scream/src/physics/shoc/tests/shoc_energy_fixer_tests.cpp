@@ -79,11 +79,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     Real zt_grid[nlev];
 
     // Initialize data structure for bridging to F90
-    SHOCEnergyfixerData SDS(shcol, nlev, nlevi, dtime, nadv);
+    ShocEnergyFixerData SDS(shcol, nlev, nlevi, dtime, nadv);
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.dtime == dtime && SDS.nadv == nadv) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi && SDS.dtime == dtime && SDS.nadv == nadv) );
     // Want exactly three columns for this case
     REQUIRE(shcol == 3);
     REQUIRE(nlevi == nlev+1);
@@ -262,15 +262,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
   static void run_bfb()
   {
-    SHOCEnergyfixerData SDS_f90[] = {
+    ShocEnergyFixerData SDS_f90[] = {
       //               shcol, nlev, nlevi, dtime, nadv
-      SHOCEnergyfixerData(10, 71, 72, 300, 2),
-      SHOCEnergyfixerData(10, 12, 13, 100, 10),
-      SHOCEnergyfixerData(7,  16, 17, 50, 1),
-      SHOCEnergyfixerData(2, 7, 8, 5, 5),
+      ShocEnergyFixerData(10, 71, 72, 300, 2),
+      ShocEnergyFixerData(10, 12, 13, 100, 10),
+      ShocEnergyFixerData(7,  16, 17, 50, 1),
+      ShocEnergyFixerData(2, 7, 8, 5, 5),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCEnergyfixerData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyFixerData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -279,11 +279,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCEnergyfixerData SDS_cxx[] = {
-      SHOCEnergyfixerData(SDS_f90[0]),
-      SHOCEnergyfixerData(SDS_f90[1]),
-      SHOCEnergyfixerData(SDS_f90[2]),
-      SHOCEnergyfixerData(SDS_f90[3]),
+    ShocEnergyFixerData SDS_cxx[] = {
+      ShocEnergyFixerData(SDS_f90[0]),
+      ShocEnergyFixerData(SDS_f90[1]),
+      ShocEnergyFixerData(SDS_f90[2]),
+      ShocEnergyFixerData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -298,7 +298,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      shoc_energy_fixer_f(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
+      shoc_energy_fixer_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
                           d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
                           d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
                           d.wqw_sfc, d.rho_zt, d.tke, d.pint,
@@ -308,9 +308,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCEnergyfixerData& d_f90 = SDS_f90[i];
-      SHOCEnergyfixerData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      ShocEnergyFixerData& d_f90 = SDS_f90[i];
+      ShocEnergyFixerData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.host_dse); ++k) {
         REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
       }
     }
