@@ -5,4 +5,4 @@ configure_file(
   @ONLY
 )
 add_executable(query-cf-database ${CMAKE_CURRENT_BINARY_DIR}/query-cf-database.cpp)
-target_link_libraries(query-cf-database ekat;${YAMLCPP_LIBARIES})
+target_link_libraries(query-cf-database ekat)
