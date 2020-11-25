@@ -81,18 +81,17 @@ def plot(period_new, parameter, test, ref):
     ax1 = plot_panel(1, fig, 'contourf', label_size, title, x, y, z=z,
                plot_colors=cmap2, color_levels=color_levels0, color_ticks=[-50, -25, -5, 5, 25, 50])
     # Panel 2 (Top/Middle Right)
-    # TODO: Are the test/ref values correct for data, data_label, data2, data2_label??
-    x = dict(axis_range=[0, 30], axis_scale='linear', data=ref['amplitude'][:], data_label=ref['name'],
-             data2=test['amplitude'][:], data2_label=test['name'], label='Amplitude (m/s)')
-    y = dict(axis_range=[100, 1], axis_scale='log', data=ref['level'][:],
-             data2=test['level'][:], label='Pressure (hPa)')
+    x = dict(axis_range=[0, 30], axis_scale='linear', data=test['amplitude'][:], data_label=test['name'],
+             data2=ref['amplitude'][:], data2_label=ref['name'], label='Amplitude (m/s)')
+    y = dict(axis_range=[100, 1], axis_scale='log', data=test['level'][:],
+             data2=ref['level'][:], label='Pressure (hPa)')
     title = 'QBO Amplitude \n (period = 20-40 months)'
     ax2 = plot_panel(2, fig, 'line', label_size, title, x, y)
     # Panel 3 (Bottom)
-    x = dict(axis_range=[0, 50], axis_scale='linear', data=period_new, data_label=ref['name'],
-             data2=period_new, data2_label=test['name'], label='Period (months)')
-    y = dict(axis_range=[-1, 25], axis_scale='linear', data=ref['amplitude_new'],
-             data2=test['amplitude_new'], label='Amplitude (m/s)')
+    x = dict(axis_range=[0, 50], axis_scale='linear', data=period_new, data_label=test['name'],
+             data2=period_new, data2_label=ref['name'], label='Period (months)')
+    y = dict(axis_range=[-1, 25], axis_scale='linear', data=test['amplitude_new'],
+             data2=ref['amplitude_new'], label='Amplitude (m/s)')
     title = 'QBO Spectral Density (Eq. 18-22 hPa zonal winds)'
     ax3 = plot_panel(3, fig, 'line', label_size, title, x, y)
     plt.tight_layout()
