@@ -263,6 +263,7 @@ void update_prognostics_implicit_c(Int shcol, Int nlev, Int nlevi, Int num_trace
 
 void shoc_main_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2);
 void pblintd_height_c(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
+void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -733,6 +734,14 @@ void pblintd_height(PblintdHeightData& d)
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   pblintd_height_c(d.shcol, d.nlev, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void pblintd_init(PblintdInitData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_init_c(d.shcol, d.nlev, d.z, d.check, d.rino, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -2385,6 +2394,56 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
 void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check)
 {
   // TODO
+}
+void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+  using view_2d    = typename SHOC::view_2d<Spack>;
+
+  Kokkos::Array<view_2d, 2> views_2d;
+  ekat::host_to_device({z, rino}, shcol, nlev, views_2d, true);
+
+  view_2d z_2d   (views_2d[0]),
+          rino_2d(views_2d[1]);
+
+  view_1d pblh_d("rino", shcol);
+
+  SHOC::view_1d<bool> check_d("check", shcol);
+  const auto host_check_d = Kokkos::create_mirror_view(check_d);
+
+  Kokkos::parallel_for("pblintd_init", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    Scalar pblh_s{0.};
+    bool check_s{false};
+
+    const auto z_1d     = ekat::subview(z_2d, i);
+    const auto rino_1d  = ekat::subview(rino_2d, i);
+
+    const auto nlev_pack = ekat::npack<Spack>(nlev)-1;
+    const int nlev_indx  = (nlev-1)%Spack::n;
+    Scalar& rino_s        = rino_1d(nlev_pack)[nlev_indx];
+    Scalar& z_s           = z_1d(nlev_pack)[nlev_indx];
+
+    SHOC::pblintd_init(z_s, check_s, rino_s, pblh_s);
+
+    check_d(i)   = check_s;
+    pblh_d(i)[0] = pblh_s;
+  });
+
+  Kokkos::Array<view_2d, 1> out_2d_views = {rino_2d};
+  ekat::device_to_host<int, 1>({rino}, {shcol}, {nlev}, out_2d_views, true);
+
+  Kokkos::Array<view_1d, 1> out_1d_views = {pblh_d};
+  ekat::device_to_host<int, 1>({pblh}, {shcol}, out_1d_views);
+
+  Kokkos::deep_copy(host_check_d, check_d);
+  for (auto s = 0; s < shcol; ++s) {
+    check[s] = host_check_d(s);
+  }
 }
 } // namespace shoc
 } // namespace scream

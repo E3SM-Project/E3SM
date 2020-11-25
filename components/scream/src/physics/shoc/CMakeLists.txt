@@ -61,6 +61,7 @@ if (NOT CUDA_BUILD)
     shoc_dp_inverse.cpp
     shoc_shoc_main.cpp
     shoc_pblintd_height.cpp
+    shoc_pblintd_init.cpp
   ) # SHOC ETI SRCS
 endif()
 
