@@ -175,8 +175,55 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    SHOCIsotropicData f90_data[] = {
+      //            shcol, nlev
+      SHOCIsotropicData(10, 71),
+      SHOCIsotropicData(10, 12),
+      SHOCIsotropicData(7,  16),
+      SHOCIsotropicData(2,   7)
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCIsotropicData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCIsotropicData cxx_data[] = {
+      SHOCIsotropicData(f90_data[0]),
+      SHOCIsotropicData(f90_data[1]),
+      SHOCIsotropicData(f90_data[2]),
+      SHOCIsotropicData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      isotropic_ts(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      isotropic_ts_f(d.nlev(), d.shcol(), d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCIsotropicData& d_f90 = f90_data[i];
+      SHOCIsotropicData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+        REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
+      }
+    }
+
+  }//run_bfb
 
 };
 
