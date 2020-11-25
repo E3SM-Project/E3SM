@@ -3816,12 +3816,6 @@ resuspension bug fix in wetdep.F90
 Default: .false.
 </entry>
 
-<entry id="demott_ice_nuc" type="logical"  category="ice_nucleation"
-       group="phys_ctl_nl" valid_values="" >
-ice nucleation scheme by Demott
-Default: .false.
-</entry>
-
 <entry id="pergro_mods" type="logical"  category="perturbation"
        group="phys_ctl_nl" valid_values="" >
 switch to turn on pergro code changes
