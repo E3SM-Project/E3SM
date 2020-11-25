@@ -60,7 +60,7 @@ OR
     parser.add_argument("--baseline-dir", default=None,
         help="Use baselines from the given directory, skip baseline creation.")
 
-    parser.add_argument("-m", "--machine", required=True,
+    parser.add_argument("-m", "--machine",
         help="Provide machine name. This is *always* required")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")

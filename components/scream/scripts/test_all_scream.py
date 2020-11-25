@@ -4,7 +4,7 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
     get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
-    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
+    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported
 
 check_minimum_python_version(3, 4)
 
@@ -50,8 +50,16 @@ class TestAllScream(object):
         #  Sanity checks and helper structs setup  #
         ############################################
 
+        # Probe machine if none was specified
+        if self._machine is None:
+            # We could potentially integrate more with CIME here to do actual
+            # nodename probing.
+            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
+                self._machine = os.environ["CIME_MACHINE"]
+            else:
+                expect(self._machine is not None, "Machine is now required by test-all-scream")
+
         # Unless the user claims to know what he/she is doing, we setup the env.
-        expect(self._machine is not None, "Machine is now required by test_all_scream")
         if not self._preserve_env:
             # Setup the env on this machine
             setup_mach_env(self._machine)
@@ -93,7 +101,7 @@ class TestAllScream(object):
         if not self._tests:
             # always do dbg and sp tests, do not do fpe test on CUDA
             self._tests = ["dbg", "sp"]
-            if not is_cuda_machine():
+            if not is_cuda_machine(self._machine):
                 self._tests.append("fpe")
         else:
             for t in self._tests:

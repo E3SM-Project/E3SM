@@ -80,7 +80,7 @@ class GatherAllData(object):
                 .format(scream_repo)
 
         extra_env = ""
-        if not is_cuda_machine():
+        if not is_cuda_machine(machine):
             extra_env = "OMP_PROC_BIND=spread "
 
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init --recursive".format(self._commit)
