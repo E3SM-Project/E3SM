@@ -3003,6 +3003,10 @@ end subroutine compute_shr_prod
 subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
      sterm_zt, tk, tke, a_diss)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: adv_sgs_tke_f
+#endif
+
   implicit none
 
   !intent -ins
@@ -3033,10 +3037,17 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   real(rtype) :: Ck, Cs, Ce, Ce1, Ce2, Cee
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call adv_sgs_tke_f(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+          sterm_zt, tk, tke, a_diss)
+     return
+  endif
+#endif
+
   Cs=0.15_rtype
   Ck=0.1_rtype
-  Ce=Ck**3/Cs**4
-
+  Ce=bfb_pow(Ck,3.0_rtype)/bfb_pow(Cs,4._rtype)
   Ce1=Ce/0.7_rtype*0.19_rtype
   Ce2=Ce/0.7_rtype*0.51_rtype
   Cee=Ce1+Ce2
@@ -3054,7 +3065,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
-        a_diss(i,k)=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+        a_diss(i,k)=Cee/shoc_mix(i,k)*bfb_pow(tke(i,k),1.5)
 
         ! March equation forward one timestep
         tke(i,k)=max(mintke,tke(i,k)+dtime* &

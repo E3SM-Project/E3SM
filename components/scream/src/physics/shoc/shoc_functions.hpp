@@ -376,6 +376,19 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql2);
 
   KOKKOS_FUNCTION
+  static void adv_sgs_tke(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Real&                  dtime,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& tk,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       a_diss);
+
+  KOKKOS_FUNCTION
   static void compute_tmpi(
     const MemberType&            team,
     const Int&                   nlevi,
@@ -441,6 +454,7 @@ struct Functions
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
+# include "shoc_adv_sgs_tke_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
 # include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"

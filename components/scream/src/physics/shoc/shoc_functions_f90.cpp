@@ -2134,6 +2134,59 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
   ekat::device_to_host<int,1>({w3}, shcol, nlevi, inout_views, true);
 }
 
+void adv_sgs_tke_f(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wthv_sec,
+                   Real* sterm_zt, Real* tk, Real* tke, Real* a_diss)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 6;
+
+  Kokkos::Array<view_2d,     num_arrays> temp_d;
+  Kokkos::Array<int,         num_arrays> dim1_sizes = {shcol,    shcol,    shcol,    shcol, shcol, shcol };
+  Kokkos::Array<int,         num_arrays> dim2_sizes = {nlev,     nlev,     nlev,     nlev,  nlev,  nlev  };
+  Kokkos::Array<const Real*, num_arrays> ptr_array  = {shoc_mix, wthv_sec, sterm_zt, tk,    tke,   a_diss};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    //input
+    shoc_mix_d (temp_d[0]),
+    wthv_sec_d (temp_d[1]),
+    sterm_zt_d (temp_d[2]),
+    tk_d       (temp_d[3]),
+    //output
+    tke_d      (temp_d[4]), //inout
+    a_diss_d   (temp_d[5]); //out
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const Int i = team.league_rank();
+
+      // inputs
+      const auto shoc_mix_s = ekat::subview(shoc_mix_d ,i);
+      const auto wthv_sec_s = ekat::subview(wthv_sec_d ,i);
+      const auto sterm_zt_s = ekat::subview(sterm_zt_d ,i);
+      const auto tk_s       = ekat::subview(tk_d ,i);
+      const auto tke_s      = ekat::subview(tke_d ,i);
+      const auto a_diss_s   = ekat::subview(a_diss_d ,i);
+
+      SHF::adv_sgs_tke(team, nlev, shcol, dtime, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, tke_s, a_diss_s);
+    });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 2> inout_views = {tke_d, a_diss_d};
+  ekat::device_to_host<int,2>({tke, a_diss}, {shcol}, {nlev}, inout_views, true);
+}
+
 void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
                         Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
                         Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
