@@ -149,6 +149,8 @@ def get_mach_baseline_root_dir(machine,default_dir):
 ###############################################################################
 def is_cuda_machine(machine):
 ###############################################################################
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+
     env_setup     = get_mach_env_setup_command(machine)
     env_setup_str = " && ".join(env_setup)
 
