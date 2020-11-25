@@ -361,7 +361,8 @@ void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
 }
 
 LatentHeatData::LatentHeatData(Int kts_, Int kte_, Int its_, Int ite_) :
-  PhysicsTestData((ite_ - its_) + 1, (kte_ - kts_) + 1, {&v, &s, &f}),
+  PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1} },
+                   { {&v, &s, &f} }),
   its(its_), ite(ite_), kts(kts_), kte(kte_)
 {}
 
@@ -529,7 +530,8 @@ void ice_cldliq_wet_growth(IceWetGrowthData& d)
 
 CheckValuesData::CheckValuesData(
   Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_) :
-  PhysicsTestData((kte_-kts_)+1, {&qv, &temp, &col_loc}),
+  PhysicsTestData( { {(kte_-kts_)+1} },
+                   { {&qv, &temp, &col_loc} }),
   kts(kts_), kte(kte_), timestepcount(timestepcount_), source_ind(source_ind_), force_abort(force_abort_)
 {
   EKAT_REQUIRE_MSG(nk() >= 3 || (kte == 0 && kts == 0), "nk too small to use for col_loc");
@@ -588,7 +590,8 @@ void ice_deposition_sublimation(IceDepSublimationData& d){
 
 CalcUpwindData::CalcUpwindData(
   Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_) :
-  PhysicsTestData((kte_ - kts_) + 1, num_arrays_, {&vs, &qnx, &fluxes}, {&rho, &inv_rho, &inv_dz}),
+  PhysicsTestData({ {(kte_ - kts_)+1, num_arrays_}, {(kte_ - kts_)+1} },
+                  { {&vs, &qnx, &fluxes},           {&rho, &inv_rho, &inv_dz} }),
   kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_)
 {}
 
@@ -635,7 +638,8 @@ void generalized_sedimentation(GenSedData& d)
 CloudSedData::CloudSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
   Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_) :
-  PhysicsTestData((kte_ - kts_) + 1, {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend}),
+  PhysicsTestData( { {(kte_ - kts_) + 1} },
+                   { {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend} }),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), do_predict_nc(do_predict_nc_), precip_liq_surf(precip_liq_surf_)
 {}
@@ -652,7 +656,8 @@ void cloud_sedimentation(CloudSedData& d)
 IceSedData::IceSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
   Real dt_, Real inv_dt_, Real precip_ice_surf_) :
-  PhysicsTestData((kte_ - kts_) + 1, {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld, &bm, &bm_incld, &qi_tend, &ni_tend}),
+  PhysicsTestData( { {(kte_ - kts_) + 1} },
+                   { {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld, &bm, &bm_incld, &qi_tend, &ni_tend} }),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), precip_ice_surf(precip_ice_surf_)
 {}
@@ -669,8 +674,8 @@ void ice_sedimentation(IceSedData& d)
 RainSedData::RainSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
   Real dt_, Real inv_dt_, Real precip_liq_surf_) :
-  PhysicsTestData((kte_ - kts_) + 2, // extra real at end for precip_liq_flux, so just add 1 to all
-                  {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld, &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux}),
+  PhysicsTestData({ {(kte_ - kts_) + 2} }, // extra real at end for precip_liq_flux, so just add 1 to all
+                  { {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld, &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux} }),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), precip_liq_surf(precip_liq_surf_)
 {}
@@ -692,7 +697,8 @@ void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
 
 HomogeneousFreezingData::HomogeneousFreezingData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_) :
-  PhysicsTestData((kte_ - kts_) + 1, {&T_atm, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th_atm}),
+  PhysicsTestData( { {(kte_ - kts_) + 1} },
+                   { {&T_atm, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th_atm} }),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_)
 {}
 
@@ -726,11 +732,11 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
 P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
-  PhysicsTestData((kte_ - kts_) + 1, {
+  PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &nccn_prescribed,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
     &acn, &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &qc_incld, &qr_incld, &qi_incld,
-    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld}),
+    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld} }),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
   do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), dt(dt_)
 {}
@@ -755,13 +761,13 @@ void p3_main_part1(P3MainPart1Data& d)
 P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
-  PhysicsTestData((kte_ - kts_) + 1, {
+  PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
     &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
     &cdistr, &mu_r, &lamr, &logn0r, &qv2qi_depos_tend, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
-    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot}),
+    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot} }),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
   do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), dt(dt_), inv_dt(1 / dt)
 {}
@@ -784,13 +790,13 @@ void p3_main_part2(P3MainPart2Data& d)
 
 P3MainPart3Data::P3MainPart3Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_) :
-  PhysicsTestData((kte_ - kts_) + 1, {
+  PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &exner, &cld_frac_l, &cld_frac_r, &cld_frac_i,
     &rho, &inv_rho, &rhofaci,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim,
     &mu_c, &nu, &lamc, &mu_r,
     &lamr, &vap_liq_exchange,
-    &ze_rain, &ze_ice, &diag_vm_qi, &diag_eff_radius_qi, &diag_diam_qi, &rho_qi, &diag_equiv_reflectivity, &diag_eff_radius_qc}),
+    &ze_rain, &ze_ice, &diag_vm_qi, &diag_eff_radius_qi, &diag_diam_qi, &rho_qi, &diag_equiv_reflectivity, &diag_eff_radius_qc} }),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_)
 {}
 
@@ -809,13 +815,13 @@ void p3_main_part3(P3MainPart3Data& d)
 
 P3MainData::P3MainData(
   Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_) :
-  PhysicsTestData( (ite_ - its_) + 1, (kte_ - kts_) + 1, (kte_ - kts_) + 2, {
+  PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
     &diag_eff_radius_qc, &diag_eff_radius_qi, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
-    {&precip_liq_surf, &precip_ice_surf}), // these two are (ni, nk+1)
+    {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
   its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_)
 {}
 

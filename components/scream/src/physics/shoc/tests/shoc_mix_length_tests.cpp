@@ -47,11 +47,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     static constexpr Real zt_grid[nlev] = {5000, 3000, 2000, 1000, 500};
 
     // Initialize data structure for bridging to F90
-    SHOCMixlengthData SDS(shcol, nlev);
+    ComputeShocMixShocLengthData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
     // For this test shcol MUST be at least 2
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 1);
 
     // Fill in test data on zt_grid.
@@ -119,15 +119,15 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
   static void run_bfb()
   {
-    SHOCMixlengthData SDS_f90[] = {
+    ComputeShocMixShocLengthData SDS_f90[] = {
       //               shcol, nlev
-      SHOCMixlengthData(10, 71),
-      SHOCMixlengthData(10, 12),
-      SHOCMixlengthData(7,  16),
-      SHOCMixlengthData(2, 7)
+      ComputeShocMixShocLengthData(10, 71),
+      ComputeShocMixShocLengthData(10, 12),
+      ComputeShocMixShocLengthData(7,  16),
+      ComputeShocMixShocLengthData(2, 7)
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCMixlengthData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeShocMixShocLengthData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -136,11 +136,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCMixlengthData SDS_cxx[] = {
-      SHOCMixlengthData(SDS_f90[0]),
-      SHOCMixlengthData(SDS_f90[1]),
-      SHOCMixlengthData(SDS_f90[2]),
-      SHOCMixlengthData(SDS_f90[3]),
+    ComputeShocMixShocLengthData SDS_cxx[] = {
+      ComputeShocMixShocLengthData(SDS_f90[0]),
+      ComputeShocMixShocLengthData(SDS_f90[1]),
+      ComputeShocMixShocLengthData(SDS_f90[2]),
+      ComputeShocMixShocLengthData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -155,7 +155,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      compute_shoc_mix_shoc_length_f(d.nlev(), d.shcol(),
+      compute_shoc_mix_shoc_length_f(d.nlev, d.shcol,
                                      d.tke, d.brunt,
                                      d.tscale, d.zt_grid,
                                      d.l_inf, d.shoc_mix);
@@ -164,9 +164,9 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCMixlengthData& d_f90 = SDS_f90[i];
-      SHOCMixlengthData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      ComputeShocMixShocLengthData& d_f90 = SDS_f90[i];
+      ComputeShocMixShocLengthData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.shoc_mix); ++k) {
         REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
       }
     }

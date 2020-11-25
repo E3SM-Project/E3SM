@@ -51,10 +51,10 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     static constexpr Real brunt_st[shcol] = {-4e-3, 4e-3};
 
     // Initialzie data structure for bridgeing to F90
-    SHOCIsotropicData SDS(shcol, nlev);
+    IsotropicTsData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
@@ -175,15 +175,15 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
   static void run_bfb()
   {
-    SHOCIsotropicData f90_data[] = {
+    IsotropicTsData f90_data[] = {
       //            shcol, nlev
-      SHOCIsotropicData(10, 71),
-      SHOCIsotropicData(10, 12),
-      SHOCIsotropicData(7,  16),
-      SHOCIsotropicData(2,   7)
+      IsotropicTsData(10, 71),
+      IsotropicTsData(10, 12),
+      IsotropicTsData(7,  16),
+      IsotropicTsData(2,   7)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCIsotropicData);
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IsotropicTsData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -192,11 +192,11 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCIsotropicData cxx_data[] = {
-      SHOCIsotropicData(f90_data[0]),
-      SHOCIsotropicData(f90_data[1]),
-      SHOCIsotropicData(f90_data[2]),
-      SHOCIsotropicData(f90_data[3]),
+    IsotropicTsData cxx_data[] = {
+      IsotropicTsData(f90_data[0]),
+      IsotropicTsData(f90_data[1]),
+      IsotropicTsData(f90_data[2]),
+      IsotropicTsData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -210,15 +210,15 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      isotropic_ts_f(d.nlev(), d.shcol(), d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
+      isotropic_ts_f(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCIsotropicData& d_f90 = f90_data[i];
-      SHOCIsotropicData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      IsotropicTsData& d_f90 = f90_data[i];
+      IsotropicTsData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.isotropy); ++k) {
         REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
       }
     }

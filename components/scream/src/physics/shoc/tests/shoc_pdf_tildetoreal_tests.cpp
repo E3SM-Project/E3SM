@@ -39,7 +39,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
     Real w1 = 0.1;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFtildeData SDS;
+    ShocAssumedPdfTildeToRealData SDS;
 
     // Fill the test data
     SDS.w_first = w_first;

@@ -44,10 +44,10 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     static constexpr Real dtime = 300;
 
     // Initialize data structure for bridging to F90
-    SHOCComptmpiData SDS(shcol, nlevi, dtime);
+    ComputeTmpiData SDS(shcol, nlevi, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlevi() == nlevi) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlevi == nlevi) );
     REQUIRE(shcol == 2);
     // Need exactly two columns for this test
     REQUIRE(SDS.dtime > 0);
@@ -117,15 +117,15 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
 
   static void run_bfb()
   {
-    SHOCComptmpiData f90_data[] = {
+    ComputeTmpiData f90_data[] = {
       //          shcol, nlevi, dtime
-      SHOCComptmpiData(10, 72, 1),
-      SHOCComptmpiData(10, 13, 10),
-      SHOCComptmpiData(7,  17, 125),
-      SHOCComptmpiData(2,   8, 300)
+      ComputeTmpiData(10, 72, 1),
+      ComputeTmpiData(10, 13, 10),
+      ComputeTmpiData(7,  17, 125),
+      ComputeTmpiData(2,   8, 300)
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCComptmpiData);
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTmpiData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -134,11 +134,11 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCComptmpiData cxx_data[] = {
-      SHOCComptmpiData(f90_data[0]),
-      SHOCComptmpiData(f90_data[1]),
-      SHOCComptmpiData(f90_data[2]),
-      SHOCComptmpiData(f90_data[3]),
+    ComputeTmpiData cxx_data[] = {
+      ComputeTmpiData(f90_data[0]),
+      ComputeTmpiData(f90_data[1]),
+      ComputeTmpiData(f90_data[2]),
+      ComputeTmpiData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -152,15 +152,15 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_tmpi_f(d.nlevi(), d.shcol(), d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+      compute_tmpi_f(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCComptmpiData& d_f90 = f90_data[i];
-      SHOCComptmpiData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      ComputeTmpiData& d_f90 = f90_data[i];
+      ComputeTmpiData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.tmpi); ++k) {
         REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
       }
     }

@@ -47,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeS {
     static constexpr Real r_qwthl = 0.5;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompsData SDS;
+    ShocAssumedPdfComputeSData SDS;
 
     // fill in data
     SDS.qw1 = qw1;
@@ -67,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeS {
     REQUIRE(SDS.s > 0);
     REQUIRE(SDS.std_s > 0);
     REQUIRE(SDS.qn > 0);
-    REQUIRE(SDS.C > 0);
+    REQUIRE(SDS.c > 0);
 
     // TEST TWO
     // Variance test.  Given the same inputs as the previous test, but
@@ -80,7 +80,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeS {
     Real s_test1 = SDS.s;
     Real std_s_test1 = SDS.std_s;
     Real qn_test1 = SDS.qn;
-    Real C_test1 = SDS.C;
+    Real C_test1 = SDS.c;
 
     // Fill in new values for variance, double the values
     //  uses in the previous test
@@ -105,7 +105,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeS {
     REQUIRE(SDS.s == s_test1);
     REQUIRE(SDS.std_s > std_s_test1);
     REQUIRE(SDS.qn > qn_test1);
-    REQUIRE(SDS.C < C_test1);
+    REQUIRE(SDS.c < C_test1);
 
     //TEST THREE
     //Unsaturated test.  Given input with unsaturated conditions, verify
@@ -134,7 +134,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeS {
 
     // Verify output
     REQUIRE(SDS.s < 0);
-    REQUIRE(SDS.C == 0);
+    REQUIRE(SDS.c == 0);
     REQUIRE(SDS.qn == 0);
     REQUIRE(SDS.std_s == 0);
   }

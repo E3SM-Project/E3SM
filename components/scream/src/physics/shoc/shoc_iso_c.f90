@@ -1335,5 +1335,17 @@ contains
     call update_prognostics_implicit(shcol, nlev, nlevi, num_tracer, dtime, dz_zt, dz_zi, rho_zt, zt_grid, zi_grid, tk, tkh, uw_sfc, vw_sfc, wthl_sfc, wqw_sfc, wtracer_sfc, thetal, qw, tracer, tke, u_wind, v_wind)
   end subroutine update_prognostics_implicit_c
 
+  subroutine pblintd_height_c(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
+    use shoc, only : pblintd_height
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, u, v, thv
+    real(kind=c_real) , intent(in), dimension(shcol) :: ustar, thv_ref
+    real(kind=c_real) , intent(out), dimension(shcol) :: pblh
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: rino
+    logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
+
+    call pblintd_height(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check)
+  end subroutine pblintd_height_c
 end module shoc_iso_c
 

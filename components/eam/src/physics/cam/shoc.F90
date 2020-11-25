@@ -4060,7 +4060,7 @@ subroutine pblintd(&
     real(rtype) :: thv(shcol,nlev)         ! virtual potential temperature
     real(rtype) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
 
-    logical  :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    logical(btype)  :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
     !
     ! Compute Obukhov length virtual temperature flux and various arrays for use later:
@@ -4179,7 +4179,7 @@ subroutine pblintd_init(&
     !
     real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(out) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
-    logical, intent(out)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    logical(btype), intent(out)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
     !
     !---------------------------Local workspace-----------------------------
@@ -4216,7 +4216,7 @@ subroutine pblintd_height(&
     !
     real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(inout) :: rino(shcol,nlev)                     ! bulk Richardson no. from level to ref lev
-    logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    logical(btype), intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
     !
     !---------------------------Local workspace-----------------------------
@@ -4265,7 +4265,7 @@ subroutine pblintd_surf_temp(&
     real(rtype), intent(in) :: thv(shcol,nlev)          ! virtual potential temperature
 
     real(rtype), intent(out) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
-    logical, intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
+    logical(btype), intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
     real(rtype), intent(inout) :: rino(shcol,nlev)      ! bulk Richardson no. from level to ref lev
     real(rtype), intent(inout) :: pblh(shcol)              ! boundary-layer height [m]
     !
@@ -4311,7 +4311,7 @@ subroutine pblintd_check_pblh(&
 
     real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
     real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
-    logical, intent(in)      :: check(shcol)            ! True=>chk if Richardson no.>critcal
+    logical(btype), intent(in)      :: check(shcol)            ! True=>chk if Richardson no.>critcal
     !
     ! Output arguments
     !
@@ -4367,7 +4367,7 @@ subroutine pblintd_cldcheck(      &
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
-    logical  :: cldcheck(shcol)      ! True=>if cloud in lowest layer
+    logical(btype)  :: cldcheck(shcol)      ! True=>if cloud in lowest layer
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then

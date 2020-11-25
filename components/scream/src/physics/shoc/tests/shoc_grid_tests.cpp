@@ -39,10 +39,10 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     static constexpr Real density_zt[nlev] = {0.4, 0.6, 0.8, 1.0, 1.2};
 
     // Initialize data structure for bridging to F90
-    SHOCGridData SDS(shcol, nlev, nlevi);
+    ShocGridData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 
