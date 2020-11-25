@@ -9,33 +9,32 @@
 #include <vector>
 #include <utility>
 
-//
-// PhysicsTestData is meant to offer the client something they can inherit to provide
-// convenient handling of arrays of data in the common *Data structs that are used for
-// unit-testing and bridging. This class supports up to 4 classes of data
-//   * dim1 of Real
-//   * (dim1 x dim2) of Real
-//   * (dim1 x dim3) of Real
-//   * dim1 of Int
-//
-// Subclasses of PhysicsTestData should look like the following. Note that the copy
-// constructor and assignment operators must be defined if you want to be able to copy
-// objects of this type. The PTR_DATA_COPY_CTOR and PTD_ASSIGN_OP macros are there to help you do this.
 /*
+PhysicsTestData is meant to offer the client something they can inherit to provide
+convenient handling of arrays of data in the common *Data structs that are used for
+unit-testing and bridging. This class supports storing reals, ints, and bools of
+any multidimensionality.
+
+Subclasses of PhysicsTestData should look like the following. Note that the copy
+constructor and assignment operators must be defined if you want to be able to copy
+objects of this type. The PTD_STD_DEF macro is there to help you do this.
+
 struct SHOCGridData : public PhysicsTestData {
   // Inputs
+  Int dim1, dim2, dim3;
   Real *zt_grid, *zi_grid, *pdel;
 
   // In/out
   Real *dz_zt, *dz_zi, *rho_zt;
 
   SHOCGridData(Int dim1_, Int dim2_, Int dim3_) :
-    PhysicsTestData(dim1_, dim2_, dim3_,
+    PhysicsTestData({ {dim1_, dim2_}, {dim1_, dim3_} },
       {&zt_grid, &dz_zt, &pdel, &rho_zt},  // list of (dim1 x dim2) members
-      {&zi_grid, &dz_zi}) {}               // list of (dim1 x dim3) members
+      {&zi_grid, &dz_zi}),                 // list of (dim1 x dim3) members
+      dim1(dim1_), dim2(dim2_), dim3(dim3_)// initialize your own scalars
+  {}
 
-  PTD_STD_DEF(SHOCGridData, 3, 0); // 3 => number of dimensions (1-3), 0 => number of scalars (0-10)
-  // If you have scalars, you'll have to add names after the count
+  PTD_STD_DEF(SHOCGridData, 3, dim1, dim2, dim3); // 3 => number of scalars followed by their names
 };
 */
 
