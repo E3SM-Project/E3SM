@@ -853,7 +853,6 @@ contains
     integer :: dimid(5)       ! dimension ids
     integer :: varid          ! variable id
     integer :: itmp           ! temporary
-    character(len=256) :: str ! temporary
     character(len=*),parameter :: subname='ncd_defvar_bygrid' ! subroutine name
     !-----------------------------------------------------------------------
 
