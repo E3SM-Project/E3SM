@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- MOSART Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="initfile" 
+       type="char*1024" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchII restart file
+</entry>
+
+<entry id="outfreq" 
+       type="integer" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII coupling frequency
+</entry>
+
+</namelist_definition>

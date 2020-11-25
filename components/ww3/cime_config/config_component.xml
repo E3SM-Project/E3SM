@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<entry_id version="3.0">
+<definitions_variables>
 
   <description>
     <desc wav="WW3" >Wave Watch III</desc>
@@ -21,4 +21,4 @@
     =========================================
   </help>
 
-</entry_id>
+</definitions_variables>

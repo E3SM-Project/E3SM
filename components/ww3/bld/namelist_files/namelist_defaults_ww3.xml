@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of MOSART model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+
+The default filenames are given relative to the root directory
+for the CLM data in the CESM distribution 
+-->
+
+<initfile>"/home/ccsm-data/inputdata/wav/ww3/restart.ww3.v6"</initfile>
+<outfreq>1</outfreq>
+
+</namelist_defaults>
