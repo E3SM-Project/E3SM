@@ -56,22 +56,28 @@ def get_name_and_yrs(parameters, dataset, season=''):
     Given either test or ref data, get the name of the data
     (test_name or reference_name), along with the years averaged.
     """
-    if dataset.test:
-        if parameters.short_test_name:
-            name_yrs = parameters.short_test_name
-        else:
-            name_yrs = parameters.test_name
-    else:
-        if parameters.short_ref_name:
-            name_yrs = parameters.short_ref_name
-        else:
-            # TODO: Or is this ref_name?
-            name_yrs = parameters.reference_name
 
+    name = get_name(parameters, dataset)
     yrs_averaged = get_yrs(dataset, season)
-    name_yrs = '{} ({})'.format(name_yrs, yrs_averaged)
+    name_yrs = '{} ({})'.format(name, yrs_averaged)
     
     return name_yrs
+
+
+def get_name(parameters, dataset):
+    if dataset.test:
+        if parameters.short_test_name:
+            name = parameters.short_test_name
+        else:
+            name = parameters.test_name
+    else:
+        if parameters.short_ref_name:
+            name = parameters.short_ref_name
+        else:
+            # parameter.ref_name is used to search though the reference data directories.
+            # parameter.reference_name is printed above ref plots.
+            name = parameters.reference_name
+    return name
 
 
 def get_yrs(dataset, season=''):
