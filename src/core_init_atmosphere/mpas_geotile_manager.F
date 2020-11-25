@@ -498,7 +498,7 @@ module mpas_geotile_manager
 
         interface
            subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
-                                   scalefactor, wordsize, status) bind(C)
+                                   wordsize, status) bind(C)
               use iso_c_binding, only : c_char, c_int, c_float, c_ptr
               character (c_char), dimension(*), intent(in) :: fname
               type (c_ptr), value :: rarray
@@ -507,7 +507,6 @@ module mpas_geotile_manager
               integer (c_int), intent(in), value :: nz
               integer (c_int), intent(in), value :: isigned
               integer (c_int), intent(in), value :: endian
-              real (c_float), intent(in), value :: scalefactor
               integer (c_int), intent(in), value :: wordsize
               integer (c_int), intent(inout) :: status
            end subroutine read_geogrid
@@ -527,7 +526,6 @@ module mpas_geotile_manager
         integer :: start_x, start_y
         integer, pointer :: signed
         character (len=StrKIND), pointer :: endian
-        real (kind=RKIND), pointer :: scalefactor
         logical :: res
 
         character (len=StrKIND) :: fname
@@ -536,7 +534,6 @@ module mpas_geotile_manager
         integer (c_int) :: c_endian
         integer (c_int) :: c_wordsize
         integer (c_int) :: c_signed
-        real (c_float) :: c_scalefactor
         integer (c_int) :: status
         type (c_ptr) :: c_tile_ptr
 
@@ -544,7 +541,6 @@ module mpas_geotile_manager
 
         tile => null()
         endian => null()
-        scalefactor => null()
         signed => null()
 
         call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
@@ -554,13 +550,11 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'wordsize', wordsize)
         call mpas_pool_get_config(mgr % pool, 'signed', signed)
         call mpas_pool_get_config(mgr % pool, 'endian', endian)
-        call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor)
 
         c_tile_nx = tile_nx + 2 * tile_bdr ! The number of pixels in the x direction, including halo cells
         c_tile_ny = tile_ny + 2 * tile_bdr ! The number of pixels in the y direction, including halo cells
         c_tile_nz = tile_nz ! The number of pixels in the z direction
         c_wordsize = wordsize
-        c_scalefactor = real(scalefactor, c_float)
         c_signed = signed
 
         if (endian == "big") then
@@ -598,8 +592,7 @@ module mpas_geotile_manager
         allocate(tile)
         allocate(tile % tile(tile_nx + (tile_bdr * 2), tile_ny + (tile_bdr * 2), tile_nz))
         c_tile_ptr = c_loc(tile % tile)
-        call read_geogrid(c_fname, c_tile_ptr, c_tile_nx, c_tile_ny, c_tile_nz, c_signed, c_endian, &
-                            c_scalefactor, c_wordsize, status)
+        call read_geogrid(c_fname, c_tile_ptr, c_tile_nx, c_tile_ny, c_tile_nz, c_signed, c_endian, c_wordsize, status)
         if (status /= 0) then
             call mpas_log_write("Error reading this geogrid file: "//trim(fname), messageType=MPAS_LOG_ERR)
             ierr = 1

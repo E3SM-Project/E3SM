@@ -26,7 +26,7 @@
 
  interface
     subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
-                            scalefactor, wordsize, status) bind(C)
+                            wordsize, status) bind(C)
        use iso_c_binding, only : c_char, c_int, c_float, c_ptr
        character (c_char), dimension(*), intent(in) :: fname
        type (c_ptr), value :: rarray
@@ -35,7 +35,6 @@
        integer (c_int), intent(in), value :: nz
        integer (c_int), intent(in), value :: isigned
        integer (c_int), intent(in), value :: endian
-       real (c_float), intent(in), value :: scalefactor
        integer (c_int), intent(in), value :: wordsize
        integer (c_int), intent(inout) :: status
     end subroutine read_geogrid
@@ -51,7 +50,6 @@ int read_geogrid(
       int nz,                /* z-dimension of the array */
       int isigned,           /* 0=unsigned data, 1=signed data */
       int endian,            /* 0=big endian, 1=little endian */
-      float scalefactor,     /* value to multiply array elements by before truncation to integers */
       int wordsize,          /* number of bytes to use for each array element */
       int * status)
 {
@@ -141,13 +139,6 @@ int read_geogrid(
    }
 
    free(c);
-
-   /* Scale real-valued array by scalefactor */
-   if (scalefactor != 1.0)
-   {
-      for (i=0; i<narray; i++)
-         rarray[i] = rarray[i] * (scalefactor);
-   }
 
    return 0;
 }
