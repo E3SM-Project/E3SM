@@ -57,7 +57,7 @@ class TestAllScream(object):
             if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
                 self._machine = os.environ["CIME_MACHINE"]
             else:
-                expect(self._machine is not None, "Machine is now required by test-all-scream")
+                expect(False, "Machine is now required by test-all-scream")
 
         # Unless the user claims to know what he/she is doing, we setup the env.
         if not self._preserve_env:
