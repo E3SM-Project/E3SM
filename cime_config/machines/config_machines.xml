@@ -1124,7 +1124,7 @@
     <OS>LINUX</OS>
     <COMPILERS>pgigpu</COMPILERS>
     <MPILIBS>mvapich</MPILIBS>
-    <PROJECT>ACME</PROJECT>
+    <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/blues</CIME_OUTPUT_ROOT>
@@ -1162,15 +1162,13 @@
         <command name="load">cmake/3.14.2-gvwazz3</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">pgi/19.10-gked3en</command>
-        <command name="load">netcdf-c/4.4.1-kiulufe</command>
-        <command name="load">netcdf-cxx/4.2-4zoepaj</command>
-        <command name="load">netcdf-fortran/4.4.4-lo3whut</command>
-        <command name="load">cuda/10.0.130-kqvlz4i</command>
-      </modules>
-      <modules compiler="pgigpu" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-blues-4scjxsw</command>
-        <command name="load">parallel-netcdf/1.12.0-iayqtgc</command>
+        <command name="load">nvhpc/20.9-5brtudu</command>
+        <command name="load">cuda/11.1.0-6dvax5z</command>
+        <command name="load">netcdf-c/4.7.4-ltqliri</command>
+        <command name="load">netcdf-cxx/4.2-kf5ox4e</command>
+        <command name="load">netcdf-fortran/4.5.3-6mgyroo</command>
+        <command name="load">mvapich2/2.3.4-blues-5fwicb5</command>
+        <command name="load">parallel-netcdf/1.12.1-nyuvwhn</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
