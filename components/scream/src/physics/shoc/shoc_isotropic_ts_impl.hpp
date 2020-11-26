@@ -29,10 +29,10 @@ void Functions<S,D>
   static constexpr  Scalar ggr = C::gravit;
 
   //Declare constants
-  static constexpr Scalar lambda_low   = sp(0.001);
-  static constexpr Scalar lambda_high  = sp(0.04);
-  static constexpr Scalar lambda_slope = sp(0.65);
-  static constexpr Scalar brunt_low    = sp(0.02);
+  static constexpr Scalar lambda_low   = 0.001;
+  static constexpr Scalar lambda_high  = 0.04;
+  static constexpr Scalar lambda_slope = 0.65;
+  static constexpr Scalar brunt_low    = 0.02;
   static constexpr Scalar maxiso       = 20000; // Return to isotropic timescale [s]
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
