@@ -1539,7 +1539,7 @@
 <!-- tensor hyperviscsoity -->
 <nu>                   3.4e-8 </nu>
 <hypervis_order >     2 </hypervis_order>
-<hypervis_scaling> 3 </hypervis_scaling>
+<hypervis_scaling> 3.0 </hypervis_scaling>
 
 <!-- special defaults for V2 NE30 -->
 <nu hgrid="ne30np4">  1.0e15 </nu>
