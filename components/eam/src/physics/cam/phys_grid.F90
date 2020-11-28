@@ -6154,6 +6154,9 @@ logical function phys_grid_initialized ()
    integer :: max_nvsmptasks             ! maximum number of processes associated
                                          !  with any virtual SMP
    integer :: proc_heap_len              ! current process heap length
+   integer :: updated                    ! index in heap for process whose cost has
+                                         !  been updated or which needs to be
+                                         !  removed from the heap
    integer, dimension(:), allocatable  :: proc_heap
                                          ! process heap to process id map
    integer, dimension(:), allocatable  :: inv_proc_heap
@@ -6381,7 +6384,8 @@ logical function phys_grid_initialized ()
             proc_heap_remove = .true.
          endif
          if ((proc_heap_update) .or. (proc_heap_remove)) then
-            call proc_heap_adjust(inv_proc_heap(ntmp2), proc_heap_remove,   &
+            updated = inv_proc_heap(ntmp2)
+            call proc_heap_adjust(updated, proc_heap_remove,   &
                                   max_nvsmptasks, proc_heap_len, proc_heap, &
                                   proc_cost, inv_proc_heap)
          endif
