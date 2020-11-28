@@ -6488,9 +6488,9 @@ logical function phys_grid_initialized ()
    integer :: proc_last    ! process id of last element
    integer :: proc_updated ! process id of updated element
    integer :: proc_i       ! process id of current element
-   real(r8):: proc_ip      ! process id of parent of current element
-   real(r8):: proc_il      ! process id of left child of current element
-   real(r8):: proc_ir      ! process id of right child of current
+   integer :: proc_ip      ! process id of parent of current element
+   integer :: proc_il      ! process id of left child of current element
+   integer :: proc_ir      ! process id of right child of current
                            !  element
 
    integer :: last_nonleaf ! index of last non-leaf in heap
