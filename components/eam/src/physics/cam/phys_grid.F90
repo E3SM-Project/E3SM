@@ -6384,6 +6384,9 @@ logical function phys_grid_initialized ()
             proc_heap_remove = .true.
          endif
          if ((proc_heap_update) .or. (proc_heap_remove)) then
+            ! Pass scalar 'updated' to 'proc_heap_adjust' instead of
+            ! 'inv_proc_heap(ntmp2)' to prevent this argument from changing
+            ! value when 'inv_proc_heap' is modified inside of 'proc_heap_adjust'
             updated = inv_proc_heap(ntmp2)
             call proc_heap_adjust(updated, proc_heap_remove,   &
                                   max_nvsmptasks, proc_heap_len, proc_heap, &
