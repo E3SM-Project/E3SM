@@ -125,10 +125,14 @@ def run_diag(parameter):
             # number from 1901.1 to 2015.12. 30961 include two columns for year and month plus
             # streamflow at 30959 gauge locations reported by GSIM
             ref_mat_file = '/{}/GSIM/GSIM_198601_199512.mat'.format(parameter.reference_data_path.strip('/'))
-            if parameter.short_ref_name == '':
-                ref_name = 'GSIM'
-            else:
+            if parameter.short_ref_name != '':
                 ref_name = parameter.short_ref_name
+            elif parameter.reference_name != '':
+                # parameter.ref_name is used to search though the reference data directories.
+                # parameter.reference_name is printed above ref plots.
+                ref_name = parameter.reference_name
+            else:
+                ref_name = 'GSIM'
             parameter.ref_name_yrs = '{} ({}-{})'.format(ref_name, parameter.ref_start_yr, parameter.ref_end_yr)
             ref_mat = scipy.io.loadmat(ref_mat_file)
             ref_array = ref_mat['GSIM'].astype(numpy.float64)
