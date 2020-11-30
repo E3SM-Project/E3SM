@@ -88,7 +88,7 @@
  integer,dimension(:,:),allocatable:: ncat
       
  real(kind=RKIND), pointer :: scalefactor_ptr
- real(kind=c_float):: scalefactor
+ real(kind=RKIND) :: scalefactor
  real(kind=c_float),dimension(:,:,:),pointer,contiguous :: rarray
  type(c_ptr) :: rarray_ptr
 
