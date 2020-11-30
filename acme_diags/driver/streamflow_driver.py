@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import csv
 import numpy
+import os
 import scipy.io
 
 import cdms2
@@ -72,9 +73,32 @@ def get_seasonality(monthly):
 
 
 def run_diag(parameter):
+    # Assume `model` will always be a `nc` file.
+    # Assume `obs` will always be a `mat` file.
+    using_test_mat_file = False
+    if parameter.run_type == 'model_vs_model':
+        using_ref_mat_file = False
+        if parameter.gauges_path is None:
+            raise Exception(
+                'To use a non-GSIM reference, please specify streamflow_param.gauges_path. This might be /{}/{}'.format(
+                    parameter.reference_data_path.strip('/'),
+                    'GSIM/GSIM_catchment_characteristics_all_1km2.csv'
+                ))
+        else:
+            gauges_path = parameter.gauges_path
+    elif parameter.run_type == 'model_vs_obs':
+        using_ref_mat_file = True
+        # The metadata file of GSIM that has observed gauge lat lon and drainage area
+        # This file includes 25765 gauges, which is a subset of the entire
+        # dataset (30959 gauges). The removed gauges are associated with very
+        # small drainage area (<1km2), which is not meaningful to be included.
+        gauges_path = '/{}/GSIM/GSIM_catchment_characteristics_all_1km2.csv'.format(parameter.reference_data_path.strip('/'))
+    else:
+        raise Exception('parameter.run_type={} not supported'.format(parameter.run_type))
+
     # Set path to the gauge metadata
-    with open(parameter.gauges_path) as gauges_path:
-        gauges_list = list(csv.reader(gauges_path))
+    with open(gauges_path) as gauges_file:
+        gauges_list = list(csv.reader(gauges_file))
     # Remove headers
     gauges_list.pop(0)
     gauges = numpy.array(gauges_list)
@@ -84,8 +108,9 @@ def run_diag(parameter):
     variables = parameter.variables
     for var in variables:
 
-        if not parameter.ref_mat_file:
+        if not using_ref_mat_file:
             ref_data = utils.dataset.Dataset(parameter, ref=True)
+            parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
             ref_data_ts = ref_data.get_timeseries_variable(var)
             var_array = ref_data_ts(cdutil.region.domain(latitude=(-90., 90, 'ccb')))
             if parameter.print_statements:
@@ -99,7 +124,13 @@ def run_diag(parameter):
             # the data has been reorganized to a 1380 * 30961 matrix. 1380 is the month
             # number from 1901.1 to 2015.12. 30961 include two columns for year and month plus
             # streamflow at 30959 gauge locations reported by GSIM
-            ref_mat = scipy.io.loadmat(parameter.ref_mat_file)
+            ref_mat_file = '/{}/GSIM/GSIM_198601_199512.mat'.format(parameter.reference_data_path.strip('/'))
+            if parameter.short_ref_name == '':
+                ref_name = 'GSIM'
+            else:
+                ref_name = parameter.short_ref_name
+            parameter.ref_name_yrs = '{} ({}-{})'.format(ref_name, parameter.ref_start_yr, parameter.ref_end_yr)
+            ref_mat = scipy.io.loadmat(ref_mat_file)
             ref_array = ref_mat['GSIM'].astype(numpy.float64)
         if parameter.print_statements:
             # GSIM: 1380 x 30961
@@ -107,9 +138,10 @@ def run_diag(parameter):
             print('ref_array.shape={}'.format(ref_array.shape))
 
         # Load E3SM simulated streamflow dataset
-        if not parameter.test_mat_file:
+        if not using_test_mat_file:
             # `Dataset` will take the time slice from test_start_yr to test_end_yr
             test_data = utils.dataset.Dataset(parameter, test=True)
+            parameter.test_name_yrs = utils.general.get_name_and_yrs(parameter, test_data)
             test_data_ts = test_data.get_timeseries_variable(var)
             var_array = test_data_ts(cdutil.region.domain(latitude=(-90., 90, 'ccb')))
             if parameter.print_statements:
@@ -123,7 +155,19 @@ def run_diag(parameter):
             if parameter.print_statements:
                 print('area_upstream dimensions={}'.format(area_upstream.shape))
         else:
-            data_mat = scipy.io.loadmat(parameter.test_mat_file)
+            # This block is only for debugging -- i.e., when testing with a `mat` file.
+            files_in_test_data_path = os.listdir(parameter.test_data_path)
+            mat_files = list(filter(lambda file_name: file_name.endswith('.mat'), files_in_test_data_path))
+            if len(mat_files) == 1:
+                mat_file = mat_files[0]
+            elif len(mat_files) > 1:
+                raise Exception('More than one .mat file in parameter.test_data_path={}'.format(
+                    parameter.test_data_path))
+            else:
+                raise Exception('No .mat file in parameter.test_data_path={}'.format(parameter.test_data_path))
+            test_mat_file = '/{}/{}'.format(parameter.test_data_path.strip('/'), mat_file)
+            parameter.test_name_yrs = '{} ({}-{})'.format(parameter.test_start_yr, parameter.test_end_yr)
+            data_mat = scipy.io.loadmat(test_mat_file)
             if 'E3SMflow' in data_mat.keys():
                 # `edison` file uses this block
                 e3sm_flow = data_mat['E3SMflow']
@@ -196,7 +240,7 @@ def run_diag(parameter):
             else:
                 # Use the center location
                 lat_lon_ref = [lat_ref, lon_ref]
-            if parameter.ref_mat_file:
+            if using_ref_mat_file:
                 origin_id = gauges[i, 1].astype(numpy.int64)
                 # Column 0 -- year
                 # Column 1 -- month
@@ -228,11 +272,11 @@ def run_diag(parameter):
                         monthly_mean[month] = numpy.nanmean(extracted[month_array_boolean, 2])
                 # This is ref annual mean streamflow
                 annual_mean_ref = numpy.mean(monthly_mean)
-            if parameter.ref_mat_file and numpy.isnan(annual_mean_ref):
+            if using_ref_mat_file and numpy.isnan(annual_mean_ref):
                 # All elements of row i will be nan
                 export[i,:] = numpy.nan
             else:
-                if parameter.ref_mat_file:
+                if using_ref_mat_file:
                     # Reshape extracted[:,2] into a 12 x ? matrix; -1 means to
                     # calculate the size of the missing dimension.
                     # Note that `numpy.reshape(extracted[:, 2], (12,-1))` will not work.
@@ -338,6 +382,11 @@ def run_diag(parameter):
 
         if parameter.print_statements:
             print('Variable: {}'.format(var))
+
+        if parameter.test_title == '':
+            parameter.test_title = parameter.test_name_yrs
+        if parameter.reference_title == '':
+            parameter.reference_title = parameter.ref_name_yrs
 
         # Seasonality
         # Plot original ref and test, not regridded versions.

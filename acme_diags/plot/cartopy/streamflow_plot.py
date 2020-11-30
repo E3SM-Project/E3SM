@@ -211,10 +211,6 @@ def plot_seasonality_map(export, parameter):
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     proj = ccrs.PlateCarree(central_longitude=0)
 
-    if parameter.test_title == '':
-        parameter.test_title = "Test"
-    if parameter.reference_title == '':
-        parameter.reference_title = "Reference"
     # test and ref color lists
     # Selected from 'hsv' colormap:
     color_list = [(0.05,0.00,0.99), (0.03,0.30,0.98), (0.12,0.92,0.99),
@@ -394,7 +390,7 @@ def plot_panel_annual_map(panel_index, fig, proj, export, bias_array, panel, par
     elif panel_type == 'ref':
         title = parameter.reference_title
     elif panel_type == 'bias':
-        title = '{} and {} bias'.format(parameter.test_title, parameter.reference_title)
+        title = 'Relative Bias'
     else:
         raise Exception('Invalid panel_type={}'.format(panel_type))
     title = (None, title, None)
@@ -459,11 +455,6 @@ def plot_annual_map(export, bias, parameter):
     # Create figure, projection
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     proj = ccrs.PlateCarree(central_longitude=0)
-
-    if parameter.test_title == '':
-        parameter.test_title = "Test"
-    if parameter.reference_title == '':
-        parameter.reference_title = "Reference"
 
     # First panel
     plot_panel_annual_map(0, fig, proj, export, bias, panel, parameter)
