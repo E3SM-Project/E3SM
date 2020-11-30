@@ -1203,7 +1203,7 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,mvapich</MPILIBS>
-    <PROJECT>acme</PROJECT>
+    <PROJECT>e3sm</PROJECT>
     <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/bebop</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
