@@ -479,6 +479,25 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: var
   end subroutine vd_shoc_decomp_and_solve_f
 
+  subroutine shoc_grid_f(shcol, nlev, nlevi, zt_grid, zi_grid, pdel, dz_zt, dz_zi, rho_zt) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: zt_grid, pdel
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: zi_grid
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: dz_zt, rho_zt
+    real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: dz_zi
+  end subroutine shoc_grid_f
+
+  subroutine eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, shoc_mix, sterm_zt, isotropy, tke, tkh, tk) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nlev, shcol
+    real(kind=c_real) , intent(in), dimension(shcol) :: obklen, pblh
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: zt_grid, shoc_mix, sterm_zt, isotropy, tke
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: tkh, tk
+  end subroutine eddy_diffusivities_f
+
 end interface
 
 end module shoc_iso_f
