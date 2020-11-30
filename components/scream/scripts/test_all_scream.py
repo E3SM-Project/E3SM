@@ -441,6 +441,7 @@ class TestAllScream(object):
 
         work_dir = pathlib.Path(self._work_dir).joinpath(name)
         result += "-DBUILD_WORK_DIR={} ".format(work_dir)
+        result += "-DBUILD_NAME_MOD={} ".format(name)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
