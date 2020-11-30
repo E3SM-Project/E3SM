@@ -199,8 +199,8 @@ def run_diag(parameter):
         parameter.main_title = 'QBO index, amplitude, and power spectral density for {}'.format(variable)
         parameter.viewer_descr[variable] = parameter.main_title
 
-        test['name'] = parameter.test_name
-        ref['name'] = parameter.ref_name
+        test['name'] = utils.general.get_name(parameter, test_data)
+        ref['name'] = utils.general.get_name(parameter, ref_data)
 
         test_nc = {}
         ref_nc = {}
