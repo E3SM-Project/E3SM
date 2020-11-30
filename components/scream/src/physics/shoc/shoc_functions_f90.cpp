@@ -2273,8 +2273,13 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
       //output
       const auto sterm_s  = ekat::subview(sterm_d ,i);
 
-      //SHF::compute_shr_prod(team, nlevi, nlev, shcol, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
+      SHF::compute_shr_prod(team, nlevi, nlev, shcol, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
     });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> out_views = {sterm_d};
+  ekat::device_to_host<int, 1>({sterm}, {shcol}, {nlevi}, out_views, true);
+
 }
 
 void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi)
