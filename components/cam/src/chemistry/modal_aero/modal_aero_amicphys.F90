@@ -160,7 +160,7 @@
   integer :: igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
   integer :: igas_soagzz
   ! species indices for various qaer_--- arrays
-  !    when nsoab > 1, igas_soag is index of the first soag species in qgas arrays
+  !    when nsoag > 1, igas_soag is index of the first soag species in qgas arrays
   !    when nsoa  > 1, iaer_soa  is index of the first soa  species in qaer arrays
   !    when nbc   > 1, iaer_bc   is index of the first bc   species in qaer arrays
   !    when npoa  > 1, iaer_pom  is index of the first pom  species in qaer arrays

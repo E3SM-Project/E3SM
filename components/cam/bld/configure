@@ -128,7 +128,7 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | linoz_mam4_resus_soa_mom_soag |
+			  trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | linoz_mam4_resus_soa_mom_soag | linoz_mam4_resus_soa_mom_soag_vbs |
 			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
@@ -229,7 +229,6 @@ OPTIONS
      -debug             Switch to turn on building CAM with debugging compiler options.
      -bc_dep_to_snow_updates  Switch on new treatment of BC/dust deposition to ice/snoe
      -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3 and MAM4 coarse mode (mam mode 3)
-     -mam_soa_vbs               Turn on VBS treatment of SOA coded by Manish Shrivastava and Richard Easter
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
@@ -360,7 +359,6 @@ GetOptions(
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
-    "mam_soa_vbs"               => \$opts{'mam_soa_vbs'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
     "dyn_target=s"              => \$opts{'dyn_target'},
@@ -913,17 +911,6 @@ $cfg_ref->set('rain_evap_to_coarse_aero', $rain_evap_to_coarse_aero_opt);
 my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
 
 if ($print>=2) { print "Is rain_evap_to_coarse_aero active (0-NO; 1-YES)?: $rain_evap_to_coarse_aero$eol"; }
-
-
-#-----------------------------------------------------------------------------------------------
-# Use VBS SOA treatment
-my $mam_soa_vbs_opt = (defined $opts{'mam_soa_vbs'}) ? 1 : 0;
-$cfg_ref->set('mam_soa_vbs', $mam_soa_vbs_opt);
-my $mam_soa_vbs = $mam_soa_vbs_opt ? 1:0;
-
-if ($print>=2) { print "Is VBS SOA treatment active (0-NO; 1-YES)?: $mam_soa_vbs$eol"; }
-
-#-----------------------------------------------------------------------------------------------
 
 # Prognostic species package(s)
 if (defined $opts{'prog_species'}) {
@@ -1518,7 +1505,7 @@ if ($bc_dep_to_snow_updates == 1) {
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
-if ($mam_soa_vbs == 1 && ($chem_pkg =~ '_mam4' || $chem_pkg  =~ '_mam4_resus' || $chem_pkg  =~ '_mam4_resus_mom'|| $chem_pkg  =~ '_mam4_resus_mom_soag' )) {
+if ($chem_pkg  =~ '_mam4_resus_soa_mom_soag_vbs' ) {
     $chem_cppdefs = "$chem_cppdefs  -DMAM_SOA_VBS "
 }
 
