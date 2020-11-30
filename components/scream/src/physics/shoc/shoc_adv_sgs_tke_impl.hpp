@@ -36,7 +36,7 @@ void Functions<S,D>
   //declare some constants
   static constexpr Scalar Cs  = 0.15;
   static constexpr Scalar Ck  = 0.1;
-  static constexpr Scalar Ce  = std::pow(Ck,3)/std::pow(Cs,4);
+  static constexpr Scalar Ce  = (Ck*Ck*Ck)/((Cs*Cs)*(Cs*Cs));
   static constexpr Scalar Ce1 = Ce/sp(0.7)*sp(0.19);
   static constexpr Scalar Ce2 = Ce/sp(0.7)*sp(0.51);
   static constexpr Scalar Cee = Ce1 + Ce2;
@@ -53,7 +53,7 @@ void Functions<S,D>
     const Spack a_prod_sh = tk(k)*sterm_zt(k);
 
     // Dissipation term
-    a_diss(k)=Cee/shoc_mix(k)*ekat::pow(tke(k),1.5);
+    a_diss(k)=Cee/shoc_mix(k)*ekat::pow(tke(k),sp(1.5));
 
     // March equation forward one timestep
     tke(k)=ekat::max(mintke,tke(k)+dtime*(ekat::max(0,a_prod_sh+a_prod_bu)-a_diss(k)));

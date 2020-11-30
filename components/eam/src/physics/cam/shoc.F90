@@ -3047,7 +3047,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   Cs=0.15_rtype
   Ck=0.1_rtype
-  Ce=bfb_pow(Ck,3.0_rtype)/bfb_pow(Cs,4._rtype)
+  Ce=bfb_cube(Ck)/bfb_quad(Cs)
   Ce1=Ce/0.7_rtype*0.19_rtype
   Ce2=Ce/0.7_rtype*0.51_rtype
   Cee=Ce1+Ce2
@@ -3065,7 +3065,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
-        a_diss(i,k)=Cee/shoc_mix(i,k)*bfb_pow(tke(i,k),1.5)
+        a_diss(i,k)=Cee/shoc_mix(i,k)*bfb_pow(tke(i,k),1.5_rtype)
 
         ! March equation forward one timestep
         tke(i,k)=max(mintke,tke(i,k)+dtime* &
