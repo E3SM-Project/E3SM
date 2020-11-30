@@ -115,6 +115,10 @@ module mpas_spline_interpolation
 
 ! INPUT PARAMETERS:
 
+  integer, intent(in) :: &
+    n,      &!< Input: number of nodes, input grid
+    nOut       !< Input: number of nodes, output grid
+
   real (kind=RKIND), dimension(n), intent(in) :: &
     x,         &!< Input: node location, input grid
     y,       &!< Input: interpolation variable, input grid
@@ -122,10 +126,6 @@ module mpas_spline_interpolation
 
   real (kind=RKIND), dimension(nOut), intent(in) :: &
     xOut          !< Input: node location, output grid
-
-  integer, intent(in) :: &
-    n,      &!< Input: number of nodes, input grid
-    nOut       !< Input: number of nodes, output grid
 
 ! OUTPUT PARAMETERS:
 
@@ -359,16 +359,16 @@ subroutine mpas_integrate_cubic_spline(x,y,y2ndDer,n,x1,x2,y_integral)  !{{{
 
 ! !INPUT PARAMETERS:
 
+  integer, intent(in) :: &
+    N,      &!< Input: number of nodes, input grid
+    NOut       !< Input: number of nodes, output grid
+
   real (kind=RKIND), dimension(n), intent(in) :: &
     x,         &!< Input: node location, input grid
     y         !< Input: interpolation variable, input grid
 
   real (kind=RKIND), dimension(nOut), intent(in) :: &
     xOut          !< Input: node location, output grid
-
-  integer, intent(in) :: &
-    N,      &!< Input: number of nodes, input grid
-    NOut       !< Input: number of nodes, output grid
 
 ! !OUTPUT PARAMETERS:
 
