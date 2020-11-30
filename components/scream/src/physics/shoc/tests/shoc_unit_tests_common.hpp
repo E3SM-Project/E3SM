@@ -115,7 +115,6 @@ struct UnitWrap {
     struct TestUpdatePrognosticsImplicit;
     struct TestShocMain;
     struct TestPblintdHeight;
-    struct TestComputeShrProd;
   };
 
 };
