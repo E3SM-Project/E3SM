@@ -3,4 +3,5 @@
 ./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
 ./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
 ./xmlchange DATM_CLMNCEP_YR_END=1948
+./xmlchange NTASKS=1
 
