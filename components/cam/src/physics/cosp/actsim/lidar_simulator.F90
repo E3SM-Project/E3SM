@@ -485,7 +485,9 @@ pnorm_perp_tot(:,:)=0
            betatot_ice(:,:) = betatot_ice(:,:)+ kp_part(:,:,i)*alpha_part(:,:,i)
            tautot_ice(:,:) = tautot_ice(:,:)  + tau_part(:,:,i)
       ENDDO ! i
-      DO i = 1, npart,2
+      betatot_ice(:,:) = betatot_ice(:,:)+ kp_part(:,:,5)*alpha_part(:,:,5)
+      tautot_ice(:,:) = tautot_ice(:,:)  + tau_part(:,:,5)
+      DO i = 1, npart-1,2
            betatot_liq(:,:) = betatot_liq(:,:)+ kp_part(:,:,i)*alpha_part(:,:,i)
            tautot_liq(:,:) = tautot_liq(:,:)  + tau_part(:,:,i)
       ENDDO ! i
