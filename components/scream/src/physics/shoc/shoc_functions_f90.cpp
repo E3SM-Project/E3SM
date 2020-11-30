@@ -2386,5 +2386,9 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
 {
   // TODO
 }
+void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm)
+{
+  // TODO
+}
 } // namespace shoc
 } // namespace scream
