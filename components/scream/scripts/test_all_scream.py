@@ -3,8 +3,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-                           get_mach_baseline_root_dir, setup_mach_env, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
+    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
+    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported
 
 check_minimum_python_version(3, 4)
 
@@ -50,6 +50,20 @@ class TestAllScream(object):
         #  Sanity checks and helper structs setup  #
         ############################################
 
+        # Probe machine if none was specified
+        if self._machine is None:
+            # We could potentially integrate more with CIME here to do actual
+            # nodename probing.
+            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
+                self._machine = os.environ["CIME_MACHINE"]
+            else:
+                expect(False, "Machine is now required by test-all-scream")
+
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine)
+
         # Compute root dir
         if not self._root_dir:
             self._root_dir = pathlib.Path(__file__).resolve().parent.parent
@@ -85,7 +99,10 @@ class TestAllScream(object):
                                   "fpe" : "debug_nopack_fpe"}
 
         if not self._tests:
-            self._tests = ["dbg", "sp", "fpe"]
+            # always do dbg and sp tests, do not do fpe test on CUDA
+            self._tests = ["dbg", "sp"]
+            if not is_cuda_machine(self._machine):
+                self._tests.append("fpe")
         else:
             for t in self._tests:
                 expect(t in self._test_full_names,
@@ -98,19 +115,11 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        if self._submit:
-            expect(self._machine, "If dashboard submit request, must provide machine name")
-
         print_last_commit(git_ref=self._original_branch)
 
         ############################################
         #    Deduce compilers if needed/possible   #
         ############################################
-
-        # Unless the user claims to know what he/she is doing, we setup the env.
-        if not self._preserve_env:
-            # Setup the env on this machine
-            setup_mach_env(self._machine)
 
         if self._cxx_compiler is None:
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)
@@ -323,7 +332,6 @@ class TestAllScream(object):
     ###############################################################################
     def get_machine_file(self):
     ###############################################################################
-        expect(self._machine is not None, "Cannot get machine file without machine")
         return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
 
     ###############################################################################
@@ -475,7 +483,7 @@ class TestAllScream(object):
             return False
         else:
             # Clean up the directory, by removing everything but the 'data' subfolder
-            run_cmd_no_fail("find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
+            run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
                             from_dir=test_dir,verbose=True)
 
         return True
