@@ -2956,6 +2956,10 @@ end subroutine integ_column_stability
 
 subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shr_prod_f
+#endif
+
   implicit none
 
   integer,     intent(in)  :: nlevi, nlev, shcol
@@ -2972,6 +2976,13 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   !local variables
   integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+     return
+  endif
+#endif
 
   !compute shear production term
   do k = 2, nlev

@@ -2232,6 +2232,50 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
   Kokkos::Array<view_2d, 5> out_views = {shoc_cldfrac_d, shoc_ql_d, wqls_d, wthv_sec_d, shoc_ql2_d};
   ekat::device_to_host<int, 5>({shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2}, {shcol}, {nlev}, out_views, true);
 }
+void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 4;
+
+  Kokkos::Array<view_2d,     num_arrays> temp_d;
+  Kokkos::Array<int,         num_arrays> dim1_sizes = {shcol,  shcol,  shcol, shcol};
+  Kokkos::Array<int,         num_arrays> dim2_sizes = {nlevi,   nlev,   nlev, nlevi};
+  Kokkos::Array<const Real*, num_arrays> ptr_array  = {dz_zi, u_wind, v_wind, sterm};
+
+  // Sync to device
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    //input
+    dz_zi_d (temp_d[0]),
+    u_wind_d(temp_d[1]),
+    v_wind_d(temp_d[2]),
+    //output
+    sterm_d (temp_d[3]);
+
+  const Int nk_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const Int i = team.league_rank();
+
+      // inputs
+      const auto dz_zi_s  = ekat::subview(dz_zi_d ,i);
+      const auto u_wind_s = ekat::subview(u_wind_d ,i);
+      const auto v_wind_s = ekat::subview(v_wind_d ,i);
+      //output
+      const auto sterm_s  = ekat::subview(sterm_d ,i);
+
+      //SHF::compute_shr_prod(team, nlevi, nlev, shcol, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
+    });
+}
 
 void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi)
 {
@@ -2383,10 +2427,6 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
   // TODO
 }
 void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check)
-{
-  // TODO
-}
-void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm)
 {
   // TODO
 }
