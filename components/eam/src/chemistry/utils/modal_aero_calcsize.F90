@@ -542,6 +542,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    integer  :: ilist
 
    real(r8), parameter :: close_to_one = 1.0_r8 + 1.0e-15_r8
+   real(r8), parameter :: seconds_in_a_day = 86400.0_r8
 
    real(r8) :: state_q(pcols,pver,pcnst), dqdt(pcols,pver,pcnst)
    real(r8) :: pdel(pcols,pver)   ! pressure thickness of levels
@@ -675,7 +676,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
    !----------------------------------------------------------------------------
-   tadj    = max( 86400.0_r8, deltat )
+   tadj    = max( seconds_in_a_day, deltat )
    tadjinv = 1.0_r8/(tadj*close_to_one)
    fracadj = max( 0.0_r8, min( 1.0_r8, deltat*tadjinv ) )
 
@@ -842,7 +843,7 @@ end subroutine modal_aero_calcsize_sub
 !---------------------------------------------------------------------------------------------
 #ifdef MODAL_AERO
 subroutine set_initial_sz_and_volumes(list_idx, top_lev, pver, ncol, imode, & !input
-     dgncur, v2ncur, dryvol )                                       !output
+     dgncur, v2ncur, dryvol )                                                 !output
 
   !-----------------------------------------------------------------------------
   !Purpose: Set initial defaults for the dry diameter, volume to num
@@ -1144,6 +1145,7 @@ real(r8), intent(out) :: dgnyy
 !local
 real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
                                               !i.e. dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3
+real(r8), parameter :: szadj_block_fac = 1.0e6_r8
 real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
 
@@ -1166,11 +1168,11 @@ dgnyy   = dgnumlo
 if ( do_aitacc_transfer ) then
    !for n=nait, divide v2nxx by 1.0e6 to effectively turn off the
    !         adjustment when number is too small (size is too big)
-   if (imode == nait) v2nxx = v2nxx/1.0e6_r8
+   if (imode == nait) v2nxx = v2nxx/szadj_block_fac
 
    !for n=nacc, multiply v2nyy by 1.0e6 to effectively turn off the
    !         adjustment when number is too big (size is too small)
-   if (imode == nacc) v2nyy = v2nyy*1.0e6_r8
+   if (imode == nacc) v2nyy = v2nyy*szadj_block_fac
 
    !Also change the v2nyyrl/v2nxxrl so that
    !the interstitial<-->activated adjustment is turned off
@@ -1419,7 +1421,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   real(r8) :: num_a, drv_a, num_c, drv_c
   real(r8) :: num_a_acc, num_c_acc
   real(r8) :: drv_a_acc, drv_c_acc
-  real(r8) :: v2nzz, pdel_fac, num_t, drv_t
+  real(r8) :: v2n_geomean, pdel_fac, num_t, drv_t
   real(r8) :: drv_a_noxf, drv_c_noxf, drv_t_noxf, dummwdens
   real(r8) :: num_t0, num_t_noxf
   real(r8) :: duma, cmn_factor, dgnum, sigmag, voltonumb_ait, voltonumb_acc
@@ -1461,21 +1463,23 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
 
   ! set dotend() for species that will be transferred
   ! for both mass and number
-  do iq = 1, nspecfrm_csizxf(list_idx)
-     lsfrm = lspecfrma_csizxf(iq,list_idx)
-     lstoo = lspectooa_csizxf(iq,list_idx)
-     if ((lsfrm > 0) .and. (lstoo > 0)) then
-        if(update_mmr)dotend(lsfrm) = .true.
-        if(update_mmr)dotend(lstoo) = .true.
-     end if
-     !for cloud borne aerosols
-     lsfrm = lspecfrmc_csizxf(iq,list_idx)
-     lstoo = lspectooc_csizxf(iq,list_idx)
-     if ((lsfrm > 0) .and. (lstoo > 0)) then
-        if(update_mmr)dotendqqcw(lsfrm) = .true.
-        if(update_mmr)dotendqqcw(lstoo) = .true.
-     end if
-  end do
+  if(update_mmr) then
+     do iq = 1, nspecfrm_csizxf(list_idx)
+        lsfrm = lspecfrma_csizxf(iq,list_idx)
+        lstoo = lspectooa_csizxf(iq,list_idx)
+        if ((lsfrm > 0) .and. (lstoo > 0)) then
+           dotend(lsfrm) = .true.
+           dotend(lstoo) = .true.
+        end if
+        !for cloud borne aerosols
+        lsfrm = lspecfrmc_csizxf(iq,list_idx)
+        lstoo = lspectooc_csizxf(iq,list_idx)
+        if ((lsfrm > 0) .and. (lstoo > 0)) then
+           dotendqqcw(lsfrm) = .true.
+           dotendqqcw(lstoo) = .true.
+        end if
+     end do
+  endif
 
   !------------------------------------------------------------------------
   ! Identify accum species cannot be transferred to aitken mode
@@ -1485,24 +1489,24 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   ! Aitken mode as they don't exist in the Aitken mode
   !------------------------------------------------------------------------
 
-  noxf_acc2ait(:) = .true. ! let us assume we are going to move all species
+  noxf_acc2ait(:) = .true. ! let us assume we are not going to move any species
 
-  !Now compute species which cannot be transfered
+  !Now compute species which can be transfered
   !Get # of species in accumulation mode
   call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc) !output:nspec_acc
 
-  do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (not number)
+  do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (only species, not number (e.g. num_a1))
      call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
      call cnst_get_ind(spec_name, idx)
      do iq = 1, nspecfrm_csizxf(list_idx) !Go through all mapped species (and number) for the accumulation mode
         if (lspectooa_csizxf(iq,list_idx) == idx) then !compare idx with mapped species in the accumulation mode
-           noxf_acc2ait(ispec_acc) = .false. ! species which cannot be tranferred
+           noxf_acc2ait(ispec_acc) = .false. ! species which can be tranferred
         end if
      end do
   end do
 
 
-  ! v2nzz is voltonumb at the "geometrically-defined" mid-point
+  ! v2n_geomean is voltonumb at the "geometrically-defined" mid-point
   ! between the aitken and accum modes
 
   call rad_cnst_get_mode_props(list_idx, iait, dgnum=dgnum, sigmag=sigmag)
@@ -1511,7 +1515,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   call rad_cnst_get_mode_props(list_idx, iacc, dgnum=dgnum, sigmag=sigmag)
   voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
 
-  v2nzz = sqrt(voltonumb_ait*voltonumb_acc)
+  v2n_geomean = sqrt(voltonumb_ait*voltonumb_acc)
 
   ! loop over columns and levels
   do  klev = top_lev, pver
@@ -1520,7 +1524,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
         pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz
 
         !Compute aitken->accumulation transfer
-        call compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv(icol,klev),             & !input
+        call compute_coef_ait_acc_transfer(iacc, v2n_geomean, tadjinv, drv_a_aitsv(icol,klev),       & !input
              drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), voltonumb_acc, & !input
              ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)                  !output
 
@@ -1534,7 +1538,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
         !    and transferred species, and use the transferred-species
         !    portion in what follows
         !----------------------------------------------------------------------------------------
-        call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2nzz, & !input
+        call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2n_geomean, & !input
              tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),       & !input
              num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait, voltonumb_ait,  & !input
              drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,                  & !output
@@ -1548,14 +1552,19 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
            !
            ! currently inactive (??? BSINGH: Not sure what this comment refers to...)
 
-           duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat
-           num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma )
-           num_a_acc = max( 0.0_r8, num_a_accsv(icol,klev) + duma )
+           !interstitial species
+           duma = (xfertend_num(1,1) - xfertend_num(2,1))*deltat    !diff in num from  ait->accum and accum->ait transfer
+           num_a     = max( 0.0_r8, num_a_aitsv(icol,klev) - duma ) !num removed/added from aitken mode
+           num_a_acc = max( 0.0_r8, num_a_accsv(icol,klev) + duma ) !num added/removed to accumulation mode
+
            duma = (drv_a_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
-                (drv_a_accsv(icol,klev)-drv_a_noxf)*xfercoef_vol_acc2ait)*deltat
-           drv_a     = max( 0.0_r8, drv_a_aitsv(icol,klev) - duma )
-           drv_a_acc = max( 0.0_r8, drv_a_accsv(icol,klev) + duma )
-           duma = (xfertend_num(1,2) - xfertend_num(2,2))*deltat
+                (drv_a_accsv(icol,klev)-drv_a_noxf)*xfercoef_vol_acc2ait)*deltat ! diff in volume transfer fomr ait->accum and accum->ait transfer
+           drv_a     = max( 0.0_r8, drv_a_aitsv(icol,klev) - duma ) !drv removed/added from aitken mode
+           drv_a_acc = max( 0.0_r8, drv_a_accsv(icol,klev) + duma ) !drv added/removed to accumulation mode
+
+           !cloud borne species
+           duma = (xfertend_num(1,2) - xfertend_num(2,2))*deltat    !same as above for cloud borne aerosols
+
            num_c     = max( 0.0_r8, num_c_aitsv(icol,klev) - duma )
            num_c_acc = max( 0.0_r8, num_c_accsv(icol,klev) + duma )
            duma = (drv_c_aitsv(icol,klev)*xfercoef_vol_ait2acc -   &
@@ -1563,11 +1572,11 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
            drv_c     = max( 0.0_r8, drv_c_aitsv(icol,klev) - duma )
            drv_c_acc = max( 0.0_r8, drv_c_accsv(icol,klev) + duma )
 
-           !interstitial species
+           !interstitial species (aitken mode)
            call compute_new_sz_after_transfer(list_idx, iait, drv_a, num_a, &
                 dgncur_a(icol,klev,iait), v2ncur_a(icol,klev,iait))
 
-           !cloud borne species
+           !cloud borne species (aitken mode)
            call compute_new_sz_after_transfer(list_idx, iait, drv_c, num_c, &
                 dgncur_c(icol,klev,iait), v2ncur_c(icol,klev,iait))
 
@@ -1576,11 +1585,11 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
            num_c = num_c_acc
            drv_c = drv_c_acc
 
-           !interstitial species
+           !interstitial species (accumulation mode)
            call compute_new_sz_after_transfer(list_idx, iacc, drv_a, num_a, &
                 dgncur_a(icol,klev,iacc), v2ncur_a(icol,klev,iacc))
 
-           !cloud borne species
+           !cloud borne species (accumulation mode)
            call compute_new_sz_after_transfer(list_idx, iacc, drv_c, num_c, &
                 dgncur_c(icol,klev,iacc), v2ncur_c(icol,klev,iacc))
 
@@ -1652,7 +1661,7 @@ end subroutine aitken_accum_exchange
 
 !---------------------------------------------------------------------------------------------
 
-subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
+subroutine compute_coef_ait_acc_transfer(iacc, v2n_geomean, tadjinv, drv_a_aitsv, &
      drv_c_aitsv, num_a_aitsv, num_c_aitsv,  voltonumb_acc, &
      ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)
 
@@ -1664,7 +1673,7 @@ subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
 
   !intent ins
   integer,  intent(in) :: iacc
-  real(r8), intent(in) :: v2nzz
+  real(r8), intent(in) :: v2n_geomean
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: drv_a_aitsv, drv_c_aitsv
   real(r8), intent(in) :: num_a_aitsv, num_c_aitsv, voltonumb_acc
@@ -1689,16 +1698,19 @@ subroutine compute_coef_ait_acc_transfer(iacc, v2nzz, tadjinv, drv_a_aitsv, &
   drv_t = drv_a_aitsv + drv_c_aitsv
   num_t = num_a_aitsv + num_c_aitsv
   if (drv_t > 0.0_r8) then
-     if (num_t < drv_t*v2nzz) then
+     !if num is less than the mean value, we have large particles (keeping volume constant drv_t)
+     !which needs to be moved to accumulation mode
+     if (num_t < drv_t*v2n_geomean) then
         ixfer_ait2acc = 1
-        if (num_t < drv_t*voltonumb_acc) then
+        if (num_t < drv_t*voltonumb_acc) then ! move all particles if number is smaller than the acc mean
            xferfrac_num_ait2acc = 1.0_r8
            xferfrac_vol_ait2acc = 1.0_r8
-        else
-           xferfrac_vol_ait2acc = ((num_t/drv_t) - v2nzz)/   &
-                (voltonumb_acc - v2nzz)
+        else !otherwise scale the transfer
+           xferfrac_vol_ait2acc = ((num_t/drv_t) - v2n_geomean)/   &
+                (voltonumb_acc - v2n_geomean)
            xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
                 (drv_t*voltonumb_acc/num_t)
+           !bound the transfer coefficients between 0 and 1
            if ((xferfrac_num_ait2acc <= 0.0_r8) .or.   &
                 (xferfrac_vol_ait2acc <= 0.0_r8)) then
               xferfrac_num_ait2acc = 0.0_r8
@@ -1721,14 +1733,14 @@ end subroutine compute_coef_ait_acc_transfer
 !---------------------------------------------------------------------------------------------
 
 subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchnk,     &
-     v2nzz, tadjinv, state, pbuf, drv_a_accsv, drv_c_accsv, num_a_accsv,      &
+     v2n_geomean, tadjinv, state, pbuf, drv_a_accsv, drv_c_accsv, num_a_accsv,      &
      num_c_accsv, noxf_acc2ait, voltonumb_ait,                                &
      drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait, &
      xfercoef_vol_acc2ait, xfertend_num)
 
   !intent -ins
   integer,  intent(in) :: iait, iacc, icol, klev, list_idx, lchnk
-  real(r8), intent(in) :: v2nzz
+  real(r8), intent(in) :: v2n_geomean
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: drv_a_accsv, drv_c_accsv
   real(r8), intent(in) :: num_a_accsv, num_c_accsv, voltonumb_ait
@@ -1748,8 +1760,9 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   real(r8) :: drv_t, num_t, drv_t_noxf, num_t0
   real(r8) :: num_t_noxf
   real(r8) :: dummwdens, specdens, dgnumlo, sigmag, voltonumblo
-  real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait, duma
+  real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
+  real(r8), parameter :: zero_div_fac = 1.0e-37_r8
 
   ixfer_acc2ait = 0
   xfercoef_num_acc2ait = 0.0_r8
@@ -1760,11 +1773,15 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   drv_a_noxf = 0.0_r8
   drv_c_noxf = 0.0_r8
   if (drv_t > 0.0_r8) then
-     if (num_t > drv_t*v2nzz) then
+     !if number is larger than the mean, it means we have small particles (keeping volume constant drv_t),
+     !we need to move particles to aitken mode
+     if (num_t > drv_t*v2n_geomean) then
+        !As there may be more species in the accumulation mode which are not present in the aitken mode,
+        !we need to compute the num and volume only for the species which can be transferred
         call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc)
         do ispec_acc = 1, nspec_acc
 
-           if ( noxf_acc2ait(ispec_acc) ) then
+           if ( noxf_acc2ait(ispec_acc) ) then !species which can't be transferred
               call rad_cnst_get_aer_props(list_idx, iacc, ispec_acc, density_aer=specdens)    !get density
               ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
               dummwdens = 1.0_r8 / specdens
@@ -1775,13 +1792,13 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
               drv_c_noxf = drv_c_noxf + max(0.0_r8,specmmr(icol,klev))*dummwdens
            end if
         end do
-        drv_t_noxf = drv_a_noxf + drv_c_noxf
+        drv_t_noxf = drv_a_noxf + drv_c_noxf !total volume which can't be moved to the aitken mode
 
         !Compute voltonumlo
         call rad_cnst_get_mode_props(list_idx, iacc, dgnumlo=dgnumlo, sigmag=sigmag)
         voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
 
-        num_t_noxf = drv_t_noxf*voltonumblo
+        num_t_noxf = drv_t_noxf*voltonumblo !total number which can't be moved to the aitken mode
         num_t0 = num_t
         num_t = max( 0.0_r8, num_t - num_t_noxf )
         drv_t = max( 0.0_r8, drv_t - drv_t_noxf )
@@ -1789,16 +1806,18 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
   end if
 
   if (drv_t > 0.0_r8) then
-     if (num_t > drv_t*v2nzz) then
+     !Find out if we need to transfer based on the new num_t
+     if (num_t > drv_t*v2n_geomean) then
         ixfer_acc2ait = 1
-        if (num_t > drv_t*voltonumb_ait) then
+        if (num_t > drv_t*voltonumb_ait) then! if number of larger than the aitken mean, move all particles
            xferfrac_num_acc2ait = 1.0_r8
            xferfrac_vol_acc2ait = 1.0_r8
-        else
-           xferfrac_vol_acc2ait = ((num_t/drv_t) - v2nzz)/   &
-                (voltonumb_ait - v2nzz)
+        else ! scale the transfer
+           xferfrac_vol_acc2ait = ((num_t/drv_t) - v2n_geomean)/   &
+                (voltonumb_ait - v2n_geomean)
            xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
                 (drv_t*voltonumb_ait/num_t)
+           !bound the transfer coefficients between 0 and 1
            if ((xferfrac_num_acc2ait <= 0.0_r8) .or.   &
                 (xferfrac_vol_acc2ait <= 0.0_r8)) then
               xferfrac_num_acc2ait = 0.0_r8
@@ -1809,9 +1828,8 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
               xferfrac_vol_acc2ait = 1.0_r8
            end if
         end if
-        duma = 1.0e-37_r8
         xferfrac_num_acc2ait = xferfrac_num_acc2ait*   &
-             num_t/max( duma, num_t0 )
+             num_t/max( zero_div_fac, num_t0 )
         xfercoef_num_acc2ait = xferfrac_num_acc2ait*tadjinv
         xfercoef_vol_acc2ait = xferfrac_vol_acc2ait*tadjinv
         xfertend_num(2,1) = num_a_accsv*xfercoef_num_acc2ait
