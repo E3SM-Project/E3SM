@@ -5,7 +5,7 @@ Schedule Type: Sequential
 
 Process 0:
   Process Name: MyDynamics
-  Grid Name: SE Dynamics
+  Grid Name: Dynamics
 Process 1:
   Process Name: Group
   Number of Entries: 2
@@ -13,8 +13,8 @@ Process 1:
 
   Process 0:
     Process Name: MyPhysicsA
-    Grid Name: SE Physics
+    Grid Name: Physics
   Process 1:
     Process Name: MyPhysicsB
-    Grid Name: SE Physics
+    Grid Name: Physics
 ...
