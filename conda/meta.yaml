@@ -22,7 +22,7 @@ requirements:
 
   run:
     - python
-    - cdp 
+    - cdp >=1.6.1
     - cdms2 
     - cdutil 
     - genutil
@@ -32,7 +32,7 @@ requirements:
     - cartopy
     - beautifulsoup4
     - lxml
-    - dask 2.15.0
+    - dask
 
 about:
     home: https://github.com/E3SM-Project/e3sm_diags

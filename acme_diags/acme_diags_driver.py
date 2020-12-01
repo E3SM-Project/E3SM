@@ -308,7 +308,8 @@ def main(parameters=[]):
             container.containerize_parameter(p)
 
     if parameters[0].multiprocessing:
-        parameters = cdp.cdp_run.multiprocess(run_diag, parameters)
+        parameters = cdp.cdp_run.multiprocess(run_diag, parameters,
+                                              context='fork')
     elif parameters[0].distributed:
         parameters = cdp.cdp_run.distribute(run_diag, parameters)
     else:
