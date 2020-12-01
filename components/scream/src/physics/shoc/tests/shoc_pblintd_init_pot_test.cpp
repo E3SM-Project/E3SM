@@ -23,7 +23,6 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
 
-<<<<<<< HEAD
   static void run_property()
   {
     static constexpr Int shcol    = 2;
@@ -77,7 +76,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
     }
 
     // call the fortran implementation
-    shoc_pblintd_init_pot(SDS);
+    pblintd_init_pot(SDS);
 
     // Check the result.
     // Verify that virtual potential temperature is idential
@@ -126,7 +125,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
     }
 
     // Call the fortran implementation
-    shoc_pblintd_init_pot(SDS);
+    pblintd_init_pot(SDS);
 
     // Check test
     // Verify that column with condensate loading
