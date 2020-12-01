@@ -121,6 +121,11 @@ protected:
 template<typename RealType>
 struct is_scream_field<Field<RealType> > : public std::true_type {};
 
+template<typename RealType>
+bool operator< (const Field<RealType>& f1, const Field<RealType>& f2) {
+  return f1.get_header().get_identifier() < f2.get_header().get_identifier();
+}
+
 // ================================= IMPLEMENTATION ================================== //
 
 template<typename RealType>

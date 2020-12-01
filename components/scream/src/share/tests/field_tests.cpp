@@ -226,20 +226,20 @@ TEST_CASE("field_repo", "") {
   REQUIRE (ekat::contains(f6.get_header().get_tracking().get_groups_names(),"Group_6"));
 
   // Check that the groups in the repo contain the correct fields
-  REQUIRE (repo.get_field_groups().count("GROUP_1")==1);
-  REQUIRE (repo.get_field_groups().count("GRoup_2")==1);
-  REQUIRE (repo.get_field_groups().count("group_3")==1);
-  REQUIRE (repo.get_field_groups().count("groUP_4")==1);
-  REQUIRE (repo.get_field_groups().count("group_5")==1);
-  REQUIRE (repo.get_field_groups().at("group_5").size()==2);
-  REQUIRE (repo.get_field_groups().count("group_6")==1);
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_1"),"Field_1"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_2"),"Field_2"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_3"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_4"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_3"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_5"),"Field_4"));
-  REQUIRE (ekat::contains(repo.get_field_groups().at("group_6"),"Field_4"));
+  REQUIRE (repo.get_field_groups_names().count("GROUP_1")==1);
+  REQUIRE (repo.get_field_groups_names().count("GRoup_2")==1);
+  REQUIRE (repo.get_field_groups_names().count("group_3")==1);
+  REQUIRE (repo.get_field_groups_names().count("groUP_4")==1);
+  REQUIRE (repo.get_field_groups_names().count("group_5")==1);
+  REQUIRE (repo.get_field_groups_names().at("group_5").size()==2);
+  REQUIRE (repo.get_field_groups_names().count("group_6")==1);
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_1"),"Field_1"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_2"),"Field_2"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_3"),"Field_3"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_4"),"Field_4"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_3"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_5"),"Field_4"));
+  REQUIRE (ekat::contains(repo.get_field_groups_names().at("group_6"),"Field_4"));
 }
 
 TEST_CASE("field_property_check", "") {

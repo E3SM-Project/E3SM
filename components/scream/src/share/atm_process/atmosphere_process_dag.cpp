@@ -5,12 +5,14 @@
 
 namespace scream {
 
-void AtmProcDAG::create_dag(const group_type& atm_procs) {
+void AtmProcDAG::
+create_dag(const group_type& atm_procs,
+           const std::shared_ptr<FieldRepository<Real>> field_repo) {
 
   cleanup ();
 
   // Create the nodes
-  add_nodes(atm_procs);
+  add_nodes(atm_procs,field_repo);
 
   // Add a 'begin' and 'end' placeholders. While they are not actual
   // nodes of the graph, they come handy when representing inputs
@@ -41,10 +43,10 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
         // We found this 'unmet' dependency. So a process, which appears
         // later in the time-step dag, will compute it. It's not a 'real'
         // unmet dependency, but rather a dependency on the prev. time step.
-        begin_ts.computed.push_back(fid);
+        begin_ts.computed.insert(fid);
         begin_ts.children.push_back(id);
 
-        end_ts.required.push_back(check->first);
+        end_ts.required.insert(check->first);
         m_nodes[check->second].children.push_back(end_ts.id);
 
         // This fid is not really an unmet dep. Mark it to be erased from unmet.
@@ -78,7 +80,7 @@ void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
     auto fid = add_fid(f);
 
     // Add the fid to the list of 'computed' fields
-    n.computed.push_back(fid);
+    n.computed.insert(fid);
 
     // Now, remove the unmet dependency (if any)
     for (auto& it : m_unmet_deps) {
@@ -217,7 +219,9 @@ void AtmProcDAG::cleanup () {
   m_has_unmet_deps = false;
 }
 
-void AtmProcDAG::add_nodes (const group_type& atm_procs) {
+void AtmProcDAG::
+add_nodes (const group_type& atm_procs,
+           const std::shared_ptr<FieldRepository<Real>> field_repo) {
   
   const int num_procs = atm_procs.get_num_processes();
   const auto& remappers_in  = atm_procs.get_inputs_remappers ();
@@ -237,7 +241,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
-      add_nodes(*group);
+      add_nodes(*group,field_repo);
     } else {
       // Add a node for the remapper(s) in (if needed)
       for (auto r : remappers_in[i]) {
@@ -251,7 +255,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
           for (int k=0; k<rem.get_num_fields(); ++k) {
             const auto& fid_in = rem.get_src_field_id(k);
             const int fid_in_id = add_fid(fid_in);
-            node.required.push_back(fid_in_id);
+            node.required.insert(fid_in_id);
             auto it = m_fid_to_last_provider.find(fid_in_id);
             if (it==m_fid_to_last_provider.end()) {
               m_unmet_deps[id].insert(fid_in_id);
@@ -263,7 +267,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
 
             const auto& fid_out = rem.get_tgt_field_id(k);
             const int fid_out_id = add_fid(fid_out);
-            node.computed.push_back(fid_out_id);
+            node.computed.insert(fid_out_id);
             m_fid_to_last_provider[fid_out_id] = id;
           }
           ++id;
@@ -280,10 +284,9 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
         node.id = id;
         node.name = proc->name();
         m_unmet_deps[id].clear();
-        // m_current_head->children.push_back(&node);
         for (auto fid : proc->get_required_fields()) {
           const int fid_id = add_fid(fid);
-          node.required.push_back(fid_id);
+          node.required.insert(fid_id);
           auto it = m_fid_to_last_provider.find(fid_id);
           if (it==m_fid_to_last_provider.end()) {
             m_unmet_deps[id].insert(fid_id);
@@ -295,8 +298,35 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
         }
         for (auto fid : proc->get_computed_fields()) {
           const int fid_id = add_fid(fid);
-          node.computed.push_back(fid_id);
+          node.computed.insert(fid_id);
           m_fid_to_last_provider[fid_id] = id;
+        }
+        for (auto itg : proc->get_updated_groups()) {
+          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
+          auto group = field_repo->get_const_field_group(itg.first,itg.second);
+          for (const auto& f : group) {
+            const auto& fid = f.get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            node.required.insert(fid_id);
+            auto it = m_fid_to_last_provider.find(fid_id);
+            if (it==m_fid_to_last_provider.end()) {
+              m_unmet_deps[id].insert(fid_id);
+            } else {
+              // Establish parent-child relationship
+              Node& parent = m_nodes[it->second];
+              parent.children.push_back(node.id);
+            }
+          }
+        }
+        for (auto itg : proc->get_required_groups()) {
+          EKAT_REQUIRE_MSG (field_repo, "Error! Field repo pointer is null.\n");
+          auto group = field_repo->get_const_field_group(itg.first,itg.second);
+          for (const auto& f : group) {
+            const auto& fid = f.get_header().get_identifier();
+            const int fid_id = add_fid(fid);
+            node.computed.insert(fid_id);
+            m_fid_to_last_provider[fid_id] = id;
+          }
         }
         ++id;
       }
@@ -313,7 +343,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
           for (int k=0; k<rem.get_num_fields(); ++k) {
             const auto& fid_in = rem.get_src_field_id(k);
             const int fid_in_id = add_fid(fid_in);
-            node.required.push_back(fid_in_id);
+            node.required.insert(fid_in_id);
             // A remapper for outputs of proc should *not* have unmet dependencies.
             auto it = m_fid_to_last_provider.find(fid_in_id);
             EKAT_REQUIRE_MSG (it!=m_fid_to_last_provider.end(),
@@ -326,7 +356,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
 
             const auto& fid_out = rem.get_tgt_field_id(k);
             const int fid_out_id = add_fid(fid_out);
-            node.computed.push_back(fid_out_id);
+            node.computed.insert(fid_out_id);
             m_fid_to_last_provider[fid_out_id] = id;
           }
           ++id;

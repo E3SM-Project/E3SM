@@ -71,6 +71,12 @@ public:
     return remapper;
   }
 
+  remapper_ptr_type
+  create_remapper (const std::string& from_grid,
+                   const std::string& to_grid) const {
+    return create_remapper(get_grid(from_grid),get_grid(to_grid));
+  }
+
 protected:
 
   virtual void build_grid (const std::string& grid_name) = 0;

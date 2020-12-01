@@ -37,14 +37,15 @@ class FieldRepository {
 public:
 
   // Public types
-  using real_type       = RealType;
-  using field_type      = Field<real_type>;
-  using header_type     = typename field_type::header_type;
-  using identifier_type = typename header_type::identifier_type;
-  using ci_string       = typename identifier_type::ci_string;
-  using alias_map_type  = std::map<identifier_type,field_type>;
-  using repo_type       = std::map<ci_string,alias_map_type>;
-  using groups_map_type = std::map<ci_string,std::set<ci_string>>;
+  using real_type        = RealType;
+  using field_type       = Field<real_type>;
+  using const_field_type = typename Field<real_type>::const_field_type;
+  using header_type      = typename field_type::header_type;
+  using identifier_type  = typename header_type::identifier_type;
+  using ci_string        = typename identifier_type::ci_string;
+  using alias_map_type   = std::map<identifier_type,field_type>;
+  using repo_type        = std::map<ci_string,alias_map_type>;
+  using groups_map_type  = std::map<ci_string,std::set<ci_string>>;
 
   // Constructor(s)
   FieldRepository ();
@@ -80,9 +81,11 @@ public:
   // Query for a particular field or group of fields
   bool has_field (const identifier_type& identifier) const;
   const field_type& get_field (const identifier_type& identifier) const;
-  const field_type& get_field(const std::string name,const std::string grid) const;
-  const groups_map_type& get_field_groups () const { return m_field_groups; }
-  const alias_map_type& get_alias_fields (const std::string& name) const;
+  const field_type& get_field(const std::string name,const std::string& grid) const;
+  const groups_map_type& get_field_groups_names () const { return m_field_groups; }
+  std::set<field_type> get_field_group (const std::string& name, const std::string& grid_name) const;
+  std::set<const_field_type> get_const_field_group (const std::string& group_name, const std::string& grid_name) const;
+  const alias_map_type& get_aliases (const std::string& name) const;
 
   // Iterators, to allow range for loops over the repo.
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
@@ -186,7 +189,8 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   // Finally, add the field to the given groups
   for (const auto& group_name : groups_names) {
     // First, make sure it's not a reserved group
-    EKAT_REQUIRE_MSG(!ekat::contains(m_reserved_groups,group_name),"");
+    EKAT_REQUIRE_MSG(!ekat::contains(m_reserved_groups,group_name),
+                     "Error! Cannot assign a reserved group name to a field.\n");
 
     // Add the group name to the field tracking of all the fields with that name
     // Remember: fields with the same name can differ only because of tags/extents (i.e., different grids).
@@ -231,7 +235,7 @@ FieldRepository<RealType>::get_field (const identifier_type& id) const {
 
 template<typename RealType>
 const typename FieldRepository<RealType>::field_type&
-FieldRepository<RealType>::get_field (const std::string name, const std::string grid) const {
+FieldRepository<RealType>::get_field (const std::string name, const std::string& grid) const {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   // Keep track of the number of fields found for this name/grid combo
@@ -240,20 +244,48 @@ FieldRepository<RealType>::get_field (const std::string name, const std::string 
   const auto& map = m_fields.find(name);
   EKAT_REQUIRE_MSG(map!=m_fields.end(), "Error! get_field: " + name + " not found.\n");
   //  Search subset of field repo for matching gridname.
-  for (const auto& it : map->second)
-  {
+  for (const auto& it : map->second) {
     if ( it.first.get_grid_name()==grid) {f_matches.push_back(it.first);}
   }
   // Check to make sure a) the field was found on this grid, and b) only once.
-  EKAT_REQUIRE_MSG(f_matches.size()!=0, "Error! get_field: " + name + " not found on grid " + grid + ".\n");
   EKAT_REQUIRE_MSG(f_matches.size()==1, "Error! get_field: " + name + " found " + std::to_string(f_matches.size()) + " matches on grid " + grid + ".\n");
   // Use this field id to grab field itself.
   return get_field(f_matches[0]);
 }
 
 template<typename RealType>
+std::set<typename FieldRepository<RealType>::field_type>
+FieldRepository<RealType>::
+get_field_group (const std::string& group_name, const std::string& grid_name) const {
+  auto names = m_field_groups.find(group_name);
+  EKAT_REQUIRE_MSG (names!=m_field_groups.end(),
+                    "Error! Group name '" << group_name << "' not found in the repo.\n");
+
+  std::set<field_type> group_fields;
+  for (const auto& fname : names->second) {
+    group_fields.insert(get_field(fname,grid_name));
+  }
+  return group_fields;
+}
+
+template<typename RealType>
+std::set<typename FieldRepository<RealType>::const_field_type>
+FieldRepository<RealType>::
+get_const_field_group (const std::string& group_name, const std::string& grid_name) const {
+  auto names = m_field_groups.find(group_name);
+  EKAT_REQUIRE_MSG (names!=m_field_groups.end(),
+                    "Error! Group name '" << group_name << "' not found in the repo.\n");
+
+  std::set<typename field_type::const_field_type> group_fields;
+  for (const auto& fname : names->second) {
+    group_fields.insert(get_field(fname,grid_name).get_const());
+  }
+  return group_fields;
+}
+
+template<typename RealType>
 const typename FieldRepository<RealType>::alias_map_type&
-FieldRepository<RealType>::get_alias_fields (const std::string& name) const
+FieldRepository<RealType>::get_aliases (const std::string& name) const
 {
   auto it = m_fields.find(name);
   EKAT_REQUIRE_MSG (it!=m_fields.end(), "Error! Field aliases not found.\n");

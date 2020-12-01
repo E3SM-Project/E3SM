@@ -32,9 +32,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert("Dynamics");
-    return s;
+    return std::set<std::string>{"Dynamics"};
   }
 
   // The name of the subcomponent
