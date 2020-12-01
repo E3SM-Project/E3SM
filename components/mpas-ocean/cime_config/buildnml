@@ -135,6 +135,10 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'oQU240':
         ic_date += '151209'
         ic_prefix += 'ocean.QU.240km'
+        if ocn_bgc in ['eco_only','eco_and_dms','eco_and_macromolecules','eco_and_dms_and_macromolecules']:
+            ic_date = '200320'
+            ic_prefix = 'ocean.QU.240km.151209+BGC'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.oQU240.20200320.nc'
         decomp_date += '151209'
         decomp_prefix += 'mpas-o.graph.info.'
     elif ocn_grid == 'oQU240wLI':
