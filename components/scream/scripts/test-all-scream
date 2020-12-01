@@ -88,6 +88,11 @@ OR
 
     parser.add_argument("-w", "--work-dir",
         help="The work directory where all the building/testing will happen. Defaults to ${root_dir}/ctest-build")
+    parser.add_argument("--quick-rerun", action="store_true",
+                        help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and test.")
+
+    parser.add_argument("--quick-rerun-failed", action="store_true",
+                        help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and retest failed tests only.")
 
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
