@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-FILENAME: io_output_restest
+FILENAME: io_output_restart_np${MPI_RANKS}
 AVERAGING TYPE: Average
 GRID: Physics
 FREQUENCY:

@@ -22,16 +22,16 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs);
-std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
-ekat::ParameterList                                  get_om_params(const Int casenum);
-ekat::ParameterList                                  get_in_params(const std::string type);
+std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs);
+std::shared_ptr<UserProvidedGridsManager>            get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+ekat::ParameterList                                  get_om_params(const Int casenum, const ekat::Comm& comm);
+ekat::ParameterList                                  get_in_params(const std::string type, const ekat::Comm& comm);
 
 TEST_CASE("input_output_basic","io")
 {
 
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
-  Int num_cols = 2;
+  Int num_gcols = 2*io_comm.size();
   Int num_levs = 3;
 
   // Initialize the pio_subsystem for this test:
@@ -39,12 +39,13 @@ TEST_CASE("input_output_basic","io")
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_cols,num_levs);
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_cols,num_levs);
+  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
+  Int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
+  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
-  auto output_params = get_om_params(1);
+  auto output_params = get_om_params(1,io_comm);
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
@@ -80,10 +81,10 @@ TEST_CASE("input_output_basic","io")
   // Cycle through each output and make sure it is correct.
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
-  auto ins_params = get_in_params("Instant");
-  auto avg_params = get_in_params("Average");
-  auto min_params = get_in_params("Min");
-  auto max_params = get_in_params("Max");
+  auto ins_params = get_in_params("Instant",io_comm);
+  auto avg_params = get_in_params("Average",io_comm);
+  auto min_params = get_in_params("Min",io_comm);
+  auto max_params = get_in_params("Max",io_comm);
   Real tol = pow(10,-6);
   // Check instant output
   input_type ins_input(io_comm,ins_params,field_repo,grid_man);
@@ -97,7 +98,7 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj)
@@ -116,7 +117,7 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
   Real avg_val;
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
     REQUIRE(std::abs(f1_hst(ii)-avg_val)<tol);
@@ -138,7 +139,7 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     REQUIRE(std::abs(f1_hst(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj)
@@ -157,7 +158,7 @@ TEST_CASE("input_output_basic","io")
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     REQUIRE(std::abs(f1_hst(ii)-ii)<tol);
     for (int jj=0;jj<num_levs;++jj)
@@ -176,7 +177,7 @@ TEST_CASE("input_output_basic","io")
 /* ----------------------------------*/
 
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs)
+std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
 {
   // Create a repo
   std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
@@ -185,9 +186,9 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};
   std::vector<FieldTag> tag_2d = {FieldTag::Column,FieldTag::VerticalLevel};
 
-  std::vector<Int>     dims_h  = {num_cols};
+  std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
-  std::vector<Int>     dims_2d = {num_cols,num_levs};
+  std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
   FieldIdentifier fid1("field_1",tag_h,m);
   FieldIdentifier fid2("field_2",tag_v,kg);
@@ -217,7 +218,7 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   Kokkos::deep_copy( f1_hst, f1_dev );
   Kokkos::deep_copy( f2_hst, f2_dev );
   Kokkos::deep_copy( f3_hst, f3_dev );
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     f1_hst(ii) = ii;
     for (int jj=0;jj<num_levs;++jj)
@@ -233,30 +234,36 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   return repo;
 }
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs)
+std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
 
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_cols,num_levs,io_comm));
+  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_gcols,num_levs,io_comm));
   auto upgm = std::make_shared<UserProvidedGridsManager>();
   upgm->set_grid(dummy_grid);
 
   return upgm;
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const Int casenum)
+ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
 {
   ekat::ParameterList om_params("Output Manager");
   om_params.set<Int>("PIO Stride",1);
   if (casenum == 1)
   {
-    om_params.set<std::vector<std::string>>("Output YAML Files",{"io_test_instant.yaml","io_test_average.yaml",
-           "io_test_max.yaml","io_test_min.yaml"});
+    std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
+                                            "io_test_max",    "io_test_min" };
+    for (auto& name : fileNames) {
+      name += "_np" + std::to_string(comm.size()) + ".yaml";
+    }
+
+    om_params.set("Output YAML Files",fileNames);
   } 
   else if (casenum == 2)
   {
-    om_params.set<std::vector<std::string>>("Output YAML Files",{"io_test_restart.yaml"});
+    std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
+    om_params.set("Output YAML Files",fileNames);
     auto& res_sub = om_params.sublist("Restart Control");
     auto& freq_sub = res_sub.sublist("FREQUENCY");
     freq_sub.set<Int>("OUT_N",5);
@@ -270,10 +277,10 @@ ekat::ParameterList get_om_params(const Int casenum)
   return om_params;  
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_in_params(const std::string type)
+ekat::ParameterList get_in_params(const std::string type, const ekat::Comm& comm)
 {
   ekat::ParameterList in_params("Input Parameters");
-  in_params.set<std::string>("FILENAME","io_output_test."+type+".Steps_x10.0000-01-01.000010.nc");
+  in_params.set<std::string>("FILENAME","io_output_test_np" + std::to_string(comm.size()) +"."+type+".Steps_x10.0000-01-01.000010.nc");
   in_params.set<std::string>("GRID","Physics");
   auto& f_list = in_params.sublist("FIELDS");
   f_list.set<Int>("Number of Fields",3);

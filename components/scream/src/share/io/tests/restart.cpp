@@ -24,23 +24,24 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 
-std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_cols, const Int num_levs);
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs);
-ekat::ParameterList                       get_om_params(const Int casenum);
-ekat::ParameterList                       get_in_params(const std::string type);
-void                                      Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols, const Int num_levs);
+std::shared_ptr<FieldRepository<Real>>    get_test_repo(const Int num_lcols, const Int num_levs);
+std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
+ekat::ParameterList                       get_om_params(const Int casenum, const ekat::Comm& comm);
+ekat::ParameterList                       get_in_params(const std::string& type, const ekat::Comm& comm);
+void                                      Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs);
 
 TEST_CASE("restart","io")
 {
   // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
   // Something having to do with freeing up and then resetting the io_decompositions.
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
-  Int num_cols = 2;
+  Int num_gcols = 2*io_comm.size();
   Int num_levs = 2;
 
   // First set up a field manager and grids manager to interact with the output functions
-  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_cols,num_levs);
-  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_cols,num_levs);
+  std::shared_ptr<UserProvidedGridsManager> grid_man   = get_test_gm(io_comm,num_gcols,num_levs);
+  int num_lcols = grid_man->get_grid("Physics")->get_num_local_dofs();
+  std::shared_ptr<FieldRepository<Real>>    field_repo = get_test_repo(num_lcols,num_levs);
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -48,7 +49,7 @@ TEST_CASE("restart","io")
 
   // Create an Output manager for testing output
   OutputManager m_output_manager;
-  auto output_params = get_om_params(2);
+  auto output_params = get_om_params(2,io_comm);
   m_output_manager.set_params(output_params);
   m_output_manager.set_comm(io_comm);
   m_output_manager.set_grids(grid_man);
@@ -89,9 +90,9 @@ TEST_CASE("restart","io")
   m_output_manager_res.set_repo(field_repo);
   m_output_manager_res.set_runtype_restart(true);
   m_output_manager_res.init();
-  auto res_params = get_in_params("Restart");
+  auto res_params = get_in_params("Restart",io_comm);
   // reinit fields
-  Initialize_field_repo(*field_repo,num_cols,num_levs);
+  Initialize_field_repo(*field_repo,num_lcols,num_levs);
   // grab restart data
   input_type ins_input(io_comm,res_params,field_repo,grid_man);
   ins_input.pull_input();
@@ -108,7 +109,7 @@ TEST_CASE("restart","io")
   Kokkos::deep_copy(field2_hst,field2_dev);
   Kokkos::deep_copy(field3_hst,field3_dev);
   Real tol = pow(10,-6);
-  for (Int ii=0;ii<num_cols;++ii)
+  for (Int ii=0;ii<num_lcols;++ii)
   {
     REQUIRE(std::abs(field1_hst(ii)-(15+ii))<tol);
     for (Int jj=0;jj<num_levs;++jj)
@@ -137,18 +138,18 @@ TEST_CASE("restart","io")
   m_output_manager_res.finalize();
   
   // We have now finished running a restart that should have loaded a restart history mid-way through averaging.  The
-  // final output should be stored in a file: io_output_restest.Average.Steps_x10.0000-01-01.000020.nc
+  // final output should be stored in a file: io_output_restart.Average.Steps_x10.0000-01-01.000020.nc
   // and reflect averaged values over the last 10 steps for fields 1 and 2 which were restarted and field 3 which started
   // with the initial value.  Note that we only took 5 steps, so field 3 should reflect a a value that stored steps 11-15
   // the restart history file, but was re-initialized and run for the last 5 steps.
-  auto avg_params = get_in_params("Final");
+  auto avg_params = get_in_params("Final",io_comm);
   input_type avg_input(io_comm,avg_params,field_repo,grid_man);
   avg_input.pull_input();
   Kokkos::deep_copy(field1_hst,field1_dev);
   Kokkos::deep_copy(field2_hst,field2_dev);
   Kokkos::deep_copy(field3_hst,field3_dev);
   Real avg_val;
-  for (Int ii=0;ii<num_cols;++ii)
+  for (Int ii=0;ii<num_lcols;++ii)
   {
     avg_val = (20+11)/2.+ii;
     REQUIRE(std::abs(field1_hst(ii)-avg_val)<tol);
@@ -166,7 +167,7 @@ TEST_CASE("restart","io")
   grid_man->clean_up();
 } // TEST_CASE restart
 /*===================================================================================================================*/
-std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const Int num_levs)
+std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_lcols, const Int num_levs)
 {
   // Create a repo
   std::shared_ptr<FieldRepository<Real>>  repo = std::make_shared<FieldRepository<Real>>();
@@ -175,9 +176,9 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   std::vector<FieldTag> tag_v  = {FieldTag::VerticalLevel};
   std::vector<FieldTag> tag_2d = {FieldTag::Column,FieldTag::VerticalLevel};
 
-  std::vector<Int>     dims_h  = {num_cols};
+  std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
-  std::vector<Int>     dims_2d = {num_cols,num_levs};
+  std::vector<Int>     dims_2d = {num_lcols,num_levs};
 
   FieldIdentifier fid1("field_1",tag_h,m);
   FieldIdentifier fid2("field_2",tag_v,kg);
@@ -198,12 +199,12 @@ std::shared_ptr<FieldRepository<Real>> get_test_repo(const Int num_cols, const I
   repo->registration_ends();
 
   // Initialize these fields
-  Initialize_field_repo(*repo,num_cols,num_levs);
+  Initialize_field_repo(*repo,num_lcols,num_levs);
 
   return repo;
 }
 /*===================================================================================================================*/
-void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols, const Int num_levs)
+void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_lcols, const Int num_levs)
 {
 
   // Initialize these fields
@@ -216,7 +217,7 @@ void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols
   Kokkos::deep_copy(f1_hst, f1_dev );
   Kokkos::deep_copy(f2_hst, f2_dev );
   Kokkos::deep_copy(f3_hst, f3_dev );
-  for (int ii=0;ii<num_cols;++ii)
+  for (int ii=0;ii<num_lcols;++ii)
   {
     f1_hst(ii) = ii;
     for (int jj=0;jj<num_levs;++jj)
@@ -231,30 +232,36 @@ void Initialize_field_repo(const FieldRepository<Real>& repo, const Int num_cols
 
 }
 /*===================================================================================================================*/
-std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm io_comm, const Int num_cols, const Int num_levs)
+std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
 
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_cols,num_levs,io_comm));
+  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_gcols,num_levs,io_comm));
   auto upgm = std::make_shared<UserProvidedGridsManager>();
   upgm->set_grid(dummy_grid);
 
   return upgm;
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_om_params(const Int casenum)
+ekat::ParameterList get_om_params(const Int casenum, const ekat::Comm& comm)
 {
   ekat::ParameterList om_params("Output Manager");
   om_params.set<Int>("PIO Stride",1);
   if (casenum == 1)
   {
-    om_params.set<std::vector<std::string>>("Output YAML Files",{"io_test_instant.yaml","io_test_average.yaml",
-           "io_test_max.yaml","io_test_min.yaml"});
+    std::vector<std::string> fileNames = { "io_test_instant","io_test_average",
+                                           "io_test_max",    "io_test_min" };
+    for (auto& name : fileNames) {
+      name += "_np" + std::to_string(comm.size()) + ".yaml";
+    }
+
+    om_params.set("Output YAML Files",fileNames);
   } 
   else if (casenum == 2)
   {
-    om_params.set<std::vector<std::string>>("Output YAML Files",{"io_test_restart.yaml"});
+    std::vector<std::string> fileNames = { "io_test_restart_np" + std::to_string(comm.size()) + ".yaml" };
+    om_params.set("Output YAML Files",fileNames);
     auto& res_sub = om_params.sublist("Restart Control");
     auto& freq_sub = res_sub.sublist("FREQUENCY");
     freq_sub.set<Int>("OUT_N",5);
@@ -268,7 +275,7 @@ ekat::ParameterList get_om_params(const Int casenum)
   return om_params;  
 }
 /*===================================================================================================================*/
-ekat::ParameterList get_in_params(const std::string type)
+ekat::ParameterList get_in_params(const std::string& type, const ekat::Comm& comm)
 {
   ekat::ParameterList in_params("Input Parameters");
   std::string filename;
@@ -295,7 +302,7 @@ ekat::ParameterList get_in_params(const std::string type)
     }
   } else if (type=="Final")
   {
-    filename = "io_output_restest.Average.Steps_x10.0000-01-01.000020.nc";
+    filename = "io_output_restart_np" + std::to_string(comm.size()) + ".Average.Steps_x10.0000-01-01.000020.nc";
     auto& f_list = in_params.sublist("FIELDS");
     f_list.set<Int>("Number of Fields",3);
     for (int ii=1;ii<=3+1;++ii)

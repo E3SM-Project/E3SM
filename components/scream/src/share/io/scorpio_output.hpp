@@ -298,7 +298,6 @@ inline void AtmosphereOutput::init()
     }
     view_type avg_count("",1);
     rhist_in.pull_input("avg_count",avg_count);
-    auto avg_count_data = avg_count.data();
     m_status["Avg Count"] = avg_count(0);
     rhist_in.finalize();
   }
