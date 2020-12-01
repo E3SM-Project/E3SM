@@ -269,6 +269,7 @@ void vd_shoc_decomp_c(Int shcol, Int nlev, Int nlevi, Real* kv_term, Real* tmpi,
                       Real* flux, Real* du, Real* dl, Real* d);
 
 void vd_shoc_solve_c(Int shcol, Int nlev, Real* du, Real* dl, Real* d, Real* var);
+void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -765,6 +766,14 @@ void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
   }
   d.transpose<ekat::TransposeDirection::f2c>();
 }
+void pblintd_init(PblintdInitData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_init_c(d.shcol, d.nlev, d.z, d.check, d.rino, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
 // end _c impls
 
 //
@@ -2598,5 +2607,9 @@ void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Rea
    ekat::device_to_host<int, 1>({var}, shcol, nlev, num_rhs, inout_views, true);
 }
 
+void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
+{
+  // TODO
+}
 } // namespace shoc
 } // namespace scream
