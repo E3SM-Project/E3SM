@@ -216,7 +216,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), pointer :: cldn(:,:)      ! layer cloud fraction (0-1)
    real(r8), pointer :: dgncur_a(:,:,:)
    real(r8), pointer :: dgncur_awet(:,:,:)
-   real(r8), pointer :: wetdens(:,:,:)=>null()
+   real(r8), pointer :: wetdens(:,:,:)
    real(r8), pointer :: qaerwat(:,:,:)
 
    real(r8) :: dryvolmr(pcols,pver)          ! volume MR for aerosol mode (m3/kg)
@@ -300,12 +300,12 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
             call endrun('modal_aero_wateruptake_dr called '// &
                  'with list_idx_in but wetdens_m is not allocated '//errmsg(__FILE__,__LINE__))
          endif
-            wetdens     => wetdens_m
+         compute_wetdens = .true.
+         wetdens     => wetdens_m
+      else
+         compute_wetdens = .false.
       endif
    end if
-
-   compute_wetdens = .false.
-   if(associated(wetdens)) compute_wetdens = .true.
 
    !----------------------------------------------------------------------------
    ! retreive aerosol properties
