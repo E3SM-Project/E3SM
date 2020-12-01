@@ -348,6 +348,19 @@ struct Functions
     const uview_1d<Spack>&       w3);
 
   KOKKOS_FUNCTION
+  static void adv_sgs_tke(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Real&                  dtime,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& tk,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       a_diss);
+
+  KOKKOS_FUNCTION
   static void shoc_assumed_pdf(
     const MemberType&            team,
     const Int&                   nlev,
@@ -488,6 +501,7 @@ struct Functions
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
+# include "shoc_adv_sgs_tke_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
 # include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_isotropic_ts_impl.hpp"

@@ -3014,6 +3014,10 @@ end subroutine compute_shr_prod
 subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
      sterm_zt, tk, tke, a_diss)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: adv_sgs_tke_f
+#endif
+
   implicit none
 
   !intent -ins
@@ -3043,6 +3047,14 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   real(rtype) :: a_prod_bu, a_prod_sh
 
   real(rtype) :: Ck, Cs, Ce, Ce1, Ce2, Cee
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call adv_sgs_tke_f(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+          sterm_zt, tk, tke, a_diss)
+     return
+  endif
+#endif
 
   Cs=0.15_rtype
   Ck=0.1_rtype
