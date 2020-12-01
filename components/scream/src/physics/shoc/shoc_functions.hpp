@@ -536,7 +536,7 @@ struct Functions
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
-# include "shoc_shoc_grid_impl.hpp"
+# include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
