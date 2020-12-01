@@ -185,25 +185,25 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
- 
+
   KOKKOS_FUNCTION
   static void shoc_diag_second_moments_lbycond(
     const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc,
     const Scalar& ustar2, const Scalar& wstar,
     Scalar& wthl_sec, Scalar& wqw_sec, Scalar& uw_sec, Scalar& vw_sec,
     Scalar& wtke_sec, Scalar& thl_sec, Scalar& qw_sec, Scalar& qwthl_sec);
- 
+
   KOKKOS_FUNCTION
-  static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi, 
-     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, 
-     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy, 
-     const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, 
+  static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
+     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+     const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
-     const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, 
-     const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, 
+     const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec,
+     const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec,
      const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
-  
+
   KOKKOS_FUNCTION
   static void diag_second_shoc_moments(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
 
@@ -407,6 +407,17 @@ struct Functions
     Scalar&                      brunt_int);
 
   KOKKOS_FUNCTION
+  static void isotropic_ts(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Scalar&                brunt_int,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& a_diss,
+    const uview_1d<const Spack>& brunt,
+    const uview_1d<Spack>&       isotropy);
+
+  KOKKOS_FUNCTION
   static void dp_inverse(
     const MemberType&            team,
     const Int&                   nlev,
@@ -479,6 +490,7 @@ struct Functions
 # include "shoc_assumed_pdf_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
 # include "shoc_integ_column_stability_impl.hpp"
+# include "shoc_isotropic_ts_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
