@@ -46,10 +46,10 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     Real shoc_mix[nlev] = {50000, 4000, 2000, 0, 500};
 
     // Initialize data structure for bridging to F90
-    SHOCMixcheckData SDS(shcol, nlev);
+    CheckLengthScaleShocLengthData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // compute geometric grid mesh
@@ -92,15 +92,15 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
   static void run_bfb()
   {
-    SHOCMixcheckData SDS_f90[] = {
+    CheckLengthScaleShocLengthData SDS_f90[] = {
       //             shcol, nlev
-      SHOCMixcheckData(10, 71),
-      SHOCMixcheckData(10, 12),
-      SHOCMixcheckData(7,  16),
-      SHOCMixcheckData(2, 7),
+      CheckLengthScaleShocLengthData(10, 71),
+      CheckLengthScaleShocLengthData(10, 12),
+      CheckLengthScaleShocLengthData(7,  16),
+      CheckLengthScaleShocLengthData(2, 7),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCMixcheckData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckLengthScaleShocLengthData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -109,11 +109,11 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCMixcheckData SDS_cxx[] = {
-      SHOCMixcheckData(SDS_f90[0]),
-      SHOCMixcheckData(SDS_f90[1]),
-      SHOCMixcheckData(SDS_f90[2]),
-      SHOCMixcheckData(SDS_f90[3]),
+    CheckLengthScaleShocLengthData SDS_cxx[] = {
+      CheckLengthScaleShocLengthData(SDS_f90[0]),
+      CheckLengthScaleShocLengthData(SDS_f90[1]),
+      CheckLengthScaleShocLengthData(SDS_f90[2]),
+      CheckLengthScaleShocLengthData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -128,15 +128,15 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      check_length_scale_shoc_length_f(d.nlev(),d.shcol(),d.host_dx,d.host_dy,d.shoc_mix);
+      check_length_scale_shoc_length_f(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCMixcheckData& d_f90 = SDS_f90[i];
-      SHOCMixcheckData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      CheckLengthScaleShocLengthData& d_f90 = SDS_f90[i];
+      CheckLengthScaleShocLengthData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.shoc_mix); ++k) {
         REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
       }
     }

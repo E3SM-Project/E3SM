@@ -39,15 +39,15 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     static constexpr Real pval_eq = 85000;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompqsData SDS;
+    ShocAssumedPdfComputeQsData SDS;
 
     // Fill in input data
-    SDS.Tl1_1 = Tl1_1_eq;
-    SDS.Tl1_2 = Tl1_2_eq;
+    SDS.tl1_1 = Tl1_1_eq;
+    SDS.tl1_2 = Tl1_2_eq;
     SDS.pval = pval_eq;
 
     // Check the inputs
-    REQUIRE(SDS.Tl1_1 == SDS.Tl1_2);
+    REQUIRE(SDS.tl1_1 == SDS.tl1_2);
     REQUIRE(SDS.pval > 0);
 
     // Call the fortran implementation
@@ -89,17 +89,17 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     static constexpr Real Tl1_2_skew = 300;
 
     // Load new input
-    SDS.Tl1_1 = Tl1_1_skew;
-    SDS.Tl1_2 = Tl1_2_skew;
+    SDS.tl1_1 = Tl1_1_skew;
+    SDS.tl1_2 = Tl1_2_skew;
 
     // Verify Gaussians are not equal
-    REQUIRE(SDS.Tl1_1 != SDS.Tl1_2);
+    REQUIRE(SDS.tl1_1 != SDS.tl1_2);
 
     // Call the fortran implementation
     shoc_assumed_pdf_compute_qs(SDS);
 
     // Check the result
-    if (SDS.Tl1_1 < SDS.Tl1_2){
+    if (SDS.tl1_1 < SDS.tl1_2){
       REQUIRE(SDS.qs1 < SDS.qs2);
       REQUIRE(SDS.beta1 > SDS.beta2);
     }

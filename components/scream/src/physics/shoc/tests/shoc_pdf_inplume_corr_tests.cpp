@@ -57,7 +57,7 @@ struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
     static constexpr Real a_zero = 0.2;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFinplumeData SDS;
+    ShocAssumedPdfInplumeCorrelationsData SDS;
 
     // Fill in test data
     SDS.sqrtqw2_1 = sqrtqw2_1_zero;

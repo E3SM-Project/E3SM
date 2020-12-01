@@ -58,10 +58,10 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     static constexpr Real conv_vel_bound = 10;
 
     // Initialize data structure for bridging to F90
-    SHOCConvvelData SDS(shcol, nlev);
+    ComputeConvVelShocLengthData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     // For this test we want exactly two columns
     REQUIRE(shcol == 2);
 
@@ -168,15 +168,15 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
   static void run_bfb()
   {
-    SHOCConvvelData SDS_f90[] = {
+    ComputeConvVelShocLengthData SDS_f90[] = {
       //           shcol, nlev
-      SHOCConvvelData(10, 71),
-      SHOCConvvelData(10, 12),
-      SHOCConvvelData(7,  16),
-      SHOCConvvelData(2, 7)
+      ComputeConvVelShocLengthData(10, 71),
+      ComputeConvVelShocLengthData(10, 12),
+      ComputeConvVelShocLengthData(7,  16),
+      ComputeConvVelShocLengthData(2, 7)
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCConvvelData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeConvVelShocLengthData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -185,11 +185,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCConvvelData SDS_cxx[] = {
-      SHOCConvvelData(SDS_f90[0]),
-      SHOCConvvelData(SDS_f90[1]),
-      SHOCConvvelData(SDS_f90[2]),
-      SHOCConvvelData(SDS_f90[3])
+    ComputeConvVelShocLengthData SDS_cxx[] = {
+      ComputeConvVelShocLengthData(SDS_f90[0]),
+      ComputeConvVelShocLengthData(SDS_f90[1]),
+      ComputeConvVelShocLengthData(SDS_f90[2]),
+      ComputeConvVelShocLengthData(SDS_f90[3])
     };
 
     // Assume all data is in C layout
@@ -204,16 +204,16 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      compute_conv_vel_shoc_length_f(d.nlev(),d.shcol(),d.pblh,d.zt_grid,
+      compute_conv_vel_shoc_length_f(d.nlev,d.shcol,d.pblh,d.zt_grid,
                                      d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCConvvelData& d_f90 = SDS_f90[i];
-      SHOCConvvelData& d_cxx = SDS_cxx[i];
-      for (Int c = 0; c < d_f90.dim1; ++c) {
+      ComputeConvVelShocLengthData& d_f90 = SDS_f90[i];
+      ComputeConvVelShocLengthData& d_cxx = SDS_cxx[i];
+      for (Int c = 0; c < d_f90.shcol; ++c) {
         REQUIRE(d_f90.conv_vel[c] == d_cxx.conv_vel[c]);
       }
     }

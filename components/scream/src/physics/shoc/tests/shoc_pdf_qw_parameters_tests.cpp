@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     REQUIRE(wqwsec_large > wqwsec_small);
 
     // Initialize data structure for bridging to F90
-    SHOCPDFqwparamData SDS;
+    ShocAssumedPdfQwParametersData SDS;
 
     // Fill the test data
     SDS.wqwsec = wqwsec_small;
@@ -73,7 +73,7 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     SDS.qw_first = qw_first_test1;
     SDS.w1_1 = w1_1_test1;
     SDS.w1_2 = w1_2_test1;
-    SDS.Skew_w = Skew_w_test1;
+    SDS.skew_w = Skew_w_test1;
     SDS.a = a_test1;
 
     // Verify input is physical
@@ -84,15 +84,15 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     // Make sure vertical velocity data is consistent
     REQUIRE(SDS.w1_1 > 0);
     REQUIRE(SDS.w1_2 < 0);
-    if (SDS.Skew_w > 0){
+    if (SDS.skew_w > 0){
       REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
       REQUIRE(SDS.a < 0.5);
     }
-    else if (SDS.Skew_w < 0){
+    else if (SDS.skew_w < 0){
       REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
       REQUIRE(SDS.a > 0.5);
     }
-    else if (SDS.Skew_w == 0){
+    else if (SDS.skew_w == 0){
       REQUIRE(abs(SDS.w1_1) == abs(SDS.w1_2));
       REQUIRE(SDS.a == 0);
     }

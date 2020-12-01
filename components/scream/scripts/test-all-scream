@@ -47,7 +47,7 @@ OR
     parser.add_argument("-f90","--f90-compiler", help="F90 compiler", default=None)
     parser.add_argument("--c-compiler", help="C compiler", default=None)
 
-    parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
+    parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad")
     parser.add_argument("-p", "--parallel", action="store_true",
                         help="Launch the different build types stacks in parallel")
 
@@ -60,7 +60,7 @@ OR
     parser.add_argument("--baseline-dir", default=None,
         help="Use baselines from the given directory, skip baseline creation.")
 
-    parser.add_argument("-m", "--machine", required=True,
+    parser.add_argument("-m", "--machine",
         help="Provide machine name. This is *always* required")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
@@ -85,6 +85,9 @@ OR
     parser.add_argument("-r", "--root-dir",
                         help="The root directory of the scream src you want to test. "
                         "Default will be the scream src containing this script.")
+
+    parser.add_argument("-w", "--work-dir",
+        help="The work directory where all the building/testing will happen. Defaults to ${root_dir}/ctest-build")
 
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")

@@ -46,7 +46,7 @@ OR
     default_repo = get_git_toplevel_dir()
 
     parser.add_argument("subs", nargs="+",
-                        help="fortran subroutine name[s]. Must specify at least one")
+                        help="fortran subroutine (or function) name[s]. Must specify at least one")
 
     parser.add_argument("-p", "--piece", dest="pieces", default=[], metavar="", action="append", choices=get_supported_pieces(),
                         help="Select which pieces of boilerplate to generate."

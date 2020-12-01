@@ -3,8 +3,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
 from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-                           get_mach_baseline_root_dir, setup_mach_env, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
+    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
+    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported
 
 check_minimum_python_version(3, 4)
 
@@ -21,7 +21,7 @@ class TestAllScream(object):
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
+                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
@@ -41,42 +41,28 @@ class TestAllScream(object):
         self._preserve_env            = preserve_env
         self._tests                   = tests
         self._root_dir                = root_dir
+        self._work_dir                = work_dir
         self._integration_test        = integration_test
         self._dry_run                 = dry_run
         self._must_generate_baselines = False
-        self._testing_dir             = "ctest-build"
 
         ############################################
         #  Sanity checks and helper structs setup  #
         ############################################
 
-        expect (not self._baseline_dir or self._testing_dir != self._baseline_dir,
-                "Error! For your safety, do NOT use 'ctest-build' to store baselines. Move them to a different directory.")
+        # Probe machine if none was specified
+        if self._machine is None:
+            # We could potentially integrate more with CIME here to do actual
+            # nodename probing.
+            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
+                self._machine = os.environ["CIME_MACHINE"]
+            else:
+                expect(False, "Machine is now required by test-all-scream")
 
-        expect(not (self._baseline_ref and self._baseline_dir),
-               "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
-
-        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("EKAT_DEFAULT_BFB", "ON")],
-                                  "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_DOUBLE_PRECISION", "False"),
-                                           ("EKAT_DEFAULT_BFB", "ON")],
-                                  "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
-                                           ("SCREAM_PACK_SIZE", "1"),
-                                           ("SCREAM_SMALL_PACK_SIZE", "1"),
-                                           ("EKAT_DEFAULT_BFB", "ON")]}
-
-        self._test_full_names = { "dbg" : "full_debug",
-                                  "sp"  : "full_sp_debug",
-                                  "fpe" : "debug_nopack_fpe"}
-
-        if not self._tests:
-            self._tests = ["dbg", "sp", "fpe"]
-        else:
-            for t in self._tests:
-                expect(t in self._test_full_names,
-                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
-                           format(t, ", ".join(self._test_full_names.keys())))
+        # Unless the user claims to know what he/she is doing, we setup the env.
+        if not self._preserve_env:
+            # Setup the env on this machine
+            setup_mach_env(self._machine)
 
         # Compute root dir
         if not self._root_dir:
@@ -86,25 +72,54 @@ class TestAllScream(object):
             expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
                    "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
 
+        if self._work_dir is not None:
+            expect(pathlib.Path(self._work_dir).absolute().is_dir(),
+                   "Error! Work directory '{}' does not exist.".format(self._work_dir))
+        else:
+            self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
+
+        expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
+                "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory of that works).".format(self._work_dir))
+
+        expect(not (self._baseline_ref and self._baseline_dir),
+               "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
+
+        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("EKAT_DEFAULT_BFB", "True")],
+                                  "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("SCREAM_DOUBLE_PRECISION", "False"),
+                                           ("EKAT_DEFAULT_BFB", "True")],
+                                  "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("SCREAM_PACK_SIZE", "1"),
+                                           ("SCREAM_SMALL_PACK_SIZE", "1"),
+                                           ("EKAT_DEFAULT_BFB", "True")]}
+
+        self._test_full_names = { "dbg" : "full_debug",
+                                  "sp"  : "full_sp_debug",
+                                  "fpe" : "debug_nopack_fpe"}
+
+        if not self._tests:
+            # always do dbg and sp tests, do not do fpe test on CUDA
+            self._tests = ["dbg", "sp"]
+            if not is_cuda_machine(self._machine):
+                self._tests.append("fpe")
+        else:
+            for t in self._tests:
+                expect(t in self._test_full_names,
+                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
+                           format(t, ", ".join(self._test_full_names.keys())))
+
         os.chdir(str(self._root_dir)) # needed, or else every git command will need repo=root_dir
         expect(get_current_commit(), "Root dir: {}, does not appear to be a git repo".format(self._root_dir))
 
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        if self._submit:
-            expect(self._machine, "If dashboard submit request, must provide machine name")
-
         print_last_commit(git_ref=self._original_branch)
 
         ############################################
         #    Deduce compilers if needed/possible   #
         ############################################
-
-        # Unless the user claims to know what he/she is doing, we setup the env.
-        if not self._preserve_env:
-            # Setup the env on this machine
-            setup_mach_env(self._machine)
 
         if self._cxx_compiler is None:
             self._cxx_compiler = get_mach_cxx_compiler(self._machine)
@@ -121,7 +136,7 @@ class TestAllScream(object):
         #      Compute baseline info      #
         ###################################
 
-        default_baselines_root_dir = pathlib.Path(self._testing_dir,"baselines")
+        default_baselines_root_dir = pathlib.Path(self._work_dir,"baselines")
         if self._baseline_dir is None:
             if self._baseline_ref is None:
                 # Compute baseline ref
@@ -256,7 +271,7 @@ class TestAllScream(object):
     ###############################################################################
     def get_test_dir(self, test):
     ###############################################################################
-        return pathlib.Path(self._root_dir, self._testing_dir, self._test_full_names[test])
+        return pathlib.Path(self._work_dir, self._test_full_names[test])
 
     ###############################################################################
     def get_preexisting_baseline(self, test):
@@ -317,7 +332,6 @@ class TestAllScream(object):
     ###############################################################################
     def get_machine_file(self):
     ###############################################################################
-        expect(self._machine is not None, "Cannot get machine file without machine")
         return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
 
     ###############################################################################
@@ -425,6 +439,8 @@ class TestAllScream(object):
         for key, value in extra_configs:
             result += "-D{}={} ".format(key, value)
 
+        work_dir = pathlib.Path(self._work_dir).joinpath(name)
+        result += "-DBUILD_WORK_DIR={} ".format(work_dir)
         result += "-DBUILD_NAME_MOD={} ".format(name)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._root_dir, cmake_config)
 
@@ -466,6 +482,10 @@ class TestAllScream(object):
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
+        else:
+            # Clean up the directory, by removing everything but the 'data' subfolder
+            run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
+                            from_dir=test_dir,verbose=True)
 
         return True
 

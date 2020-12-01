@@ -45,10 +45,10 @@ struct UnitWrap::UnitTest<D>::TestImpSfcStress {
     static constexpr Real v_wind_sfc[shcol] = {-10, 2, 20, 0, 1};
 
     // Initialize data structure for bridging to F90
-    SHOCImplsrfstressData SDS(shcol);
+    ImpliSrfStressTermData SDS(shcol);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(SDS.shcol == shcol);
     REQUIRE(shcol > 1);
 
     // Fill in test data, column only

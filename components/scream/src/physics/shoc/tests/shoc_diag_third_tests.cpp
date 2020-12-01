@@ -79,12 +79,12 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     dz_zi[nlevi-1] = zt_grid[nlev-1];
 
     // Initialize data structure for bridging to F90
-    SHOCDiagThirdMomData SDS(shcol, nlev, nlevi);
+    DiagThirdShocMomentsData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
     // For this test shcol MUST be at least 2
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
-    REQUIRE(SDS.nlevi() == SDS.nlev()+1);
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
+    REQUIRE(SDS.nlevi == SDS.nlev+1);
 
     // Load up the new data
     for(Int s = 0; s < shcol; ++s) {
@@ -176,7 +176,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Load up new and increased TKE values
     for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
+      for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlevi;
 
         SDS.w_sec[offset] = 10*w_sec[n];
@@ -203,15 +203,15 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
   static void run_bfb()
   {
-    SHOCDiagThirdMomData SDS_f90[] = {
+    DiagThirdShocMomentsData SDS_f90[] = {
       //               shcol, nlev, nlevi
-      SHOCDiagThirdMomData(10, 71, 72),
-      SHOCDiagThirdMomData(10, 12, 13),
-      SHOCDiagThirdMomData(7,  16, 17),
-      SHOCDiagThirdMomData(2, 7, 8),
+      DiagThirdShocMomentsData(10, 71, 72),
+      DiagThirdShocMomentsData(10, 12, 13),
+      DiagThirdShocMomentsData(7,  16, 17),
+      DiagThirdShocMomentsData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCDiagThirdMomData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -220,11 +220,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCDiagThirdMomData SDS_cxx[] = {
-      SHOCDiagThirdMomData(SDS_f90[0]),
-      SHOCDiagThirdMomData(SDS_f90[1]),
-      SHOCDiagThirdMomData(SDS_f90[2]),
-      SHOCDiagThirdMomData(SDS_f90[3]),
+    DiagThirdShocMomentsData SDS_cxx[] = {
+      DiagThirdShocMomentsData(SDS_f90[0]),
+      DiagThirdShocMomentsData(SDS_f90[1]),
+      DiagThirdShocMomentsData(SDS_f90[2]),
+      DiagThirdShocMomentsData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -239,7 +239,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      diag_third_shoc_moments_f(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,
+      diag_third_shoc_moments_f(d.shcol,d.nlev,d.nlevi,d.w_sec,d.thl_sec,
                                 d.wthl_sec,d.isotropy,d.brunt,d.thetal,
                                 d.tke,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
                                 d.w3);
@@ -248,9 +248,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCDiagThirdMomData& d_f90 = SDS_f90[i];
-      SHOCDiagThirdMomData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+      DiagThirdShocMomentsData& d_f90 = SDS_f90[i];
+      DiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.w3); ++k) {
         REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
       }
     }

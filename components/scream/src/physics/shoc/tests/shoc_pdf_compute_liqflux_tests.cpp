@@ -46,7 +46,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompLiqFlux {
     static constexpr Real w_first = 0;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcompliqfluxData SDS;
+    ShocAssumedPdfComputeLiquidWaterFluxData SDS;
 
     // Load input data
     SDS.a = a;

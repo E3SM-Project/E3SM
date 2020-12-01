@@ -118,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     UpdatePrognosticsImplicitData SDS(shcol,nlev,nlevi,num_tracer,dtime);
     // Note to validate this test we need to call the linear interp function
     //  to get the value of rho on zi grid at surface
-    SHOCLinearInterpData SDSL(shcol,nlev,nlevi,0);
+    LinearInterpData SDSL(shcol,nlev,nlevi,0);
 
     // Test that the inputs are reasonable
     REQUIRE(SDS.shcol == shcol);
