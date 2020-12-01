@@ -57,6 +57,9 @@ module check_energy
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
 
+  public :: get_water_mass
+  public :: get_water_energy
+
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
   public :: check_prect             ! output prect at certain locations for water conservation check  
@@ -235,6 +238,78 @@ end subroutine check_energy_get_integrals
     end if 
 
   end subroutine check_energy_init
+
+
+subroutine get_water_mass(state,field)
+    type(physics_state),   intent(in)    :: state
+    real(r8),   intent(inout)    :: field(state%ncol)
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water
+    integer ncol                                   ! number of atmospheric
+    integer  i,k                                   ! column, level indices
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+!-----------------------------------------------------------------------
+    ncol  = state%ncol
+ 
+    call get_water_componentsVLIRS(wv,wl,wi,wr,ws)
+
+    field(1:ncol) = wv(1:ncol) + wr(1:ncol) + wl(1:ncol) + ws(1:ncol) + wi(1:ncol)
+end subroutine get_water_mass
+
+
+subroutine get_water_componentsVLIRS(wv,wl,wi,wr,ws,state)
+    type(physics_state),   intent(in)    :: state
+    real(r8), intent(inout) :: wv(state%ncol)                     ! vertical integral of water
+    real(r8), intent(inout) :: wl(state%ncol)                     ! vertical integral of water
+    real(r8), intent(inout) :: wi(state%ncol)                     ! vertical integral of water
+    integer ncol                                   ! number of atmospheric
+    integer  i,k                                   ! column, level indices
+    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+    real(r8), intent(inout) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8), intent(inout) :: ws(state%ncol)                     ! vertical integral of snow
+    integer :: ixrain
+    integer :: ixsnow
+
+    ncol  = state%ncol
+
+    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+
+    wv = 0._r8
+    wl = 0._r8
+    wi = 0._r8
+    wr = 0._r8
+    ws = 0._r8
+    do k = 1, pver 
+       do i = 1, ncol
+          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
+       end do 
+    end do
+    if (ixcldliq > 1  .and.  ixcldice > 1) then
+       do k = 1, pver
+          do i = 1, ncol
+             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
+             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+end subroutine get_water_componentsVLIRS
+
+
+
+
 
 !===============================================================================
 

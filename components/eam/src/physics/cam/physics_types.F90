@@ -67,7 +67,15 @@ module physics_types
      real(r8), dimension(:), allocatable         :: &
           te_before_physstep, &
           delta_te, & !te after physics - te before physics
-          delta_te_flux !restom - ressurf
+          delta_te_flux, & !restom - ressurf, bad name
+          water_before_physstep, &
+          water_after_physstep, &
+          water_delta, & !difference after - before
+          water_flux_to_send, & !flux that is leaving ATM
+          energy_water_before_physstep, &
+          energy_water_after_physstep, &
+          energy_delta_water, & !difference after - before
+          energy_water_flux_to_send !flux that is leaving ATM
 
      real(r8), dimension(:), allocatable         :: &
           lat,     &! latitude (radians)
@@ -2015,6 +2023,23 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   if ( ierr /= 0 ) call endrun('physics_state_all...')
 
 
+  allocate(state%water_before_physstep(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%water_after_physstep(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%water_delta(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%water_flux_to_send(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+
+  allocate(state%energy_water_before_physstep(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%energy_water_after_physstep(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%energy_water_delta(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
+  allocate(state%energy_water_flux_to_send(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_all...')
 
   allocate(state%lat(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%lat')
@@ -2126,6 +2151,15 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%delta_te(:)=-1.0
   state%delta_te_flux(:)=-1.0
   
+  state%water_before_physstep(:)=-1.0
+  state%water_after_physstep(:)=-1.0
+  state%water_delta(:)=-1.0
+  state%water_flux_to_send(:)=-1.0
+
+  state%energy_water_before_physstep(:)=-1.0
+  state%energy_water_after_physstep(:)=-1.0
+  state%energy_water_delta(:)=-1.0
+  state%energy_water_flux_to_send(:)=-1.0
 
   state%lat(:) = inf
   state%lon(:) = inf
@@ -2177,7 +2211,15 @@ subroutine physics_state_dealloc(state)
   deallocate(state%delta_te, stat=ierr)
   deallocate(state%delta_te_flux, stat=ierr)
 
+  deallocate(state%water_before_physstep, stat=ierr)
+  deallocate(state%water_after_physstep, stat=ierr)
+  deallocate(state%water_delta, stat=ierr)
+  deallocate(state%water_flux_to_send, stat=ierr)
 
+  deallocate(state%energy_water_before_physstep, stat=ierr)
+  deallocate(state%energy_water_after_physstep, stat=ierr)
+  deallocate(state%energy_water_delta, stat=ierr)
+  deallocate(state%energy_water_flux_to_send, stat=ierr)
 
   deallocate(state%lat, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%lat')
