@@ -37,6 +37,7 @@ module pftvarcon
   integer :: nc3_nonarctic_grass    !value for C3 non-arctic grass
   integer :: nc4_grass              !value for C4 grass
   integer :: npcropmin              !value for first crop
+  integer :: nppercropmin           !value for first perennial crop
   integer :: ncorn                  !value for corn, rain fed (rf)
   integer :: ncornirrig             !value for corn, irrigated (ir)
   integer :: nscereal               !value for spring temperate cereal (rf)
@@ -46,6 +47,7 @@ module pftvarcon
   integer :: nsoybean               !value for soybean (rf)
   integer :: nsoybeanirrig          !value for soybean (ir)
   integer :: npcropmax              !value for last prognostic crop in list
+  integer :: nppercropmax           !value for last prognostic perennial crop in list
   integer :: nc3crop                !value for generic crop (rf)
   integer :: nc3irrig               !value for irrigated generic crop (ir)
   integer :: ncassava               !value for cassava, rain fed (rf)
@@ -93,6 +95,7 @@ module pftvarcon
   real(r8), allocatable :: roota_par(:)   !CLM rooting distribution parameter [1/m]
   real(r8), allocatable :: rootb_par(:)   !CLM rooting distribution parameter [1/m]
   real(r8), allocatable :: crop(:)        !crop pft: 0. = not crop, 1. = crop pft
+  real(r8), allocatable :: percrop(:)     !perennial crop pft: 0. = not annual crop, 1. = perennial crop pft
   real(r8), allocatable :: irrigated(:)   !irrigated pft: 0. = not, 1. = irrigated
   real(r8), allocatable :: smpso(:)       !soil water potential at full stomatal opening (mm)
   real(r8), allocatable :: smpsc(:)       !soil water potential at full stomatal closure (mm)
@@ -156,6 +159,9 @@ module pftvarcon
   integer , allocatable :: mxSHplantdate(:)!maximum planting date for SouthHemisphere (YYYYMMDD)
   real(r8), allocatable :: planttemp(:)    !planting temperature used in Phenology (K)
   real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in Phenology (K)
+  real(r8), allocatable :: senestemp(:)    !senescence temperature for perennial crops used in Phenology (K)
+  real(r8), allocatable :: min_days_senes(:)   !minimum leaf age to allow for leaf senescence
+  real(r8), allocatable :: crit_days_senes(:)  !critical leaf age beyond which leaf senescence
   real(r8), allocatable :: froot_leaf(:)   !allocation parameter: new fine root C per new leaf C (gC/gC) 
   real(r8), allocatable :: stem_leaf(:)    !allocation parameter: new stem c per new leaf C (gC/gC)
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)
@@ -411,6 +417,7 @@ contains
     allocate( roota_par     (0:mxpft) )   
     allocate( rootb_par     (0:mxpft) )   
     allocate( crop          (0:mxpft) )        
+    allocate( percrop       (0:mxpft) )
     allocate( irrigated     (0:mxpft) )   
     allocate( smpso         (0:mxpft) )       
     allocate( smpsc         (0:mxpft) )       
@@ -465,6 +472,9 @@ contains
     allocate( mxSHplantdate (0:mxpft) )
     allocate( planttemp     (0:mxpft) )    
     allocate( minplanttemp  (0:mxpft) ) 
+    allocate( senestemp     (0:mxpft) )
+    allocate( min_days_senes (0:mxpft) )
+    allocate( crit_days_senes (0:mxpft) )
     allocate( froot_leaf    (0:mxpft) )   
     allocate( stem_leaf     (0:mxpft) )    
     allocate( croot_stem    (0:mxpft) )   
@@ -751,6 +761,8 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('crop',crop, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('percrop', percrop, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('irrigated',irrigated, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('ztopmx',ztopmx, 'read', ncid, readvar=readv)  
@@ -804,6 +816,12 @@ contains
     call ncd_io('max_NH_planting_date',mxNHplantdate, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('max_SH_planting_date',mxSHplantdate, 'read', ncid, readvar=readv)  
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('senescence_temp', senestemp, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('crit_days_senescence', crit_days_senes, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
     if (nu_com .ne. 'RD' ) then
@@ -1050,14 +1068,16 @@ contains
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
-    npcropmax            = nwillowirrig         ! last prognostic crop in list
+    npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
+    nppercropmin         = nmiscanthus          ! first prognostic perennial crop
+    nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
 
     if( .not. use_fates ) then
-       if ( npcropmax /= mxpft )then
-          call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
+       if ( nppercropmax /= mxpft )then
+          call endrun(msg=' ERROR: nppercropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
        end if
        do i = 0, mxpft
           if ( irrigated(i) == 1.0_r8  .and. (i == nc3irrig .or. &
@@ -1090,6 +1110,13 @@ contains
              ! correct
           else
              call endrun(msg=' ERROR: crop has wrong values'//errMsg(__FILE__, __LINE__))
+          end if
+          if (      percrop(i) == 1.0_r8 .and. (i >= nmiscanthus .and. i <= nppercropmax))then
+             ! correct
+          else if ( percrop(i) == 0.0_r8 )then
+             ! correct
+          else
+             call endrun(msg=' ERROR: perennial crop has wrong values'//errMsg(__FILE__, __LINE__))
           end if
           if ( (i /= noveg) .and. (i < npcropmin) .and. &
                abs(pconv(i)+pprod10(i)+pprod100(i) - 1.0_r8) > 1.e-7_r8 )then
