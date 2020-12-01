@@ -59,7 +59,10 @@ def get_name_and_yrs(parameters, dataset, season=''):
 
     name = get_name(parameters, dataset)
     yrs_averaged = get_yrs(dataset, season)
-    name_yrs = '{} ({})'.format(name, yrs_averaged)
+    if yrs_averaged:
+        name_yrs = '{} ({})'.format(name, yrs_averaged)
+    else:
+        name_yrs = name
     
     return name_yrs
 
@@ -86,6 +89,7 @@ def get_yrs(dataset, season=''):
             yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
         except:
             print("No 'yrs_averaged' exists in the global attributes.")
+            yrs_averaged = ''
     else:
         start_yr, end_yr = dataset.get_start_and_end_years()
         yrs_averaged = '{}-{}'.format(start_yr, end_yr)
