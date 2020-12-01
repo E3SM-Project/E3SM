@@ -21,6 +21,9 @@ module check_energy
 !                  MG2 (now includes prognostic rain and snow)    
 !               2. Better printout information for energy and water conservation check 
 !               3. Additional water conservation check utilities 
+!
+!   2020-01  O. Guba Correct energy density function
+!
 !---------------------------------------------------------------------------------
 
   use shr_kind_mod,    only: r8 => shr_kind_r8
