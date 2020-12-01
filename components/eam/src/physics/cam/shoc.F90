@@ -3204,8 +3204,8 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
            Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
-           tkh(i,k) = Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-           tk(i,k)  = Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
+           tk(i,k)  = Ckm_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
         else
            ! Default definition of eddy diffusivity for heat and momentum
            tkh(i,k) = Ckh*isotropy(i,k)*tke(i,k)
