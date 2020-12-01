@@ -85,11 +85,11 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     }
 
     // Initialize data structure for bridging to F90
-    SHOCTkeData SDS(shcol, nlev, nlevi, dtime);
+    ShocTkeData SDS(shcol, nlev, nlevi, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi() - SDS.nlev() == 1);
-    REQUIRE(SDS.shcol() > 0);
+    REQUIRE(SDS.nlevi - SDS.nlev == 1);
+    REQUIRE(SDS.shcol > 0);
 
     SDS.dtime = dtime;
     // Fill in test data on zt_grid.

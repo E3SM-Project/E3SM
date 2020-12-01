@@ -42,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestOmegadiagThirdMoms {
     constexpr static Real f4_test1a = 5;
 
     // Initialize data structure for bridging to F90
-    SHOCOmegadiagthirdmomsData SDS;
+    OmegaTermsDiagThirdShocMomentData SDS;
 
     // Load up the data
     SDS.buoy_sgs2 = buoy_sgs2;

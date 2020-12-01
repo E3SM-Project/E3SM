@@ -45,10 +45,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     static constexpr Real brunt_sym[nlev] = {-0.5, -0.25, 0.0, 0.25, 0.5};
 
     // Initialize data structure for bridging to F90
-    SHOCColstabData SDS(shcol, nlev);
+    IntegColumnStabilityData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
@@ -118,8 +118,55 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    //declare data for the f90 function call
+    IntegColumnStabilityData f90_data[] = {
+      IntegColumnStabilityData(10, 71),
+      IntegColumnStabilityData(10, 12),
+      IntegColumnStabilityData(7,  16),
+      IntegColumnStabilityData(2,  7 ),
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IntegColumnStabilityData);
+
+    //Generate random data
+    for (auto &d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data (if any) is in original state
+    IntegColumnStabilityData cxx_data[] = {
+      IntegColumnStabilityData(f90_data[0]),
+      IntegColumnStabilityData(f90_data[1]),
+      IntegColumnStabilityData(f90_data[2]),
+      IntegColumnStabilityData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto &d : f90_data) {
+      // expects data in C layout
+      integ_column_stability(d);
+    }
+
+    // Get data from cxx
+    for (auto &d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      integ_column_stability_f(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      IntegColumnStabilityData& d_f90 = f90_data[i];
+      IntegColumnStabilityData& d_cxx = cxx_data[i];
+      for (Int c = 0; c < d_f90.shcol; ++c) {
+        REQUIRE(d_f90.brunt_int[c] == d_cxx.brunt_int[c]);
+      }
+    }
+
+  } //run_bfb
 };
 
 }  // namespace unit_test

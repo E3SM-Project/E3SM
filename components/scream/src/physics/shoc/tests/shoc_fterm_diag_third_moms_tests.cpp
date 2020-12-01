@@ -50,7 +50,7 @@ struct UnitWrap::UnitTest<D>::TestFtermdiagThirdMoms {
     constexpr static Real tke_zero = 0.5;
 
     // Initialize data structure for bridging to F90
-    SHOCFtermdiagthirdmomsData SDS;
+    F0ToF5DiagThirdShocMomentData SDS;
 
     // Fill in data
     SDS.thedz = thedz;

@@ -48,9 +48,9 @@ struct UnitWrap::UnitTest<D>::TestLatentHeat {
       LatentHeatData& d = latent_cxx[i];
       get_latent_heat_f(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
 
-      REQUIRE(h.total1x2() == d.total1x2());
+      REQUIRE(h.total(h.v) == d.total(d.v));
 
-      for (Int j = 0; j < h.total1x2(); ++j) {
+      for (Int j = 0; j < h.total(h.v); ++j) {
         REQUIRE(d.v[j] == h.v[j]);
         REQUIRE(d.s[j] == h.s[j]);
         REQUIRE(d.f[j] == h.f[j]);

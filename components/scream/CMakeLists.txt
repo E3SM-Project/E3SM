@@ -260,3 +260,6 @@ add_subdirectory(src)
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
+
+# Build any tools in the scripts/ dir.
+add_subdirectory(scripts)

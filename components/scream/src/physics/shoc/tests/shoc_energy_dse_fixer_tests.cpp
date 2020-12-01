@@ -49,11 +49,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
     static constexpr Int shoctop[shcol] = {5, 3, 1, 2, 4, 4};
 
     // Initialize data structure for bridging to F90
-    SHOCEnergydsefixerData SDS(shcol, nlev);
+    ShocEnergyDseFixerData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
     // for this test we need exactly six columns
-    REQUIRE( (SDS.shcol() == 6 && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == 6 && SDS.nlev == nlev) );
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {

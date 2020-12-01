@@ -51,7 +51,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     Real Tl1_save;
 
     // Initialize data structure for bridging to F90
-    SHOCPDFcomptempData SDS;
+    ShocAssumedPdfComputeTemperatureData SDS;
 
     // Fill in data
     SDS.thl1 = thl1;
@@ -76,33 +76,33 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
 
       // Check the result
       // Make sure temperature falls within reasonable bound
-      REQUIRE(SDS.Tl1 < Tl_upper_bound);
-      REQUIRE(SDS.Tl1 > Tl_lower_bound);
+      REQUIRE(SDS.tl1 < Tl_upper_bound);
+      REQUIRE(SDS.tl1 > Tl_lower_bound);
 
       // If pressure is greater than basepressure then
       //  make sure that temperature is greater than thetal
       if (SDS.pval > SDS.basepres){
-        REQUIRE(SDS.Tl1 > SDS.thl1);
+        REQUIRE(SDS.tl1 > SDS.thl1);
       }
       // otherwise temperature should be less than thetal
       else if(SDS.pval < SDS.basepres){
-        REQUIRE(SDS.Tl1 < SDS.thl1);
+        REQUIRE(SDS.tl1 < SDS.thl1);
       }
       // otherwise if they are equal the temperatures
       //  should be equal
       else
       {
-        REQUIRE(SDS.Tl1 == SDS.thl1);
+        REQUIRE(SDS.tl1 == SDS.thl1);
       }
 
       // Make sure temperature are decreasing
       if (s > 0){
-        REQUIRE(SDS.Tl1 < Tl1_save);
+        REQUIRE(SDS.tl1 < Tl1_save);
       }
 
       // Save result to make sure that temperatures
       //  are decreasing as pressure decreases
-      Tl1_save = SDS.Tl1;
+      Tl1_save = SDS.tl1;
 
       // Decrease pressure value
       SDS.pval = SDS.pval+presincr;

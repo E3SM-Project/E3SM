@@ -41,7 +41,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
     static constexpr Real vw_sfc[shcol] = {-0.4, 0.1, 0.01, -0.2, 0};
 
     // Initialize data structure for bridging to F90
-    SHOCSecondMomentSrfData SDS(shcol);
+    DiagSecondMomentsSrfData SDS(shcol);
 
     // Load up the data
     for (Int s = 0; s < shcol; ++s){
@@ -51,7 +51,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
     }
 
     // Call the fortran implementation
-    shoc_diag_second_moments_srf(SDS);
+    diag_second_moments_srf(SDS);
 
     // Verify the output
     for (Int s = 0; s < shcol; ++s){

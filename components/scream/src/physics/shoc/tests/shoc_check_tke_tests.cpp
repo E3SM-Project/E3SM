@@ -37,7 +37,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     static constexpr Real tke_input[nlev] = {-0.3, 0.4, -100, -1.5, 0.4};
 
     // Intialize data structure for bridging to F90
-    SHOCCheckTkeData SDS(shcol, nlev);
+    CheckTkeData SDS(shcol, nlev);
 
     // Load the data
     for(Int s = 0; s < shcol; ++s) {
@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     }
 
     // Check some input
-    REQUIRE((SDS.shcol() > 0 && SDS.nlev() > 0));
+    REQUIRE((SDS.shcol > 0 && SDS.nlev > 0));
 
     // call the fortran implementation
     check_tke(SDS);
@@ -74,15 +74,15 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
 
   static void run_bfb()
   {
-    SHOCCheckTkeData SDS_f90[] = {
+    CheckTkeData SDS_f90[] = {
       //               shcol, nlev
-      SHOCCheckTkeData(10, 71),
-      SHOCCheckTkeData(10, 12),
-      SHOCCheckTkeData(7,  16),
-      SHOCCheckTkeData(2,   7),
+      CheckTkeData(10, 71),
+      CheckTkeData(10, 12),
+      CheckTkeData(7,  16),
+      CheckTkeData(2,   7),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCCheckTkeData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CheckTkeData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -91,11 +91,11 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCCheckTkeData SDS_cxx[] = {
-      SHOCCheckTkeData(SDS_f90[0]),
-      SHOCCheckTkeData(SDS_f90[1]),
-      SHOCCheckTkeData(SDS_f90[2]),
-      SHOCCheckTkeData(SDS_f90[3]),
+    CheckTkeData SDS_cxx[] = {
+      CheckTkeData(SDS_f90[0]),
+      CheckTkeData(SDS_f90[1]),
+      CheckTkeData(SDS_f90[2]),
+      CheckTkeData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -110,15 +110,15 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      check_tke_f(d.nlev(), d.shcol(), d.tke);
+      check_tke_f(d.nlev, d.shcol, d.tke);
       d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCCheckTkeData& d_f90 = SDS_f90[i];
-      SHOCCheckTkeData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+      CheckTkeData& d_f90 = SDS_f90[i];
+      CheckTkeData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
         REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
       }
     }

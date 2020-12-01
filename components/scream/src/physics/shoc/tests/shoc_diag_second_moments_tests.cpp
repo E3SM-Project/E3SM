@@ -81,8 +81,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     DiagSecondMomentsData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
-    REQUIRE(SDS.nlevi() == SDS.nlev()+1);
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
+    REQUIRE(SDS.nlevi == SDS.nlev+1);
 
     // Load up the new data
     for(Int s = 0; s < shcol; ++s) {
@@ -285,9 +285,9 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      diag_second_moments_f(d.shcol(), d.nlev(), d.nlevi(), d.thetal, d.qw, d.u_wind, d.v_wind, 
-                            d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, 
-                            d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, 
+      diag_second_moments_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind,
+                            d.tke, d.isotropy, d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix,
+                            d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
                             d.vw_sec, d.wtke_sec, d.w_sec);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
@@ -296,10 +296,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments {
     for (Int i = 0; i < num_runs; ++i) {
       DiagSecondMomentsData& d_f90 = f90_data[i];
       DiagSecondMomentsData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      for (Int k = 0; k < d_f90.total(d_f90.w_sec); ++k) {
         REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
       }
-      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+      for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
         REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
         REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
         REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);

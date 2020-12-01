@@ -122,7 +122,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_shoc_vapor_f(d.shcol(), d.nlev(), d.qw, d.ql, d.qv);
+      compute_shoc_vapor_f(d.shcol, d.nlev, d.qw, d.ql, d.qv);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
@@ -130,7 +130,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     for (Int i = 0; i < num_runs; ++i) {
       ComputeShocVaporData& d_f90 = f90_data[i];
       ComputeShocVaporData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x2(); ++k) {
+      for (Int k = 0; k < d_f90.total(d_f90.qv); ++k) {
         REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
       }
     }

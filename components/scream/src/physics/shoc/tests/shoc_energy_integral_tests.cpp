@@ -54,11 +54,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     static constexpr Real rcm[nlev] = {1e-6, 1e-5, 4e-5, 2e-6, 1e-6};
 
     // Initialize data structure for bridging to F90
-    SHOCEnergyintData SDS(shcol, nlev);
+    ShocEnergyIntegralsData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
     REQUIRE(shcol == 2);
 
     // Fill in test data on zt_grid.
@@ -128,15 +128,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
   static void run_bfb()
   {
-    SHOCEnergyintData SDS_f90[] = {
+    ShocEnergyIntegralsData SDS_f90[] = {
       //               shcol, nlev
-      SHOCEnergyintData(10, 71),
-      SHOCEnergyintData(10, 12),
-      SHOCEnergyintData(7,  16),
-      SHOCEnergyintData(2, 7),
+      ShocEnergyIntegralsData(10, 71),
+      ShocEnergyIntegralsData(10, 12),
+      ShocEnergyIntegralsData(7,  16),
+      ShocEnergyIntegralsData(2, 7),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCEnergyintData);
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyIntegralsData);
 
     // Generate random input data
     for (auto& d : SDS_f90) {
@@ -145,11 +145,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCEnergyintData SDS_cxx[] = {
-      SHOCEnergyintData(SDS_f90[0]),
-      SHOCEnergyintData(SDS_f90[1]),
-      SHOCEnergyintData(SDS_f90[2]),
-      SHOCEnergyintData(SDS_f90[3]),
+    ShocEnergyIntegralsData SDS_cxx[] = {
+      ShocEnergyIntegralsData(SDS_f90[0]),
+      ShocEnergyIntegralsData(SDS_f90[1]),
+      ShocEnergyIntegralsData(SDS_f90[2]),
+      ShocEnergyIntegralsData(SDS_f90[3]),
     };
 
     // Assume all data is in C layout
@@ -164,7 +164,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
-      shoc_energy_integrals_f(d.shcol(), d.nlev(), d.host_dse, d.pdel,
+      shoc_energy_integrals_f(d.shcol, d.nlev, d.host_dse, d.pdel,
                               d.rtm, d.rcm, d.u_wind, d.v_wind,
                               d.se_int, d.ke_int, d.wv_int, d.wl_int);
       d.transpose<ekat::TransposeDirection::f2c>();
@@ -172,9 +172,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCEnergyintData& d_f90 = SDS_f90[i];
-      SHOCEnergyintData& d_cxx = SDS_cxx[i];
-      for (Int c = 0; c < d_f90.dim1; ++c) {
+      ShocEnergyIntegralsData& d_f90 = SDS_f90[i];
+      ShocEnergyIntegralsData& d_cxx = SDS_cxx[i];
+      for (Int c = 0; c < d_f90.shcol; ++c) {
         REQUIRE(d_f90.se_int[c] == d_cxx.se_int[c]);
         REQUIRE(d_f90.ke_int[c] == d_cxx.ke_int[c]);
         REQUIRE(d_f90.wv_int[c] == d_cxx.wv_int[c]);

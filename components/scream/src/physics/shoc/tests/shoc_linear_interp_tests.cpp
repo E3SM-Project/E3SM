@@ -53,10 +53,10 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     static constexpr Real minthresh = -99999.0;
 
     // Initialize data structure for bridging to F90
-    SHOCLinearInterpData SDS(shcol, km1, km2, minthresh);
+    LinearInterpData SDS(shcol, km1, km2, minthresh);
 
     // For this test we need exactly two columns
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == km1 && SDS.nlevi() == km2 && SDS.minthresh == minthresh) );
+    REQUIRE( (SDS.ncol == shcol && SDS.km1 == km1 && SDS.km2 == km2 && SDS.minthresh == minthresh) );
     REQUIRE(shcol == 2);
 
     // Fill in test data on zt_grid.
@@ -168,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Initialize data structure for bridging to F90
     // NOTE that km2 and km1 grid must be switched here.
     // Must initialize a new data structure since km1 and km2 are swapped.
-    SHOCLinearInterpData SDS2(shcol, km2, km1, minthresh);
+    LinearInterpData SDS2(shcol, km2, km1, minthresh);
 
     // Fill in test data on zi_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -236,7 +236,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     const Int km1 = km1_dist(generator);
     const Int km2 = km1 + (km1_bigger ? -1 : 1);
 
-    SHOCLinearInterpData d(shcol, km1, km2, minthresh);
+    LinearInterpData d(shcol, km1, km2, minthresh);
 
     for (Int s = 0; s < shcol; ++s) {
 
@@ -333,17 +333,17 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
   static void run_bfb()
   {
-    SHOCLinearInterpData f90_data[] = {
+    LinearInterpData f90_data[] = {
       //                   shcol, nlev(km1), nlevi(km2), minthresh
-      SHOCLinearInterpData(10, 72, 71, 1e-15),
-      SHOCLinearInterpData(10, 71, 72, 1e-15),
-      SHOCLinearInterpData(1, 15, 16, 1e-15),
-      SHOCLinearInterpData(1, 16, 15, 1e-15),
-      SHOCLinearInterpData(1, 5, 6, 1e-15),
-      SHOCLinearInterpData(1, 6, 5, 1e-15),
+      LinearInterpData(10, 72, 71, 1e-15),
+      LinearInterpData(10, 71, 72, 1e-15),
+      LinearInterpData(1, 15, 16, 1e-15),
+      LinearInterpData(1, 16, 15, 1e-15),
+      LinearInterpData(1, 5, 6, 1e-15),
+      LinearInterpData(1, 6, 5, 1e-15),
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(SHOCLinearInterpData);
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
 
     // Generate random input data
     for (auto& d : f90_data) {
@@ -352,13 +352,13 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    SHOCLinearInterpData cxx_data[] = {
-      SHOCLinearInterpData(f90_data[0]),
-      SHOCLinearInterpData(f90_data[1]),
-      SHOCLinearInterpData(f90_data[2]),
-      SHOCLinearInterpData(f90_data[3]),
-      SHOCLinearInterpData(f90_data[4]),
-      SHOCLinearInterpData(f90_data[5]),
+    LinearInterpData cxx_data[] = {
+      LinearInterpData(f90_data[0]),
+      LinearInterpData(f90_data[1]),
+      LinearInterpData(f90_data[2]),
+      LinearInterpData(f90_data[3]),
+      LinearInterpData(f90_data[4]),
+      LinearInterpData(f90_data[5]),
     };
 
     // Assume all data is in C layout
@@ -372,15 +372,15 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.nlev(), d.nlevi(), d.shcol(), d.minthresh);
+      linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
-      SHOCLinearInterpData& d_f90 = f90_data[i];
-      SHOCLinearInterpData& d_cxx = cxx_data[i];
-      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+      LinearInterpData& d_f90 = f90_data[i];
+      LinearInterpData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.y2); ++k) {
         REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
       }
     }
