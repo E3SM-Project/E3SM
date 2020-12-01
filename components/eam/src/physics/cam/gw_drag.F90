@@ -18,6 +18,11 @@ module gw_drag
 ! Author: Byron Boville
 !
 !--------------------------------------------------------------------------
+!
+! Nov 2020  O. Guba Option for energy fix in GWD
+!
+!--------------------------------------------------------------------------
+
   use shr_kind_mod,  only: r8 => shr_kind_r8
   use ppgrid,        only: pcols, pver
   use constituents,  only: pcnst
