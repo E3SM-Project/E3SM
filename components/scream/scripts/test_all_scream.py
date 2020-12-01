@@ -563,7 +563,7 @@ class TestAllScream(object):
             # Note: make will still rerun cmake if some cmake file has changed
             ctest_config += "-DSKIP_CONFIG_STEP=TRUE "
             if self._quick_rerun_failed:
-              ctest_config += "--rerun-failed "
+                ctest_config += "--rerun-failed "
         else:
             # This directory might have been used also to build the model to generate baselines.
             # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
@@ -588,8 +588,8 @@ class TestAllScream(object):
             # Create this test's build dir
             if test_dir.exists():
                 if not self._quick_rerun:
-                  shutil.rmtree(str(test_dir))
-                  test_dir.mkdir(parents=True)
+                    shutil.rmtree(str(test_dir))
+                    test_dir.mkdir(parents=True)
             else:
                 test_dir.mkdir(parents=True)
 
