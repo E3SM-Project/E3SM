@@ -106,11 +106,26 @@ module GridcellDataType
   ! Define the data structure that holds carbon state information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_carbon_state
-    real(r8), pointer :: seedc          (:) => null()   ! (gC/m2) pool for seeding new PFTs via dynamic landcover
-    real(r8), pointer :: begcb          (:) => null()   ! carbon mass, beginning of time step (gC/m**2)
-    real(r8), pointer :: endcb          (:) => null()   ! carbon mass, end of time step (gC/m**2)
-    real(r8), pointer :: errcb          (:) => null()   ! carbon balance error for the timestep (gC/m**2)
-
+    real(r8), pointer :: seedc                 (:) => null() ! (gC/m2) pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: begcb                 (:) => null() ! carbon mass, beginning of time step (gC/m**2)
+    real(r8), pointer :: endcb                 (:) => null() ! carbon mass, end of time step (gC/m**2)
+    real(r8), pointer :: errcb                 (:) => null() ! carbon balance error for the timestep (gC/m**2)
+    real(r8), pointer :: beg_totc              (:) => null() ! (gC/m2) total carbon, including veg and cpool at begining of the time step
+    real(r8), pointer :: beg_totpftc           (:) => null() ! (gC/m2) total carbon, including cpool at begining of the time step
+    real(r8), pointer :: beg_cwdc              (:) => null() ! (gC/m2) Diagnostic: coarse woody debris C at begining of the time step
+    real(r8), pointer :: beg_totsomc           (:) => null() ! (gC/m2) total soil organic matter carbon at begining of the time step
+    real(r8), pointer :: beg_totlitc           (:) => null() ! (gC/m2) total litter carbon at begining of the time step
+    real(r8), pointer :: beg_totprodc          (:) => null() ! (gC/m2) total wood product C at begining of the time step
+    real(r8), pointer :: beg_ctrunc            (:) => null() ! (gC/m2) column-level sink for C truncation at begining of the time step
+    real(r8), pointer :: beg_cropseedc_deficit (:) => null() ! (gC/m2) crop seed C deficit at begining of the time step
+    real(r8), pointer :: end_totc              (:) => null() ! (gC/m2) total carbon, including veg and cpool at end of the time step
+    real(r8), pointer :: end_totpftc           (:) => null() ! (gC/m2) total carbon, including cpool at end of the time step
+    real(r8), pointer :: end_cwdc              (:) => null() ! (gC/m2) Diagnostic: coarse woody debris C at end of the time step
+    real(r8), pointer :: end_totsomc           (:) => null() ! (gC/m2) total soil organic matter carbon at end of the time step
+    real(r8), pointer :: end_totlitc           (:) => null() ! (gC/m2) total litter carbon at end of the time step
+    real(r8), pointer :: end_totprodc          (:) => null() ! (gC/m2) total wood product C at end of the time step
+    real(r8), pointer :: end_ctrunc            (:) => null() ! (gC/m2) column-level sink for C truncation at end of the time step
+    real(r8), pointer :: end_cropseedc_deficit (:) => null() ! (gC/m2) crop seed C deficit at end of the time step
   contains
     procedure, public :: Init    => grc_cs_init
     procedure, public :: Clean   => grc_cs_clean
@@ -120,17 +135,25 @@ module GridcellDataType
   ! Define the data structure that holds carbon flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_carbon_flux
-    ! Dynamic land cover change
-    real(r8), pointer :: dwt_seedc_to_leaf          (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_seedc_to_deadstem      (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_conv_cflux             (:) => null()  ! (gC/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_conv_cflux_dribbled    (:) => null()  ! (gC/m2/s) dwt_conv_cflux dribbled evenly throughout the year
-    real(r8), pointer :: dwt_prod10c_gain           (:) => null()  ! (gC/m2/s) dynamic landcover addition to 10-year wood product pool
-    real(r8), pointer :: dwt_prod100c_gain          (:) => null()  ! (gC/m2/s) dynamic landcover addition to 100-year wood product pool
-    real(r8), pointer :: hrv_deadstemc_to_prod10c   (:) => null()  ! (gC/m2/s) dead stem harvest to 10-year wood product pool
-    real(r8), pointer :: hrv_deadstemc_to_prod100c  (:) => null()  ! (gC/m2/s) dead stem harvest to 100-year wood product pool
-    real(r8), pointer :: cinputs                    (:) => null()  ! (gC/m2/s) grid-level C inputs
-    real(r8), pointer :: coutputs                   (:) => null()  ! (gC/m2/s) grid-level C outputs
+    real(r8), pointer :: dwt_seedc_to_leaf         (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_seedc_to_deadstem     (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_cflux            (:) => null()  ! (gC/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_conv_cflux_dribbled   (:) => null()  ! (gC/m2/s) dwt_conv_cflux dribbled evenly throughout the year
+    real(r8), pointer :: dwt_prod10c_gain          (:) => null()  ! (gC/m2/s) dynamic landcover addition to 10-year wood product pool
+    real(r8), pointer :: dwt_prod100c_gain         (:) => null()  ! (gC/m2/s) dynamic landcover addition to 100-year wood product pool
+    real(r8), pointer :: hrv_deadstemc_to_prod10c  (:) => null()  ! (gC/m2/s) dead stem harvest to 10-year wood product pool
+    real(r8), pointer :: hrv_deadstemc_to_prod100c (:) => null()  ! (gC/m2/s) dead stem harvest to 100-year wood product pool
+    real(r8), pointer :: cinputs                   (:) => null()  ! (gC/m2/s) grid-level C inputs
+    real(r8), pointer :: coutputs                  (:) => null()  ! (gC/m2/s) grid-level C outputs
+    real(r8), pointer :: gpp                       (:) => null()  ! (gC/m2/s) grid-level gross primary production
+    real(r8), pointer :: er                        (:) => null()  ! (gC/m2/s) grid-level total ecosystem respiration
+    real(r8), pointer :: fire_closs                (:) => null()  ! (gC/m2/s) grid-level total fire C loss
+    real(r8), pointer :: prod1_loss                (:) => null()  ! (gC/m2/s) grid-level crop leafc harvested
+    real(r8), pointer :: prod10_loss               (:) => null()  ! (gC/m2/s) grid-level 10-year wood C harvested
+    real(r8), pointer :: prod100_loss              (:) => null()  ! (gC/m2/s) grid-level 100-year wood C harvested
+    real(r8), pointer :: hrv_xsmrpool_to_atm       (:) => null()  ! (gC/m2/s) grid-level excess MR pool harvest mortality
+    real(r8), pointer :: som_c_leached             (:) => null()  ! (gC/m2/s) grid-level total SOM C loss from vertical transport
+    real(r8), pointer :: somc_yield                (:) => null()  ! (gC/m2/s) grid-level total SOM C loss by erosion
 
   contains
     procedure, public :: Init    => grc_cf_init
@@ -528,10 +551,28 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_cs
     !-----------------------------------------------------------------------
-    allocate(this%seedc   (begg:endg));     this%seedc   (:) = nan
-    allocate(this%begcb   (begg:endg));     this%begcb   (:) = nan
-    allocate(this%endcb   (begg:endg));     this%endcb   (:) = nan
-    allocate(this%errcb   (begg:endg));     this%errcb   (:) = nan
+    allocate(this%seedc                 (begg:endg));     this%seedc                 (:) = nan
+    allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
+    allocate(this%endcb                 (begg:endg));     this%endcb                 (:) = nan
+    allocate(this%errcb                 (begg:endg));     this%errcb                 (:) = nan
+
+    allocate(this%beg_totc              (begg:endg));     this%beg_totc              (:) = nan
+    allocate(this%beg_totpftc           (begg:endg));     this%beg_totpftc           (:) = nan
+    allocate(this%beg_cwdc              (begg:endg));     this%beg_cwdc              (:) = nan
+    allocate(this%beg_totsomc           (begg:endg));     this%beg_totsomc           (:) = nan
+    allocate(this%beg_totlitc           (begg:endg));     this%beg_totlitc           (:) = nan
+    allocate(this%beg_totprodc          (begg:endg));     this%beg_totprodc          (:) = nan
+    allocate(this%beg_ctrunc            (begg:endg));     this%beg_ctrunc            (:) = nan
+    allocate(this%beg_cropseedc_deficit (begg:endg));     this%beg_cropseedc_deficit (:) = nan
+
+    allocate(this%end_totc              (begg:endg));     this%end_totc              (:) = nan
+    allocate(this%end_totpftc           (begg:endg));     this%end_totpftc           (:) = nan
+    allocate(this%end_cwdc              (begg:endg));     this%end_cwdc              (:) = nan
+    allocate(this%end_totsomc           (begg:endg));     this%end_totsomc           (:) = nan
+    allocate(this%end_totlitc           (begg:endg));     this%end_totlitc           (:) = nan
+    allocate(this%end_totprodc          (begg:endg));     this%end_totprodc          (:) = nan
+    allocate(this%end_ctrunc            (begg:endg));     this%end_ctrunc            (:) = nan
+    allocate(this%end_cropseedc_deficit (begg:endg));     this%end_cropseedc_deficit (:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_cs
@@ -596,16 +637,25 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_cf
     !-----------------------------------------------------------------------
-    allocate(this%dwt_seedc_to_leaf            (begg:endg)) ; this%dwt_seedc_to_leaf            (:) = nan
-    allocate(this%dwt_seedc_to_deadstem        (begg:endg)) ; this%dwt_seedc_to_deadstem        (:) = nan
-    allocate(this%dwt_conv_cflux               (begg:endg)) ; this%dwt_conv_cflux               (:) = nan
-    allocate(this%dwt_conv_cflux_dribbled      (begg:endg)) ; this%dwt_conv_cflux_dribbled      (:) = nan
-    allocate(this%dwt_prod10c_gain             (begg:endg)) ; this%dwt_prod10c_gain             (:) = nan
-    allocate(this%dwt_prod100c_gain            (begg:endg)) ; this%dwt_prod100c_gain            (:) = nan
-    allocate(this%hrv_deadstemc_to_prod10c     (begg:endg)) ; this%hrv_deadstemc_to_prod10c     (:) = nan
-    allocate(this%hrv_deadstemc_to_prod100c    (begg:endg)) ; this%hrv_deadstemc_to_prod100c    (:) = nan
-    allocate(this%cinputs                      (begg:endg)) ; this%cinputs                      (:) = nan
-    allocate(this%coutputs                     (begg:endg)) ; this%coutputs                     (:) = nan
+    allocate(this%dwt_seedc_to_leaf            (begg:endg)) ; this%dwt_seedc_to_leaf         (:) = nan
+    allocate(this%dwt_seedc_to_deadstem        (begg:endg)) ; this%dwt_seedc_to_deadstem     (:) = nan
+    allocate(this%dwt_conv_cflux               (begg:endg)) ; this%dwt_conv_cflux            (:) = nan
+    allocate(this%dwt_conv_cflux_dribbled      (begg:endg)) ; this%dwt_conv_cflux_dribbled   (:) = nan
+    allocate(this%dwt_prod10c_gain             (begg:endg)) ; this%dwt_prod10c_gain          (:) = nan
+    allocate(this%dwt_prod100c_gain            (begg:endg)) ; this%dwt_prod100c_gain         (:) = nan
+    allocate(this%hrv_deadstemc_to_prod10c     (begg:endg)) ; this%hrv_deadstemc_to_prod10c  (:) = nan
+    allocate(this%hrv_deadstemc_to_prod100c    (begg:endg)) ; this%hrv_deadstemc_to_prod100c (:) = nan
+    allocate(this%cinputs                      (begg:endg)) ; this%cinputs                   (:) = nan
+    allocate(this%coutputs                     (begg:endg)) ; this%coutputs                  (:) = nan
+    allocate(this%gpp                          (begg:endg)) ; this%gpp                       (:) = nan
+    allocate(this%er                           (begg:endg)) ; this%er                        (:) = nan
+    allocate(this%fire_closs                   (begg:endg)) ; this%fire_closs                (:) = nan
+    allocate(this%prod1_loss                   (begg:endg)) ; this%prod1_loss                (:) = nan
+    allocate(this%prod10_loss                  (begg:endg)) ; this%prod10_loss               (:) = nan
+    allocate(this%prod100_loss                 (begg:endg)) ; this%prod100_loss              (:) = nan
+    allocate(this%hrv_xsmrpool_to_atm          (begg:endg)) ; this%hrv_xsmrpool_to_atm       (:) = nan
+    allocate(this%som_c_leached                (begg:endg)) ; this%som_c_leached             (:) = nan
+    allocate(this%somc_yield                   (begg:endg)) ; this%somc_yield                (:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_cf
