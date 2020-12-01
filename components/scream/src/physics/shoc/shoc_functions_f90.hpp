@@ -817,6 +817,23 @@ struct PblintdHeightData : public PhysicsTestData {
 
   PTD_STD_DEF(PblintdHeightData, 2, shcol, nlev);
 };
+struct VdShocDecompandSolveData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi, n_rhs;
+  Real dtime;
+  Real *kv_term, *tmpi, *rdp_zt, *flux;
+
+  // Inputs/Outputs
+  Real *du, *dl, *d;
+  Real *var, *rhs;
+
+  VdShocDecompandSolveData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int n_rhs_) :
+    PhysicsTestData({{shcol_}, {shcol_, nlev_},               {shcol_, nlevi_},  {shcol_, nlev_, n_rhs_}},
+                    {{&flux}, {&rdp_zt, &du, &dl, &d, &rhs}, {&kv_term, &tmpi}, {&var }                }, {}),
+                    shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_), n_rhs(n_rhs_) {}
+
+  PTD_STD_DEF(VdShocDecompandSolveData, 5, shcol, nlev, nlevi, dtime, n_rhs);
+};
 
 // Glue functions to call fortran from from C++ with the Data struct
 
@@ -883,7 +900,7 @@ void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
 void shoc_main                                      (ShocMainData& d);
 void pblintd_height                                 (PblintdHeightData& d);
-
+void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -933,6 +950,7 @@ void shoc_diag_obklen_f(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, R
 void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cldn, Real* pblh);
 void compute_conv_time_shoc_length_f(Int shcol, Real *pblh, Real *conv_vel,
                                      Real *tscale);
+void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm);
 void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy, Real* pblh, Real* tke,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* dz_zi, Real* wthv_sec, Real*thetal,
                    Real* thv, Real*brunt, Real* shoc_mix);
@@ -956,10 +974,16 @@ void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, 
 void compute_tmpi_f(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi);
 void integ_column_stability_f(Int nlev, Int shcol, Real *dz_zt,
                               Real *pres, Real *brunt, Real *brunt_int);
+void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
+                    Real* a_diss, Real* brunt, Real* isotropy);
 void dp_inverse_f(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 
 void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* exner, Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh, Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec, Real* brunt, Real* shoc_ql2);
+
 void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
+
+void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
+                                Real* flux, Real* var);
 } // end _f function decls
 
 }  // namespace shoc

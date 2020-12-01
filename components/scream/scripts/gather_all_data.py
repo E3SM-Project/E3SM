@@ -3,7 +3,7 @@ from utils import run_cmd_no_fail
 import os, pathlib
 import concurrent.futures as threading3
 from machines_specs import get_mach_env_setup_command, get_mach_batch_command, get_mach_testing_resources, \
-                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler
+                           get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_cuda_machine
 
 ###############################################################################
 class GatherAllData(object):
@@ -80,8 +80,7 @@ class GatherAllData(object):
                 .format(scream_repo)
 
         extra_env = ""
-        is_cuda_machine = "cuda" in env_setup_str
-        if not is_cuda_machine:
+        if not is_cuda_machine(machine):
             extra_env = "OMP_PROC_BIND=spread "
 
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init --recursive".format(self._commit)

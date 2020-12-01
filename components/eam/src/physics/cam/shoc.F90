@@ -2956,6 +2956,10 @@ end subroutine integ_column_stability
 
 subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shr_prod_f
+#endif
+
   implicit none
 
   integer,     intent(in)  :: nlevi, nlev, shcol
@@ -2973,6 +2977,13 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+     return
+  endif
+#endif
+
   !compute shear production term
   do k = 2, nlev
      km1 = k - 1
@@ -2982,7 +2993,7 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
         ! calculate vertical gradient of u&v wind
         u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
         v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
-        sterm(i,k) = u_grad**2+v_grad**2
+        sterm(i,k) = bfb_square(u_grad)+bfb_square(v_grad)
      enddo
   enddo
 
@@ -3048,6 +3059,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   Cs=0.15_rtype
   Ck=0.1_rtype
   Ce=bfb_cube(Ck)/bfb_quad(Cs)
+
   Ce1=Ce/0.7_rtype*0.19_rtype
   Ce2=Ce/0.7_rtype*0.51_rtype
   Cee=Ce1+Ce2
@@ -3087,6 +3099,10 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   ! moments in SHOC
   !------------------------------------------------------------
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: isotropic_ts_f
+#endif
+
   implicit none
 
   !intent-ins
@@ -3115,6 +3131,14 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   real(rtype), parameter :: lambda_slope = 0.65_rtype
   real(rtype), parameter :: brunt_low    = 0.02_rtype
   real(rtype), parameter :: maxiso       = 20000.0_rtype ! Return to isotropic timescale [s]
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call isotropic_ts_f(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
+     return
+  endif
+#endif
+
 
   do k = 1, nlev
      do i = 1, shcol
@@ -3215,8 +3239,8 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
            Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
-           tkh(i,k) = Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-           tk(i,k)  = Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
+           tk(i,k)  = Ckm_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
         else
            ! Default definition of eddy diffusivity for heat and momentum
            tkh(i,k) = Ckh*isotropy(i,k)*tke(i,k)

@@ -42,7 +42,7 @@ MACHINE_METADATA = {
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi lapack python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -q pdebug",
+                  "bsub -q pbatch -W 45",
                   44,
                   4,
                   ""),
@@ -83,73 +83,63 @@ MACHINE_METADATA = {
 }
 
 ###############################################################################
-def is_machine_supported (machine):
+def is_machine_supported(machine):
 ###############################################################################
-
     return machine in MACHINE_METADATA.keys()
 
 ###############################################################################
-def get_mach_env_setup_command (machine):
+def get_mach_env_setup_command(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][0]
 
 ###############################################################################
-def get_mach_cxx_compiler (machine):
+def get_mach_cxx_compiler(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][1][0]
 
 ###############################################################################
-def get_mach_f90_compiler (machine):
+def get_mach_f90_compiler(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][1][1]
 
 ###############################################################################
-def get_mach_c_compiler (machine):
+def get_mach_c_compiler(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][1][2]
 
 ###############################################################################
-def get_mach_batch_command (machine):
+def get_mach_batch_command(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][2]
 
 ###############################################################################
-def get_mach_compilation_resources (machine):
+def get_mach_compilation_resources(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][3]
 
 ###############################################################################
-def get_mach_testing_resources (machine):
+def get_mach_testing_resources(machine):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][4]
 
-
 ###############################################################################
-def get_mach_baseline_root_dir (machine,default_dir):
+def get_mach_baseline_root_dir(machine,default_dir):
 ###############################################################################
-
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     if MACHINE_METADATA[machine][5]=="":
         return default_dir
@@ -157,10 +147,19 @@ def get_mach_baseline_root_dir (machine,default_dir):
         return MACHINE_METADATA[machine][5]
 
 ###############################################################################
-def setup_mach_env (machine):
+def is_cuda_machine(machine):
 ###############################################################################
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
-    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    env_setup     = get_mach_env_setup_command(machine)
+    env_setup_str = " && ".join(env_setup)
+
+    return "cuda" in env_setup_str.lower()
+
+###############################################################################
+def setup_mach_env(machine):
+###############################################################################
+    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     env_setup = get_mach_env_setup_command(machine)
 
