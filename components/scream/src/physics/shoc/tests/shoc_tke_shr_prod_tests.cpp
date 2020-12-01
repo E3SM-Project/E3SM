@@ -156,8 +156,54 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    ComputeShrProdData f90_data[] = {
+      //            shcol, nlev
+      ComputeShrProdData(10, 71, 72),
+      ComputeShrProdData(10, 12, 13),
+      ComputeShrProdData(7,  16, 17),
+      ComputeShrProdData(2,   7, 8)
+    };
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShrProdData);
+
+    // Generate random input data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    ComputeShrProdData cxx_data[] = {
+      ComputeShrProdData(f90_data[0]),
+      ComputeShrProdData(f90_data[1]),
+      ComputeShrProdData(f90_data[2]),
+      ComputeShrProdData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      compute_shr_prod(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      compute_shr_prod_f(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      ComputeShrProdData& d_f90 = f90_data[i];
+      ComputeShrProdData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.sterm); ++k) {
+        REQUIRE(d_f90.sterm[k] == d_cxx.sterm[k]);
+      }
+    }
+
+  } //run_bfb
 };
 
 }  // namespace unit_test

@@ -378,6 +378,17 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql2);
 
   KOKKOS_FUNCTION
+  static void compute_shr_prod(
+    const MemberType&            team,
+    const Int&                   nlevi,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
+    const uview_1d<Spack>&       sterm);
+
+  KOKKOS_FUNCTION
   static void compute_tmpi(
     const MemberType&            team,
     const Int&                   nlevi,
@@ -452,6 +463,7 @@ struct Functions
 # include "shoc_diag_second_moments_lbycond_impl.hpp"
 # include "shoc_diag_second_moments_impl.hpp"
 # include "shoc_diag_second_shoc_moments_impl.hpp"
+# include "shoc_compute_shr_prod_impl.hpp"
 # include "shoc_compute_brunt_shoc_length_impl.hpp"
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"

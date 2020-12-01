@@ -379,6 +379,15 @@ subroutine shoc_assumed_pdf_f(shcol, nlev, nlevi, thetal, qw, w_field, thl_sec, 
   real(kind=c_real) , intent(out), dimension(shcol, nlev) :: shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2
 end subroutine shoc_assumed_pdf_f
 
+subroutine compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm) bind(C)
+  use iso_c_binding
+
+  integer(kind=c_int) , value, intent(in) :: nlevi, nlev, shcol
+  real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi
+  real(kind=c_real) , intent(in), dimension(shcol, nlev) :: u_wind, v_wind
+  real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: sterm
+end subroutine compute_shr_prod_f
+
 subroutine compute_tmpi_f(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi) bind(C)
   use iso_c_binding
 
