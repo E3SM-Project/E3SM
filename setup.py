@@ -92,7 +92,7 @@ data_files = [
 
 setup(
     name="e3sm_diags",
-    version="2.2.0",
+    version="2.3.0",
     author="Chengzhu (Jill) Zhang, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",

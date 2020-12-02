@@ -88,7 +88,7 @@ def get_yrs(dataset, season=''):
         try:
             yrs_averaged = dataset.get_attr_from_climo('yrs_averaged', season)
         except:
-            print("No 'yrs_averaged' exists in the global attributes.")
+            #print("No 'yrs_averaged' exists in the global attributes.")
             yrs_averaged = ''
     else:
         start_yr, end_yr = dataset.get_start_and_end_years()

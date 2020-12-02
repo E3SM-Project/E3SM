@@ -1,5 +1,5 @@
 {% set name = "e3sm_diags" %}
-{% set version = "2.2.0" %}
+{% set version = "2.3.0" %}
 
 package:
     name: {{ name|lower }}
@@ -22,7 +22,7 @@ requirements:
 
   run:
     - python
-    - cdp >=1.6.1
+    - cdp >=1.7.0
     - cdms2 
     - cdutil 
     - genutil
@@ -33,6 +33,7 @@ requirements:
     - beautifulsoup4
     - lxml
     - dask
+    - scipy
 
 about:
     home: https://github.com/E3SM-Project/e3sm_diags
