@@ -848,7 +848,7 @@ contains
     type(gridcell_carbon_flux) , intent(inout) :: grc_cf
     !
     integer             :: g, nstep
-    real(r8)            :: dt, grc_errcb
+    real(r8)            :: dt
     real(r8), parameter :: error_tol = 1.e-8_r8
     !-----------------------------------------------------------------------
 
@@ -881,6 +881,7 @@ contains
          end_totprodc            => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
          end_ctrunc              => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit   => grc_cs%end_cropseedc_deficit     , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
+         grc_errcb               => grc_cs%errcb                     , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
          grc_gpp                 => grc_cf%gpp                       , & ! Output: [real(r8) (:) ] (gC/m2/s) gross primary production
          grc_er                  => grc_cf%er                        , & ! Output: [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          grc_fire_closs          => grc_cf%fire_closs                , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
@@ -927,10 +928,10 @@ contains
             grc_coutputs(g) = grc_coutputs(g) + grc_som_c_yield(g)
          end if
 
-         grc_errcb = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
+         grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
-         if (grc_errcb > error_tol .and. nstep > 1) then
-            write(iulog,*)'grid cbalance error = ', grc_errcb, g
+         if (grc_errcb(g) > error_tol .and. nstep > 1) then
+            write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
             write(iulog,*)'input               = ', grc_cinputs(g)*dt
             write(iulog,*)'output              = ', grc_coutputs(g)*dt
