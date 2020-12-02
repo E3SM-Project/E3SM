@@ -514,6 +514,10 @@ subroutine shoc_grid( &
   !  throughout the SHOC parameterization, also define air
   !  density in SHOC
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_grid_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -540,6 +544,16 @@ subroutine shoc_grid( &
 
   ! local variables
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call shoc_grid_f(shcol,nlev,nlevi,&
+                     zt_grid,zi_grid,pdel,&
+                     dz_zt,dz_zi,rho_zt)
+     return
+  endif
+#endif
+
   do k=1,nlev
     do i=1,shcol
       ! define thickness of the thermodynamic gridpoints
@@ -3169,6 +3183,10 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   ! Compute eddy diffusivity for heat and momentum
   !------------------------------------------------------------
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: eddy_diffusivities_f
+#endif
+
   implicit none
 
   !intent-ins
@@ -3215,6 +3233,14 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   real(rtype), parameter :: Ckm_s_def = 1.0_rtype
   ! Minimum allowable value for stability diffusivities
   real(rtype), parameter :: Ck_s_min = 0.1_rtype
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, &
+                                shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
+      return
+   endif
+#endif
 
   !store zt_grid at nlev in 1d array
   zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)

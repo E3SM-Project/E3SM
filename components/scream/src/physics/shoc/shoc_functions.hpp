@@ -464,6 +464,33 @@ struct Functions
     const uview_1d<Scalar>& dl,
     const uview_1d<Scalar>& d,
     const uview_2d<Spack>&  var);
+
+  KOKKOS_FUNCTION
+  static void shoc_grid(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& pdel,
+    const uview_1d<Spack>&       dz_zt,
+    const uview_1d<Spack>&       dz_zi,
+    const uview_1d<Spack>&       rho_zt);
+
+  KOKKOS_FUNCTION
+  static void eddy_diffusivities(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Scalar&                obklen,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& isotropy,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<Spack>&       tkh,
+    const uview_1d<Spack>&       tk);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -509,6 +536,8 @@ struct Functions
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
+# include "shoc_grid_impl.hpp"
+# include "shoc_eddy_diffusivities_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // SHOC_FUNCTIONS_HPP
