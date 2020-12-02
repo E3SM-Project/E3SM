@@ -21,3 +21,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/../yakl)
 
 include_directories(${YAKL_HOME})
 
+if ("${ARCH}" STREQUAL "HIP")
+  include_directories(${YAKL_HOME}/hipCUB/hipcub/include)
+  include_directories(${YAKL_HOME}/rocPRIM/rocprim/include)
+endif()
+

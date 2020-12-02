@@ -2,9 +2,9 @@
 #include "periodic.h"
 
 void periodic(int flag) {
-  auto &w     = ::w;
-  auto &sstxy = ::sstxy;
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( w     , ::w );
+  YAKL_SCOPE( sstxy , ::sstxy );
+  YAKL_SCOPE( ncrms , ::ncrms );
 
   if (flag == 0) {
     bound_exchange(u,nzm,1,1,1,1, 1);
