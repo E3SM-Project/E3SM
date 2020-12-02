@@ -117,6 +117,7 @@ struct UnitWrap {
     struct TestPblintdHeight;
     struct TestVdShocDecompandSolve;
     struct TestPblintdInit;
+    struct TestPblintdSurfTemp;
   };
 
 };

@@ -134,7 +134,7 @@ void shoc_init(Int nlev, bool use_fortran) {
 
     shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
                 C::LatVap, C::LatIce, C::Karman);
-    is_init = true;
+    is_init = false;
   }
   shoc_use_cxx_c(!use_fortran);
 }

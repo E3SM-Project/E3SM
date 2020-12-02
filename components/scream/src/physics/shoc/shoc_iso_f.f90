@@ -478,6 +478,17 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: rino
     real(kind=c_real) , intent(out), dimension(shcol) :: pblh
   end subroutine pblintd_init_f
+  subroutine pblintd_surf_temp_f(shcol, nlev, nlevi, z, ustar, obklen, kbfs, thv, tlv, pblh, check, rino) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, thv
+    real(kind=c_real) , intent(in), dimension(shcol) :: ustar, obklen, kbfs
+    real(kind=c_real) , intent(out), dimension(shcol) :: tlv
+    real(kind=c_real) , intent(inout), dimension(shcol) :: pblh
+    logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: rino
+  end subroutine pblintd_surf_temp_f
 end interface
 
 end module shoc_iso_f

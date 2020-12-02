@@ -69,6 +69,7 @@ set(SHOC_TESTS_SRCS
     shoc_pblintd_height_tests.cpp
     shoc_vd_shoc_decomp_and_solve_tests.cpp
     shoc_pblintd_init_tests.cpp
+    shoc_pblintd_surf_temp_tests.cpp
     ) # SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
