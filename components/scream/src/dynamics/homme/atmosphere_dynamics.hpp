@@ -33,7 +33,7 @@ public:
 
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("SE Dynamics");
+    s.insert("Dynamics");
     return s;
   }
 

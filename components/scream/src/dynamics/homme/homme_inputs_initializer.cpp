@@ -30,6 +30,13 @@ void HommeInputsInitializer::initialize_fields () {
     // to the Diagnostics class (unlike ElementsStates, which share the
     // same pointer with the Scream fields!).
     prim_set_test_initial_conditions_f90 ();
+
+    if (m_remapper) {
+      // Copy inited fields to the ref grid, then dispose of the remapper.
+      m_remapper->registration_ends();
+      m_remapper->remap(true);
+      m_remapper = nullptr;
+    }
   }
 }
 
@@ -39,7 +46,37 @@ void HommeInputsInitializer::add_field (const field_type& f) {
   // identifiers, since we need to expose them to the AD.
   const auto& id = f.get_header().get_identifier();
   m_fids.insert(id);
-  m_names.insert(id.name());
+}
+
+void HommeInputsInitializer::
+add_field (const field_type& f, const field_type& f_ref,
+           const remapper_ptr_type& remapper)
+{
+  if (m_remapper) {
+    // Sanity check
+    EKAT_REQUIRE_MSG (m_remapper->get_src_grid()->name()==remapper->get_src_grid()->name(),
+      "Error! A remapper was already set in P3InputsInitializer, but its src grid differs from"
+      "       the grid of the input remapper of this call.\n");
+  } else {
+    m_remapper = remapper;
+    m_remapper->registration_begins();
+  }
+
+  // We don't really need to store the field, since we can access all views
+  // from Homme's data structures. But we need to store the fields
+  // identifiers, since we need to expose them to the AD.
+  // Also, the remapper needs to store the fields
+  const auto& id = f.get_header().get_identifier();
+  m_fids.insert(id);
+
+  const auto& id_ref = f_ref.get_header().get_identifier();
+
+  // To the AD, we only expose the fact that we init f_ref...
+  m_fids.insert(id_ref);
+
+  // ...but homme only knows how to init f,
+  // hence, we remap to f_ref.
+  m_remapper->register_field(f, f_ref);
 }
 
 } // namespace scream

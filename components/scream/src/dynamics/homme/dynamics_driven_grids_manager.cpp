@@ -22,13 +22,18 @@ DynamicsDrivenGridsManager::remapper_ptr_type
 DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
                                                 const grid_ptr_type to_grid) const {
   using PDR = PhysicsDynamicsRemapper<remapper_type::real_type>;
-  auto pd_remapper = std::make_shared<PDR>(m_grids.at("SE Physics"),m_grids.at("SE Dynamics"));
-  if (from_grid->name()=="SE Physics" &&
-      to_grid->name()=="SE Dynamics") {
+
+  const auto& from = from_grid->name();
+  const auto& to   = to_grid->name();
+
+  if (from=="Physics" && to=="Dynamics") {
+    auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics"),m_grids.at("Dynamics"));
     return pd_remapper;
-  } else if (from_grid->name()=="SE Dynamics" &&
-             to_grid->name()=="SE Physics") {
+  } else if (from=="Dynamics" && to=="Physics") {
+    auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics"),m_grids.at("Dynamics"));
     return std::make_shared<InverseRemapper<Real>>(pd_remapper);
+  } else if (from==to) {
+    return std::make_shared<IdentityRemapper<Real> >(from_grid);
   }
   return nullptr;
 }
@@ -44,9 +49,9 @@ void DynamicsDrivenGridsManager::build_grid (const std::string& grid_name)
     init_geometry_f90();
   }
 
-  if (grid_name=="SE Physics") {
+  if (grid_name=="Physics") {
     build_physics_grid();
-  } else if (grid_name=="SE Dynamics") {
+  } else if (grid_name=="Dynamics") {
     build_dynamics_grid();
   }
 
@@ -56,12 +61,12 @@ void DynamicsDrivenGridsManager::build_grid (const std::string& grid_name)
 }
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
-  if (m_grids.find("SE Dynamics")==m_grids.end()) {
+  if (m_grids.find("Dynamics")==m_grids.end()) {
 
     // Initialize the dyn grid
     const int nelemd = get_num_owned_elems_f90();
     const int nlev   = get_nlev_f90();
-    auto dyn_grid = std::make_shared<SEGrid>("SE Dynamics",nelemd,NP,nlev);
+    auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nelemd,NP,nlev);
 
     // Create dynamics dofs map
     AbstractGrid::dofs_list_type      dofs("dyn dofs",nelemd*NP*NP);
@@ -79,7 +84,7 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
     dyn_grid->set_dofs (dofs, lids_to_elgpgp);
 
     // Set the grid in the map
-    m_grids["SE Dynamics"] = m_grids["Dynamics"] = dyn_grid;
+    m_grids["Dynamics"] = dyn_grid;
   }
 }
 
