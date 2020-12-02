@@ -60,6 +60,8 @@ module EcosystemBalanceCheckMod
   public :: ColCBalanceCheck
   public :: ColNBalanceCheck
   public :: ColPBalanceCheck
+  public :: BeginGridCBalance
+  public :: GridCBalanceCheck
   public :: BeginGridCBalanceBeforeDynSubgridDriver
   public :: BeginGridNBalanceBeforeDynSubgridDriver
   public :: BeginGridPBalanceBeforeDynSubgridDriver
@@ -199,6 +201,7 @@ contains
     integer  :: fc             ! lake filter indices
     logical  :: err_found      ! error flag
     real(r8) :: dt             ! radiation time step (seconds)
+    integer  :: nstep
     !-----------------------------------------------------------------------
 
     associate(                                                                           &
@@ -224,6 +227,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+      nstep = get_nstep()
 
       err_found = .false.
       ! column loop
@@ -286,32 +290,42 @@ contains
          end if
       end do ! end of columns loop
       
-      if (err_found) then
-         c = err_index
-         write(iulog,*)'column cbalance error = ', col_errcb(c), c
-         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-         write(iulog,*)'input                 = ',col_cinputs(c)*dt
-         write(iulog,*)'output                = ',col_coutputs(c)*dt
-         write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-         write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-         write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-         write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-         write(iulog,*)'begcb                 = ',col_begcb(c)
-         write(iulog,*)'endcb                 = ',col_endcb(c)
-         write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
-         write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+      ! Consider adapting this check to be fates compliant (rgk 04-2017)
+      if (.not. use_fates) then
+         if (err_found .and. nstep > 1) then
+            c = err_index
+            write(iulog,*)'column cbalance error = ', col_errcb(c), c
+            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+            write(iulog,*)'input                 = ',col_cinputs(c)*dt
+            write(iulog,*)'output                = ',col_coutputs(c)*dt
+            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+            write(iulog,*)'begcb                 = ',col_begcb(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+            write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
+            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
-         if (ero_ccycle) then
-            write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-         end if
+            if (ero_ccycle) then
+               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
+            end if
+
+            if (use_pflotran .and. pf_cmode) then
+               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+            end if
+
+            if (ero_ccycle) then
+               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
+            end if
          
-         if (use_pflotran .and. pf_cmode) then
-            write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-         end if
+            if (use_pflotran .and. pf_cmode) then
+               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+            end if
 
-         call endrun(msg=errMsg(__FILE__, __LINE__))
+            call endrun(msg=errMsg(__FILE__, __LINE__))
+         end if
       end if
-      
 
     end associate
 
@@ -344,6 +358,7 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
+    integer :: nstep
     !-----------------------------------------------------------------------
 
     associate(                                                                             &
@@ -380,6 +395,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+      nstep = get_nstep()
       call get_curr_date(kyr, kmo, kda, mcsec)
 
       err_found = .false.
@@ -488,7 +504,7 @@ contains
          end if
       end do ! end of columns loop
 
-      if (err_found) then
+      if (err_found .and. nstep > 1) then
          c = err_index
          write(iulog,*)'column nbalance error = ',col_errnb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
@@ -560,6 +576,7 @@ contains
     integer:: kmo                     ! month of year  (1, ..., 12)
     integer:: kda                     ! day of month   (1, ..., 31) 
     integer:: mcsec                   ! seconds of day (0, ..., seconds/day) 
+    integer :: nstep
     !-----------------------------------------------------------------------
 
     associate(                                                                            &
@@ -604,6 +621,7 @@ contains
 
       ! set time steps
       dt = real( get_step_size(), r8 )
+      nstep = get_nstep()
       call get_curr_date(kyr, kmo, kda, mcsec)
 
       err_found = .false.
@@ -720,7 +738,7 @@ contains
       end do ! end of columns loop
 
 
-      if (err_found) then
+      if (err_found .and. nstep>1) then
          c = err_index
          write(iulog,*)'column pbalance error = ', col_errpb(c), c
          write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
@@ -750,6 +768,192 @@ contains
     end associate
 
   end subroutine ColPBalanceCheck
+
+  !-----------------------------------------------------------------------
+  subroutine bgc_c2g(bounds, col_var, grd_var)
+    !
+    ! !DESCRIPTION:
+    ! Upscale BGC states or fluxes from column to grid level
+    !
+    ! !ARGUMENTS:
+    type(bounds_type) , intent(in)  :: bounds
+    real(r8)          , intent(in)  :: col_var(:)
+    real(r8)          , intent(out) :: grd_var(:)
+    !
+
+    call c2g(bounds, col_var(bounds%begc:bounds%endc), grd_var(bounds%begg:bounds%endg), &
+         c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
+  end subroutine bgc_c2g
+
+  !-----------------------------------------------------------------------
+  subroutine BeginGridCBalance(bounds, col_cs, grc_cs)
+    !
+    ! !DESCRIPTION:
+    ! Calculate the beginning carbon balance for mass conservation checks
+    ! at grid cell level
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)  :: bounds
+    type(column_carbon_state)  , intent(in)  :: col_cs
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
+    !-----------------------------------------------------------------------
+
+    associate(                                                    &
+         totcolc               =>  col_cs%totcolc               , & ! Input:  [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         totpftc               =>  col_cs%totpftc               , & ! Input:  [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         cwdc                  =>  col_cs%cwdc                  , & ! Input:  [real(r8) (:)] (gC/m2) total column coarse woody debris carbon,
+         totsomc               =>  col_cs%totsomc               , & ! Input:  [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         totlitc               =>  col_cs%totlitc               , & ! Input:  [real(r8) (:)] (gC/m2) total column litter carbon
+         totprodc              =>  col_cs%totprodc              , & ! Input:  [real(r8) (:)] (gC/m2) total column wood product carbon
+         ctrunc                =>  col_cs%ctrunc                , & ! Input:  [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         cropseedc_deficit     =>  col_cs%cropseedc_deficit     , & ! Input:  [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         beg_totc              =>  grc_cs%beg_totc              , & ! Output: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         beg_totpftc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         beg_cwdc              =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc          =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc            =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         )
+
+      call bgc_c2g(bounds, totcolc           , beg_totc              )
+      call bgc_c2g(bounds, totpftc           , beg_totpftc           )
+      call bgc_c2g(bounds, cwdc              , beg_cwdc              )
+      call bgc_c2g(bounds, totlitc           , beg_totlitc           )
+      call bgc_c2g(bounds, totprodc          , beg_totprodc          )
+      call bgc_c2g(bounds, ctrunc            , beg_ctrunc            )
+      call bgc_c2g(bounds, cropseedc_deficit , beg_cropseedc_deficit )
+
+    end associate
+
+  end subroutine BeginGridCBalance
+
+  !-----------------------------------------------------------------------
+  subroutine GridCBalanceCheck(bounds, col_cs, col_cf, grc_cs, grc_cf)
+    !
+    ! !DESCRIPTION:
+    ! Calculate the beginning carbon balance for mass conservation checks
+    ! at grid cell level
+    !
+    use GridcellDataType, only : gridcell_carbon_flux
+    use ColumnDataType  , only : column_carbon_flux
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    type(column_carbon_state)  , intent(in)    :: col_cs
+    type(column_carbon_flux)   , intent(in)    :: col_cf
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
+    type(gridcell_carbon_flux) , intent(inout) :: grc_cf
+    !
+    integer             :: g, nstep
+    real(r8)            :: dt, grc_errcb
+    real(r8), parameter :: error_tol = 1.e-8_r8
+    !-----------------------------------------------------------------------
+
+    associate(                                                         &
+         col_totc                => col_cs%totcolc                   , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
+         col_totpftc             => col_cs%totpftc                   , & ! Input:  [real(r8) (:) ] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         col_cwdc                => col_cs%cwdc                      , & ! Input:  [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon,
+         col_totsomc             => col_cs%totsomc                   , & ! Input:  [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
+         col_totlitc             => col_cs%totlitc                   , & ! Input:  [real(r8) (:) ] (gC/m2) total column litter carbon
+         col_totprodc            => col_cs%totprodc                  , & ! Input:  [real(r8) (:) ] (gC/m2) total column wood product carbon
+         col_ctrunc              => col_cs%ctrunc                    , & ! Input:  [real(r8) (:) ] (gC/m2) total column truncation carbon sink
+         col_cropseedc_deficit   => col_cs%cropseedc_deficit         , & ! Input:  [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
+         col_gpp                 => col_cf%gpp                       , & ! Input:  [real(r8) (:) ] (gC/m2/s) gross primary production
+         col_er                  => col_cf%er                        , & ! Input:  [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         col_fire_closs          => col_cf%fire_closs                , & ! Input:  [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
+         col_prod1c_loss         => col_cf%prod1c_loss               , & ! Input:  [real(r8) (:) ] (gC/m2/s) crop leafc harvested
+         col_prod10c_loss        => col_cf%prod10c_loss              , & ! Input:  [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
+         col_prod100c_loss       => col_cf%prod100c_loss             , & ! Input:  [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
+         col_hrv_xsmrpool_to_atm => col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
+         col_som_c_leached       => col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
+         col_som_c_yield         => col_cf%somc_yield                , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
+         col_cinputs             => col_cf%cinputs                   , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C inputs
+         col_coutputs            => col_cf%coutputs                  , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         beg_totc                => grc_cs%beg_totc                  , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
+         end_totc                => grc_cs%end_totc                  , & ! Output: [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
+         end_totpftc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         end_cwdc                => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon
+         end_totsomc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
+         end_totlitc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column litter carbon
+         end_totprodc            => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
+         end_ctrunc              => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
+         end_cropseedc_deficit   => grc_cs%end_cropseedc_deficit     , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
+         grc_gpp                 => grc_cf%gpp                       , & ! Output: [real(r8) (:) ] (gC/m2/s) gross primary production
+         grc_er                  => grc_cf%er                        , & ! Output: [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         grc_fire_closs          => grc_cf%fire_closs                , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
+         grc_prod1c_loss         => grc_cf%prod1_loss                , & ! Output: [real(r8) (:) ] (gC/m2/s) crop leafc harvested
+         grc_prod10c_loss        => grc_cf%prod10_loss               , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
+         grc_prod100c_loss       => grc_cf%prod10_loss               , & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
+         grc_hrv_xsmrpool_to_atm => grc_cf%hrv_xsmrpool_to_atm       , & ! Output: [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
+         grc_som_c_leached       => grc_cf%som_c_leached             , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
+         grc_som_c_yield         => grc_cf%somc_yield                , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
+         grc_cinputs             => grc_cf%cinputs                   , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
+         grc_coutputs            => grc_cf%coutputs                    & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         )
+
+      ! c2g states
+      call bgc_c2g(bounds, col_totc              , end_totc              )
+      call bgc_c2g(bounds, col_totpftc           , end_totpftc           )
+      call bgc_c2g(bounds, col_cwdc              , end_cwdc              )
+      call bgc_c2g(bounds, col_totlitc           , end_totlitc           )
+      call bgc_c2g(bounds, col_totprodc          , end_totprodc          )
+      call bgc_c2g(bounds, col_ctrunc            , end_ctrunc            )
+      call bgc_c2g(bounds, col_cropseedc_deficit , end_cropseedc_deficit )
+
+      ! c2g fluxes
+      call bgc_c2g(bounds, col_gpp                 , grc_gpp                 )
+      call bgc_c2g(bounds, col_er                  , grc_er                  )
+      call bgc_c2g(bounds, col_fire_closs          , grc_fire_closs          )
+      call bgc_c2g(bounds, col_prod1c_loss         , grc_prod1c_loss         )
+      call bgc_c2g(bounds, col_prod10c_loss        , grc_prod10c_loss        )
+      call bgc_c2g(bounds, col_prod100c_loss       , grc_prod100c_loss       )
+      call bgc_c2g(bounds, col_hrv_xsmrpool_to_atm , grc_hrv_xsmrpool_to_atm )
+      call bgc_c2g(bounds, col_som_c_leached       , grc_som_c_leached       )
+      call bgc_c2g(bounds, col_som_c_yield         , grc_som_c_yield         )
+
+      dt = real( get_step_size(), r8 )
+      nstep = get_nstep()
+
+      do g = bounds%begg, bounds%endg
+         grc_cinputs(g) = grc_gpp(g)
+
+         grc_coutputs(g) = grc_er(g) + grc_fire_closs(g) + grc_hrv_xsmrpool_to_atm(g) + &
+              grc_prod1c_loss(g) + grc_prod10c_loss(g) + grc_prod100c_loss(g) - grc_som_c_leached(g)
+
+         if (ero_ccycle) then
+            grc_coutputs(g) = grc_coutputs(g) + grc_som_c_yield(g)
+         end if
+
+         grc_errcb = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
+
+         if (grc_errcb > error_tol .and. nstep > 1) then
+            write(iulog,*)'grid cbalance error = ', grc_errcb, g
+            write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
+            write(iulog,*)'input               = ', grc_cinputs(g)*dt
+            write(iulog,*)'output              = ', grc_coutputs(g)*dt
+            write(iulog,*)'er                  = ', grc_er(g)*dt
+            write(iulog,*)'fire                = ', grc_fire_closs(g)*dt
+            write(iulog,*)'hrv_to_atm          = ', grc_hrv_xsmrpool_to_atm(g)*dt
+            write(iulog,*)'leach               = ', grc_som_c_leached(g)*dt
+
+            if (ero_ccycle) then
+               write(iulog,*)'erosion             = ',grc_som_c_yield(g)*dt
+            end if
+
+            write(iulog,*)'begcb               = ', beg_totc(g)
+            write(iulog,*)'endcb               = ', end_totc(g)
+            write(iulog,*)'delta store         = ', end_totc(g) - beg_totc(g)
+
+            call endrun(msg=errMsg(__FILE__, __LINE__))
+         end if
+      end do
+
+    end associate
+
+  end subroutine GridCBalanceCheck
 
   !-----------------------------------------------------------------------
   subroutine BeginGridCBalanceBeforeDynSubgridDriver(bounds, col_cs, grc_cs)

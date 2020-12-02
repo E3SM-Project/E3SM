@@ -61,6 +61,7 @@ module elm_driver
   use AnnualUpdateMod      , only : AnnualUpdate
   use EcosystemBalanceCheckMod      , only : BeginColCBalance, BeginColNBalance, ColCBalanceCheck, ColNBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginColPBalance, ColPBalanceCheck
+  use EcosystemBalanceCheckMod      , only : BeginGridCBalance, GridCBalanceCheck
   use EcosystemBalanceCheckMod      , only : BeginGridCBalanceBeforeDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : BeginGridNBalanceBeforeDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : BeginGridPBalanceBeforeDynSubgridDriver
@@ -332,6 +333,9 @@ contains
        
        if (use_cn) then
           call t_startf('cnpvegzero')
+
+          call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
+
           call veg_cs%ZeroDwt(bounds_clump)
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
@@ -1289,31 +1293,25 @@ contains
 
        call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
 
-
        if (use_cn .or. use_fates) then
-          nstep = get_nstep()
           
-          if (nstep < 2 )then
-             if (masterproc) then
-                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-             end if
-          else
-             call t_startf('cnbalchk')
+          call t_startf('cnbalchk')
              
-             call ColCBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  col_cs, carbonflux_vars)
+          call ColCBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               col_cs, carbonflux_vars)
              
-             call ColNBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  nitrogenstate_vars, nitrogenflux_vars)
+          call ColNBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               nitrogenstate_vars, nitrogenflux_vars)
              
-             call ColPBalanceCheck(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  phosphorusstate_vars, phosphorusflux_vars)
+          call ColPBalanceCheck(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               phosphorusstate_vars, phosphorusflux_vars)
              
-             call t_stopf('cnbalchk')
-          end if
+          call GridCBalanceCheck(bounds_clump, col_cs, col_cf, grc_cs, grc_cf)
+
+          call t_stopf('cnbalchk')
        end if
 
 
