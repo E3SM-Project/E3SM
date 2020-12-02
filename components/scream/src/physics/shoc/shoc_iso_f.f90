@@ -209,7 +209,9 @@ subroutine diag_second_moments_f(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind,
   real(kind=c_real) , intent(out), dimension(shcol, nlev) :: w_sec
 end subroutine diag_second_moments_f
 
-  subroutine diag_second_shoc_moments_f(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
+  subroutine diag_second_shoc_moments_f(shcol, nlev, nlevi, thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, dz_zi, zt_grid, &
+                                        zi_grid, shoc_mix, wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, thl_sec, qw_sec, wthl_sec, wqw_sec, &
+                                        qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec) bind(C)
     use iso_c_binding
 
     integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi

@@ -990,6 +990,10 @@ subroutine diag_second_shoc_moments(&
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
          w_sec)                                 ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_shoc_moments_f
+#endif
+
   ! This is the main routine to compute the second
   !   order moments in SHOC.
 
@@ -1059,6 +1063,16 @@ subroutine diag_second_shoc_moments(&
 ! LOCAL VARIABLES
   real(rtype) :: wstar(shcol)
   real(rtype) :: ustar2(shcol)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+     call  diag_second_shoc_moments_f(shcol,nlev,nlevi,  &
+              thetal,qw,u_wind,v_wind,tke, isotropy,tkh,tk, dz_zi,zt_grid,zi_grid,shoc_mix, &
+              wthl_sfc, wqw_sfc, uw_sfc, vw_sfc,thl_sec,qw_sec,wthl_sec,wqw_sec,&
+              qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec)
+      return
+   endif
+#endif
 
   ! Calculate surface properties needed for lower
   !  boundary conditions
