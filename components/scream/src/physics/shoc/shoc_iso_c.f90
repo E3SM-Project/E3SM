@@ -1395,5 +1395,16 @@ contains
 
     call pblintd_surf_temp(shcol, nlev, nlevi, z, ustar, obklen, kbfs, thv, tlv, pblh, check, rino)
   end subroutine pblintd_surf_temp_c
+  subroutine pblintd_check_pblh_c(shcol, nlev, nlevi, z, ustar, check, pblh) bind(C)
+    use shoc, only : pblintd_check_pblh
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z
+    real(kind=c_real) , intent(in), dimension(shcol) :: ustar
+    logical(kind=c_bool) , intent(in), dimension(shcol) :: check
+    real(kind=c_real) , intent(out), dimension(shcol) :: pblh
+
+    call pblintd_check_pblh(shcol, nlev, nlevi, z, ustar, check, pblh)
+  end subroutine pblintd_check_pblh_c
 end module shoc_iso_c
 

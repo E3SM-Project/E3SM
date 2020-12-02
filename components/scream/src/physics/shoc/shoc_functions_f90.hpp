@@ -868,6 +868,21 @@ struct PblintdSurfTempData : public PhysicsTestData {
   PTD_STD_DEF(PblintdSurfTempData, 3, shcol, nlev, nlevi);
 };
 
+struct PblintdCheckPblhData : public PhysicsTestData {
+  // Inputs
+  Int shcol, nlev, nlevi;
+  Real *z, *ustar;
+  bool *check;
+  
+  // Outputs
+  Real *pblh;
+  
+  PblintdCheckPblhData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z }, { &ustar, &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+  
+  PTD_STD_DEF(PblintdCheckPblhData, 3, shcol, nlev, nlevi);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void shoc_grid                                      (ShocGridData& d);
@@ -936,6 +951,7 @@ void pblintd_height                                 (PblintdHeightData& d);
 void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d);
 void pblintd_init(PblintdInitData& d);
 void pblintd_surf_temp(PblintdSurfTempData& d);
+void pblintd_check_pblh(PblintdCheckPblhData& d);
 extern "C" { // _f function decls
 
 void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
@@ -1019,6 +1035,7 @@ void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Rea
                                 Real* flux, Real* var);
 void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
 void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
+void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
 } // end _f function decls
 
 }  // namespace shoc

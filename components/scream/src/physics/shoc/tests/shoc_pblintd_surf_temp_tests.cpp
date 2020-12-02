@@ -42,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     // Initialize data structure for bridging to F90
     PblintdSurfTempData SDS(shcol, nlev, nlevi);
 
-    // Thest that the inputs are reasonable
+    // Test that the inputs are reasonable
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
     REQUIRE(shcol > 0);
     REQUIRE(nlevi == nlev+1);
