@@ -131,8 +131,6 @@ contains
        call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
        call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
        Global_COMM=mpicom
-
-       print *,__FILE__,__LINE__,subname, ' complete'
 #endif
     end if
     total_comps = ncomps
@@ -217,6 +215,7 @@ contains
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
                   pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger, &
                   pio_comp_settings(i)%pio_netcdf_ioformat)
+
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
