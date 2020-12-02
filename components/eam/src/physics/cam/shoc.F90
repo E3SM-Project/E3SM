@@ -4301,7 +4301,7 @@ subroutine pblintd_surf_temp(&
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        check(i)  = (kbfs(i) > 0._rtype)
        if (check(i)) then
-          phiminv      = (1._rtype - binm*pblh(i)/obklen(i))**onet
+          phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
           rino(i,nlev) = 0.0_rtype
           tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv )
        end if
