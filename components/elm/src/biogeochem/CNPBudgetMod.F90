@@ -1,22 +1,30 @@
 module CNPBudgetMod
   ! !USES:
-  use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use shr_sys_mod       , only : shr_sys_abort
-  use decompMod         , only : bounds_type
-  use abortutils        , only : endrun
-  use elm_varctl        , only : iulog
-  use atm2lndType       , only : atm2lnd_type
-  use lnd2atmType       , only : lnd2atm_type
-  use spmdMod           , only : masterproc
-  use GridcellDataType  , only : grc_ws
-  use ColumnDataType    , only : col_ws
+  use shr_kind_mod        , only : r8 => shr_kind_r8
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use shr_sys_mod         , only : shr_sys_abort
+  use decompMod           , only : bounds_type
+  use abortutils          , only : endrun
+  use elm_varctl          , only : iulog
+  use atm2lndType         , only : atm2lnd_type
+  use lnd2atmType         , only : lnd2atm_type
+  use spmdMod             , only : masterproc
+  use GridcellDataType    , only : grc_ws
+  use ColumnDataType      , only : col_ws
+  use PhosphorusFluxType  , only : phosphorusflux_type
+  use PhosphorusStateType , only : phosphorusstate_type
+  use ColumnDataType      , only : column_carbon_state, col_cf 
+  use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
+  use CNNitrogenFluxType  , only : nitrogenflux_type
+  use CNNitrogenStateType , only : nitrogenstate_type
+  use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
 
   implicit none
   save
   private
 
   public :: CNPBudget_Reset
+  public :: CNPBudget_Run
 
   !--- F for flux ---
 
@@ -24,23 +32,21 @@ module CNPBudgetMod
   integer, parameter :: f_gpp                  = 1
 
   ! C outputs
-  integer, parameter :: f_ar                   =  2
-  integer, parameter :: f_hr                   =  3
-  integer, parameter :: f_fire_closs           =  4
-  integer, parameter :: f_hrv_xsmrpool_to_atm  =  5
-  integer, parameter :: f_prod1c_loss          =  6
-  integer, parameter :: f_prod10c_loss         =  7
-  integer, parameter :: f_prod100c_loss        =  8
-  integer, parameter :: f_som_c_leached        =  9
-  integer, parameter :: f_som_c_yield          = 10
+  integer, parameter :: f_er                   =  2
+  integer, parameter :: f_fire_closs           =  3
+  integer, parameter :: f_hrv_xsmrpool_to_atm  =  4
+  integer, parameter :: f_prod1c_loss          =  5
+  integer, parameter :: f_prod10c_loss         =  6
+  integer, parameter :: f_prod100c_loss        =  7
+  integer, parameter :: f_som_c_leached        =  8
+  integer, parameter :: f_som_c_yield          =  9
 
   integer, parameter, public :: c_f_size = f_som_c_yield
 
   character(len=51), parameter :: c_f_name(c_f_size) = &
        (/&
        '                              gross primary product', &
-       '                            autotrophic respiration', &
-       '                          heterotrophic respiration', &
+       '                              ecosystem respiration', &
        '                                        fire C loss', &
        '                   excess MR pool harvest mortality', &
        '        decomposition loss from 1-year product pool', &
@@ -52,27 +58,27 @@ module CNPBudgetMod
        
        
   ! N inputs
-  integer, parameter :: f_ndep_to_sminn        = 11
-  integer, parameter :: f_nfix_to_ecosysn      = 12
-  integer, parameter :: f_nfix_to_sminn        = 13
-  integer, parameter :: f_supplement_to_sminn  = 14
-  integer, parameter :: f_fert_to_sminn        = 15
-  integer, parameter :: f_soyfixn_to_sminn     = 16
-  integer, parameter :: f_supplement_to_plantn = 17
-  integer, parameter :: f_nfert_dose           = 18
+  integer, parameter :: f_ndep_to_sminn        = 10
+  integer, parameter :: f_nfix_to_ecosysn      = 11
+  integer, parameter :: f_nfix_to_sminn        = 12
+  integer, parameter :: f_supplement_to_sminn  = 13
+  integer, parameter :: f_fert_to_sminn        = 14
+  integer, parameter :: f_soyfixn_to_sminn     = 15
+  integer, parameter :: f_supplement_to_plantn = 16
+  integer, parameter :: f_nfert_dose           = 17
 
   ! N outputs
-  integer, parameter :: f_denit                = 19
-  integer, parameter :: f_fire_ploss           = 20
-  integer, parameter :: f_n2o_nit            = 21
-  integer, parameter :: f_smin_no3_leached     = 22
-  integer, parameter :: f_smin_no3_runoff      = 23
-  integer, parameter :: f_sminn_leached        = 24
-  integer, parameter :: f_col_prod1n_loss      = 25
-  integer, parameter :: f_col_prod10n_loss     = 26
-  integer, parameter :: f_col_prod100n_loss    = 27
-  integer, parameter :: f_som_n_leached        = 28
-  integer, parameter :: f_som_n_yield          = 29
+  integer, parameter :: f_denit                = 18
+  integer, parameter :: f_fire_ploss           = 19
+  integer, parameter :: f_n2o_nit              = 20
+  integer, parameter :: f_smin_no3_leached     = 21
+  integer, parameter :: f_smin_no3_runoff      = 22
+  integer, parameter :: f_sminn_leached        = 23
+  integer, parameter :: f_col_prod1n_loss      = 24
+  integer, parameter :: f_col_prod10n_loss     = 25
+  integer, parameter :: f_col_prod100n_loss    = 26
+  integer, parameter :: f_som_n_leached        = 27
+  integer, parameter :: f_som_n_yield          = 28
 
   integer, parameter, public :: n_f_size = f_som_n_yield     - f_som_c_yield
 
@@ -100,24 +106,24 @@ module CNPBudgetMod
        /)
 
   ! P inputs
-  integer, parameter :: f_primp_to_labilep     = 30
-  integer, parameter :: f_supplement_to_sminp  = 31
-  integer, parameter :: f_supplement_to_plantp = 32
-  integer, parameter :: f_pfert_dose           = 33
+  integer, parameter :: f_primp_to_labilep     = 29
+  integer, parameter :: f_supplement_to_sminp  = 30
+  integer, parameter :: f_supplement_to_plantp = 31
+  integer, parameter :: f_pfert_dose           = 32
 
   ! P outputs
-  integer, parameter :: f_secondp_to_occlp     = 34
-  integer, parameter :: f_sminp_leached        = 35
-  integer, parameter :: f_col_fire_ploss       = 36
-  integer, parameter :: f_solutionp            = 37
-  integer, parameter :: f_labilep              = 38
-  integer, parameter :: f_secondp              = 39
-  integer, parameter :: f_col_prod1p_loss      = 40
-  integer, parameter :: f_col_prod10p_loss     = 41
-  integer, parameter :: f_col_prod100p_loss    = 42
-  integer, parameter :: f_som_p_yield          = 43
-  integer, parameter :: f_labilep_yield        = 44
-  integer, parameter :: f_secondp_yield        = 45
+  integer, parameter :: f_secondp_to_occlp     = 33
+  integer, parameter :: f_sminp_leached        = 34
+  integer, parameter :: f_col_fire_ploss       = 35
+  integer, parameter :: f_solutionp            = 36
+  integer, parameter :: f_labilep              = 37
+  integer, parameter :: f_secondp              = 38
+  integer, parameter :: f_col_prod1p_loss      = 39
+  integer, parameter :: f_col_prod10p_loss     = 40
+  integer, parameter :: f_col_prod100p_loss    = 41
+  integer, parameter :: f_som_p_yield          = 42
+  integer, parameter :: f_labilep_yield        = 43
+  integer, parameter :: f_secondp_yield        = 44
 
   integer, parameter, public :: p_f_size = f_secondp_yield - f_som_n_yield
 
@@ -144,23 +150,25 @@ module CNPBudgetMod
   !--- S for state ---
 
   ! C
-  integer, parameter :: s_totpftc_beg           =  1
-  integer, parameter :: s_cwdc_beg              =  2
-  integer, parameter :: s_totlitc_beg           =  3
-  integer, parameter :: s_totsomc_beg           =  4
-  integer, parameter :: s_totprodc_beg          =  5
-  integer, parameter :: s_ctrunc_beg            =  6
-  integer, parameter :: s_cropseedc_deficit_beg =  7
+  integer, parameter :: s_totc_beg              =  1
+  integer, parameter :: s_totpftc_beg           =  2
+  integer, parameter :: s_cwdc_beg              =  3
+  integer, parameter :: s_totlitc_beg           =  4
+  integer, parameter :: s_totsomc_beg           =  5
+  integer, parameter :: s_totprodc_beg          =  6
+  integer, parameter :: s_ctrunc_beg            =  7
+  integer, parameter :: s_cropseedc_deficit_beg =  8
 
-  integer, parameter :: s_totpftc_end           =  8
-  integer, parameter :: s_cwdc_end              =  9
-  integer, parameter :: s_totlitc_end           = 10
-  integer, parameter :: s_totsomc_end           = 11
-  integer, parameter :: s_totprodc_end          = 12
-  integer, parameter :: s_ctrunc_end            = 13
-  integer, parameter :: s_cropseedc_deficit_end = 14
+  integer, parameter :: s_totc_end              =  9
+  integer, parameter :: s_totpftc_end           = 10
+  integer, parameter :: s_cwdc_end              = 11
+  integer, parameter :: s_totlitc_end           = 12
+  integer, parameter :: s_totsomc_end           = 13
+  integer, parameter :: s_totprodc_end          = 14
+  integer, parameter :: s_ctrunc_end            = 15
+  integer, parameter :: s_cropseedc_deficit_end = 16
 
-  integer, parameter :: s_c_error               = 15
+  integer, parameter :: s_c_error               = 17
 
   integer, parameter, public :: c_s_size = s_c_error
 
@@ -168,6 +176,8 @@ module CNPBudgetMod
        (/&
        '              total_c_beg', &
        '              total_c_end', &
+       '            total_pft_beg', &
+       '            total_pft_end', &
        'coarse woody debris_c_beg', &
        'coarse woody debris_c_end', &
        '       total litter_c_beg', &
@@ -184,27 +194,27 @@ module CNPBudgetMod
        /)
 
   ! N
-  integer, parameter :: s_totpftn_beg           = 16
-  integer, parameter :: s_cwdn_beg              = 17
-  integer, parameter :: s_totlitn_beg           = 18
-  integer, parameter :: s_totsomn_beg           = 19
-  integer, parameter :: s_sminn_beg             = 20
-  integer, parameter :: s_totprodn_beg          = 21
-  integer, parameter :: s_plant_n_buffer_beg    = 22
-  integer, parameter :: s_ntrunc_beg            = 23
-  integer, parameter :: s_cropseedn_deficit_beg = 24
+  integer, parameter :: s_totpftn_beg           = 18
+  integer, parameter :: s_cwdn_beg              = 19
+  integer, parameter :: s_totlitn_beg           = 20
+  integer, parameter :: s_totsomn_beg           = 21
+  integer, parameter :: s_sminn_beg             = 22
+  integer, parameter :: s_totprodn_beg          = 23
+  integer, parameter :: s_plant_n_buffer_beg    = 24
+  integer, parameter :: s_ntrunc_beg            = 25
+  integer, parameter :: s_cropseedn_deficit_beg = 26
 
-  integer, parameter :: s_totpftn_end           = 25
-  integer, parameter :: s_cwdn_end              = 26
-  integer, parameter :: s_totlitn_end           = 27
-  integer, parameter :: s_totsomn_end           = 28
-  integer, parameter :: s_sminn_end             = 29
-  integer, parameter :: s_totprodn_end          = 30
-  integer, parameter :: s_plant_n_buffer_end    = 31
-  integer, parameter :: s_ntrunc_end            = 32
-  integer, parameter :: s_cropseedn_deficit_end = 33
+  integer, parameter :: s_totpftn_end           = 27
+  integer, parameter :: s_cwdn_end              = 28
+  integer, parameter :: s_totlitn_end           = 29
+  integer, parameter :: s_totsomn_end           = 30
+  integer, parameter :: s_sminn_end             = 31
+  integer, parameter :: s_totprodn_end          = 32
+  integer, parameter :: s_plant_n_buffer_end    = 33
+  integer, parameter :: s_ntrunc_end            = 34
+  integer, parameter :: s_cropseedn_deficit_end = 35
 
-  integer, parameter :: s_n_error               = 34
+  integer, parameter :: s_n_error               = 36
 
   integer, parameter, public :: n_s_size = s_n_error - s_c_error
   
@@ -232,29 +242,29 @@ module CNPBudgetMod
        /)
 
   ! P
-  integer, parameter :: s_totpftp_beg           = 35
-  integer, parameter :: s_cwdp_beg              = 36
-  integer, parameter :: s_totlitp_beg           = 37
-  integer, parameter :: s_totsomp_beg           = 38
-  integer, parameter :: s_totprodp_beg          = 39
-  integer, parameter :: s_ptrunc_beg            = 40
-  integer, parameter :: s_solutionp_beg         = 41
-  integer, parameter :: s_labilep_beg           = 42
-  integer, parameter :: s_secondp_beg           = 43
-  integer, parameter :: s_cropseedp_deficit_beg = 44
+  integer, parameter :: s_totpftp_beg           = 37
+  integer, parameter :: s_cwdp_beg              = 38
+  integer, parameter :: s_totlitp_beg           = 39
+  integer, parameter :: s_totsomp_beg           = 40
+  integer, parameter :: s_totprodp_beg          = 41
+  integer, parameter :: s_ptrunc_beg            = 42
+  integer, parameter :: s_solutionp_beg         = 43
+  integer, parameter :: s_labilep_beg           = 44
+  integer, parameter :: s_secondp_beg           = 45
+  integer, parameter :: s_cropseedp_deficit_beg = 46
 
-  integer, parameter :: s_totpftp_end           = 45
-  integer, parameter :: s_cwd_endp              = 46
-  integer, parameter :: s_totlitp_end           = 47
-  integer, parameter :: s_totsomp_end           = 48
-  integer, parameter :: s_totprodp_end          = 49
-  integer, parameter :: s_ptrunc_end            = 50
-  integer, parameter :: s_solutionp_end         = 51
-  integer, parameter :: s_labilep_end           = 52
-  integer, parameter :: s_secondp_end           = 53
-  integer, parameter :: s_cropseedp_deficit_end = 54
+  integer, parameter :: s_totpftp_end           = 47
+  integer, parameter :: s_cwd_endp              = 48
+  integer, parameter :: s_totlitp_end           = 49
+  integer, parameter :: s_totsomp_end           = 50
+  integer, parameter :: s_totprodp_end          = 51
+  integer, parameter :: s_ptrunc_end            = 52
+  integer, parameter :: s_solutionp_end         = 53
+  integer, parameter :: s_labilep_end           = 54
+  integer, parameter :: s_secondp_end           = 55
+  integer, parameter :: s_cropseedp_deficit_end = 56
 
-  integer, parameter :: s_p_error               = 55
+  integer, parameter :: s_p_error               = 57
 
   integer, parameter, public :: p_s_size = s_p_error - s_n_error
 
@@ -527,6 +537,120 @@ contains
     budg_fluxN(:,:) = budg_fluxN(:,:) + 1._r8
 
   end subroutine Accum
+
+  !-----------------------------------------------------------------------
+  subroutine CNPBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, grc_cs, grc_cf)
+    !
+    ! !DESCRIPTION:
+    !
+    use domainMod, only : ldomain
+    use elm_varcon, only : re
+    !
+    implicit none
+
+    type(bounds_type)           , intent(in) :: bounds
+    type(atm2lnd_type)          , intent(in) :: atm2lnd_vars
+    type(lnd2atm_type)          , intent(in) :: lnd2atm_vars
+    type(gridcell_carbon_state) , intent(in) :: grc_cs
+    type(gridcell_carbon_flux)  , intent(in) :: grc_cf
+
+    call CBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, grc_cs, grc_cf, c_budg_fluxL, c_budg_stateL)
+
+  end subroutine CNPBudget_Run
+    
+  !-----------------------------------------------------------------------
+  subroutine CBudget_Run(bounds, atm2lnd_vars, lnd2atm_vars, grc_cs, grc_cf, budg_fluxL, budg_stateL)
+    !
+    ! !DESCRIPTION:
+    !
+    use domainMod, only : ldomain
+    use elm_varcon, only : re
+    !
+    implicit none
+
+    type(bounds_type)           , intent(in)    :: bounds
+    type(atm2lnd_type)          , intent(in)    :: atm2lnd_vars
+    type(lnd2atm_type)          , intent(in)    :: lnd2atm_vars
+    type(gridcell_carbon_state) , intent(in)    :: grc_cs
+    type(gridcell_carbon_flux)  , intent(in)    :: grc_cf
+    real(r8)                    , intent(inout) :: budg_fluxL(:,:), budg_stateL(:,:)
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g, nf, ns, ip
+    real(r8) :: af, one_over_re2
+
+    associate(                                                   &
+         beg_totc              => grc_cs%beg_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         beg_totpftc           => grc_cs%beg_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         beg_cwdc              => grc_cs%beg_cwdc           , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc           => grc_cs%beg_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc           => grc_cs%beg_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc          => grc_cs%beg_totprodc           , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc            => grc_cs%beg_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cropseedc_deficit => grc_cs%beg_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         end_totc              => grc_cs%end_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         end_totpftc           => grc_cs%end_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         end_cwdc              => grc_cs%end_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         end_totsomc           => grc_cs%end_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         end_totlitc           => grc_cs%end_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         end_totprodc          => grc_cs%end_totprodc           , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         end_ctrunc            => grc_cs%end_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         end_cropseedc_deficit => grc_cs%end_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         errcb                 => grc_cs%errcb                 , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
+         gpp                   => grc_cf%gpp                   , & ! Input: [real(r8) (:)] (gC/m2/s) gross primary production
+         er                    => grc_cf%er                    , & ! Input: [real(r8) (:)] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         fire_closs            => grc_cf%fire_closs            , & ! Input: [real(r8) (:)] (gC/m2/s) total column-level fire C loss
+         prod1c_loss           => grc_cf%prod1_loss            , & ! Input: [real(r8) (:)] (gC/m2/s) crop leafc harvested
+         prod10c_loss          => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 10-year wood C harvested
+         prod100c_loss         => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 100-year wood C harvested 
+         hrv_xsmrpool_to_atm   => grc_cf%hrv_xsmrpool_to_atm   , & ! Input: [real(r8) (:)] (gC/m2/s) excess MR pool harvest mortality
+         som_c_leached         => grc_cf%som_c_leached         , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss from vertical transport
+         som_c_yield           => grc_cf%somc_yield              & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
+         )
+
+      ip = p_inst
+      budg_stateL(:,ip) = 0._r8
+      one_over_re2 = 1._r8/(re**2._r8)
+
+      do g = bounds%begg, bounds%endg
+         af = (ldomain%area(g) * one_over_re2) * & ! area (converting km**2 to radians**2)
+              ldomain%frac(g)                      ! land fraction
+
+         ! fluxes
+         nf = f_gpp                   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + gpp(g)                     *af
+         nf = f_er                    ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - er(g)                      *af
+         nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)              *af
+         nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)              *af
+         nf = f_hrv_xsmrpool_to_atm   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - hrv_xsmrpool_to_atm(g)     *af
+         nf = f_prod1c_loss           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod1c_loss(g)             *af
+         nf = f_prod10c_loss          ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod10c_loss(g)            *af
+         nf = f_prod100c_loss         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod100c_loss(g)           *af
+         nf = f_som_c_leached         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_leached(g)           *af
+         nf = f_som_c_yield           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_yield(g)             *af
+
+         ! states
+         ns = s_totc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totc(g)              *af
+         ns = s_totpftc_beg           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totpftc(g)           *af
+         ns = s_cwdc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_cwdc(g)              *af
+         ns = s_totlitc_beg           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totlitc(g)           *af
+         ns = s_totprodc_beg          ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totprodc(g)          *af
+         ns = s_ctrunc_beg            ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_ctrunc(g)            *af
+         ns = s_cropseedc_deficit_beg ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_cropseedc_deficit(g) *af
+
+         ns = s_totc_end              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totc(g)              *af
+         ns = s_totpftc_end           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totpftc(g)           *af
+         ns = s_cwdc_end              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_cwdc(g)              *af
+         ns = s_totlitc_end           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totlitc(g)           *af
+         ns = s_totprodc_end          ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totprodc(g)          *af
+         ns = s_ctrunc_end            ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_ctrunc(g)            *af
+         ns = s_cropseedc_deficit_end ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_cropseedc_deficit(g) *af
+
+         ns = s_c_error               ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + errcb(g)                 *af
+      end do
+
+    end associate
+
+  end subroutine CBudget_Run
 
   !-----------------------------------------------------------------------
   subroutine CNPBudget_Sum0()
