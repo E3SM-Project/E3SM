@@ -54,10 +54,12 @@ void Functions<S,D>::eddy_diffusivities(
 
     // Compute diffusivity coefficient as function of dimensionless Obukhov,
     // given a critical value
-    const Scalar Ckh_s = std::max(Ck_s_min,
-                                  std::min(Ckh_s_def, z_over_L/zL_crit_val));
-    const Scalar Ckm_s = std::max(Ck_s_min,
-                                  std::min(Ckm_s_def, z_over_L/zL_crit_val));
+    const Scalar Ckh_s = ekat::impl::max(Ck_s_min,
+                                         ekat::impl::min(Ckh_s_def,
+                                                         z_over_L/zL_crit_val));
+    const Scalar Ckm_s = ekat::impl::max(Ck_s_min,
+                                         ekat::impl::min(Ckm_s_def,
+                                                         z_over_L/zL_crit_val));
 
     // If surface layer is stable, based on near surface dimensionless Monin-Obukov
     // use modified coefficients of tkh and tk that are primarily based on shear

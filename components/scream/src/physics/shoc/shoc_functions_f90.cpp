@@ -2767,7 +2767,7 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* z
 
   // Sync back to host
   Kokkos::Array<view_2d, 2> inout_views = {tkh_d, tk_d};
-  ekat::device_to_host<int,2>({tkh, tk}, {shcol}, {nlev}, inout_views, true);
+  ekat::device_to_host<int,2>({tkh, tk}, shcol, nlev, inout_views, true);
 }
 
 } // namespace shoc
