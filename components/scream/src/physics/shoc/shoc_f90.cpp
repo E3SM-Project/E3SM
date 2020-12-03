@@ -7,6 +7,7 @@
 
 using scream::Real;
 using scream::Int;
+
 extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                    Real zvir, Real latvap, Real latice, Real karman);
@@ -126,15 +127,15 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void shoc_init(Int nlev, bool use_fortran) {
+void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
   static bool is_init = false;
-  if (!is_init) {
+  if (!is_init || force_reinit) {
     using Scalar = Real;
     using C = scream::physics::Constants<Scalar>;
 
     shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
                 C::LatVap, C::LatIce, C::Karman);
-    is_init = false;
+    is_init = true;
   }
   shoc_use_cxx_c(!use_fortran);
 }
