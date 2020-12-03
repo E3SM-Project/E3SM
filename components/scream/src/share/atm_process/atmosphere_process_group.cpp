@@ -139,9 +139,12 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       // Note: in general, as of today, no atm process other than APG stores more than
       //       one grid, so this for loop is somewhat overkill. Still, it doesn't hurt.
       for (const auto& gname : atm_proc_grids) {
+        // Note: grid->name() might be different from gname. This happens if the GM
+        //       allows a few aliases for the same grid. So we store the remappers
+        //       with both gname and grid->name() as keys
         const auto grid = grids_manager->get_grid(gname);
-        remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
-        remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
+        remap_in[gname] = remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
+        remap_out[gname] = remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
         remap_in[grid->name()]->registration_begins();
         remap_out[grid->name()]->registration_begins();
       }
@@ -152,8 +155,11 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       // Whether this fid is on the reference grid or not, we expose
       // as input a copy of fid on the reference grid.
       // If fid is not on the reference grid, we add fid to our 'computed' fields.
-      const bool is_ref_grid = (fid.get_grid_name()==ref_grid->name());
-      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[fid.get_grid_name()]);
+      const auto& gname = fid.get_grid_name();
+
+      const bool is_ref_grid = (gname==ref_grid->name());
+
+      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[gname]);
 
       if (m_group_schedule_type==ScheduleType::Sequential) {
         // If the schedule is sequential, we do not add inputs if they are computed
@@ -175,7 +181,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
         computed.insert(fid.name());
         m_computed_fields.insert(fid);
 
-        remap_in[fid.get_grid_name()]->register_field(ref_fid,fid);
+        remap_in[gname]->register_field(ref_fid,fid);
       }
     }
 
@@ -183,14 +189,16 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     for (const auto& fid : atm_proc->get_computed_fields()) {
       m_computed_fields.insert(fid);
 
+      const auto& gname = fid.get_grid_name();
+
       // Update the list of fields computed by the processes processed so far
       computed.insert(fid.name());
 
       // If the grid of fid is not the reference one, we also remap it
       // to the reference grid, hence "computing" ref_fid
       // Exception: if atm proc is a group, then it should already take care of this.
-      if (!is_group && fid.get_grid_name()!=ref_grid->name()) {
-        auto& remapper = remap_out[fid.get_grid_name()];
+      if (!is_group && gname!=ref_grid->name()) {
+        auto& remapper = remap_out[gname];
 
         const FieldIdentifier ref_fid = create_ref_fid(fid,remapper);
         m_computed_fields.insert(ref_fid);
@@ -509,8 +517,12 @@ FieldIdentifier
 AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
                                         const remapper_ptr_type& remapper)
 {
+
   const auto& fid_layout = fid.get_layout();
   const auto& grid_name = fid.get_grid_name();
+
+  EKAT_REQUIRE_MSG (remapper, "Error! Input remapper from grid " << grid_name << " is null.\n");
+
   if (remapper->get_src_grid()->name()==grid_name) {
     const FieldLayout ref_layout = remapper->create_tgt_layout(fid_layout);
     return FieldIdentifier (fid.name(),ref_layout,fid.get_units(),remapper->get_tgt_grid()->name());

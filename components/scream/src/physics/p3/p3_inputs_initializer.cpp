@@ -14,6 +14,34 @@ void P3InputsInitializer::add_field (const field_type &f)
   m_fields_id.insert(id);
 }
 
+void P3InputsInitializer::
+add_field (const field_type &f, const field_type& f_ref,
+           const remapper_ptr_type& remapper)
+{
+  if (m_remapper) {
+    // Sanity check
+    EKAT_REQUIRE_MSG (m_remapper->get_src_grid()->name()==remapper->get_src_grid()->name(),
+      "Error! A remapper was already set in P3InputsInitializer, but its src grid differs from"
+      "       the grid of the input remapper of this call.\n");
+  } else {
+    m_remapper = remapper;
+    m_remapper->registration_begins();
+  }
+
+  const auto& id = f.get_header().get_identifier();
+  const auto& id_ref = f_ref.get_header().get_identifier();
+
+  // To the AD, we only expose the fact that we init f_ref...
+  m_fields_id.insert(id_ref);
+
+  // ...but P3 only knows how to init f...
+  m_fields.emplace(id.name(),f);
+
+  // ...hence, we remap to f_ref.
+  m_remapper->register_field(f, f_ref);
+}
+
+
 // =========================================================================================
 void P3InputsInitializer::initialize_fields ()
 {
@@ -97,6 +125,15 @@ void P3InputsInitializer::initialize_fields ()
     // Init FQ to 0
     auto d_FQ = m_fields.at("FQ").get_view();
     Kokkos::deep_copy(d_FQ,Real(0));
+  }
+
+  if (m_remapper) {
+    m_remapper->registration_ends();
+
+    m_remapper->remap(true);
+
+    // Now we can destroy the remapper
+    m_remapper = nullptr;
   }
 }
 

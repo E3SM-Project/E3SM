@@ -1031,6 +1031,8 @@ void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real
                                Real* wthl_sec, Real* isotropy, Real* brunt, Real* thetal,
                                Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,
                                Real* w3);
+void adv_sgs_tke_f(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wthv_sec, Real* sterm_zt,
+                   Real* tk, Real* tke, Real* a_diss);
 void shoc_assumed_pdf_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
                         Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
                         Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
@@ -1052,6 +1054,8 @@ void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real*
 void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
 void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
+void shoc_grid_f(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
+void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* zt_grid, Real* shoc_mix, Real* sterm_zt, Real* isotropy, Real* tke, Real* tkh, Real* tk);
 } // end _f function decls
 
 }  // namespace shoc

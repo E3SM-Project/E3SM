@@ -348,6 +348,19 @@ struct Functions
     const uview_1d<Spack>&       w3);
 
   KOKKOS_FUNCTION
+  static void adv_sgs_tke(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Real&                  dtime,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& tk,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       a_diss);
+
+  KOKKOS_FUNCTION
   static void shoc_assumed_pdf(
     const MemberType&            team,
     const Int&                   nlev,
@@ -451,6 +464,7 @@ struct Functions
     const uview_1d<Scalar>& dl,
     const uview_1d<Scalar>& d,
     const uview_2d<Spack>&  var);
+
   KOKKOS_FUNCTION
   static void pblintd_init(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<bool>& check, const uview_1d<Spack>& rino, const uview_1d<Spack>& pblh);
   KOKKOS_FUNCTION
@@ -459,6 +473,33 @@ struct Functions
   static void pblintd_check_pblh(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const bool>& check, const uview_1d<Spack>& pblh);
   KOKKOS_FUNCTION
   static void pblintd(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& zi, const uview_1d<const Spack>& thl, const uview_1d<const Spack>& ql, const uview_1d<const Spack>& q, const uview_1d<const Spack>& u, const uview_1d<const Spack>& v, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& cldn, const uview_1d<Spack>& pblh);
+
+  KOKKOS_FUNCTION
+  static void shoc_grid(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& pdel,
+    const uview_1d<Spack>&       dz_zt,
+    const uview_1d<Spack>&       dz_zi,
+    const uview_1d<Spack>&       rho_zt);
+
+  KOKKOS_FUNCTION
+  static void eddy_diffusivities(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Scalar&                obklen,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& isotropy,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<Spack>&       tkh,
+    const uview_1d<Spack>&       tk);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -496,6 +537,7 @@ struct Functions
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
+# include "shoc_adv_sgs_tke_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
 # include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_isotropic_ts_impl.hpp"
@@ -507,6 +549,8 @@ struct Functions
 # include "shoc_pblintd_surf_temp_impl.hpp"
 # include "shoc_pblintd_check_pblh_impl.hpp"
 # include "shoc_pblintd_impl.hpp"
+# include "shoc_grid_impl.hpp"
+# include "shoc_eddy_diffusivities_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // SHOC_FUNCTIONS_HPP

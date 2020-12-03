@@ -368,6 +368,16 @@ subroutine diag_third_shoc_moments_f(shcol, nlev, nlevi, w_sec, thl_sec, wthl_se
   real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: w3
 end subroutine diag_third_shoc_moments_f
 
+  subroutine adv_sgs_tke_f(nlev, shcol, dtime, shoc_mix, wthv_sec, sterm_zt, tk, tke, a_diss) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nlev, shcol
+    real(kind=c_real) , value, intent(in) :: dtime
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: shoc_mix, wthv_sec, sterm_zt, tk
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: tke
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: a_diss
+  end subroutine adv_sgs_tke_f
+
 subroutine shoc_assumed_pdf_f(shcol, nlev, nlevi, thetal, qw, w_field, thl_sec, qw_sec,&
                               wthl_sec, w_sec, wqw_sec, qwthl_sec, w3, pres, zt_grid,&
                               zi_grid, shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2) bind(C)
@@ -507,6 +517,26 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(in), dimension(shcol) :: ustar, obklen, kbfs
     real(kind=c_real) , intent(out), dimension(shcol) :: pblh
   end subroutine pblintd_f
+
+  subroutine shoc_grid_f(shcol, nlev, nlevi, zt_grid, zi_grid, pdel, dz_zt, dz_zi, rho_zt) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: zt_grid, pdel
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: zi_grid
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: dz_zt, rho_zt
+    real(kind=c_real) , intent(out), dimension(shcol, nlevi) :: dz_zi
+  end subroutine shoc_grid_f
+
+  subroutine eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, shoc_mix, sterm_zt, isotropy, tke, tkh, tk) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nlev, shcol
+    real(kind=c_real) , intent(in), dimension(shcol) :: obklen, pblh
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: zt_grid, shoc_mix, sterm_zt, isotropy, tke
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: tkh, tk
+  end subroutine eddy_diffusivities_f
+
 end interface
 
 end module shoc_iso_f
