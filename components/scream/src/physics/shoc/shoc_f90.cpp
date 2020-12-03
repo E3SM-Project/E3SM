@@ -7,7 +7,6 @@
 
 using scream::Real;
 using scream::Int;
-
 extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                    Real zvir, Real latvap, Real latice, Real karman);
