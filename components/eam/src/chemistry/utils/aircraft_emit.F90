@@ -128,7 +128,7 @@ module aircraft_emit
   logical, parameter  :: convert_to_mmr(N_AERO) = (/.true., .true., .true., .true., .true., &
        .true., .false., .true., .true.,.true./)
 
-  !mixtyoe is only used for advected tracers
+  !mixtype is only used for advected tracers
   character(len=3) :: mixtype(N_AERO) = (/'wet','wet','wet','wet','wet','wet','wet','wet','wet','wet'/)
 
   real(r8) :: cptmp = 666.0_r8

@@ -1,4 +1,3 @@
-!BALLI: take care of the units of CO2!!, do cleanup
 
 module co2_data_flux
 
