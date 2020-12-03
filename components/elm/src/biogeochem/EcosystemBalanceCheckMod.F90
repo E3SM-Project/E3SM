@@ -810,11 +810,11 @@ contains
          cropseedc_deficit     =>  col_cs%cropseedc_deficit     , & ! Input:  [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          beg_totc              =>  grc_cs%beg_totc              , & ! Output: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
          beg_totpftc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         beg_cwdc              =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
-         beg_totsomc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
-         beg_totlitc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column litter carbon
-         beg_totprodc          =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
-         beg_ctrunc            =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cwdc              =>  grc_cs%beg_cwdc           , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc           =>  grc_cs%beg_totsomc           , & ! Output: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc           =>  grc_cs%beg_totlitc           , & ! Output: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc          =>  grc_cs%beg_totprodc           , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc            =>  grc_cs%beg_ctrunc           , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
          beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          )
 
@@ -822,6 +822,7 @@ contains
       call bgc_c2g(bounds, totpftc           , beg_totpftc           )
       call bgc_c2g(bounds, cwdc              , beg_cwdc              )
       call bgc_c2g(bounds, totlitc           , beg_totlitc           )
+      call bgc_c2g(bounds, totsomc           , beg_totsomc           )
       call bgc_c2g(bounds, totprodc          , beg_totprodc          )
       call bgc_c2g(bounds, ctrunc            , beg_ctrunc            )
       call bgc_c2g(bounds, cropseedc_deficit , beg_cropseedc_deficit )
@@ -874,12 +875,12 @@ contains
          col_coutputs            => col_cf%coutputs                  , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C outputs
          beg_totc                => grc_cs%beg_totc                  , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
          end_totc                => grc_cs%end_totc                  , & ! Output: [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
-         end_totpftc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         end_cwdc                => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon
-         end_totsomc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
-         end_totlitc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column litter carbon
-         end_totprodc            => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
-         end_ctrunc              => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
+         end_totpftc             => grc_cs%end_totpftc               , & ! Output: [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
+         end_cwdc                => grc_cs%end_cwdc                  , & ! Output: [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon
+         end_totsomc             => grc_cs%end_totsomc               , & ! Output: [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
+         end_totlitc             => grc_cs%end_totlitc               , & ! Output: [real(r8) (:) ] (gC/m2) total column litter carbon
+         end_totprodc            => grc_cs%end_totprodc              , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
+         end_ctrunc              => grc_cs%end_ctrunc                , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit   => grc_cs%end_cropseedc_deficit     , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
          grc_errcb               => grc_cs%errcb                     , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
          grc_gpp                 => grc_cf%gpp                       , & ! Output: [real(r8) (:) ] (gC/m2/s) gross primary production
@@ -900,6 +901,7 @@ contains
       call bgc_c2g(bounds, col_totpftc           , end_totpftc           )
       call bgc_c2g(bounds, col_cwdc              , end_cwdc              )
       call bgc_c2g(bounds, col_totlitc           , end_totlitc           )
+      call bgc_c2g(bounds, col_totsomc           , end_totsomc           )
       call bgc_c2g(bounds, col_totprodc          , end_totprodc          )
       call bgc_c2g(bounds, col_ctrunc            , end_ctrunc            )
       call bgc_c2g(bounds, col_cropseedc_deficit , end_cropseedc_deficit )
