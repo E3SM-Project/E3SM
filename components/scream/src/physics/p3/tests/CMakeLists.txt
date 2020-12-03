@@ -58,14 +58,12 @@ endif()
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
                EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
-               DEP p3_tests_ut_np1_omp1
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP)
 
 CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
                EXE_ARGS "-f ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
-               DEP p3_tests_ut_np1_omp1
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP)
 
