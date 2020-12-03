@@ -131,8 +131,6 @@ contains
        call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
        call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
        Global_COMM=mpicom
-
-       print *,__FILE__,__LINE__,subname, ' complete'
 #endif
     end if
     total_comps = ncomps
@@ -189,8 +187,7 @@ contains
     allocate(iosystems(total_comps))
 
     if(pio_async_interface) then
-       call shr_sys_abort('pio_async_interface is not currently supported')
-!       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
+!       call pio_init(iosystems, MPI_COMM_WORLD, comp_comm, io_comm, PIO_REARR_BOX)
 !       do i=1,total_comps
 !         ret =  pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
 !                  pio_rearr_opt_fcd,&
@@ -217,6 +214,7 @@ contains
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
                   pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger, &
                   pio_comp_settings(i)%pio_netcdf_ioformat)
+
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_rearranger, iosystems(i), &
