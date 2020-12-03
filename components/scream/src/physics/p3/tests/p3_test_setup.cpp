@@ -3,7 +3,6 @@
 
 #include <cstdio>
 #include "physics/p3/p3_f90.hpp"
-//#include "physics/p3/p3_functions_f90.hpp"
 
 int main(int argc, char* argv[]) {
   std::printf("Generating p3 rain tables...\n");
