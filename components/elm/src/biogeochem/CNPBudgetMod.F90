@@ -25,6 +25,12 @@ module CNPBudgetMod
 
   public :: CNPBudget_Reset
   public :: CNPBudget_Run
+  public :: CNPBudget_Accum
+  public :: CNPBudget_Print
+
+  integer, parameter :: carbon_budget     = 1
+  integer, parameter :: nitrogen_budget   = 2
+  integer, parameter :: phosphorus_budget = 3
 
   !--- F for flux ---
 
@@ -172,25 +178,17 @@ module CNPBudgetMod
 
   integer, parameter, public :: c_s_size = s_c_error
 
-  character(len=25),parameter :: c_s_name(c_s_size) = &
+  integer, parameter, public :: c_s_name_size = 8
+  character(len=25),parameter :: c_s_name(c_s_name_size) = &
        (/&
-       '              total_c_beg', &
-       '              total_c_end', &
-       '            total_pft_beg', &
-       '            total_pft_end', &
-       'coarse woody debris_c_beg', &
-       'coarse woody debris_c_end', &
-       '       total litter_c_beg', &
-       '       total litter_c_end', &
-       '          total_som_c_beg', &
-       '          total_som_c_end', &
-       ' total_wood_product_c_beg', &
-       ' total_wood_product_c_end', &
-       '    truncation_sink_c_beg', &
-       '    truncation_sink_c_end', &
-       '  crop_seed_deficit_c_beg', &
-       '  crop_seed_deficit_c_end', &
-       '                  error c'  &
+       '                PFT', &
+       '                CWD', &
+       '       Total litter', &
+       '          Total SOM', &
+       ' Total wood product', &
+       '    Truncation sink', &
+       '     Grid-level Err', &
+       '              TOTAL'  &
        /)
 
   ! N
@@ -325,6 +323,18 @@ module CNPBudgetMod
   real(r8), public :: c_budg_stateG(c_s_size, p_size) ! global sum, valid only on root pe
   real(r8), public :: n_budg_stateG(n_s_size, p_size) ! global sum, valid only on root pe
   real(r8), public :: p_budg_stateG(p_s_size, p_size) ! global sum, valid only on root pe
+
+  !----- formats -----
+  character(*),parameter :: C_FA0  = "('    ',12x,(42x,a10,2x),' | ',(3x,a10,2x))"
+  character(*),parameter :: C_FF = "('    ',a51,f15.8,' | ',f18.2)"
+  character(*),parameter :: FF2= "('    ',a12,a15,' | ',f18.2)"
+  character(*),parameter :: C_FS = "('    ',a12,7(f18.2),26x,' | ',(f18.2))"
+  character(*),parameter :: C_FS0= "('    ',12x,8(a19),' | ',(a19))"
+  character(*),parameter :: C_FS2= "('    ',a12,67x,f18.2,67x,' | ',f18.2)"
+  character(*),parameter :: C_FS3= "('    ',a12,8(f18.2),8x,' | ',(f18.2))"
+  character(*),parameter :: C_FS_2 = "('    ',a25,f15.2,5x,f15.2,5x,' | ',f18.2)"
+  character(*),parameter :: C_SA0  = "('    ',33x,2(5x,a3,8x),' | ',(8x,a12,2x))"
+  character(*),parameter :: C_FS2_2= "('    ',a12,17x,f18.2,18x,' | ',f18.2)"
 
 contains
 
@@ -473,15 +483,15 @@ contains
   end subroutine CNP_Restart
 
 !-----------------------------------------------------------------------
-  subroutine CNP_Accum()
+  subroutine CNPBudget_Accum()
     !
     implicit none
 
     call Accum(c_s_size,c_budg_fluxN, c_budg_fluxL, c_budg_stateL, c_budg_stateG)
-    call Accum(n_s_size,n_budg_fluxN, n_budg_fluxL, n_budg_stateL, n_budg_stateG)
-    call Accum(p_s_size,p_budg_fluxN, p_budg_fluxL, p_budg_stateL, p_budg_stateG)
+    !call Accum(n_s_size,n_budg_fluxN, n_budg_fluxL, n_budg_stateL, n_budg_stateG)
+    !call Accum(p_s_size,p_budg_fluxN, p_budg_fluxL, p_budg_stateL, p_budg_stateG)
 
-  end subroutine CNP_Accum
+  end subroutine CNPBudget_Accum
 !-----------------------------------------------------------------------
   subroutine Accum(s_size, budg_fluxN, budg_fluxL, budg_stateL, budg_stateG)
     !
@@ -633,6 +643,7 @@ contains
          ns = s_totpftc_beg           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totpftc(g)           *af
          ns = s_cwdc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_cwdc(g)              *af
          ns = s_totlitc_beg           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totlitc(g)           *af
+         ns = s_totsomc_beg           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totsomc(g)           *af
          ns = s_totprodc_beg          ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totprodc(g)          *af
          ns = s_ctrunc_beg            ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_ctrunc(g)            *af
          ns = s_cropseedc_deficit_beg ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_cropseedc_deficit(g) *af
@@ -641,6 +652,7 @@ contains
          ns = s_totpftc_end           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totpftc(g)           *af
          ns = s_cwdc_end              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_cwdc(g)              *af
          ns = s_totlitc_end           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totlitc(g)           *af
+         ns = s_totsomc_end           ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totsomc(g)           *af
          ns = s_totprodc_end          ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_totprodc(g)          *af
          ns = s_ctrunc_end            ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_ctrunc(g)            *af
          ns = s_cropseedc_deficit_end ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + end_cropseedc_deficit(g) *af
@@ -685,6 +697,7 @@ contains
     call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
     call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
 
+
     budg_fluxG  = budg_fluxG + budg_fluxGtmp
     budg_stateG = budg_stateGtmp
 
@@ -692,6 +705,245 @@ contains
     budg_stateL(:,p_inst) = 0._r8 ! only reset instantaneous states
 
   end subroutine Sum0
+
+  !-----------------------------------------------------------------------
+
+  subroutine CNPBudget_Print(budg_print_inst,  budg_print_daily,  budg_print_month,  &
+       budg_print_ann,  budg_print_ltann,  budg_print_ltend)
+    !
+    implicit none
+    !
+    integer , intent(in) :: budg_print_inst
+    integer , intent(in) :: budg_print_daily
+    integer , intent(in) :: budg_print_month
+    integer , intent(in) :: budg_print_ann
+    integer , intent(in) :: budg_print_ltann
+    integer , intent(in) :: budg_print_ltend
+
+    call Print( carbon_budget, c_f_size, c_s_size            , &
+         c_budg_fluxL, c_budg_fluxG, c_budg_fluxN            , &
+         c_budg_stateL, c_budg_stateG                        , &
+         budg_print_inst, budg_print_daily, budg_print_month , &
+         budg_print_ann, budg_print_ltann, budg_print_ltend)
+
+  end subroutine CNPBudget_Print
+
+  !-----------------------------------------------------------------------
+
+  subroutine Print(budget_type, f_size, s_size, budg_fluxL, budg_fluxG, budg_fluxN, &
+       budg_stateL, budg_stateG, &
+       budg_print_inst,  budg_print_daily,  budg_print_month,  &
+       budg_print_ann,  budg_print_ltann,  budg_print_ltend)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use shr_const_mod   , only : shr_const_pi
+    !
+    implicit none
+    !
+    integer              :: budget_type, f_size, s_size
+    real(r8)             :: budg_fluxL(:,:), budg_fluxG(:,:), budg_fluxN(:,:)
+    real(r8)             :: budg_stateL(:,:), budg_stateG(:,:)
+    integer , intent(in) :: budg_print_inst
+    integer , intent(in) :: budg_print_daily
+    integer , intent(in) :: budg_print_month
+    integer , intent(in) :: budg_print_ann
+    integer , intent(in) :: budg_print_ltann
+    integer , intent(in) :: budg_print_ltend
+    !
+    ! !LOCAL VARIABLES:
+    integer :: s,f,ic,nf,ip,is ! data array indicies
+    integer :: plev        ! print level
+    integer :: year, mon, day, sec
+    integer :: cdate
+    logical :: sumdone
+    real(r8) :: unit_conversion
+    real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
+
+    sumdone = .false.
+
+    if (get_nstep() <= 1) then
+       call get_prev_date(year, mon, day, sec);
+    else
+       call get_curr_date(year, mon, day, sec);
+    end if
+
+    cdate = year*10000 + mon*100 + day
+
+    do ip = 1,p_size
+       plev = 0
+       if (ip == p_inst) then
+          plev = max(plev,budg_print_inst)
+       endif
+       if (ip==p_day .and. sec==0) then
+          plev = max(plev,budg_print_daily)
+       endif
+       if (ip==p_mon .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_month)
+       endif
+       if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_ann)
+       endif
+       if (ip==p_inf .and. mon==1 .and. day==1 .and. sec==0) then
+          plev = max(plev,budg_print_ltann)
+       endif
+
+       if (plev > 0) then
+          unit_conversion = 1._r8/(4.0_r8*shr_const_pi)*1.0e9_r8
+          if (.not.sumdone) then
+             sumdone = .true.
+             call Sum0(f_size, s_size, budg_fluxL, budg_fluxG, budg_stateL, budg_stateG)
+             budg_fluxGpr = budg_fluxG
+             budg_fluxGpr = budg_fluxGpr*unit_conversion
+             budg_fluxGpr = budg_fluxGpr/budg_fluxN
+          end if
+
+          if (ip == p_day .and. get_nstep() == 1) cycle
+          if (ip == p_mon .and. get_nstep() == 1) cycle
+          if (ip == p_ann .and. get_nstep() == 1) cycle
+          if (ip == p_inf .and. get_nstep() == 1) cycle
+
+          if (masterproc) then
+             select case (budget_type)
+             case (carbon_budget)
+                call CarbonBudget_Message(ip, cdate, sec, f_size, s_size, &
+                     budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
+
+             case (nitrogen_budget)
+             case (phosphorus_budget)
+             case default
+                call endrun(msg='ERROR: Unknown budget type'//&
+                     errMsg(__FILE__, __LINE__))
+             end select
+          end if
+       end if
+    end do
+
+  end subroutine Print
+
+  !-----------------------------------------------------------------------
+  subroutine CarbonBudget_Message(ip, cdate, sec, f_size, s_size, budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
+    !
+    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use shr_const_mod   , only : shr_const_pi
+    !
+    implicit none
+    !
+    integer  , intent(in) :: ip, cdate, sec, f_size, s_size
+    real(r8) , intent(in) :: budg_stateG(:,:), budg_fluxG(:,:), budg_fluxGpr (:,:)
+    real(r8) , intent(in) :: unit_conversion
+    !
+    !
+    ! !LOCAL VARIABLES:
+    integer :: f, s, s_beg, s_end ! data array indicies
+
+    write(iulog,*   )''
+    write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
+    write(iulog,C_FA0 )'  Time  ','  Time    '
+    write(iulog,C_FA0 )'averaged','integrated'
+    write(iulog,C_FA0 )'kgC/s*1e6','kgC/s*1e6'
+
+    write(iulog,'(71("-"),"|",20("-"))')
+
+    do f = 1, f_size
+       write(iulog,C_FF)c_f_name(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()
+    end do
+
+    write(iulog,'(71("-"),"|",20("-"))')
+
+    write(iulog,C_FF)'   *SUM*', &
+         sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
+
+    write(iulog,'(71("-"),"|",20("-"))')
+
+    write(iulog,*)''
+    write(iulog,*)'CARBON STATES (gC*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
+
+#if 0
+    write(iulog,C_FS0) &
+       '         PFT       ', &
+       '         CWD       ', &
+       '    Total litter   ', &
+       '      Total SOM    ', &
+       ' Total wood product', &
+       '   Truncation sink ', &
+       ' Crop seeed deficit', &
+       '   Grid-level Err  ', &
+       '       TOTAL       '
+    write(iulog,'(169("-"),"|",23("-"))')
+    write(iulog,C_FS) '         beg', &
+         budg_stateG(s_totpftc_beg           , ip)*unit_conversion, &
+         budg_stateG(s_cwdc_beg              , ip)*unit_conversion, &
+         budg_stateG(s_totlitc_beg           , ip)*unit_conversion, &
+         budg_stateG(s_totsomc_beg           , ip)*unit_conversion, &
+         budg_stateG(s_totprodc_beg          , ip)*unit_conversion, &
+         budg_stateG(s_ctrunc_beg            , ip)*unit_conversion, &
+         budg_stateG(s_cropseedc_deficit_beg , ip)*unit_conversion, &
+         budg_stateG(s_totc_beg              , ip)*unit_conversion
+    write(iulog,C_FS) '         end', &
+         budg_stateG(s_totpftc_end           , ip)*unit_conversion, &
+         budg_stateG(s_cwdc_end              , ip)*unit_conversion, &
+         budg_stateG(s_totlitc_end           , ip)*unit_conversion, &
+         budg_stateG(s_totsomc_end           , ip)*unit_conversion, &
+         budg_stateG(s_totprodc_end          , ip)*unit_conversion, &
+         budg_stateG(s_ctrunc_end            , ip)*unit_conversion, &
+         budg_stateG(s_cropseedc_deficit_end , ip)*unit_conversion, &
+         budg_stateG(s_totc_end              , ip)*unit_conversion
+    write(iulog,C_FS3)'*NET CHANGE*', &
+         (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion, &
+         (budg_stateG(s_cwdc_end              ,ip) - budg_stateG(s_cwdc_beg             ,ip))*unit_conversion, &
+         (budg_stateG(s_totlitc_end           ,ip) - budg_stateG(s_totlitc_beg          ,ip))*unit_conversion, &
+         (budg_stateG(s_totsomc_end           ,ip) - budg_stateG(s_totsomc_beg          ,ip))*unit_conversion, &
+         (budg_stateG(s_totprodc_end          ,ip) - budg_stateG(s_totprodc_beg         ,ip))*unit_conversion, &
+         (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion, &
+         (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion, &
+         budg_stateG(s_c_error,ip) *unit_conversion, &
+         (budg_stateG(s_totc_end,ip) - budg_stateG(s_totc_beg,ip))*unit_conversion
+    write(iulog,'(169("-"),"|",23("-"))')
+    write(iulog,C_FS2)'   *SUM*    ', &
+         (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_cwdc_end              ,ip) - budg_stateG(s_cwdc_beg             ,ip))*unit_conversion + &
+         (budg_stateG(s_totlitc_end           ,ip) - budg_stateG(s_totlitc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_totsomc_end           ,ip) - budg_stateG(s_totsomc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_totprodc_end          ,ip) - budg_stateG(s_totprodc_beg         ,ip))*unit_conversion + &
+         (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion + &
+         (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion + &
+         budg_stateG(s_c_error,ip) *unit_conversion, &
+         (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion
+    write(iulog,'(169("-"),"|",23("-"))')
+    write(iulog,*)''
+    write(iulog,*)''
+
+    write(iulog,'(70("-"),"|",23("-"))')
+    write(iulog,C_SA0 )'beg','end','*NET CHANGE*'
+    write(iulog,'(70("-"),"|",23("-"))')
+#endif
+
+    write(iulog,*)''
+    do s = 1,c_s_name_size-1
+       s_beg = s_totc_beg + s
+       s_end = s_totc_end + s
+       write(iulog,C_FS_2)c_s_name(s),&
+            budg_stateG(s_beg,ip)*unit_conversion, &
+            budg_stateG(s_end,ip)*unit_conversion, &
+            (budg_stateG(s_end,ip) - budg_stateG(s_beg,ip))*unit_conversion
+    end do
+
+    write(iulog,'(70("-"),"|",23("-"))')
+
+    write(iulog,C_FS2_2)'       *SUM*', &
+         (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_cwdc_end              ,ip) - budg_stateG(s_cwdc_beg             ,ip))*unit_conversion + &
+         (budg_stateG(s_totlitc_end           ,ip) - budg_stateG(s_totlitc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_totsomc_end           ,ip) - budg_stateG(s_totsomc_beg          ,ip))*unit_conversion + &
+         (budg_stateG(s_totprodc_end          ,ip) - budg_stateG(s_totprodc_beg         ,ip))*unit_conversion + &
+         (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion + &
+         (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion + &
+         budg_stateG(s_c_error,ip) *unit_conversion, &
+         (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion
+
+    write(iulog,'(70("-"),"|",23("-"))')
+
+  end subroutine CarbonBudget_Message
 
   !-----------------------------------------------------------------------
   subroutine Restart_Define(bounds, ncid, name)

@@ -168,6 +168,7 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
+  use CNPBudgetMod                , only : CNPBudget_Run, CNPBudget_Accum, CNPBudget_Print, CNPBudget_Reset
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
 
@@ -239,7 +240,13 @@ contains
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
     
-    if (do_budgets) call WaterBudget_Reset()
+    if (do_budgets) then
+       call WaterBudget_Reset()
+
+       if (use_cn) then
+          call CNPBudget_Reset()
+       end if
+    end if
 
 
     ! ============================================================================
@@ -1448,6 +1455,13 @@ contains
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
             budget_ann,  budget_ltann,  budget_ltend)
+
+       if (use_cn .and. nstep > 1 .and. do_budgets) then
+          call CNPBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, grc_cs, grc_cf)
+          call CNPBudget_Accum()
+          call CNPBudget_Print(budget_inst,  budget_daily,  budget_month,  &
+               budget_ann,  budget_ltann,  budget_ltend)
+      end if
     endif
 
     ! ============================================================================
