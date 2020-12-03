@@ -54,7 +54,7 @@ contains
     use atm2lndType      , only : atm2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi    
     use clm_time_manager , only : get_step_size, get_nstep
-    use SoilHydrologyMod , only : CLMVICMap, Drainage
+    use SoilHydrologyMod , only : ELMVICMap, Drainage
     use elm_varctl       , only : use_vsfm
     use BeTRSimulationALM, only : betr_simulation_alm_type
     !
@@ -130,7 +130,7 @@ contains
       dtime = get_step_size()
 
       if (use_vichydro) then
-         call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
+         call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars, waterstate_vars)
       endif
 

@@ -1557,13 +1557,13 @@ Use old snow cover fraction from Niu et al. 2007
 </entry>
 
 <entry id="h2osfcflag" type="integer" category="elm_physics"
-       group="clm_soilhydrology_inparm" valid_values="0,1" >
+       group="elm_soilhydrology_inparm" valid_values="0,1" >
 If surface water is active or not
 (deprecated -- will be removed)
 </entry>
 
 <entry id="origflag" type="integer" category="elm_physics"
-       group="clm_soilhydrology_inparm" valid_values="0,1" >
+       group="elm_soilhydrology_inparm" valid_values="0,1" >
 Use original CLM4 soil hydraulic properties
 (deprecated -- will be removed)
 </entry>

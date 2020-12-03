@@ -20,7 +20,7 @@ Module SoilHydrologyType
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: initSoilParVIC    ! Convert default CLM soil properties to VIC parameters
-  private :: initCLMVICMap     ! Initialize map from VIC to CLM layers
+  private :: initELMVICMap     ! Initialize map from VIC to CLM layers
   private :: linear_interp     ! function for linear interperation 
   !
   type, public :: soilhydrology_type
@@ -501,7 +501,7 @@ contains
                    this%depth_col(c, nlayer+1:nlayert) = col_pp%dz(c, nlevsoi+1:nlevgrnd)
 
                    ! create weights to map soil moisture profiles (10 layer) to 3 layers for VIC hydrology, M.Huang
-                   call initCLMVICMap(c, this)
+                   call initELMVICMap(c, this)
                    call initSoilParVIC(c, claycol, sandcol, om_fraccol, this)
                 end if
              else 
@@ -509,7 +509,7 @@ contains
                 this%depth_col(c, nlayer+1:nlayert) = col_pp%dz(c, nlevsoi+1:nlevgrnd)
 
                 ! create weights to map soil moisture profiles (10 layer) to 3 layers for VIC hydrology, M.Huang
-                call initCLMVICMap(c, this)
+                call initELMVICMap(c, this)
                 call initSoilParVIC(c, claycol, sandcol, om_fraccol, this)
              end if
           end if ! end of if not lake
@@ -739,7 +739,7 @@ contains
   end subroutine initSoilParVIC
 
    !-----------------------------------------------------------------------
-   subroutine initCLMVICMap(c, soilhydrology_vars)
+   subroutine initELMVICMap(c, soilhydrology_vars)
      !
      ! !DESCRIPTION:
      ! This subroutine calculates mapping between CLM and VIC layers
@@ -814,7 +814,7 @@ contains
 
      end associate 
 
-   end subroutine initCLMVICMap
+   end subroutine initELMVICMap
 
    !-------------------------------------------------------------------
    subroutine linear_interp(x,y, x0, x1, y0, y1)
@@ -855,7 +855,7 @@ contains
      character(len=32) :: subname = 'SoilHydrology_readnl'  ! subroutine name
      !-----------------------------------------------------------------------
 
-     namelist / clm_soilhydrology_inparm / h2osfcflag, origflag
+     namelist / elm_soilhydrology_inparm / h2osfcflag, origflag
 
      ! preset values
 
@@ -865,13 +865,13 @@ contains
      if ( masterproc )then
 
         unitn = getavu()
-        write(iulog,*) 'Read in clm_soilhydrology_inparm  namelist'
+        write(iulog,*) 'Read in elm_soilhydrology_inparm  namelist'
         call opnfil (NLFilename, unitn, 'F')
-        call find_nlgroup_name(unitn, 'clm_soilhydrology_inparm', status=ierr)
+        call find_nlgroup_name(unitn, 'elm_soilhydrology_inparm', status=ierr)
         if (ierr == 0) then
-           read(unitn, clm_soilhydrology_inparm, iostat=ierr)
+           read(unitn, elm_soilhydrology_inparm, iostat=ierr)
            if (ierr /= 0) then
-              call endrun(msg="ERROR reading clm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+              call endrun(msg="ERROR reading elm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
            end if
         end if
         call relavu( unitn )

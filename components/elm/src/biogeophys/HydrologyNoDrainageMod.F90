@@ -71,7 +71,7 @@ contains
     use clm_time_manager     , only : get_step_size, get_nstep
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
-    use SoilHydrologyMod     , only : CLMVICMap, SurfaceRunoff, Infiltration, WaterTable
+    use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use elm_varctl           , only : use_vsfm
@@ -191,7 +191,7 @@ contains
 
       ! mapping soilmoist from CLM to VIC layers for runoff calculations
       if (use_vichydro) then
-         call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
+         call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars, waterstate_vars)
       end if
 
@@ -267,7 +267,7 @@ contains
              
       if (use_vichydro) then
          ! mapping soilmoist from CLM to VIC layers for runoff calculations
-         call CLMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
+         call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars, waterstate_vars)
       end if
 

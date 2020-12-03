@@ -31,7 +31,7 @@ module SoilHydrologyMod
   public :: WaterTable           ! Calculate water table before imposing drainage
   public :: Drainage             ! Calculate subsurface drainage
   public :: DrainageVSFM         ! Calculate subsurface drainage for VSFM
-  public :: CLMVICMap
+  public :: ELMVICMap
   !-----------------------------------------------------------------------
 
 contains
@@ -1940,7 +1940,7 @@ contains
    end subroutine DrainageVSFM
 
   !-----------------------------------------------------------------------
-  subroutine CLMVICMap(bounds, numf, filter, &
+  subroutine ELMVICMap(bounds, numf, filter, &
        soilhydrology_vars, waterstate_vars)
      !
      ! !DESCRIPTION:
@@ -2023,6 +2023,6 @@ contains
 
      end associate
 
-   end subroutine CLMVICMap
+   end subroutine ELMVICMap
 
 end module SoilHydrologyMod

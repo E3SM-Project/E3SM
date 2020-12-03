@@ -1982,7 +1982,7 @@ sub process_namelist_inline_logic {
 #  setup_logic_humanindex($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #######################################################################
-  # namelist groups: clm_hydrology1_inparm and clm_soilhydrology_inparm #
+  # namelist groups: clm_hydrology1_inparm and elm_soilhydrology_inparm #
   #######################################################################
   setup_logic_hydrology_switches($nl);
 
@@ -3412,7 +3412,7 @@ sub write_output_files {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm 
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
                  elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm);
-    #@groups = qw(elm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
+    #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on
     #if ( $nl_flags->{'bgc_mode'}  eq "cn" ) {
