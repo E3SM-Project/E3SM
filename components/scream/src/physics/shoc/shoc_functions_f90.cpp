@@ -272,6 +272,7 @@ void vd_shoc_solve_c(Int shcol, Int nlev, Real* du, Real* dl, Real* d, Real* var
 void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
 void pblintd_surf_temp_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 void pblintd_check_pblh_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
+void pblintd_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -789,6 +790,14 @@ void pblintd_check_pblh(PblintdCheckPblhData& d)
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   pblintd_check_pblh_c(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void pblintd(PblintdData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_c(d.shcol, d.nlev, d.nlevi, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -2634,6 +2643,10 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
   // TODO
 }
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh)
+{
+  // TODO
+}
+void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
 {
   // TODO
 }

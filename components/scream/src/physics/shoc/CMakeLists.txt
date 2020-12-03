@@ -67,6 +67,7 @@ if (NOT CUDA_BUILD)
     shoc_pblintd_init.cpp
     shoc_pblintd_surf_temp.cpp
     shoc_pblintd_check_pblh.cpp
+    shoc_pblintd.cpp
   ) # SHOC ETI SRCS
 endif()
 
