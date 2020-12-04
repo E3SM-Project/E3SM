@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+"""
+Script containing python test suite for SCREAM test
+infrastructure. This suite should be run to confirm overall
+correctness. You should run this test once in generation mode to
+generate baseline results using your reference commit (common
+ancestor) and once in comparison mode to compare against these
+baselines using your development commit. Baseline and compare runs
+will use dry-run modes so we are only comparing hypothetical shell
+commands, not actually running them.
+
+You can also do a full run which will actually execute the commands.
+
+TODO: Add doctests to libs
+"""
+
+from utils import run_cmd_no_fail, check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import unittest, pathlib, argparse, sys
+
+TEST_DIR = pathlib.Path(__file__).resolve().parent
+
+###############################################################################
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
+###############################################################################
+    from_dir = pathlib.Path() if from_dir is None else from_dir
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
+    if expected_stat == 0:
+        expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
+    else:
+        expectation = "EXPECTED STAT %s, INSTEAD GOT STAT %s" % (expected_stat, stat)
+    msg = \
+"""
+COMMAND: %s
+FROM_DIR: %s
+%s
+OUTPUT: %s
+ERRPUT: %s
+""" % (cmd, from_dir, expectation, output, errput)
+    test_obj.assertEqual(stat, expected_stat, msg=msg)
+
+    return output
+
+###############################################################################
+class TestMachineSpecs(unittest.TestCase):
+###############################################################################
+
+    def test_doctests(self):
+        run_cmd_assert_result(self, "python3 -m doctest machine_specs.py", from_dir=TEST_DIR)
+
+    def test_pylint(self):
+        run_cmd_assert_result(self, "pylint --disable C --disable R machine_specs.py", from_dir=TEST_DIR)
+
+###############################################################################
+class TestTestAllScream(unittest.TestCase):
+###############################################################################
+
+    def test_doctests(self):
+        run_cmd_assert_result(self, "python3 -m doctest test_all_scream.py", from_dir=TEST_DIR)
+
+    def test_pylint(self):
+        run_cmd_assert_result(self, "pylint --disable C --disable R test_all_scream.py", from_dir=TEST_DIR)
+
+###############################################################################
+class TestGatherAllData(unittest.TestCase):
+###############################################################################
+
+    def test_doctests(self):
+        run_cmd_assert_result(self, "python3 -m doctest gather_all_data.py", from_dir=TEST_DIR)
+
+    def test_pylint(self):
+        run_cmd_assert_result(self, "pylint --disable C --disable R gather_all_data.py", from_dir=TEST_DIR)
+
+###############################################################################
+class TestScriptsTest(unittest.TestCase):
+###############################################################################
+
+    def test_pylint(self):
+        run_cmd_assert_result(self, "pylint --disable C --disable R scripts-test", from_dir=TEST_DIR)
+
+###############################################################################
+def parse_command_line(args, desc):
+###############################################################################
+    """
+    Parse custom args for this test suite. Will delete our custom args from
+    sys.argv so that only args meant for unittest remain.
+    """
+    help_str = \
+"""
+{0} [TEST] [TEST]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run the full suite \033[0m
+    > {0}
+
+    \033[1;32m# Run all Foo tests \033[0m
+    > {0} Foo
+
+    \033[1;32m# Run specific Foo.bar test \033[0m
+    > {0} Foo.bar
+""".format(pathlib.Path(sys.argv[0]))
+
+    parser = argparse.ArgumentParser(
+             usage=help_str,
+             description=desc,
+             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-m", "--machine",
+        help="Provide machine name. This is *always* required")
+
+    args, py_ut_args = parser.parse_known_args()
+    sys.argv[1:] = py_ut_args
+
+    return args
+
+###############################################################################
+def scripts_tests():
+###############################################################################
+    unittest.main(verbosity=2)
+
+###############################################################################
+def _main_func(desc):
+###############################################################################
+    scripts_tests(**vars(parse_command_line(sys.argv, desc)))
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
