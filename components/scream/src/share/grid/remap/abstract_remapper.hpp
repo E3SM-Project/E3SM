@@ -224,10 +224,9 @@ protected:
   // necessary because the binding of fields is separate from their
   // regіstration: recall that one may register a field using its identifier,
   // and bind the actual field later.
-  // NOTE: vector<bool> is a strange beast, and doesn't necessary behave as
-  // NOTE: expected. Use caution when manipulating this member, and don't
-  // NOTE: rely on the usual assumptions about how the boolean elements are
-  // NOTE: stored.
+  // NOTE: vector<bool> is a strange beast, and doesn't necessarily behave as
+  // expected. Use caution when manipulating this member, and don't rely on the
+  // usual assumptions about how the boolean elements are stored.
   std::vector<bool>   m_fields_are_bound;
   int                 m_num_bound_fields;
 };
