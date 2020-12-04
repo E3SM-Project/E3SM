@@ -2106,6 +2106,17 @@ Default: 1
 Directory where P3 initialization files are located.
 </entry>
 
+<entry id="do_SPA_optics" type="logical" category="radiation"
+       group="radiation_nl" valid_values="" >
+Option to prescribe aerosol optical properties.
+Default: .false.
+</entry>
+
+<entry id="SPA_lookup_dir" type="char*128" category="radiation"
+       group="radiation_nl" valid_values="" >
+Directory where SPA files are located.
+</entry>
+
 <entry id="micro_aerosolactivation" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
 Specify if aerosol activation is used in microphysics scheme.

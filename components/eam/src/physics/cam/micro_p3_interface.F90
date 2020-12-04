@@ -825,7 +825,7 @@ end subroutine micro_p3_readnl
 
       nullify(ccn_values)
 
-      !fill days_per_month
+      !fill days_per_month, SPA does not recognize leap year
       days_per_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
       !get current time step's date
