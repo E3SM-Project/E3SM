@@ -259,7 +259,7 @@ void Field<RealType>::allocate_view ()
   EKAT_REQUIRE_MSG(layout.are_dimensions_set(), "Error! Cannot allocate the view until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
-  alloc_prop.commit();
+  alloc_prop.commit(layout);
 
   // Create the view, by quering allocation properties for the allocation size
   const int view_dim = alloc_prop.get_alloc_size() / sizeof(value_type);
