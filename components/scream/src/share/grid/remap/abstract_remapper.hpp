@@ -189,9 +189,10 @@ protected:
   virtual void do_remap_bwd () const = 0;
 
   // This helper function searches for a pair of source and target field
-  // identifiers in the remapper's set of bound fields, and returns the index to
-  // which they are bound, or -1 if no such pair of bound fields exists within
-  // the remapper.
+  // identifiers in the remapper's set of bound fields. It returns -1 if fields
+  // were not registered at all (via the field identifier). If they were
+  // registered, it returns the index, regardless of whether the fields have
+  // already been bound.
   int find_field (const identifier_type& src,
                   const identifier_type& tgt) {
     int ifield = -1;
@@ -218,10 +219,15 @@ protected:
   int           m_num_fields;
   int           m_num_registered_fields;
 
-  // This vector stores a boolean whose elements are the indices of fields that
-  // have been bound to the remapper. This vector is necessary because the
-  // binding of fields is separate from their regіstration: recall that one may
-  // register a field using its identifier, and bind the actual field later.
+  // This vector maps the indices of registered fields to booleans that indicate
+  // whether these fields have been bound to the remapper. This vector is
+  // necessary because the binding of fields is separate from their
+  // regіstration: recall that one may register a field using its identifier,
+  // and bind the actual field later.
+  // NOTE: vector<bool> is a strange beast, and doesn't necessary behave as
+  // NOTE: expected. Use caution when manipulating this member, and don't
+  // NOTE: rely on the usual assumptions about how the boolean elements are
+  // NOTE: stored.
   std::vector<bool>   m_fields_are_bound;
   int                 m_num_bound_fields;
 };
