@@ -57,6 +57,7 @@ if (NOT CUDA_BUILD)
     shoc_update_prognostics_implicit.cpp
     shoc_diag_third_shoc_moments.cpp
     shoc_assumed_pdf.cpp
+    shoc_adv_sgs_tke.cpp
     shoc_compute_tmpi.cpp
     shoc_integ_column_stability.cpp
     shoc_isotropic_ts.cpp
@@ -64,6 +65,8 @@ if (NOT CUDA_BUILD)
     shoc_shoc_main.cpp
     shoc_pblintd_height.cpp
     shoc_tridiag_solver.cpp
+    shoc_grid.cpp
+    shoc_eddy_diffusivities.cpp
   ) # SHOC ETI SRCS
 endif()
 

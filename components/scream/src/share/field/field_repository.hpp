@@ -82,6 +82,7 @@ public:
   const field_type& get_field (const identifier_type& identifier) const;
   const field_type& get_field(const std::string name,const std::string grid) const;
   const groups_map_type& get_field_groups () const { return m_field_groups; }
+  const alias_map_type& get_alias_fields (const std::string& name) const;
 
   // Iterators, to allow range for loops over the repo.
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
@@ -248,6 +249,15 @@ FieldRepository<RealType>::get_field (const std::string name, const std::string 
   EKAT_REQUIRE_MSG(f_matches.size()==1, "Error! get_field: " + name + " found " + std::to_string(f_matches.size()) + " matches on grid " + grid + ".\n");
   // Use this field id to grab field itself.
   return get_field(f_matches[0]);
+}
+
+template<typename RealType>
+const typename FieldRepository<RealType>::alias_map_type&
+FieldRepository<RealType>::get_alias_fields (const std::string& name) const
+{
+  auto it = m_fields.find(name);
+  EKAT_REQUIRE_MSG (it!=m_fields.end(), "Error! Field aliases not found.\n");
+  return it->second;
 }
 
 template<typename RealType>

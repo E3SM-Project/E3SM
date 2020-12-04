@@ -17,8 +17,11 @@ set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ctest_start(${dashboard_model} TRACK ${dashboard_track})
 
-separate_arguments(OPTIONS_LIST UNIX_COMMAND "${CMAKE_COMMAND}")
-ctest_configure(OPTIONS "${OPTIONS_LIST}" RETURN_VALUE CONFIG_ERROR_CODE)
+if (NOT SKIP_CONFIG_STEP)
+  # Config step is not to be skipped
+  separate_arguments(OPTIONS_LIST UNIX_COMMAND "${CMAKE_COMMAND}")
+  ctest_configure(OPTIONS "${OPTIONS_LIST}" RETURN_VALUE CONFIG_ERROR_CODE)
+endif()
 
 if (CONFIG_ERROR_CODE)
   set (TEST_FAILS TRUE)

@@ -15,8 +15,7 @@ set(SHARE_SRC
 )
 
 add_library(scream_share ${SHARE_SRC})
-
-target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BINARY_DIR}/src)
+target_include_directories(scream_share PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(scream_share SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS})
 target_link_libraries(scream_share PUBLIC ekat)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})

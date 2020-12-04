@@ -128,8 +128,58 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    ShocGridData f90_data[] = {
+      ShocGridData(10, 71, 72),
+      ShocGridData(10, 12, 13),
+      ShocGridData(7,  16, 17),
+      ShocGridData(2, 7, 8),
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
+
+    // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    ShocGridData cxx_data[] = {
+      ShocGridData(f90_data[0]),
+      ShocGridData(f90_data[1]),
+      ShocGridData(f90_data[2]),
+      ShocGridData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      shoc_grid(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      shoc_grid_f(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      ShocGridData& d_f90 = f90_data[i];
+      ShocGridData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.dz_zt); ++k) {
+        REQUIRE(d_f90.dz_zt[k] == d_cxx.dz_zt[k]);
+        REQUIRE(d_f90.rho_zt[k] == d_cxx.rho_zt[k]);
+      }
+      for (Int k = 0; k < d_f90.total(d_f90.dz_zi); ++k) {
+        REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
+      }
+    }
+  } // run_bfb
 };
 
 }  // namespace unit_test

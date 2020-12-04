@@ -9,6 +9,8 @@
 #include "share/grid/remap/inverse_remapper.hpp"
 #include "share/tests/dummy_se_point_remapper.hpp"
 
+#include "ekat/ekat_parse_yaml_file.hpp"
+
 namespace scream {
 
 template<AtmosphereProcessType PType>
@@ -197,11 +199,11 @@ setup_upgm (const int ne) {
 
   // Note: our test does not use actual dof info, but we need to set these
   //       views in the SEGrid's, so that the num local dofs is set
-  SEGrid::dofs_list_type dyn_dofs("",nelem*np*np);
-  SEGrid::dofs_list_type phys_dofs("",ncols);
+  AbstractGrid::dofs_list_type dyn_dofs("",nelem*np*np);
+  AbstractGrid::dofs_list_type phys_dofs("",ncols);
 
-  SEGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
-  SEGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
+  AbstractGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
+  AbstractGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
 
   // Create a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
@@ -214,6 +216,7 @@ setup_upgm (const int ne) {
 
   using dummy_remapper = DummySEPointRemapper<Real>;
   using inverse_remapper = InverseRemapper<Real>;
+  using identity_remapper = IdentityRemapper<Real>;
   auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);
@@ -231,28 +234,10 @@ TEST_CASE("process_factory", "") {
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  // Create a parameter list for inputs
+  // Load ad parameter list
+  std::string fname = "atm_process_tests.yaml";
   ekat::ParameterList params ("Atmosphere Processes");
-
-  params.set("Number of Entries",2);
-  params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", "Dynamics");
-
-  auto& p1 = params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Group");
-  p1.set("Number of Entries",2);
-  p1.set<std::string>("Schedule Type","Sequential");
-
-  auto& p1_0 = p1.sublist("Process 0");
-  p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", "Physics");
-
-  auto& p1_1 = p1.sublist("Process 1");
-  p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", "Physics");
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
