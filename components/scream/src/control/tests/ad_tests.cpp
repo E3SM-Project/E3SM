@@ -9,11 +9,10 @@
 
 namespace scream {
 
-TEST_CASE ("dag_check","[!throws]")
+TEST_CASE ("group_requirements","[!throws]")
 {
-  constexpr int num_cols = 1;
-  constexpr int num_vl   = 1;
-  // This test checks that unmet dependencies in the Atm DAG will throw
+  constexpr int num_cols = 4;
+  constexpr int num_vl   = 2;
 
   // Load ad parameter list
   std::string fname = "ad_tests.yaml";
@@ -29,10 +28,11 @@ TEST_CASE ("dag_check","[!throws]")
   // Create the driver
   control::AtmosphereDriver ad;
 
+  // Init and run a single time step
   util::TimeStamp init_time(0,0,0,0.0);
-
-  // Since Physics_fwd has an unmet dependency, this should throw
-  REQUIRE_THROWS(ad.initialize(atm_comm,ad_params,init_time));
+  ad.initialize(atm_comm,ad_params,init_time);
+  ad.run(1.0);
+  ad.finalize ();
 
   // Cleanup atm factories and grids manager
   dummy_atm_cleanup();
