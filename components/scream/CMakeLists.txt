@@ -188,10 +188,6 @@ include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 
-# # Init scream TPLs info to whatever EKAT set.
-# set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
-# set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
-
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
@@ -212,13 +208,11 @@ print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
-print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
-print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
