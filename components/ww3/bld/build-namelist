@@ -86,7 +86,6 @@ my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
 	     scriptsroot => 0,
-             simyr       => 2000,
 	     inst_string => 0,
 	    );
 
@@ -95,10 +94,10 @@ GetOptions(
     "infile=s"      => \$opts{'infile'},
     "namelist=s"    => \$opts{'namelist'},
     "print=i"       => \$opts{'print'},
-    "simyr=i"       => \$opts{'simyr'},
     "caseroot=s"    => \$opts{'caseroot'},
     "scriptsroot=s" => \$opts{'scriptsroot'},
     "inst_string=s" => \$opts{'inst_string'},	   
+    "nml_type=s"    => \$opts{'nml_type'},	   
     
 )  or usage();
 
@@ -121,10 +120,14 @@ my $eol = "\n";
 my $CASEROOT    = $opts{'caseroot'}; 
 my $SCRIPTSROOT = $opts{'scriptsroot'};       
 my $INST_STRING = $opts{'inst_string'}; 
+my $NML_TYPE    = $opts{'nml_type'};
 
 if ($print>=2) { print "Setting ww3 configuration script directory to $cfgdir$eol"; }
 
-print 'Here.... \n';
+if ($NML_TYPE ne "ww3" && $NML_TYPE ne "ww3_grid") {  
+die  "NML_TYPE not recognized";
+}
+
 #-----------------------------------------------------------------------------------------------
 # Create config_cache.xml file (needed below)
 
@@ -185,14 +188,14 @@ EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.
-my $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_ww3.xml";
+my $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_$NML_TYPE.xml";
 (-f "$nl_definition_file")  or  die <<"EOF";
 ** $ProgName - Cannot find namelist definition file \"$nl_definition_file\" **
 EOF
 if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol"; }
 
 # The namelist defaults file contains default values for all required namelist variables.
-my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_ww3.xml"; 
+my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_$NML_TYPE.xml"; 
 (-f "$nl_defaults_file")  or  die <<"EOF";
 ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
@@ -291,27 +294,82 @@ if ($print>=2) {
 # namelist group: ww3_inparm, wrm_inparm, inund_inparm  #
 ####################################
 
-add_default($nl, 'initfile');
-add_default($nl, 'outfreq');
+if ($NML_TYPE eq "ww3") {
+    add_default($nl, 'initfile');
+    add_default($nl, 'outfreq');
+}
+if ($NML_TYPE eq "ww3_grid") {
+
+    add_default($nl, 'spectrum%xfr');
+    add_default($nl, 'spectrum%freq1');
+    add_default($nl, 'spectrum%nk');
+    add_default($nl, 'spectrum%nth');
+    add_default($nl, 'spectrum%thoff');
+
+    add_default($nl, 'run%fldry');
+    add_default($nl, 'run%flcx');
+    add_default($nl, 'run%flcy');
+    add_default($nl, 'run%flcth');
+    add_default($nl, 'run%flck');
+    add_default($nl, 'run%flsou');
+
+    add_default($nl, 'timesteps%dtmax');
+    add_default($nl, 'timesteps%dtxy');
+    add_default($nl, 'timesteps%dtkth');
+    add_default($nl, 'timesteps%dtmin');
+
+    add_default($nl, 'grid%name');
+    add_default($nl, 'grid%nml');
+    add_default($nl, 'grid%type');
+    add_default($nl, 'grid%coord');
+    add_default($nl, 'grid%clos');
+    add_default($nl, 'grid%zlim');
+    add_default($nl, 'grid%dmin');
+
+    add_default($nl, 'unst%sf');
+    add_default($nl, 'unst%filename');
+    add_default($nl, 'unst%idf');
+    add_default($nl, 'unst%idla');
+    add_default($nl, 'unst%idfm');
+    add_default($nl, 'unst%format');
+
+    add_default($nl, 'inbnd_count%n_point');
+
+    add_default($nl, 'inbnd_point(1)%x_index');
+    add_default($nl, 'inbnd_point(1)%y_index');
+    add_default($nl, 'inbnd_point(1)%connect');
+    add_default($nl, 'inbnd_point(2)%x_index');
+    add_default($nl, 'inbnd_point(2)%y_index');
+    add_default($nl, 'inbnd_point(2)%connect');
+}
 
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid
 #
+
 $definition->validate($nl);
 
 #-----------------------------------------------------------------------------------------------
 # Write output files
 #
 my $note = "";
+my @groups = "";
+my $outfile = "";
 
-# ww3_in
-my @groups = qw(ww3_inparm);
-my $outfile = "./ww3_in";
+if ($NML_TYPE eq "ww3") {
+    @groups = qw(ww3_inparm);
+    $outfile = "./ww3_in";
+}
+if ($NML_TYPE eq "ww3_grid") {
+    @groups = qw(spectrum_nml run_nml timesteps_nml grid_nml unst_nml inbnd_count_nml inbnd_point_nml);
+    $outfile = "./ww3_grid_in";
+}
+
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing ww3 namelist to $outfile $eol"; }
 
 # Write out required local input files
-check_input_files($nl, $DIN_LOC_ROOT, "$CASEROOT/Buildconf/ww3.input_data_list");
+check_input_files($nl, $DIN_LOC_ROOT, "$CASEROOT/Buildconf/$NML_TYPE.input_data_list");
 
 #===============================================================================================
 #===============================================================================================
