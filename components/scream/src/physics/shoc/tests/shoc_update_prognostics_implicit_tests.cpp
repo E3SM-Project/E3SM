@@ -380,6 +380,12 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     for (Int i = 0; i < num_runs; ++i) {
       UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
       UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
+
+      REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
+      REQUIRE(d_f90.total(d_f90.qw) == d_cxx.total(d_cxx.qw));
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
+      REQUIRE(d_f90.total(d_f90.u_wind) == d_cxx.total(d_cxx.u_wind));
+      REQUIRE(d_f90.total(d_f90.v_wind) == d_cxx.total(d_cxx.v_wind));
       for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
         REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
         REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
@@ -388,6 +394,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
         REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
       }
 
+      REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
       for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
         REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
       }
