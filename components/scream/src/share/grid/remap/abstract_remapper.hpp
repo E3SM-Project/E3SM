@@ -42,15 +42,6 @@ public:
   // Call this before you begin registering fields with this remapper.
   void registration_begins ();
 
-  // Specify that all given source fields be packed into the single "packed"
-  // target field identified by packed_tgt. The target field must have a layout
-  // with a sufficient rank to accommodate the fields being packed into it. In
-  // the inverse mapping, the target (source) fields are unpacked from the
-  // source (target) field in the same order in which they were packed.
-  // This method must be called before any other field registration method.
-  void register_packing (const std::vector<field_type>& src_fields,
-                         const identifier_type& packed_tgt);
-
   // This method registers a source field to be remapped to a target field.
   void register_field (const field_type& src, const field_type& tgt);
 
@@ -316,15 +307,6 @@ unregister_field (const identifier_type& src, const identifier_type& tgt) {
     --m_num_bound_fields;
   }
   m_fields_are_bound.erase(m_fields_are_bound.begin()+ifield);
-}
-
-template<typename RealType>
-void AbstractRemapper<RealType>::
-register_packing (const std::vector<field_type>& src_fields,
-                  const identifier_type& packed_tgt) {
-  EKAT_REQUIRE_MSG(m_state==RepoState::Open,
-                   "Error! You can only register fields to be packed during "
-                   "the registration phase.\n");
 }
 
 template<typename RealType>
