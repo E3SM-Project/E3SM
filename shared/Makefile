@@ -27,6 +27,13 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_forcing_surface_stress.o \
 	   mpas_ocn_vel_forcing_explicit_bottom_drag.o \
 	   mpas_ocn_vel_pressure_grad.o \
+		 mpas_ocn_vvel_vert_advection.o \
+		 mpas_ocn_vvel_horiz_advection.o \
+		 mpas_ocn_vvel_coriolis.o \
+		 mpas_ocn_vvel_hmix_del2.o \
+		 mpas_ocn_vvel_advection.o \
+		 mpas_ocn_vvel_pgf.o \
+		 mpas_ocn_nonhydrostatic_pressure_solve.o \
 	   mpas_ocn_vmix.o \
 	   mpas_ocn_vmix_coefs_redi.o \
 	   mpas_ocn_vmix_cvmix.o \
@@ -68,13 +75,43 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_time_varying_forcing.o \
 	   mpas_ocn_wetting_drying.o \
 	   mpas_ocn_vel_tidal_potential.o \
-	   mpas_ocn_vel_forcing_topographic_wave_drag.o
+	   mpas_ocn_vel_forcing_topographic_wave_drag.o \
+	   mpas_ocn_two_equation_model_driver.o \
+	   mpas_ocn_tke_glsPsi_transport.o \
+	   mpas_ocn_two_equation_structure_functions.o \
+	   mpas_ocn_tke_advection_mono.o \
+	   mpas_ocn_glsPsi_advection_mono.o \
+	   mpas_ocn_shear_production.o \
+	   mpas_ocn_buoyancy_production.o
 
 all: $(OBJS)
 
+mpas_ocn_vmix.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o
+
 mpas_ocn_init_routines.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics.o mpas_ocn_gm.o mpas_ocn_forcing.o mpas_ocn_surface_land_ice_fluxes.o
 
-mpas_ocn_tendency.o: mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_restoring.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o mpas_ocn_surface_bulk_forcing.o mpas_ocn_surface_land_ice_fluxes.o mpas_ocn_tracer_surface_flux_to_tend.o mpas_ocn_tracer_interior_restoring.o mpas_ocn_tracer_exponential_decay.o mpas_ocn_tracer_ideal_age.o mpas_ocn_tracer_TTD.o mpas_ocn_vmix.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_frazil_forcing.o mpas_ocn_tidal_forcing.o mpas_ocn_tracer_ecosys.o mpas_ocn_tracer_DMS.o mpas_ocn_tracer_MacroMolecules.o mpas_ocn_diagnostics.o mpas_ocn_wetting_drying.o mpas_ocn_tidal_potential_forcing.o mpas_ocn_vel_tidal_potential.o mpas_ocn_mesh.o
+mpas_ocn_tendency.o: mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_restoring.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o mpas_ocn_surface_bulk_forcing.o mpas_ocn_surface_land_ice_fluxes.o mpas_ocn_tracer_surface_flux_to_tend.o mpas_ocn_tracer_interior_restoring.o mpas_ocn_tracer_exponential_decay.o mpas_ocn_tracer_ideal_age.o mpas_ocn_tracer_TTD.o mpas_ocn_vmix.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_frazil_forcing.o mpas_ocn_tidal_forcing.o mpas_ocn_tracer_ecosys.o mpas_ocn_tracer_DMS.o mpas_ocn_tracer_MacroMolecules.o mpas_ocn_diagnostics.o mpas_ocn_wetting_drying.o mpas_ocn_tidal_potential_forcing.o mpas_ocn_vel_tidal_potential.o mpas_ocn_vvel_pgrad.o mpas_ocn_vvel_advection.o mpas_ocn_vvel_coriolis.o mpas_ocn_vvel_hmix_del2.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
+all: $(OBJS)
+
+mpas_ocn_two_equation_model_driver.o: mpas_ocn_mesh.o mpas_ocn_tke_advection_mono.o mpas_ocn_glsPsi_advection_mono.o mpas_ocn_tke_glsPsi_transport.o mpas_ocn_shear_production.o mpas_ocn_buoyancy_production.o mpas_ocn_diagnostics_variables.o mpas_ocn_two_equation_structure_functions.o mpas_ocn_config.o
+
+mpas_ocn_two_equation_structure_functions.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_shear_production.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o mpas_ocn_mesh.o
+
+mpas_ocn_buoyancy_production.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_tke_advection_mono.o: mpas_ocn_constants.o mpas_ocn_mesh.o
+
+mpas_ocn_glsPsi_advection.o: mpas_ocn_constants.o mpas_ocn_mesh.o
+
+mpas_ocn_tke_glsPsi_transport.o: mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_init_routines.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics.o mpas_ocn_gm.o mpas_ocn_forcing.o mpas_ocn_surface_land_ice_fluxes.o
+
+mpas_ocn_tendency.o: mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_restoring.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o mpas_ocn_tracer_advection.o mpas_ocn_tracer_hmix.o mpas_ocn_tracer_nonlocalflux.o mpas_ocn_surface_bulk_forcing.o mpas_ocn_surface_land_ice_fluxes.o mpas_ocn_tracer_surface_flux_to_tend.o mpas_ocn_tracer_interior_restoring.o mpas_ocn_tracer_exponential_decay.o mpas_ocn_tracer_ideal_age.o mpas_ocn_tracer_TTD.o mpas_ocn_vmix.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_frazil_forcing.o mpas_ocn_tidal_forcing.o mpas_ocn_tracer_ecosys.o mpas_ocn_tracer_DMS.o mpas_ocn_tracer_MacroMolecules.o mpas_ocn_diagnostics.o mpas_ocn_wetting_drying.o mpas_ocn_tidal_potential_forcing.o mpas_ocn_vel_tidal_potential.o mpas_ocn_vvel_pgrad.o mpas_ocn_vvel_advection.o mpas_ocn_vvel_coriolis.o mpas_ocn_vvel_hmix_del2.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
 
@@ -100,7 +137,7 @@ mpas_ocn_vel_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vel_hmix.o: mpas_ocn_vel_hmix_del2.o mpas_ocn_vel_hmix_leith.o mpas_ocn_vel_hmix_del4.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vel_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vel_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_hmix_leith.o: mpas_ocn_constants.o mpas_ocn_config.o
 
@@ -116,6 +153,22 @@ mpas_ocn_vel_forcing_explicit_bottom_drag.o: mpas_ocn_constants.o mpas_ocn_confi
 
 mpas_ocn_vel_hadv_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
 
+mpas_ocn_vvel_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_vvel_pgf.o: mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_vvel_vert_advection.o: mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_vvel_horiz_advection.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
+
+mpas_ocn_vvel_horiz_advection_old.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o
+
+mpas_ocn_vvel_hmix_del2.o: mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_vvel_advection.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_vvel_horiz_advection_old.o mpas_ocn_vvel_horiz_advection.o mpas_ocn_vvel_vert_advection.o
+
+mpas_ocn_nonhydrostatic_pressure_solve.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
+
 mpas_ocn_tracer_hmix.o: mpas_ocn_tracer_hmix_del2.o mpas_ocn_tracer_hmix_del4.o mpas_ocn_tracer_hmix_redi.o
 
 mpas_ocn_tracer_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o
@@ -130,13 +183,12 @@ mpas_ocn_tracer_advection_std.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_hmix_redi.o: mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_high_freq_thickness_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_tracer_nonlocalflux.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o mpas_ocn_tracer_short_wave_absorption_variable.o mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_tracer_shortwave.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o mpas_ocn_tracer_short_wave_absorption_variable.o mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_short_wave_absorption_variable.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o
 
@@ -150,7 +202,7 @@ mpas_ocn_vmix_coefs_redi.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diag
 
 mpas_ocn_vmix_gotm.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
-mpas_ocn_vmix_coefs_redi.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vmix_coefs_redi.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o mpas_ocn_equation_of_state_wright.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 

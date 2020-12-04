@@ -43,10 +43,16 @@ module ocn_forward_mode
    use ocn_test
    use ocn_mesh
 
+   use ocn_two_equation_model
    use ocn_thick_hadv
    use ocn_thick_vadv
    use ocn_thick_ale
    use ocn_thick_surface_flux
+
+   use ocn_vvel_pgrad
+   use ocn_vvel_coriolis
+   use ocn_vvel_advection
+   use ocn_vvel_hmix_del2
 
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
@@ -72,6 +78,7 @@ module ocn_forward_mode
    use ocn_tracer_MacroMolecules
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_compute_nonhydrostatic_pressure
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -256,12 +263,15 @@ module ocn_forward_mode
 
       call ocn_init_routines_compute_min_max_level(domain)
 
+      timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
+      call mpas_get_timeInterval(timeStep, dt=dt)
+
       call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
 
       select case (trim(config_time_integrator))
 
       case ('semi_implicit')
-         call ocn_time_integration_si_init(domain)
+         call ocn_time_integration_si_init(domain,dt)
 
       case ('split_explicit','unsplit_explicit')
          call ocn_time_integration_split_init(domain)
@@ -314,8 +324,23 @@ module ocn_forward_mode
       ! fill the ocean mesh structure
       call ocn_meshCreate(domain)
 
-      timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
-      call mpas_get_timeInterval(timeStep, dt=dt)
+      if(config_enable_nonhydrostatic_mode) then
+        call ocn_vvel_advection_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_coriolis_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_pgf_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_hmix_del2_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_nonhydrostatic_solver_init(domain % dminfo % comm, err_tmp)
+        ierr = ior(ierr, err_tmp)
+      endif
+
+      if(config_use_two_equation_turbulence_model) then
+        call ocn_two_equation_init(domain, err_tmp)
+        ierr = ior(ierr, err_tmp)
+      end if
 
       block => domain % blocklist
       do while (associated(block))
@@ -723,6 +748,10 @@ module ocn_forward_mode
       call mpas_destroy_clock(domain % clock, ierr)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      if(config_enable_nonhydrostatic_mode .and. .not. config_enable_vertMomentum_disable_nonHydro) THEN
+         call ocn_nonhydrostatic_solver_finalize()
+      end if
 
    end function ocn_forward_mode_finalize!}}}
 

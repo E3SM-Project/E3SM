@@ -23,6 +23,7 @@ module ocn_vel_hmix_del2
    use mpas_timer
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_mesh
 
    implicit none
@@ -77,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tend(div, relVort, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tend(div, relVort, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -85,9 +86,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          div,           &!< [in] velocity divergence
-         relVort         !< [in] relative vorticity
-
-      !-----------------------------------------------------------------
+         relVort,       &!< [in] relative vorticity
+         viscosity
       ! input /output variables
       !-----------------------------------------------------------------
 
@@ -135,6 +135,32 @@ contains
       !$acc    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
 #else
+      nEdges = nEdgesOwned
+
+      if(config_use_two_equation_turbulence_model) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge)
+               viscosity(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      else
+         !$omp prallel
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+            do k = 1, maxLevelEdgeTop(iEdge)
+               viscosity(k,iEdge) = viscDel2 * meshScalingDel2(iEdge)
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
+
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
@@ -149,10 +175,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         visc2 =  viscDel2*meshScalingDel2(iEdge)
-
          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-
             ! Here -( relativeVorticity(k,vertex2) - 
             !         relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
             ! is - \nabla relativeVorticity pointing from vertex 2 
@@ -164,7 +187,7 @@ contains
                    -(relVort(k,vertex2)-relVort(k,vertex1))*dvEdgeInv
 
             tend(k,iEdge) = tend(k,iEdge) + &
-                            edgeMask(k,iEdge)*visc2*uDiff
+                            edgeMask(k,iEdge)*viscosity(k,iEdge)*uDiff
 
          end do
       end do
@@ -211,10 +234,9 @@ contains
 
       !*** reset values based on input configuration
 
-      if (config_use_mom_del2) then 
+      if (config_use_mom_del2 .or. config_use_two_equation_turbulence_model) then 
          hmixDel2Off = .false.
          viscDel2    = config_mom_del2
-
          if (viscDel2 <= 0.0_RKIND) then
             call mpas_log_write( &
                 'vel_hmix_del2_init: viscosity must be > 0', &

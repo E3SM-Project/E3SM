@@ -74,6 +74,7 @@ module ocn_mesh
       maxLevelVertexBot, &! max ocean level at bottom of each vertex
       nAdvCellsForEdge, &! number of cells contrib to advection at edge
       indexToCellID, &! global ID of each local cell
+      mpasToPetscMap, &! mapping from mpas decomposition to PETSC decomp
       indexToEdgeID, &! global ID of each local edge
       indexToVertexID    ! global ID of each local vertex
 
@@ -87,7 +88,8 @@ module ocn_mesh
       cellsOnVertex, &! index of cells connected to each vertex
       edgesOnVertex, &! index of edges connected to each vertex
       kiteIndexOnCell, &! index of kite associated with each cell
-      advCellsForEdge  ! index of cells contrib to advective flux at edge
+      advCellsForEdge, &! index of cells contrib to advective flux at edge
+      highOrderAdvectionMask ! mask for high order advection contributions
 
    real(kind=RKIND), public, dimension(:), pointer :: &
       latCell, &! latitude  of cell centers
@@ -130,8 +132,7 @@ module ocn_mesh
       boundaryCell, &! mask for boundary cells    at each level
       boundaryVertex, &! mask for boundary vertices at each level
       edgeSignOnCell, &! sign of edge contributions to a cell
-      edgeSignOnVertex, &! sign of edge contributions to a vertex
-      highOrderAdvectionMask ! mask for high order advection contributions
+      edgeSignOnVertex ! sign of edge contributions to a vertex
 
    real(kind=RKIND), public, dimension(:, :), pointer :: &
       weightsOnEdge, &! weights on each edge
@@ -147,6 +148,13 @@ module ocn_mesh
       cellTangentPlane, &! two vectors defining tangent plane at cell center
       coeffs_reconstruct  ! coeffs for reconstructing vectors at cell centers
    !}}}
+
+   real(kind=RKIND), public, dimension(:,:), pointer :: &
+      boundaryNormalAngle, &
+      distanceToBoundary
+
+   integer, public, dimension(:,:), pointer :: &
+      boundaryCellMask
 
    !----------------------------------------------------------------------------
    !
@@ -336,6 +344,8 @@ contains
                                   nAdvCellsForEdge)
          call mpas_pool_get_array(meshPool, 'indexToCellID', &
                                   indexToCellID)
+         call mpas_pool_get_array(meshPool, 'mpasToPetscMap', &
+                                  mpasToPetscMap)
          call mpas_pool_get_array(meshPool, 'indexToEdgeID', &
                                   indexToEdgeID)
          call mpas_pool_get_array(meshPool, 'indexToVertexID', &
@@ -446,6 +456,10 @@ contains
          call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', &
                                   coeffs_reconstruct)
 
+         call mpas_pool_get_array(meshPool, 'distanceToBoundary', distanceToBoundary)
+         call mpas_pool_get_array(meshPool, 'boundaryCellMask', boundaryCellMask)
+         call mpas_pool_get_array(meshPool, 'boundaryNormalAngle', boundaryNormalAngle)
+
          ! For masks, we wish to convert to real multiplicative masks
          ! so retrieve integer version and set real version in struct.
          ! Once these are converted in Registry, we can eliminate conversion.
@@ -546,6 +560,7 @@ contains
          !$acc                   maxLevelVertexBot,        &
          !$acc                   nAdvCellsForEdge,         &
          !$acc                   indexToCellID,            &
+         !$acc                   mpasToPetcMap,            &
          !$acc                   indexToEdgeID,            &
          !$acc                   indexToVertexID,          &
          !$acc                   edgesOnEdge,              &
@@ -606,7 +621,10 @@ contains
          !$acc                   advCoefs3rd,              &
          !$acc                   derivTwo,                 &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct)
+         !$acc                   coeffs_reconstruct,       &
+         !$acc                   boundaryNormalAngle,      &
+         !$acc                   distanceToBoundary,       &
+         !$acc                   boundaryCellMask)
 
          block => block%next
       end do
@@ -682,6 +700,7 @@ contains
       !$acc                  maxLevelVertexBot, &
       !$acc                  nAdvCellsForEdge,  &
       !$acc                  indexToCellID,     &
+      !$acc                  mpasToPetscMap,    &
       !$acc                  indexToEdgeID,     &
       !$acc                  indexToVertexID,   &
       !$acc                  edgesOnEdge,       &
@@ -742,7 +761,10 @@ contains
       !$acc                  advCoefs3rd,       &
       !$acc                  derivTwo,          &
       !$acc                  cellTangentPlane,  &
-      !$acc                  coeffs_reconstruct)
+      !$acc                  coeffs_reconstruct, &
+      !$acc                  boundaryNormalAngle, &
+      !$acc                  boundaryCellMask, &
+      !$acc                  distanceToBoundary)
 
       ! Reset all scalars to zero
       nCellsAll = 0
@@ -776,6 +798,7 @@ contains
                maxLevelVertexBot, &
                nAdvCellsForEdge, &
                indexToCellID, &
+               mpasToPetscMap, &
                indexToEdgeID, &
                indexToVertexID, &
                edgesOnEdge, &
@@ -827,7 +850,10 @@ contains
                advCoefs3rd, &
                derivTwo, &
                cellTangentPlane, &
-               coeffs_reconstruct)
+               coeffs_reconstruct, &
+               boundaryNormalAngle, &
+               boundaryCellMask, &
+               distanceToBoundary)
 
       deallocate (nEdgesHalo, &
                   nCellsHalo, &
@@ -1128,6 +1154,7 @@ contains
       !$acc               maxLevelVertexBot,        &
       !$acc               nAdvCellsForEdge,         &
       !$acc               indexToCellID,            &
+      !$acc               mpasToPetscMap,           &
       !$acc               indexToEdgeID,            &
       !$acc               indexToVertexID,          &
       !$acc               edgesOnEdge,              &
@@ -1188,7 +1215,10 @@ contains
       !$acc               advCoefs3rd,              &
       !$acc               derivTwo,                 &
       !$acc               cellTangentPlane,         &
-      !$acc               coeffs_reconstruct)
+      !$acc               coeffs_reconstruct,       &
+      !$acc               boundaryNormalAngle,      &
+      !$acc               boundaryCellMask,         &
+      !$acc               distanceToBoundary)
 
 !-------------------------------------------------------------------------------
 

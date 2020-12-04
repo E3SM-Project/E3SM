@@ -42,6 +42,7 @@ module ocn_init_mode
    use ocn_init_spherical_utils
    use ocn_init_cosine_bell
    !use ocn_init_TEMPLATE
+   use ocn_init_deep_convection
    use ocn_init_baroclinic_channel
    use ocn_init_lock_exchange
    use ocn_init_internal_waves
@@ -292,6 +293,7 @@ module ocn_init_mode
       call ocn_init_setup_hurricane(domain, ierr)
       call ocn_init_setup_tidal_boundary(domain, ierr)
       call ocn_init_setup_cosine_bell(domain, ierr)
+      call ocn_init_setup_deep_convection(domain, ierr)
       !call ocn_init_setup_TEMPLATE(domain, ierr)
 
       call mpas_log_write( ' Completed setup of: ' // trim(config_init_configuration))
@@ -402,6 +404,8 @@ module ocn_init_mode
       call ocn_init_validate_tidal_boundary(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       call ocn_init_validate_cosine_bell(configPool, packagePool, iocontext, iErr=err_tmp)
+      iErr = ior(iErr, err_tmp)
+      call ocn_init_validate_deep_convection(configPool, packagePool, iocontext, iErr=err_tmp)
       iErr = ior(iErr, err_tmp)
       ! call ocn_init_validate_TEMPLATE(configPool, packagePool, iocontext, iErr=err_tmp)
       ! iErr = ior(iErr, err_tmp)

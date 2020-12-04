@@ -135,6 +135,18 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: wettingVelocity
    type (field2DReal), pointer :: wettingVelocityField
 
+   real (kind=RKIND), dimension(:,:), pointer :: &
+      velocityVmixtend, &
+      velocityHmixtend, &
+      velocityCoriolisTend, &
+      velocityVadvTend, &
+      velocityForcingTend, &
+      velocityPGFtend
+
+   real (kind=RKIND), dimension(:,:), pointer :: strainTensor
+   real (kind=RKIND), dimension(:,:), pointer :: Sm, Sh
+   real (kind=RKIND), dimension(:,:,:), pointer :: ugrad, vgrad, wgrad
+   real (kind=RKIND), dimension(:,:,:), pointer :: tgrad, sgrad
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
    real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
    integer, dimension(:,:), pointer :: rediLimiterCount
@@ -197,6 +209,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: CGvec_t0,CGvec_t1 ,CGvec_q0 ,CGvec_q1 ,CGvec_qh0
    real (kind=RKIND), dimension(:), pointer :: CGvec_w0,CGvec_w1 ,CGvec_wh0,CGvec_wh1,CGvec_y0
    real (kind=RKIND), dimension(:), pointer :: CGvec_z0,CGvec_z1 ,CGvec_zh0,CGvec_zh1
+   real (kind=RKIND), dimension(:,:), pointer :: dynamicViscosity, uStar, yPlus
 
    !--------------------------------------------------------------------
    !
@@ -282,6 +295,14 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'bottomLayerShortwaveTemperatureFlux', bottomLayerShortwaveTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'strainRateTensor', strainTensor)
+      call mpas_pool_get_array(diagnosticsPool, 'Sm', Sm)
+      call mpas_pool_get_array(diagnosticsPool, 'Sh', Sh)
+      call mpas_pool_get_array(diagnosticsPool, 'ugrad', ugrad)
+      call mpas_pool_get_array(diagnosticsPool, 'vgrad', vgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'wgrad', wgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'tgrad', tgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'sgrad', sgrad)
 
       if (config_use_topographic_wave_drag) then
          call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
@@ -464,6 +485,17 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh0', CGvec_zh0)
          call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh1', CGvec_zh1)
       end if
+
+      call mpas_pool_get_array(diagnosticsPool, 'velocityForcingTend', velocityForcingTend)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityPGFtend', velocityPGFtend)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityVadvTend', velocityVadvTend)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityHmixTend', velocityHmixTend)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityVmixTend', velocityVmixTend)
+      call mpas_pool_get_array(diagnosticsPool, 'velocityCoriolisTend', velocityCoriolisTend)
+
+      call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
+      call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
+      call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
 
     end subroutine ocn_diagnostics_variables_init!}}}
 

@@ -1,0 +1,38 @@
+	<nml_record name="deep_convection" mode="init" configuration=="deep_convection">
+		<nml_option name="config_deep_convection_vert_levels" type="integer" default_value="50" units="unitless"
+			description="Number of vertical levels in the deep convection case. Typical value is 50-100."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_deep_convection_vertical_resolution" type="real" default_value="50" units="m"
+			description="vertical resolution for deep convection"
+			possible_values="positive real numbers"
+		/>
+		<nml_option name="config_deep_convection_random_perturbation_strength" type="real" default_value="1e-8" units="unitless"
+			description="strength of perturbation in layer 1 to initiate convection"
+			possible_values="small positive reals"
+		/>
+		<nml_option name="config_deep_convection_surface_temperature" type="real" default_value="20" units="^oC"
+			description="Surface temperature"
+			possible_values="Real numbers between -2 and 40 degC"
+			/>
+		<nml_option name="config_deep_convection_temperature_stratification" type="real" default_value="0.0" units="^oC/m"
+			description="Initial stratification in C/m, default is unstratified"
+			possible_values="Small positive real numbers"
+			/>
+		<nml_option name="config_deep_convection_salinity" type="real" default_value="35.0" units="PSU"
+			description="Initial and time invariant salinity"
+			possible_values="positive real numbers"
+			/>
+		<nml_option name="config_deep_convection_surface_cooling_strength" type="real" default_value="-800.0" units="W/m^2"
+			description="constant cooling rate in W/m^2, will place in latentHeatFlux"
+			possible_values="negative values likely less than 1000"
+			/>
+		<nml_option name="config_deep_convection_coriolis_parameter" type="real" default_value="1e-4" units="s^{-1}"
+			description="f-plane strength for Coriolis"
+			possible_values="small real numbers"
+			/>
+		<nml_option name="config_deep_convection_smooth_passes" type="integer" default_value="0" unit="unitless"
+		    description="number of smoothing passes of layer 1 temperature"
+			possible_values="positive integers"
+			/>
+	</nml_record>
