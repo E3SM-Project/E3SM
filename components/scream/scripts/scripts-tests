@@ -53,46 +53,47 @@ ERRPUT: %s
     return output
 
 ###############################################################################
-class TestBase(unittest.TestCase):
+class TestBaseOuter:
+    class TestBase(unittest.TestCase):
 ###############################################################################
 
-    def __init__(self, source_file):
-        super(TestBase, self).__init__()
-        self._source_file = source_file
+        def __init__(self, source_file):
+            super(TestBaseOuter.TestBase, self).__init__()
+            self._source_file = source_file
 
-    def test_doctests(self):
-        run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
+        def test_doctests(self):
+            run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
 
-    def test_pylint(self):
-        run_cmd_assert_result(self, "pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
-
-###############################################################################
-class TestMachinesSpecs(TestBase):
-###############################################################################
-
-    def __init__(self):
-        TestBase.__init__(self, "machines_specs.py")
+        def test_pylint(self):
+            run_cmd_assert_result(self, "pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
 
 ###############################################################################
-class TestTestAllScream(TestBase):
+class TestMachinesSpecs(TestBaseOuter.TestBase):
 ###############################################################################
 
     def __init__(self):
-        TestBase.__init__(self, "test_all_scream.py")
+        super(TestMachinesSpecs, self).__init__("machines_specs.py")
 
 ###############################################################################
-class TestGatherAllData(TestBase):
-###############################################################################
-
-    def __init__(self):
-        TestBase.__init__(self, "gather_all_data.py")
-
-###############################################################################
-class TestScriptsTest(TestBase):
+class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
     def __init__(self):
-        TestBase.__init__(self, "scripts-tests")
+        super(TestTestAllScream, self).__init__("test_all_scream.py")
+
+###############################################################################
+class TestGatherAllData(TestBaseOuter.TestBase):
+###############################################################################
+
+    def __init__(self):
+        super(TestGatherAllData, self).__init__("gather_all_data.py")
+
+###############################################################################
+class TestScriptsTest(TestBaseOuter.TestBase):
+###############################################################################
+
+    def __init__(self):
+        super(TestScriptsTest, self).__init__("scripts-tests")
 
 ###############################################################################
 def parse_command_line(args, desc):
