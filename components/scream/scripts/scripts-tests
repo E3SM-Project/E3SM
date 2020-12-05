@@ -57,8 +57,8 @@ class TestBaseOuter:
     class TestBase(unittest.TestCase):
 ###############################################################################
 
-        def __init__(self, source_file):
-            super(TestBaseOuter.TestBase, self).__init__()
+        def __init__(self, source_file, *internal_args):
+            super(TestBaseOuter.TestBase, self).__init__(*internal_args)
             self._source_file = source_file
 
         def test_doctests(self):
@@ -71,29 +71,29 @@ class TestBaseOuter:
 class TestMachinesSpecs(TestBaseOuter.TestBase):
 ###############################################################################
 
-    def __init__(self):
-        super(TestMachinesSpecs, self).__init__("machines_specs.py")
+    def __init__(self, *internal_args):
+        super(TestMachinesSpecs, self).__init__("machines_specs.py", *internal_args)
 
 ###############################################################################
 class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
-    def __init__(self):
-        super(TestTestAllScream, self).__init__("test_all_scream.py")
+    def __init__(self, *internal_args):
+        super(TestTestAllScream, self).__init__("test_all_scream.py", *internal_args)
 
 ###############################################################################
 class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
 
-    def __init__(self):
-        super(TestGatherAllData, self).__init__("gather_all_data.py")
+    def __init__(self, *internal_args):
+        super(TestGatherAllData, self).__init__("gather_all_data.py", *internal_args)
 
 ###############################################################################
 class TestScriptsTest(TestBaseOuter.TestBase):
 ###############################################################################
 
-    def __init__(self):
-        super(TestScriptsTest, self).__init__("scripts-tests")
+    def __init__(self, *internal_args):
+        super(TestScriptsTest, self).__init__("scripts-tests", *internal_args)
 
 ###############################################################################
 def parse_command_line(args, desc):
