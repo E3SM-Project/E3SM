@@ -20,7 +20,7 @@ check_minimum_python_version(3, 4)
 
 import machines_specs
 
-import unittest, pathlib, argparse, sys
+import unittest, pathlib, argparse, sys, difflib
 
 # Globals
 TEST_DIR = pathlib.Path(__file__).resolve().parent
@@ -53,6 +53,26 @@ ERRPUT: %s
     return output
 
 ###############################################################################
+def run_cmd_store_output(test_obj, cmd, baseline_path):
+###############################################################################
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
+    baseline_path.write_text(output)
+
+###############################################################################
+def run_cmd_check_output(test_obj, cmd, baseline_path):
+###############################################################################
+    test_obj.assertTrue(baseline_path.is_file, msg="Missing baseline {}".format(baseline_path))
+    output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
+    diff = difflib.unified_diff(
+        baseline_path.read_text().splitlines(),
+        output.splitlines(),
+        fromfile=str(baseline_path),
+        tofile=cmd)
+    diff_output = "\n".join(diff)
+    test_obj.assertEqual("", diff_output, msg=diff_output)
+
+###############################################################################
 class TestBaseOuter:
     class TestBase(unittest.TestCase):
 ###############################################################################
@@ -60,12 +80,41 @@ class TestBaseOuter:
         def __init__(self, source_file, *internal_args):
             super(TestBaseOuter.TestBase, self).__init__(*internal_args)
             self._source_file = source_file
+            self._cmd         = "echo {}".format(source_file)
+
+        def get_baseline(self, machine):
+            return TEST_DIR.joinpath(self._source_file).with_suffix("").joinpath(machine)
+
+        def get_machines(self):
+            return [CONFIG["machine"]] if CONFIG["machine"] else machines_specs.get_all_supported_machines()
 
         def test_doctests(self):
             run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
 
         def test_pylint(self):
             run_cmd_assert_result(self, "pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
+
+        def test_gen_baseline(self):
+            if CONFIG["generate"]:
+                machines = self.get_machines()
+                for machine in machines:
+                    run_cmd_store_output(self, self._cmd, self.get_baseline(machine))
+            else:
+                self.skipTest("Skipping dry run baseline generation")
+
+        def test_cmp_baseline(self):
+            if CONFIG["compare"]:
+                machines = self.get_machines()
+                for machine in machines:
+                    run_cmd_check_output(self, self._cmd, self.get_baseline(machine))
+            else:
+                self.skipTest("Skipping dry run baseline comparison")
+
+        def test_full(self):
+            if CONFIG["full"]:
+                pass
+            else:
+                self.skipTest("Skipping full run")
 
 ###############################################################################
 class TestMachinesSpecs(TestBaseOuter.TestBase):
