@@ -538,6 +538,7 @@ subroutine momentum_energy_fix(ncol, tend_level, dt, pint, pdel, u, v, dudt, dvd
   end do
 #endif
 
+#if 0
 do i=1,ncol
 if (maxval(dudt(i,:)) > 0.0)then
 
@@ -545,9 +546,9 @@ print *, 'du here is', dudt(i,:)
 print *, 'dv here is', dvdt(i,:)
 
 print *, 'tend here', tend_level(i)
-
+endif
 enddo
-
+#endif
 
 !print *, 'tend_level(:ncol)',tend_level(:ncol)
 !print *, 'dudt(1,: )',dudt(1,: )

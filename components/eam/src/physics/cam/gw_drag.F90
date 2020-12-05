@@ -747,9 +747,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
 
 
-!#define OLDGW
+#define OLDGW
 !#define NEWGW
-#define NEWGW2
+!#define NEWGW2
 
 
 
@@ -799,16 +799,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            ptend%s(:ncol,k) = ttgw(:,k)
         end do
 
-
-#ifndef NEWGW2
         ! C.-C. Chen, momentum & energy conservation
         call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
-#endif
-#ifdef NEWGW2
-        call momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
-             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
-#endif
 
         call gw_spec_outflds(beres_pf, lchnk, ncol, pgwv, c, u, v, &
              xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
@@ -869,15 +862,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k)
         end do
 
-#ifndef NEWGW2
         ! C.-C. Chen, momentum & energy conservation
         call momentum_energy_conservation(ncol, tend_level, dt, taucd, &
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
-#endif
-#ifdef NEWGW2
-        call momentum_energy_conservation_shift(ncol, tend_level, dt, taucd, &
-             pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
-#endif
 
         call gw_spec_outflds(cm_pf, lchnk, ncol, pgwv, c, u, v, &
              xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
@@ -891,6 +878,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   end if
 
+#if 0
   if (use_gw_oro) then
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
@@ -939,19 +927,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 #endif
      end do
 
-
-
-#ifdef NEWGW2
-     call momentum_energy_fix(ncol, tend_level, dt, pint, dpm, u, v, ptend%u, ptend%v, ptend%s)
-
-     do k = 1, pver
-        ttgw(:ncol,k) = ptend%s(:ncol,k) 
-        ttgw(:ncol,k) = ttgw(:ncol,k) / cpairv(:ncol, k, lchnk)
-     end do
-#endif
-
-
-
      do m = 1, pcnst
         do k = 1, pver
            ptend%q(:ncol,k,m) = ptend%q(:ncol,k,m) + qtgw(:,k,m)
@@ -969,6 +944,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('SGH   ',   sgh,pcols, lchnk)
 
   end if
+#endif
 
   ! Convert the tendencies for the dry constituents to dry air basis.
   do m = 1, pcnst

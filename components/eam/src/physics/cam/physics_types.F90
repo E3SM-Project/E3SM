@@ -74,7 +74,7 @@ module physics_types
           water_flux_to_send, & !flux that is leaving ATM
           energy_water_before_physstep, &
           energy_water_after_physstep, &
-          energy_delta_water, & !difference after - before
+          energy_water_delta, & !difference after - before
           energy_water_flux_to_send !flux that is leaving ATM
 
      real(r8), dimension(:), allocatable         :: &

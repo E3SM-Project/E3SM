@@ -240,6 +240,25 @@ end subroutine check_energy_get_integrals
   end subroutine check_energy_init
 
 
+subroutine get_water_energy(state,field)
+    type(physics_state),   intent(in)    :: state
+    real(r8),   intent(inout)    :: field(state%ncol)
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water
+    integer ncol                                   ! number of atmospheric
+    integer  i,k                                   ! column, level indices
+    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
+    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+!-----------------------------------------------------------------------
+    ncol  = state%ncol
+
+    call get_water_componentsVLIRS(wv,wl,wi,wr,ws,state)
+
+    field(1:ncol) = (latvap+latice)*wv(1:ncol) + latice*(wr(1:ncol) + wl(1:ncol)) + ws(1:ncol) + wi(1:ncol)
+end subroutine get_water_energy
+
+
 subroutine get_water_mass(state,field)
     type(physics_state),   intent(in)    :: state
     real(r8),   intent(inout)    :: field(state%ncol)
@@ -253,7 +272,7 @@ subroutine get_water_mass(state,field)
 !-----------------------------------------------------------------------
     ncol  = state%ncol
  
-    call get_water_componentsVLIRS(wv,wl,wi,wr,ws)
+    call get_water_componentsVLIRS(wv,wl,wi,wr,ws,state)
 
     field(1:ncol) = wv(1:ncol) + wr(1:ncol) + wl(1:ncol) + ws(1:ncol) + wi(1:ncol)
 end subroutine get_water_mass
