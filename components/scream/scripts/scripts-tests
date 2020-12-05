@@ -73,17 +73,20 @@ def run_cmd_check_output(test_obj, cmd, baseline_path):
     test_obj.assertEqual("", diff_output, msg=diff_output)
 
 ###############################################################################
-class TestBaseOuter:
+class TestBaseOuter: # Hide the base class from test scanner
     class TestBase(unittest.TestCase):
 ###############################################################################
 
-        def __init__(self, source_file, *internal_args):
+        def __init__(self, cmds, source_file, *internal_args):
             super(TestBaseOuter.TestBase, self).__init__(*internal_args)
             self._source_file = source_file
-            self._cmd         = "echo {}".format(source_file)
+            self._cmds        = list(cmds)
 
-        def get_baseline(self, machine):
-            return TEST_DIR.joinpath(self._source_file).with_suffix("").joinpath(machine)
+        def get_baseline(self, cmd, machine):
+            return TEST_DIR.joinpath("results", self._source_file).with_suffix("").joinpath(machine, cmd.replace(" ", ""))
+
+        def get_cmd(self, cmd, machine, dry_run=True):
+            return "{}{}".format(cmd.replace("$machine", machine), " --dry-run" if dry_run else "")
 
         def get_machines(self):
             return [CONFIG["machine"]] if CONFIG["machine"] else machines_specs.get_all_supported_machines()
@@ -98,7 +101,8 @@ class TestBaseOuter:
             if CONFIG["generate"]:
                 machines = self.get_machines()
                 for machine in machines:
-                    run_cmd_store_output(self, self._cmd, self.get_baseline(machine))
+                    for cmd in self._cmds:
+                        run_cmd_store_output(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
             else:
                 self.skipTest("Skipping dry run baseline generation")
 
@@ -106,13 +110,15 @@ class TestBaseOuter:
             if CONFIG["compare"]:
                 machines = self.get_machines()
                 for machine in machines:
-                    run_cmd_check_output(self, self._cmd, self.get_baseline(machine))
+                    for cmd in self._cmds:
+                        run_cmd_check_output(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
             else:
                 self.skipTest("Skipping dry run baseline comparison")
 
         def test_full(self):
             if CONFIG["full"]:
-                pass
+                for cmd in self._cmds:
+                    run_cmd_assert_result(self, self.get_cmd(cmd, CONFIG["machine"], dry_run=False))
             else:
                 self.skipTest("Skipping full run")
 
@@ -120,29 +126,46 @@ class TestBaseOuter:
 class TestMachinesSpecs(TestBaseOuter.TestBase):
 ###############################################################################
 
+
     def __init__(self, *internal_args):
-        super(TestMachinesSpecs, self).__init__("machines_specs.py", *internal_args)
+        super(TestMachinesSpecs, self).__init__("machines_specs.py", [], *internal_args)
 
 ###############################################################################
 class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
+    CMDS_TO_TEST = [
+        "echo test-all-scream cmd1 $machine -- "
+        "echo test-all-scream cmd2 $machine -- "
+    ]
+
     def __init__(self, *internal_args):
-        super(TestTestAllScream, self).__init__("test_all_scream.py", *internal_args)
+        super(TestTestAllScream, self).__init__(
+            "test_all_scream.py",
+            TestTestAllScream.CMDS_TO_TEST,
+            *internal_args)
 
 ###############################################################################
 class TestGatherAllData(TestBaseOuter.TestBase):
 ###############################################################################
 
+    CMDS_TO_TEST = [
+        "echo gather-all-data cmd1 $machine -- "
+        "echo gather-all-data cmd2 $machine -- "
+    ]
+
     def __init__(self, *internal_args):
-        super(TestGatherAllData, self).__init__("gather_all_data.py", *internal_args)
+        super(TestGatherAllData, self).__init__(
+            "gather_all_data.py",
+            TestGatherAllData.CMDS_TO_TEST,
+            *internal_args)
 
 ###############################################################################
 class TestScriptsTest(TestBaseOuter.TestBase):
 ###############################################################################
 
     def __init__(self, *internal_args):
-        super(TestScriptsTest, self).__init__("scripts-tests", *internal_args)
+        super(TestScriptsTest, self).__init__("scripts-tests", [], *internal_args)
 
 ###############################################################################
 def parse_command_line(args, desc):
