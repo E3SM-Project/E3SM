@@ -15,12 +15,21 @@ You can also do a full run which will actually execute the commands.
 TODO: Add doctests to libs
 """
 
-from utils import run_cmd_no_fail, check_minimum_python_version
+from utils import run_cmd, check_minimum_python_version, expect
 check_minimum_python_version(3, 4)
+
+import machines_specs
 
 import unittest, pathlib, argparse, sys
 
+# Globals
 TEST_DIR = pathlib.Path(__file__).resolve().parent
+CONFIG = {
+    "machine"  : None,
+    "compare"  : False,
+    "generate" : False,
+    "full"     : False
+}
 
 ###############################################################################
 def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
@@ -44,41 +53,46 @@ ERRPUT: %s
     return output
 
 ###############################################################################
-class TestMachineSpecs(unittest.TestCase):
+class TestBase(unittest.TestCase):
 ###############################################################################
+
+    def __init__(self, source_file):
+        super(TestBase, self).__init__()
+        self._source_file = source_file
 
     def test_doctests(self):
-        run_cmd_assert_result(self, "python3 -m doctest machine_specs.py", from_dir=TEST_DIR)
+        run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
 
     def test_pylint(self):
-        run_cmd_assert_result(self, "pylint --disable C --disable R machine_specs.py", from_dir=TEST_DIR)
+        run_cmd_assert_result(self, "pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
 
 ###############################################################################
-class TestTestAllScream(unittest.TestCase):
+class TestMachinesSpecs(TestBase):
 ###############################################################################
 
-    def test_doctests(self):
-        run_cmd_assert_result(self, "python3 -m doctest test_all_scream.py", from_dir=TEST_DIR)
-
-    def test_pylint(self):
-        run_cmd_assert_result(self, "pylint --disable C --disable R test_all_scream.py", from_dir=TEST_DIR)
+    def __init__(self):
+        TestBase.__init__(self, "machines_specs.py")
 
 ###############################################################################
-class TestGatherAllData(unittest.TestCase):
+class TestTestAllScream(TestBase):
 ###############################################################################
 
-    def test_doctests(self):
-        run_cmd_assert_result(self, "python3 -m doctest gather_all_data.py", from_dir=TEST_DIR)
-
-    def test_pylint(self):
-        run_cmd_assert_result(self, "pylint --disable C --disable R gather_all_data.py", from_dir=TEST_DIR)
+    def __init__(self):
+        TestBase.__init__(self, "test_all_scream.py")
 
 ###############################################################################
-class TestScriptsTest(unittest.TestCase):
+class TestGatherAllData(TestBase):
 ###############################################################################
 
-    def test_pylint(self):
-        run_cmd_assert_result(self, "pylint --disable C --disable R scripts-test", from_dir=TEST_DIR)
+    def __init__(self):
+        TestBase.__init__(self, "gather_all_data.py")
+
+###############################################################################
+class TestScriptsTest(TestBase):
+###############################################################################
+
+    def __init__(self):
+        TestBase.__init__(self, "scripts-tests")
 
 ###############################################################################
 def parse_command_line(args, desc):
@@ -94,23 +108,51 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Run the full suite \033[0m
+    \033[1;32m# Run basic pylint and doctests for everything \033[0m
     > {0}
 
-    \033[1;32m# Run all Foo tests \033[0m
-    > {0} Foo
+    \033[1;32m# Run basic pylint and doctests for test_all_scream \033[0m
+    > {0} TestTestAllScream
 
-    \033[1;32m# Run specific Foo.bar test \033[0m
-    > {0} Foo.bar
+    \033[1;32m# Run pylint tests for test_all_scream \033[0m
+    > {0} TestTestAllScream.test_pylint
+
+    \033[1;32m# Do a dry-run generation for test_all_scream \033[0m
+    > {0} -g TestTestAllScream
+
+    \033[1;32m# Do a dry-run comparison for test_all_scream \033[0m
+    > {0} -c TestTestAllScream
+
+    \033[1;32m# Do a full test run of test_all_scream \033[0m
+    > {0} -f -m $machine TestTestAllScream
+
+    \033[1;32m# Do a full test run of everything \033[0m
+    > {0} -f -m $machine
+
+    \033[1;32m# Do a dry-run generation for everything \033[0m
+    > {0} -g
+
+    \033[1;32m# Do a dry-run comparison for comparison \033[0m
+    > {0} -c
+
 """.format(pathlib.Path(sys.argv[0]))
 
     parser = argparse.ArgumentParser(
-             usage=help_str,
-             description=desc,
-             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        usage=help_str,
+        description=desc,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("-m", "--machine",
-        help="Provide machine name. This is *always* required")
+                        help="Provide machine name. This is required for full (not dry) runs")
+
+    parser.add_argument("-g", "--generate", action="store_true",
+                        help="Do a dry run with baseline generation")
+
+    parser.add_argument("-c", "--compare", action="store_true",
+                        help="Do a dry run with baseline comparison")
+
+    parser.add_argument("-f", "--full", action="store_true",
+                        help="Do a full (not dry) run")
 
     args, py_ut_args = parser.parse_known_args()
     sys.argv[1:] = py_ut_args
@@ -118,8 +160,21 @@ OR
     return args
 
 ###############################################################################
-def scripts_tests():
+def scripts_tests(machine=None, generate=False, compare=False, full=False):
 ###############################################################################
+    # Store test params in environment
+    if machine:
+        expect(machines_specs.is_machine_supported(machine), "Machine {} is not supported".format(machine))
+        CONFIG["machine"] = machine
+
+    expect(not (generate and compare), "Cannot do generate and compare in the same run")
+    CONFIG["compare"] = compare
+    CONFIG["generate"] = generate
+
+    if full:
+        expect(machine, "Must provide a machine to do a full run")
+        CONFIG["full"] = full
+
     unittest.main(verbosity=2)
 
 ###############################################################################
