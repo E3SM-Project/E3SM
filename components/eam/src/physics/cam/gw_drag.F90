@@ -569,9 +569,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use camsrfexch, only: cam_in_t
   ! Location-dependent cpair
   use physconst,  only: cpairv
-  use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof, momentum_energy_conservation_shift, momentum_energy_conservation_shift_ds, &
-       momentum_energy_fix
+  use gw_common,  only: gw_prof, momentum_energy_conservation, gw_drag_prof
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
@@ -668,6 +666,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: rdpm(state%ncol,pver)
   real(r8) :: zm(state%ncol,pver)
 
+  real(r8) :: dE(state%ncol)
+
   ! local override option for constituents cnst_type
   character(len=3), dimension(pcnst) :: cnst_type_loc
 
@@ -747,9 +747,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
 
 
-#define OLDGW
+!#define OLDGW
 !#define NEWGW
-!#define NEWGW2
+#define NEWGW2
 
 
 
@@ -878,7 +878,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
   end if
 
-#if 0
+#if 1
   if (use_gw_oro) then
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
@@ -901,6 +901,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      ! Add the orographic tendencies to the spectrum tendencies
      ! Compute the temperature tendency from energy conservation
      ! (includes spectrum).
+
+
+
+#ifndef NEWGW2
      do k = 1, pver
         utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
         ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
@@ -926,6 +930,35 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
 #endif
      end do
+#endif
+
+
+
+
+#ifdef NEWGW2
+     do k = 1, pver
+        utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
+        ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
+        vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
+        ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+     enddo
+
+     dE = 0.0
+     do k = 1, pver
+     dE(:ncol) = dE(:ncol) - dpm(:ncol,k)*(ptend%u(:ncol,k) * (u(:ncol,k) +ptend%u(:ncol,k)*0.5_r8*dt) &
+                                          +ptend%v(:ncol,k) * (v(:ncol,k) +ptend%v(:ncol,k)*0.5_r8*dt) &
+                                          +ptend%s(:ncol,k) )
+     enddo
+     dE(:ncol)=dE(:ncol) / (pint(:ncol,pver+1) - pint(:ncol,1))
+
+     do k = 1, pver
+        ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
+        ttgw(:ncol,k) = ptend%s(:ncol,k) / cpairv(:ncol, k, lchnk)
+     enddo
+
+#endif
+
+
 
      do m = 1, pcnst
         do k = 1, pver
