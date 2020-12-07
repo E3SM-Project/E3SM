@@ -1130,7 +1130,7 @@ module ocn_time_integration_si
          call mpas_dmpar_sum_real_array(dminfo, 2, CGcst_allreduce2, CGcst_allreduce_global2)
          call mpas_timer_stop ("si reduction r0")
 
-         if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+         if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
             CGcst_allreduce_temp5(:)    = 0.0_RKIND
             CGcst_allreduce_itemp5(:)   = 0.0_RKIND
             CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
@@ -1230,7 +1230,7 @@ module ocn_time_integration_si
             call mpas_dmpar_sum_real_array(dminfo, 3, CGcst_allreduce3, CGcst_allreduce_global3)
             call mpas_timer_stop("si reduction iter")
 
-            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
                CGcst_allreduce_temp5(:)    = 0.0_RKIND
                CGcst_allreduce_itemp5(:)   = 0.0_RKIND
                CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
@@ -1419,7 +1419,7 @@ module ocn_time_integration_si
             call mpas_dmpar_sum_real_array(dminfo, 5, CGcst_allreduce5, CGcst_allreduce_global5)
             call mpas_timer_stop("si reduction iter")
 
-            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
                CGcst_allreduce_temp5(:)    = 0.0_RKIND
                CGcst_allreduce_itemp5(:)   = 0.0_RKIND
                CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
@@ -2071,7 +2071,7 @@ module ocn_time_integration_si
          call mpas_dmpar_sum_real_array(dminfo, 2, CGcst_allreduce2, CGcst_allreduce_global2)
          call mpas_timer_stop("si reduction r0")
 
-         if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+         if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
             CGcst_allreduce_temp5(:)    = 0.0_RKIND
             CGcst_allreduce_itemp5(:)   = 0.0_RKIND
             CGcst_allreduce_itemp5(1:2) = exponent(CGcst_allreduce_global2(:))
@@ -2178,7 +2178,7 @@ module ocn_time_integration_si
             call mpas_dmpar_sum_real_array(dminfo, 3, CGcst_allreduce3, CGcst_allreduce_global3)
             call mpas_timer_stop("si reduction iter")
 
-            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
                CGcst_allreduce_temp5(:)    = 0.0_RKIND
                CGcst_allreduce_itemp5(:)   = 0.0_RKIND
                CGcst_allreduce_itemp5(1:3) = exponent(CGcst_allreduce_global3(:))
@@ -2366,7 +2366,7 @@ module ocn_time_integration_si
             call mpas_dmpar_sum_real_array(dminfo, 5, CGcst_allreduce5, CGcst_allreduce_global5)
             call mpas_timer_stop("si reduction iter")
 
-            if ( config_btr_si_thread_match_mode .and. ncpus > 1) then
+            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
                CGcst_allreduce_temp5(:)    = 0.0_RKIND
                CGcst_allreduce_itemp5(:)   = 0.0_RKIND
                CGcst_allreduce_itemp5(1:5) = exponent(CGcst_allreduce_global5(:))
@@ -3333,7 +3333,7 @@ module ocn_time_integration_si
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
          if (config_use_GM) then
-            call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+            call ocn_reconstruct_gm_vectors(meshPool)
          end if
 
          block => block % next
@@ -3531,7 +3531,7 @@ module ocn_time_integration_si
             mean_num_cells = total_num_cells/ncpus
    
             ! Tolerance for main iteration
-            if ( config_btr_si_thread_match_mode ) then
+            if ( config_btr_si_partition_match_mode ) then
                config_btr_si_tolerance = 1.d-8
             endif
             crit_main  = config_btr_si_tolerance * area_mean
@@ -3707,7 +3707,7 @@ module ocn_time_integration_si
             endif
          endif
 
-         if ( config_btr_si_thread_match_mode ) then
+         if ( config_btr_si_partition_match_mode ) then
             call mpas_log_write('       Thread-match mode is turned on.')
             call mpas_log_write('       The preconditioner is configured as jacobi.')
             call mpas_log_write('       The bit-for-bit allreduce is used.')

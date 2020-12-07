@@ -1109,8 +1109,8 @@
                                         description="number of outer iterations"
                                         possible_values="any positive integer, but typically 2"
                 />
-		<nml_option name="config_btr_si_thread_match_mode" type="logical" default_value=".false." units="unitless"
-					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit allreduce."
+		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false." units="unitless"
+					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
 		/>
         </nml_record>
