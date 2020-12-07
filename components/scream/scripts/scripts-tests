@@ -127,9 +127,15 @@ class TestBaseOuter: # Hide the base class from test scanner
 class TestMachinesSpecs(TestBaseOuter.TestBase):
 ###############################################################################
 
-
     def __init__(self, *internal_args):
         super(TestMachinesSpecs, self).__init__("machines_specs.py", [], *internal_args)
+
+###############################################################################
+class TestUtils(TestBaseOuter.TestBase):
+###############################################################################
+
+    def __init__(self, *internal_args):
+        super(TestUtils, self).__init__("utils.py", [], *internal_args)
 
 ###############################################################################
 class TestTestAllScream(TestBaseOuter.TestBase):

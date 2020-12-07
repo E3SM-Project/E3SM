@@ -121,7 +121,7 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        print_last_commit(git_ref=self._original_branch)
+        print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
 
         ############################################
         #    Deduce compilers if needed/possible   #
@@ -151,7 +151,7 @@ class TestAllScream(object):
                     self._baseline_ref = "HEAD"
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
-                    merge_git_ref(git_ref="origin/master",verbose=True)
+                    merge_git_ref(git_ref="origin/master", verbose=True, dry_run=self._dry_run)
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
@@ -173,7 +173,7 @@ class TestAllScream(object):
 
             if self._integration_test:
                 self._baseline_ref = "origin/master"
-                merge_git_ref(git_ref=self._baseline_ref,verbose=True)
+                merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
             else:
                 for test in self._tests:
                     test_baseline_dir = self.get_preexisting_baseline(test)
@@ -255,7 +255,8 @@ class TestAllScream(object):
                 print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
         if self._keep_tree:
-            expect(not is_repo_clean(silent=True), "Makes no sense to use --keep-tree when repo is clean")
+            expect(not is_repo_clean(silent=True) or self._dry_run,
+                   "Makes no sense to use --keep-tree when repo is clean")
             expect(not self._integration_test, "Should not be doing keep-tree with integration testing")
             print("WARNING! You have uncommitted changes in your repo.",
                   "         The PASS/FAIL status may depend on these changes",
@@ -515,7 +516,7 @@ class TestAllScream(object):
 
             test_dir.mkdir(parents=True)
 
-        checkout_git_ref(self._baseline_ref, verbose=True)
+        checkout_git_ref(self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -542,7 +543,7 @@ class TestAllScream(object):
                 tmp_string += " {}".format(test)
             run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file))
 
-        checkout_git_ref(git_head_ref, verbose=True)
+        checkout_git_ref(git_head_ref, verbose=True, dry_run=self._dry_run)
 
         return success
 

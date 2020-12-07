@@ -358,7 +358,7 @@ def update_submodules(repo=None):
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
-def merge_git_ref(git_ref, repo=None, verbose=False):
+def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
 ###############################################################################
     """
     Merge given git ref into the current branch, and updates submodules
@@ -367,36 +367,45 @@ def merge_git_ref(git_ref, repo=None, verbose=False):
     # Even thoguh it can allow some extra corner cases (dirty repo, but ahead of git_ref),
     # this check is mostly for debugging purposes, as it will inform that no merge occurred
     out = get_common_ancestor(git_ref)
-    if out==get_current_commit(commit=git_ref):
+    if out == get_current_commit(commit=git_ref):
         if verbose:
             print ("Merge of '{}' not necessary. Current HEAD is already ahead.".format(git_ref))
         return
 
-    expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
-    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
-    update_submodules(repo=repo)
-    expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
-    if verbose:
-        print ("git ref {} successfully merged.".format(git_ref))
-        print_last_commit()
+    merge_cmd = "git merge {0} -m 'Automatic merge of {0}'".format(git_ref)
+    if dry_run:
+        print("Would run: {}".format(merge_cmd))
+    else:
+        expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
+        run_cmd_no_fail(merge_cmd, from_dir=repo)
+        update_submodules(repo=repo)
+        expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
+        if verbose:
+            print ("git ref {} successfully merged.".format(git_ref))
+            print_last_commit()
 
 ###############################################################################
-def print_last_commit(git_ref=None, repo=None):
+def print_last_commit(git_ref=None, repo=None, dry_run=False):
 ###############################################################################
     """
     Prints a one-liner of the last commit
     """
-    git_ref = get_current_head(repo) if git_ref is None else git_ref
-    last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
-    print("Last commit on ref '{}': {}".format(git_ref, last_commit))
+    if dry_run:
+        print("Last commit on ref '{}'".format(git_ref))
+    else:
+        git_ref = get_current_head(repo) if git_ref is None else git_ref
+        last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
+        print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
-def checkout_git_ref(git_ref, verbose=False, repo=None):
+def checkout_git_ref(git_ref, verbose=False, repo=None, dry_run=False):
 ###############################################################################
     """
     Checks out 'branch_ref', and updates submodules
     """
-    if get_current_commit() != get_current_commit(commit=git_ref):
+    if dry_run:
+        print("Would checkout {}".format(git_ref))
+    elif get_current_commit() != get_current_commit(commit=git_ref):
         expect(is_repo_clean(repo=repo), "If we need to change HEAD, then the repo must be clean before running")
         expect(git_ref is not None, "Missing git-ref")
 
@@ -446,10 +455,9 @@ def cleanup_repo(orig_branch, orig_commit, repo=None):
         update_submodules(repo=repo)
 
 ###############################################################################
-def get_cpu_core_count ():
+def get_cpu_core_count():
 ###############################################################################
     """
     Get the number of CPU processors available on the current node
     """
-
     return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
