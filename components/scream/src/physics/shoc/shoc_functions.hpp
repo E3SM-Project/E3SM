@@ -358,7 +358,6 @@ struct Functions
     const uview_1d<Scalar>&       dl,
     const uview_1d<Scalar>&       d,
     const uview_2d<Spack>&       X1,
-    const uview_2d<Spack>&       X2,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
     const uview_2d<Spack>&       tracer,

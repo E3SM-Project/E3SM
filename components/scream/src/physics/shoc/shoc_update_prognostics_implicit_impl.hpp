@@ -40,7 +40,6 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_1d<Scalar>&      dl,
   const uview_1d<Scalar>&      d,
   const uview_2d<Spack>&       X1,
-  const uview_2d<Spack>&       X2,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
   const uview_2d<Spack>&       tracer,
@@ -108,21 +107,21 @@ void Functions<S,D>::update_prognostics_implicit(
     });
   }
 
-  // Store RHS values in X1 and X2
+  // Store RHS values in X1 and tracer for 1st and 2nd solve respectively
   team.team_barrier();
+  const auto s_u_wind = ekat::scalarize(u_wind);
+  const auto s_v_wind = ekat::scalarize(v_wind);
+  const auto s_thetal = ekat::scalarize(thetal);
+  const auto s_qw = ekat::scalarize(qw);
+  const auto s_tke = ekat::scalarize(tke);
+
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    const auto k_view_indx = k/Spack::n;
-    const auto k_pack_indx = k%Spack::n;
+    X1(k,0)[0] = s_u_wind(k);
+    X1(k,1/Spack::n)[1%Spack::n] = s_v_wind(k);
 
-    X1(k,0)[0] = u_wind(k_view_indx)[k_pack_indx];
-    X1(k,1/Spack::n)[1%Spack::n] = v_wind(k_view_indx)[k_pack_indx];
-
-    X2(k,0)[0] = thetal(k_view_indx)[k_pack_indx];
-    X2(k,1/Spack::n)[1%Spack::n] = qw(k_view_indx)[k_pack_indx];
-    X2(k,2/Spack::n)[2%Spack::n] = tke(k_view_indx)[k_pack_indx];
-    for (Int p=0; p<num_tracer; ++p) {
-      X2(k,(3+p)/Spack::n)[(3+p)%Spack::n] = tracer(k, p/Spack::n)[p%Spack::n];
-    }
+    tracer(k,(num_tracer)/Spack::n)[(num_tracer)%Spack::n] = s_thetal(k);
+    tracer(k,(num_tracer+1)/Spack::n)[(num_tracer+1)%Spack::n] = s_qw(k);
+    tracer(k,(num_tracer+2)/Spack::n)[(num_tracer+2)%Spack::n] = s_tke(k);
   });
 
   // march u_wind and v_wind one step forward using implicit solver
@@ -144,24 +143,18 @@ void Functions<S,D>::update_prognostics_implicit(
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, X2);
+    vd_shoc_solve(team, du, dl, d, tracer);
   }
 
   // Copy RHS values from X1 and X2
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    const auto k_view_indx = k/Spack::n;
-    const auto k_pack_indx = k%Spack::n;
+    s_u_wind(k) = X1(k,0)[0];
+    s_v_wind(k) = X1(k,1/Spack::n)[1%Spack::n];
 
-    u_wind(k_view_indx)[k_pack_indx] = X1(k,0)[0];
-    v_wind(k_view_indx)[k_pack_indx] = X1(k,1/Spack::n)[1%Spack::n];
-
-    thetal(k_view_indx)[k_pack_indx] = X2(k,0)[0];
-    qw(k_view_indx)[k_pack_indx] = X2(k,1/Spack::n)[1%Spack::n];
-    tke(k_view_indx)[k_pack_indx] = X2(k,2/Spack::n)[2%Spack::n];
-    for (Int p=0; p<num_tracer; ++p) {
-      tracer(k, p/Spack::n)[p%Spack::n] = X2(k,(3+p)/Spack::n)[(3+p)%Spack::n];
-    }
+    s_thetal(k) = tracer(k,(num_tracer)/Spack::n)[(num_tracer)%Spack::n];
+    s_qw(k) = tracer(k,(num_tracer+1)/Spack::n)[(num_tracer+1)%Spack::n];
+    s_tke(k) = tracer(k,(num_tracer+2)/Spack::n)[(num_tracer+2)%Spack::n];
   });
 }
 

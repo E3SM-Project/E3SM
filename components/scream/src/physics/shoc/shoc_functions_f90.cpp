@@ -2260,6 +2260,8 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
 
   view_3d
     tracer_d(temp_3d_d[0]);
+  Kokkos::resize(Kokkos::WithoutInitializing, tracer_d,
+                 shcol,nlev,ekat::npack<Spack>(num_tracer+3));
 
   // Local variables
   const Int nlev_packs = ekat::npack<Spack>(nlev);
@@ -2277,9 +2279,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     d_d("d", shcol, nlev);
 
   view_3d
-    X1_d("X1",shcol,nlev,ekat::npack<Spack>(2)),
-    X2_d("X2",shcol,nlev,ekat::npack<Spack>(3+num_tracer));
-
+    X1_d("X1",shcol,nlev,ekat::npack<Spack>(2));
 
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -2307,7 +2307,6 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
     const auto dl_s = ekat::subview(dl_d, i);
     const auto d_s = ekat::subview(d_d, i);
     const auto X1_s = Kokkos::subview(X1_d, i, Kokkos::ALL(), Kokkos::ALL());
-    const auto X2_s = Kokkos::subview(X2_d, i, Kokkos::ALL(), Kokkos::ALL());
     const auto thetal_s = ekat::subview(thetal_d, i);
     const auto qw_s = ekat::subview(qw_d, i);
     const auto u_wind_s = ekat::subview(u_wind_d, i);
@@ -2320,7 +2319,7 @@ void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_trace
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      rdp_zt_s, tmpi_s, tkh_zi_s, tk_zi_s, rho_zi_s,
-                                     du_s, dl_s, d_s, X1_s, X2_s,
+                                     du_s, dl_s, d_s, X1_s,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s);
   });
 
