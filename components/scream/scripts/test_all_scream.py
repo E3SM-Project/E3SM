@@ -558,7 +558,7 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        if self._quick_rerun:
+        if self._quick_rerun and pathlib.Path("{}/CMakeCache.txt".format(test_dir)).is_file():
             # Do not purge bld dir, and do not rerun config step.
             # Note: make will still rerun cmake if some cmake file has changed
             ctest_config += "-DSKIP_CONFIG_STEP=TRUE "
