@@ -144,6 +144,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
     CMDS_TO_TEST = [
         "test-all-scream -m $machine -b HEAD -k",
         "test-all-scream -m $machine -b HEAD -k -t dbg",
+        "test-all-scream --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m $machine --submit --dry-run", # always dry run
     ]
 
     def __init__(self, *internal_args):

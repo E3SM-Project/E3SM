@@ -85,7 +85,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None, dry_run=Fa
         ...
     SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
-    >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
+    >>> run_cmd_no_fail('grep foo', input_str='foo') == 'foo'
     True
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
@@ -428,7 +428,7 @@ def get_git_toplevel_dir(repo=None):
     return output if stat == 0 else None
 
 ###############################################################################
-def cleanup_repo(orig_branch, orig_commit, repo=None):
+def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
 ###############################################################################
     """
     Discards all unstaged changes, as well as untracked files
@@ -436,21 +436,21 @@ def cleanup_repo(orig_branch, orig_commit, repo=None):
     curr_commit = get_current_commit(repo=repo)
 
     # Is this a pointless check? Maybe.
-    if not is_repo_clean(repo=repo):
+    if not dry_run and not is_repo_clean(repo=repo):
         # Discard any modifications to the repo (either tracked or untracked),
         # but keep the ctest-build directory
         run_cmd_no_fail("git clean -df --exclude=ctest-build", from_dir=repo)
         toplevel_dir = get_git_toplevel_dir(repo=repo)
         run_cmd_no_fail("git checkout -- {}".format(toplevel_dir), from_dir=repo)
 
-    checkout_git_ref(orig_branch, repo=repo)
+    checkout_git_ref(orig_branch, repo=repo, dry_run=dry_run)
 
     # This *can* happen. test_all_scream can merge origin/master into current branch.
     # Checking out orig_branch doesn't do anything if we were on a branch (not detached
     # head mode), since the branch tip moved with the master merge. In that case,
     # what we really need is a hard reset to the original commit.
     # NOTE: if you reset the branch, don't forget to re-update the modules!!
-    if curr_commit != orig_commit:
+    if curr_commit != orig_commit and not dry_run:
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
         update_submodules(repo=repo)
 

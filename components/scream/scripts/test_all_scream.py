@@ -255,7 +255,7 @@ class TestAllScream(object):
                 print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
         if self._keep_tree:
-            expect(not is_repo_clean(silent=True) or self._dry_run,
+            expect(self._dry_run or not is_repo_clean(silent=True),
                    "Makes no sense to use --keep-tree when repo is clean")
             expect(not self._integration_test, "Should not be doing keep-tree with integration testing")
             print("WARNING! You have uncommitted changes in your repo.",
@@ -267,7 +267,7 @@ class TestAllScream(object):
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
         else:
-            expect(is_repo_clean(),
+            expect(self._dry_run or is_repo_clean(),
                    "Repo must be clean before running. If testing against HEAD or pre-built baselines, "
                    "you can pass `--keep-tree` to allow non-clean repo.")
 
@@ -493,7 +493,7 @@ class TestAllScream(object):
         else:
             # Clean up the directory, by removing everything but the 'data' subfolder
             run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
-                            from_dir=test_dir,verbose=True)
+                            from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
         return True
 
@@ -570,7 +570,7 @@ class TestAllScream(object):
             # This directory might have been used also to build the model to generate baselines.
             # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
             # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
-            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
+            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir, dry_run=self._dry_run)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 
@@ -654,6 +654,6 @@ class TestAllScream(object):
         finally:
             if not self._keep_tree:
                 # Cleanup the repo if needed
-                cleanup_repo(self._original_branch, self._original_commit)
+                cleanup_repo(self._original_branch, self._original_commit, dry_run=self._dry_run)
 
         return success
