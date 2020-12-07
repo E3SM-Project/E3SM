@@ -963,7 +963,11 @@ void shoc_energy_fixer_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, R
                          Real* wqw_sfc, Real* rho_zt, Real* tke, Real* pint,
                          Real* host_dse);
 void compute_shoc_vapor_f(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv);
-void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime, Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid, Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal, Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind);
+void update_prognostics_implicit_f(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime,
+                                   Real* dz_zt, Real* dz_zi, Real* rho_zt, Real* zt_grid,
+                                   Real* zi_grid, Real* tk, Real* tkh, Real* uw_sfc, Real* vw_sfc,
+                                   Real* wthl_sfc, Real* wqw_sfc, Real* wtracer_sfc, Real* thetal,
+                                   Real* qw, Real* tracer, Real* tke, Real* u_wind, Real* v_wind);
 void diag_third_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real* thl_sec,
                                Real* wthl_sec, Real* isotropy, Real* brunt, Real* thetal,
                                Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,

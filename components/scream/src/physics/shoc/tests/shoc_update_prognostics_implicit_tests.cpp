@@ -335,8 +335,11 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
 
   static void run_bfb()
   {
-    UpdatePrognosticsImplicitData f90_data[] = {
-      // TODO
+    UpdatePrognosticsImplicitData f90_data[] = {      
+      UpdatePrognosticsImplicitData(10, 71, 72, 19, 5),
+      UpdatePrognosticsImplicitData(10, 12, 13, 7, 2.5),
+      UpdatePrognosticsImplicitData(7, 16, 17, 2, 1),
+      UpdatePrognosticsImplicitData(2, 7, 8, 1, 1)
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
@@ -349,7 +352,10 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     UpdatePrognosticsImplicitData cxx_data[] = {
-      // TODO
+      UpdatePrognosticsImplicitData(f90_data[0]),
+      UpdatePrognosticsImplicitData(f90_data[1]),
+      UpdatePrognosticsImplicitData(f90_data[2]),
+      UpdatePrognosticsImplicitData(f90_data[3]),
     };
 
     // Assume all data is in C layout
@@ -363,7 +369,10 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      update_prognostics_implicit_f(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime, d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid, d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc, d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
+      update_prognostics_implicit_f(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
+                                    d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
+                                    d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+                                    d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
@@ -371,20 +380,22 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     for (Int i = 0; i < num_runs; ++i) {
       UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
       UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
+
+      REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
+      REQUIRE(d_f90.total(d_f90.qw) == d_cxx.total(d_cxx.qw));
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
+      REQUIRE(d_f90.total(d_f90.u_wind) == d_cxx.total(d_cxx.u_wind));
+      REQUIRE(d_f90.total(d_f90.v_wind) == d_cxx.total(d_cxx.v_wind));
       for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
         REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.qw));
         REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.tke));
         REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.u_wind));
         REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.v_wind));
         REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
       }
+
+      REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
       for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
-        REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
         REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
       }
 
