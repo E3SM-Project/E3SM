@@ -134,9 +134,10 @@ class TestAllScream(object):
         if self._c_compiler is None:
             self._c_compiler = get_mach_c_compiler(self._machine)
 
-        self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
-        self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
-        self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
+        if not self._dry_run:
+            self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
+            self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
+            self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
 
         ###################################
         #      Compute baseline info      #

@@ -136,8 +136,8 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 ###############################################################################
 
     CMDS_TO_TEST = [
-        "echo test-all-scream cmd1 $machine -- ",
-        "echo test-all-scream cmd2 $machine -- ",
+        "test-all-scream -m $machine -b HEAD -k",
+        "test-all-scream -m $machine -b HEAD -k -t dbg",
     ]
 
     def __init__(self, *internal_args):
