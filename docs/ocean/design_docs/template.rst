@@ -55,6 +55,21 @@ performance issues. In general, this section should steer away from a detailed
 discussion of low-level software issues such as variable declarations,
 interfaces and sequencing.
 
+If you want to add math, the syntax is almost identical to Latex:
+
+.. math::
+
+   (a + b)^2  &=  (a + b)(a + b) \\
+              &=  a^2 + 2ab + b^2
+
+If you want to add an image, keep in mind that these should be quite small
+(jpegs are preferred but small pngs are okay) to keep the size of the repo
+small.  Here is an example:
+
+.. image:: small_images/ocean.jpg
+   :width: 500 px
+   :align: center
+
 
 Implementation
 --------------
