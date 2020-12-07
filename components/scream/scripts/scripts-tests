@@ -87,7 +87,7 @@ class TestBaseOuter: # Hide the base class from test scanner
                 joinpath(machine, self.get_cmd(cmd, machine, dry_run=False).replace(" ", "_").replace("/", "_").replace("=", "_"))
 
         def get_cmd(self, cmd, machine, dry_run=True):
-            return "{}{}".format(cmd.replace("$machine", machine), " --dry-run" if dry_run else "")
+            return "{}{}".format(cmd.replace("$machine", machine), " --dry-run" if (dry_run and "--dry-run" not in cmd) else "")
 
         def get_machines(self):
             return [CONFIG["machine"]] if CONFIG["machine"] else machines_specs.get_all_supported_machines()

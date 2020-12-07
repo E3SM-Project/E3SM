@@ -255,8 +255,6 @@ class TestAllScream(object):
                 print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
         if self._keep_tree:
-            expect(self._dry_run or not is_repo_clean(silent=True),
-                   "Makes no sense to use --keep-tree when repo is clean")
             expect(not self._integration_test, "Should not be doing keep-tree with integration testing")
             print("WARNING! You have uncommitted changes in your repo.",
                   "         The PASS/FAIL status may depend on these changes",
