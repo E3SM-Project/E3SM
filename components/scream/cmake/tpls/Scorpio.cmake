@@ -32,7 +32,7 @@ macro (CreateScorpioTarget CREATE_FLIB)
       set_target_properties(pioc PROPERTIES
                 IMPORTED_LOCATION "${SCORPIO_C_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
-      target_link_libraries(pioc INTERFACE "scream_gptl;${netcdf_c_lib}")
+      target_link_libraries(pioc INTERFACE "gptl;${netcdf_c_lib}")
       if (pnetcdf_lib)
         target_link_libraries(pioc INTERFACE "${pnetcdf_lib}")
       endif ()
@@ -47,7 +47,7 @@ macro (CreateScorpioTarget CREATE_FLIB)
         set_target_properties(piof PROPERTIES
                 IMPORTED_LOCATION "${SCORPIO_F_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
-        target_link_libraries(piof INTERFACE "${netcdf_f_lib};scream_pioc")
+        target_link_libraries(piof INTERFACE "${netcdf_f_lib};pioc")
       endif ()
     else ()
       # Not a CIME build. Add scorpio as a subdir
