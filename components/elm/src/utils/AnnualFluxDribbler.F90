@@ -57,13 +57,13 @@ module AnnualFluxDribbler
   !  
   !
   ! !USES:
-  use clm_varctl       , only : iulog
+  use elm_varctl       , only : iulog
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use decompMod        , only : bounds_type, get_beg, get_end
   use decompMod        , only : BOUNDS_SUBGRID_GRIDCELL, BOUNDS_SUBGRID_PATCH
-  use clm_varcon       , only : secspday, nameg, namep
+  use elm_varcon       , only : secspday, nameg, namep
   use clm_time_manager , only : get_days_per_year, get_step_size_real, is_beg_curr_year
   use clm_time_manager , only : get_curr_yearfrac, get_prev_yearfrac, get_prev_date
   use clm_time_manager , only : is_first_step
@@ -274,7 +274,7 @@ contains
                 write(iulog,*) 'other than the first time step of the year, which this dribbler was told not to expect.'
                 write(iulog,*) 'If this non-zero mid-year delta is expected, then you can suppress this error'
                 write(iulog,*) 'by setting allows_non_annual_delta to .true. when constructing this dribbler.'
-                call endrun(decomp_index=i, clmlevel=this%name_subgrid, &
+                call endrun(decomp_index=i, elmlevel=this%name_subgrid, &
                      msg=subname//': found unexpected non-zero delta mid-year: ' // &
                      errMsg(sourcefile, __LINE__))
              end if

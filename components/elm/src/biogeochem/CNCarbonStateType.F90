@@ -5,11 +5,11 @@ module CNCarbonStateType
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar             , only : nlevdecomp_full, crop_prog, nlevdecomp
-  use clm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
+  use elm_varpar             , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar             , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi, zsoi
   use landunit_varcon        , only : istcrop 
-  use clm_varctl             , only : iulog, use_vertsoilc, spinup_state 
+  use elm_varctl             , only : iulog, use_vertsoilc, spinup_state 
   use decompMod              , only : bounds_type
   use CNStateType            , only : cnstate_type
   use pftvarcon              , only : npcropmin
@@ -20,13 +20,13 @@ module CNCarbonStateType
   use subgridAveMod          , only : p2c
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
-  use clm_varctl             , only : nu_com, use_fates, use_crop
+  use elm_varctl             , only : nu_com, use_fates, use_crop
   use VegetationType         , only : veg_pp
   use SpeciesMod           , only : species_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
 
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:
@@ -294,9 +294,9 @@ contains
     ! add history fields for all CN variables, always set as default='inactive'
     !
     ! !USES:
-    use clm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
-    use clm_varpar , only : nlevdecomp, nlevdecomp_full, nlevgrnd
-    use clm_varctl , only : use_c13, use_c14
+    use elm_varpar , only : ndecomp_cascade_transitions, ndecomp_pools
+    use elm_varpar , only : nlevdecomp, nlevdecomp_full, nlevgrnd
+    use elm_varctl , only : use_c13, use_c14
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
     !
     ! !ARGUMENTS:
@@ -627,8 +627,8 @@ contains
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use shr_const_mod    , only : SHR_CONST_PDB
     use clm_time_manager , only : is_restart, get_nstep
-    use clm_varcon       , only : c13ratio, c14ratio
-    use clm_varctl       , only : spinup_mortality_factor, spinup_state
+    use elm_varcon       , only : c13ratio, c14ratio
+    use elm_varctl       , only : spinup_mortality_factor, spinup_state
 
     use restUtilMod
     use ncdio_pio
@@ -810,10 +810,10 @@ contains
     ! On the radiation time step, perform patch and column-level carbon summary calculations
     !
     ! !USES:
-    use clm_varctl       , only: iulog
+    use elm_varctl       , only: iulog
     use clm_time_manager , only: get_step_size
-    use clm_varcon       , only: secspday
-    use clm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use elm_varcon       , only: secspday
+    use elm_varpar       , only: nlevdecomp, ndecomp_pools, nlevdecomp_full
     !
     ! !ARGUMENTS:
     class(carbonstate_type) :: this

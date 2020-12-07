@@ -13,7 +13,7 @@ module SoilTemperatureMod
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use perf_mod          , only : t_startf, t_stopf
-  use clm_varctl        , only : iulog
+  use elm_varctl        , only : iulog
   use UrbanParamsType   , only : urbanparams_type  
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -124,7 +124,7 @@ contains
     !DESCRIPTION
     !  Initializes the soil tempreature model
     !
-    use clm_varctl, only : use_petsc_thermal_model
+    use elm_varctl, only : use_petsc_thermal_model
     ! !ARGUMENTS:
 
     if (.not.use_petsc_thermal_model) then
@@ -161,9 +161,9 @@ contains
     !
     ! !USES:
     use clm_time_manager         , only : get_step_size
-    use clm_varpar               , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl               , only : iulog
-    use clm_varcon               , only : cnfac, cpice, cpliq, denh2o
+    use elm_varpar               , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varctl               , only : iulog
+    use elm_varcon               , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon          , only : istice, istice_mec, istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use landunit_varcon          , only : istwet, istice, istice_mec, istsoil, istcrop
@@ -715,9 +715,9 @@ contains
     !  Assembles and solves the banded penta-diagonal system of equations
     !
     ! !USES:
-    use clm_varpar       , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl       , only : iulog
-    use clm_varcon       , only : cnfac, cpice, cpliq, denh2o
+    use elm_varpar       , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varctl       , only : iulog
+    use elm_varcon       , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
     use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
     use BandDiagonalMod  , only : BandDiagonal
@@ -842,11 +842,11 @@ end subroutine SolveTemperature
     ! flux from the interface to the node j+1.
     !
     ! !USES:
-    use clm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
-    use clm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
+    use elm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
+    use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                   
@@ -1072,9 +1072,9 @@ end subroutine SolveTemperature
     !
     ! !USES:
     use clm_time_manager , only : get_step_size
-    use clm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
-    use clm_varpar       , only : nlevsno, nlevgrnd
-    use clm_varctl       , only : iulog
+    use elm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
+    use elm_varpar       , only : nlevsno, nlevgrnd
+    use elm_varctl       , only : iulog
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                         
@@ -1300,9 +1300,9 @@ end subroutine SolveTemperature
     !
     ! !USES:
     use clm_time_manager , only : get_step_size
-    use clm_varpar       , only : nlevsno, nlevgrnd,nlevurb
-    use clm_varctl       , only : iulog
-    use clm_varcon       , only : tfrz, hfus, grav
+    use elm_varpar       , only : nlevsno, nlevgrnd,nlevurb
+    use elm_varctl       , only : iulog
+    use elm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use landunit_varcon  , only : istsoil, istcrop, istice_mec
     !
@@ -1695,9 +1695,9 @@ end subroutine SolveTemperature
     ! Additionally, derivative of ground heat flux w.r.t to temeprature
     !
     ! !USES:
-    use clm_varcon     , only : sb, hvap
+    use elm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, max_patch_per_col
+    use elm_varpar     , only : nlevsno, max_patch_per_col
     !
     ! !ARGUMENTS:
     implicit none
@@ -1946,9 +1946,9 @@ end subroutine SolveTemperature
     ! (2) Factor used in computing tridiagonal matrix
     !
     ! !USES:
-    use clm_varcon     , only : capr, cnfac
+    use elm_varcon     , only : capr, cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2053,9 +2053,9 @@ end subroutine SolveTemperature
     !           !===========|
     !
     ! !USES:
-    use clm_varcon      , only : cnfac, cpliq
+    use elm_varcon      , only : cnfac, cpliq
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2181,7 +2181,7 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to snow layers.
     !
     ! !USES:
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2256,9 +2256,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to snow layers for urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2331,9 +2331,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to snow layers for urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon      , only : cnfac
+    use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2413,9 +2413,9 @@ end subroutine SolveTemperature
     ! (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2498,9 +2498,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to snow layers for non-urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2577,9 +2577,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to standing surface water
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -2643,9 +2643,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to soil layers
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2747,9 +2747,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to soil layers for urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2831,9 +2831,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to soil layers for urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon      , only : cnfac
+    use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -2922,9 +2922,9 @@ end subroutine SolveTemperature
     ! (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon      , only : cnfac
+    use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3009,9 +3009,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to soil layers.
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3094,9 +3094,9 @@ end subroutine SolveTemperature
     ! Sets up RHS vector corresponding to soil layers.
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3168,9 +3168,9 @@ end subroutine SolveTemperature
     !
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3343,9 +3343,9 @@ end subroutine SolveTemperature
     !
     !
     ! !USES:
-    use clm_varcon      , only : cnfac
+    use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3420,9 +3420,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to internal snow layers
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3481,9 +3481,9 @@ end subroutine SolveTemperature
     ! urban soil columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3534,9 +3534,9 @@ end subroutine SolveTemperature
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3613,9 +3613,9 @@ end subroutine SolveTemperature
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3690,9 +3690,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to internal snow layers for non-urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3765,9 +3765,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to snow-soil interaction
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
 
     implicit none
     type(bounds_type), intent(in) :: bounds                               ! bounds
@@ -3817,9 +3817,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to snow-soil interaction for urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3865,9 +3865,9 @@ end subroutine SolveTemperature
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3932,9 +3932,9 @@ end subroutine SolveTemperature
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -3999,9 +3999,9 @@ end subroutine SolveTemperature
     ! non-urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4064,9 +4064,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to internal soil layers.
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4160,9 +4160,9 @@ end subroutine SolveTemperature
     ! urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4223,9 +4223,9 @@ end subroutine SolveTemperature
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4315,9 +4315,9 @@ end subroutine SolveTemperature
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4412,9 +4412,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to internal soil layers.
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4508,9 +4508,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to soil-snow interaction
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4566,9 +4566,9 @@ end subroutine SolveTemperature
     ! urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4617,9 +4617,9 @@ end subroutine SolveTemperature
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4683,9 +4683,9 @@ end subroutine SolveTemperature
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_imperv, icol_road_perv
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4755,9 +4755,9 @@ end subroutine SolveTemperature
     ! non urban columns
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevurb
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
@@ -4824,9 +4824,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to internal standing water layer
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4882,9 +4882,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to standing surface water-soil layer interaction
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4937,9 +4937,9 @@ end subroutine SolveTemperature
     ! Setup the matrix entries corresponding to soil layer-standing surface water interaction
     !
     ! !USES:
-    use clm_varcon     , only : cnfac
+    use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     implicit none
@@ -4996,7 +4996,7 @@ end subroutine SolveTemperature
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use TemperatureType , only : temperature_type
-    use clm_varpar      , only : nlevsno
+    use elm_varpar      , only : nlevsno
     !
     implicit none
     !

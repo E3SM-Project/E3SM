@@ -12,15 +12,15 @@ module initGridCellsMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc,iam
   use abortutils     , only : endrun
-  use clm_varctl     , only : iulog
-  use clm_varcon     , only : namep, namec, namel, nameg
+  use elm_varctl     , only : iulog
+  use elm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp  
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
-  use initSubgridMod , only : clm_ptrs_compdown, clm_ptrs_check
+  use initSubgridMod , only : elm_ptrs_compdown, elm_ptrs_check
   use initSubgridMod , only : add_topounit, add_landunit, add_column, add_patch
   !
   ! !PUBLIC TYPES:
@@ -55,7 +55,7 @@ contains
     use topounit_varcon   , only : max_topounits
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
-    use clm_varctl        , only : create_glacier_mec_landunit
+    use elm_varctl        , only : create_glacier_mec_landunit
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
@@ -219,12 +219,12 @@ contains
 
        ! Fill in subgrid datatypes
 
-       call clm_ptrs_compdown(bounds_clump)
+       call elm_ptrs_compdown(bounds_clump)
 
        ! By putting this check within the loop over clumps, we ensure that (for example)
        ! if a clump is responsible for landunit L, then that same clump is also
        ! responsible for all columns and pfts in L.
-       call clm_ptrs_check(bounds_clump)
+       call elm_ptrs_check(bounds_clump)
 
        ! Set veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
@@ -242,9 +242,9 @@ contains
     ! Initialize vegetated landunit with competition
     !
     ! !USES
-    use clm_varsur, only : wt_lunit, wt_nat_patch
+    use elm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
-    use clm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
+    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
     !
     ! !ARGUMENTS:
     integer , intent(in)    :: ltype             ! landunit type
@@ -291,8 +291,8 @@ contains
     ! Initialize wet_ice_lake landunits that are non-urban (lake, wetland, glacier, glacier_mec)
     !
     ! !USES
-    use clm_varpar      , only : maxpatch_glcmec
-    use clm_varsur      , only : wt_lunit, wt_glc_mec
+    use elm_varpar      , only : maxpatch_glcmec
+    use elm_varsur      , only : wt_lunit, wt_glc_mec
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_topounitinfo
@@ -399,11 +399,11 @@ contains
     ! since itype is istsoil if we are running with create_crop_landunit but crop_prog = false.
     !
     ! !USES
-    use clm_varsur      , only : wt_lunit, wt_cft
+    use elm_varsur      , only : wt_lunit, wt_cft
     use landunit_varcon , only : istcrop, istsoil
     use subgridMod      , only : subgrid_get_topounitinfo
-    use clm_varctl      , only : create_crop_landunit
-    use clm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
+    use elm_varctl      , only : create_crop_landunit
+    use elm_varpar      , only : maxpatch_pft, numcft, crop_prog, cft_lb, cft_ub
     !
     ! !ARGUMENTS:
     integer , intent(in)    :: ltype             ! landunit type
@@ -467,8 +467,8 @@ contains
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv
     use landunit_varcon , only : isturb_tbd, isturb_hd, isturb_md, isturb_MIN
-    use clm_varpar      , only : maxpatch_urb
-    use clm_varsur      , only : wt_lunit
+    use elm_varpar      , only : maxpatch_urb
+    use elm_varsur      , only : wt_lunit
     use subgridMod      , only : subgrid_get_topounitinfo
     use UrbanParamsType , only : urbinp
     use decompMod       , only : ldecomp
@@ -1125,7 +1125,7 @@ contains
     !
     ! !USES
     use decompMod         , only : get_proc_bounds
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !LOCAL VARIABLES:
     type(bounds_type) :: bounds_proc
@@ -1141,7 +1141,7 @@ contains
        curg  = lun_pp%gridcell(l)
        if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
           write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
-          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
 
        if (grc_pp%landunit_indices(ltype, curg) == ispval) then
@@ -1149,7 +1149,7 @@ contains
        else
           write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
           write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
-          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 

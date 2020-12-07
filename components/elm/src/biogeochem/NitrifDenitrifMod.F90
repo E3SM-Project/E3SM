@@ -7,10 +7,10 @@ module CNNitrifDenitrifMod
   use shr_const_mod       , only : SHR_CONST_TKFRZ
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_const_mod       , only : SHR_CONST_TKFRZ
-  use clm_varpar          , only : nlevgrnd,nlevdecomp
-  use clm_varcon          , only : rpi, denh2o, dzsoi, zisoi, grav
-  use clm_varcon          , only : d_con_g, d_con_w, spval, secspday
-  use clm_varctl          , only : use_lch4, iulog
+  use elm_varpar          , only : nlevgrnd,nlevdecomp
+  use elm_varcon          , only : rpi, denh2o, dzsoi, zisoi, grav
+  use elm_varcon          , only : d_con_g, d_con_w, spval, secspday
+  use elm_varctl          , only : use_lch4, iulog
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use SoilStatetype       , only : soilstate_type

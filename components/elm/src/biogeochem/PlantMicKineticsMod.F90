@@ -6,7 +6,7 @@ module PlantMicKineticsMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_infnan_mod         , only : nan => shr_infnan_nan, assignment(=)
   use decompMod              , only : bounds_type
-  use clm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
+  use elm_varpar             , only : nlevdecomp_full, nlevgrnd, nlevdecomp
 implicit none
 
   type, public :: PlantMicKinetics_type

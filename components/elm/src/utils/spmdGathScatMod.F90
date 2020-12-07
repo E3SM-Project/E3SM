@@ -9,13 +9,13 @@ module spmdGathScatMod
 ! Perform SPMD gather and scatter operations.
 !
 ! !USES:
-  use clm_varcon, only: spval, ispval
-  use decompMod, only : get_clmlevel_gsmap
+  use elm_varcon, only: spval, ispval
+  use decompMod, only : get_elmlevel_gsmap
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmdMod
   use mct_mod
   use abortutils, only : endrun
-  use clm_varctl, only : iulog
+  use elm_varctl, only : iulog
   use perf_mod
 !
 ! !PUBLIC TYPES:
@@ -51,7 +51,7 @@ contains
 ! !IROUTINE: scatter_1darray_int
 !
 ! !INTERFACE:
-  subroutine scatter_1darray_int (alocal, aglobal, clmlevel)
+  subroutine scatter_1darray_int (alocal, aglobal, elmlevel)
 !
 ! !DESCRIPTION:
 ! Wrapper routine to scatter int 1d array
@@ -62,7 +62,7 @@ contains
     implicit none
     integer , pointer            :: alocal(:)       ! local  data (output)
     integer , pointer            :: aglobal(:)      ! global data (input)
-    character(len=*) ,intent(in) :: clmlevel    ! type of input grid
+    character(len=*) ,intent(in) :: elmlevel    ! type of input grid
 !
 ! !REVISION HISTORY:
 ! Author: T Craig
@@ -83,7 +83,7 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf(trim(subname)//'_total')
-    call get_clmlevel_gsmap(clmlevel,gsmap)
+    call get_elmlevel_gsmap(elmlevel,gsmap)
 
     lb1 = lbound(alocal,dim=1)
     ub1 = ubound(alocal,dim=1)
@@ -156,7 +156,7 @@ contains
 ! !IROUTINE: gather_1darray_int
 !
 ! !INTERFACE:
-  subroutine gather_1darray_int (alocal, aglobal, clmlevel, missing)
+  subroutine gather_1darray_int (alocal, aglobal, elmlevel, missing)
 !
 ! !DESCRIPTION:
 ! Wrapper routine to gather int 1d array
@@ -167,7 +167,7 @@ contains
     implicit none
     integer , pointer            :: alocal(:)       ! local  data (output)
     integer , pointer            :: aglobal(:)      ! global data (input)
-    character(len=*) ,intent(in) :: clmlevel    ! type of input grid
+    character(len=*) ,intent(in) :: elmlevel    ! type of input grid
     integer ,optional,intent(in) :: missing     ! missing value
 !
 ! !REVISION HISTORY:
@@ -190,7 +190,7 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf(trim(subname)//'_total')
-    call get_clmlevel_gsmap(clmlevel,gsmap)
+    call get_elmlevel_gsmap(elmlevel,gsmap)
 
     lsize = size(alocal,dim=1)
     lb1 = lbound(alocal,dim=1)
@@ -295,7 +295,7 @@ contains
 ! !IROUTINE: scatter_1darray_real
 !
 ! !INTERFACE:
-  subroutine scatter_1darray_real (alocal, aglobal, clmlevel)
+  subroutine scatter_1darray_real (alocal, aglobal, elmlevel)
 !
 ! !DESCRIPTION:
 ! Wrapper routine to scatter real 1d array
@@ -306,7 +306,7 @@ contains
     implicit none
     real(r8), pointer            :: alocal(:)       ! local  data (output)
     real(r8), pointer            :: aglobal(:)      ! global data (input)
-    character(len=*) ,intent(in) :: clmlevel    ! type of input grid
+    character(len=*) ,intent(in) :: elmlevel    ! type of input grid
 !
 ! !REVISION HISTORY:
 ! Author: T Craig
@@ -327,7 +327,7 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf(trim(subname)//'_total')
-    call get_clmlevel_gsmap(clmlevel,gsmap)
+    call get_elmlevel_gsmap(elmlevel,gsmap)
 
     lb1 = lbound(alocal,dim=1)
     ub1 = ubound(alocal,dim=1)
@@ -400,7 +400,7 @@ contains
 ! !IROUTINE: gather_1darray_real
 !
 ! !INTERFACE:
-  subroutine gather_1darray_real (alocal, aglobal, clmlevel, missing)
+  subroutine gather_1darray_real (alocal, aglobal, elmlevel, missing)
 !
 ! !DESCRIPTION:
 ! Wrapper routine to gather real 1d array
@@ -411,7 +411,7 @@ contains
     implicit none
     real(r8), pointer            :: alocal(:)       ! local  data (output)
     real(r8), pointer            :: aglobal(:)      ! global data (input)
-    character(len=*) ,intent(in) :: clmlevel    ! type of input grid
+    character(len=*) ,intent(in) :: elmlevel    ! type of input grid
     real(r8),optional,intent(in) :: missing     ! missing value
 !
 ! !REVISION HISTORY:
@@ -434,7 +434,7 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf(trim(subname)//'_total')
-    call get_clmlevel_gsmap(clmlevel,gsmap)
+    call get_elmlevel_gsmap(elmlevel,gsmap)
 
     lsize = size(alocal,dim=1)
     lb1 = lbound(alocal,dim=1)

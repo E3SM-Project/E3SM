@@ -11,7 +11,7 @@ module domainMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use clm_varctl  , only : iulog
+  use elm_varctl  , only : iulog
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -25,7 +25,7 @@ module domainMod
      integer          :: ni,nj      ! global axis if 2d (nj=1 if unstructured)
      logical          :: isgrid2d   ! true => global grid is lat/lon
      integer          :: nbeg,nend  ! local beg/end indices
-     character(len=8) :: clmlevel   ! grid type
+     character(len=8) :: elmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
      real(r8),pointer :: topo(:)    ! topography
@@ -63,8 +63,8 @@ module domainMod
   public domain_check         ! write out domain info
 !
 ! !REVISION HISTORY:
-! Originally clm_varsur by Mariana Vertenstein
-! Migrated from clm_varsur to domainMod by T Craig
+! Originally elm_varsur by Mariana Vertenstein
+! Migrated from elm_varsur to domainMod by T Craig
 !
 !
 !EOP
@@ -78,7 +78,7 @@ contains
 ! !IROUTINE: domain_init
 !
 ! !INTERFACE:
-  subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,clmlevel)
+  subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,elmlevel)
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
 !
 ! !DESCRIPTION:
@@ -92,7 +92,7 @@ contains
     logical, intent(in) :: isgrid2d      ! true => global grid is lat/lon
     integer, intent(in) :: ni,nj         ! grid size, 2d
     integer         , intent(in), optional  :: nbeg,nend  ! beg/end indices
-    character(len=*), intent(in), optional  :: clmlevel   ! grid type
+    character(len=*), intent(in), optional  :: elmlevel   ! grid type
 !
 ! !REVISION HISTORY:
 !   Created by T Craig
@@ -146,8 +146,8 @@ contains
     end if
     ! pflotran:end-----------------------------------------------------
 
-    if (present(clmlevel)) then
-       domain%clmlevel = clmlevel
+    if (present(elmlevel)) then
+       domain%elmlevel = elmlevel
     endif
 
     domain%isgrid2d = isgrid2d
@@ -240,7 +240,7 @@ end subroutine domain_init
        endif
     endif
 
-    domain%clmlevel   = 'NOdomain_unsetNO'
+    domain%elmlevel   = 'NOdomain_unsetNO'
     domain%ns         = huge(1)
     domain%ni         = huge(1)
     domain%nj         = huge(1)
@@ -281,7 +281,7 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check decomped  = ',domain%decomped
     write(iulog,*) '  domain_check ns        = ',domain%ns
     write(iulog,*) '  domain_check ni,nj     = ',domain%ni,domain%nj
-    write(iulog,*) '  domain_check clmlevel  = ',trim(domain%clmlevel)
+    write(iulog,*) '  domain_check elmlevel  = ',trim(domain%elmlevel)
     write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
     write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
     write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)

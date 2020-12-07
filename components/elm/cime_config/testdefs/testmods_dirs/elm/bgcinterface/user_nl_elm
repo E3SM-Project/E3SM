@@ -1,2 +1,2 @@
-use_clm_interface = .true.
-use_clm_bgc = .true.
+use_elm_interface = .true.
+use_elm_bgc = .true.

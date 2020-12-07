@@ -19,7 +19,7 @@ module dynColumnTemplateMod
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
-  use clm_varcon      , only : ispval
+  use elm_varcon      , only : ispval
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:

@@ -33,7 +33,7 @@ module LakeHydrologyMod
   use TemperatureType      , only : temperature_type
   use WaterfluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
-  use clm_varcon           , only : snw_rds_min  
+  use elm_varcon           , only : snw_rds_min  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -71,9 +71,9 @@ contains
     !    Cleanup and do water balance.
     !
     ! !USES:
-    use clm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
-    use clm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
-    use clm_varctl      , only : iulog
+    use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
+    use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
+    use elm_varctl      , only : iulog
     use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers

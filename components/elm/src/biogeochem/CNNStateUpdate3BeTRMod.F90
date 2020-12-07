@@ -7,15 +7,15 @@ module CNNStateUpdate3BeTRMod
   !
   ! !USES:
   use shr_kind_mod        , only: r8 => shr_kind_r8
-  use clm_varpar          , only: nlevdecomp, ndecomp_pools
+  use elm_varpar          , only: nlevdecomp, ndecomp_pools
   use clm_time_manager    , only : get_step_size
-  use clm_varctl          , only : iulog, use_nitrif_denitrif
-  use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varctl          , only : iulog, use_nitrif_denitrif
+  use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
   use VegetationDataType  , only : veg_ns, veg_nf
   !! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
+  use elm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save

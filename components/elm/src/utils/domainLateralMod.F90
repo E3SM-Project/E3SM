@@ -25,7 +25,7 @@ module domainLateralMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use clm_varctl  , only : iulog
+  use elm_varctl  , only : iulog
   use spmdMod     , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils  , only : endrun
   use UnstructuredGridType, only : ugdm_type, ugrid_type
@@ -553,7 +553,7 @@ contains
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
-  use clm_varctl  , only : iulog
+  use elm_varctl  , only : iulog
   use spmdMod     , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils  , only : endrun
   !

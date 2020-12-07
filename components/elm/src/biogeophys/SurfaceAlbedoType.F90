@@ -6,7 +6,7 @@ module SurfaceAlbedoType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use decompMod      , only : bounds_type
-  use clm_varpar     , only : numrad, nlevcan, nlevsno
+  use elm_varpar     , only : numrad, nlevcan, nlevsno
   use abortutils     , only : endrun
   !
   ! !PUBLIC TYPES:
@@ -92,7 +92,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval, ispval
+    use elm_varcon    , only: spval, ispval
     !
     ! !ARGUMENTS:
     class(surfalb_type) :: this
@@ -159,7 +159,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only: spval
+    use elm_varcon    , only: spval
     use histFileMod   , only: hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
@@ -256,7 +256,7 @@ contains
     ! Read/Write module information to/from restart file.
     !
     ! !USES:
-    use clm_varctl , only : use_snicar_frc, iulog 
+    use elm_varctl , only : use_snicar_frc, iulog 
     use spmdMod    , only : masterproc
     use decompMod  , only : bounds_type
     use abortutils , only : endrun

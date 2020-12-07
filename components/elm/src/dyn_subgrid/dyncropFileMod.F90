@@ -12,8 +12,8 @@ module dyncropFileMod
   use decompMod             , only : bounds_type, BOUNDS_LEVEL_PROC
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
-  use clm_varctl            , only : iulog, use_crop
-  use clm_varcon            , only : grlnd, namec
+  use elm_varctl            , only : iulog, use_crop
+  use elm_varcon            , only : grlnd, namec
   use abortutils            , only : endrun
   use spmdMod               , only : masterproc, mpicom
   use LandunitType          , only : lun_pp
@@ -51,7 +51,7 @@ contains
     ! samples that bound the initial model date)
     !
     ! !USES:
-    use clm_varpar     , only : cft_size
+    use elm_varpar     , only : cft_size
     use ncdio_pio      , only : check_dim
     use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     !
@@ -120,7 +120,7 @@ contains
     ! !USES:
     use CropType          , only : crop_type
     use landunit_varcon   , only : istcrop
-    use clm_varpar        , only : cft_lb, cft_ub
+    use elm_varpar        , only : cft_lb, cft_ub
     use surfrdUtilsMod    , only : collapse_crop_types
     use subgridWeightsMod , only : set_landunit_weight
     use subgridWeightsMod , only : get_landunit_weight
@@ -178,7 +178,7 @@ contains
           if (col_set(c)) then
              write(iulog,*) subname//' ERROR: attempt to set a column that has already been set.'
              write(iulog,*) 'This may happen if there are multiple crops on a single column.'
-             call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(sourcefile, __LINE__))
+             call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
           col_pp%wtlunit(c) = wtcft_cur(g,m)
           if (use_crop) then

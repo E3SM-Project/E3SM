@@ -16,8 +16,8 @@ module CanopyHydrologyMod
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
-  use LandunitType      , only : lun_pp                
+  use elm_varctl        , only : iulog, tw_irr, extra_gw_irr, irrigate
+  use LandunitType      , only : lun_pp
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use CanopyStateType   , only : canopystate_type
@@ -29,7 +29,7 @@ module CanopyHydrologyMod
   use ColumnDataType    , only : col_es, col_ws, col_wf  
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ws, veg_wf  
-  use clm_varcon        , only : snw_rds_min
+  use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
   !
@@ -72,7 +72,7 @@ contains
     character(len=32) :: subname = 'CanopyHydrology_readnl'  ! subroutine name
     !-----------------------------------------------------------------------
 
-    namelist / clm_canopyhydrology_inparm / oldfflag
+    namelist / elm_canopyhydrology_inparm / oldfflag
 
     ! ----------------------------------------------------------------------
     ! Read namelist from standard input. 
@@ -81,13 +81,13 @@ contains
     if ( masterproc )then
 
        unitn = getavu()
-       write(iulog,*) 'Read in clm_CanopyHydrology_inparm  namelist'
+       write(iulog,*) 'Read in elm_canopyhydrology_inparm  namelist'
        call opnfil (NLFilename, unitn, 'F')
-       call shr_nl_find_group_name(unitn, 'clm_CanopyHydrology_inparm', status=ierr)
+       call shr_nl_find_group_name(unitn, 'elm_canopyhydrology_inparm', status=ierr)
        if (ierr == 0) then
-          read(unitn, clm_canopyhydrology_inparm, iostat=ierr)
+          read(unitn, elm_canopyhydrology_inparm, iostat=ierr)
           if (ierr /= 0) then
-             call endrun(msg="ERROR reading clm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+             call endrun(msg="ERROR reading elm_canopyhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
           end if
        end if
        call relavu( unitn )
@@ -115,12 +115,12 @@ contains
      ! temperature in the subroutine clm\_leaftem.f90, not in this subroutine.
      !
      ! !USES:
-     use clm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
+     use elm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
-     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak 
-     use clm_varctl         , only : subgridflag
-     use clm_varpar         , only : nlevsoi,nlevsno
-     use clm_varsur         , only : wt_lunit
+     use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
+     use elm_varctl         , only : subgridflag
+     use elm_varpar         , only : nlevsoi,nlevsno
+     use elm_varsur         , only : wt_lunit
      use atm2lndType        , only : atm2lnd_type
      use domainMod          , only : ldomain
      use clm_time_manager   , only : get_step_size

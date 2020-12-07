@@ -35,8 +35,8 @@ module VegetationType
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varcon     , only : ispval
-  use clm_varctl     , only : use_fates
+  use elm_varcon     , only : ispval
+  use elm_varctl     , only : use_fates
   !
   ! !PUBLIC TYPES:
   implicit none

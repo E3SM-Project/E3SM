@@ -3,14 +3,14 @@ program demo
   use ExternalModelInterfaceMod
   use clm_varctl                , only : iulog
   use decompMod                 , only : bounds_type, get_proc_bounds, get_proc_clumps, get_clump_bounds
-  use clm_instMod               , only : clm_inst_biogeophys
+  use elm_instMod               , only : elm_inst_biogeophys
   use clm_varpar                , only : clm_varpar_init
-  use clm_varcon                , only : clm_varcon_init
+  use elm_varcon                , only : elm_varcon_init
   use clm_varpar                , only : nlevdecomp_full, ndecomp_pools
   use spmdMod                   , only : spmd_init
   use ExternalModelConstants    , only : EM_ID_STUB, EM_STUB_SOIL_HYDRO_STAGE, EM_STUB_SOIL_THERMAL_STAGE
-  use clm_instMod               , only : soilstate_vars, waterstate_vars, waterflux_vars
-  use clm_instMod               , only : energyflux_vars, temperature_vars, carbonstate_vars
+  use elm_instMod               , only : soilstate_vars, waterstate_vars, waterflux_vars
+  use elm_instMod               , only : energyflux_vars, temperature_vars, carbonstate_vars
   use shr_kind_mod              , only : r8 => shr_kind_r8, SHR_KIND_CL
 
   implicit none
@@ -28,12 +28,12 @@ program demo
   call spmd_init()
   call set_namelist_variables()
   call clm_varpar_init()
-  call clm_varcon_init()
+  call elm_varcon_init()
   call decompInit()
 
   call get_proc_bounds(bounds_proc)
 
-  call clm_inst_biogeophys(bounds_proc)
+  call elm_inst_biogeophys(bounds_proc)
   call initialize_clm_data_structures(bounds_proc)
 
   call EMI_Determine_Active_EMs()
@@ -197,9 +197,9 @@ end subroutine decompInit
 subroutine initialize_clm_data_structures(bounds_proc)
 
   use decompMod     , only : bounds_type
-  use clm_instMod   , only : soilstate_vars!, waterstate_vars, waterflux_vars
-  use clm_instMod   , only : carbonstate_vars
-  !use clm_instMod   , only : energyflux_vars
+  use elm_instMod   , only : soilstate_vars!, waterstate_vars, waterflux_vars
+  use elm_instMod   , only : carbonstate_vars
+  !use elm_instMod   , only : energyflux_vars
   use ColumnDataType, only : col_ws, col_wf, col_ef
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use clm_varpar    , only : nlevgrnd

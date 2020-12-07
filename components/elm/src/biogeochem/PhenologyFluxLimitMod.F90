@@ -11,7 +11,7 @@ module PhenologyFLuxLimitMod
   use VegetationPropertiesType    , only : veg_vp
   use clm_time_manager            , only : get_step_size
   use pftvarcon                   , only : npcropmin
-  use clm_varctl                  , only : iulog
+  use elm_varctl                  , only : iulog
   use abortutils                  , only : endrun
 implicit none
   private
@@ -533,7 +533,7 @@ contains
     use VegetationDataType, only : vegetation_nitrogen_state
     use VegetationDataType, only : vegetation_phosphorus_flux
     use VegetationDataType, only : vegetation_phosphorus_state
-    use clm_varctl          , only : use_c13, use_c14
+    use elm_varctl          , only : use_c13, use_c14
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds

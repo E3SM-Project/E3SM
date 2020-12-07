@@ -5,13 +5,13 @@ module EMI_DataDimensionMod
   !
 
   use decompMod , only : bounds_type
-  use clm_varpar, only : nlevgrnd
-  use clm_varpar, only : nlevsoi
-  use clm_varpar, only : nlevsno
-  use clm_varpar, only : ndecomp_pools
-  use clm_varpar, only : nlevdecomp_full
+  use elm_varpar, only : nlevgrnd
+  use elm_varpar, only : nlevsoi
+  use elm_varpar, only : nlevsno
+  use elm_varpar, only : ndecomp_pools
+  use elm_varpar, only : nlevdecomp_full
   use abortutils, only : endrun
-  use clm_varctl, only : iulog
+  use elm_varctl, only : iulog
 
 implicit none
 
