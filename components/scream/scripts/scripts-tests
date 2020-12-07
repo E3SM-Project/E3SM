@@ -84,7 +84,7 @@ class TestBaseOuter: # Hide the base class from test scanner
 
         def get_baseline(self, cmd, machine):
             return TEST_DIR.joinpath("results", self._source_file).with_suffix("").\
-                joinpath(machine, self.get_cmd(cmd, machine, dry_run=False).replace(" ", "_"))
+                joinpath(machine, self.get_cmd(cmd, machine, dry_run=False).replace(" ", "_").replace("/", "_").replace("=", "_"))
 
         def get_cmd(self, cmd, machine, dry_run=True):
             return "{}{}".format(cmd.replace("$machine", machine), " --dry-run" if dry_run else "")
@@ -144,7 +144,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
     CMDS_TO_TEST = [
         "test-all-scream -m $machine -b HEAD -k",
         "test-all-scream -m $machine -b HEAD -k -t dbg",
-        "test-all-scream --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m $machine --submit --dry-run", # always dry run
+        "test-all-scream --baseline-dir {} -c EKAT_DISABLE_TPL_WARNINGS=ON -i -m $machine --submit --dry-run".format(TEST_DIR.joinpath("results")), # always dry run
     ]
 
     def __init__(self, *internal_args):
