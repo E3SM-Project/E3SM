@@ -45,7 +45,7 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<Spack>&       isotropy)
 {
   // Compute integrated column stability in lower troposphere
-  Scalar brunt_int;
+  Scalar brunt_int(0);
   integ_column_stability(team,nlev,dz_zt,pres,brunt,brunt_int);
 
   // Compute shear production term, which is on interface levels
