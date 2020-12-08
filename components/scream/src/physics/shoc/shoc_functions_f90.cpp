@@ -273,6 +273,10 @@ void vd_shoc_decomp_c(Int shcol, Int nlev, Int nlevi, Real* kv_term, Real* tmpi,
                       Real* flux, Real* du, Real* dl, Real* d);
 
 void vd_shoc_solve_c(Int shcol, Int nlev, Real* du, Real* dl, Real* d, Real* var);
+void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
+void pblintd_surf_temp_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
+void pblintd_check_pblh_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
+void pblintd_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -678,7 +682,7 @@ void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
 
 void pblintd_init_pot(PblintdInitPotData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   shoc_pblintd_init_pot_c(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -686,7 +690,7 @@ void pblintd_init_pot(PblintdInitPotData& d)
 
 void pblintd_cldcheck(PblintdCldcheckData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   shoc_pblintd_cldcheck_c(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -747,7 +751,7 @@ void shoc_main(ShocMainData& d)
 
 void pblintd_height(PblintdHeightData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev, true, true);
   d.transpose<ekat::TransposeDirection::c2f>();
   pblintd_height_c(d.shcol, d.nlev, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -776,6 +780,38 @@ void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
   }
   d.transpose<ekat::TransposeDirection::f2c>();
 }
+void pblintd_init(PblintdInitData& d)
+{
+  shoc_init(d.nlev, true, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_init_c(d.shcol, d.nlev, d.z, d.check, d.rino, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void pblintd_surf_temp(PblintdSurfTempData& d)
+{
+  shoc_init(d.nlev, true, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_surf_temp_c(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.obklen, d.kbfs, d.thv, d.tlv, d.pblh, d.check, d.rino);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void pblintd_check_pblh(PblintdCheckPblhData& d)
+{
+  shoc_init(d.nlev, true, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_check_pblh_c(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void pblintd(PblintdData& d)
+{
+  shoc_init(d.nlev, true, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_c(d.shcol, d.nlev, d.nlevi, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
 // end _c impls
 
 //
@@ -3020,5 +3056,21 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* z
   ekat::device_to_host<int,2>({tkh, tk}, shcol, nlev, inout_views, true);
 }
 
+void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
+{
+  // TODO
+}
+void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino)
+{
+  // TODO
+}
+void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh)
+{
+  // TODO
+}
+void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
+{
+  // TODO
+}
 } // namespace shoc
 } // namespace scream
