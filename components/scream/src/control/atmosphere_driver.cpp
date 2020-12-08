@@ -183,17 +183,36 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
 void AtmosphereDriver::init_atm_inputs () {
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
-  for (const auto& id : atm_inputs) {
-    auto& f = m_field_repo->get_field(id);
-    auto init_type = f.get_header_ptr()->get_tracking().get_init_type();
-    if (init_type!=InitType::None) {
-      auto initializer = f.get_header_ptr()->get_tracking().get_initializer().lock();
-      EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
-                          "Error! Field '" + f.get_header().get_identifier().name() + "' has initialization type '" + e2str(init_type) + "',\n" +
-                          "       but its initializer pointer is not valid.\n");
+  for (const auto& input : atm_inputs) {
+    // We loop on all ids with the same name, cause it might be that some
+    // initializer is set to init this field on a non-ref grid. In that case,
+    // such non-ref field would *not* appear as an atm input (since it's the
+    // output of a remapper).
+    auto& aliases = m_field_repo->get_alias_fields(input.name());
+    for (auto& it : aliases) {
+      auto& f = it.second;
+      auto& hdr = f.get_header_ptr();
+      auto& id = hdr->get_identifier();
+      auto init_type = hdr->get_tracking().get_init_type();
+      if (init_type!=InitType::None) {
+        auto initializer = hdr->get_tracking().get_initializer().lock();
+        EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
+                            "Error! Field '" + id.name() + "' has initialization type '" + e2str(init_type) + "',\n" +
+                            "       but its initializer pointer is not valid.\n");
 
-      initializer->add_field(f);
-      m_field_initializers.insert(initializer);
+        // If f is not on the ref grid, the initializer should init also the field
+        // on the ref grid.
+        const auto& ref_grid = m_grids_manager->get_reference_grid();
+        const auto&     grid = m_grids_manager->get_grid(id.get_grid_name());
+        if (grid->name()!=ref_grid->name()) {
+          auto& f_ref = m_field_repo->get_field(id.name(),ref_grid->name());
+          const auto& remapper = m_grids_manager->create_remapper(grid,ref_grid);
+          initializer->add_field(f,f_ref,remapper);
+        } else {
+          initializer->add_field(f);
+        }
+        m_field_initializers.insert(initializer);
+      }
     }
   }
 

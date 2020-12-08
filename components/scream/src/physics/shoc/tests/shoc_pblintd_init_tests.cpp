@@ -15,6 +15,56 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestPblintdInit {
 
+  static void run_property()
+  {
+    static constexpr Int shcol = 5;
+    static constexpr Int nlev = 3;
+    // Tests for the subroutine pblintd_init
+
+    // TEST
+    // This is a small routine, so feed inputs to make sure that
+    //  everything is set as it is supposed to be.
+
+    // Define mid point height [m]
+    static constexpr Real z[nlev] = {1000, 500, 20};
+
+    // Initialize data structure for bridging to F90
+    PblintdInitData SDS(shcol, nlev);
+
+    // Test that the inputs are reasonable
+    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
+    REQUIRE(shcol > 0);
+
+    // Fill in test data on the zt_grid and make sure
+    //  inputs make sense
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Make each column a little bit different by supplying
+        //  random numbers to each level between 1 and 10;
+        SDS.z[offset] = z[n] + (rand()%10 + 1);
+        // Mid point height should always be greater than zero
+        REQUIRE(SDS.z[offset] > 0);
+      }
+    }
+
+    // Call the fortran implementation
+    pblintd_init(SDS);
+
+    // Check the result
+    for(Int s = 0; s < shcol; ++s) {
+       // determine lowest level index for this column
+       const auto low_lev = (nlev-1) + s * nlev;
+      // "check" should always be true
+      REQUIRE(SDS.check[s] == true);
+      // PBLH should be set to lowest height input array
+      REQUIRE(SDS.pblh[s] == SDS.z[low_lev]);
+      // Require lowest level of rino to always be zero
+      REQUIRE(SDS.rino[low_lev] == 0);
+    }
+
+  }  // run_property
+
   static void run_bfb()
   {
     PblintdInitData f90_data[] = {
@@ -82,7 +132,14 @@ struct UnitWrap::UnitTest<D>::TestPblintdInit {
 
 namespace {
 
-TEST_CASE("pblintd_init_bfb", "[shoc]")
+TEST_CASE("pblintd_init_property", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInit;
+
+  TestStruct::run_property();
+}
+
+TEST_CASE("pblintd_init_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInit;
 

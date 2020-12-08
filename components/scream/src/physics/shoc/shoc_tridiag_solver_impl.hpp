@@ -76,12 +76,12 @@ void Functions<S,D>::vd_shoc_solve(
   const uview_2d<Spack>&  var)
 {
 #ifdef EKAT_DEFAULT_BFB
-  ekat::bfb(team, dl, d, du, var);
+  ekat::tridiag::bfb(team, dl, d, du, var);
 #else
 #ifdef KOKKOS_ENABLE_CUDA
-  ekat::cr(team, dl, d, du, ekat::scalarize(var));
+  ekat::tridiag::cr(team, dl, d, du, ekat::scalarize(var));
 #else
-  const auto f = [&] () { ekat::thomas(dl, d, du, var); };
+  const auto f = [&] () { ekat::tridiag::thomas(dl, d, du, var); };
   Kokkos::single(Kokkos::PerTeam(team), f);
 #endif
 #endif

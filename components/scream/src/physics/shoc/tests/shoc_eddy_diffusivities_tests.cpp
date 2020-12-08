@@ -254,8 +254,55 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    EddyDiffusivitiesData f90_data[] = {
+      EddyDiffusivitiesData(10, 71),
+      EddyDiffusivitiesData(10, 12),
+      EddyDiffusivitiesData(7,  16),
+      EddyDiffusivitiesData(2, 7),
+    };
+
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
+
+    // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    EddyDiffusivitiesData cxx_data[] = {
+      EddyDiffusivitiesData(f90_data[0]),
+      EddyDiffusivitiesData(f90_data[1]),
+      EddyDiffusivitiesData(f90_data[2]),
+      EddyDiffusivitiesData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      eddy_diffusivities(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      eddy_diffusivities_f(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      EddyDiffusivitiesData& d_f90 = f90_data[i];
+      EddyDiffusivitiesData& d_cxx = cxx_data[i];
+      for (Int k = 0; k < d_f90.total(d_f90.tkh); ++k) {
+        REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
+        REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+      }
+    }
+  } // run_bfb
 };
 
 }  // namespace unit_test

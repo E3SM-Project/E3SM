@@ -59,18 +59,18 @@ void Functions<S,D>
       w_sec_k,    w_sec_km1,
       tke_k,      tke_km1;
 
-    auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
-    auto range_pack2 = range_pack1;
-    // index for _km1 should never go below 0 and _kp1 should never go above nlevi
-    range_pack2.set(range_pack1 < 1 || range_pack1 >= nlevi, 1);
+    auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    auto range_pack_m1 = range_pack;
+    // index for _km1 should never go below 0
+    range_pack_m1.set(range_pack < 1, 1);
 
-    ekat::index_and_shift<-1>(s_dz_zt, range_pack2, dz_zt_k, dz_zt_km1);
-    ekat::index_and_shift<-1>(s_wthl_sec, range_pack2, wthl_sec_k, wthl_sec_km1);
-    ekat::index_and_shift<1> (s_wthl_sec, range_pack2, wthl_sec_k, wthl_sec_kp1);
-    ekat::index_and_shift<-1>(s_thl_sec, range_pack2, thl_sec_k, thl_sec_km1);
-    ekat::index_and_shift<1> (s_thl_sec, range_pack2, thl_sec_k, thl_sec_kp1);
-    ekat::index_and_shift<-1>(s_w_sec, range_pack2, w_sec_k, w_sec_km1);
-    ekat::index_and_shift<-1>(s_tke, range_pack2, tke_k, tke_km1);
+    ekat::index_and_shift<-1>(s_dz_zt, range_pack_m1, dz_zt_k, dz_zt_km1);
+    ekat::index_and_shift<-1>(s_wthl_sec, range_pack_m1, wthl_sec_k, wthl_sec_km1);
+    ekat::index_and_shift<1> (s_wthl_sec, range_pack, wthl_sec_k, wthl_sec_kp1);
+    ekat::index_and_shift<-1>(s_thl_sec, range_pack_m1, thl_sec_k, thl_sec_km1);
+    ekat::index_and_shift<1> (s_thl_sec, range_pack, thl_sec_k, thl_sec_kp1);
+    ekat::index_and_shift<-1>(s_w_sec, range_pack_m1, w_sec_k, w_sec_km1);
+    ekat::index_and_shift<-1>(s_tke, range_pack_m1, tke_k, tke_km1);
 
     // Compute inputs for computing f0 to f5 terms
     const auto thedz  = 1/dz_zi(k);
@@ -110,7 +110,7 @@ void Functions<S,D>
     const auto aa1 = omega0*x1+omega1*y1+omega2;
 
     // Finally, compute the third moment of w
-    w3(k).set(range_pack1 > 0 && range_pack1 < nlev,
+    w3(k).set(range_pack > 0 && range_pack < nlev,
               (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
   });
 

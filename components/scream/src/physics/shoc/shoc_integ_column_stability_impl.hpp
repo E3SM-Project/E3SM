@@ -18,7 +18,7 @@ void Functions<S,D>
   Scalar&                      brunt_int)
 {
   //Lower troposphere pressure [Pa]
-  static constexpr auto troppres = 80000;
+  static constexpr Scalar troppres = 80000;
 
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 

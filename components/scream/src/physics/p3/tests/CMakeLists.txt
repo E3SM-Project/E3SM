@@ -40,14 +40,32 @@ set(P3_TESTS_SRCS
     p3_water_vapor_conservation_tests.cpp
  ) # P3_TESTS_SRCS
 
+# The p3_test_setup executable generates tables used by all p3 tests. This
+# executable is a test fixture in the sense of CMake, so we mark it with the
+# FIXTURES_SETUP property, and we make p3_tests and p3_run_and_cmp_* depend on
+# it via the FIXTURES_REQUIRED property.
+# (See https://cmake.org/cmake/help/latest/prop_test/FIXTURES_REQUIRED.html)
+CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
+               PROPERTIES FIXTURES_SETUP p3_tables)
+
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
-  CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
+  CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}"
+                 THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+                 PROPERTIES FIXTURES_REQUIRED p3_tables)
 endif()
 
-CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline" DEP p3_tests_ut_np1_omp1 EXCLUDE_MAIN_CPP)
+CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               PROPERTIES FIXTURES_REQUIRED p3_tables
+               EXCLUDE_MAIN_CPP)
 
-CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "-f ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline" DEP p3_tests_ut_np1_omp1 EXCLUDE_MAIN_CPP)
+CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "-f ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               PROPERTIES FIXTURES_REQUIRED p3_tables
+               EXCLUDE_MAIN_CPP)
 
 # By default, baselines should be created using all fortran
 add_custom_target(p3_baseline_f90

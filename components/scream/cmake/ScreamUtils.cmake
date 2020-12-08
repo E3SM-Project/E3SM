@@ -16,20 +16,16 @@ include(EkatUtils)
 #  - compiler defs/flags can also be providedd on a per-language basis via COMPILER_[C|CXX|F]_[FLAGS|DEFS]
 
 function(CreateUnitTest target_name target_srcs scream_libs)
-  set(options EXCLUDE_MAIN_CPP)
+  set(options EXCLUDE_MAIN_CPP SERIAL)
   set(oneValueArgs EXE_ARGS DEP)
   set(multiValueArgs
     MPI_RANKS THREADS
     INCLUDE_DIRS
     COMPILER_DEFS
-    COMPILER_C_DEFS
-    COMPILER_CXX_DEFS
-    COMPILER_F_DEFS
+    COMPILER_C_DEFS COMPILER_CXX_DEFS COMPILER_F_DEFS
     COMPILER_FLAGS
-    COMPILER_C_FLAGS
-    COMPILER_CXX_FLAGS
-    COMPILER_F_FLAGS
-    LABELS)
+    COMPILER_C_FLAGS COMPILER_CXX_FLAGS COMPILER_F_FLAGS
+    LABELS PROPERTIES)
   cmake_parse_arguments(PARSE_ARGV 3 CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
   CheckMacroArgs(CreateUnitTest CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
@@ -44,40 +40,69 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   set (test_libs "${scream_libs}")
   list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
 
-  if (NOT CreateUnitTest_MPI_RANKS)
-    set (CreateUnitTest_MPI_RANKS 1)
-  endif ()
-  if (NOT CreateUnitTest_THREADS)
-    set (CreateUnitTest_THREADS 1)
-  endif ()
-
-  # Note: some args are likely empty, so tell Ekat to suppress warnings
+  # Note: some args are likely empty, so check them before adding them,
+  #       or you would have either a) a keyword followed by nothing (error),
+  #       or b) to add a space at front or back (causing EKAT to think that
+  #       that option is present, when it's not).
   set (cut_options EXCLUDE_TEST_SESSION)
   if (CreateUnitTest_EXCLUDE_MAIN_CPP)
     list(APPEND cut_options EXCLUDE_MAIN_CPP)
   endif()
+  if (CreateUnitTest_SERIAL)
+    list(APPEND cut_options SERIAL)
+  endif()
+  if (CreateUnitTest_DEP)
+    list(APPEND cut_options DEP ${CreateUnitTest_DEP})
+  endif()
+  if (CreateUnitTest_PROPERTIES)
+    list(APPEND cut_options PROPERTIES ${CreateUnitTest_PROPERTIES})
+  endif()
+  if (CreateUnitTest_LABELS)
+    list(APPEND cut_options LABELS ${CreateUnitTest_LABELS})
+  endif()
+  if (CreateUnitTest_MPI_RANKS)
+    list(APPEND cut_options MPI_RANKS ${CreateUnitTest_MPI_RANKS})
+  endif ()
+  if (CreateUnitTest_THREADS)
+    list(APPEND cut_options THREADS ${CreateUnitTest_THREADS})
+  endif ()
+  if (CreateUnitTest_EXE_ARGS)
+    list(APPEND cut_options EXE_ARGS ${CreateUnitTest_EXE_ARGS})
+  endif ()
+  if (SCREAM_MPI_EXTRA_ARGS)
+    list(APPEND cut_options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
+  endif ()
+  if (CreateUnitTest_COMPILER_DEFS)
+    list(APPEND cut_options COMPILER_DEFS ${CreateUnitTest_COMPILER_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_C_DEFS)
+    list(APPEND cut_options COMPILER_C_DEFS ${CreateUnitTest_COMPILER_C_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_CXX_DEFS)
+    list(APPEND cut_options COMPILER_CXX_DEFS ${CreateUnitTest_COMPILER_CXX_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_F_DEFS)
+    list(APPEND cut_options COMPILER_F_DEFS ${CreateUnitTest_C_COMPILER_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_FLAGS)
+    list(APPEND cut_options COMPILER_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_C_FLAGS)
+    list(APPEND cut_options COMPILER_C_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_CXX_FLAGS)
+    list(APPEND cut_options COMPILER_CXX_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
+  endif ()
+  if (CreateUnitTest_COMPILER_F_FLAGS)
+    list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
+  endif ()
+
 
   EkatCreateUnitTest(${target_name} "${target_srcs}"
-    DEP " ${CreateUnitTest_DEP}"
     MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
     MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG}
-    MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
-    THREADS "${CreateUnitTest_THREADS}"
-    EXE_ARGS " ${CreateUnitTest_EXE_ARGS}"
-    MPI_EXTRA_ARGS " ${SCREAM_MPI_EXTRA_ARGS}"
-    COMPILER_DEFS " ${CreateUnitTest_COMPILER_DEFS}"
-    COMPILER_C_DEFS " ${CreateUnitTest_COMPILER_C_DEFS}"
-    COMPILER_CXX_DEFS " ${CreateUnitTest_COMPILER_CXX_DEFS}"
-    COMPILER_F_DEFS " ${CreateUnitTest_COMPILER_F_DEFS}"
-    COMPILER_FLAGS " ${CreateUnitTest_COMPILER_FLAGS}"
-    COMPILER_C_FLAGS " ${CreateUnitTest_COMPILER_C_FLAGS}"
-    COMPILER_CXX_FLAGS " ${CreateUnitTest_COMPILER_CXX_FLAGS}"
-    COMPILER_F_FLAGS " ${CreateUnitTest_COMPILER_F_FLAGS}"
-    INCLUDE_DIRS " ${TEST_INCLUDE_DIRS}"
-    LIBS " ${test_libs}"
-    LIBS_DIRS " ${SCREAM_TPL_LIBRARY_DIRS}"
-    LINKER_FLAGS " ${SCREAM_LINK_FLAGS}"
-    LABELS " ${CreateUnitTest_LABELS}"
+    INCLUDE_DIRS ${TEST_INCLUDE_DIRS}
+    LIBS ${test_libs}
     "${cut_options}"
   )
 

@@ -514,6 +514,10 @@ subroutine shoc_grid( &
   !  throughout the SHOC parameterization, also define air
   !  density in SHOC
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_grid_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -540,6 +544,16 @@ subroutine shoc_grid( &
 
   ! local variables
   integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call shoc_grid_f(shcol,nlev,nlevi,&
+                     zt_grid,zi_grid,pdel,&
+                     dz_zt,dz_zi,rho_zt)
+     return
+  endif
+#endif
+
   do k=1,nlev
     do i=1,shcol
       ! define thickness of the thermodynamic gridpoints
@@ -629,6 +643,10 @@ subroutine update_prognostics_implicit( &
          thetal,qw,tracer,tke,&           ! Input/Output
          u_wind,v_wind)                   ! Input/Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: update_prognostics_implicit_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -696,6 +714,20 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: du(shcol,nlev) ! Superdiagonal for solver
   real(rtype) :: dl(shcol,nlev) ! Factorized subdiagonal for solver
   real(rtype) :: d(shcol,nlev)  ! Factorized diagonal for solver
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call update_prognostics_implicit_f(&
+           shcol,nlev,nlevi,num_tracer,&    ! Input
+           dtime,dz_zt,dz_zi,rho_zt,&       ! Input
+           zt_grid,zi_grid,tk,tkh,&         ! Input
+           uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
+           wtracer_sfc,&                    ! Input
+           thetal,qw,tracer,tke,&           ! Input/Output
+           u_wind,v_wind)                   ! Input/Output
+     return
+  endif
+#endif
 
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
@@ -976,6 +1008,10 @@ subroutine diag_second_shoc_moments(&
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
          w_sec)                                 ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: diag_second_shoc_moments_f
+#endif
+
   ! This is the main routine to compute the second
   !   order moments in SHOC.
 
@@ -1045,6 +1081,16 @@ subroutine diag_second_shoc_moments(&
 ! LOCAL VARIABLES
   real(rtype) :: wstar(shcol)
   real(rtype) :: ustar2(shcol)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+     call  diag_second_shoc_moments_f(shcol,nlev,nlevi,  &
+              thetal,qw,u_wind,v_wind,tke, isotropy,tkh,tk, dz_zi,zt_grid,zi_grid,shoc_mix, &
+              wthl_sfc, wqw_sfc, uw_sfc, vw_sfc,thl_sec,qw_sec,wthl_sec,wqw_sec,&
+              qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec)
+      return
+   endif
+#endif
 
   ! Calculate surface properties needed for lower
   !  boundary conditions
@@ -2956,6 +3002,10 @@ end subroutine integ_column_stability
 
 subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shr_prod_f
+#endif
+
   implicit none
 
   integer,     intent(in)  :: nlevi, nlev, shcol
@@ -2973,6 +3023,13 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_shr_prod_f(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+     return
+  endif
+#endif
+
   !compute shear production term
   do k = 2, nlev
      km1 = k - 1
@@ -2982,7 +3039,7 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
         ! calculate vertical gradient of u&v wind
         u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
         v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
-        sterm(i,k) = u_grad**2+v_grad**2
+        sterm(i,k) = bfb_square(u_grad)+bfb_square(v_grad)
      enddo
   enddo
 
@@ -3002,6 +3059,10 @@ end subroutine compute_shr_prod
 
 subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
      sterm_zt, tk, tke, a_diss)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: adv_sgs_tke_f
+#endif
 
   implicit none
 
@@ -3033,9 +3094,17 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   real(rtype) :: Ck, Cs, Ce, Ce1, Ce2, Cee
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call adv_sgs_tke_f(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+          sterm_zt, tk, tke, a_diss)
+     return
+  endif
+#endif
+
   Cs=0.15_rtype
   Ck=0.1_rtype
-  Ce=Ck**3/Cs**4
+  Ce=bfb_cube(Ck)/bfb_quad(Cs)
 
   Ce1=Ce/0.7_rtype*0.19_rtype
   Ce2=Ce/0.7_rtype*0.51_rtype
@@ -3054,7 +3123,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
-        a_diss(i,k)=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+        a_diss(i,k)=Cee/shoc_mix(i,k)*bfb_pow(tke(i,k),1.5_rtype)
 
         ! March equation forward one timestep
         tke(i,k)=max(mintke,tke(i,k)+dtime* &
@@ -3075,6 +3144,10 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   ! eddy coefficients as well as to diagnose higher
   ! moments in SHOC
   !------------------------------------------------------------
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: isotropic_ts_f
+#endif
 
   implicit none
 
@@ -3105,6 +3178,14 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
   real(rtype), parameter :: brunt_low    = 0.02_rtype
   real(rtype), parameter :: maxiso       = 20000.0_rtype ! Return to isotropic timescale [s]
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call isotropic_ts_f(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
+     return
+  endif
+#endif
+
+
   do k = 1, nlev
      do i = 1, shcol
 
@@ -3133,6 +3214,10 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   !------------------------------------------------------------
   ! Compute eddy diffusivity for heat and momentum
   !------------------------------------------------------------
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: eddy_diffusivities_f
+#endif
 
   implicit none
 
@@ -3181,6 +3266,14 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   ! Minimum allowable value for stability diffusivities
   real(rtype), parameter :: Ck_s_min = 0.1_rtype
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, &
+                                shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
+      return
+   endif
+#endif
+
   !store zt_grid at nlev in 1d array
   zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)
 
@@ -3204,8 +3297,8 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
            Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
-           tkh(i,k) = Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-           tk(i,k)  = Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
+           tk(i,k)  = Ckm_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
         else
            ! Default definition of eddy diffusivity for heat and momentum
            tkh(i,k) = Ckh*isotropy(i,k)*tke(i,k)
@@ -4291,7 +4384,7 @@ subroutine pblintd_surf_temp(&
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        check(i)  = (kbfs(i) > 0._rtype)
        if (check(i)) then
-          phiminv      = (1._rtype - binm*pblh(i)/obklen(i))**onet
+          phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
           rino(i,nlev) = 0.0_rtype
           tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv )
        end if

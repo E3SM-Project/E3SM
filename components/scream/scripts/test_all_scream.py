@@ -21,7 +21,8 @@ class TestAllScream(object):
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None, dry_run=False,
+                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None,
+                 quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
@@ -43,8 +44,13 @@ class TestAllScream(object):
         self._root_dir                = root_dir
         self._work_dir                = work_dir
         self._integration_test        = integration_test
+        self._quick_rerun             = quick_rerun
+        self._quick_rerun_failed      = quick_rerun_failed
         self._dry_run                 = dry_run
         self._must_generate_baselines = False
+
+        if self._quick_rerun_failed:
+            self._quick_rerun = True
 
         ############################################
         #  Sanity checks and helper structs setup  #
@@ -552,10 +558,17 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        # This directory might have been used also to build the model to generate baselines.
-        # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
-        # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
-        run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
+        if self._quick_rerun and pathlib.Path("{}/CMakeCache.txt".format(test_dir)).is_file():
+            # Do not purge bld dir, and do not rerun config step.
+            # Note: make will still rerun cmake if some cmake file has changed
+            ctest_config += "-DSKIP_CONFIG_STEP=TRUE "
+            if self._quick_rerun_failed:
+                ctest_config += "--rerun-failed "
+        else:
+            # This directory might have been used also to build the model to generate baselines.
+            # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
+            # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
+            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 
@@ -574,9 +587,11 @@ class TestAllScream(object):
 
             # Create this test's build dir
             if test_dir.exists():
-                shutil.rmtree(str(test_dir))
-
-            test_dir.mkdir(parents=True)
+                if not self._quick_rerun:
+                    shutil.rmtree(str(test_dir))
+                    test_dir.mkdir(parents=True)
+            else:
+                test_dir.mkdir(parents=True)
 
         success = True
         tests_success = {

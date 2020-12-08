@@ -185,27 +185,35 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
- 
+
   KOKKOS_FUNCTION
   static void shoc_diag_second_moments_lbycond(
     const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc,
     const Scalar& ustar2, const Scalar& wstar,
     Scalar& wthl_sec, Scalar& wqw_sec, Scalar& uw_sec, Scalar& vw_sec,
     Scalar& wtke_sec, Scalar& thl_sec, Scalar& qw_sec, Scalar& qwthl_sec);
- 
+
   KOKKOS_FUNCTION
-  static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi, 
-     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, 
-     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy, 
-     const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, 
+  static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
+     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+     const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
-     const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, 
-     const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, 
+     const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec,
+     const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec,
      const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
-  
+
   KOKKOS_FUNCTION
-  static void diag_second_shoc_moments(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind, const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
+  static void diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+     const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
+     const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
+     const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
+     const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
+     const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
+     const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi, const uview_1d<Spack>& thl_sec,
+     const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
+     const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
 
   KOKKOS_FUNCTION
   static void compute_brunt_shoc_length(
@@ -323,7 +331,39 @@ struct Functions
     const uview_1d<Spack>&       qv);
 
   KOKKOS_FUNCTION
-  static void update_prognostics_implicit(const Int& shcol, const Int& nlev, const Int& nlevi, const Int& num_tracer, const Spack& dtime, const uview_1d<const Spack>& dz_zt, const uview_1d<const Spack>& dz_zi, const uview_1d<const Spack>& rho_zt, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& wtracer_sfc, const uview_1d<Spack>& thetal, const uview_1d<Spack>& qw, const uview_1d<Spack>& tracer, const uview_1d<Spack>& tke, const uview_1d<Spack>& u_wind, const uview_1d<Spack>& v_wind);
+  static void update_prognostics_implicit(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Int&                   num_tracer,
+    const Scalar&                dtime,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& rho_zt,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& tk,
+    const uview_1d<const Spack>& tkh,
+    const Scalar&                uw_sfc,
+    const Scalar&                vw_sfc,
+    const Scalar&                wthl_sfc,
+    const Scalar&                wqw_sfc,
+    const uview_1d<const Spack>& wtracer_sfc,
+    const uview_1d<Spack>&       rdp_zt,
+    const uview_1d<Spack>&       tmpi,
+    const uview_1d<Spack>&       tkh_zi,
+    const uview_1d<Spack>&       tk_zi,
+    const uview_1d<Spack>&       rho_zi,
+    const uview_1d<Scalar>&       du,
+    const uview_1d<Scalar>&       dl,
+    const uview_1d<Scalar>&       d,
+    const uview_2d<Spack>&       X1,
+    const uview_1d<Spack>&       thetal,
+    const uview_1d<Spack>&       qw,
+    const uview_2d<Spack>&       tracer,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       u_wind,
+    const uview_1d<Spack>&       v_wind);
 
   KOKKOS_FUNCTION
   static void diag_third_shoc_moments(
@@ -346,6 +386,19 @@ struct Functions
     const uview_1d<Spack>&       brunt_zi,
     const uview_1d<Spack>&       thetal_zi,
     const uview_1d<Spack>&       w3);
+
+  KOKKOS_FUNCTION
+  static void adv_sgs_tke(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Real&                  dtime,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& tk,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       a_diss);
 
   KOKKOS_FUNCTION
   static void shoc_assumed_pdf(
@@ -378,6 +431,17 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql2);
 
   KOKKOS_FUNCTION
+  static void compute_shr_prod(
+    const MemberType&            team,
+    const Int&                   nlevi,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
+    const uview_1d<Spack>&       sterm);
+
+  KOKKOS_FUNCTION
   static void compute_tmpi(
     const MemberType&            team,
     const Int&                   nlevi,
@@ -394,6 +458,17 @@ struct Functions
     const uview_1d<const Spack>& pres,
     const uview_1d<const Spack>& brunt,
     Scalar&                      brunt_int);
+
+  KOKKOS_FUNCTION
+  static void isotropic_ts(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   shcol,
+    const Scalar&                brunt_int,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<const Spack>& a_diss,
+    const uview_1d<const Spack>& brunt,
+    const uview_1d<Spack>&       isotropy);
 
   KOKKOS_FUNCTION
   static void dp_inverse(
@@ -436,6 +511,42 @@ struct Functions
     const uview_1d<Scalar>& dl,
     const uview_1d<Scalar>& d,
     const uview_2d<Spack>&  var);
+
+  KOKKOS_FUNCTION
+  static void pblintd_init(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<bool>& check, const uview_1d<Spack>& rino, const uview_1d<Spack>& pblh);
+  KOKKOS_FUNCTION
+  static void pblintd_surf_temp(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& thv, const uview_1d<Spack>& tlv, const uview_1d<Spack>& pblh, const uview_1d<bool>& check, const uview_1d<Spack>& rino);
+  KOKKOS_FUNCTION
+  static void pblintd_check_pblh(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const bool>& check, const uview_1d<Spack>& pblh);
+  KOKKOS_FUNCTION
+  static void pblintd(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& zi, const uview_1d<const Spack>& thl, const uview_1d<const Spack>& ql, const uview_1d<const Spack>& q, const uview_1d<const Spack>& u, const uview_1d<const Spack>& v, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& cldn, const uview_1d<Spack>& pblh);
+
+  KOKKOS_FUNCTION
+  static void shoc_grid(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& pdel,
+    const uview_1d<Spack>&       dz_zt,
+    const uview_1d<Spack>&       dz_zi,
+    const uview_1d<Spack>&       rho_zt);
+
+  KOKKOS_FUNCTION
+  static void eddy_diffusivities(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Scalar&                obklen,
+    const Scalar&                pblh,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& sterm_zt,
+    const uview_1d<const Spack>& isotropy,
+    const uview_1d<const Spack>& tke,
+    const uview_1d<Spack>&       tkh,
+    const uview_1d<Spack>&       tk);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -459,6 +570,7 @@ struct Functions
 # include "shoc_diag_second_moments_lbycond_impl.hpp"
 # include "shoc_diag_second_moments_impl.hpp"
 # include "shoc_diag_second_shoc_moments_impl.hpp"
+# include "shoc_compute_shr_prod_impl.hpp"
 # include "shoc_compute_brunt_shoc_length_impl.hpp"
 # include "shoc_compute_l_inf_shoc_length_impl.hpp"
 # include "shoc_check_length_scale_shoc_length_impl.hpp"
@@ -472,13 +584,21 @@ struct Functions
 # include "shoc_update_prognostics_implicit_impl.hpp"
 # include "shoc_diag_third_shoc_moments_impl.hpp"
 # include "shoc_assumed_pdf_impl.hpp"
+# include "shoc_adv_sgs_tke_impl.hpp"
 # include "shoc_compute_tmpi_impl.hpp"
 # include "shoc_integ_column_stability_impl.hpp"
+# include "shoc_isotropic_ts_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
 # include "shoc_pblintd_init_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
+# include "shoc_pblintd_init_impl.hpp"
+# include "shoc_pblintd_surf_temp_impl.hpp"
+# include "shoc_pblintd_check_pblh_impl.hpp"
+# include "shoc_pblintd_impl.hpp"
+# include "shoc_grid_impl.hpp"
+# include "shoc_eddy_diffusivities_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // SHOC_FUNCTIONS_HPP

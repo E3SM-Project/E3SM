@@ -68,7 +68,7 @@ private:
 };
 
 // Initialize SHOC with the given number of levels.
-void shoc_init(Int nlev, bool use_fortran=false);
+void shoc_init(Int nlev, bool use_fortran=false, bool force_reinit=false);
 
 // Run SHOC subroutines, populating inout and out fields of d.
 void shoc_main(FortranData& d);

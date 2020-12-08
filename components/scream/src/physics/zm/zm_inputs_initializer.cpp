@@ -47,8 +47,8 @@ struct GridOpts{
 unordered_map<string, GridOpts> opt_map;
 
 //Initializes struct GridOpts fields
-void set_grid_opts_helper(GridOpts O, string n, bool out, const Units* unit, int field_idx
-                          ){
+void set_grid_opts_helper(GridOpts O, string n, bool out, const Units* unit, int field_idx)
+{
   O.name = n;
   O.isOut = out;
   O.field_idx = field_idx;
@@ -187,9 +187,8 @@ void set_grid_opts(){
   set_grid_opts_helper(icwu, "icwu", true, NULL, VECTOR_3D_MID);
   set_grid_opts_helper(ncnst, "ncnst", true, NULL, VECTOR_3D_MID);
   set_grid_opts_helper(fracis, "fracis", true, NULL, VECTOR_3D_MID);
-
-
 } 
+
 void ZMInputsInitializer::add_field (const field_type &f)
 {
   const auto& id = f.get_header().get_identifier();
@@ -198,13 +197,38 @@ void ZMInputsInitializer::add_field (const field_type &f)
   m_fields_id.insert(id);
 }
 
+void ZMInputsInitializer::
+add_field (const field_type &f, const field_type& f_ref,
+           const remapper_ptr_type& remapper)
+{
+  if (m_remapper) {
+    // Sanity check
+    EKAT_REQUIRE_MSG (m_remapper->get_src_grid()->name()==remapper->get_src_grid()->name(),
+      "Error! A remapper was already set in P3InputsInitializer, but its src grid differs from"
+      "       the grid of the input remapper of this call.\n");
+  } else {
+    m_remapper = remapper;
+    m_remapper->registration_begins();
+  }
 
+  const auto& id = f.get_header().get_identifier();
+  const auto& id_ref = f_ref.get_header().get_identifier();
+
+  // To the AD, we only expose the fact that we init f_ref...
+  m_fields_id.insert(id_ref);
+
+  // ...but P3 only knows how to init f...
+  m_fields.emplace(id.name(),f);
+
+  // ...hence, we remap to f_ref.
+  m_remapper->register_field(f, f_ref);
+}
 
 void ZMInputsInitializer :: initialize_fields(){
 
   //check if zm inputs have been registered as fields
   int count = 0;
-  for (int j = 0; j < zm_inputs.size(); j++){
+  for (size_t j = 0; j < zm_inputs.size(); j++){
     count += m_fields.count(zm_inputs[j]);
     if (count==0){
       return;
@@ -220,13 +244,13 @@ void ZMInputsInitializer :: initialize_fields(){
 
 
 
-  for (int i = 0; i < zm_inputs.size(); i++){
+  for (size_t i = 0; i < zm_inputs.size(); i++){
     //Get and store device view using input name
     Kokkos::View<Real*, Kokkos::LayoutRight, DefaultDevice> d_v = m_fields.at(zm_inputs[i]).get_view();
     //Create and store host mirrors using device views
     Kokkos::View<scream::Real*, Kokkos::LayoutRight, HostDevice> h_m = Kokkos::create_mirror_view(d_v);
     //Create and store host mirrors raw pointers
-    Real* r_p = h_m.data();
+    // Real* r_p = h_m.data();
     //Deep copy back to device
     Kokkos::deep_copy(d_v, h_m);
   }

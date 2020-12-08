@@ -1515,7 +1515,8 @@
 <!-- Only for use with RRTMGP -->
 <do_aerosol_rad>              .true.   </do_aerosol_rad>
 <fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
-
+<do_SPA_optics>              .false.   </do_SPA_optics>
+<SPA_lookup_dir        > atm/cam/physprops </SPA_lookup_dir>
 
 <!-- ================================================================== -->
 <!-- Defaults for SE                                                    -->
