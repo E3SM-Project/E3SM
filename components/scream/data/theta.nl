@@ -33,6 +33,6 @@ tstep_type        = 10
 /
 &vert_nl
 vform     = "ccm"
-vfile_mid = './data/acme-72m.ascii'
-vfile_int = './data/acme-72i.ascii'
+vfile_mid = './data/scream-128m.ascii'
+vfile_int = './data/scream-128i.ascii'
 /
