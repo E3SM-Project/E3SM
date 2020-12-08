@@ -698,6 +698,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             scatmom(:ncol)  = 0._r8
             absmom(:ncol)   = 0._r8
             hygromom(:ncol) = 0._r8
+            momaod(:ncol)   = 0._r8
 #elif ( defined MODAL_AERO_9MODE )
             scatpoly(:ncol)  = 0._r8
             abspoly(:ncol)   = 0._r8
