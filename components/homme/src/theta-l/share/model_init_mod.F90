@@ -111,12 +111,11 @@ contains
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 #endif
 
-    nlev_tom=0
-
     !$omp master
     ! 
     ! compute scaling of sponge layer damping 
     !
+    nlev_tom=0
     if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
     do k=1,nlev
        !press = (hvcoord%hyam(k)+hvcoord%hybm(k))*hvcoord%ps0
@@ -158,7 +157,7 @@ contains
     if (hybrid%masterthread) then
        write(iulog,*) "  nlev_tom ",nlev_tom
     end if
-    !$omp master
+    !$omp end master
     !$omp barrier
 
   end subroutine 
