@@ -39,7 +39,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     // Define the virtual potential temperature [K]
     static constexpr Real thv[nlev] = {320, 315, 314, 312, 311, 310, 302, 302, 300};
     // Define the surface friction velocity [m4/s3]
-    static constexpr Real ustar = ustar_min;
+    Real ustar = ustar_min;
 
     // Initialize dtata structure for bridging to F90
     PblintdHeightData SDS(shcol,nlev);
