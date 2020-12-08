@@ -709,6 +709,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             scatlip(:ncol)  = 0._r8
             abslip(:ncol)   = 0._r8
             hygrolip(:ncol) = 0._r8
+            polyaod(:ncol) = 0._r8
+            protaod(:ncol) = 0._r8
+            lipaod(:ncol) = 0._r8
 #endif
 
             ! aerosol species loop
