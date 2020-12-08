@@ -101,17 +101,17 @@ struct Baseline {
     //otherwise, modify start and end to only loop over case of interest. Test that predict_nc
     //is only yes, no, or both is done below so not bothering here.
     int i_start=0;
-    int i_end=2;     
+    int i_end=2;
     if (predict_nc == "yes") {i_start=1;}
     if (predict_nc == "no" ) {i_end=1;}
 
     //Like above, get indexing for prescribe_CCN options
     int j_start=0;
-    int j_end=2;     
+    int j_end=2;
     if (prescribed_CCN == "yes") {j_start=1;}
     if (prescribed_CCN == "no" ) {j_end=1;}
-   
-    
+
+
     for (int i = i_start; i < i_end; ++i) { // predict_nc is false or true
       for (int j = j_start; j< j_end; ++j) { //prescribed_CCN is false or true
 	//                 initial condit,     dt,  nsteps, prescribe or predict nc, prescribe CCN or not
@@ -222,6 +222,9 @@ private:
       const auto& f = fdi.getfield(i);
       ekat::write(&f.dim, 1, fid);
       ekat::write(f.extent, f.dim, fid);
+#ifdef SCREAM_FORCE_RUN_DIFF
+      f.data[0] = 0;
+#endif
       ekat::write(f.data, f.size, fid);
     }
   }

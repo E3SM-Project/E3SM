@@ -14,6 +14,10 @@
 "A non-cmake build of scream is currently not supported."
 #endif
 
+#ifdef SCREAM_FORCE_BUILD_FAIL
+choke_build();
+#endif
+
 namespace scream {
 
 std::string scream_config_string();
