@@ -403,9 +403,13 @@ class TestAllScream(object):
         # on correct cores with taskset. On GPU, however, these ids are used to select
         # the kokkos device where the tests are run on.
 
-        it = itertools.takewhile(lambda name: name!=test, self._tests)
-        start = sum(self._testing_res_count[prevs] for prevs in it)
-        end   = start + self._testing_res_count[test]
+        if self._parallel:
+            it = itertools.takewhile(lambda name: name!=test, self._tests)
+            start = sum(self._testing_res_count[prevs] for prevs in it)
+            end   = start + self._testing_res_count[test]
+        else:
+            start = 0
+            end   = self._testing_res_count[test]
 
         data = {}
 
