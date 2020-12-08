@@ -1120,20 +1120,20 @@
   </machine>
 
   <machine MACH="chrysalis">
-    <DESC>ANL LCRC Linux Cluster</DESC>
+    <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
     <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>openmpi,impi</MPILIBS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
-    <SAVE_TIMING_DIR>/disk/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/disk/e3sm/$USER/scratch/chrys</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/disk/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/disk/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/disk/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/disk/e3sm/baselines/chrys/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/disk/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/chrys/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -1151,42 +1151,27 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="sh">/nfs/spack-0.15.4/opt/spack/linux-centos8-x86_64/gcc-8.3.1/lmod-8.3-527cd5e/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/nfs/spack-0.15.4/opt/spack/linux-centos8-x86_64/gcc-8.3.1/lmod-8.3-527cd5e/lmod/lmod/init/csh</init_path>
-      <init_path lang="python">/nfs/spack-0.15.4/opt/spack/linux-centos8-x86_64/gcc-8.3.1/lmod-8.3-527cd5e/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/nfs/spack-0.15.4/opt/spack/linux-centos8-x86_64/gcc-8.3.1/lmod-8.3-527cd5e/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="sh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">python/3.8.5-ethv5xz</command>
-        <command name="load">cmake/3.18.2-vuj6hkm</command>
-        <command name="load">gmake/4.2.1-7u3ryez</command>
-        <command name="load">perl/5.30.3-ed3remr</command>
-        <command name="load">subversion/1.14.0-btjqlun</command>
+        <command name="load">subversion/1.14.0-e4smcy3</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/20.0.4-xkafm4q</command>
-        <command name="load">intel-mkl/2020.4.304-g4cokjh</command>
-        <command name="load">hdf5/1.10.6-z5e442p</command>
-        <command name="load">netcdf-c/4.7.4-3w4cjar</command>
-        <command name="load">netcdf-cxx/4.2-wrqvzln</command>
-        <command name="load">netcdf-fortran/4.5.3-gdijef3</command>
-      </modules>
-      <modules compiler="gnu"><!-- /bin/gcc v.8.3.1 -->
-        <command name="load">intel-mkl/2019.5.281-vati572</command>
-        <command name="load">hdf5/1.10.6-n354s2k</command>
-        <command name="load">netcdf-c/4.7.4-fy6qxb3</command>
-        <command name="load">netcdf-cxx/4.2-z2ssgxi</command>
-        <command name="load">netcdf-fortran/4.5.3-o2rbyue</command>
+        <command name="load">intel/20.0.4-kodw73g</command>
+        <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.0.4-hpcx-x3pasa6</command>
-        <command name="load">parallel-netcdf/1.12.1-hkhbopc</command>
-      </modules>
-      <modules compiler="intel" mpilib="impi">
-        <command name="load">intel-mpi/2019.9.304-fz3d3rc</command>
-        <command name="load">parallel-netcdf/1.12.1-7maf7i6</command>
+        <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
+        <command name="load">hdf5/1.10.7-ticiopc</command>
+        <command name="load">netcdf-c/4.7.4-h26ravg</command>
+        <command name="load">netcdf-cxx/4.2-wmjjndn</command>
+        <command name="load">netcdf-fortran/4.5.3-3i4qf2w</command>
+        <command name="load">parallel-netcdf/1.12.1-sr56aqs</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1194,23 +1179,13 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/nfs/e3sm/soft/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl5/lib/perl5</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
-    <environment_variables compiler="gnu" mpilib="openmpi">
-      <env name="PATH">/usr/mpi/gcc/openmpi-4.0.4rc3/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/usr/mpi/gcc/openmpi-4.0.4rc3/lib64:$ENV{LD_LIBRARY_PATH}</env>
-    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
-    </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-      <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=core,scatter</env>
