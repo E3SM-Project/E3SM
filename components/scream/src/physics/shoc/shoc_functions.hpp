@@ -621,7 +621,7 @@ struct Functions
 # include "shoc_pblintd_impl.hpp"
 # include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
-# include "shoc_shoc_tke_impl.hpp"
+# include "shoc_tke_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // SHOC_FUNCTIONS_HPP
