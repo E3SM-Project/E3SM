@@ -82,7 +82,9 @@ contains
   end subroutine phys_grid_init
 
   subroutine cleanup_grid_init_data ()
-    deallocate(g_ncols)
+    if (is_phys_grid_inited) then
+      deallocate(g_ncols)
+    endif
   end subroutine cleanup_grid_init_data
 
   subroutine finalize_phys_grid ()

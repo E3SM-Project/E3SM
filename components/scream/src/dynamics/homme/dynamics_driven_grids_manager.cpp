@@ -99,6 +99,10 @@ build_grids (const std::set<std::string>& grid_names,
 
     codes.insert(m_grid_codes.at(gn));
   }
+  // Also check the ref grid (and retrieve its code)
+  EKAT_REQUIRE_MSG (supported_grids().count(reference_grid)==1,
+                    "Error! Grid '" +reference_grid + "' is not supported by this grid manager.\n");
+  codes.insert(m_grid_codes.at(reference_grid));
 
   // Deduce the phys grid type we need
   int pgN = -1;
@@ -121,6 +125,10 @@ build_grids (const std::set<std::string>& grid_names,
     if (gn!="Dynamics") {
       build_physics_grid(gn);
     }
+  }
+
+  if (reference_grid!="Dynamics") {
+    build_physics_grid(reference_grid);
   }
 
   // Now we can cleanup all the grid stuff in f90

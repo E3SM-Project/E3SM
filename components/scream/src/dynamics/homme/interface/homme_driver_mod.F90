@@ -22,17 +22,15 @@ contains
   subroutine prim_init_data_structures_f90 () bind(c)
     use prim_driver_mod,      only: prim_create_c_data_structures, prim_init_kokkos_functors
     use prim_driver_base,     only: prim_init1_geometry, prim_init1_elem_arrays, &
-                                    prim_init1_cleanup, prim_init1_buffers,      &
-                                    MetaVertex, GridEdge
+                                    prim_init1_cleanup, prim_init1_buffers
     use prim_cxx_driver_base, only: setup_element_pointers
     use derivative_mod_base,  only: derivinit
     use time_mod,             only: TimeLevel_init
     use hybvcoord_mod,        only: hvcoord_init
     use hybrid_mod,           only: hybrid_create
     use control_mod,          only: vfile_mid, vfile_int
-    use homme_context_mod,    only: is_parallel_inited, is_geometry_inited, is_data_structures_inited, &
-                                    par, dom_mt, elem, tl, deriv, hybrid, hvcoord, init_parallel_f90
-    use dimensions_mod,       only: nelemd
+    use homme_context_mod,    only: is_geometry_inited, is_data_structures_inited, &
+                                    par, elem, tl, deriv, hybrid, hvcoord, init_parallel_f90
     !
     ! Local(s)
     !
@@ -176,7 +174,6 @@ contains
 
   subroutine prim_finalize_f90 () bind(c)
     use homme_context_mod,    only: is_model_inited, elem, dom_mt, par
-    use homme_grid_mod,       only: finalize_geometry_f90
     use prim_cxx_driver_base, only: prim_finalize
 
     if (.not. is_model_inited) then
@@ -200,8 +197,6 @@ contains
     call t_finalizef()
 
     is_model_inited = .false.
-
-    call finalize_geometry_f90()
 
   end subroutine prim_finalize_f90
 
