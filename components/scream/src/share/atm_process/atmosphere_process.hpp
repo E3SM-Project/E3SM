@@ -139,11 +139,23 @@ public:
 
   virtual void set_required_group (const ci_string_pair& /* group_and_grid */,
                                    const std::set<Field<const Real>>& /* group */) {
-    ekat::error::runtime_abort("Error! This atmosphere process does not require a group of fields.\n");
+    ekat::error::runtime_abort(
+      "Error! This atmosphere process does not require a group of fields, meaning\n"
+      "       that 'get_required_groups' was not overridden in this class, or that\n"
+      "       its override returns an empty set.\n"
+      "       If you override 'get_required_groups' to return a non-empty set,\n"
+      "       then you must also override 'set_required_group' in your derived class.\n"
+    );
   }
   virtual void set_updated_group (const ci_string_pair& /* group_and_grid */,
                                   const std::set<Field<Real>>& /* group */) {
-    ekat::error::runtime_abort("Error! This atmosphere process does not update a group of fields.\n");
+    ekat::error::runtime_abort(
+      "Error! This atmosphere process does not update a group of fields, meaning\n"
+      "       that 'get_updated_groups' was not overridden in this class, or that\n"
+      "       its override returns an empty set.\n"
+      "       If you override 'get_updated_groups' to return a non-empty set,\n"
+      "       then you must also override 'set_updated_group' in your derived class.\n"
+    );
   }
 
   // Register required/computed fields in the field repo

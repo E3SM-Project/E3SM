@@ -82,10 +82,18 @@ public:
   bool has_field (const identifier_type& identifier) const;
   const field_type& get_field (const identifier_type& identifier) const;
   const field_type& get_field(const std::string name,const std::string& grid) const;
+
+  // Get all fields corresponding to a given name (they will differ in their grid/layou).
+  const alias_map_type& get_aliases (const std::string& name) const;
+
+  // Get the names of the groups, with the names of all fields belonging to each group
   const groups_map_type& get_field_groups_names () const { return m_field_groups; }
+
+  // Note: when you request a group of fields, you must also specify the grid on which you need them.
+  //       If you need the group G on grids foo and bar, then you must issue two separate requests to
+  //       the field repo, for the group/grid pairs (G,foo) and (G,bar).
   std::set<field_type> get_field_group (const std::string& name, const std::string& grid_name) const;
   std::set<const_field_type> get_const_field_group (const std::string& group_name, const std::string& grid_name) const;
-  const alias_map_type& get_aliases (const std::string& name) const;
 
   // Iterators, to allow range for loops over the repo.
   typename repo_type::const_iterator begin() const { return m_fields.begin(); }
