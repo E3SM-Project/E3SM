@@ -2496,7 +2496,7 @@ void adv_sgs_tke_f(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wthv_s
       const auto tke_s      = ekat::subview(tke_d ,i);
       const auto a_diss_s   = ekat::subview(a_diss_d ,i);
 
-      SHF::adv_sgs_tke(team, nlev, shcol, dtime, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, tke_s, a_diss_s);
+      SHF::adv_sgs_tke(team, nlev, dtime, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, tke_s, a_diss_s);
     });
 
   // Sync back to host
@@ -2643,7 +2643,7 @@ void compute_shr_prod_f(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_win
       //output
       const auto sterm_s  = ekat::subview(sterm_d ,i);
 
-      SHF::compute_shr_prod(team, nlevi, nlev, shcol, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
+      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
     });
 
   // Sync back to host
@@ -2804,7 +2804,7 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
-      SHF::isotropic_ts(team, nlev, shcol, brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
+      SHF::isotropic_ts(team, nlev, brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
     });
 
   // Sync back to host
@@ -3123,6 +3123,102 @@ void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, 
 void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
 {
   // TODO
+}
+
+void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
+                Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke, Real* tk,
+                Real* tkh, Real* isotropy)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using Pack1d     = typename ekat::Pack<Real,1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_1d_arrays = 2;
+  static constexpr Int num_2d_arrays = 14;
+
+  Kokkos::Array<view_1d, num_1d_arrays> temp_1d_d;
+  Kokkos::Array<view_2d, num_2d_arrays> temp_2d_d;
+
+  Kokkos::Array<int, num_2d_arrays> dim1_sizes = {shcol, shcol, shcol, shcol, shcol, shcol, shcol,
+                                                  shcol, shcol, shcol, shcol, shcol, shcol, shcol};
+  Kokkos::Array<int, num_2d_arrays> dim2_sizes = {nlev, nlev, nlev,  nlev, nlevi, nlev, nlev,
+                                                  nlev, nlev, nlevi, nlev, nlev,  nlev, nlev};
+  Kokkos::Array<const Real*, num_2d_arrays> ptr_array = {wthv_sec, shoc_mix, u_wind,  v_wind, dz_zi, dz_zt, pres,
+                                                         brunt,    zt_grid,  zi_grid, tke,    tk,    tkh,   isotropy};
+
+  // Sync to device
+  ekat::host_to_device({obklen, pblh}, shcol, temp_1d_d);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+
+  view_1d
+    obklen_d(temp_1d_d[0]),
+    pblh_d(temp_1d_d[1]);
+
+  view_2d
+    wthv_sec_d(temp_2d_d[0]),
+    shoc_mix_d(temp_2d_d[1]),
+    u_wind_d(temp_2d_d[2]),
+    v_wind_d(temp_2d_d[3]),
+    dz_zi_d(temp_2d_d[4]),
+    dz_zt_d(temp_2d_d[5]),
+    pres_d(temp_2d_d[6]),
+    brunt_d(temp_2d_d[7]),
+    zt_grid_d(temp_2d_d[8]),
+    zi_grid_d(temp_2d_d[9]),
+    tke_d(temp_2d_d[10]),
+    tk_d(temp_2d_d[11]),
+    tkh_d(temp_2d_d[12]),
+    isotropy_d(temp_2d_d[13]);
+
+  // Local variables
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const Int nlevi_pack = ekat::npack<Spack>(nlevi);
+  view_2d
+    sterm_d("sterm",shcol,nlevi_pack),
+    sterm_zt_d("sterm_zt",shcol,nlev_pack),
+    a_diss_d("a_diss",shcol,nlev_pack);
+
+
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const Scalar obklen_s{obklen_d(i)[0]};
+    const Scalar pblh_s{pblh_d(i)[0]};
+
+    const auto wthv_sec_s = ekat::subview(wthv_sec_d, i);
+    const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
+    const auto u_wind_s = ekat::subview(u_wind_d, i);
+    const auto v_wind_s = ekat::subview(v_wind_d, i);
+    const auto dz_zi_s = ekat::subview(dz_zi_d, i);
+    const auto dz_zt_s = ekat::subview(dz_zt_d, i);
+    const auto pres_s = ekat::subview(pres_d, i);
+    const auto brunt_s = ekat::subview(brunt_d, i);
+    const auto zt_grid_s = ekat::subview(zt_grid_d, i);
+    const auto zi_grid_s = ekat::subview(zi_grid_d, i);
+    const auto sterm_s = ekat::subview(sterm_d, i);
+    const auto sterm_zt_s = ekat::subview(sterm_zt_d, i);
+    const auto a_diss_s = ekat::subview(a_diss_d, i);
+    const auto tke_s = ekat::subview(tke_d, i);
+    const auto tk_s = ekat::subview(tk_d, i);
+    const auto tkh_s = ekat::subview(tkh_d, i);
+    const auto isotropy_s = ekat::subview(isotropy_d, i);
+
+    SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
+                  u_wind_s,v_wind_s,brunt_s,obklen_s,zt_grid_s,zi_grid_s,pblh_s,
+                  sterm_s,sterm_zt_s,a_diss_s,tke_s,tk_s,tkh_s,isotropy_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 4> inout_views = {tke_d, tk_d, tkh_d, isotropy_d};
+  ekat::device_to_host<int,4>({tke, tk, tkh, isotropy}, shcol, nlev, inout_views, true);
 }
 } // namespace shoc
 } // namespace scream

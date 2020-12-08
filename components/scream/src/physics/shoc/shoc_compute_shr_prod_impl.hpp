@@ -15,11 +15,10 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_shr_prod(
-  const MemberType&            team  ,
-  const Int&                   nlevi ,
-  const Int&                   nlev  ,
-  const Int&                   shcol ,
-  const uview_1d<const Spack>& dz_zi ,
+  const MemberType&            team,
+  const Int&                   nlevi,
+  const Int&                   nlev,
+  const uview_1d<const Spack>& dz_zi,
   const uview_1d<const Spack>& u_wind,
   const uview_1d<const Spack>& v_wind,
   const uview_1d<Spack>&       sterm)

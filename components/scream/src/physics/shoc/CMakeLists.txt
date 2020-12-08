@@ -71,6 +71,7 @@ if (NOT CUDA_BUILD)
     shoc_pblintd.cpp
     shoc_grid.cpp
     shoc_eddy_diffusivities.cpp
+    shoc_tke.cpp
   ) # SHOC ETI SRCS
 endif()
 
