@@ -245,14 +245,15 @@ add_nodes (const group_type& atm_procs,
     } else {
       // Add a node for the remapper(s) in (if needed)
       for (auto r : remappers_in[i]) {
-        if (r.second->get_num_fields()>0) {
-          const auto& rem = *r.second;
+        const auto& rem = *r.second;
+        const int nfields = rem.get_num_registered_fields();
+        if (nfields>0) {
           m_nodes.push_back(Node());
           Node& node = m_nodes.back();;
           node.id = id;
           node.name = proc->name()+" (remap in [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
           m_unmet_deps[id].clear();
-          for (int k=0; k<rem.get_num_fields(); ++k) {
+          for (int k=0; k<nfields; ++k) {
             const auto& fid_in = rem.get_src_field_id(k);
             const int fid_in_id = add_fid(fid_in);
             node.required.insert(fid_in_id);
@@ -333,14 +334,15 @@ add_nodes (const group_type& atm_procs,
 
       // Add a node for the remapper(s) out (if needed)
       for (auto r : remappers_out[i]) {
-        if (r.second->get_num_fields()>0) {
-          const auto& rem = *r.second;
+        const auto& rem = *r.second;
+        const int nfields = rem.get_num_registered_fields();
+        if (nfields>0) {
           m_nodes.push_back(Node());
           Node& node = m_nodes.back();
           node.id = id;
           node.name = proc->name()+" (remap out [" + rem.get_src_grid()->name() + "->" + rem.get_tgt_grid()->name() + "])";
           m_unmet_deps[id].clear();
-          for (int k=0; k<rem.get_num_fields(); ++k) {
+          for (int k=0; k<nfields; ++k) {
             const auto& fid_in = rem.get_src_field_id(k);
             const int fid_in_id = add_fid(fid_in);
             node.required.insert(fid_in_id);
