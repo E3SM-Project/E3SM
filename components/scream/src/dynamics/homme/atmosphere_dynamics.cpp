@@ -37,6 +37,14 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
+  // Init prim structures
+  // TODO: they should not be inited yet; should we error out if they are?
+  //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
+  if (!is_data_structures_inited_f90()) {
+    prim_init_data_structures_f90 ();
+  }
+
+
   using namespace ekat::units;
 
   // The units of mixing ratio Q are technically non-dimensional.
@@ -100,14 +108,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
 void HommeDynamics::initialize_impl (const util::TimeStamp& /* t0 */)
 {
-  // Init prim structures
-  // TODO: they should not be inited yet; should we error out if they are?
-  //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
-  if (!is_data_structures_inited_f90()) {
-    prim_init_data_structures_f90 ();
-  }
-
-
   // We need to set the pointers in the C++ views to the ones contained in the scream
   // Fields *before* they ever get copied/filled. In particular, we need to make sure
   // that the Elements and Tracers structures contain scream Field's views before:

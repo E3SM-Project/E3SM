@@ -117,7 +117,7 @@ contains
           elgpgp(2,idof) = jp-1
           elgpgp(3,idof) = ip-1
 
-          gids(idof) = elem(ie)%gdofP(ip,jp)
+          gids(idof) = INT(elem(ie)%gdofP(ip,jp),kind=c_int)
           lat(idof)  = elem(ie)%spherep(ip,jp)%lat
           lon(idof)  = elem(ie)%spherep(ip,jp)%lon
 
@@ -185,7 +185,6 @@ contains
   end function get_num_global_columns_f90
 
   function get_num_local_elems_f90 () result(num_elems) bind(c)
-    use homme_context_mod, only: is_geometry_inited
     use dimensions_mod,    only: nelemd
     !
     ! Local(s)
@@ -199,7 +198,6 @@ contains
   end function get_num_local_elems_f90
 
   function get_num_global_elems_f90 () result(num_elems) bind(c)
-    use homme_context_mod, only: is_geometry_inited
     use dimensions_mod,    only: nelem
     !
     ! Local(s)

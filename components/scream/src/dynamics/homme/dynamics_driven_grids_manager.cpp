@@ -75,7 +75,7 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   if (from=="Physics GLL" || to=="Physics GLL") {
     using PDR = PhysicsDynamicsRemapper<remapper_type::real_type>;
 
-    auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics"),dyn_grid);
+    auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics GLL"),dyn_grid);
     if (p2d) {
       return pd_remapper;
     } else {
