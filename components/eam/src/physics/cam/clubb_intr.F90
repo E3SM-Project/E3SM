@@ -15,7 +15,8 @@ module clubb_intr
   ! Authors:  P. Bogenschutz, C. Craig, A. Gettelman                                                     ! 
   !                                                                                                      ! 
   !----------------------------------------------------------------------------------------------------- !
-
+  !  2020-01  O. Guba Correct energy density function
+  !-----------------------------------------------------------------------------------------------------
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use ppgrid,        only: pver, pverp
   use phys_control,  only: phys_getopts
