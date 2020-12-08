@@ -22,20 +22,6 @@ namespace scream
  * has an init, run and finalize routine which is called during the AD
  * during those respective steps.
  *
- * init():
- *   1. Parses the parameter list that contains all output manager control information.
- *   2. Creates a restart file output stream, if defined in the parameter list.
- *   3. Cycles through all of the output streams listed in the parameter list.
- *      See scorpio_output.hpp for more information on output streams.
- * run(time):
- *   1. Run is overloaded to allow for the passage of a timestamp (default) or time
- *   as a float.
- *   2. This routine simply calls 'run' for each output stream stored in the output
- *      manager.
- * finalize():
- *   1. This routine calls 'finalize' for each output stream stored in the output
- *      manager.
- *
  * PROPER USAGE:
  * The output manager requires a communication group, a parameter list of control
  * variables, a grid manager and a field repository.
@@ -107,8 +93,11 @@ public:
   void run(Real current_ts);
   void finalize();
 
+/* Short function to add a new output stream to the output manager.  By making this an independent
+ * function it is possible to add an output stream after initialization has been called.           */
   void new_output(const ekat::ParameterList& params);
   void new_output(const ekat::ParameterList& params,const bool runtype_restart);
+
   void set_comm(const ekat::Comm& comm) { atm_comm = comm; }
   void set_params(const ekat::ParameterList& params) { m_params=params; param_set=true;}
   void set_grids(const std::shared_ptr<const GridsManager>& gm) { m_grids_manager = gm; gm_set=true;}
@@ -131,7 +120,7 @@ protected:
 
 }; // class OutputManager
 /*===============================================================================================*/
-/* Short function to add a new output stream to the output manager.  By making this a stand-alone
+/* Short function to add a new output stream to the output manager.  By making this an independent
  * function it is possible to add an output stream after initialization has been called.
  * Note: new_output requires a parameter list with all of the output control information for this
  * stream.  See scorpio_output.hpp for more information on what the parameter list needs.         */
@@ -149,6 +138,13 @@ inline void OutputManager::new_output(const ekat::ParameterList& params, const b
   m_output_streams.push_back(output_instance);
 }
 /*===============================================================================================*/
+/*
+ * init():
+ *   1. Parses the parameter list that contains all output manager control information.
+ *   2. Creates a restart file output stream, if defined in the parameter list.
+ *   3. Cycles through all of the output streams listed in the parameter list.
+ *      See scorpio_output.hpp for more information on output streams.
+ */
 inline void OutputManager::init()
 {
   using namespace scorpio;
@@ -209,6 +205,13 @@ inline void OutputManager::init()
   }
 }
 /*===============================================================================================*/
+/*
+ * run(time):
+ *   1. Run is overloaded to allow for the passage of a timestamp (default) or time
+ *   as a float.
+ *   2. This routine simply calls 'run' for each output stream stored in the output
+ *      manager.
+ */
 // Overload run to allow for passing a TimeStamp or just directly a Real
 inline void OutputManager::run(util::TimeStamp& current_ts)
 {
@@ -226,6 +229,11 @@ inline void OutputManager::run(Real current_ts)
   }
 }
 /*===============================================================================================*/
+/*
+ * finalize():
+ *   1. This routine calls 'finalize' for each output stream stored in the output
+ *      manager.
+ */
 inline void OutputManager::finalize()
 {
   for (auto& it : m_output_streams)

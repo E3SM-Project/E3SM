@@ -2,21 +2,11 @@
 include(ScreamUtils)
 
 set (ARRAY_SCORPIO_SRCS
-  scorpio_tests.cpp
   io.cpp
   restart.cpp
 )
 
 ## Test atmosphere processes
-# TODO:
-# This commented test may be needed for future development.
-# Currently tests a functionality that isn't yet in the code.
-# Keeping for now for use when that development task is finished.
-#CreateUnitTest(scorpio_interface "scorpio_tests.cpp" scream_io 
-#  MPI_RANKS 1 4
-#)
-#configure_file(scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
-
 CreateUnitTest(io_test "io.cpp" scream_io
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )

@@ -78,36 +78,6 @@
  *  (2020-10-21) Aaron S. Donahue (LLNL)
  */
 
-/* There are a number of things that need to be cleaned up - in no particular order -
- *--1) Gather dimension data from grid manager or field repo.  We may need to use field repo since grid manager
- *     is unaware of say the number of components, for example.  --DONE--
- *--2) Clean-up init step, perhaps with subfunctions.  --DONE--
- *--3) Gather degree's of freedom from grid manager. Need to know the global-id index for
- *     each value in a view, in order if flattened.  --DONE--
- *  4) Handle MPI communication to allow for PIO_STRIDE (i.e. fewer pio ranks than total ranks).
- *  5) Make it so that all dimensions that are registered are automatically registered as variables and the values written (only once, not with time).  Probably need this information from the grid manager(?)
- *--6) Write Restart output.  Extra-savy would be to use DAG from AD to determine which fields were essential and just write those.  #3
- *-6a) Also need restart history, in case you stop mid-out frequency and need to pick it up in the next run.
- *--7) Create an AtmosphereInput class built on these same concepts.  Can we make a master SCORPIO class with output and input as sub-classes?  --DONE--
- *--8) Create average, min, max and instantaneous options for output.  --DONE--
- *  9) Assure that IO is compatible with PACKing of variables.
- * 10) Add control of netCDF header information to the YAML file and this class.
- * 11) Better naming convention for output files?  Currently just keeps a counter, but in EAM the date/time range is used.
- * 12) Better handling of output frequency.  Need to a) gather time info from driver and b) parse that info for frequency units.
- * 13) Expand compatability of IO class to handle Dynamics grids.  This will require a different approach to "set_dofs"
- *-14) Hook up the AD for the unit test.  --DONE--
- *-15) SCORPIO in stand-alone build.
- * 16) When dynamics is ready, write output from a dynamics run.
- * 17) Remove the F90 layer and call PIO C routines directly.
- * 18) Add option to restart to write a restart at finalization, maybe if OUT_N = -1
- *-19) take advantage of shared pointers field_repo and gridsmanager to streamline init, run and finalize interface.
- * 20) Create a single IO Master class with AtmosphereOutput and AtmosphereInput as sub-classes.
- * 21) Output averaging types could be individual instances of the same class providing flexibility for future types to be incorporated.  See Jeff's work on field property tests for example.
- * 22) Currently the restart history frequency is set to the restart frequency.  Should maybe fix this so that if the restart history field is included in the parameter list for the output stream than that value is taken instead of the restart frequency values.
- * 23) Should restart output just be a sub-class of the AtmosphereOutput class?
- * 24) For restart runs the timestamp should be set by the restart input.
- */
-
 namespace scream
 {
 

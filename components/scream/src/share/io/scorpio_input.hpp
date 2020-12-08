@@ -23,16 +23,9 @@
  *
  *  The typical input call will be to the outward facing routine 'pull_input'.
  *
- *  pullinput calls the three typical init, run and finalize routines in order
- *  and makes the input immediately availalbe. Note, init, run and finalize are
- *  also outward facing but do not need those respective sections of the AD, 
- *  i.e. during ad.init, ad.run and ad.finalize.
- *
  *  Currently, input can only handle single timesnap input files.  In other words
  *  files that will be opened, read and closed within the same timestep and only
  *  store one timesnap of data.
- *  TODO: Develop infrastructure for reading input from files with multiple timesnaps
- *  and over multiple timesteps of the simulation.
  *
  *  Note: the init, run and finalize are separate routines that are outward facing in
  *  this class to facilitate cases where reading input over some number of simulation
@@ -144,6 +137,12 @@ private:
 }; // Class AtmosphereInput
 
 // ====================== IMPLEMENTATION ===================== //
+/*
+ *  pull_input calls the three typical init, run and finalize routines in order
+ *  and makes the input immediately availalbe. Note, init, run and finalize are
+ *  also outward facing but do not need those respective sections of the AD, 
+ *  i.e. during ad.init, ad.run and ad.finalize.
+ */
 inline void AtmosphereInput::pull_input(const std::string name, view_type view_out)
 {
 /*  Run through the sequence of opening the file, reading input and then closing the file.  
