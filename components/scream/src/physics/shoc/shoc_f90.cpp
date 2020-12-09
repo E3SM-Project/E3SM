@@ -126,9 +126,9 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void shoc_init(Int nlev, bool use_fortran) {
+void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
   static bool is_init = false;
-  if (!is_init) {
+  if (!is_init || force_reinit) {
     using Scalar = Real;
     using C = scream::physics::Constants<Scalar>;
 

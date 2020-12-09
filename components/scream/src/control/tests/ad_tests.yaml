@@ -4,13 +4,23 @@ Debug:
   Atmosphere DAG Verbosity Level: 5
 
 Atmosphere Processes:
-  Number of Entries: 1
+  Number of Entries: 3
+  Schedule Type: Sequential
 
   Process 0:
-    Process Name: Physics_fwd
-    Number of vector components: 4
+    Process Name: Dummy
+    Sub Name: A to BC
+    Grid Name: Point Grid A
+  Process 1:
+    Process Name: Dummy
+    Sub Name: Group to Group
+    Grid Name: Point Grid B
+  Process 2:
+    Process Name: Dummy
+    Sub Name: Group to A
+    Grid Name: Point Grid A
 
 Grids Manager:
   Type: User Provided
-  Reference Grid: Physics_fwd
+  Reference Grid: Point Grid A
 ...

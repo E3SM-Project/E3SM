@@ -819,6 +819,8 @@ my $rad_pkg = $cfg->get('rad');
 if ($rad_pkg eq 'rrtmgp') {
   add_default($nl,'do_aerosol_rad');
   add_default($nl,'fixed_total_solar_irradiance');
+  add_default($nl,'do_SPA_optics');
+  add_default($nl,'SPA_lookup_dir');
 }
 
 #

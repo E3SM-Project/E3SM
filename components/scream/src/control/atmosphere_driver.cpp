@@ -109,6 +109,7 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   m_field_repo = std::make_shared<FieldRepository<Real> >();
   m_field_repo->registration_begins();
   m_atm_process_group->register_fields(*m_field_repo);
+  register_groups();
   m_field_repo->registration_ends();
 
   // Set all the fields in the processes needing them (before, they only had ids)
@@ -118,14 +119,18 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   for (const auto& id : inputs) {
     m_atm_process_group->set_required_field(m_field_repo->get_field(id).get_const());
   }
-  // Internal fields are fields that the atm proc group both computes and requires
-  // (in that order). These are present only in case of sequential splitting
-  for (const auto& id : m_atm_process_group->get_internal_fields()) {
-    m_atm_process_group->set_internal_field(m_field_repo->get_field(id));
-  }
   // Output fields are handed to the processes as writable
   for (const auto& id : outputs) {
     m_atm_process_group->set_computed_field(m_field_repo->get_field(id));
+  }
+  // Set all groups of fields
+  for (const auto& it : m_atm_process_group->get_required_groups()) {
+    auto group = m_field_repo->get_const_field_group(it.first,it.second);
+    m_atm_process_group->set_required_group(it,group);
+  }
+  for (const auto& it : m_atm_process_group->get_updated_groups()) {
+    auto group = m_field_repo->get_field_group(it.first,it.second);
+    m_atm_process_group->set_updated_group(it,group);
   }
 
   // Initialize the processes
@@ -181,6 +186,56 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 #endif
 }
 
+void AtmosphereDriver::register_groups () {
+  using ci_string = ekat::CaseInsensitiveString;
+  using ci_string_pair = std::pair<ci_string,ci_string>;
+
+  // Given a list of group-grid pairs (A,B), make sure there is a copy of A
+  // on grid B registered in the repo.
+  auto lambda = [&](const std::set<ci_string_pair>& groups_grids) {
+    const auto& groups_to_fnames = m_field_repo->get_field_groups_names();
+    for (const auto& gg : groups_grids) {
+      const auto& group = gg.first;
+      const auto& grid  = gg.second;
+      EKAT_REQUIRE_MSG(groups_to_fnames.find(group)!=groups_to_fnames.end(),
+        "Error! Group '" << group << "' not found in the repo.\n");
+
+      const auto& fnames = groups_to_fnames.at(group);
+      for (const auto& name : fnames) {
+        auto aliases = m_field_repo->get_aliases(name);
+        EKAT_REQUIRE_MSG(aliases.size()>0,
+          "Error! Something went wrong while looking for field '" << name << "' in the repo.\n");
+
+        // Check if a copy of this field on the right grid already is registered.
+        bool found = false;
+        for (const auto& alias : aliases) {
+          if (alias.first.get_grid_name()==grid) {
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          // Field $name in group $group has no copy on grid $grid.
+          // Lets take any fid in the repo for this field, and register
+          // a copy of it on grid $grid. We can do this by creating
+          // a remapper and using its capabilities.
+          const auto& alias = *aliases.begin();
+          const auto& fid = alias.first;
+          auto r = m_grids_manager->create_remapper(fid.get_grid_name(),grid);
+          auto f_units = fid.get_units();
+          auto src_layout = fid.get_layout();
+          auto tgt_layout = r->create_tgt_layout(src_layout);
+          FieldIdentifier new_fid(name,tgt_layout,f_units,grid);
+          m_field_repo->register_field(new_fid,group);
+        }
+      }
+    }
+  };
+  lambda( m_atm_process_group->get_required_groups() );
+  lambda( m_atm_process_group->get_updated_groups() );
+}
+
 void AtmosphereDriver::init_atm_inputs () {
   const auto& atm_inputs = m_atm_process_group->get_required_fields();
   for (const auto& input : atm_inputs) {
@@ -188,7 +243,7 @@ void AtmosphereDriver::init_atm_inputs () {
     // initializer is set to init this field on a non-ref grid. In that case,
     // such non-ref field would *not* appear as an atm input (since it's the
     // output of a remapper).
-    auto& aliases = m_field_repo->get_alias_fields(input.name());
+    auto& aliases = m_field_repo->get_aliases(input.name());
     for (auto& it : aliases) {
       auto& f = it.second;
       auto& hdr = f.get_header_ptr();
@@ -229,7 +284,7 @@ void AtmosphereDriver::inspect_atm_dag () {
 
   // First, process the dag
   AtmProcDAG dag;
-  dag.create_dag(*m_atm_process_group);
+  dag.create_dag(*m_atm_process_group,m_field_repo);
 
   for (const auto& it : m_field_initializers) {
     dag.add_field_initializer(*it.lock());

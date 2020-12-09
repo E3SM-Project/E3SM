@@ -15,7 +15,7 @@ namespace scream
 
 // An abstract interface for a remapper
 
-// A remapper is basically a functor, that, given two fields
+// A remapper is basically a functor, that, given two fields,
 // copies the first into the second, or viceversa. The copy must
 // account for different layouts and/or different mpi distributions.
 // This concept can be extended to remaps that involve interpolation,
@@ -32,16 +32,28 @@ public:
   using layout_type     = typename identifier_type::layout_type;
   using grid_type       = AbstractGrid;
   using grid_ptr_type   = std::shared_ptr<const grid_type>;
+  using ci_string       = ekat::CaseInsensitiveString;
 
   AbstractRemapper (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid);
 
   virtual ~AbstractRemapper () = default;
 
+  // Call this before you begin registering fields with this remapper.
   void registration_begins ();
+
+  // This method registers a source field to be remapped to a target field.
   void register_field (const field_type& src, const field_type& tgt);
+
+  // This method registers a source field to be remapped to a target field
+  // using fields associated with the given field identifiers.
   void register_field (const identifier_type& src, const identifier_type& tgt);
+
+  // This method unregisters source and target fields associated with the given
+  // identifiers, indicating that they are no longer to be remapped.
   void unregister_field (const identifier_type& src, const identifier_type& tgt);
+
+  // Call this to indicate that field registration is complete.
   void registration_ends ();
 
   // The user is allowed to only provide identifiers in the registration phase.
@@ -76,18 +88,23 @@ public:
   grid_ptr_type get_src_grid () const { return m_src_grid; }
   grid_ptr_type get_tgt_grid () const { return m_tgt_grid; }
 
+  // Returns the source field identifier for a specified field index (assigned
+  // during field registration).
   const identifier_type& get_src_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_src_field_id(ifield);
   }
 
+  // Returns the target field identifier for a specified field index (assigned
+  // during field registration).
   const identifier_type& get_tgt_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_tgt_field_id(ifield);
   }
 
+  // Returns the source field for the given field index.
   const field_type& get_src_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
                        "Error! Cannot call 'get_src_field' until registration has ended.\n");
@@ -96,6 +113,7 @@ public:
     return do_get_src_field(ifield);
   }
 
+  // Returns the target field for the given field index.
   const field_type& get_tgt_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
                        "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
@@ -127,8 +145,16 @@ public:
 
   int get_num_fields () const {
     EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
-                       "Error! Cannot call 'get_num_fields' durin the registration phase.\n");
+      "Error! Cannot call 'get_num_fields' during the registration phase.\n"
+      "       This number is set at 'registration_ends' time.\n"
+      " Note: you can call 'num_registered_fields' and 'num_bound_fields' though.\n");
     return m_num_fields;
+  }
+  int get_num_registered_fields () const {
+    return m_num_registered_fields;
+  }
+  int get_num_bound_fields () const {
+    return m_num_bound_fields;
   }
 
   virtual bool compatible_layouts (const layout_type& src,
@@ -143,15 +169,38 @@ protected:
   virtual const field_type& do_get_src_field (const int ifield) const = 0;
   virtual const field_type& do_get_tgt_field (const int ifield) const = 0;
 
+  // Override this method to insert logic executed at the beginning of the field
+  // registration process.
   virtual void do_registration_begins () = 0;
+
+  // Override this method to insert logic executed when a pair of source/target
+  // field identifiers are registered.
   virtual void do_register_field (const identifier_type& src, const identifier_type& tgt) = 0;
+
+  // Override this method to insert logic executed when a pair of source/target
+  // fields are bound to an index within the remapper.
   virtual void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) = 0;
+
+  // Override this method to insert logic executed when a field is unregistered.
   virtual void do_unregister_field (const int ifield) = 0;
+
+  // Override this method to insert logic executed when the field registration
+  // process ends.
   virtual void do_registration_ends () = 0;
 
+  // Override this method to implement the forward remapping process using
+  // the protected data members of this class.
   virtual void do_remap_fwd () const = 0;
+
+  // Override this method to implement the backward/inverse remapping process
+  // using the protected data members of this class.
   virtual void do_remap_bwd () const = 0;
 
+  // This helper function searches for a pair of source and target field
+  // identifiers in the remapper's set of bound fields. It returns -1 if fields
+  // were not registered at all (via the field identifier). If they were
+  // registered, it returns the index, regardless of whether the fields have
+  // already been bound.
   int find_field (const identifier_type& src,
                   const identifier_type& tgt) {
     int ifield = -1;
@@ -178,9 +227,14 @@ protected:
   int           m_num_fields;
   int           m_num_registered_fields;
 
-  // Whether fields have been provided. Recall that the user may register
-  // fields passing only an identifier, and actually bind fields only
-  // at a later moment.
+  // This vector maps the indices of registered fields to booleans that indicate
+  // whether these fields have been bound to the remapper. This vector is
+  // necessary because the binding of fields is separate from their
+  // regіstration: recall that one may register a field using its identifier,
+  // and bind the actual field later.
+  // NOTE: vector<bool> is a strange beast, and doesn't necessarily behave as
+  // expected. Use caution when manipulating this member, and don't rely on the
+  // usual assumptions about how the boolean elements are stored.
   std::vector<bool>   m_fields_are_bound;
   int                 m_num_bound_fields;
 };
