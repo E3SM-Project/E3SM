@@ -98,6 +98,19 @@ struct Functions
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
   static void check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask);
+
+  // Computes exner function and potential temperature given the mid-level pressure
+  KOKKOS_FUNCTION
+  static Spack get_exner(const Spack& pmid, const Smask& range_mask);
+
+  KOKKOS_FUNCTION
+  static Spack T_to_th(const Spack& T_atm, const Spack& exner, const Smask& range_mask);
+
+  KOKKOS_FUNCTION
+  static Spack th_to_T(const Spack& th_atm, const Spack& exner, const Smask& range_mask);
+
+  KOKKOS_FUNCTION
+  static Spack get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& range_mask);
 };
 
 } // namespace physics

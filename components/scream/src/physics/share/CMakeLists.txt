@@ -22,6 +22,8 @@ set(PHYSICS_SHARE_SRCS
 if (NOT CUDA_BUILD)
   list(APPEND PHYSICS_SHARE_SRCS
   physics_saturation.cpp)
+  list(APPEND PHYSICS_SHARE_SRCS
+  physics_universal.cpp)
 endif()
 
 add_library(physics_share ${PHYSICS_SHARE_SRCS})
