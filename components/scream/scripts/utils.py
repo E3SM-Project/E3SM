@@ -40,8 +40,9 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
     if dry_run:
         return 0, "", ""
 
-    if (input_str is not None):
+    if input_str is not None:
         stdin = subprocess.PIPE
+        input_str = input_str.encode('utf-8')
     else:
         stdin = None
 
@@ -51,17 +52,18 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir,
-                            env=env,
-                            universal_newlines=True)
+                            env=env)
 
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
+            output = output.decode('utf-8', errors='ignore')
             output = output.strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
+            errput = errput.decode('utf-8', errors='ignore')
             errput = errput.strip()
         except AttributeError:
             pass
