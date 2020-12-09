@@ -31,6 +31,13 @@ SET(HOMME_TESTS
   thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
   hommetool.cmake
+  thetah-nhgw.cmake
+  thetanh-nhgw.cmake
+  preqx-nhgw.cmake
+  thetah-nhgw-slice.cmake
+  thetanh-nhgw-slice.cmake
+  preqx-nhgw-slice.cmake
+  sweqx-dbvor.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})

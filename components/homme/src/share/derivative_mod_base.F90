@@ -11,7 +11,7 @@ module derivative_mod_base
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
   use control_mod,    only : hypervis_scaling, hypervis_power
-  use physical_constants, only : rrearth
+  use physical_constants, only : scale_factor_inv, laplacian_rigid_factor
 
 implicit none
 private
@@ -64,7 +64,7 @@ private
 ! are always expressed in lat-lon coordinates
 !
 ! note that weak derivatives (integrated by parts form) can be defined using
-! contra or co-variant test functions, so 
+! contra or co-variant test functions, so
 !
   public  :: gradient_sphere
   public  :: gradient_sphere_wk_testcov
@@ -93,7 +93,7 @@ contains
 ! ==========================================
 ! derivinit:
 !
-! Initialize the matrices for taking 
+! Initialize the matrices for taking
 ! derivatives and interpolating
 ! ==========================================
 
@@ -102,7 +102,7 @@ contains
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
-    
+
     real (kind=longdouble_kind) :: dmat(np,np)
     real (kind=longdouble_kind) :: dpv(np,np)
     real (kind=longdouble_kind) :: dvv(np,np)
@@ -128,7 +128,7 @@ contains
              deriv%dvv_diag(i,j)   = dvv(i,j)
           else
              deriv%dvv_diag(i,j) = 0.0D0
-          endif 
+          endif
         end do
      end do
 
@@ -147,7 +147,7 @@ contains
     deriv%Dvv_twt = TRANSPOSE(dvv)
     deriv%Mvv_twt = v2v
 
-    ! notice we deallocate this memory here even though it was allocated 
+    ! notice we deallocate this memory here even though it was allocated
     ! by the call to gausslobatto.
     deallocate(gp%points)
     deallocate(gp%weights)
@@ -214,7 +214,7 @@ contains
   end subroutine dvvinit
 
 !  ================================================
-!  divergence_nonstag: 
+!  divergence_nonstag:
 !
 !  Compute divergence (maps v->v)
 !  ================================================
@@ -264,7 +264,7 @@ contains
 
 !  ================================================
 !  gradient_wk_nonstag:
-! 
+!
 !  Compute the weak form gradient:
 !  maps scalar field on the Gauss-Lobatto grid to the
 !  weak gradient on the Gauss-Lobbatto grid
@@ -278,7 +278,7 @@ contains
     real(kind=real_kind)             :: dp(np,np,2)
 
     ! Local
-      
+
     integer i
     integer j
     integer l
@@ -289,7 +289,7 @@ contains
     real(kind=real_kind)  :: vvtempt(np,np,2)
 
     !JMD ================================
-    !JMD 2*np*np*np Flops 
+    !JMD 2*np*np*np Flops
     !JMD ================================
 
 !   print *, "gradient_wk_nonstag"
@@ -308,7 +308,7 @@ contains
        end do
 
        !JMD ================================
-       !JMD 2*np*np*np Flops 
+       !JMD 2*np*np*np Flops
        !JMD ================================
 
        do j=1,np
@@ -381,7 +381,7 @@ contains
     integer i
     integer j
     integer l
-    
+
     real(kind=real_kind) ::  dvdx00,dvdx01
     real(kind=real_kind) ::  dudy00,dudy01
 
@@ -441,8 +441,8 @@ contains
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
           end do
-          v1(l  ,j  ) = dsdx00*rrearth
-          v2(j  ,l  ) = dsdy00*rrearth
+          v1(l  ,j  ) = dsdx00*scale_factor_inv
+          v2(j  ,l  ) = dsdy00*scale_factor_inv
        end do
     end do
     ! convert covarient to latlon
@@ -461,27 +461,27 @@ contains
 !   integrated-by-parts gradient, w.r.t. COVARIANT test functions
 !   input s:  scalar  (assumed to be s*khat)
 !   output  ds: weak curl, lat/lon coordinates
-!   
-! starting with: 
-!   PHIcov1 = (PHI,0)  covariant vector 
-!   PHIcov2 = (0,PHI)  covariant vector 
 !
-!   ds1 = integral[ PHIcov1 dot curl(s*khat) ] 
-!   ds2 = integral[ PHIcov2 dot curl(s*khat) ] 
-! integrate by parts: 
-!   ds1 = integral[ vor(PHIcov1) * s ]       
+! starting with:
+!   PHIcov1 = (PHI,0)  covariant vector
+!   PHIcov2 = (0,PHI)  covariant vector
+!
+!   ds1 = integral[ PHIcov1 dot curl(s*khat) ]
+!   ds2 = integral[ PHIcov2 dot curl(s*khat) ]
+! integrate by parts:
+!   ds1 = integral[ vor(PHIcov1) * s ]
 !   ds2 = integral[ vor(PHIcov1) * s ]
 !
-!     PHIcov1 = (PHI^mn,0)   
+!     PHIcov1 = (PHI^mn,0)
 !     PHIcov2 = (0,PHI^mn)
 !  vorticity() acts on covariant vectors:
-!   ds1 = sum wij g  s_ij 1/g (  (PHIcov1_2)_x  - (PHIcov1_1)_y ) 
+!   ds1 = sum wij g  s_ij 1/g (  (PHIcov1_2)_x  - (PHIcov1_1)_y )
 !       = -sum wij s_ij  d/dy (PHI^mn )
 ! for d/dy component, only sum over i=m
 !       = -sum  w_mj s_mj   d( PHI^n)(j)
 !           j
 !
-!   ds2 = sum wij g  s_ij 1/g (  (PHIcov2_2)_x  - (PHIcov2_1)_y ) 
+!   ds2 = sum wij g  s_ij 1/g (  (PHIcov2_2)_x  - (PHIcov2_1)_y )
 !       = +sum wij s_ij  d/dx (PHI^mn )
 ! for d/dx component, only sum over j=n
 !       = +sum  w_in s_in  d( PHI^m)(i)
@@ -509,11 +509,11 @@ contains
        enddo
     enddo
 
-    ! convert contra -> latlon 
+    ! convert contra -> latlon
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))*rrearth
-          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))*rrearth
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2))*scale_factor_inv
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2))*scale_factor_inv
        enddo
     enddo
     end function curl_sphere_wk_testcov
@@ -526,26 +526,26 @@ contains
 !   output  ds: weak gradient, lat/lon coordinates
 !   ds = - integral[ div(PHIcov) s ]
 !
-!     PHIcov1 = (PHI^mn,0)   
+!     PHIcov1 = (PHI^mn,0)
 !     PHIcov2 = (0,PHI^mn)
-!   div() acts on contra components, so convert test function to contra: 
-!     PHIcontra1 =  metinv PHIcov1  = (a^mn,b^mn)*PHI^mn   
+!   div() acts on contra components, so convert test function to contra:
+!     PHIcontra1 =  metinv PHIcov1  = (a^mn,b^mn)*PHI^mn
 !                                     a = metinv(1,1)  b=metinv(2,1)
 !
-!   ds1 = sum wij g  s_ij 1/g ( g a PHI^mn)_x  + ( g b PHI^mn)_y ) 
+!   ds1 = sum wij g  s_ij 1/g ( g a PHI^mn)_x  + ( g b PHI^mn)_y )
 !       = sum  wij s_ij  ag(m,n)  d/dx( PHI^mn ) + bg(m,n) d/dy( PHI^mn)
-!          i,j 
+!          i,j
 ! for d/dx component, only sum over j=n
 !       = sum  w_in s_in  ag(m,n)  d( PHI^m)(i)
 !          i
 ! for d/dy component, only sum over i=m
 !       = sum  w_mj s_mj  bg(m,n)  d( PHI^n)(j)
 !          j
-!  
+!
 !
 ! This formula is identical to gradient_sphere_wk_testcontra, except that
-!    g(m,n) is replaced by a(m,n)*g(m,n)   
-!  and we have two terms for each componet of ds 
+!    g(m,n) is replaced by a(m,n)*g(m,n)
+!  and we have two terms for each componet of ds
 !
 !
     type (derivative_t), intent(in) :: deriv
@@ -575,11 +575,11 @@ contains
           enddo
        enddo
     enddo
-    ! convert contra -> latlon 
+    ! convert contra -> latlon
     do j=1,np
        do i=1,np
-          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2)) *rrearth
-          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2)) *rrearth
+          ds(i,j,1)=(elem%D(i,j,1,1)*dscontra(i,j,1) + elem%D(i,j,1,2)*dscontra(i,j,2)) *scale_factor_inv
+          ds(i,j,2)=(elem%D(i,j,2,1)*dscontra(i,j,1) + elem%D(i,j,2,2)*dscontra(i,j,2)) *scale_factor_inv
        enddo
     enddo
 
@@ -595,10 +595,10 @@ contains
 !   integral[ div(phivec) s ] = sum  spheremp()* divergence_sphere(phivec) *s
 !   ds1 = above formual with phivec=(PHI,0) in CONTRA coordinates
 !   ds2 = above formual with phivec=(0,PHI) in CONTRA coordinates
-!   
+!
 ! PHI = (phi,0)
-!   s1 =  sum w_ij s_ij g_ij 1/g_ij ( g_ij PHI^mn )x  
-!      =  sum w_ij s_ij g_mn dx(PHI^mn)_ij 
+!   s1 =  sum w_ij s_ij g_ij 1/g_ij ( g_ij PHI^mn )x
+!      =  sum w_ij s_ij g_mn dx(PHI^mn)_ij
 !         ij
 ! because x derivative is zero for j<>n, only have to sum over j=n
 !   s1(m,n)  =  sum w_i,n g_mn dx(PHI^m)_i,n s_i,n
@@ -613,7 +613,7 @@ contains
     integer i,j,l,m,n
     real(kind=real_kind) ::  dscov(np,np,2)
 
-    ! debug: 
+    ! debug:
     real(kind=real_kind) ::  vcontra(np,np,2)
     real(kind=real_kind) ::  v(np,np,2)
     real(kind=real_kind) ::  div(np,np)
@@ -626,9 +626,9 @@ contains
 !DIR$ UNROLL(NP)
           do j=1,np
              ! phi(m)_x  sum over first index, second index fixed at n
-             dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
+             dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*scale_factor_inv
              ! phi(n)_y  sum over second index, 1st index fixed at m
-             dscov(m,n,2)=dscov(m,n,2)-(elem%mp(m,j)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) )*rrearth
+             dscov(m,n,2)=dscov(m,n,2)-(elem%mp(m,j)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) )*scale_factor_inv
           enddo
        enddo
     enddo
@@ -673,14 +673,14 @@ contains
           enddo
        enddo
     enddo
-    ! change sign 
+    ! change sign
     ds=-ds
     print *,'ds,dscov:1 ',ds(1,1,1),dscov(1,1,1),ds(1,1,1)/dscov(1,1,1)
     print *,'ds,dscov:2 ',ds(1,1,2),dscov(1,1,2),ds(1,1,2)/dscov(1,1,2)
 
     dscov=ds
 #endif
-    ! convert covariant -> latlon 
+    ! convert covariant -> latlon
     ds(:,:,1)=elem%Dinv(:,:,1,1)*dscov(:,:,1) + elem%Dinv(:,:,2,1)*dscov(:,:,2)
     ds(:,:,2)=elem%Dinv(:,:,1,2)*dscov(:,:,1) + elem%Dinv(:,:,2,2)*dscov(:,:,2)
 
@@ -736,11 +736,11 @@ contains
 !
 !   input s:  scalar  (assumed to be  s khat)
 !   output  curl(s khat) vector in lat-lon coordinates
-! 
+!
 !   This subroutine can be used to compute divergence free velocity fields,
 !   since div(ds)=0
 !
-!    first compute:  
+!    first compute:
 !    curl(s khat) = (1/jacobian) ( ds/dy, -ds/dx ) in contra-variant coordinates
 !    then map to lat-lon
 !
@@ -757,7 +757,7 @@ contains
     real(kind=real_kind) ::  dsdx00
     real(kind=real_kind) ::  dsdy00
     real(kind=real_kind) ::  v1(np,np),v2(np,np)
-    
+
     do j=1,np
        do l=1,np
           dsdx00=0.0d0
@@ -767,8 +767,8 @@ contains
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
           end do
-          v2(l  ,j  ) = -dsdx00*rrearth
-          v1(j  ,l  ) =  dsdy00*rrearth
+          v2(l  ,j  ) = -dsdx00*scale_factor_inv
+          v1(j  ,l  ) =  dsdy00*scale_factor_inv
        end do
     end do
     ! convert contra -> latlon *and* divide by jacobian
@@ -778,7 +778,7 @@ contains
           ds(i,j,2)= (elem%D(i,j,2,1)*v1(i,j) + elem%D(i,j,2,2)*v2(i,j))/elem%metdet(i,j)
        enddo
     enddo
- 
+
     end function curl_sphere
 
 
@@ -791,10 +791,10 @@ contains
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  div(v)  spherical divergence of v, integrated by parts
 !
-!   Computes  -< grad(psi) dot v > 
+!   Computes  -< grad(psi) dot v >
 !   (the integrated by parts version of < psi div(v) > )
 !
-!   note: after DSS, divergence_sphere() and divergence_sphere_wk() 
+!   note: after DSS, divergence_sphere() and divergence_sphere_wk()
 !   are identical to roundoff, as theory predicts.
 !
     real(kind=real_kind), intent(in) :: v(np,np,2)  ! in lat-lon coordinates
@@ -828,7 +828,7 @@ contains
           do j=1,np
              div(m,n)=div(m,n)-(elem%spheremp(j,n)*vtemp(j,n,1)*deriv%Dvv(m,j) &
                               +elem%spheremp(m,j)*vtemp(m,j,2)*deriv%Dvv(n,j)) &
-                              * rrearth
+                              * scale_factor_inv
           enddo
 
 #if 0
@@ -853,10 +853,10 @@ contains
           if (abs(xtmp-div(m,n)) > 3e-17) then
              print *,m,n,xtmp,div(m,n),xtmp-div(m,n)
           endif
-#endif          
+#endif
        end do
     end do
-    
+
   end function divergence_sphere_wk
 
 
@@ -865,7 +865,7 @@ contains
 !
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  result(i,j) = contour integral of PHI_ij * v dot normal
-!           where PHI_ij = cardinal function at i,j GLL point 
+!           where PHI_ij = cardinal function at i,j GLL point
 !
 !   this routine is used just to check spectral element integration by parts identities
 !
@@ -890,22 +890,22 @@ contains
     result=0
     j=1
     do i=1,np
-       result(i,j)=result(i,j)-deriv%Mvv_twt(i,i)*elem%metdet(i,j)*ucontra(i,j,2)*rrearth
+       result(i,j)=result(i,j)-deriv%Mvv_twt(i,i)*elem%metdet(i,j)*ucontra(i,j,2)*scale_factor_inv
     enddo
-    
+
     j=np
     do i=1,np
-       result(i,j)=result(i,j)+deriv%Mvv_twt(i,i)*elem%metdet(i,j)*ucontra(i,j,2)*rrearth
+       result(i,j)=result(i,j)+deriv%Mvv_twt(i,i)*elem%metdet(i,j)*ucontra(i,j,2)*scale_factor_inv
     enddo
-    
+
     i=1
     do j=1,np
-       result(i,j)=result(i,j)-deriv%Mvv_twt(j,j)*elem%metdet(i,j)*ucontra(i,j,1)*rrearth
+       result(i,j)=result(i,j)-deriv%Mvv_twt(j,j)*elem%metdet(i,j)*ucontra(i,j,1)*scale_factor_inv
     enddo
-    
+
     i=np
     do j=1,np
-       result(i,j)=result(i,j)+deriv%Mvv_twt(j,j)*elem%metdet(i,j)*ucontra(i,j,1)*rrearth
+       result(i,j)=result(i,j)+deriv%Mvv_twt(j,j)*elem%metdet(i,j)*ucontra(i,j,1)*scale_factor_inv
     enddo
   end function element_boundary_integral
 
@@ -919,12 +919,12 @@ contains
 !           pedges = scalar edge data from neighbor elements
 !
 !   ouput:  result(i,j) = contour integral of PHI_ij * pstar * v dot normal
-!           where PHI_ij = cardinal function at i,j GLL point 
+!           where PHI_ij = cardinal function at i,j GLL point
 !           pstar = centered or other flux
 !
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), intent(in) :: p(np,np) 
-    real(kind=real_kind), intent(in) :: pedges(0:np+1,0:np+1) 
+    real(kind=real_kind), intent(in) :: v(np,np,2)
+    real(kind=real_kind), intent(in) :: p(np,np)
+    real(kind=real_kind), intent(in) :: pedges(0:np+1,0:np+1)
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind) :: result(np,np)
@@ -955,24 +955,24 @@ contains
     do i=1,np
        j=1
        pstar=(pedges(i,0) + p(i,j) ) /2
-       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*rrearth)
+       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
-       
+
        j=np
        pstar=(pedges(i   ,np+1) + p(i,j) ) /2
-       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*rrearth)
+       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
     enddo
-    
+
     do j=1,np
        i=1
        pstar=(pedges(0   ,j   ) + p(i,j) )/2
-       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*rrearth)
+       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
-       
-       i=np  
+
+       i=np
        pstar=(pedges(np+1,j   ) + p(i,j) ) /2
-       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*rrearth)
+       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
     end do
 #else
@@ -981,34 +981,34 @@ contains
        j=1
        pstar=p(i,j)
        if (ucontra(i,j,2)>0) pstar=pedges(i,0)
-       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*rrearth)
+       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
-       
+
        j=np
        pstar=p(i,j)
        if (ucontra(i,j,2)<0) pstar=pedges(i,np+1)
-       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*rrearth)
+       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
     enddo
-    
+
     do j=1,np
        i=1
        pstar=p(i,j)
        if (ucontra(i,j,1)>0) pstar=pedges(0,j)
-       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*rrearth)
+       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
-       
-       i=np  
+
+       i=np
        pstar=p(i,j)
        if (ucontra(i,j,1)<0) pstar=pedges(np+1,j)
-       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*rrearth)
+       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
        result(i,j)=result(i,j)+flux
     end do
-#endif    
+#endif
 
   end function edge_flux_u_cg
 
-    
+
 !DIR$ ATTRIBUTES FORCEINLINE :: vorticity_sphere
   function vorticity_sphere(v,deriv,elem) result(vort)
 !
@@ -1025,7 +1025,7 @@ contains
     integer i
     integer j
     integer l
-    
+
     real(kind=real_kind) ::  dvdx00,dudy00
     real(kind=real_kind) ::  vco(np,np,2)
     real(kind=real_kind) ::  vtemp(np,np)
@@ -1049,7 +1049,7 @@ contains
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*vco(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*vco(j  ,i,1)
           enddo
- 
+
           vort(l  ,j  ) = dvdx00
           vtemp(j  ,l  ) = dudy00
        enddo
@@ -1057,7 +1057,7 @@ contains
 
     do j=1,np
        do i=1,np
-          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
+          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*scale_factor_inv)
        end do
     end do
 
@@ -1086,7 +1086,7 @@ contains
       real(kind=real_kind) :: rdy
 
       ! convert to covariant form
-                                                                    
+
       do j=1,np
          do i=1,np
             vco(i,j,1)=(elem%D(i,j,1,1)*v(i,j,1) + elem%D(i,j,2,1)*v(i,j,2))
@@ -1094,7 +1094,7 @@ contains
          enddo
       enddo
 
-                                                                                                               
+
       do j=1,np
          do l=1,np
             dudy00=0.0d0
@@ -1103,18 +1103,18 @@ contains
             do i=1,np
                dvdx00 = dvdx00 + deriv%Dvv_diag(i,l)*vco(i,j ,2)
                dudy00 = dudy00 + deriv%Dvv_diag(i,l)*vco(j ,i,1)
-            enddo 
-            vort(l ,j) = dvdx00 
+            enddo
+            vort(l ,j) = dvdx00
             vtemp(j ,l) = dudy00
          enddo
       enddo
 
       do j=1,np
-         do i=1,np 
-          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
-         end do 
-      end do 
-     
+         do i=1,np
+          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*scale_factor_inv)
+         end do
+      end do
+
   end function vorticity_sphere_diag
 
 !DIR$ ATTRIBUTES FORCEINLINE :: divergence_sphere
@@ -1148,7 +1148,7 @@ contains
        enddo
     enddo
 
-    ! compute d/dx and d/dy         
+    ! compute d/dx and d/dy
     do j=1,np
        do l=1,np
           dudx00=0.0d0
@@ -1163,8 +1163,8 @@ contains
        end do
     end do
 
-    div(:,:)=(div(:,:)+vvtemp(:,:))*(elem%rmetdet(:,:)*rrearth)
-    
+    div(:,:)=(div(:,:)+vvtemp(:,:))*(elem%rmetdet(:,:)*scale_factor_inv)
+
   end function divergence_sphere
 
 
@@ -1174,8 +1174,8 @@ contains
 !   input:  s = scalar
 !   ouput:  -< grad(PHI), grad(s) >   = weak divergence of grad(s)
 !     note: for this form of the operator, grad(s) does not need to be made C0
-!            
-    real(kind=real_kind), intent(in) :: s(np,np) 
+!
+    real(kind=real_kind), intent(in) :: s(np,np)
     logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1187,7 +1187,7 @@ contains
     real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
 
     grads=gradient_sphere(s,deriv,elem%Dinv)
- 
+
     if (var_coef) then
        if (hypervis_power/=0 ) then
           ! scalar viscosity with variable coefficient
@@ -1212,7 +1212,7 @@ contains
     endif
 
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
-    ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
+    ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().
     laplace=divergence_sphere_wk(grads,deriv,elem)
 
   end function laplace_sphere_wk
@@ -1229,7 +1229,7 @@ contains
 !
 !   One combination NOT supported:  tensorHV and nu_div/=nu then abort
 !
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), intent(in) :: v(np,np,2)
     logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1245,7 +1245,7 @@ contains
           endif
        endif
        laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
-    else  
+    else
        ! all other cases, use contra formulation:
        laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
     endif
@@ -1259,7 +1259,7 @@ contains
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
 
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), intent(in) :: v(np,np,2)
     logical :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1288,14 +1288,14 @@ contains
 !JMD       laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
        laplace(:,:,component) = dum_cart(:,:,1)*elem%vec_sphere2cart(:,:,1,component) + &
                                 dum_cart(:,:,2)*elem%vec_sphere2cart(:,:,2,component) + &
-                                dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component) 
-    end do 
+                                dum_cart(:,:,3)*elem%vec_sphere2cart(:,:,3,component)
+    end do
 
 #define UNDAMPRRCART
 #ifdef UNDAMPRRCART
     ! add in correction so we dont damp rigid rotation
-    laplace(:,:,1)=laplace(:,:,1) + 2*elem%spheremp(:,:)*v(:,:,1)*(rrearth**2)
-    laplace(:,:,2)=laplace(:,:,2) + 2*elem%spheremp(:,:)*v(:,:,2)*(rrearth**2)
+    laplace(:,:,1)=laplace(:,:,1) + 2*elem%spheremp(:,:)*v(:,:,1)*(laplacian_rigid_factor**2)
+    laplace(:,:,2)=laplace(:,:,2) + 2*elem%spheremp(:,:)*v(:,:,2)*(laplacian_rigid_factor**2)
 #endif
   end function vlaplace_sphere_wk_cartesian
 
@@ -1309,9 +1309,9 @@ contains
 !   du/dt = laplace(u) = grad(div) - curl(vor)
 !   < PHI du/dt > = < PHI laplace(u) >        PHI = covariant, u = contravariant
 !                 = < PHI grad(div) >  - < PHI curl(vor) >
-!                 = grad_wk(div) - curl_wk(vor)               
+!                 = grad_wk(div) - curl_wk(vor)
 !
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), intent(in) :: v(np,np,2)
     logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
@@ -1340,10 +1340,11 @@ contains
     do n=1,np
        do m=1,np
           ! add in correction so we dont damp rigid rotation
+
 #define UNDAMPRR
 #ifdef UNDAMPRR
-          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
-          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
+          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(laplacian_rigid_factor**2)
+          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(laplacian_rigid_factor**2)
 #endif
        enddo
     enddo
@@ -1352,13 +1353,13 @@ contains
 
 
 #if 0
-  subroutine laplace_eta(v,laplace,ncomp,etam) 
+  subroutine laplace_eta(v,laplace,ncomp,etam)
 !
-!   input:  v = scalar 
+!   input:  v = scalar
 !   ouput:  vertical laplace operator in z coordinates
 !   u'(i+1/2) = u(i+1) - u(i) / deta(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
 !   u''(i) = u'(i+1/2) - u'(i-1/2) / deta(i)
-!   
+!
 !   NOTE: some variables in HOMME (dp3d, eta_dot_dpdn) have been scaled by deta(i) and so we remove
 !   the second deta(i) factor below.  But if this routine is used for
 !   variables like u or theta and not multiplied by eta_dot_dpdn, this will need some work
@@ -1387,13 +1388,13 @@ contains
 #endif
 
 
-  subroutine laplace_z(v,laplace,ncomp,nk,dz) 
+  subroutine laplace_z(v,laplace,ncomp,nk,dz)
 !
-!   input:  v = scalar 
+!   input:  v = scalar
 !   ouput:  vertical laplace operator in z coordinates
 !   u'(i+1/2) = u(i+1) - u(i) / dz(i+.5)      no flux b.c.  u(0)=u(1), u(nlev+1)=u(nlev)
 !   u''(i) = u'(i+1/2) - u'(i-1/2) / dz(i)
-!   
+!
 !   This routine is currently only used for the supercell test, which uses equally spaced
 !   levels ( dz=20km/nlev ) so currently only a constant dz is supported
 !
@@ -1412,7 +1413,7 @@ contains
     u_z(:,:,nk+1)=0
     do n=1,ncomp
        do k=2,nk
-          u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)  
+          u_z(:,:,k) = (v(:,:,n,k)-v(:,:,n,k-1)) / dz        ! dz(k-.5)
        enddo
        do k=1,nk
           laplace(:,:,n,k) =( u_z(:,:,k+1) - u_z(:,:,k) )/dz    ! dz(k)
@@ -1432,7 +1433,7 @@ contains
     integer              , intent(in)  :: n
     real (kind=real_kind), intent(in)  :: dss     (p,p)
     real (kind=real_kind), intent(in)  :: metdet  (p,p)
-    real (kind=real_kind), intent(in)  :: C       (2,2,2)  
+    real (kind=real_kind), intent(in)  :: C       (2,2,2)
 
     real (kind=real_kind)              :: fluxes  (n,n,4)
 
@@ -1463,12 +1464,12 @@ contains
     Bp(1,1)  = C(1,1,2)
     Lp(1,1)  = C(1,1,1)
     Bp(p,1)  = C(2,1,2)
-    Rp(p,1)  = C(2,1,1) 
+    Rp(p,1)  = C(2,1,1)
 
     Tp(1,p)  = C(1,2,2)
-    Lp(1,p)  = C(1,2,1) 
+    Lp(1,p)  = C(1,2,1)
     Tp(p,p)  = C(2,2,2)
-    Rp(p,p)  = C(2,2,1) 
+    Rp(p,p)  = C(2,2,1)
 
     B = subcell_integration(Bp, p, n, metdet)
     T = subcell_integration(Tp, p, n, metdet)
@@ -1477,15 +1478,15 @@ contains
 
     do i = 1,n
     do j = 1,n
-      if (1<j) T(i,j) = T(i,j) + T(i,j-1) 
-      if (1<i) R(i,j) = R(i,j) + R(i-1,j) 
+      if (1<j) T(i,j) = T(i,j) + T(i,j-1)
+      if (1<i) R(i,j) = R(i,j) + R(i-1,j)
     end do
     end do
 
     do i = n,1,-1
     do j = n,1,-1
-      if (j<n) B(i,j) = B(i,j) + B(i,j+1) 
-      if (i<n) L(i,j) = L(i,j) + L(i+1,j) 
+      if (j<n) B(i,j) = B(i,j) + B(i,j+1)
+      if (i<n) L(i,j) = L(i,j) + L(i+1,j)
     end do
     end do
 
@@ -1522,7 +1523,7 @@ contains
     real (kind=real_kind)              :: flux_r(n,n)
     real (kind=real_kind)              :: flux_b(n,n)
     real (kind=real_kind)              :: flux_t(n,n)
-    
+
     integer i,j
 
     if (.not.ALLOCATED(integration_matrix)      .or. &
@@ -1542,10 +1543,10 @@ contains
     flux_l(:,:) = MATMUL(boundary_interp_matrix(:,1,:),lr)
     flux_r(:,:) = MATMUL(boundary_interp_matrix(:,2,:),lr)
 
-    fluxes(:,:,1) = -flux_b(:,:)*rrearth
-    fluxes(:,:,2) =  flux_r(:,:)*rrearth
-    fluxes(:,:,3) =  flux_t(:,:)*rrearth
-    fluxes(:,:,4) = -flux_l(:,:)*rrearth
+    fluxes(:,:,1) = -flux_b(:,:)*scale_factor_inv
+    fluxes(:,:,2) =  flux_r(:,:)*scale_factor_inv
+    fluxes(:,:,3) =  flux_t(:,:)*scale_factor_inv
+    fluxes(:,:,4) = -flux_l(:,:)*scale_factor_inv
 
   end function subcell_div_fluxes
 
@@ -1564,7 +1565,7 @@ contains
     real (kind=real_kind)              :: div(p,p,2)
     real (kind=real_kind)              :: sub_int(n,n,2)
     real (kind=real_kind)              :: fluxes(n,n,4)
-    
+
     integer i,j
 
     g = gradient_sphere(u,deriv,elem%Dinv)
@@ -1577,7 +1578,7 @@ contains
        div(i,j,2) = -SUM(elem%spheremp(i,:)*v(i,:,2)*deriv%Dvv(j,:))
     end do
     end do
-    div = div * rrearth
+    div = div * scale_factor_inv
 
     div(:,:,1) = div(:,:,1) / elem%spheremp(:,:)
     div(:,:,2) = div(:,:,2) / elem%spheremp(:,:)
@@ -1587,8 +1588,8 @@ contains
 
     do i=1,n
     do j=2,n
-      sub_int(j,i,1) = sub_int(j,i,1) + sub_int(j-1,i,1) 
-      sub_int(i,j,2) = sub_int(i,j,2) + sub_int(i,j-1,2) 
+      sub_int(j,i,1) = sub_int(j,i,1) + sub_int(j-1,i,1)
+      sub_int(i,j,2) = sub_int(i,j,2) + sub_int(i,j-1,2)
     end do
     end do
 
@@ -1609,9 +1610,9 @@ contains
   ! sample values, sampled_val, premultiplied by integration weights,
   ! and a number, np, of Gauss-Lobatto-Legendre points. Divide
   ! the square up into intervals by intervals sub-squares so that
-  ! there are now intervals**2 sub-cells.  Integrate the 
+  ! there are now intervals**2 sub-cells.  Integrate the
   ! function defined by sampled_val over each of these
-  ! sub-cells and return the integrated values as an 
+  ! sub-cells and return the integrated values as an
   ! intervals by intervals matrix.
   !
   ! Efficiency is obtained by computing and caching the appropriate
@@ -1636,11 +1637,11 @@ contains
     end if
 
     ! Multiply sampled values by spectral element weights
-    val = sampled_val * metdet 
+    val = sampled_val * metdet
 
-    ! Multiply the sampled values by the weighted jacobians.  
+    ! Multiply the sampled values by the weighted jacobians.
     ! Symmetry allows us to write this as J^t V J
-    ! where J is a vector.  
+    ! where J is a vector.
 
     values = MATMUL(integration_matrix, &
              MATMUL(val,TRANSPOSE(integration_matrix)))
@@ -1648,19 +1649,19 @@ contains
   end function subcell_integration
 
 
-  ! Helper subroutine that will fill in a matrix needed to 
+  ! Helper subroutine that will fill in a matrix needed to
   ! integrate a function defined on the GLL points of a unit
   ! square on sub-cells.  So np is the number of integration
   ! GLL points defined on the unit square (actually [-1,1]x[-1,1])
   ! and intervals is the number to cut it up into, say a 3 by 3
-  ! set of uniform sub-cells.  This function will fill the 
+  ! set of uniform sub-cells.  This function will fill the
   ! subcell_integration matrix with the correct coefficients
-  ! to integrate over each subcell.  
+  ! to integrate over each subcell.
   subroutine allocate_subcell_integration_matrix(np, intervals)
     !-----------------
     !-----------------
     use quadrature_mod, only : gausslobatto, quadrature_t
-    
+
     implicit none
 
     integer              , intent(in)  :: np
@@ -1674,11 +1675,11 @@ contains
     real (kind=real_kind) :: sub_gll        (intervals,np)
 
     real (kind=real_kind) :: Lagrange_interp(intervals,np,np)
-    type (quadrature_t)   :: gll 
+    type (quadrature_t)   :: gll
 
     real (kind=real_kind) :: legrange_div(np)
-    real (kind=real_kind) :: a,b,x,y, x_j, x_i 
-    real (kind=real_kind) :: r(1) 
+    real (kind=real_kind) :: a,b,x,y, x_j, x_i
+    real (kind=real_kind) :: r(1)
     integer i,j,n,m
 
     if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
@@ -1687,39 +1688,39 @@ contains
     allocate(boundary_interp_matrix(intervals,2,np))
 
     gll = gausslobatto(np)
- 
-    ! The GLL (Gauss-Lobatto-Legendre) points are from [-1,1], 
-    ! we have a bunch of sub-intervals defined by intervals that 
-    ! go from [a,b] so we need to linearly map [-1,1] -> [a,b] 
+
+    ! The GLL (Gauss-Lobatto-Legendre) points are from [-1,1],
+    ! we have a bunch of sub-intervals defined by intervals that
+    ! go from [a,b] so we need to linearly map [-1,1] -> [a,b]
     ! all the  GLL points by  y = (a/2)(1-x) + (b/2)(1+x)
     do i=1,intervals
-      a = -one + (i-one)*two/intervals   
-      b = -one +  i     *two/intervals  
+      a = -one + (i-one)*two/intervals
+      b = -one +  i     *two/intervals
       sub_gll(i,:) = (a+b)/two + gll%points(:)/intervals
     end do
 
     ! Now to interpolate from the values at the input GLL
     ! points to the sub-GLL points.  Do this by Lagrange
     ! interpolation.  The jth Lagrange interpolating polynomial
-    ! for points x_i is 
+    ! for points x_i is
     !              \prod_{i\ne j} (x-x_i)/(x_j-x_i)
-    ! These are then multiplied by the sampled values y_i 
-    ! and summed. 
-    
-    ! Save some time by pre-computing the denominitor. I think 
+    ! These are then multiplied by the sampled values y_i
+    ! and summed.
+
+    ! Save some time by pre-computing the denominitor. I think
     ! this is OK since all the points are of order 1 so should
     ! be well behaved.
     do n = 1,np
       x_j = gll%points(n)
-      x   = one 
-      do m = 1,np 
+      x   = one
+      do m = 1,np
         if (m.ne.n) then
           x_i = gll%points(m)
           x = x * (x_j-x_i)
         endif
       end do
       legrange_div(n)= x
-    end do 
+    end do
     do i=1,intervals
       do n=1,np
         x = sub_gll(i,n)
@@ -1738,9 +1739,9 @@ contains
 
     ! Integration is the GLL weights times Jacobians times
     ! the interpolated values:
-    !                   w^t I Y I^t w 
-    ! where  
-    ! w is GLL weights and Jacobians, 
+    !                   w^t I Y I^t w
+    ! where
+    ! w is GLL weights and Jacobians,
     ! I is the Lagrange_interp matrix, and
     ! Y is the coefficient matrix, sampled_val.
     ! This can be written  J Y J^t where
@@ -1750,10 +1751,10 @@ contains
       integration_matrix(i,:) = MATMUL(gll%weights(:),Lagrange_interp(i,:,:))
     end do
 
-    ! There is still the Jacobian to consider.  We are 
-    ! integrating over [a,b] x [c,d] where 
+    ! There is still the Jacobian to consider.  We are
+    ! integrating over [a,b] x [c,d] where
     !        |b-a| = |d-c| = 2/Intervals
-    ! Multiply the weights appropriately given that 
+    ! Multiply the weights appropriately given that
     ! they are defined for a 2x2 square
     integration_matrix = integration_matrix/intervals
 
@@ -1763,7 +1764,7 @@ contains
 
 
   subroutine limiter_optim_iter_full(ptens,sphweights,minp,maxp,dpmass)
-    ! 
+    !
     !The idea here is the following: We need to find a grid field which is closest
     !to the initial field (in terms of weighted sum), but satisfies the min/max constraints.
     !So, first we find values which do not satisfy constraints and bring these values
@@ -1772,8 +1773,8 @@ contains
     !This redistribution might violate constraints thus, we do a few iterations.
     !
     ! O. Guba ~2012                    Documented in Guba, Taylor & St-Cyr, JCP 2014
-    ! I. Demeshko & M. Taylor 7/2015:  Removed indirect addressing.  
-    ! N. Lopez & M. Taylor 8/2015:     Mass redistributon tweak which is better at 
+    ! I. Demeshko & M. Taylor 7/2015:  Removed indirect addressing.
+    ! N. Lopez & M. Taylor 8/2015:     Mass redistributon tweak which is better at
     !                                  linear coorelation preservation
     !
     use kinds         , only : real_kind

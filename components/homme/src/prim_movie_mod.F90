@@ -1,4 +1,4 @@
-! Sept 2019 O. Guba Add w_i, mu_i, geo_i, pnh to native output 
+! Sept 2019 O. Guba Add w_i, mu_i, geo_i, pnh to native output
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -9,7 +9,7 @@ module prim_movie_mod
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
-  use hybvcoord_mod, only :  hvcoord_t 
+  use hybvcoord_mod, only :  hvcoord_t
 #ifdef _MPI
   use parallel_mod, only : syncmp, iam, mpireal_t, mpi_max, mpi_sum, mpiinteger_t, parallel_t, haltmp, abortmp
 #else
@@ -19,7 +19,7 @@ module prim_movie_mod
   use element_mod, only : element_t
 
   use cube_mod, only : cube_assemble
-  use control_mod, only : test_case, runtype, &
+  use control_mod, only : test_case, runtype, geometry, &
        restartfreq, &
        integration, hypervis_power, qsplit
   use common_io_mod, only : &
@@ -35,10 +35,10 @@ module prim_movie_mod
        nfsizekind,             &
        nf_selectedvar,       &
        PIOFS
-       
+
   use surfaces_mod, only : cvlist, InitControlVolumesData, InitControlVolumes
 
-  use netcdf_io_mod, only:  nf_output_init_begin,& 
+  use netcdf_io_mod, only:  nf_output_init_begin,&
        nf_global_attribute, &
        nf_output_init_complete,  &
        nf_output_register_variables,&
@@ -99,7 +99,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
@@ -125,13 +125,18 @@ contains
     real (kind=real_kind) :: vartmp(np,np,nlev)
     real (kind=real_kind),allocatable :: var3d(:,:),var2d(:)
 
-
+    real (kind=real_kind) :: latlon_adj_factor
 #ifdef _MPI
     integer :: ierr
 #endif
 
     call PIO_setDebugLevel(0)
 
+    if (geometry=="sphere") then
+      latlon_adj_factor = 180.0D0/dd_pi
+    else if (geometry=="plane") then
+      latlon_adj_factor = 1.0D0
+    end if
 
     call nf_output_init_begin(ncdf,par%masterproc,par%nprocs,par%rank, &
          par%comm,test_case,runtype)
@@ -147,7 +152,7 @@ contains
 
 
     allocate(compdof(nxyp*nlevp), latp(nxyp),lonp(nxyp))
-    
+
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(PIOFS)
 
@@ -176,7 +181,7 @@ contains
     end if
     call pio_initdecomp(PIOFS, pio_double, (/nlev/), compdof(1:nlev), iodescv)
     call pio_initdecomp(PIOFS, pio_double, (/nlevp/), compdof(1:nlevp), iodescvp1)
-    
+
 ! this is a trivial case for the time variable
     if(iorank==0) then
        compdof(1)=1
@@ -219,10 +224,18 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'area', 'area weights','m^2','coordinates','x y')
+    call nf_variable_attributes(ncdf, 'u', 'x-dir wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'v', 'y-dir wind component','meters/second')
+  end if
+
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
     call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
@@ -235,15 +248,21 @@ contains
     call nf_variable_attributes(ncdf, 'PHIS', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
+  if (geometry=="sphere") then
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
+  else if (geometry=="plane") then
+    call nf_variable_attributes(ncdf, 'lat', 'column y','m')
+    call nf_variable_attributes(ncdf, 'lon', 'column x','m')
+  end if
+
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'lev' ,'hybrid level at midpoints' ,'level','positive','down') !,'formula_terms','a: hyam b: hybm p0: P0 ps: PS')
     call nf_variable_attributes(ncdf, 'ilev','hybrid level at interfaces','level','positive','down') !,'formula_terms','a: hyai b: hybi p0: P0 ps: PS')
-    call nf_variable_attributes(ncdf, 'hyam','hybrid A coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybm','hybrid B coefficiet at layer midpoints' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hyai','hybrid A coefficiet at layer interfaces' ,'dimensionless') 
-    call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless') 
+    call nf_variable_attributes(ncdf, 'hyam','hybrid A coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybm','hybrid B coefficiet at layer midpoints' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hyai','hybrid A coefficiet at layer interfaces' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'hybi','hybrid B coefficiet at layer interfaces' ,'dimensionless')
     call nf_output_init_complete(ncdf)
 
     do ios=1,max_output_streams
@@ -281,13 +300,14 @@ contains
             ! if (par%masterproc .and. mod(ie,1).eq.0 ) print *,'ie=',ie
             if(ie<=nelemd) then
                en=st+elem(ie)%idxp%NumUniquePts-1
-               call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,latp(st:en), lonp(st:en)) 
+               call UniqueCoords(elem(ie)%idxP, elem(ie)%spherep,latp(st:en), lonp(st:en))
                st=en+1
             end if
           enddo
 
-          latp=latp*180/dd_pi
-          lonp=lonp*180/dd_pi
+          ! MAKE THIS AN ADJUSTMENT FACTOR!
+          latp=latp*latlon_adj_factor
+          lonp=lonp*latlon_adj_factor
           call nf_put_var(ncdf(ios),latp,start(1:1),count(1:1),name='lat', iodescin=iodesc2d)
           call nf_put_var(ncdf(ios),lonp,start(1:1),count(1:1),name='lon', iodescin=iodesc2d)
 
@@ -303,7 +323,7 @@ contains
           call nf_put_var(ncdf(ios),hvcoord%etai,start(1:1),count(1:1),name='ilev',iodescin=iodescvp1)
 
 
-          ! check if reqested 
+          ! check if reqested
 
 
 
@@ -320,7 +340,7 @@ contains
              kmax = ParallelMax(kmax2,hybrid)
              if ( nlev < kmax ) call abortmp('cv output requires nlev >= max number of vertex')
           endif
-          
+
           if(nf_selectedvar('cv_lon', output_varnames)) then
              if (par%masterproc) print *,'writing cv_lon...'
              allocate(var3d(nxyp,nlev))
@@ -329,7 +349,7 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
-                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*180/dd_pi
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*latlon_adj_factor
                 enddo
                 call UniquePoints(elem(ie)%idxp, nlev, vartmp, var3d(st:en,:))
                 st=en+1
@@ -345,7 +365,7 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
-                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*180/dd_pi
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*latlon_adj_factor
                 enddo
                 call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                 st=en+1
@@ -411,7 +431,7 @@ contains
 
 
   !
-! This function returns the next step number in which an output (either restart or movie) 
+! This function returns the next step number in which an output (either restart or movie)
 ! needs to be written.
 !
   integer function nextoutputstep(tl)
@@ -430,7 +450,7 @@ contains
     end do
     nextoutputstep=minval(nstep)
     if(restartfreq>0) then
-       nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))    
+       nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))
     end if
  end function nextoutputstep
 
@@ -441,7 +461,7 @@ contains
     use viscosity_mod, only : compute_zeta_C0
     use element_ops, only : get_field, get_field_i
     use dcmip16_wrapper, only: precl
-    use netcdf_io_mod, only : iodesc3dp1 
+    use netcdf_io_mod, only : iodesc3dp1
 
     type (element_t)    :: elem(:)
 
@@ -480,13 +500,13 @@ contains
              count2d(1)=0
              count2d(2)=1
 
-             count(1:2)=0 
-             start(1:2)=0 
+             count(1:2)=0
+             start(1:2)=0
              start(3)=nf_get_frame(ncdf(ios))
              count(3)=1
 
-             countp1(1:2)=0 
-             startp1(1:2)=0 
+             countp1(1:2)=0
+             startp1(1:2)=0
              startp1(3)=start(3)
              countp1(3)=1
 
@@ -534,7 +554,7 @@ contains
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   arealocal=1/elem(ie)%rspheremp(:,:)         
+                   arealocal=1/elem(ie)%rspheremp(:,:)
                    call UniquePoints(elem(ie)%idxP,arealocal,var2d(st:en))
                    st=en+1
                 enddo
@@ -625,7 +645,7 @@ contains
              if(nf_selectedvar('ke', output_varnames)) then
                 st=1
                 do ie=1,nelemd
-                   do k=1,nlev 
+                   do k=1,nlev
                       ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)**2 + &
                       elem(ie)%state%v(:,:,2,k,n0)**2 )/2
                    enddo
@@ -767,4 +787,3 @@ contains
 #endif
 !for WITHOUT_PIOLIB
 end module prim_movie_mod
-

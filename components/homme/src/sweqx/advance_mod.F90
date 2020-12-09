@@ -83,7 +83,7 @@ contains
     elseif (LFTfreq==1) then
        steptype=1
     else
-       steptype=2  
+       steptype=2
        if (mod(nstep,LFTfreq).ne.0) steptype=0
     endif
 
@@ -91,25 +91,25 @@ contains
     ! For RK methods we should remove bootstrap procedure
     if (nstep==0) steptype=0
 
-    if (steptype==0) then   
+    if (steptype==0) then
 
        ! Leapfrog timestep: u(np1) = u(nm1) + dt2*DSS [ RHS(u(n0)) ]
        call compute_and_apply_rhs(np1,nm1,n0,dt2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
 
        ! ====================================================
-       ! apply viscosity  
+       ! apply viscosity
        ! ====================================================
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt2)
 
     else if (steptype==1)  then
        if (smooth/=0) stop 'ERROR: smooth>0 only allowed for leapfrog'
        ! leapfrog+trapazoidal
-       ! 2x as expensive as LF, but 2nd order, no Robert filter needed, 
+       ! 2x as expensive as LF, but 2nd order, no Robert filter needed,
        ! dt sqrt(2) larger than LF
        ! u(*) = u(n-1) + 2dt F(u(n))   u(*) is at time level n+1
        ! u(n+1) = u(n) + dt [ F(u(n)) + F(u(*)) ] /2
-       
-       ! u(n+1) = u(n) + dt/2 F(u(n))   
+
+       ! u(n+1) = u(n) + dt/2 F(u(n))
        call compute_and_apply_rhs(np1,n0,n0,dt/2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
 
        ! u(n-1) = u(n-1) + 4( u(n+1)-u(n))     u(*) above
@@ -120,7 +120,7 @@ contains
                4*(elem(ie)%state%p(:,:,:,np1)-elem(ie)%state%p(:,:,:,n0)  )
        enddo
 
-       ! u(n+1) = u(n+1) + dt/2 F(u(*))        
+       ! u(n+1) = u(n+1) + dt/2 F(u(*))
        call compute_and_apply_rhs(np1,np1,nm1,dt/2,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
        ! ====================================================
        ! apply viscosity  Note: use dt, not dt/2
@@ -249,7 +249,7 @@ contains
           ! when we dont advect a seperate density, we only allow limiter=0 or 4
        else
           print *,'Error: limiter can only be applied for advection tests with kmass>0'
-          stop 
+          stop
        endif
     endif
 
@@ -318,7 +318,7 @@ contains
               do j=1,np
                  do i=1,np
                     v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
-                    v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
+                    v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra
                     elem(ie)%state%v(i,j,1,k,n0)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
                     elem(ie)%state%v(i,j,2,k,n0)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
                  enddo
@@ -339,7 +339,7 @@ contains
               enddo
            enddo
         enddo
-        
+
 
 	do ie=nets,nete
 	    spheremp     => elem(ie)%spheremp
@@ -377,7 +377,7 @@ contains
                 do i=1,np
 
                    v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
-                   v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
+                   v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra
                    ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
                    ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
 
@@ -390,7 +390,7 @@ contains
              end do
              grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
              !grade = gradient_sphere_wk(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
-             zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
+             zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar
              div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
 
              ! ==============================================
@@ -406,7 +406,7 @@ contains
              ptens(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0) + dtstage*ptens(:,:,k,ie)
           end do!end of loop over levels
 
-          
+
           if ((limiter_option == 8))then
              call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass)
@@ -422,7 +422,7 @@ contains
              call limiter_optim_wrap(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass)
           endif
-          
+
           if ((limiter_option == 84))then
 	     pmin(:,ie)=0.0d0
              if (test_case=='swirl') then
@@ -439,13 +439,13 @@ contains
           if ( (limiter_option == 4) ) then
              call limiter2d_zero(ptens(:,:,:,ie),elem(ie)%spheremp, kmass)
           endif
-          
+
           do k=1,nlev
              ptens(:,:,k,ie) = ptens(:,:,k,ie)*elem(ie)%spheremp(:,:)
              vtens(:,:,1,k,ie) = vtens(:,:,1,k,ie)*elem(ie)%spheremp(:,:)
              vtens(:,:,2,k,ie) = vtens(:,:,2,k,ie)*elem(ie)%spheremp(:,:)
           enddo
-          
+
           ! ===================================================
           ! Pack cube edges of tendencies, rotate velocities
           ! ===================================================
@@ -467,7 +467,7 @@ contains
 #if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
-       
+
        do ie=nets,nete
 
           rspheremp     => elem(ie)%rspheremp
@@ -587,9 +587,9 @@ contains
 
   subroutine limiter2d_zero(Q,spheremp,kmass)
     !
-    ! mass conserving sign-preserving limiter (2D only). 
+    ! mass conserving sign-preserving limiter (2D only).
     ! uses specified global minimum
-    ! 
+    !
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
     use control_mod, only :  test_case
@@ -642,11 +642,11 @@ contains
       mass2 = mass - area*qmin
       Q(:,:)=Q(:,:)-qmin
 
-      ! negative mass.  so reduce all postive values to zero 
+      ! negative mass.  so reduce all postive values to zero
       ! then increase negative values as much as possible
-      if (mass2 < 0) Q(:,:)=-Q(:,:) 
+      if (mass2 < 0) Q(:,:)=-Q(:,:)
       mass_added=0
-      do j=1,np	
+      do j=1,np
 	  do i=1,np
 	    if (Q(i,j)<0) then
 		Q(i,j)=0
@@ -657,7 +657,7 @@ contains
       enddo
       ! now scale the all positive values to restore mass
       if (mass_added>0) Q(:,:) = Q(:,:)*abs(mass2)/mass_added
-      if (mass2 < 0) Q(:,:)=-Q(:,:)         
+      if (mass2 < 0) Q(:,:)=-Q(:,:)
       Q(:,:)=Q(:,:)+qmin
     endif
 
@@ -665,7 +665,7 @@ contains
 
 !-------------------------------------------------------------------------------
   subroutine limiter2d_max_onelevel(Q,spheremp,qmax)
-  
+
     use kinds, only : real_kind
     use dimensions_mod, only : np
 
@@ -684,12 +684,12 @@ contains
        mass=sum( Q(:,:)*spheremp(:,:) )
        area=sum( spheremp(:,:) )
        mass2 = area*qmax - mass
-       
+
       Q(:,:)=qmax-Q(:,:)
 
-      if (mass2 < 0) Q(:,:)=-Q(:,:) 
+      if (mass2 < 0) Q(:,:)=-Q(:,:)
       mass_added=0
-      do j=1,np	
+      do j=1,np
 	  do i=1,np
 	    if (Q(i,j)<0) then
 		Q(i,j)=0
@@ -700,7 +700,7 @@ contains
       enddo
       ! now scale the all positive values to restore mass
       if (mass_added>0) Q(:,:) = Q(:,:)*abs(mass2)/mass_added
-      if (mass2 < 0) Q(:,:)=-Q(:,:) 
+      if (mass2 < 0) Q(:,:)=-Q(:,:)
       Q(:,:)=qmax-Q(:,:)
     endif
 
@@ -713,7 +713,7 @@ contains
 
   subroutine advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,nt,nets,nete,dt2)
     !
-    !  take one timestep of:  
+    !  take one timestep of:
     !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
     !          h(:,:,:,np) = h(:,:,:,np) +  dt2*nu_s*laplacian**order ( h )
     !
@@ -769,7 +769,7 @@ contains
           do j=1,np
              do i=1,np
                 v1     = elem(ie)%state%v(i,j,1,k,nt)   ! contra
-                v2     = elem(ie)%state%v(i,j,2,k,nt)   ! contra 
+                v2     = elem(ie)%state%v(i,j,2,k,nt)   ! contra
                 elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
                 elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
              enddo
@@ -781,7 +781,7 @@ contains
     dt=dt2/hypervis_subcycle
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !  regular viscosity  
+    !  regular viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (hypervis_order == 1) then
 
@@ -793,7 +793,7 @@ contains
              do k=1,nlev
                 ! filter surface height, not thickness
                 do j=1,np
-                   do i=1,np             
+                   do i=1,np
                       ptot(i,j)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%ps(i,j)
                    enddo
                 enddo
@@ -805,8 +805,8 @@ contains
                 ! can time advance and then DSS.  this has the advantage of
                 ! not letting any discontinuties accumulate in p,v via tol
                 do j=1,np
-                   do i=1,np             
-                      elem(ie)%state%p(i,j,k,nt)=elem(ie)%state%p(i,j,k,nt)*spheremp(i,j)  +  dt*nu_s*lap_p(i,j) 
+                   do i=1,np
+                      elem(ie)%state%p(i,j,k,nt)=elem(ie)%state%p(i,j,k,nt)*spheremp(i,j)  +  dt*nu_s*lap_p(i,j)
                       elem(ie)%state%v(i,j,1,k,nt)=elem(ie)%state%v(i,j,1,k,nt)*spheremp(i,j) + dt*nu*lap_v(i,j,1)
                       elem(ie)%state%v(i,j,2,k,nt)=elem(ie)%state%v(i,j,2,k,nt)*spheremp(i,j) + dt*nu*lap_v(i,j,2)
                    enddo
@@ -832,7 +832,7 @@ contains
              ! apply inverse mass matrix
              do k=1,nlev
                 do j=1,np
-                   do i=1,np             
+                   do i=1,np
                       elem(ie)%state%p(i,j,k,nt)=rspheremp(i,j)*elem(ie)%state%p(i,j,k,nt)
                       elem(ie)%state%v(i,j,1,k,nt)=rspheremp(i,j)*elem(ie)%state%v(i,j,1,k,nt)
                       elem(ie)%state%v(i,j,2,k,nt)=rspheremp(i,j)*elem(ie)%state%v(i,j,2,k,nt)
@@ -845,7 +845,7 @@ contains
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !  hyper viscosity  
+    !  hyper viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (hypervis_order == 2) then
        do ic=1,hypervis_subcycle
@@ -854,7 +854,7 @@ contains
           do ie=nets,nete
              spheremp     => elem(ie)%spheremp
              do k=1,nlev
-                ! advace in time.  
+                ! advace in time.
                 ! note: DSS commutes with time stepping, so we can time advance and then DSS.
                 ! note: weak operators alreayd have mass matrix "included"
 
@@ -914,8 +914,8 @@ contains
 
 
     ! lat-lon conversion 1740  20%
-    ! opss+pack+mass     5937  68% 
-    ! unpack+mass_inv    1015  12%     
+    ! opss+pack+mass     5937  68%
+    ! unpack+mass_inv    1015  12%
     ! total 8692
   end subroutine advance_hypervis
 
@@ -924,7 +924,7 @@ contains
 
 
   subroutine set_prescribed_velocity(elem,n0,time)
-  use control_mod, only :  topology, test_case
+  use control_mod, only :  test_case
   use element_mod, only : element_t
   use dimensions_mod, only : nlev
   use shallow_water_mod, only : tc1_velocity, vortex_velocity, swirl_velocity
@@ -936,15 +936,15 @@ contains
   integer :: n0,k
   real (kind=real_kind) :: time
 
-  if (topology == "cube" .and. test_case=="swtc1") then
+  if (test_case=="swtc1") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=tc1_velocity(elem%spherep,elem%Dinv)
      end do
-  else if (topology == "cube" .and. test_case=="vortex") then                
+  else if (test_case=="vortex") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=vortex_velocity(time,elem%spherep,elem%Dinv)
      end do
-  else if (topology == "cube" .and. test_case=="swirl") then                
+  else if (test_case=="swirl") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=swirl_velocity(time,elem%spherep,elem%Dinv)
      end do
@@ -967,16 +967,16 @@ contains
   ! take a forward euler step, overwriting the input with the output.
   !
   ! if  dt2=0, then the DSS'd RHS is returned in vtens,ptens
-  ! and u(np1) is not changed.  
+  ! and u(np1) is not changed.
   !
-  ! Combining the RHS and DSS pack operation in one routine 
+  ! Combining the RHS and DSS pack operation in one routine
   ! allows us to fuse these two loops for more cache reuse
   !
-  ! Combining the dt advance and DSS unpack operation in one routine 
+  ! Combining the dt advance and DSS unpack operation in one routine
   ! allows us to fuse these two loops for more cache reuse
   !
   ! note: for prescribed velocity case, velocity will be computed at
-  ! "real_time", which should be the time of timelevel n0.  
+  ! "real_time", which should be the time of timelevel n0.
   ! ===================================
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev
@@ -1005,7 +1005,7 @@ contains
   real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
   real (kind=real_kind), dimension(np,np)                     :: E          ! kinetic energy term
   real (kind=real_kind), dimension(np,np)                     :: zeta       ! relative vorticity
-  real (kind=real_kind), dimension(np,np)      :: div  
+  real (kind=real_kind), dimension(np,np)      :: div
   real (kind=real_kind), dimension(np,np,2)      :: ulatlon
 
   integer i,j,k,kptr,ie
@@ -1031,23 +1031,23 @@ contains
         ! ==============================================
         do j=1,np
            do i=1,np
-              
+
               v1     = elem(ie)%state%v(i,j,1,k,n0)   ! contra
-              v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra 
+              v2     = elem(ie)%state%v(i,j,2,k,n0)   ! contra
               ulatlon(i,j,1)=elem(ie)%D(i,j,1,1)*v1 + elem(ie)%D(i,j,1,2)*v2   ! contra->latlon
               ulatlon(i,j,2)=elem(ie)%D(i,j,2,1)*v1 + elem(ie)%D(i,j,2,2)*v2   ! contra->latlon
-              
+
               E(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  +&
                    elem(ie)%state%p(i,j,k,n0) + elem(ie)%state%ps(i,j)
-              
+
               pv(i,j,1) = ulatlon(i,j,1)*(pmean+elem(ie)%state%p(i,j,k,n0))
               pv(i,j,2) = ulatlon(i,j,2)*(pmean+elem(ie)%state%p(i,j,k,n0))
            end do
         end do
         grade = gradient_sphere(E,deriv,elem(ie)%Dinv)       ! scalar -> latlon vector
-        zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar 
-        div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar 
-        
+        zeta = vorticity_sphere(ulatlon,deriv,elem(ie)) ! latlon vector -> scalar
+        div = divergence_sphere(pv,deriv,elem(ie))      ! latlon vector -> scalar
+
         ! ==============================================
         ! Compute velocity tendency terms
         ! ==============================================
@@ -1060,7 +1060,7 @@ contains
            end do
         end do
      end do
-     
+
      ! ===================================================
      ! Pack cube edges of tendencies, rotate velocities
      ! ===================================================
@@ -1069,8 +1069,8 @@ contains
      kptr=nlev
      call edgeVpack_nlyr(edge3,elem(ie)%desc,vtens(1,1,1,1,ie),2*nlev,kptr,3*nlev)
   end do
-  
-  
+
+
 #if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
@@ -1078,19 +1078,19 @@ contains
 #if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
-  
+
   do ie=nets,nete
      rspheremp     => elem(ie)%rspheremp
-     
+
      ! ===========================================================
      ! Unpack the edges for vgradp and vtens
      ! ===========================================================
      kptr=0
      call edgeVunpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie), nlev, kptr,3*nlev)
-     
+
      kptr=nlev
      call edgeVunpack_nlyr(edge3, elem(ie)%desc, vtens(1,1,1,1,ie), 2*nlev, kptr, 3*nlev)
-     
+
      ! ===========================================================
      ! Compute velocity and pressure tendencies for all levels
      ! ===========================================================
@@ -1100,14 +1100,14 @@ contains
               ptens(i,j,k,ie) = rspheremp(i,j)*ptens(i,j,k,ie)
               vtens1=rspheremp(i,j)*vtens(i,j,1,k,ie)
               vtens2=rspheremp(i,j)*vtens(i,j,2,k,ie)
-              
+
               ! lat-lon -> contra
               vtens(i,j,1,k,ie) = elem(ie)%Dinv(i,j,1,1)*vtens1 + elem(ie)%Dinv(i,j,1,2)*vtens2
               vtens(i,j,2,k,ie) = elem(ie)%Dinv(i,j,2,1)*vtens1 + elem(ie)%Dinv(i,j,2,2)*vtens2
            end do
         end do
      end do
-     
+
      if (dt2/=0) then
      do k=1,nlev
         ! ====================================================
@@ -1125,7 +1125,7 @@ contains
   end do
   call t_stopf('compute_and_apply_rhs')
   end subroutine compute_and_apply_rhs
-  
+
 
 
 

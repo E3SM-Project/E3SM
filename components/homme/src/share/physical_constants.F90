@@ -61,18 +61,22 @@ module physical_constants
   real (kind=real_kind), public            :: ginv         = 1.0_real_kind/g
   real (kind=real_kind), public, parameter :: omega0       = 7.292D-5   ! s^-1
   real (kind=real_kind), public            :: omega        = omega0
-  real (kind=real_kind), public, parameter :: Rgas         = 287.04D0        
+  real (kind=real_kind), public, parameter :: Rgas         = 287.04D0
   real (kind=real_kind), public, parameter :: Cp           = 1005.0D0
   real (kind=real_kind), public, parameter :: p0           = 100000.0D0 ! mbar
   real (kind=real_kind), public, parameter :: MWDAIR       = 28.966D0
   real (kind=real_kind), public, parameter :: Rwater_vapor = 461.50D0
   real (kind=real_kind), public, parameter :: Cpwater_vapor= 1870.0D0
   real (kind=real_kind), public, parameter :: kappa        = Rgas/Cp
-  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor	
+  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv   = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth0     = 1.0_real_kind/rearth0
   real (kind=real_kind), public            :: rrearth      = rrearth0
+
 #endif
+
+real (kind=real_kind), public :: scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
+real (kind=real_kind), public :: Lx, Ly, Sx, Sy, dx, dy, dx_ref, dy_ref
 
   real (kind=real_kind), public, parameter :: TREF = 288
 

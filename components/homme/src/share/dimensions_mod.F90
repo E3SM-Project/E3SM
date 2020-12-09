@@ -9,7 +9,7 @@ module dimensions_mod
   implicit none
   private
 
-! set MAX number of tracers.  actual number of tracers is a run time argument  
+! set MAX number of tracers.  actual number of tracers is a run time argument
 #ifdef CAM
 #else
 #ifdef QSIZE_D
@@ -29,7 +29,7 @@ module dimensions_mod
   integer, parameter, public :: nlev=PLEV
   integer, parameter, public :: nlevp=nlev+1
 
-  integer, parameter, public  :: max_elements_attached_to_node = 7 ! RRM meshes 
+  integer, parameter, public  :: max_elements_attached_to_node = 7 ! RRM meshes
 ! defaults for cubed sphere grids:
   integer, public  :: max_corner_elem               = 1  !  max_elements_attached_to_node-3
   integer, public  :: max_neigh_edges               = 8  !  4 + 4*max_corner_elem
@@ -37,6 +37,7 @@ module dimensions_mod
   public :: qsize,qsize_d
 
   integer, public :: ne
+  integer, public :: ne_x,ne_y   ! used for planar topology- number of elements in each direction
   integer, public :: nelem       ! total number of elements
   integer, public :: nelemd      ! number of elements per MPI task
   integer, public :: nelemdmax   ! max number of elements on any MPI task
@@ -55,4 +56,3 @@ contains
 
   end subroutine set_mesh_dimensions
 end module dimensions_mod
-

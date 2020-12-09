@@ -31,7 +31,9 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/cg_mod.F90
   ${SRC_SHARE}/control_mod.F90
   ${SRC_SHARE}/coordinate_systems_mod.F90
+  ${SRC_SHARE}/geometry_mod.F90
   ${SRC_SHARE}/cube_mod.F90
+  ${SRC_SHARE}/planar_mod.F90
   ${SRC_SHARE}/derivative_mod_base.F90
   ${SRC_SHARE}/dimensions_mod.F90
   ${SRC_SHARE}/dof_mod.F90
@@ -46,6 +48,7 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/ll_mod.F90
   ${SRC_SHARE}/mass_matrix_mod.F90
   ${SRC_SHARE}/mesh_mod.F90
+  ${SRC_SHARE}/planar_mesh_mod.F90
   ${SRC_SHARE}/sort_mod.F90
   ${SRC_SHARE}/metagraph_mod.F90
   ${SRC_SHARE}/metis_mod.F90
@@ -77,16 +80,16 @@ SET(EXEC_SOURCES ${SWEQX_SRCS} )
 
 # Set up defaults
 IF (NOT SWEQX_NP)
-  SET (SWEQX_NP 8) 
+  SET (SWEQX_NP 8)
 ENDIF ()
 IF (NOT SWEQX_PLEV)
-  SET (SWEQX_PLEV 4) 
+  SET (SWEQX_PLEV 4)
 ENDIF ()
 IF (NOT SWEQX_USE_PIO)
-  SET (SWEQX_USE_PIO FALSE) 
+  SET (SWEQX_USE_PIO FALSE)
 ENDIF ()
 IF (NOT SWEQX_USE_ENERGY)
-  SET (SWEQX_USE_ENERGY FALSE) 
+  SET (SWEQX_USE_ENERGY FALSE)
 ENDIF ()
 IF (NOT SWEQX_NC)
   SET (SWEQX_NC 4)
@@ -103,4 +106,3 @@ endmacro(sweqx_setup)
 
 sweqx_setup()
 createTestExec(sweqx sweqx ${SWEQX_NP} ${SWEQX_NC} ${SWEQX_PLEV} ${SWEQX_USE_PIO} ${SWEQX_USE_ENERGY} ${QSIZE_D})
-

@@ -26,7 +26,7 @@ module spacecurve_mod
 
   integer,public                              :: maxdim  ! dimensionality of entire space
   integer,public                              :: vcnt   ! visitation count
-  logical,private                             :: verbose=.FALSE. 
+  logical,private                             :: verbose=.FALSE.
 
   type (factor_t), private                  :: fact
 
@@ -35,6 +35,7 @@ module spacecurve_mod
   public :: PrintCurve
   public :: IsFactorable,IsLoadBalanced
   public :: genspacepart
+  public :: GilbertCurve
 
   ! Map (i,j) <-> SFC index in O(log ne) time. Unlike the above routines,
   ! nothing like a mesh(ne,ne) is allocated; these routines use O(log ne) memory
@@ -67,7 +68,7 @@ module spacecurve_mod
        ! finalization.
        sfcmap_test
 
-contains 
+contains
   !---------------------------------------------------------
   recursive function Cinco(l,type,ma,md,ja,jd) result(ierr)
 
@@ -822,12 +823,12 @@ contains
     integer  :: n
 
     integer  :: log2,tmp
-    ! 
+    !
     !  Find the log2 of input value
     !
     log2 = 1
     tmp =n
-    do while (tmp/2 .ne. 1) 
+    do while (tmp/2 .ne. 1)
        tmp=tmp/2
        log2=log2+1
     enddo
@@ -836,7 +837,7 @@ contains
   !---------------------------------------------------------
   function  IsLoadBalanced(nelem,npart)
 
-    implicit none 
+    implicit none
 
     integer        :: nelem,npart
 
@@ -846,7 +847,7 @@ contains
 
     tmp1 = nelem/npart
 
-    if(npart*tmp1 == nelem ) then 
+    if(npart*tmp1 == nelem ) then
        IsLoadBalanced=.TRUE.
     else
        IsLoadBalanced=.FALSE.
@@ -873,7 +874,7 @@ contains
   function Factor(num) result(res)
   ! note: this function is allocating memory in the 'fact' struct
   ! to avoid memory leaks, the calling program needs to deallocate
-  ! this array.  poor design choice. 
+  ! this array.  poor design choice.
 
     implicit none
     integer,intent(in)  :: num
@@ -950,7 +951,7 @@ contains
   !---------------------------------------------------------
   function IsFactorable(n)
 
-    implicit none 
+    implicit none
 
     integer,intent(in)  :: n
     type (factor_t)     :: fact
@@ -964,7 +965,7 @@ contains
        IsFactorable = .FALSE.
     endif
     deallocate(fact%factors)
-    
+
   end function IsFactorable
   !------------------------------------------------
   subroutine map(l)
@@ -984,12 +985,12 @@ contains
 
      end subroutine map
      !---------------------------------------------------------
-     subroutine GenSpaceCurve(Mesh) 
+     subroutine GenSpaceCurve(Mesh)
 
        implicit none
 
        integer,target,intent(inout) :: Mesh(:,:)
-       integer :: level,dim 
+       integer :: level,dim
 
        integer :: gridsize
 
@@ -1017,7 +1018,7 @@ contains
        deallocate(pos)
 
      end subroutine GenSpaceCurve
-     !------------------------------------------------------------------------------------------------------- 
+     !-------------------------------------------------------------------------------------------------------
      subroutine PrintCurve(Mesh)
        implicit none
        integer,target ::  Mesh(:,:)
@@ -1193,13 +1194,13 @@ contains
 
      end subroutine PrintCurve
 
-     !------------------------------------------------------------------------------------------------------- 
+     !-------------------------------------------------------------------------------------------------------
      subroutine genspacepart(GridEdge,GridVertex)
        use dimensions_mod, only : npart
        use gridgraph_mod, only : gridedge_t, gridvertex_t
 
 
-       implicit none 
+       implicit none
 
        type (GridVertex_t), intent(inout) :: GridVertex(:)
        type (GridEdge_t),   intent(inout) :: GridEdge(:)
@@ -1220,7 +1221,7 @@ contains
        ! 1 ... s1  s2 ... nelem
        !
        !  s1 = extra*(nelemd+1)         (count be 0)
-       !  s2 = s1+1 
+       !  s2 = s1+1
        !
        ! First region gets nelemd+1 elements per Processor
        ! Second region gets nelemd elements per Processor
@@ -1308,7 +1309,7 @@ contains
     integer, intent(in) :: idxs, idxe
     integer, target, intent(inout) :: pos(:,:)
     integer :: index, status
-    
+
     s%pos2i = .false.
     s%idxs = idxs
     s%idxe = idxe
@@ -1630,7 +1631,7 @@ contains
           case (3); reg = 17
           case (4); reg = 16
           end select
-       end select       
+       end select
     end select
   end function sfcmap_pos2region
 
@@ -1809,5 +1810,120 @@ contains
        call sfcmap_finalize(sfcmap)
     end do
   end subroutine sfcmap_test
+
+
+  ! Generalized Hilbert ('gilbert') space-filling curve for arbitrary-sized
+  ! 2D rectangular grids.
+  ! Follows algorithm from https://github.com/jakubcerveny/gilbert
+
+  subroutine GilbertCurve(Mesh)
+
+    use dimensions_mod, only : ne_x, ne_y
+
+    implicit none
+
+    integer,target,intent(inout) :: Mesh(:,:)
+    integer :: global_index_ctr
+
+    global_index_ctr = 0
+    if (ne_x >= ne_y) then
+        call gilbert(Mesh, 0, 0, ne_x, 0, 0, ne_y, global_index_ctr)
+    else
+        call gilbert(Mesh, 0, 0, 0, ne_y, ne_x, 0, global_index_ctr)
+    end if
+
+  end subroutine GilbertCurve
+
+  recursive subroutine gilbert(Mesh, ix, iy, iax, iay, ibx, iby, global_index_ctr)
+
+    use dimensions_mod, only : ne_x, ne_y
+
+    implicit none
+
+    integer, intent(in) :: ix,iy,iax,iay,ibx,iby
+    integer, intent(inout) :: global_index_ctr
+    integer,target,intent(inout) :: Mesh(:,:)
+
+    integer :: x, y, ax, ay, bx, by
+    integer :: dax, day, dbx, dby, width, height, width2, height2, ax2, bx2, ay2, by2
+    integer :: ii
+
+    x=ix; y=iy; ax=iax; ay=iay; bx=ibx; by=iby ! we want the values here, since we are recursing
+
+
+    width = abs(ax + ay)
+    height = abs(bx + by)
+
+    ! ax/ay are major direction, bx/by are minor direction
+    ! merge gives 0 if ax==0 and sign(1,ax) if ax /=0
+    ! end result is 1 if ax>0, -1 if ax<0 and 0 if ax=0
+    dax = merge(0,sign(1,ax),ax==0)
+    day = merge(0,sign(1,ay),ay==0)
+    dbx = merge(0,sign(1,bx),bx==0)
+    dby = merge(0,sign(1,by),by==0)
+
+    !print *,x, y, ax, ay, bx, by, dax,day,dbx,dby
+
+    !trivial row fill
+    if (height == 1) then
+      do ii=0,width-1,1
+        ! print *, x,y,global_index_ctr
+          Mesh(x+1,y+1) = global_index_ctr ! Fortran arrays are indexed starting with 1
+          global_index_ctr = global_index_ctr + 1
+          x = x + dax
+          y = y + day
+      end do
+      return
+    end if
+
+    ! trivial column fill
+    if (width == 1) then
+      do ii=0,height-1,1
+        ! print *, x,y,global_index_ctr
+          Mesh(x+1,y+1) = global_index_ctr ! Fortran arrays are indexed starting with 1
+          global_index_ctr = global_index_ctr + 1
+          x = x + dbx
+          y = y + dby
+      end do
+      return
+    end if
+
+! This is required to get "floor" division ie always rounds DOWN to nearest int, even for negative numbers
+    ax2 = floor(real(ax)/2.0D0)
+    ay2 = floor(real(ay)/2.0D0)
+    bx2 = floor(real(bx)/2.0D0)
+    by2 = floor(real(by)/2.0D0)
+
+    width2 = abs(ax2 + ay2)
+    height2 = abs(bx2 + by2)
+
+    if (2*width > 3*height) then
+      ! if width2 is odd, shift since even steps are prefered
+        if ((MOD(width2,2) /= 0) .and. (width > 2)) then
+             ax2 = ax2 + dax
+             ay2 = ay2 + day
+        end if
+
+        !long case: split in two parts only
+        !print *,"call 1"
+        call gilbert(Mesh, x, y, ax2, ay2, bx, by, global_index_ctr)
+        !print *,"call 2"
+        call gilbert(Mesh, x+ax2, y+ay2, ax-ax2, ay-ay2, bx, by, global_index_ctr)
+    else
+       ! if height2 is odd, shift since even steps are prefered
+        if ((MOD(height2,2) /= 0) .and. (height > 2)) then
+            bx2 = bx2 + dbx
+            by2 = by2 + dby
+        end if
+        ! standard case: one step up, one long horizontal, one step down
+        !print *,"call 3"
+        call gilbert(Mesh, x, y, bx2, by2, ax2, ay2, global_index_ctr)
+        !print *,"call 4"
+        call gilbert(Mesh, x+bx2, y+by2, ax, ay, bx-bx2, by-by2, global_index_ctr)
+        !print *,"call 5"
+        call gilbert(Mesh, x+(ax-dax)+(bx2-dbx), y+(ay-day)+(by2-dby),-bx2, -by2, -(ax-ax2), -(ay-ay2), global_index_ctr)
+    end if
+
+  end subroutine gilbert
 
 end module spacecurve_mod

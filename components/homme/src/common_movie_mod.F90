@@ -114,7 +114,7 @@ module common_movie_mod
   integer, parameter :: vartype(varcnt)=(/nf_double, nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
                                           nf_int,    nf_double,nf_double,nf_double,nf_double,& !corners:T
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w
-                                          nf_double, nf_double, nf_double,nf_double,& 
+                                          nf_double, nf_double, nf_double,nf_double,&
                                           nf_double, nf_double,nf_double,nf_double,nf_double,& !Q:geo
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !omega:ilev
                                           nf_double, nf_double,nf_double,nf_double,nf_double/)
@@ -133,30 +133,32 @@ module common_movie_mod
                                                  'ilev        ',&
                                                  'nelem       ',&
                                                  'time        ',&
-                                                 'nsubelements'/)  
+                                                 'nsubelements'/)
 #else
-  integer, parameter :: varcnt = 10
+  integer, parameter :: varcnt = 12
   integer, parameter :: maxdims=4
-  character*(*),parameter::dimnames(maxdims)=(/'ncol ','nlev ','nelem','time '/)  
+  character*(*),parameter::dimnames(maxdims)=(/'ncol ','nlev ','nelem','time '/)
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,4,0,0,  &  !ps
                                                                1,2,4,0,  &  !geop
                                                                1,2,4,0,  &  !u
                                                                1,2,4,0,  &  !v
-                                                               1,0,0,0,  &  !lon
-                                                               1,0,0,0,  &  !lat
+                                                               1,0,0,0,  &  !lon (x for planar)
+                                                               1,0,0,0,  &  !lat (y for planar)
                                                                4,0,0,0,  &  ! time
                                                                1,2,4,0,  &  ! zeta
                                                                1,2,4,0,  &  ! div
+                                                               1,2,4,0,  &  ! eta = absolute vorticity = zeta + coriolis
+                                                               1,2,4,0,  &  ! pv
                                                                1,0,0,0/),&  ! area
                                                                shape=(/maxdims,varcnt/))
   character*(*),parameter::varnames(varcnt)=(/'ps       ','geop     ','u        ','v        ',&
                                               'lon      ','lat      ','time     ',&
-                                              'zeta     ','div      ','area     '/)
+                                              'zeta     ','div      ','eta      ','pv       ','area     '/)
   integer, parameter :: vartype(varcnt)=(/nf_double,nf_double,nf_double,nf_double,nf_double,&
-       nf_double,nf_double,nf_double,nf_double,nf_double/)
+       nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,nf_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
                                               .true.,.true.,.true.,&
-                                              .false.,.false.,.true./)
+                                              .false.,.false.,.false.,.false.,.true./)
 #endif
 
   ! end of analysis_nl namelist variables
@@ -183,11 +185,11 @@ contains
   end subroutine setvarnames
 
 !
-! This function returns the next step number in which an output (either restart or movie) 
+! This function returns the next step number in which an output (either restart or movie)
 ! needs to be written.
 !
   integer function nextoutputstep(tl)
-    use time_mod, only : Timelevel_t, nendstep  
+    use time_mod, only : Timelevel_t, nendstep
     use control_mod, only : restartfreq
 
     type(timelevel_t), intent(in) :: tl
@@ -207,7 +209,7 @@ contains
     end do
     nextoutputstep=minval(nstep)
     if(restartfreq>0) then
-       nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))    
+       nextoutputstep=min(nextoutputstep,tl%nstep+restartfreq-MODULO(tl%nstep,restartfreq))
     end if
  end function nextoutputstep
 

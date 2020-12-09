@@ -46,11 +46,11 @@ module control_mod
 
 
   integer, public  :: tstep_type= 5                           ! preqx timestepping options
-  integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model) 
+  integer, public  :: rk_stage_user  = 0                      ! number of RK stages (shallow water model)
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
-                                              
+
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
@@ -69,7 +69,7 @@ module control_mod
   integer, public :: dt_remap_factor = -1, dt_tracer_factor = -1
 
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
-                                          ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
+                                          ! interspace a lf-trapazoidal step every LFTfreq leapfrogs
                                           ! 0 = disabled
 
 ! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
@@ -80,7 +80,7 @@ module control_mod
 !                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
  integer, public :: vert_remap_q_alg = 0
 
-! advect theta 0: conservation form 
+! advect theta 0: conservation form
 !              1: expanded divergence form (less noisy, non-conservative)
  integer, public :: theta_advect_form = 0
 
@@ -109,26 +109,30 @@ module control_mod
                                                             ! Use (3) if zoltan2 is enabled.
 
   integer              , public :: partmethod     ! partition methods
-  character(len=MAX_STRING_LEN)    , public :: topology       ! options: "cube" is supported
-  character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"  
+  character(len=MAX_STRING_LEN)    , public :: topology = "cube"       ! options: "cube", "plane"
+  character(len=MAX_STRING_LEN)    , public :: geometry = "sphere"      ! options: "sphere", "plane"
+  character(len=MAX_STRING_LEN)    , public :: test_case      ! options: if cube: "swtc1","swtc2",or "swtc6"
   integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
-  integer              , public :: runtype 
-  integer              , public :: timerdetail 
-  integer              , public :: numnodes 
+  integer              , public :: runtype
+  integer              , public :: timerdetail
+  integer              , public :: numnodes
   logical              , public :: uselapi
-  character(len=MAX_STRING_LEN)    , public :: restartfile 
+  character(len=MAX_STRING_LEN)    , public :: restartfile
   character(len=MAX_STRING_LEN)    , public :: restartdir
+
+  ! flag used for "slice" planar tests (no variation in y-dir)
+    logical, public :: planar_slice
 
 ! namelist variable set to dry,notdry,moist
 ! internally the code should use logical "use_moisture"
-  character(len=MAX_STRING_LEN)    , public :: moisture  
+  character(len=MAX_STRING_LEN)    , public :: moisture
 
   integer, public  :: use_cpstar=0          ! use cp or cp* in thermodynamics
   logical, public  :: use_moisture=.false.  ! use Q(:,:,:,1) to compute T_v
 
-  
+
   integer              , public :: maxits         ! max iterations of solver
   real (kind=real_kind), public :: tol            ! solver tolerance (convergence criteria)
   integer              , public :: debug_level    ! debug level of CG solver
@@ -172,7 +176,7 @@ module control_mod
   !            scalar coefficient within each element
   !            hypervisc_scaling=0
   !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
-  ! (3) tensor HV var-res grids 
+  ! (3) tensor HV var-res grids
   !            tensor within each element:
   !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
   !            hypervis_power=0
@@ -194,7 +198,7 @@ module control_mod
   integer, public, parameter :: seast = 6
   integer, public, parameter :: nwest = 7
   integer, public, parameter :: neast = 8
-  
+
   logical, public :: disable_diagnostics  = .FALSE.
 
   ! Physgrid parameters
@@ -208,7 +212,7 @@ module control_mod
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! generic test case parameter - can be used by any test case to define options
-  integer, public :: sub_case = 1                  
+  integer, public :: sub_case = 1
 
   real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
   real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
@@ -235,7 +239,7 @@ module control_mod
 
   ! for dcmip 2014 test 4:
   integer,         public :: dcmip4_moist     = 1
-  real(real_kind), public :: dcmip4_X         = 1.0d0 
+  real(real_kind), public :: dcmip4_X         = 1.0d0
 
   ! for dcmip 2016 test 2
   integer, public :: dcmip16_prec_type = 0;
@@ -485,7 +489,7 @@ contains
              write(iulog,*) 'If dtime is set to <=0, then tstep must be >0.'
           end if
           if (abort_in) call abortmp('timestep_make_parameters_consistent: input error')
-          return          
+          return
        end if
     end if
 

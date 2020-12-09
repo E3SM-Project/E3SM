@@ -13,7 +13,7 @@ module parallel_mod
 !
   implicit none
 
-  public 
+  public
 #ifdef _MPI
 #include <mpif.h>
 #endif
@@ -55,14 +55,14 @@ module parallel_mod
 !    integer :: node_comm                  ! local communicator of all procs per node
 !    integer :: node_rank                  ! local rank in node_comm
 !    integer :: node_nprocs                ! local rank in node_comm
-    logical :: masterproc                
+    logical :: masterproc
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
 
 #ifdef CAM
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
 #endif
-  integer, parameter :: nrepro_vars=MAX(11,nlev*qsize_d)
+  integer, parameter :: nrepro_vars=MAX(12,nlev*qsize_d)
   real(kind=8), public, allocatable :: global_shared_buf(:,:)
   real(kind=8), public :: global_shared_sum(nrepro_vars)
 
@@ -115,7 +115,7 @@ contains
   subroutine init_par(par,npes_in,npes_stride)
 #ifdef CAM
     use spmd_utils, only : mpicom
-#endif      
+#endif
     integer, intent(in), optional ::  npes_in
     integer, intent(in), optional ::  npes_stride
     type(parallel_t), intent(out) ::  par
@@ -141,7 +141,7 @@ contains
     end if
 
     par%root     = 0
-    
+
 #ifdef CAM
     call MPI_comm_size(mpicom,npes_cam,ierr)
     if(present(npes_in)) then
@@ -187,7 +187,7 @@ contains
     integer(kind=int_kind)                              :: namelen,i
     integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
     integer :: node_color
-           
+
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
        ! and LAM MPI's allreduce does not accept on MPI_REAL8
@@ -202,14 +202,14 @@ contains
     MPI2real_t   = MPI_2DOUBLE_PRECISION
 
     MPIinteger_t = MPI_INTEGER
-    MPIchar_t    = MPI_CHARACTER 
+    MPIchar_t    = MPI_CHARACTER
     MPILogical_t = MPI_LOGICAL
 
-    ! ================================================ 
-    !  Determine where this MPI process is running 
-    !   then use this information to determined the 
-    !   number of MPI processes per node    
-    ! ================================================ 
+    ! ================================================
+    !  Determine where this MPI process is running
+    !   then use this information to determined the
+    !   number of MPI processes per node
+    ! ================================================
 
     my_name(:) = ''
     call MPI_Get_Processor_Name(my_name,namelen,ierr)
@@ -218,19 +218,19 @@ contains
     do i=1,par%nprocs
        the_names(i)(:) =  ''
     enddo
-    ! ================================================ 
-    !   Collect all the machine names 
-    ! ================================================ 
+    ! ================================================
+    !   Collect all the machine names
+    ! ================================================
     call MPI_Allgather(my_name,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER, &
            the_names,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,par%comm,ierr)
 
     ! ======================================================================
-    !   Calculate how many other MPI processes are on my node 
+    !   Calculate how many other MPI processes are on my node
     ! ======================================================================
     node_color=0
     nmpi_per_node = 0
     do i=1,par%nprocs
-      if( TRIM(ADJUSTL(my_name)) .eq. TRIM(ADJUSTL(the_names(i)))   ) then 
+      if( TRIM(ADJUSTL(my_name)) .eq. TRIM(ADJUSTL(the_names(i)))   ) then
         nmpi_per_node = nmpi_per_node + 1
         if (node_color==0) node_color=i
       endif
@@ -244,14 +244,14 @@ contains
 !    call MPI_comm_size(par%node_comm,par%node_nprocs,ierr)
 
     ! =======================================================================
-    !  Verify that everybody agrees on this number otherwise do not do 
+    !  Verify that everybody agrees on this number otherwise do not do
     !  the multi-level partitioning
     ! =======================================================================
     call MPI_Allreduce(nmpi_per_node,tmp_min,1,MPIinteger_t,MPI_MIN,par%comm,ierr)
     call MPI_Allreduce(nmpi_per_node,tmp_max,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
     if (par%masterproc) write(iulog,*)'number of MPI processes per node: min,max=',&
          tmp_min,tmp_max
-    if(tmp_min .ne. tmp_max) then 
+    if(tmp_min .ne. tmp_max) then
       if (par%masterproc) write(iulog,*)'initmp:  disagrement accross nodes for nmpi_per_node'
       nmpi_per_node = 1
       PartitionForNodes=.FALSE.
@@ -261,13 +261,13 @@ contains
 
 
     deallocate(the_names)
- 
+
 #else
     nmpi_per_node     =  2
     PartitionForNodes = .TRUE.
 #endif
     !===================================================
-    !  Kind of lame but set this variable to be 1 based 
+    !  Kind of lame but set this variable to be 1 based
     !===================================================
     iam = par%rank+1
 
@@ -312,24 +312,24 @@ contains
 #endif
 #endif
   end subroutine abortmp
-       
+
   ! =========================================================
   ! haltmp:
   !
-  !> stops the parallel (message passing) environment 
+  !> stops the parallel (message passing) environment
   !! and prints a message.
   !
-  !> Print the message and call MPI_finalize. 
+  !> Print the message and call MPI_finalize.
   !! @param[in] string The message to be printed.
   ! =========================================================
   subroutine haltmp(string)
-         
+
 #ifdef _MPI
   integer info
 #endif
 
   character*(*) string
-  if(iam .eq. 1) then 
+  if(iam .eq. 1) then
     write(*,*) string
   endif
 
@@ -342,8 +342,8 @@ end subroutine haltmp
 
 ! =====================================
 ! syncmp:
-! 
-! sychronize message passing domains 
+!
+! sychronize message passing domains
 !
 ! =====================================
   subroutine syncmp(par)
@@ -366,7 +366,7 @@ end subroutine haltmp
 
 ! =====================================
 ! syncmp_comm:
-! 
+!
 ! same as above, but allow user to specify communicator
 !
 ! =====================================
@@ -399,11 +399,11 @@ end subroutine haltmp
     real(kind=real_kind),intent(in)  :: variable(:)
     type (parallel_t),intent(in)     :: par
     real(kind=real_kind)             :: res
-         
+
     real(kind=real_kind)             :: local_sum
 #ifdef _MPI
     integer                          :: ierr
-#endif    
+#endif
 
     local_sum=MINVAL(variable)
 #ifdef _MPI
@@ -414,7 +414,7 @@ end subroutine haltmp
     res = local_sum
 #endif
   end function pmin_1d
-  
+
   ! =============================================
   ! pmax_1d:
   ! 1D version of the parallel MAX
@@ -425,11 +425,11 @@ end subroutine haltmp
     real(kind=real_kind),intent(in)  :: variable(:)
     type (parallel_t),intent(in)     :: par
     real(kind=real_kind)             :: res
-    
+
     real(kind=real_kind)             :: local_sum
 #ifdef _MPI
     integer                          :: ierr
-#endif    
+#endif
     local_sum=MAXVAL(variable)
 #ifdef _MPI
     call MPI_Allreduce(local_sum,res,1,MPIreal_t, &
@@ -449,11 +449,11 @@ end subroutine haltmp
     real(kind=real_kind),intent(in)  :: variable(:)
     type (parallel_t),intent(in)     :: par
     real(kind=real_kind)             :: res
-     
+
     real(kind=real_kind)             :: local_sum
 #ifdef _MPI
     integer                          :: ierr
-#endif    
+#endif
 
     local_sum=SUM(variable)
 #ifdef _MPI
@@ -464,6 +464,6 @@ end subroutine haltmp
 #endif
 
   end function psum_1d
-  
+
 
 end module parallel_mod

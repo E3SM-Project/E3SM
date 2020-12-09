@@ -10,13 +10,13 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, omp_set_num_threads
     ! --------------------------------
-    use control_mod, only : restartfreq, topology, partmethod, cubed_sphere_map
+    use control_mod, only : restartfreq, topology, geometry, partmethod, cubed_sphere_map
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
     use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
 	GlobalUniqueCols
-    ! -------------------------------- 
+    ! --------------------------------
     use time_mod, only : time_at, nmax
     ! --------------------------------
     use quadrature_mod, only :  test_gauss, test_gausslobatto, quadrature_t, gausslobatto
@@ -25,16 +25,25 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
+
     use mesh_mod, only : MeshUseMeshFile
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
+    use cube_mod,  only : CubeEdgeCount , CubeElemCount, CubeTopology
     ! --------------------------------
     use mesh_mod, only :   MeshSetCoordinates,      &
                            MeshCubeTopology,  &
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
     ! --------------------------------
-    use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
-        set_area_correction_map2
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates
+    ! --------------------------------
+    use geometry_mod, only : set_area_correction_map0, set_area_correction_map2
+    ! --------------------------------
+  use planar_mod,  only : PlaneEdgeCount , PlaneElemCount, PlaneTopology
+  ! --------------------------------
+  use planar_mesh_mod, only :   PlaneMeshSetCoordinates,      &
+                         MeshPlaneTopology
+  ! --------------------------------
+  use planar_mod, only : plane_init_atomic, plane_set_corner_coordinates
 
     ! --------------------------------
     use edge_mod, only : initedgebuffer, edge_g
@@ -72,15 +81,15 @@ contains
     ! --------------------------------
     use params_mod, only : SFCURVE
     ! ---------------------------------
-    use domain_mod, only: domain1d_t, decompose 
+    use domain_mod, only: domain1d_t, decompose
     ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
     ! --------------------------------
-    use physical_constants, only : dd_pi
+    !use physical_constants, only : dd_pi
     ! -------------------------------
-    use coordinate_systems_mod, only : sphere_tri_area
+    !use coordinate_systems_mod, only : sphere_tri_area
     ! --------------------------------
     use common_io_mod, only : homme_pio_init
     ! --------------------------------
@@ -89,12 +98,12 @@ contains
     implicit none
 #ifdef _MPI
 ! _EXTERNAL
-#include <mpif.h> 
+#include <mpif.h>
 #endif
-!   G95  "pointer attribute conflicts with INTENT attribute":  
+!   G95  "pointer attribute conflicts with INTENT attribute":
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-        
+
     type (EdgeBuffer_t)           :: edge1
     type (EdgeBuffer_t)           :: edge2
     type (EdgeBuffer_t)           :: edge3
@@ -162,20 +171,20 @@ contains
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
 
-
-    if (topology=="cube") then
-
        if (par%masterproc) then
-          write(6,*)"creating cube topology..."
+          write(6,*)"creating topology..."
        end if
-       
+
        if (MeshUseMeshFile) then
           nelem      = MeshCubeElemCount()
-          nelem_edge = MeshCubeEdgeCount() 
-       else
+          nelem_edge = MeshCubeEdgeCount()
+       else if (topology=="cube") then
           nelem      = CubeElemCount()
-          nelem_edge = CubeEdgeCount() 
-       end if
+          nelem_edge = CubeEdgeCount()
+        else if (topology=="plane") then
+          nelem      = PlaneElemCount()
+          nelem_edge = PlaneEdgeCount()
+        end if
 
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
         if  (approx_elements_per_task < 1.0D0) then
@@ -186,7 +195,7 @@ contains
 
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
-       
+
        do j =1,nelem
           call allocate_gridvertex_nbrs(GridVertex(j))
        end do
@@ -195,19 +204,24 @@ contains
           if (par%masterproc) then
              write(6,*)"Set up grid vertex from mesh..."
           end if
+          if (topology=="cube") then
           call MeshCubeTopology(GridEdge,GridVertex)
-       else 
+        else if  (topology=="plane") then
+          call MeshPlaneTopology(GridEdge,GridVertex)
+        end if
+       else
+         if (topology=="cube") then
           call CubeTopology(GridEdge,GridVertex)
+        else if (topology=="plane") then
+         call PlaneTopology(GridEdge,GridVertex)
+       end if
        end if
 
        if(par%masterproc) write(6,*)"...done."
-       
-    end if
 
     if(par%masterproc) write(6,*)"partitioning graph..."
 
-
-    if(partmethod .eq. SFCURVE) then 
+    if(partmethod .eq. SFCURVE) then
        call genspacepart(GridEdge,GridVertex)
     else
        call genmetispart(GridEdge,GridVertex)
@@ -234,11 +248,15 @@ contains
     allocate(Schedule(1))
 
     ! ====================================================
-    !  Generate the communication graph 
+    !  Generate the communication graph
     ! ====================================================
     !JMD call initMetaGraph(iam,MetaVertex(1),TailPartition,HeadPartition,GridVertex,GridEdge)
 
+    if(par%masterproc) write(6,*)"initialize MetaGraph..."
+
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
+
+    if(par%masterproc) write(6,*)"...done."
 
     nelemd = LocalElemCount(MetaVertex(1))
 #ifdef _MPI
@@ -250,12 +268,16 @@ contains
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
 
+    if(par%masterproc) write(6,*)"generate communication schedule..."
+
     ! ====================================================
     !  Generate the communication schedule
     ! ====================================================
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
     !call PrintSchedule(Schedule(1))
-    
+
+    if(par%masterproc) write(6,*)"...done."
+
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
@@ -273,34 +295,64 @@ contains
 
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
-    if (topology=="cube") then
+
        ! ========================================================================
-       ! Note it is more expensive to initialize each individual spectral element 
+       ! Note it is more expensive to initialize each individual spectral element
        ! ========================================================================
-       if(par%masterproc) write(6,*)"initializing cube elements..."
+       if(par%masterproc) write(6,*)"initializing elements..."
 
        if (MeshUseMeshFile) then
+         if (geometry=="sphere") then
           call MeshSetCoordinates(elem)
+        else if  (geometry=="plane") then
+           call PlaneMeshSetCoordinates(elem)
+           end if
        else
+         if (geometry=="sphere") then
           do ie=1,nelemd
              call set_corner_coordinates(elem(ie))
           enddo
+        else if (geometry=="plane") then
+          do ie=1,nelemd
+             call plane_set_corner_coordinates(elem(ie))
+          enddo
+         end if
           !call assign_node_numbers_to_elem(elem, GridVertex)
        endif
 
+       if (geometry=="sphere") then
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
        enddo
-       if(par%masterproc) write(6,*)"...done."
-    end if
+     else if (geometry=="plane") then
+       do ie=1,nelemd
+          call plane_init_atomic(elem(ie),gp%points)
+       enddo
+      end if
 
-    ! This routine does not check whether gp is init-ed.
-    if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
-       call set_area_correction_map2(elem, nelemd, par, gp)
-    endif
+       if(par%masterproc) write(6,*)"...done."
+
+       ! =================================================================
+       ! Initialize mass_matrix
+       ! =================================================================
+
+       call mass_matrix(par,elem)
+
+       ! global area correction (default for cubed-sphere meshes)
+       if( cubed_sphere_map == 0 ) then
+          call set_area_correction_map0(elem, nelemd, par, gp)
+       endif
+
+       ! Epsilon bubble correction (default for RRM meshes).
+       if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
+          call set_area_correction_map2(elem, nelemd, par, gp)
+       endif
 
     deallocate(gp%points)
     deallocate(gp%weights)
+
+    if(par%masterproc) write(6,*) 're-running mass_matrix'
+    call mass_matrix(par,elem)
 
     ! =================================================================
     ! Run the checksum to verify communication schedule
@@ -308,22 +360,17 @@ contains
 
     !call testchecksum(elem,par,GridEdge)  ! broken
 
-    ! =================================================================
-    ! Initialize mass_matrix
-    ! =================================================================
-
-    call mass_matrix(par,elem)
 
     ! =================================================================
-    ! Determine the global degree of freedome for each gridpoint 
+    ! Determine the global degree of freedome for each gridpoint
     ! =================================================================
 
     call global_dof(par,elem)
 
     ! =================================================================
-    ! Create Unique Indices 
+    ! Create Unique Indices
     ! =================================================================
-    
+
     do ie=1,nelemd
        call CreateUniqueIndex(elem(ie)%GlobalId,elem(ie)%gdofP,elem(ie)%idxP)
     enddo
@@ -367,7 +414,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    
+
     call t_stopf('init')
   end subroutine init
 

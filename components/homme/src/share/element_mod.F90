@@ -34,14 +34,19 @@ module element_mod
      integer(kind=int_kind) :: GlobalId      ! global element numbering independent of MPI decomposition
 
      ! Coordinate values of element points
-     type (spherical_polar_t) :: spherep(np,np)                       ! Spherical coords of GLL points
+     type (spherical_polar_t) :: spherep(np,np)                       ! Spherical or physical coords of GLL points
+     ! EVENTUALLY HERE spherical_polar_t should become cartesian3D_t
+     ! However, this breaks a bunch of code that expects spherep to be spherical_polar_t
+     ! So instead we will let lat=y, lon=x, r=z=0
+     ! This is an ugly hack that we can fix once the "planar" geometry code can handle arbitrary geometries/topologies
 
      ! Equ-angular gnomonic projection coordinates
-     type (cartesian2D_t)     :: cartp(np,np)                         ! gnomonic coords of GLL points
-     type (cartesian2D_t)     :: corners(4)                           ! gnomonic coords of element corners
+     type (cartesian2D_t)     :: cartp(np,np)                         ! gnomonic or reference coords of GLL points
+     type (cartesian2D_t)     :: corners(4)                           ! gnomonic or reference coords of element corners
 
      ! 3D cartesian coordinates
-     type (cartesian3D_t)     :: corners3D(4)
+     type (cartesian3D_t)     :: corners3D(4)                         ! Physical coords of corners
+
 
      ! Element diagnostics
      real (kind=real_kind)    :: area                                 ! Area of element
@@ -65,8 +70,8 @@ module element_mod
      real (kind=real_kind)    :: metinv(np,np,2,2)                    ! metric tensor on velocity and pressure grid
      real (kind=real_kind)    :: metdet(np,np)                        ! g = SQRT(det(g_ij)) on velocity and pressure grid
      real (kind=real_kind)    :: rmetdet(np,np)                       ! 1/metdet on velocity pressure grid
-     real (kind=real_kind)    :: D(np,np,2,2)                         ! Map covariant field on cube to vector field on the sphere
-     real (kind=real_kind)    :: Dinv(np,np,2,2)                      ! Map vector field on the sphere to covariant v on cube
+     real (kind=real_kind)    :: D(np,np,2,2)                         ! Map covariant field on cube or reference plane to vector field on the sphere or physical plane
+     real (kind=real_kind)    :: Dinv(np,np,2,2)                      ! Map vector field on the sphere or physical plane to covariant v on cube or reference plane
 
 
      ! Mass flux across the sides of each sub-element.
@@ -103,23 +108,27 @@ module element_mod
      !  |    (1,1,1)     |                |              |  (4,1,1)   |
      !  ---------------------------------------------------------------
      !          First Coordinate ------->
+
+
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.
+     ! This is just "identity" for plane
+
      real (kind=real_kind)    :: vec_sphere2cart(np,np,3,2)
 
-     ! Mass matrix terms for an element on a cube face
+     ! Mass matrix terms for an element on a cube or reference face
      real (kind=real_kind)    :: mp(np,np)                            ! mass matrix on v and p grid
      real (kind=real_kind)    :: rmp(np,np)                           ! inverse mass matrix on v and p grid
 
      ! Mass matrix terms for an element on the sphere
      ! This mass matrix is used when solving the equations in weak form
-     ! with the natural (surface area of the sphere) inner product
+     ! with the natural (surface area of the sphere or plane) inner product
      real (kind=real_kind)    :: spheremp(np,np)                      ! mass matrix on v and p grid
      real (kind=real_kind)    :: rspheremp(np,np)                     ! inverse mass matrix on v and p grid
 
      integer(kind=long_kind)  :: gdofP(np,np)                         ! global degree of freedom (P-grid)
 
-     real (kind=real_kind)    :: fcor(np,np)                          ! Coreolis term
+     real (kind=real_kind)    :: fcor(np,np)                          ! Coriolis term
 
      type (index_t) :: idxP
      integer :: FaceNum
@@ -259,7 +268,7 @@ contains
 
 
 ! this should go in openACC's element_state.F90, but it cant because that
-! module doesn't know about element_t.  
+! module doesn't know about element_t.
 ! LB: this should go in prim_driver_mod in preqx_acc, and that module
 !     should define its own version of prim_init1, which would be pretty
 !     much the same as the version in prim_driver_base, with the addition
@@ -280,9 +289,9 @@ contains
     allocate( derived_divdp_proj       (np,np,nlev,nelemd)                    )
     do ie = 1 , nelemd
       elem(ie)%state%Qdp                 => state_Qdp                (:,:,:,:,:,ie)
-      elem(ie)%derived%vn0               => derived_vn0              (:,:,:,:,ie)  
-      elem(ie)%derived%divdp             => derived_divdp            (:,:,:,ie)    
-      elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)    
+      elem(ie)%derived%vn0               => derived_vn0              (:,:,:,:,ie)
+      elem(ie)%derived%divdp             => derived_divdp            (:,:,:,ie)
+      elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)
     enddo
 #endif
   end subroutine setup_element_pointers
