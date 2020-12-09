@@ -65,6 +65,7 @@ public:
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 protected:
 
+  void register_groups ();
   void init_atm_inputs ();
   void inspect_atm_dag ();
 #ifdef SCREAM_DEBUG

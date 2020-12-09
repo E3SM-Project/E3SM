@@ -44,12 +44,25 @@ namespace scream
  *     fields, it should make sure to set itself as customer/provider of
  *     the field. The methods add_me_as_provider/customer can be used on the
  *     input field to achieve this result.
+ *   - An AP can claim to require or update a group of fields. This can be useful
+ *     if the AP performs the *same* action on a bunch of fields, with no
+ *     knowledge of what fields are (e.g., advect them, or apply fix/limiter).
+ *     For each group, the AP must specify the group name and the grid name.
+ *     If the same group is needed on multiple grids, the AP will issue a separate
+ *     request for each grid. An AP that needs this feature must override the
+ *     get_X_groups and the set_X_groups (with X=required and/or updated).
+ *     Notice that it makes no sense to have computed_groups: if an AP computes
+ *     a group of fields that are not an input (i.e., not updated fields), then
+ *     it must know the names and layouts of the fields, which means it can handle
+ *     all these fields directly in [set,get]_computed_fields.
  */
 
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using TimeStamp = util::TimeStamp;
+  using TimeStamp       = util::TimeStamp;
+  using ci_string       = ekat::CaseInsensitiveString;
+  using ci_string_pair  = std::pair<ci_string,ci_string>; // Group and grid names
 
   virtual ~AtmosphereProcess () = default;
 
@@ -103,23 +116,46 @@ public:
   // device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template function 'get_reshaped_view' (see field.hpp for details).
-  // Note: this method will be called *after* set_grid, but *before* initialize.
+  // Note: this method will be called *after* set_grids, but *before* initialize.
   //       You are *guaranteed* that the view in the Field f is allocated by now.
   // Note: it would be tempting to add this process as provider/customer right here.
   //       However, if this process is of type Group, we don't really want to add it
-  //       as provider/customer. The group is just a 'design layer', and the stored processes
-  //       are the actuall providers/customers.
+  //       as provider/customer. The group is just a 'design layer', and the stored
+  //       processes are the actuall providers/customers.
   void set_required_field (const Field<const Real>& f) {
-    ekat::error::runtime_check(requires(f.get_header().get_identifier()),
-                         "Error! This atmosphere process does not require this field. "
-                         "Something is wrong up the call stack. Please, contact developers.\n");
+    ekat::error::runtime_check(
+        requires(f.get_header().get_identifier()),
+        "Error! This atmosphere process does not require this field. "
+        "Something is wrong up the call stack. Please, contact developers.\n");
     set_required_field_impl (f);
   }
   void set_computed_field (const Field<Real>& f) {
-    ekat::error::runtime_check(computes(f.get_header().get_identifier()),
-                         "Error! This atmosphere process does not compute this field. "
-                         "Something is wrong up the call stack. Please, contact developers.\n");
+    ekat::error::runtime_check(
+        computes(f.get_header().get_identifier()),
+        "Error! This atmosphere process does not compute this field. "
+        "Something is wrong up the call stack. Please, contact developers.\n");
     set_computed_field_impl (f);
+  }
+
+  virtual void set_required_group (const ci_string_pair& /* group_and_grid */,
+                                   const std::set<Field<const Real>>& /* group */) {
+    ekat::error::runtime_abort(
+      "Error! This atmosphere process does not require a group of fields, meaning\n"
+      "       that 'get_required_groups' was not overridden in this class, or that\n"
+      "       its override returns an empty set.\n"
+      "       If you override 'get_required_groups' to return a non-empty set,\n"
+      "       then you must also override 'set_required_group' in your derived class.\n"
+    );
+  }
+  virtual void set_updated_group (const ci_string_pair& /* group_and_grid */,
+                                  const std::set<Field<Real>>& /* group */) {
+    ekat::error::runtime_abort(
+      "Error! This atmosphere process does not update a group of fields, meaning\n"
+      "       that 'get_updated_groups' was not overridden in this class, or that\n"
+      "       its override returns an empty set.\n"
+      "       If you override 'get_updated_groups' to return a non-empty set,\n"
+      "       then you must also override 'set_updated_group' in your derived class.\n"
+    );
   }
 
   // Register required/computed fields in the field repo
@@ -130,9 +166,28 @@ public:
   virtual const std::set<FieldIdentifier>& get_required_fields () const = 0;
   virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
 
+  // If needed, an Atm Proc can claim to need/update a whole group of fields, without really knowing
+  // a priori how many they are, or even what they are. Each entry of the returned set is a pair
+  // of strings, where the 1st is the group name, and the 2nd the grid name. If the same group is
+  // needed on multiple grids, two separate entries are needed.
+  // Note: we provide a default empty version since most Atm Proc classes will likely not need this feature.
+  virtual std::set<ci_string_pair> get_required_groups () const {
+    return std::set<ci_string_pair>();
+  }
+  virtual std::set<ci_string_pair> get_updated_groups () const {
+    return std::set<ci_string_pair>();
+  }
+
   // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
   bool requires (const FieldIdentifier& id) const { return ekat::contains(get_required_fields(),id); }
   bool computes (const FieldIdentifier& id) const { return ekat::contains(get_computed_fields(),id); }
+
+  bool requires_group (const std::string& name, const std::string& grid) const {
+    return ekat::contains(get_required_groups(),ci_string_pair(name,grid));
+  }
+  bool updates_group (const std::string& name, const std::string& grid) const {
+    return ekat::contains(get_updated_groups(),ci_string_pair(name,grid));
+  }
 
 protected:
 

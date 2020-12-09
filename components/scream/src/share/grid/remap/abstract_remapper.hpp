@@ -145,8 +145,16 @@ public:
 
   int get_num_fields () const {
     EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
-                     "Error! Cannot call 'get_num_fields' during the registration phase.\n");
+      "Error! Cannot call 'get_num_fields' during the registration phase.\n"
+      "       This number is set at 'registration_ends' time.\n"
+      " Note: you can call 'num_registered_fields' and 'num_bound_fields' though.\n");
     return m_num_fields;
+  }
+  int get_num_registered_fields () const {
+    return m_num_registered_fields;
+  }
+  int get_num_bound_fields () const {
+    return m_num_bound_fields;
   }
 
   virtual bool compatible_layouts (const layout_type& src,

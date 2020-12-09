@@ -39,14 +39,14 @@ namespace scream
 class FieldAllocProp {
 public:
 
-  explicit FieldAllocProp (const FieldLayout& layout);
+  FieldAllocProp ();
   
   // Request allocation able to accommodate the given ValueType
   template<typename ValueType>
   void request_value_type_allocation ();
 
   // Locks the properties, preventing furter value types requests
-  void commit ();
+  void commit (const FieldLayout& layout);
 
   // ---- Getters ---- //
   bool is_committed   () const { return m_committed; }
@@ -60,8 +60,6 @@ public:
   const std::vector<int>& get_requested_value_types_sizes () const { return m_value_type_sizes; }
 
 protected:
-
-  const FieldLayout&  m_layout;
 
   std::vector<int>    m_value_type_sizes;
 

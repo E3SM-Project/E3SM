@@ -12,7 +12,8 @@ public:
   using group_type = AtmosphereProcessGroup;
   static constexpr int VERB_MAX = 4;
 
-  void create_dag (const group_type& atm_procs);
+  void create_dag (const group_type& atm_procs,
+                   const std::shared_ptr<FieldRepository<Real>> field_repo);
 
   void add_field_initializer (const FieldInitializer& initializer);
 
@@ -27,7 +28,8 @@ protected:
 
   void cleanup ();
 
-  void add_nodes (const group_type& atm_procs);
+  void add_nodes (const group_type& atm_procs,
+                  const std::shared_ptr<FieldRepository<Real>> field_repo);
 
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position
@@ -39,8 +41,8 @@ protected:
     std::vector<int>  children;
     std::string       name;
     int               id;
-    std::vector<int>  computed;
-    std::vector<int>  required;
+    std::set<int>     computed;
+    std::set<int>     required;
   };
 
   // Assign an id to each field identifier
