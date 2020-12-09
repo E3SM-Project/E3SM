@@ -358,8 +358,8 @@ contains
                    call endrun(err_str//errmsg(__FILE__,__LINE__))
                 endif
              else
-                call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//'&
-                     &'//errmsg(__FILE__,__LINE__))
+                call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
+                     ' '//errmsg(__FILE__,__LINE__))
              endif
           elseif( dycore_is('LR')) then
              if(pio_inq_dimid(fh, trim(adjustl(dim2name)), dim2id)) then !obtain lat dimension of model
@@ -374,8 +374,8 @@ contains
                    call endrun(err_str//errmsg(__FILE__,__LINE__))
                 endif
              else
-                call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//'&
-                     &'//errmsg(__FILE__,__LINE__))
+                call endrun('failed while inquiring dimensions of file:'//trim(adjustl(native_grid_frc_air(m)%input_file))//' '&
+                     ' '//errmsg(__FILE__,__LINE__))
              endif
           else
              call endrun('Only SE or LR(FV) grids are supported currently:'//errmsg(__FILE__,__LINE__))
@@ -429,8 +429,8 @@ contains
           !get units of the data in the forcing file
           if(pio_inq_varid( fh, spc_name, var_id ) == pio_noerr ) then
              if(pio_get_att( fh, var_id, 'units', native_grid_frc_air(m)%units) .ne. pio_noerr ) then
-                write(err_str,*)'failed to obtain units of variable ',trim(spc_name),' in &
-                     &file:',trim(adjustl(native_grid_frc_air(m)%input_file)),',',errmsg(__FILE__, __LINE__)
+                write(err_str,*)'failed to obtain units of variable ',trim(spc_name),' in', &
+                     ' file:',trim(adjustl(native_grid_frc_air(m)%input_file)),',',errmsg(__FILE__, __LINE__)
                 call endrun(err_str)
              endif
           else
@@ -446,8 +446,8 @@ contains
           allocate(native_grid_frc_air(m)%native_grid_flds_tslices(pcols, native_grid_frc_air(m)%lev_frc, &
                begchunk:endchunk,2), stat=astat )
           if( astat/= 0 ) then
-             write(err_str,*) 'failed to allocate native_grid_frc_air(',m,')%native_grid_flds_tslices array;&
-                  error = ',astat,',',errmsg(__FILE__, __LINE__)
+             write(err_str,*) 'failed to allocate native_grid_frc_air(',m,')%native_grid_flds_tslices array; '&
+                  'error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           endif
 
@@ -470,15 +470,15 @@ contains
 
           allocate( forcings_air(m)%sectors(1), stat=astat )
           if( astat/= 0 ) then
-             write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%sectors &
-                  &array; error = ',astat,',',errmsg(__FILE__, __LINE__)
+             write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%sectors', &
+                  ' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           end if
 
           allocate( forcings_air(m)%fields(1), stat=astat )
           if( astat/= 0 ) then
-             write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%fields &
-                  &array; error = ',astat,',',errmsg(__FILE__, __LINE__)
+             write(err_str,*) 'aircraft_emit_init: failed to allocate forcings_air%fields', &
+                  ' array; error = ',astat,',',errmsg(__FILE__, __LINE__)
              call endrun(err_str)
           end if
 
