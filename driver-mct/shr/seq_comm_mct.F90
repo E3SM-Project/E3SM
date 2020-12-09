@@ -162,6 +162,9 @@ module seq_comm_mct
   ! taskmap output level specifications for components
   ! (0:no output, 1:compact, 2:verbose)
   integer, public :: info_taskmap_comp
+  integer, public :: driver_nnodes
+  integer, public, allocatable :: driver_task_node_map(:)
+  integer, public :: info_mprof, info_mprof_dt
 
   ! suffix for log and timing files if multi coupler driver
   character(len=seq_comm_namelen), public  :: cpl_inst_tag
@@ -267,7 +270,7 @@ contains
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
          iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
          cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
-         info_taskmap_model, info_taskmap_comp
+         info_taskmap_model, info_taskmap_comp, info_mprof, info_mprof_dt
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -338,6 +341,8 @@ contains
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
        info_taskmap_model = 0
        info_taskmap_comp  = 0
+       info_mprof         = 2
+       info_mprof_dt      = 86400
 
        ! Read namelist if it exists
 
@@ -377,6 +382,8 @@ contains
 
     call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
     call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+    call shr_mpi_bcast(info_mprof,   DRIVER_COMM,'info_mprof')
+    call shr_mpi_bcast(info_mprof_dt,DRIVER_COMM,'info_mprof_dt')
 
 #ifdef TIMING
     if (info_taskmap_model > 0) then
@@ -408,15 +415,22 @@ contains
           call shr_sys_flush(logunit)
        endif
 
+       allocate( driver_task_node_map(global_numpes), stat=ierr)
+       if (ierr /= 0) call shr_sys_abort(trim(subname)//' allocate driver_task_node_map failed ')
+
        call t_startf("shr_taskmap_write")
        if (drv_inst == 0) then
           call shr_taskmap_write(logunit, DRIVER_COMM, &
                                  'GLOBAL', &
-                                 verbose=verbose_taskmap_output)
+                                 verbose=verbose_taskmap_output, &
+                                 save_nnodes=driver_nnodes, &
+                                 save_task_node_map=driver_task_node_map)
        else
           call shr_taskmap_write(logunit, DRIVER_COMM, &
                                  'DRIVER #'//trim(adjustl(c_drv_inst)), &
-                                 verbose=verbose_taskmap_output)
+                                 verbose=verbose_taskmap_output, &
+                                 save_nnodes=driver_nnodes, &
+                                 save_task_node_map=driver_task_node_map)
        endif
        call t_stopf("shr_taskmap_write")
     endif
