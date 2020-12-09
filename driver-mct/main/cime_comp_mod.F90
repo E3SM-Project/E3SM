@@ -62,7 +62,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
 
   ! mpi comm data & routines, plus logunit and loglevel
-  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp, info_mprof, info_mprof_dt
+  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp
   use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
   use seq_comm_mct, only: ALLATMID,ALLLNDID,ALLOCNID,ALLICEID,ALLGLCID,ALLROFID,ALLWAVID,ALLESPID
   use seq_comm_mct, only: CPLALLATMID,CPLALLLNDID,CPLALLOCNID,CPLALLICEID
@@ -77,9 +77,8 @@ module cime_comp_mod
   use seq_comm_mct, only: num_inst_total, num_inst_max
   use seq_comm_mct, only: seq_comm_iamin, seq_comm_name, seq_comm_namelen
   use seq_comm_mct, only: seq_comm_init, seq_comm_setnthreads, seq_comm_getnthreads
-  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_gloroot
+  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only: cpl_inst_tag
-  use seq_comm_mct, only: driver_nnodes, driver_task_node_map
 
   ! clock & alarm routines and variables
   use seq_timemgr_mod, only: seq_timemgr_type
@@ -560,9 +559,6 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   real(r8) :: msize,msize0,msize1     ! memory size (high water)
   real(r8) :: mrss ,mrss0 ,mrss1      ! resident size (current memory use)
-  real(r8),allocatable :: msizeOnTask(:),mrssOnTask(:) ! msize,mrss on each MPI task
-  real(r8),allocatable :: msizeOnNode(:),mrssOnNode(:) ! msize,mrss on each node
-  integer  :: mlog
 
   !----------------------------------------------------------------------------
   ! threading control
@@ -601,7 +597,6 @@ module cime_comp_mod
   integer  :: mpicom_CPLALLIACID    ! MPI comm for CPLALLIACID
 
   integer  :: iam_GLOID             ! pe number in global id
-  integer  :: npes_GLOID            ! global number of pes
   logical  :: iamin_CPLID           ! pe associated with CPLID
   logical  :: iamroot_GLOID         ! GLOID masterproc
   logical  :: iamroot_CPLID         ! CPLID masterproc
@@ -615,8 +610,6 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
-  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
-              glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
   ! complist: list of comps on this pe
@@ -724,7 +717,7 @@ contains
     end if
 
     !--- set task based threading counts ---
-    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID,npes=npes_GLOID)
+    call seq_comm_getinfo(GLOID,pethreads=pethreads_GLOID,iam=iam_GLOID)
     call seq_comm_setnthreads(pethreads_GLOID)
 
     !--- get some general data ---
@@ -743,15 +736,6 @@ contains
     iamin_CPLID    = seq_comm_iamin(CPLID)
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
-
-    atm_rootpe = seq_comm_gloroot(ALLATMID)
-    lnd_rootpe = seq_comm_gloroot(ALLLNDID)
-    ice_rootpe = seq_comm_gloroot(ALLICEID)
-    ocn_rootpe = seq_comm_gloroot(ALLOCNID)
-    glc_rootpe = seq_comm_gloroot(ALLGLCID)
-    rof_rootpe = seq_comm_gloroot(ALLROFID)
-    wav_rootpe = seq_comm_gloroot(ALLWAVID)
-    iac_rootpe = seq_comm_gloroot(ALLIACID)
 
     do eai = 1,num_inst_atm
        it=it+1
@@ -1516,13 +1500,6 @@ contains
        iamin_ID = component_get_iamin_compid(glc(egi))
        if (iamin_ID) then
           compname = component_get_name(glc(egi))
-          complist = trim(complist)//' '//trim(compname)
-       endif
-    enddo
-    do eri = 1,num_inst_rof
-       iamin_ID = component_get_iamin_compid(rof(eri))
-       if (iamin_ID) then
-          compname = component_get_name(rof(eri))
           complist = trim(complist)//' '//trim(compname)
        endif
     enddo
@@ -2419,9 +2396,6 @@ contains
     real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
-    integer               :: i, nodeId
-    character(len=15)     :: c_ymdtod
-    character(len=18)     :: c_mprof_file
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -2458,32 +2432,6 @@ contains
     call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
 #ifndef CPL_BYPASS
     ! Report on memory usage
-    call shr_mem_getusage(msize,mrss)
-
-    allocate( msizeOnTask(0:npes_GLOID-1), mrssOnTask(0:npes_GLOID-1), stat=ierr)
-    if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnTask,mrssOnTask failed')
-    allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
-    if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
-
-    ! log from cpl_rootpe only, so gather from all tasks
-    msizeOnTask(:) = -1
-    mrssOnTask(:) = -1
-    call mpi_gather (msize, 1, mpi_real8, &
-                     msizeOnTask, 1, mpi_real8, &
-                     0, mpicom_GLOID, ierr)
-    call mpi_gather (mrss, 1, mpi_real8, &
-                     mrssOnTask, 1, mpi_real8, &
-                     0, mpicom_GLOID, ierr)
-
-    ! aggregate task-level to node-level mem-usage
-    msizeOnNode(:) = 0
-    mrssOnNode(:) = 0
-    do i=0,npes_GLOID-1
-       nodeId = driver_task_node_map(i)
-       msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
-       mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
-    enddo
-
     ! (For now, just look at the first instance of each component)
     if ( iamroot_CPLID .or. &
          ocn(ens1)%iamroot_compid .or. &
@@ -2491,58 +2439,13 @@ contains
          lnd(ens1)%iamroot_compid .or. &
          ice(ens1)%iamroot_compid .or. &
          glc(ens1)%iamroot_compid .or. &
-         rof(ens1)%iamroot_compid .or. &
          wav(ens1)%iamroot_compid .or. &
          iac(ens1)%iamroot_compid) then
+       call shr_mem_getusage(msize,mrss,.true.)
 
        write(logunit,105) ' memory_write: model date = ',ymd,tod, &
             ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
             '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
-    endif
-    ! write memory highwater and usage to standalone file
-    if ( iamroot_CPLID) then
-       mlog = shr_file_getUnit()
-       ! log-name: memory.{0,1,2,3}.{nsecs}.log
-       write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
-       inquire(file=trim(c_mprof_file),exist=exists)
-       if (exists) then
-          open(mlog, file=trim(c_mprof_file), status='old', position='append')
-       else
-          open(mlog, file=trim(c_mprof_file), status='new', position='append')
-       endif
-
-       ! log memory highwater and usage
-       write(c_ymdtod,'(f14.5)') ymd+tod/86400.
-       if (info_mprof == 1) then      ! log each task
-          !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
-       else if (info_mprof == 0) then ! log ROOTPE tasks only
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",  &
-             (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID), &
-               msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe),&
-               msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe),&
-               msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe),&
-               msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe),&
-               msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe),&
-               msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe),&
-               msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe),&
-               msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
-       else if (info_mprof == 3) then  ! log each node
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
-       else if (info_mprof == 2) then  ! log ROOTPE nodes
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",", &
-             (/msizeOnNode(driver_task_node_map(iam_GLOID)), mrssOnNode(driver_task_node_map(iam_GLOID)), &
-               msizeOnNode(driver_task_node_map(atm_rootpe)),mrssOnNode(driver_task_node_map(atm_rootpe)),&
-               msizeOnNode(driver_task_node_map(lnd_rootpe)),mrssOnNode(driver_task_node_map(lnd_rootpe)),&
-               msizeOnNode(driver_task_node_map(ice_rootpe)),mrssOnNode(driver_task_node_map(ice_rootpe)),&
-               msizeOnNode(driver_task_node_map(ocn_rootpe)),mrssOnNode(driver_task_node_map(ocn_rootpe)),&
-               msizeOnNode(driver_task_node_map(glc_rootpe)),mrssOnNode(driver_task_node_map(glc_rootpe)),&
-               msizeOnNode(driver_task_node_map(rof_rootpe)),mrssOnNode(driver_task_node_map(rof_rootpe)),&
-               msizeOnNode(driver_task_node_map(wav_rootpe)),mrssOnNode(driver_task_node_map(wav_rootpe)),&
-               msizeOnNode(driver_task_node_map(iac_rootpe)),mrssOnNode(driver_task_node_map(iac_rootpe))/)
-       else
-          write(logunit,*) "cime_run: valid info_mprof values:0,1,10,11, given:",info_mprof
-       endif
     endif
 #endif
     ! Write out a timing file checkpoint
@@ -3422,78 +3325,24 @@ contains
           endif
        endif
 #ifndef CPL_BYPASS
-       if (tod == 0 .or. info_debug > 1 .or. (mod(tod, info_mprof_dt) == 0)) then
-
+       if (tod == 0 .or. info_debug > 1) then
           !! Report on memory usage
-          call shr_mem_getusage(msize,mrss)
-
-          call mpi_gather (msize, 1, mpi_real8, &
-                           msizeOnTask, 1, mpi_real8, &
-                           0, mpicom_GLOID, ierr)
-          call mpi_gather (mrss, 1, mpi_real8, &
-                           mrssOnTask, 1, mpi_real8, &
-                           0, mpicom_GLOID, ierr)
-
-          ! aggregate task-level to node-level mem-usage
-          msizeOnNode(:) = 0
-          mrssOnNode(:) = 0
-          do i=0,npes_GLOID-1
-             nodeId = driver_task_node_map(i)
-             msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
-             mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
-          enddo
-
           !! For now, just look at the first instance of each component
-          if ((tod == 0 .or. info_debug > 1) .and. &
-              (iamroot_CPLID .or. &
+          if ( iamroot_CPLID .or. &
                ocn(ens1)%iamroot_compid .or. &
                atm(ens1)%iamroot_compid .or. &
                lnd(ens1)%iamroot_compid .or. &
                ice(ens1)%iamroot_compid .or. &
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid .or. &
-               rof(ens1)%iamroot_compid .or. &
-               iac(ens1)%iamroot_compid)) then
+               iac(ens1)%iamroot_compid) then
+             call shr_mem_getusage(msize,mrss,.true.)
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                   '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
           endif
-          if (iamroot_CPLID) then
-             ! log memory highwater and usage
-             write(c_ymdtod,'(f14.5)') ymd+tod/86400.
-             if (info_mprof == 1) then      ! log each task
-                !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
-             else if (info_mprof == 0) then ! ROOTPEs only
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",&
-                (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
-                  msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
-                  msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
-                  msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
-                  msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
-                  msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
-                  msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
-                  msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
-                  msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
-             else if (info_mprof == 3) then  ! log each node
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
-             else if (info_mprof == 2) then  ! log ROOTPE nodes
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",", &
-                   (/msizeOnNode(driver_task_node_map(iam_GLOID)),mrssOnNode(driver_task_node_map(iam_GLOID)), &
-                     msizeOnNode(driver_task_node_map(atm_rootpe)),mrssOnNode(driver_task_node_map(atm_rootpe)),&
-                     msizeOnNode(driver_task_node_map(lnd_rootpe)),mrssOnNode(driver_task_node_map(lnd_rootpe)),&
-                     msizeOnNode(driver_task_node_map(ice_rootpe)),mrssOnNode(driver_task_node_map(ice_rootpe)),&
-                     msizeOnNode(driver_task_node_map(ocn_rootpe)),mrssOnNode(driver_task_node_map(ocn_rootpe)),&
-                     msizeOnNode(driver_task_node_map(glc_rootpe)),mrssOnNode(driver_task_node_map(glc_rootpe)),&
-                     msizeOnNode(driver_task_node_map(rof_rootpe)),mrssOnNode(driver_task_node_map(rof_rootpe)),&
-                     msizeOnNode(driver_task_node_map(wav_rootpe)),mrssOnNode(driver_task_node_map(wav_rootpe)),&
-                     msizeOnNode(driver_task_node_map(iac_rootpe)),mrssOnNode(driver_task_node_map(iac_rootpe))/)
-             else
-                write(logunit,*) "cime_run: valid info_mprof values:0,1,2,3, given:",info_mprof
-             endif
-          endif ! iamroot_CPLID
-       endif ! tod == 0
+       endif
 #endif
        if (info_debug > 1) then
           if (iamroot_CPLID) then
@@ -3607,10 +3456,7 @@ contains
        write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
        write(logunit,'(//)')
        close(logunit)
-       close(mlog)
-       call shr_file_freeUnit(mlog)
     endif
-    deallocate(msizeOnTask,mrssOnTask,msizeOnNode,mrssOnNode)
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_final')

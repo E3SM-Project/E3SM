@@ -40,27 +40,6 @@
     (0: no output; 1: compact; 2: verbose).</desc>
   </entry>
 
-  <entry id="INFO_MPROF">
-    <type>integer</type>
-    <valid_values>0,1,2,3</valid_values>
-    <default_value>2</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Sets level of memory profile logging:
-      0: log mem-usage from component ROOTPE tasks
-      1: log mem-usage from all tasks
-      2: aggregate logging to node-level mem-usage on ROOTPE nodes
-      3: aggregate logging to node-level mem-usage on all nodes</desc>
-  </entry>
-
-  <entry id="INFO_MPROF_DT">
-    <type>integer</type>
-    <default_value>86400</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>number of seconds between memory profiling logs</desc>
-  </entry>
-
   <entry id="SAVE_TIMING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
