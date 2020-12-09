@@ -82,6 +82,10 @@ OR
     parser.add_argument("-i", "--integration-test", action="store_true", default="JENKINS_HOME" in os.environ,
                         help="Merge origin/master into this branch before testing.")
 
+    parser.add_argument("-l", "--local", action="store_true",
+                        help="Allow to not specify a machine name, and have test-all-scream to look"
+                             "for '~/.cime/scream_mach_specs.py' for machine specifications.")
+
     parser.add_argument("-r", "--root-dir",
                         help="The root directory of the scream src you want to test. "
                         "Default will be the scream src containing this script.")
