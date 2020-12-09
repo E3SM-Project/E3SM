@@ -309,7 +309,7 @@ OR
     > {0} -c
     > {0} -f -m $machine
 
-""".format(pathlib.Path(sys.argv[0]))
+""".format(pathlib.Path(args[0]).name)
 
     parser = argparse.ArgumentParser(
         usage=help_str,
