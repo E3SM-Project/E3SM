@@ -170,7 +170,7 @@ subroutine co2_data_flux_init (input_file, spec_name, xin)
          call endrun('ERROR: failed while inquiring dimensions of file:'//input_file//' '//errmsg(__FILE__,__LINE__))
       endif
    elseif( dycore_is('LR')) then
-      if(pio_inq_dimid(fh_co2_data_flux, trim(adjustl(dim2name)), dim2id)) then !obtain lat dimension of model
+      if(pio_inq_dimid(fh_co2_data_flux, trim(adjustl(dim2name)), dim2id) .ne. pio_noerr) then !obtain lat dimension of model
          call endrun('ERROR: failed while inquiring dimension'//trim(adjustl(dim2name))//' from file:'&
               ' '//input_file//' '//errmsg(__FILE__,__LINE__))
       endif

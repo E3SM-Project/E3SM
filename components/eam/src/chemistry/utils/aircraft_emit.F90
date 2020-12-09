@@ -362,7 +362,7 @@ contains
                      ' '//errmsg(__FILE__,__LINE__))
              endif
           elseif( dycore_is('LR')) then
-             if(pio_inq_dimid(fh, trim(adjustl(dim2name)), dim2id)) then !obtain lat dimension of model
+             if(pio_inq_dimid(fh, trim(adjustl(dim2name)), dim2id) .ne. pio_noerr) then !obtain lat dimension of model
                 call endrun('failed while inquiring dimension'//trim(adjustl(dim2name))//' from file:'&
                      ' '//trim(adjustl(native_grid_frc_air(m)%input_file))//' '//errmsg(__FILE__,__LINE__))
              endif
