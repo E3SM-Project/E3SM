@@ -34,23 +34,35 @@ module rrtmgpxx_interface
 
    public :: &
       rrtmgpxx_initialize, rrtmgpxx_finalize, rrtmgp_run_sw, rrtmgp_run_lw, &
-      get_nbands_sw, get_nbands_lw, &
-      get_ngpts_sw, get_ngpts_lw, &
+      get_nband_sw, get_nband_lw, &
+      get_ngpt_sw, get_ngpt_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       get_min_temperature, get_max_temperature
    
    interface 
 
-      function get_nbands_sw()  bind(C,name="get_nbands_sw")
+      function get_nband_sw() bind(C,name="get_nband_sw")
          use iso_c_binding
          implicit none
-         integer(c_int) :: get_nbands_sw
+         integer(c_int) :: get_nband_sw
       end function
 
-      function get_nbands_lw()  bind(C,name="get_nbands_lw")
+      function get_nband_lw() bind(C,name="get_nband_lw")
          use iso_c_binding
          implicit none
-         integer(c_int) :: get_nbands_lw
+         integer(c_int) :: get_nband_lw
+      end function
+
+      function get_ngpt_sw() bind(C, name="get_ngpt_sw")
+         use iso_c_binding
+         implicit none
+         integer(c_int) :: get_ngpt_sw
+      end function
+
+      function get_ngpt_lw() bind(C, name="get_ngpt_lw")
+         use iso_c_binding
+         implicit none
+         integer(c_int) :: get_ngpt_lw
       end function
 
       subroutine rrtmgpxx_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
@@ -70,14 +82,6 @@ module rrtmgpxx_interface
    end interface
 
 contains
-
-   integer function get_ngpts_sw()
-      get_ngpts_sw = k_dist_sw%get_ngpt()
-   end function get_ngpts_sw
-
-   integer function get_ngpts_lw()
-      get_ngpts_lw = k_dist_lw%get_ngpt()
-   end function get_ngpts_lw
 
    function get_gpoint_bands_sw() result(gpoint_bands)
       integer, dimension(nswgpts) :: gpoint_bands

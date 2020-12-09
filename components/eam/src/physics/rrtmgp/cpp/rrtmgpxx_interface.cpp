@@ -7,8 +7,10 @@
 extern "C" void add_gas_name(char const *gas_name);
 extern "C" void convert_gas_names(string1d &gas_names);
 extern "C" void vect_to_string1d(std::vector<std::string> vect, string1d strarr);
-extern "C" int get_nbands_sw();
-extern "C" int get_nbands_lw();
+extern "C" int get_nband_sw();
+extern "C" int get_nband_lw();
+extern "C" int get_ngpt_sw();
+extern "C" int get_ngpt_lw();
 extern "C" void rrtmgpxx_finalize();
 
 GasOpticsRRTMGP k_dist_sw;
@@ -74,10 +76,18 @@ extern "C" void vect_to_string1d(std::vector<std::string> vect, string1d strarr)
     }
 }
 
-extern "C" int get_nbands_sw() {
+extern "C" int get_nband_sw() {
     return k_dist_sw.get_nband();
 }
 
-extern "C" int get_nbands_lw() {
+extern "C" int get_nband_lw() {
     return k_dist_lw.get_nband();
+}
+
+extern "C" int get_ngpt_sw() {
+    return k_dist_sw.get_ngpt();
+}
+
+extern "C" int get_ngpt_lw() {
+    return k_dist_lw.get_ngpt();
 }

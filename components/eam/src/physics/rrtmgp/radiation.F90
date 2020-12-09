@@ -34,7 +34,8 @@ module radiation
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
    use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, get_nbands_sw, get_nbands_lw
+      rrtmgpxx_initialize, rrtmgpxx_finalize, get_nband_sw, get_nband_lw, &
+      get_ngpt_sw, get_ngpt_lw
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -489,8 +490,12 @@ contains
       ! Make sure number of bands in absorption coefficient files matches what we expect
       call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
       call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
-      !call assert(nswbands == get_nbands_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
-      !call assert(nlwbands == get_nbands_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
+      call assert(nswbands == get_nband_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
+      call assert(nlwbands == get_nband_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
+
+      ! Check that gpoints are consistent after initialization
+      call assert(nswgpts == get_ngpt_sw(), 'nswgpts does not match RRTMGPXX absorption coefficient data')
+      call assert(nlwgpts == get_ngpt_lw(), 'nlwgpts does not match RRTMGPXX absorption coefficient data')
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
