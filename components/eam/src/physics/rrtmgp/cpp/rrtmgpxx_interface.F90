@@ -33,13 +33,14 @@ module rrtmgpxx_interface
    integer, public :: nswbands, nlwbands, nswgpts, nlwgpts
 
    public :: &
-      rrtmgp_initialize, rrtmgp_run_sw, rrtmgp_run_lw, &
-      get_nbnds_sw, get_nbnds_lw, &
+      rrtmgpxx_initialize, rrtmgpxx_finalize, rrtmgp_run_sw, rrtmgp_run_lw, &
+      get_nbands_sw, get_nbands_lw, &
       get_ngpts_sw, get_ngpts_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       get_min_temperature, get_max_temperature
    
    interface 
+
       function get_nbands_sw()  bind(C,name="get_nbands_sw")
          use iso_c_binding
          implicit none
@@ -51,17 +52,24 @@ module rrtmgpxx_interface
          implicit none
          integer(c_int) :: get_nbands_lw
       end function
+
+      subroutine rrtmgpxx_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
+         use iso_c_binding, only: C_CHAR, C_NULL_CHAR
+         character(kind=c_char) :: coefficients_file_sw(*)
+         character(kind=c_char) :: coefficients_file_lw(*)
+      end subroutine rrtmgpxx_initialize_cpp
+
+      subroutine rrtmgpxx_finalize() bind(C, name="rrtmgpxx_finalize")
+      end subroutine rrtmgpxx_finalize
+
+      subroutine add_gas_name(gas_name) bind(C, name="add_gas_name")
+         use iso_c_binding, only: C_CHAR
+         character(kind=c_char) :: gas_name
+      end subroutine add_gas_name
+
    end interface
 
 contains
-
-   integer function get_nbnds_sw()
-      get_nbnds_sw = k_dist_sw%get_nband()
-   end function get_nbnds_sw
-
-   integer function get_nbnds_lw()
-      get_nbnds_lw = k_dist_lw%get_nband()
-   end function get_nbnds_lw
 
    integer function get_ngpts_sw()
       get_ngpts_sw = k_dist_sw%get_ngpt()
@@ -81,7 +89,8 @@ contains
       gpoint_bands = k_dist_lw%get_gpoint_bands()
    end function get_gpoint_bands_lw
 
-   subroutine rrtmgp_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
+   subroutine rrtmgpxx_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
+      use iso_c_binding, only: C_CHAR, C_NULL_CHAR
       character(len=*), intent(in) :: active_gases(:)
       character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
       type(ty_gas_concs) :: available_gases
@@ -104,7 +113,15 @@ contains
       ! Number of gpoints depend on inputdata, so initialize here
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
-   end subroutine rrtmgp_initialize
+      ! Add active gases
+      call add_gases(active_gases)
+      ! Initialize RRTMGP
+      call rrtmgpxx_initialize_cpp( &
+         C_CHAR_""//trim(coefficients_file_sw)//C_NULL_CHAR, &
+         C_CHAR_""//trim(coefficients_file_lw)//C_NULL_CHAR &
+      )
+   end subroutine rrtmgpxx_initialize
+
 
    subroutine rrtmgp_run_sw( &
          ngas, ncol, nlev, &
@@ -339,6 +356,16 @@ contains
       call handle_error(gas_concentrations%init(gases_lowercase))
 
    end subroutine set_available_gases
+
+   subroutine add_gases(gases)
+      use mo_rrtmgp_util_string, only: lower_case
+      use iso_c_binding, only: C_CHAR, C_NULL_CHAR
+      character(len=*), intent(in) :: gases(:)
+      integer :: igas
+      do igas = 1,size(gases)
+         call add_gas_name(trim(lower_case(gases(igas)))//C_NULL_CHAR)
+      end do
+   end subroutine add_gases
 
    !----------------------------------------------------------------------------
 

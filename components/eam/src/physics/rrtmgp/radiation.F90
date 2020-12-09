@@ -33,6 +33,8 @@ module radiation
       rrtmgp_get_max_temperature => get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
+   use rrtmgpxx_interface, only: &
+      rrtmgpxx_initialize, rrtmgpxx_finalize, get_nbands_sw, get_nbands_lw
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -65,6 +67,7 @@ module radiation
       radiation_nextsw_cday, &! calendar day of next radiation calculation
       radiation_do,          &! query which radiation calcs are done this timestep
       radiation_init,        &! calls radini
+      radiation_final,       &! Deallocate memory, finalize yakl
       radiation_readnl,      &! read radiation namelist
       radiation_tend          ! moved from radctl.F90
 
@@ -481,10 +484,13 @@ contains
 
       ! Setup the RRTMGP interface
       call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
+      call rrtmgpxx_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
 
       ! Make sure number of bands in absorption coefficient files matches what we expect
       call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
       call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
+      !call assert(nswbands == get_nbands_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
+      !call assert(nlwbands == get_nbands_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -872,6 +878,9 @@ contains
 
    end subroutine radiation_init
 
+   subroutine radiation_final()
+      call rrtmgpxx_finalize()
+   end subroutine radiation_final
 
    subroutine perturbation_growth_init()
 
