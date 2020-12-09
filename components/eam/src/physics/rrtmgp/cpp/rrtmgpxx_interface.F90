@@ -125,12 +125,6 @@ contains
       call set_available_gases(active_gases, available_gases)
       call load_and_init(k_dist_sw, coefficients_file_sw, available_gases)
       call load_and_init(k_dist_lw, coefficients_file_lw, available_gases)
-      ! Set number of bands based on what we read in from input data
-      nswbands = k_dist_sw%get_nband()
-      nlwbands = k_dist_lw%get_nband()
-      ! Number of gpoints depend on inputdata, so initialize here
-      nswgpts = k_dist_sw%get_ngpt()
-      nlwgpts = k_dist_lw%get_ngpt()
       ! Add active gases
       call add_gases(active_gases)
       ! Initialize RRTMGP
@@ -138,6 +132,12 @@ contains
          C_CHAR_""//trim(coefficients_file_sw)//C_NULL_CHAR, &
          C_CHAR_""//trim(coefficients_file_lw)//C_NULL_CHAR &
       )
+      ! Set number of bands based on what we read in from input data
+      nswbands = get_nband_sw()
+      nlwbands = get_nband_lw()
+      ! Number of gpoints depend on inputdata, so initialize here
+      nswgpts = get_ngpt_sw()
+      nlwgpts = get_ngpt_lw()
    end subroutine rrtmgpxx_initialize
 
 

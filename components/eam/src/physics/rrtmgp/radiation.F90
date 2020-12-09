@@ -31,15 +31,15 @@ module radiation
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
-      get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      nswgpts, nlwgpts
+      get_gpoint_bands_sw, get_gpoint_bands_lw
    use rrtmgpxx_interface, only: &
       rrtmgpxx_initialize, rrtmgpxx_finalize, get_nband_sw, get_nband_lw, &
       rrtmgpxx_get_min_temperature => get_min_temperature, &
       rrtmgpxx_get_max_temperature => get_max_temperature, &
       rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
       rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
-      get_ngpt_sw, get_ngpt_lw
+      get_ngpt_sw, get_ngpt_lw, &
+      nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
