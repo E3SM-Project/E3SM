@@ -104,6 +104,10 @@ protected:
     m_fields.erase(m_fields.begin()+ifield);
   }
 
+// CUDA needs top level lambdas to be enclosed by a method that is public.
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
   void do_remap_fwd () const override {
     for (const auto& it : m_fields) {
       const auto& layout = it.first.get_header().get_identifier().get_layout();
@@ -156,6 +160,7 @@ protected:
     }
   }
 
+protected:
   std::vector<std::pair<field_type,field_type>> m_fields;
 };
 

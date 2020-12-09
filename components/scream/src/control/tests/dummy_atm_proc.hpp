@@ -134,6 +134,10 @@ protected:
     // Do nothing
   }
 
+// CUDA needs top level lambdas to be enclosed by a method that is public.
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
   void run_impl (const Real /* dt */) {
     const int ncols = m_grid->get_num_local_dofs();
     const int nlevs = m_grid->get_num_vertical_levels();
@@ -178,6 +182,8 @@ protected:
       });
     }
   }
+
+protected:
 
   void finalize_impl () {
     // Do nothing
