@@ -287,8 +287,8 @@ contains
     !
     ! Input(s)
     !
-    real(kind=c_double), pointer, intent(out) :: lat_g(:)
-    real(kind=c_double), pointer, intent(out) :: lon_g(:)
+    real(kind=c_double), pointer, intent(inout) :: lat_g(:)
+    real(kind=c_double), pointer, intent(inout) :: lon_g(:)
     !
     ! Local(s)
     !
