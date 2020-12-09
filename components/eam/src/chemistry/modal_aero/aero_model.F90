@@ -1536,9 +1536,9 @@ contains
     call t_startf('wateruptake')
     if (present(clear_rh)) then
       ! clear_rh allows us to provide alternate calculation of clear air RH
-      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
+       call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
     else
-      call modal_aero_wateruptake_dr(state, pbuf)
+       call modal_aero_wateruptake_dr(state, pbuf)
     endif
     call t_stopf('wateruptake')
 

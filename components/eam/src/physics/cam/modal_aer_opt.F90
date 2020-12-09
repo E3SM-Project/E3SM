@@ -616,23 +616,23 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
       ! Calculate aerosol size distribution parameters and aerosol water uptake
       ! For prescribed aerosol codes
-      if (clim_modal_aero .and. .not. prog_modal_aero) then
+      !if (clim_modal_aero .and. .not. prog_modal_aero) then
          ! diagnostic aerosol size calculations
-         call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-         if (present(clear_rh)) then
+      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
+      !   if (present(clear_rh)) then
             ! clear_rh provides alternate estimate non-cloudy relative humidity
-            call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, wetdens_m, clear_rh_in=clear_rh)
-         else
-            call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, wetdens_m)
-         endif
-      else
+      !      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      !        qaerwat_m, wetdens_m, clear_rh_in=clear_rh)
+      !   else
+      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      qaerwat_m, wetdens_m)
+      !   endif
+      !else
          !For prognostic aerosols
-         call modal_aero_calcsize_sub(state, dt, pbuf,list_idx_in=list_idx, dgnumdry_m=dgnumdry_m)
-         call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, wetdens_m)
-      endif
+      !call modal_aero_calcsize_sub(state, dt, pbuf,list_idx_in=list_idx, dgnumdry_m=dgnumdry_m)
+      !call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      !              qaerwat_m, wetdens_m)
+      !endif
 
    else
       call endrun('Radiation diagnostic calls are temporarily not supported,' // &
@@ -1303,23 +1303,23 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    if (list_idx == 0) then
       ! Calculate aerosol size distribution parameters and aerosol water uptake
       ! For prescribed aerosol codes
-      if (clim_modal_aero .and. .not. prog_modal_aero) then
+      !if (clim_modal_aero .and. .not. prog_modal_aero) then
          ! diagnostic aerosol size calculations
          call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-         if (present(clear_rh)) then
+      !   if (present(clear_rh)) then
             ! clear_rh provides alternate estimate non-cloudy relative humidity
-            call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, wetdens_m, clear_rh_in=clear_rh)
-         else
-            call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
-              qaerwat_m, wetdens_m)
-         endif
-      else
-         !For prognostic aerosols
-         call modal_aero_calcsize_sub(state, dt, pbuf,list_idx_in=list_idx, dgnumdry_m=dgnumdry_m)
+      !      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      !        qaerwat_m, wetdens_m, clear_rh_in=clear_rh)
+      !   else
          call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
               qaerwat_m, wetdens_m)
-      endif
+      !   endif
+      !else
+         !For prognostic aerosols
+         !call modal_aero_calcsize_sub(state, dt, pbuf,list_idx_in=list_idx, dgnumdry_m=dgnumdry_m)
+         !call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+         !     qaerwat_m, wetdens_m)
+      !endif
    else
       call endrun('Radiation diagnostic calls are temporarily not supported,' // &
                  ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
