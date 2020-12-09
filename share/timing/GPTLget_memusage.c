@@ -118,8 +118,8 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   */
 
   pid = (int) getpid ();
-  if (pid > 999999) {
-    fprintf (stderr, "get_memusage: pid %d is too large\n", pid);
+  if (pid <= 0) {
+    fprintf (stderr, "get_memusage: pid %d is non-positive\n", pid);
     return -1;
   }
 
