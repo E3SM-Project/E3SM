@@ -52,3 +52,6 @@
 [submodule "externals/mct"]
 	path = externals/mct
 	url = git@github.com:MCSclimate/MCT.git
+[submodule "externals/netcdf-cxx4"]
+	path = externals/netcdf-cxx4
+	url = git@github.com:Unidata/netcdf-cxx4.git
