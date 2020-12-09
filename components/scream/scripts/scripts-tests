@@ -34,35 +34,38 @@ CONFIG = {
 }
 
 ###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expected_stat=0, env=None, verbose=False):
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expect_works=True, env=None, verbose=False):
 ###############################################################################
     from_dir = pathlib.Path() if from_dir is None else from_dir
     stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
-    if expected_stat == 0:
-        expectation = "SHOULD HAVE WORKED, INSTEAD GOT STAT %s" % stat
-    else:
-        expectation = "EXPECTED STAT %s, INSTEAD GOT STAT %s" % (expected_stat, stat)
-    msg = \
+    problem = None
+    if expect_works and stat != 0:
+        problem = "SHOULD HAVE WORKED"
+    elif not expect_works and stat == 0:
+        problem = "SHOULD NOT HAVE WORKED"
+
+    if problem is not None:
+        msg = \
 """
 COMMAND: %s
 FROM_DIR: %s
 %s
 OUTPUT: %s
 ERRPUT: %s
-""" % (cmd, from_dir, expectation, output, errput)
-    test_obj.assertEqual(stat, expected_stat, msg=msg)
+""" % (cmd, from_dir, problem, output, errput)
+        test_obj.assertTrue(False, msg=msg)
 
     return output
 
 ###############################################################################
-def run_cmd_store_output(test_obj, cmd, baseline_path):
+def run_cmd_store_output(test_obj, cmd, output_file):
 ###############################################################################
-    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
-    baseline_path.write_text(output)
+    output_file.write_text(output)
 
 ###############################################################################
-def run_cmd_check_output(test_obj, cmd, baseline_path):
+def run_cmd_check_baseline(test_obj, cmd, baseline_path):
 ###############################################################################
     test_obj.assertTrue(baseline_path.is_file(), msg="Missing baseline {}".format(baseline_path))
     output = run_cmd_assert_result(test_obj, cmd, from_dir=TEST_DIR)
@@ -136,7 +139,7 @@ class TestBaseOuter: # Hide the base class from test scanner
                 machines = self.get_machines()
                 for machine in machines:
                     for cmd in self._cmds:
-                        run_cmd_check_output(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
+                        run_cmd_check_baseline(self, self.get_cmd(cmd, machine), self.get_baseline(cmd, machine))
             else:
                 self.skipTest("Skipping dry run baseline comparison")
 
@@ -217,28 +220,28 @@ class TestTestAllScream(TestBaseOuter.TestBase):
     def test_config_fail_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_CONFIG_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expected_stat=1)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 
     def test_build_fail_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_BUILD_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expected_stat=1)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 
     def test_run_fail_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expected_stat=1)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 
     def test_run_diff_captured(self):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_DIFF=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expected_stat=1)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
         else:
             self.skipTest("Skipping full run")
 

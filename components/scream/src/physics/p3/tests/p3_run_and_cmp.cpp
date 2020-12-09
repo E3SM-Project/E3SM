@@ -223,7 +223,7 @@ private:
       ekat::write(&f.dim, 1, fid);
       ekat::write(f.extent, f.dim, fid);
 #ifdef SCREAM_FORCE_RUN_DIFF
-      f.data[0] = 0;
+      f.data[0] += 1;
 #endif
       ekat::write(f.data, f.size, fid);
     }

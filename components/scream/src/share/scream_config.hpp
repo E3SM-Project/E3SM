@@ -15,7 +15,7 @@
 #endif
 
 #ifdef SCREAM_FORCE_BUILD_FAIL
-choke_build();
+#error "Forcing failure to test test-all-scream"
 #endif
 
 namespace scream {

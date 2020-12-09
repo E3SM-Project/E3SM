@@ -123,22 +123,6 @@ if (CIME_BUILD)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
 
-if ($ENV{SCREAM_FORCE_BUILD_FAIL})
-  set(DEFAULT_FORCE_BUILD_FAIL TRUE)
-else()
-  set(DEFAULT_FORCE_BUILD_FAIL FALSE)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_FAIL})
-  set(DEFAULT_FORCE_RUN_FAIL TRUE)
-else()
-  set(DEFAULT_FORCE_RUN_FAIL FALSE)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF})
-  set(DEFAULT_FORCE_RUN_DIFF TRUE)
-else()
-  set(DEFAULT_FORCE_RUN_DIFF FALSE)
-endif()
-
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -147,9 +131,6 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
-set(SCREAM_FORCE_BUILD_FAIL ${DEFAULT_FORCE_BUILD_FAIL} CACHE BOOL "Force the build to fail, used for testing script infrastructure")
-set(SCREAM_FORCE_RUN_FAIL ${DEFAULT_FORCE_RUN_FAIL} CACHE BOOL "Force the run to fail, used for testing script infrastructure")
-set(SCREAM_FORCE_RUN_DIFF ${DEFAULT_FORCE_RUN_DIFF} CACHE BOOL "Force the run to diff, used for testing script infrastructure")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
@@ -255,13 +236,14 @@ add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
-if (SCREAM_FORCE_BUILD_FAIL)
+# Hooks for testing test-all-scream within test-scripts
+if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
 endif()
-if (SCREAM_FORCE_RUN_FAIL)
+if ($ENV{SCREAM_FORCE_RUN_FAIL})
   add_definitions(-DSCREAM_FORCE_RUN_FAIL)
 endif()
-if (SCREAM_FORCE_RUN_DIFF)
+if ($ENV{SCREAM_FORCE_RUN_DIFF})
   add_definitions(-DSCREAM_FORCE_RUN_DIFF)
 endif()
 
