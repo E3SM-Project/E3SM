@@ -11,6 +11,10 @@ extern "C" int get_nband_sw();
 extern "C" int get_nband_lw();
 extern "C" int get_ngpt_sw();
 extern "C" int get_ngpt_lw();
+extern "C" double get_min_temperature();
+extern "C" double get_max_temperature();
+extern "C" void get_gpoint_bands_sw(int *gpoint_bands);
+extern "C" void get_gpoint_bands_lw(int *gpoint_bands);
 extern "C" void rrtmgpxx_finalize();
 
 GasOpticsRRTMGP k_dist_sw;
@@ -90,4 +94,26 @@ extern "C" int get_ngpt_sw() {
 
 extern "C" int get_ngpt_lw() {
     return k_dist_lw.get_ngpt();
+}
+
+extern "C" double get_min_temperature() {
+    return min(k_dist_sw.temp_ref_min, k_dist_lw.temp_ref_min);
+}
+
+extern "C" double get_max_temperature() {
+    return max(k_dist_sw.temp_ref_max, k_dist_lw.temp_ref_max);
+}
+
+int1d gpoint_bands_sw;
+extern "C" void get_gpoint_bands_sw(int *gpoint_bands_p) {
+    gpoint_bands_sw = int1d("gpoint_bands", gpoint_bands_p, k_dist_sw.get_ngpt());
+    auto tmp = k_dist_sw.get_gpoint_bands();
+    tmp.deep_copy_to(gpoint_bands_sw);
+}
+
+int1d gpoint_bands_lw;
+extern "C" void get_gpoint_bands_lw(int *gpoint_bands_p) {
+    gpoint_bands_lw = int1d("gpoint_bands", gpoint_bands_p, k_dist_lw.get_ngpt());
+    auto tmp = k_dist_lw.get_gpoint_bands();
+    tmp.deep_copy_to(gpoint_bands_lw);
 }

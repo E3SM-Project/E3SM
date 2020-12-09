@@ -65,6 +65,30 @@ module rrtmgpxx_interface
          integer(c_int) :: get_ngpt_lw
       end function
 
+      function get_min_temperature() bind(C, name="get_min_temperature")
+         use iso_c_binding
+         implicit none
+         real(c_double) :: get_min_temperature
+      end function
+
+      function get_max_temperature() bind(C, name="get_max_temperature")
+         use iso_c_binding
+         implicit none
+         real(c_double) :: get_max_temperature
+      end function
+
+      subroutine get_gpoint_bands_sw(gpoint_bands) bind(C, name="get_gpoint_bands_sw")
+         use iso_c_binding
+         implicit none
+         integer(c_int), dimension(*) :: gpoint_bands
+      end subroutine
+
+      subroutine get_gpoint_bands_lw(gpoint_bands) bind(C, name="get_gpoint_bands_lw")
+         use iso_c_binding
+         implicit none
+         integer(c_int), dimension(*) :: gpoint_bands
+      end subroutine
+
       subroutine rrtmgpxx_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
          use iso_c_binding, only: C_CHAR, C_NULL_CHAR
          character(kind=c_char) :: coefficients_file_sw(*)
@@ -82,16 +106,6 @@ module rrtmgpxx_interface
    end interface
 
 contains
-
-   function get_gpoint_bands_sw() result(gpoint_bands)
-      integer, dimension(nswgpts) :: gpoint_bands
-      gpoint_bands = k_dist_sw%get_gpoint_bands()
-   end function get_gpoint_bands_sw
-
-   function get_gpoint_bands_lw() result(gpoint_bands)
-      integer, dimension(nlwgpts) :: gpoint_bands
-      gpoint_bands = k_dist_lw%get_gpoint_bands()
-   end function get_gpoint_bands_lw
 
    subroutine rrtmgpxx_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
       use iso_c_binding, only: C_CHAR, C_NULL_CHAR
@@ -328,14 +342,6 @@ contains
       ))
 
    end subroutine rrtmgp_run_lw
-
-   real(wp) function get_min_temperature()
-      get_min_temperature = min(k_dist_sw%get_temp_min(), k_dist_lw%get_temp_min())
-   end function get_min_temperature
-     
-   real(wp) function get_max_temperature()
-      get_max_temperature = max(k_dist_sw%get_temp_max(), k_dist_lw%get_temp_max())
-   end function get_max_temperature
 
    ! --------------------------------------------------------------------------
    ! Private routines

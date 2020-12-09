@@ -35,6 +35,10 @@ module radiation
       nswgpts, nlwgpts
    use rrtmgpxx_interface, only: &
       rrtmgpxx_initialize, rrtmgpxx_finalize, get_nband_sw, get_nband_lw, &
+      rrtmgpxx_get_min_temperature => get_min_temperature, &
+      rrtmgpxx_get_max_temperature => get_max_temperature, &
+      rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
+      rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
       get_ngpt_sw, get_ngpt_lw
 
    ! Use my assertion routines to perform sanity checks
@@ -496,6 +500,10 @@ contains
       ! Check that gpoints are consistent after initialization
       call assert(nswgpts == get_ngpt_sw(), 'nswgpts does not match RRTMGPXX absorption coefficient data')
       call assert(nlwgpts == get_ngpt_lw(), 'nlwgpts does not match RRTMGPXX absorption coefficient data')
+
+      ! Check that min and max temperatures are consistent
+      call assert(rrtmgp_get_min_temperature() == rrtmgpxx_get_min_temperature(), 'RRTMGP and RRTMGPXX min temperatures do not match.')
+      call assert(rrtmgp_get_max_temperature() == rrtmgpxx_get_max_temperature(), 'RRTMGP and RRTMGPXX max temperatures do not match.')
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1171,6 +1179,9 @@ contains
       ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
 
+      integer, dimension(nswgpts) :: gpoint_bands_sw
+      integer, dimension(nlwgpts) :: gpoint_bands_lw
+
       !----------------------------------------------------------------------
 
       ! Number of physics columns in this "chunk"
@@ -1278,8 +1289,9 @@ contains
          end do
          ! And now do the MCICA sampling to get cloud optical properties by
          ! gpoint/cloud state
+         call rrtmgpxx_get_gpoint_bands_sw(gpoint_bands_sw)
          call sample_cloud_optics_sw( &
-            ncol, pver, nswgpts, get_gpoint_bands_sw(), &
+            ncol, pver, nswgpts, gpoint_bands_sw, &
             state%pmid, cld, cldfsnow, &
             cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
             cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
@@ -1386,8 +1398,9 @@ contains
             lambdac, mu, dei, des, rei, &
             cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
          )
+         call rrtmgpxx_get_gpoint_bands_lw(gpoint_bands_lw)
          call sample_cloud_optics_lw( &
-            ncol, pver, nlwgpts, get_gpoint_bands_lw(), &
+            ncol, pver, nlwgpts, gpoint_bands_lw, &
             state%pmid, cld, cldfsnow, &
             cld_tau_bnd_lw, cld_tau_gpt_lw &
          )

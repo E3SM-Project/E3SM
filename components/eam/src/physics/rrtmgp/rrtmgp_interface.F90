@@ -56,15 +56,15 @@ contains
       get_ngpts_lw = k_dist_lw%get_ngpt()
    end function get_ngpts_lw
 
-   function get_gpoint_bands_sw() result(gpoint_bands)
-      integer, dimension(nswgpts) :: gpoint_bands
+   subroutine get_gpoint_bands_sw(gpoint_bands)
+      integer, intent(out), dimension(nswgpts) :: gpoint_bands
       gpoint_bands = k_dist_sw%get_gpoint_bands()
-   end function get_gpoint_bands_sw
+   end subroutine get_gpoint_bands_sw
 
-   function get_gpoint_bands_lw() result(gpoint_bands)
-      integer, dimension(nlwgpts) :: gpoint_bands
+   subroutine get_gpoint_bands_lw(gpoint_bands)
+      integer, intent(out), dimension(nlwgpts) :: gpoint_bands
       gpoint_bands = k_dist_lw%get_gpoint_bands()
-   end function get_gpoint_bands_lw
+   end subroutine get_gpoint_bands_lw
 
    subroutine rrtmgp_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
       character(len=*), intent(in) :: active_gases(:)
