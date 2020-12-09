@@ -1537,6 +1537,11 @@ else {
 
     }
 
+    if (defined $opts{'use_MMF_CVT'}) {
+        $nadv += 2; # add tracers for CRM t and q variance transport
+        if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+    }
+
     # Add in specified test tracers.  These may be present with adiabatic or ideal physics.
     $nadv += $ttrac_nadv;
     if ($print>=2 and $ttrac_nadv) { print "Advected constituents added by test tracer package: $ttrac_nadv$eol"; }
@@ -1834,6 +1839,9 @@ if (defined $opts{'use_MMF'}) {
         $cfg_cppdefs .= " -DMMF_SAM "
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
+    }
+    if (defined $opts{'use_MMF_CVT'}) {
+        $cfg_cppdefs .= " -DMMF_CVT "
     }
 
 }

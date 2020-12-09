@@ -1,0 +1,371 @@
+module variance_transport_mod
+!-------------------------------------------------------------------------------
+! This module supports the capability of transporting the CRM's internal 
+! variance on the large-scale host model grid. This is done by calculating a 
+! total or filtered variance and using this to couple to a mass-less tracer 
+! on the GCM grid.
+!
+! The variance transport only applies to the prognostic scalars of the CRM. 
+! Extending this to momentum may be possible, but it does not seem necessary.
+! 
+! Author: Walter Hannah - Lawrence Livermore National Lab
+!-------------------------------------------------------------------------------
+   use params_kind,  only: crm_rknd
+   use grid,         only: nx,ny,nzm,dtn
+   use params,       only: pi
+   use openacc_utils
+
+   implicit none
+
+   public allocate_CVT
+   public deallocate_CVT
+   public CVT_diagnose
+   public CVT_forcing
+
+   real(crm_rknd), allocatable :: t_cvt_tend(:,:)     ! forcing tendency of LSE amp per wavenumber
+   real(crm_rknd), allocatable :: q_cvt_tend(:,:)     ! forcing tendency of QT  amp per wavenumber
+
+   real(crm_rknd), allocatable :: t_cvt(:,:)          ! LSE variance tracer
+   real(crm_rknd), allocatable :: q_cvt(:,:)          ! QT  variance tracer
+
+   real(crm_rknd), allocatable :: t_cvt_pert(:,:,:,:) ! LSE perturbation from horizontal mean
+   real(crm_rknd), allocatable :: q_cvt_pert(:,:,:,:) ! QT  perturbation from horizontal mean
+
+#if defined(MMF_CVT_KMAX)
+   integer, parameter :: filter_wn_max = MMF_CVT_KMAX
+#else
+   integer, parameter :: filter_wn_max = 0
+#endif
+
+contains
+
+!===============================================================================
+!===============================================================================
+subroutine allocate_CVT(ncrms)
+   !----------------------------------------------------------------------------
+   ! Purpose: Allocate and initialize CVT variables
+   !----------------------------------------------------------------------------
+   implicit none
+   integer, intent(in) :: ncrms
+
+   allocate( t_cvt_tend( ncrms, nzm ) )
+   allocate( q_cvt_tend( ncrms, nzm ) )
+
+   allocate( t_cvt( ncrms, nzm ) )
+   allocate( q_cvt( ncrms, nzm ) )   
+
+   t_cvt_tend(:,:) = 0.0_crm_rknd
+   q_cvt_tend(:,:) = 0.0_crm_rknd
+
+   t_cvt(:,:)      = 0.0_crm_rknd
+   q_cvt(:,:)      = 0.0_crm_rknd
+
+   allocate( t_cvt_pert( ncrms, nx, ny, nzm ) )
+   allocate( q_cvt_pert( ncrms, nx, ny, nzm ) )
+   t_cvt_pert(:,:,:,:)  = 0.0_crm_rknd
+   q_cvt_pert(:,:,:,:)  = 0.0_crm_rknd
+
+end subroutine allocate_CVT
+
+!===============================================================================
+!===============================================================================
+subroutine deallocate_CVT()
+   !----------------------------------------------------------------------------
+   ! Purpose: Deallocate CVT variables
+   !----------------------------------------------------------------------------
+   deallocate( t_cvt_tend )
+   deallocate( q_cvt_tend )
+   deallocate( t_cvt )
+   deallocate( q_cvt )   
+   deallocate( t_cvt_pert )
+   deallocate( q_cvt_pert )
+
+end subroutine deallocate_CVT
+
+!===============================================================================
+!===============================================================================
+subroutine CVT_filter(ncrms,f_in,f_out)
+   !----------------------------------------------------------------------------
+   ! Purpose: use FFT to filter out high frequency modes
+   !----------------------------------------------------------------------------
+   use crmdims,   only: crm_dx
+   use fftpack51D
+   implicit none
+
+   ! interface arguments
+   integer, intent(in) :: ncrms
+   real(crm_rknd), dimension(ncrms,nx,ny,nzm), intent(in ) :: f_in
+   real(crm_rknd), dimension(ncrms,nx,ny,nzm), intent(out) :: f_out
+
+   ! local variables
+   integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
+   real(crm_rknd), dimension(nx)    :: fft_out   ! for FFT input and output
+   real(crm_rknd), dimension(nx)    :: work      ! work array
+   real(crm_rknd), dimension(lensav):: wsave     ! prime factors of N and certain trig values used in rfft1f
+   ! real(crm_rknd), dimension(nx)    :: wave_num    ! only for debugging
+   integer :: i, j, k, icrm   ! loop iterators
+   integer :: ier             ! FFT error return code
+   !----------------------------------------------------------------------------
+   ! initialization for FFT
+   call rfft1i(nx,wsave,lensav,ier)
+   if(ier /= 0) write(0,*) 'ERROR: rfftmi(): CVT_filter - FFT initialization error ',ier
+   
+   !$acc parallel loop collapse(3) async(asyncid)
+   do k = 1,nzm
+      do j = 1,ny
+         do icrm = 1,ncrms
+            
+            ! initialize FFT input
+            do i = 1,nx
+               fft_out(i) = f_in(icrm,i,j,k)
+            end do
+
+            ! do the forward transform
+            call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+            if (ier/=0) write(0,*) 'ERROR: rfftmf(): CVT_filter - forward FFT error ',ier
+
+            ! filter out high frequencies
+            fft_out(2*(filter_wn_max+1):) = 0
+
+            ! transform back
+            call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+            if(ier /= 0) write(0,*) 'ERROR: rfftmb(): CVT_filter - backward FFT error ',ier
+
+            ! copy to output
+            do i = 1,nx
+               f_out(icrm,i,j,k) = fft_out(i)
+            end do
+
+         end do
+      end do
+   end do
+
+end subroutine CVT_filter
+
+!===============================================================================
+!===============================================================================
+subroutine CVT_diagnose(ncrms)
+   !----------------------------------------------------------------------------
+   ! Purpose: Diagnose amplitude for each wavenumber for variance transport
+   !----------------------------------------------------------------------------
+   use crmdims,   only: crm_dx
+   use vars,      only: t,qv,qcl,qci
+   implicit none
+
+   ! interface arguments
+   integer, intent(in) :: ncrms
+
+   ! local variables
+   real(crm_rknd), allocatable :: t_mean(:,:)
+   real(crm_rknd), allocatable :: q_mean(:,:)
+   real(crm_rknd), allocatable :: tmp_t(:,:,:,:)
+   real(crm_rknd), allocatable :: tmp_q(:,:,:,:)
+   real(crm_rknd) :: tmp
+   real(crm_rknd) :: factor_xy
+   integer :: i, j, k, icrm   ! loop iterators
+   !----------------------------------------------------------------------------
+
+   allocate( t_mean( ncrms, nzm ) )
+   allocate( q_mean( ncrms, nzm ) )
+
+   allocate( tmp_t( ncrms, nx, ny, nzm ) )
+   allocate( tmp_q( ncrms, nx, ny, nzm ) )
+
+   factor_xy = 1._crm_rknd/dble(nx*ny)
+
+   !----------------------------------------------------------------------------
+   ! calculate horizontal mean
+   !----------------------------------------------------------------------------
+   !$acc parallel loop collapse(2) async(asyncid)
+   do k = 1,nzm
+      do icrm = 1,ncrms
+         t_mean(icrm,k) = 0.
+         q_mean(icrm,k) = 0.
+         t_cvt(icrm,k,1) = 0.
+         q_cvt(icrm,k,1) = 0.
+      end do
+   end do
+
+   !$acc parallel loop collapse(4) async(asyncid)
+   do k = 1,nzm
+      do j = 1,ny
+         do i = 1,nx
+            do icrm = 1,ncrms
+               !$acc atomic update
+               t_mean(icrm,k) = t_mean(icrm,k) + t(icrm,i,j,k)
+               tmp = qv(icrm,i,j,k)+qcl(icrm,i,j,k)+qci(icrm,i,j,k)
+               !$acc atomic update
+               q_mean(icrm,k) = q_mean(icrm,k) + tmp
+            end do
+         end do
+      end do
+   end do
+
+   !$acc parallel loop collapse(2) async(asyncid)
+   do k = 1,nzm
+      do icrm = 1,ncrms
+         t_mean(icrm,k) = t_mean(icrm,k) * factor_xy
+         q_mean(icrm,k) = q_mean(icrm,k) * factor_xy
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! calculate anomalies
+   !----------------------------------------------------------------------------
+   if (filter_wn_max>0) then ! use filtered state for anomalies
+
+      !$acc parallel loop collapse(4) async(asyncid)
+      do k = 1,nzm
+         do j = 1,ny
+            do i = 1,nx
+               do icrm = 1,ncrms
+                  tmp_t(icrm,i,j,k) = t(icrm,i,j,k) 
+                  tmp_q(icrm,i,j,k) = qv(icrm,i,j,k) + qcl(icrm,i,j,k) + qci(icrm,i,j,k)
+                  tmp_t(icrm,i,j,k) = tmp_t(icrm,i,j,k) - t_mean(icrm,k)
+                  tmp_q(icrm,i,j,k) = tmp_q(icrm,i,j,k) - q_mean(icrm,k)
+               end do
+            end do
+         end do
+      end do
+
+      call CVT_filter( ncrms, tmp_t, t_cvt_pert )
+      call CVT_filter( ncrms, tmp_q, q_cvt_pert )
+
+   else ! use total variance
+
+      !$acc parallel loop collapse(4) async(asyncid)
+      do k = 1,nzm
+         do j = 1,ny
+            do i = 1,nx
+               do icrm = 1,ncrms
+                  t_cvt_pert(icrm,i,j,k) = t(icrm,i,j,k) - t_mean(icrm,k)
+                  tmp = qv(icrm,i,j,k) + qcl(icrm,i,j,k) + qci(icrm,i,j,k)
+                  q_cvt_pert(icrm,i,j,k) = tmp           - q_mean(icrm,k)
+               end do
+            end do
+         end do
+      end do
+
+   end if
+
+   !----------------------------------------------------------------------------
+   ! calculate variance
+   !----------------------------------------------------------------------------
+   !$acc parallel loop collapse(4) async(asyncid)
+   do k = 1,nzm
+      do j = 1,ny
+         do i = 1,nx
+            do icrm = 1,ncrms
+               t_cvt(icrm,k,1) = t_cvt(icrm,k,1) + t_cvt_pert(icrm,i,j,k) * t_cvt_pert(icrm,i,j,k)
+               q_cvt(icrm,k,1) = q_cvt(icrm,k,1) + q_cvt_pert(icrm,i,j,k) * q_cvt_pert(icrm,i,j,k)
+            end do
+         end do
+      end do
+   end do
+
+   !$acc parallel loop collapse(2) async(asyncid)
+   do k = 1,nzm
+      do icrm = 1,ncrms
+         t_cvt(icrm,k,1) = t_cvt(icrm,k,1) * factor_xy
+         q_cvt(icrm,k,1) = q_cvt(icrm,k,1) * factor_xy
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! clean up
+   !----------------------------------------------------------------------------
+   deallocate( t_mean )
+   deallocate( q_mean )
+
+   deallocate( tmp_t )
+   deallocate( tmp_q )
+
+end subroutine CVT_diagnose
+
+!===============================================================================
+!===============================================================================
+subroutine CVT_forcing(ncrms)
+   !----------------------------------------------------------------------------
+   ! Purpose: Calculate forcing for variance injection and apply limiters
+   !----------------------------------------------------------------------------
+   use crmdims,      only: crm_dx
+   use vars,         only: t
+   use microphysics, only: micro_field, index_water_vapor
+   implicit none
+
+   ! interface arguments
+   integer, intent(in) :: ncrms
+
+   ! local variables
+   real(crm_rknd), parameter   :: pert_scale_min = 1.0 - 0.1
+   real(crm_rknd), parameter   :: pert_scale_max = 1.0 + 0.1
+   real(crm_rknd), allocatable :: t_pert_scale(:,:)
+   real(crm_rknd), allocatable :: q_pert_scale(:,:)
+   real(crm_rknd), allocatable :: ttend_loc(:,:,:,:)
+   real(crm_rknd), allocatable :: qtend_loc(:,:,:,:)
+   integer :: i, j, k, icrm   ! loop iterators
+   !----------------------------------------------------------------------------
+
+   allocate( t_pert_scale( ncrms, nzm ) )
+   allocate( q_pert_scale( ncrms, nzm ) )
+
+   allocate( ttend_loc( ncrms, nx, ny, nzm ) )
+   allocate( qtend_loc( ncrms, nx, ny, nzm ) )
+
+   !----------------------------------------------------------------------------
+   ! calculate local tendencies scaled by local perturbations
+   !----------------------------------------------------------------------------
+   !$acc parallel loop collapse(2) async(asyncid)
+   do k=1,nzm
+      do icrm = 1 , ncrms
+         t_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k,1) / t_cvt(icrm,k,1) )
+         q_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k,1) / q_cvt(icrm,k,1) )
+         ! enforce minimum scaling
+         t_pert_scale(icrm,k) = max( t_pert_scale(icrm,k), pert_scale_min )
+         q_pert_scale(icrm,k) = max( q_pert_scale(icrm,k), pert_scale_min )
+         ! enforce maximum scaling
+         t_pert_scale(icrm,k) = min( t_pert_scale(icrm,k), pert_scale_max )
+         q_pert_scale(icrm,k) = min( q_pert_scale(icrm,k), pert_scale_max )
+      end do
+   end do
+
+   !$acc parallel loop collapse(4) async(asyncid)
+   do k = 1,nzm
+      do j = 1,ny
+         do i = 1,nx
+            do icrm = 1,ncrms
+               ttend_loc(icrm,i,j,k) = ( t_pert_scale(icrm,k) * t_cvt_pert(icrm,i,j,k) - t_cvt_pert(icrm,i,j,k) ) / dtn
+               qtend_loc(icrm,i,j,k) = ( q_pert_scale(icrm,k) * q_cvt_pert(icrm,i,j,k) - q_cvt_pert(icrm,i,j,k) ) / dtn
+            end do
+         end do
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! apply tendencies
+   !----------------------------------------------------------------------------
+   !$acc parallel loop collapse(4) async(asyncid)
+   do k = 1,nzm
+      do j = 1,ny
+         do i = 1,nx
+            do icrm = 1,ncrms
+               t(icrm,i,j,k) = t(icrm,i,j,k) + ttend_loc(icrm,i,j,k) * dtn
+               micro_field(icrm,i,j,k,index_water_vapor) = micro_field(icrm,i,j,k,index_water_vapor) + qtend_loc(icrm,i,j,k) * dtn
+            end do
+         end do
+      end do
+   end do
+
+   !----------------------------------------------------------------------------
+   ! clean up
+   !----------------------------------------------------------------------------
+   deallocate( ttend_loc )
+   deallocate( qtend_loc )
+   deallocate( t_pert_scale )
+   deallocate( q_pert_scale )
+
+end subroutine CVT_forcing
+
+!===============================================================================
+!===============================================================================
+end module variance_transport_mod

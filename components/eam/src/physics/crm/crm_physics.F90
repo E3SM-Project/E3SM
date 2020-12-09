@@ -70,6 +70,7 @@ subroutine crm_physics_register()
    use phys_control,        only: phys_getopts
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, &
                                   crm_nx_rad, crm_ny_rad
+   use constituents,        only: cnst_add
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,   only: setparm
    use gator_mod, only: gator_init
@@ -127,6 +128,14 @@ subroutine crm_physics_register()
 
    ! Setup CRM internal parameters
    call setparm()
+
+#if defined(MMF_CVT)
+   ! add variance tracers
+   call cnst_add('CVT_T', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                 longname='CVT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
+   call cnst_add('CVT_Q', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                 longname='CVT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
+#endif
 
    ! Register MMF history variables
    call crm_history_register()
@@ -205,7 +214,7 @@ end subroutine crm_physics_register
 !===================================================================================================
 !===================================================================================================
 
-subroutine crm_physics_init(species_class)
+subroutine crm_physics_init(state,species_class)
 !---------------------------------------------------------------------------------------------------
 ! 
 ! Purpose: initialize some variables, and add necessary fields into output fields 
@@ -217,10 +226,13 @@ subroutine crm_physics_init(species_class)
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
 #endif
+   use ppgrid,                only: begchunk, endchunk
+   use constituents,          only: pcnst, cnst_get_ind
    !----------------------------------------------------------------------------
    ! interface variables
    ! species_class is defined as input so it needs to be outside 
    ! of MODAL_AERO condition for 1-moment micro to work
+   type(physics_state), intent(inout), dimension(begchunk:endchunk) :: state
    integer, intent(inout) :: species_class(:)
    !----------------------------------------------------------------------------
    ! local variables
@@ -228,6 +240,8 @@ subroutine crm_physics_init(species_class)
    integer :: ierror   ! Error code
    logical :: use_ECPP
    character(len=16) :: MMF_microphysics_scheme
+   integer :: idx_cvt_t, idx_cvt_q
+   integer :: lchnk, ncol
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
@@ -267,6 +281,17 @@ subroutine crm_physics_init(species_class)
    snow_str_idx = pbuf_get_index('SNOW_STR')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+
+#if defined(MMF_CVT)
+   ! initialize variance transport tracers
+   call cnst_get_ind( 'CVT_T', idx_cvt_t )
+   call cnst_get_ind( 'CVT_Q', idx_cvt_q )
+   do lchnk = begchunk, endchunk
+      ncol  = state(lchnk)%ncol
+      state(lchnk)%q(:ncol,:pver,idx_cvt_t) = 0
+      state(lchnk)%q(:ncol,:pver,idx_cvt_q) = 0
+   end do
+#endif /* MMF_CVT */
 
 end subroutine crm_physics_init
 
@@ -438,7 +463,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
-
+   integer                     :: idx_cvt_t, idx_cvt_q  ! variance transport constituent indices
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
 #if defined( MMF_ORIENT_RAND )
@@ -828,6 +853,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       end do
 #endif
       !---------------------------------------------------------------------------------------------
+      ! Variance transport
+      !---------------------------------------------------------------------------------------------
+#if defined(MMF_CVT)
+      call cnst_get_ind( 'CVT_T', idx_cvt_t )
+      call cnst_get_ind( 'CVT_Q', idx_cvt_q )
+      crm_input%t_cvt(:ncol,:pver) = state%q(:ncol,:pver,idx_cvt_t)
+      crm_input%q_cvt(:ncol,:pver) = state%q(:ncol,:pver,idx_cvt_q)
+#endif /* MMF_CVT */
+      !---------------------------------------------------------------------------------------------
       ! Set the input wind (also sets CRM orientation)
       !---------------------------------------------------------------------------------------------
       do i = 1,ncol
@@ -935,6 +969,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:ncol,:pver,ixcldliq) = crm_output%qcltend(1:ncol,1:pver)
       ptend%q(:ncol,:pver,ixcldice) = crm_output%qiltend(1:ncol,1:pver)
 
+#if defined(MMF_CVT)
+      call cnst_get_ind( 'CVT_T', idx_cvt_t )
+      call cnst_get_ind( 'CVT_Q', idx_cvt_q )
+      ptend%q(1:ncol,1:pver,idx_cvt_t) = crm_output%t_cvt_tend(1:ncol,1:pver,k)
+      ptend%q(1:ncol,1:pver,idx_cvt_q) = crm_output%q_cvt_tend(1:ncol,1:pver,k)
+#endif /* MMF_CVT */
+
       !---------------------------------------------------------------------------------------------
       ! Add radiative heating tendency above CRM
       !---------------------------------------------------------------------------------------------
@@ -1031,6 +1072,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%lq(ixcldice) = .TRUE.
       ptend%lu           = .FALSE.
       ptend%lv           = .FALSE.
+
+#if defined(MMF_CVT)
+      call cnst_get_ind( 'CVT_T', idx_cvt_t )
+      call cnst_get_ind( 'CVT_Q', idx_cvt_q )
+      ptend%lq(idx_cvt_t) = .TRUE.
+      ptend%lq(idx_cvt_q) = .TRUE.
+#endif /* MMF_CVT */
 
       !---------------------------------------------------------------------------------------------
       ! CRM momentum tendencies

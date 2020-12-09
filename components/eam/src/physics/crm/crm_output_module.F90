@@ -88,6 +88,9 @@ module crm_output_module
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
       real(crm_rknd), allocatable :: qiltend (:,:)          ! CRM output tendency of cloud ice
 
+      real(crm_rknd), allocatable :: t_cvt_tend (:,:)       ! CRM output tendency for variance transport
+      real(crm_rknd), allocatable :: q_cvt_tend (:,:)       ! CRM output tendency for variance transport
+
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
       real(crm_rknd), allocatable :: gicewp(:,:)      ! ice water path
@@ -261,6 +264,9 @@ contains
          if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
          if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
 
+         if (.not. allocated(output%t_cvt_tend))  allocate(output%t_cvt_tend(ncol,nlev))
+         if (.not. allocated(output%q_cvt_tend))  allocate(output%q_cvt_tend(ncol,nlev))
+
          if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
          if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
          if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
@@ -306,6 +312,10 @@ contains
          call prefetch(output%qltend  )
          call prefetch(output%qcltend )
          call prefetch(output%qiltend )
+
+         call prefetch(output%t_cvt_tend )
+         call prefetch(output%q_cvt_tend )
+
          call prefetch(output%cld    )
          call prefetch(output%gicewp )
          call prefetch(output%gliqwp )
@@ -420,6 +430,9 @@ contains
       output%qltend  = 0
       output%qcltend = 0
       output%qiltend = 0
+
+      output%t_cvt_tend = 0
+      output%q_cvt_tend = 0
 
       output%cld    = 0
       output%gicewp = 0
@@ -538,6 +551,9 @@ contains
       if (allocated(output%qltend)) deallocate(output%qltend)
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
+
+      if (allocated(output%t_cvt_tend)) deallocate(output%t_cvt_tend)
+      if (allocated(output%q_cvt_tend)) deallocate(output%q_cvt_tend)
 
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)
