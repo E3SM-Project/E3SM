@@ -1015,7 +1015,6 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
-          end if
         else if (test_case == "planar_dbl_vrtx") then
            if (hybrid%masterthread) print *,"Restarting planar double vortex..."
            !==================================================
@@ -1023,6 +1022,8 @@ contains
            !==================================================
            call planar_dbl_vrtx_init_state(elem, nets,nete,pmean,deriv)
            call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+         end if
+
           !============================
           ! Read in the restarted state
           !============================
@@ -1070,7 +1071,7 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
-           else if (test_case == "planar_dbl_vrtx") then
+          else if (test_case == "planar_dbl_vrtx") then
               if (hybrid%masterthread) print *,"initializing planar double vortex..."
               call planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
               call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)

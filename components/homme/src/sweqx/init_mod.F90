@@ -332,17 +332,6 @@ contains
 
        if(par%masterproc) write(6,*)"...done."
 
-       ! =================================================================
-       ! Initialize mass_matrix
-       ! =================================================================
-
-       call mass_matrix(par,elem)
-
-       ! global area correction (default for cubed-sphere meshes)
-       if( cubed_sphere_map == 0 ) then
-          call set_area_correction_map0(elem, nelemd, par, gp)
-       endif
-
        ! Epsilon bubble correction (default for RRM meshes).
        if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
           call set_area_correction_map2(elem, nelemd, par, gp)
@@ -351,8 +340,6 @@ contains
     deallocate(gp%points)
     deallocate(gp%weights)
 
-    if(par%masterproc) write(6,*) 're-running mass_matrix'
-    call mass_matrix(par,elem)
 
     ! =================================================================
     ! Run the checksum to verify communication schedule
@@ -360,6 +347,11 @@ contains
 
     !call testchecksum(elem,par,GridEdge)  ! broken
 
+    ! =================================================================
+    ! Initialize mass_matrix
+    ! =================================================================
+
+    call mass_matrix(par,elem)
 
     ! =================================================================
     ! Determine the global degree of freedome for each gridpoint
