@@ -57,8 +57,9 @@ module ice_comp_mct
    use seaice_time_integration
    use seaice_error, only: seaice_check_critical_error
 
-   use ice_constants_colpkg, only: &
-       Tffresh
+   use ice_constants_colpkg, only: Tffresh
+
+   use ice_colpkg, only: colpkg_sea_freezing_temperature
 
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -1917,6 +1918,9 @@ contains
         n = n + 1
         seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
+
+        seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
@@ -2050,9 +2054,6 @@ contains
 !-----------------------------------------------------------------------
       do i = 1, nCellsSolve
         seaSurfaceTemperature(i)  = seaSurfaceTemperature(i) - seaiceFreshWaterFreezingPoint
-        seaFreezingTemperature(i) = -1.8_RKIND                 ! hardwired for NCOM
-             !         Tf (i,j,iblk) = -depressT*sss(i,j,iblk)       ! freezing temp (C)
-             !         Tf (i,j,iblk) = -depressT*max(sss(i,j,iblk),ice_ref_salinity)
 
         if (config_use_column_biogeochemistry) then
            ! convert from mmol C/m^3 to mmol N/m^3
