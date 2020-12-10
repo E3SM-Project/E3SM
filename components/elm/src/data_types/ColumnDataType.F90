@@ -1927,38 +1927,9 @@ contains
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
     !-----------------------------------------------------------------------
-    if ( use_fates ) then
 
-       if (carbon_type == 'c12') then
-          if ( nlevdecomp_full > 1 ) then
-             this%totlitc_1m(begc:endc) = spval
-             call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
-                  avgflag='A', long_name='total litter carbon to 1 meter depth', &
-                  ptr_col=this%totlitc_1m)
-             
-             this%totsomc_1m(begc:endc) = spval
-             call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
-                  avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
-                  ptr_col=this%totsomc_1m)
-          end if
-
-          this%totlitc(begc:endc) = spval
-          call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
-               avgflag='A', long_name='total litter carbon', &
-               ptr_col=this%totlitc)
+    if (carbon_type == 'c12') then
           
-          this%totsomc(begc:endc) = spval
-          call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
-               avgflag='A', long_name='total soil organic matter carbon', &
-               ptr_col=this%totsomc)
-
-       end if ! c12
-
-       
-
-
-    
-    else if (carbon_type == 'c12') then
        this%decomp_cpools(begc:endc,:) = spval
        do l  = 1, ndecomp_pools
           if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
@@ -2019,50 +1990,55 @@ contains
              avgflag='A', long_name='column-level sink for C truncation', &
              ptr_col=this%ctrunc, default='inactive')
 
-       this%seedc(begc:endc) = spval
-       call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
-             avgflag='A', long_name='pool for seeding new Patches', &
-             ptr_col=this%seedc, default='inactive')
-
        call hist_addfld1d (fname='SOILC', units='gC/m^2', &
              avgflag='A', long_name='soil C', &
              ptr_col=this%totsomc)
 
        this%totecosysc(begc:endc) = spval
        call hist_addfld1d (fname='TOTECOSYSC', units='gC/m^2', &
-             avgflag='A', long_name='total ecosystem carbon, incl veg but excl cpool but excl product pools', &
-             ptr_col=this%totecosysc)
-
+            avgflag='A', long_name='total ecosystem carbon, incl veg but excl cpool but excl product pools', &
+            ptr_col=this%totecosysc)
+       
        this%totcolc(begc:endc) = spval
        call hist_addfld1d (fname='TOTCOLC', units='gC/m^2', &
-             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
-             ptr_col=this%totcolc)
+            avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
+            ptr_col=this%totcolc)
 
-       this%prod10c(begc:endc) = spval
-       call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
-             avgflag='A', long_name='10-yr wood product C', &
-             ptr_col=this%prod10c, default='inactive')
-
-       this%prod100c(begc:endc) = spval
-       call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
-             avgflag='A', long_name='100-yr wood product C', &
-             ptr_col=this%prod100c, default='inactive')
-
-       this%prod1c(begc:endc) = spval
-       call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
-             avgflag='A', long_name='1-yr crop product C', &
-             ptr_col=this%prod1c, default='inactive')
-
-       this%totprodc(begc:endc) = spval
-       call hist_addfld1d (fname='TOTPRODC', units='gC/m^2', &
-             avgflag='A', long_name='total wood product C', &
-             ptr_col=this%totprodc, default='inactive')
-
-       this%fuelc(begc:endc) = spval
-       call hist_addfld1d (fname='FUELC', units='gC/m^2', &
-             avgflag='A', long_name='fuel load', &
-             ptr_col=this%fuelc, default='inactive')
-
+       if(.not.use_fates)then
+       
+          this%seedc(begc:endc) = spval
+          call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
+               avgflag='A', long_name='pool for seeding new Patches', &
+               ptr_col=this%seedc, default='inactive')
+          
+          this%prod10c(begc:endc) = spval
+          call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
+               avgflag='A', long_name='10-yr wood product C', &
+               ptr_col=this%prod10c, default='inactive')
+          
+          this%prod100c(begc:endc) = spval
+          call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
+               avgflag='A', long_name='100-yr wood product C', &
+               ptr_col=this%prod100c, default='inactive')
+          
+          this%prod1c(begc:endc) = spval
+          call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
+               avgflag='A', long_name='1-yr crop product C', &
+               ptr_col=this%prod1c, default='inactive')
+          
+          this%totprodc(begc:endc) = spval
+          call hist_addfld1d (fname='TOTPRODC', units='gC/m^2', &
+               avgflag='A', long_name='total wood product C', &
+               ptr_col=this%totprodc, default='inactive')
+          
+          this%fuelc(begc:endc) = spval
+          call hist_addfld1d (fname='FUELC', units='gC/m^2', &
+               avgflag='A', long_name='fuel load', &
+               ptr_col=this%fuelc, default='inactive')
+          
+          
+       end if
+       
     else if ( carbon_type == 'c13' ) then
        this%decomp_cpools_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_pools
@@ -2233,7 +2209,7 @@ contains
              avgflag='A', long_name='C14 total wood product C', &
              ptr_col=this%totprodc)
     
-    endif ! use_fates, or c12, or c13, or c14
+    endif ! if c12/c13/c14
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_cs
@@ -3005,7 +2981,7 @@ contains
             this%totprodc(c) + &
             this%ctrunc(c)   + &
             this%cropseedc_deficit(c)
-            
+
        this%totabgc(c) =       &
             this%totprodc(c) + &
             this%seedc(c)    + &

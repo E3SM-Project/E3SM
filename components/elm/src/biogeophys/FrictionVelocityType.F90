@@ -6,7 +6,7 @@ module FrictionVelocityType
   use shr_sys_mod    , only : shr_sys_flush
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varctl     , only : use_cn
+  use clm_varctl     , only : use_cn, use_fates
   use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
   use clm_varcon     , only : spval
   use decompMod      , only : bounds_type
@@ -224,7 +224,7 @@ contains
     ! to set this properly (e.g., patch-level displacement height and roughness 
     ! length). So leave at 30m.
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        do p = bounds%begp, bounds%endp
           this%forc_hgt_u_patch(p) = 30._r8
        end do

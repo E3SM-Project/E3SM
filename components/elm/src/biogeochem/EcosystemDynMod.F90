@@ -224,6 +224,8 @@ contains
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
          carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
+    call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
+    
     ! Only update the veg_ data structures if we are using cn
     if(.not.use_fates) then
        call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
@@ -260,14 +262,12 @@ contains
        call col_nf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
        call col_pf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
     end if
-
-    call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
+    
     call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
     call col_cs%Summary(bounds, num_soilc, filter_soilc)
     
     call col_nf%Summary(bounds, num_soilc, filter_soilc)
     call col_ns%Summary(bounds, num_soilc, filter_soilc)
-    
    
     call col_pf%Summary(bounds, num_soilc, filter_soilc)
     call col_ps%Summary(bounds, num_soilc, filter_soilc)

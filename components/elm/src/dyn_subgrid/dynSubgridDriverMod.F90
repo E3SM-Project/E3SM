@@ -322,6 +322,9 @@ contains
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
 
+       end if
+
+       if(use_cn .or. use_fates)then
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
                phosphorusstate_vars, col_ns, col_ps )

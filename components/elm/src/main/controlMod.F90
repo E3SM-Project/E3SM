@@ -732,11 +732,12 @@ contains
 
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    if (use_cn .and. use_vertsoilc) then
+    if ((use_cn .or. use_fates) .and. use_vertsoilc) then
        ! vertical soil mixing variables
        call mpi_bcast (som_adv_flux, 1, MPI_REAL8,  0, mpicom, ier)
        call mpi_bcast (max_depth_cryoturb, 1, MPI_REAL8,  0, mpicom, ier)
-
+    end if
+    if (use_cn .and. use_vertsoilc) then
        ! C and N input vertical profiles
        call mpi_bcast (exponential_rooting_profile,       1, MPI_LOGICAL,  0, mpicom, ier)
        call mpi_bcast (rootprof_exp,            1, MPI_REAL8,  0, mpicom, ier)
@@ -744,7 +745,7 @@ contains
        call mpi_bcast (pftspecific_rootingprofile,        1, MPI_LOGICAL,  0, mpicom, ier)
     end if
 
-    if (use_cn .and. use_nitrif_denitrif) then 
+    if ((use_cn .or. use_fates).and. use_nitrif_denitrif) then 
        call mpi_bcast (no_frozen_nitrif_denitrif,  1, MPI_LOGICAL, 0, mpicom, ier)
     end if
 
