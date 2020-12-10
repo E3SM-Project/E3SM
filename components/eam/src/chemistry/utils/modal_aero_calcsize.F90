@@ -541,7 +541,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    real(r8), parameter :: third = 1.0_r8/3.0_r8
    real(r8), pointer :: fldcw(:,:)
    real(r8) :: delnum_a2, delnum_c2            !  work variables
-   real(r8) :: delnum_a3, delnum_c3, delnum_t3, odelnum_t3, ndelnum_t3 !  work variables
+   real(r8) :: delnum_a3, delnum_c3, delnum_t3, odelnum_t3, ndelnum_t3, o1delnum_t3, n1delnum_t3 !  work variables
    real(r8) :: deltatinv                     ! 1/deltat
    real(r8) :: dgncur_c(pcols,pver,ntot_amode)
    real(r8) :: dgnyy, dgnxx                  ! dgnumlo/hi of current mode
@@ -576,9 +576,8 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    real(r8) :: tadjinv                       ! 1/tadj
    real(r8) :: v2ncur_a(pcols,pver,ntot_amode)
    real(r8) :: v2ncur_c(pcols,pver,ntot_amode)
-   real(r8) :: bv2nyy,v2nyy, v2nxx,bv2nxx, v2nzz           ! voltonumblo/hi of current mode
-   real(r8) :: v2n_bnd1, v2n_bnd2           ! voltonumblo/hi of current mode
-   real(r8) :: v2nyyrl, v2nxxrl              ! relaxed voltonumblo/hi 
+   real(r8) :: bv2nyy,v2nyy, v2n_bnd1,bv2n_bnd1, v2nzz           ! voltonumblo/hi of current mode
+   real(r8) :: v2nyyrl, v2n_bnd1rl              ! relaxed voltonumblo/hi 
    real(r8) :: xfercoef
    real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
    real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
@@ -748,47 +747,43 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
          ! note
          !    v2nyy = voltonumblo_amode is proportional to dgnumlo**(-3), 
          !            and produces the maximum allowed number for a given volume
-         !    v2nxx = voltonumbhi_amode is proportional to dgnumhi**(-3), 
+         !    v2n_bnd1 = voltonumbhi_amode is proportional to dgnumhi**(-3), 
          !            and produces the minimum allowed number for a given volume
-         !    v2nxxrl and v2nyyrl are their "relaxed" equivalents.  
+         !    v2n_bnd1rl and v2nyyrl are their "relaxed" equivalents.  
          !            Setting frelaxadj=27=3**3 means that 
          !            dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3
          !
          ! if do_aitacc_transfer is .true., then
          !     for n=nacc, multiply v2nyy by 1.0e6 to effectively turn off the
          !         adjustment when number is too big (size is too small)
-         !     for n=nait, divide   v2nxx by 1.0e6 to effectively turn off the
+         !     for n=nait, divide   v2n_bnd1 by 1.0e6 to effectively turn off the
          !         adjustment when number is too small (size is too big)
-         !OLD  however, do not change the v2nyyrl/v2nxxrl so that
+         !OLD  however, do not change the v2nyyrl/v2n_bnd1rl so that
          !OLD      the interstitial<-->activated adjustment is not changed
-         !NEW  also change the v2nyyrl/v2nxxrl so that
+         !NEW  also change the v2nyyrl/v2n_bnd1rl so that
          !NEW      the interstitial<-->activated adjustment is turned off 
          !
       end if
 
       frelaxadj = 27.0_r8
       dumfac = exp(4.5_r8*alnsg_amode(n)**2)*pi/6.0_r8
-      v2nxx = voltonumbhi_amode(n)
-      bv2nxx    = voltonumbhi_amode(n)
-      if ( do_aitacc_transfer ) then
-        if (n == nait) bv2nxx = bv2nxx/1.0e6_r8
-      endif
-      !v2nxx = 0.01_r8! voltonumbhi_amode(n)
-      !v2nxx   = dgnumhi_amode(n)*1.0e-3_r8 !PASSED
-      !v2nxx   = 1._r8/(pi*alnsg_amode(n)*dgnumhi_amode(n)*3._r8) !PASS
-      !v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi_amode(n)**3._r8)*exp(4.5_r8*alnsg_amode(n)**2._r8) )
+      v2n_bnd1  = voltonumbhi_amode(n)
+      bv2n_bnd1 = voltonumbhi_amode(n)
+
       v2nyy = voltonumblo_amode(n)
-      v2nxxrl = v2nxx/frelaxadj
+      v2n_bnd1rl = v2n_bnd1/frelaxadj
       v2nyyrl = v2nyy*frelaxadj
       dgnxx = dgnumhi_amode(n)
       dgnyy = dgnumlo_amode(n)
       if ( do_aitacc_transfer ) then
-         if (n == nait) v2nxx = v2nxx/1.0e6_r8 !BALLI
+         if (n == nait) v2n_bnd1  = v2n_bnd1/1.0e6_r8 !BALLI
+         if (n == nait) bv2n_bnd1 = bv2n_bnd1/1.0e6_r8
          if (n == nacc) v2nyy = v2nyy*1.0e6_r8
-         v2nxxrl = v2nxx/frelaxadj   ! NEW
+         v2n_bnd1rl = v2n_bnd1/frelaxadj   ! NEW
          v2nyyrl = v2nyy*frelaxadj   ! NEW
       end if
 
+      if(bv2n_bnd1 .ne. v2n_bnd1)call endrun('BALLI STOP!!!')
       if (do_adjust .and. ptend_present) then
          dotend(lna) = .true.
          dotendqqcw(lnc) = .true.
@@ -829,7 +824,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
                   num_c = 0.0_r8
                   if(ptend_present) dqqcwdt(i,k,lnc) = -num_c0*deltatinv
                   num_a1 = num_a
-                  numbnd = max( drv_a*v2nxx, min( drv_a*v2nyy, num_a1 ) )
+                  numbnd = max( drv_a*v2n_bnd1, min( drv_a*v2nyy, num_a1 ) )
                   num_a  = num_a1 + (numbnd - num_a1)*fracadj
                   if(ptend_present) dqdt(i,k,lna) = (num_a - num_a0)*deltatinv
 
@@ -838,7 +833,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
                   num_a = 0.0_r8
                   if(ptend_present) dqdt(i,k,lna) = -num_a0*deltatinv
                   num_c1 = num_c
-                  numbnd = max( drv_c*v2nxx, min( drv_c*v2nyy, num_c1 ) )
+                  numbnd = max( drv_c*v2n_bnd1, min( drv_c*v2nyy, num_c1 ) )
                   num_c  = num_c1 + (numbnd - num_c1)*fracadj
                   if(ptend_present) dqqcwdt(i,k,lnc) = (num_c - num_c0)*deltatinv
 !#ifdef BALLI ---pass
@@ -852,17 +847,17 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
                   !    and activated number (individually)
                   !    if only only a or c changes, adjust the other in the opposite direction
                   !    as much as possible to conserve a+c
-                  numbnd = max( drv_a*v2nxxrl, min( drv_a*v2nyyrl, num_a1 ) )
+                  numbnd = max( drv_a*v2n_bnd1rl, min( drv_a*v2nyyrl, num_a1 ) )
                   delnum_a2 = (numbnd - num_a1)*fracadj
                   num_a2 = num_a1 + delnum_a2
-                  numbnd = max( drv_c*v2nxxrl, min( drv_c*v2nyyrl, num_c1 ) )
+                  numbnd = max( drv_c*v2n_bnd1rl, min( drv_c*v2nyyrl, num_c1 ) )
                   delnum_c2 = (numbnd - num_c1)*fracadj
                   num_c2 = num_c1 + delnum_c2
                   if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
-                     num_a2 = max( drv_a*v2nxxrl, min( drv_a*v2nyyrl,   &
+                     num_a2 = max( drv_a*v2n_bnd1rl, min( drv_a*v2nyyrl,   &
                         num_a1-delnum_c2 ) )
                   else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
-                     num_c2 = max( drv_c*v2nxxrl, min( drv_c*v2nyyrl,   &
+                     num_c2 = max( drv_c*v2n_bnd1rl, min( drv_c*v2nyyrl,   &
                         num_c1-delnum_a2 ) )
                   end if
                   ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the 
@@ -871,23 +866,24 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
                   num_t2 = num_a2 + num_c2
                   delnum_a3 = 0.0_r8
                   delnum_c3 = 0.0_r8
-                  if (num_t2 < drv_t*v2nxx) then
+                  if (num_t2 < drv_t*v2n_bnd1) then
 
-                     odelnum_t3 = (drv_t*v2nxx - num_t2)*fracadj
+                     odelnum_t3 = (drv_t*v2n_bnd1 - num_t2)*fracadj
 
-                     ndelnum_t3 = (drv_t*bv2nxx - num_t2)*fracadj
-
-                     if(odelnum_t3 .ne. ndelnum_t3) write(102,*)odelnum_t3, ndelnum_t3
+                     ndelnum_t3 = (drv_t*bv2n_bnd1 - num_t2)*fracadj
+                     !if(drv_t*bv2n_bnd1 .ne. drv_t*v2n_bnd1) write(104,*)drv_t*bv2n_bnd1,drv_t*v2n_bnd1,num_t2
+                     !if(bv2n_bnd1 .ne. v2n_bnd1) write(103,*)bv2n_bnd1,v2n_bnd1
+                     if(odelnum_t3 .ne. ndelnum_t3) write(102,*)odelnum_t3, ndelnum_t3, drv_t*v2n_bnd1, num_t2
                      delnum_t3 = ndelnum_t3
 
-                     ! if you are here then (num_a2 < drv_a*v2nxx) and/or
-                     !                      (num_c2 < drv_c*v2nxx) must be true
-                     if ((num_a2 < drv_a*v2nxx) .and. (num_c2 < drv_c*v2nxx)) then
+                     ! if you are here then (num_a2 < drv_a*v2n_bnd1) and/or
+                     !                      (num_c2 < drv_c*v2n_bnd1) must be true
+                     if ((num_a2 < drv_a*v2n_bnd1) .and. (num_c2 < drv_c*v2n_bnd1)) then
                         delnum_a3 = delnum_t3*(num_a2/num_t2) !BALLI
                         delnum_c3 = delnum_t3*(num_c2/num_t2)
-                     else if (num_c2 < drv_c*v2nxx) then
+                     else if (num_c2 < drv_c*v2n_bnd1) then
                         delnum_c3 = delnum_t3
-                     else if (num_a2 < drv_a*v2nxx) then
+                     else if (num_a2 < drv_a*v2n_bnd1) then
                         delnum_a3 = delnum_t3 !BALLI
                      end if
 !#ifdef BALLI
@@ -921,9 +917,9 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
             ! now compute current dgn and v2n
             !
             if (drv_a > 0.0_r8) then
-               if (num_a <= drv_a*v2nxx) then
+               if (num_a <= drv_a*v2n_bnd1) then
                   dgncur_a(i,k,n) = dgnxx
-                  v2ncur_a(i,k,n) = v2nxx
+                  v2ncur_a(i,k,n) = v2n_bnd1
                else if (num_a >= drv_a*v2nyy) then
                   dgncur_a(i,k,n) = dgnyy
                   v2ncur_a(i,k,n) = v2nyy
@@ -940,9 +936,9 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
             endif
 
             if (drv_c > 0.0_r8) then
-               if (num_c <= drv_c*v2nxx) then
+               if (num_c <= drv_c*v2n_bnd1) then
                   dgncur_c(i,k,n) = dgnumhi_amode(n)
-                  v2ncur_c(i,k,n) = v2nxx
+                  v2ncur_c(i,k,n) = v2n_bnd1
                else if (num_c >= drv_c*v2nyy) then
                   dgncur_c(i,k,n) = dgnumlo_amode(n)
                   v2ncur_c(i,k,n) = v2nyy
@@ -1494,7 +1490,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
    real(r8) :: num_a0                 ! initial number (#/mol_air)
    real(r8) :: num_a                  ! final number (#/mol_air)
    real(r8) :: voltonumbhi, voltonumblo
-   real(r8) :: v2nyy, v2nxx           ! voltonumblo/hi of current mode
+   real(r8) :: v2nyy, v2n_bnd1           ! voltonumblo/hi of current mode
    real(r8) :: sigmag, alnsg
    !-----------------------------------------------------------------------
 
@@ -1558,7 +1554,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
       dumfac = exp(4.5_r8*alnsg**2)*pi/6.0_r8
       voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*alnsg**2) )
       voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*alnsg**2) )
-      v2nxx = voltonumbhi
+      v2n_bnd1 = voltonumbhi
       v2nyy = voltonumblo
       dgnxx = dgnumhi
       dgnyy = dgnumlo
@@ -1571,7 +1567,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
             num_a = max( 0.0_r8, num_a0 )
 
             if (drv_a > 0.0_r8) then
-               if (num_a <= drv_a*v2nxx) then
+               if (num_a <= drv_a*v2n_bnd1) then
                   dgncur_a(i,k) = dgnxx
                else if (num_a >= drv_a*v2nyy) then
                   dgncur_a(i,k) = dgnyy
