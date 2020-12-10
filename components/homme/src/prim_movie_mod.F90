@@ -347,7 +347,7 @@ contains
                   ! only do conversion if we are on the sphere
                   if (geometry=="sphere") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*180/dd_pi
-                  else if (geometry=="plane")
+                 else if (geometry=="plane") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon
                   end if
                 enddo
@@ -368,7 +368,7 @@ contains
                   ! only do conversion if we are on the sphere
                   if (geometry=="sphere") then
                     vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*180/dd_pi
-                  else if (geometry=="plane")
+                  else if (geometry=="plane") then
                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat
                   end if
                 enddo
