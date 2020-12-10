@@ -408,6 +408,9 @@ contains
           call shr_sys_flush(logunit)
        endif
 
+       allocate( driver_task_node_map(0:global_numpes-1), stat=ierr)
+       if (ierr /= 0) call shr_sys_abort(trim(subname)//' allocate driver_task_node_map failed ')
+
        call t_startf("shr_taskmap_write")
        if (drv_inst == 0) then
           call shr_taskmap_write(logunit, DRIVER_COMM, &
