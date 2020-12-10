@@ -16,6 +16,10 @@ TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
 
+#ifdef SCREAM_FORCE_RUN_FAIL
+  REQUIRE(false); // force this test to fail
+#endif
+
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
 

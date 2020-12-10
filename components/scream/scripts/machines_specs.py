@@ -12,8 +12,8 @@
 #       subdirs are located (full_debug, full_sp_debug, debug_no_fpe).
 
 from utils import expect, get_cpu_core_count, run_cmd_no_fail
-import os, sys
-import pathlib
+
+import os, sys, pathlib
 
 MACHINE_METADATA = {
     "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],
@@ -82,13 +82,18 @@ MACHINE_METADATA = {
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", get_cpu_core_count(), get_cpu_core_count(),""),
 }
 
-if (pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file()):
+if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
     sys.path.append(str(pathlib.Path("~/.cime").expanduser()))
-    from scream_mach_specs import MACHINE_METADATA as LOCAL_MD
+    from scream_mach_specs import MACHINE_METADATA as LOCAL_MD # pylint: disable=import-error
     if len(LOCAL_MD) == 6:
         MACHINE_METADATA["local"] = LOCAL_MD
     else:
         print("WARNING! File '~/.cime/scream_mach_specs.py' was found, but the MACHINE_METADATA in there is badly formatted. Ignoring it.")
+
+###############################################################################
+def get_all_supported_machines():
+###############################################################################
+    return MACHINE_METADATA.keys()
 
 ###############################################################################
 def is_machine_supported(machine):
@@ -160,7 +165,7 @@ def get_mach_testing_resources(machine):
     return MACHINE_METADATA[machine][4]
 
 ###############################################################################
-def get_mach_baseline_root_dir(machine,default_dir):
+def get_mach_baseline_root_dir(machine):
 ###############################################################################
     expect(is_machine_supported(machine),
            "Machine {} is not currently supported by scream testing system.\n"
