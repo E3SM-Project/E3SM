@@ -1,4 +1,4 @@
-module clm_instMod
+module elm_instMod
 
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
@@ -31,13 +31,13 @@ module clm_instMod
   type(waterflux_type)     :: waterflux_vars
   type(waterstate_type)    :: waterstate_vars
 
-  public :: clm_inst_biogeophys
+  public :: elm_inst_biogeophys
 
   contains
 
   !-----------------------------------------------------------------------
 
-    subroutine clm_inst_biogeophys(bounds_proc)
+    subroutine elm_inst_biogeophys(bounds_proc)
 
     ! !ARGUMENTS
     implicit none
@@ -59,6 +59,6 @@ module clm_instMod
     call soilstate_vars%init(bounds_proc)
     call soilhydrology_vars%Init(bounds_proc)
 
-  end subroutine clm_inst_biogeophys
+  end subroutine elm_inst_biogeophys
 
-end module clm_instMod
+end module elm_instMod

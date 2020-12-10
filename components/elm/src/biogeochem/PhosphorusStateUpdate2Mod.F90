@@ -7,16 +7,16 @@ module PhosphorusStateUpdate2Mod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use clm_time_manager    , only : get_step_size
-  use clm_varpar          , only : nlevsoi, nlevdecomp
-  use clm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl          , only : iulog
+  use elm_varpar          , only : nlevsoi, nlevdecomp
+  use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varctl          , only : iulog
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
   use pftvarcon           , only : npcropmin
   use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
+  use elm_varctl          , only : use_pflotran, pf_cmode
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
   !

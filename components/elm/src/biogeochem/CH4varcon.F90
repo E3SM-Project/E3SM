@@ -5,8 +5,8 @@ module CH4varcon
   !
   use shr_kind_mod, only : r8 => shr_kind_r8
   use abortutils  , only : endrun
-  use clm_varctl  , only : iulog
-  use clm_varctl  , only : NLFileName_in
+  use elm_varctl  , only : iulog
+  use elm_varctl  , only : NLFileName_in
   implicit none
   save
   !

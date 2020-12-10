@@ -12,7 +12,7 @@ module dynConsBiogeochemMod
   use shr_log_mod              , only : errMsg => shr_log_errMsg
   use decompMod                , only : bounds_type
   use abortutils               , only : endrun
-  use clm_varctl               , only : iulog, use_c13, use_c14
+  use elm_varctl               , only : iulog, use_c13, use_c14
   use VegetationPropertiesType , only : veg_vp
   use CanopyStateType          , only : canopystate_type
   use PhotosynthesisType       , only : photosyns_type
@@ -37,7 +37,7 @@ module dynConsBiogeochemMod
   use VegetationDataType       , only : vegetation_phosphorus_state 
   use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf  
   use VegetationDataType       , only : veg_nf, veg_pf  
-  use clm_varcon               , only : c3_r2, c4_r2, c14ratio
+  use elm_varcon               , only : c3_r2, c4_r2, c14ratio
   use dynPatchStateUpdaterMod  , only : patch_state_updater_type
   use dynSubgridAdjustmentsMod , only : dyn_veg_cs_Adjustments, dyn_col_cs_Adjustments
   use dynSubgridAdjustmentsMod , only : dyn_veg_ns_Adjustments, dyn_col_ns_Adjustments
@@ -78,9 +78,9 @@ contains
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_PDB
     use landunit_varcon    , only : istsoil, istcrop
-    use clm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
+    use elm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
     use pftvarcon          , only : pconv, pprod10, pprod100
-    use clm_varcon         , only : c13ratio, c14ratio
+    use elm_varcon         , only : c13ratio, c14ratio
     use clm_time_manager   , only : get_step_size
     use dynPriorWeightsMod , only : prior_weights_type
     !
@@ -1029,7 +1029,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of cnstate_type
    !
-   use clm_varcon, only : c14ratio
+   use elm_varcon, only : c14ratio
    implicit none
    !
    ! !ARGUMENT
@@ -1082,7 +1082,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of carbonflux_type
    !
-   use clm_varcon, only : c13ratio
+   use elm_varcon, only : c13ratio
    !
    implicit none
    !
@@ -1154,7 +1154,7 @@ contains
    ! !USES:
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
-   use clm_varctl              , only : use_lch4
+   use elm_varctl              , only : use_lch4
    !
    ! !ARGUMENTS:
    type(bounds_type)               , intent(in)    :: bounds

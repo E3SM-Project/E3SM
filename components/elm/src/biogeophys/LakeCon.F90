@@ -10,7 +10,7 @@ module LakeCon
   ! !USES:
   use shr_kind_mod , only : r8 => shr_kind_r8
   use decompMod    , only : bounds_type
-  use clm_varctl   , only : iulog
+  use elm_varctl   , only : iulog
   use spmdMod      , only : masterproc
   !
   ! !PUBLIC TYPES:

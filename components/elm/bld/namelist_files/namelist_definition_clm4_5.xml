@@ -5,14 +5,14 @@
 <namelist_definition>
 
 <!-- ========================================================================================  -->
-<!-- CLM Namelist -->
+<!-- ELM Namelist -->
 <!-- ========================================================================================  -->
 
 <entry id="finidat_interp_source" 
        type="char*256" 
        category="datasets"
        input_pathname="abs" 
-       group="clm_inparm" 
+       group="elm_inparm"
        valid_values="" >
 If non-blank, then interpinic will be called to interpolate finidat_interp_source and 
 create output file specified by finidat_interp_dest.
@@ -23,7 +23,7 @@ For this to be used finidat MUST BE blank.
        type="char*256" 
        category="datasets"
        input_pathname="abs" 
-       group="clm_inparm" 
+       group="elm_inparm"
        valid_values="" >
 If finidat_interp_source is set to non-blank, then interpinic will be called 
 to interpolate finidat_interp_source and create output file finidat_interp_dest.
@@ -33,17 +33,17 @@ to interpolate finidat_interp_source and create output file finidat_interp_dest.
        type="char*256" 
        category="datasets"
        input_pathname="abs" 
-       group="clm_inparm" 
+       group="elm_inparm"
        valid_values="" >
-Full pathname of initial conditions file. If blank CLM will startup from
+Full pathname of initial conditions file. If blank ELM will startup from
 arbitrary initial conditions.
 </entry>
 
 <entry id="nrevsn" 
        type="char*256" 
-       category="clm_restart"
+       category="elm_restart"
        input_pathname="abs" 
-       group="clm_inparm" 
+       group="elm_inparm"
        valid_values="" >
 Full pathname of master restart file for a branch run. (only used if RUN_TYPE=branch)
 (Set with RUN_REFCASE and RUN_REFDATE)
@@ -53,29 +53,29 @@ Full pathname of master restart file for a branch run. (only used if RUN_TYPE=br
        type="char*256" 
        category="datasets"
        input_pathname="abs" 
-       group="clm_inparm" 
+       group="elm_inparm"
        valid_values="" >
 Full pathname of land fraction data file.
 </entry>
 
-<entry id="clump_pproc" type="integer" category="clm_performance"
-       group="clm_inparm" valid_values="" >
+<entry id="clump_pproc" type="integer" category="elm_performance"
+       group="elm_inparm" valid_values="" >
 Clumps per processor.
 </entry>
 
-<entry id="const_climate_hist" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="const_climate_hist" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Continue cycling spinup climate througout transient simulation
 </entry>
 
-<entry id="co2_ppmv" type="real" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="co2_ppmv" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Atmospheric CO2 molar ratio (by volume) only used when co2_type==constant (umol/mol)
 (Set by CCSM_CO2_PPMV)
 </entry>
 
-<entry id="co2_type" type="char*16" category="clm_physics"
-       group="clm_inparm" valid_values="constant,prognostic,diagnostic" >
+<entry id="co2_type" type="char*16" category="elm_physics"
+       group="elm_inparm" valid_values="constant,prognostic,diagnostic" >
 Type of CO2 feedback.
     constant   = use the input co2_ppmv value
     prognostic = use the prognostic value sent from the atmosphere
@@ -83,8 +83,8 @@ Type of CO2 feedback.
 </entry>
 
 
-<entry id="suplnitro" type="char*15" category="clm_physics"
-       group="clm_inparm" valid_values="NONE,ALL" >
+<entry id="suplnitro" type="char*15" category="elm_physics"
+       group="elm_inparm" valid_values="NONE,ALL" >
 Supplemental Nitrogen mode and for what type of vegetation it's turned on for. 
 In this mode Nitrogen is unlimited rather than prognosed and in general vegetation is 
 over-productive.
@@ -92,8 +92,8 @@ over-productive.
     ALL            = Supplemental Nitrogen is active for all vegetation types
 </entry>
 
-<entry id="suplphos" type="char*15" category="clm_physics"
-       group="clm_inparm" valid_values="NONE,ALL" >
+<entry id="suplphos" type="char*15" category="elm_physics"
+       group="elm_inparm" valid_values="NONE,ALL" >
 Supplemental Phosphorus mode and for what type of vegetation it's turned on for. 
 In this mode Phosphorus is unlimited rather than prognosed and in general vegetation is 
 over-productive.
@@ -102,8 +102,8 @@ over-productive.
 </entry>
 
 
-<entry id="nu_com" type="char*15" category="clm_physics"
-       group="clm_inparm" valid_values="RD,ECA,MIC" >
+<entry id="nu_com" type="char*15" category="elm_physics"
+       group="elm_inparm" valid_values="RD,ECA,MIC" >
 Nutrient competition mode. In each specific mode, plants/soil microbes have the different
 priority to access soil nitrogen and phosphorus.
     RD           = competition scaled by relative nutrient demand
@@ -111,111 +111,111 @@ priority to access soil nitrogen and phosphorus.
     MIC          = always assume that soil microbes out-compete plants
 </entry>
 
-<entry id="nu_com_phosphatase" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="nu_com_phosphatase" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, use new phosphatase activity algorithm that comes with nu_com module
 </entry>
 
-<entry id="nu_com_nfix" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="nu_com_nfix" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, use new N2 fixation algorithm that comes with nu_com module
 </entry>
 
-<entry id="forest_fert_exp" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="forest_fert_exp" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, run forest N/P fertilization experiment
 </entry>
 
-<entry id="ECA_Pconst_RGspin" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="ECA_Pconst_RGspin" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, do not allow soil labile, secondary, occcluded, and 
 parent material phosphorus to change, during Regular Spinup,
 for ECA model
 </entry>
 
-<entry id="NFIX_PTASE_plant" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="NFIX_PTASE_plant" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE consider priority of plant to get a fraction of 
 symbiotic N fixation and P phosphatase
 </entry>
 
-<entry id="startdate_add_temperature" type="char*8" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="startdate_add_temperature" type="char*8" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Set date for beginning of adding temperature to atmospheric forcing
 </entry>
 
-<entry id="startdate_add_co2" type="char*8" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="startdate_add_co2" type="char*8" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Set date for beginning of adding CO2 to atmospheric forcing
 </entry>
 
-<entry id="add_temperature" type="real" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="add_temperature" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Amount of added temperature (K) to atmospheric forcing
 </entry>
 
-<entry id="add_co2" type="real" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="add_co2" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Amount of added CO2 (ppmv) to atmospheric forcing
 </entry>
 
-<entry id="use_pheno_flux_limiter" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="use_pheno_flux_limiter" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, apply flux limiter to phenology fluxes to avoid overextraction
 of plant carbon and nutrient fluxes
 </entry>
 
-<entry id="create_crop_landunit" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="create_crop_landunit" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
 </entry>
 
-<entry id="all_active" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="all_active" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, make ALL pfts, columns and landunits active, even those with 0 weight.
 This means that computations will be run even over these 0-weight points.
 
 THIS IS ONLY FOR TESTING PURPOSES - IT HAS NOT BEEN CHECKED FOR SCIENTIFIC VALIDITY.
 </entry>
 
-<entry id="more_vertlayers" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="more_vertlayers" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, run with an increased number of soil layers
 Interpolate the soil layers on the surface dataset to the soil layers specified in iniTimeConst
 (EXPERIMENTAL)
 </entry>
 
-<entry id="irrigate" type="logical" category="clm_physics"
-       group="clm_inparm"  >
+<entry id="irrigate" type="logical" category="elm_physics"
+       group="elm_inparm"  >
 If TRUE, irrigation will be active.
 </entry> 
 
-<entry id="tw_irr" type="logical" category="clm_physics"
-       group="clm_inparm"  >
+<entry id="tw_irr" type="logical" category="elm_physics"
+       group="elm_inparm"  >
 If TRUE, irrigation will be two-way coupled with MOSART.
 irrigation supply will be constrained by surface water availability from MOSART
 </entry>
 
-<entry id="extra_gw_irr" type="logical" category="clm_physics"
-       group="clm_inparm"  >
+<entry id="extra_gw_irr" type="logical" category="elm_physics"
+       group="elm_inparm"  >
 Only effective when tw_irr is TRUE. If TRUE, extra groundwater pumping will be performed to meet the irrigation demand.
 surface water irrigation supply will still be constrained by surface water availability from MOSART
 </entry>
 
-<entry id="firrig_data" type="logical" category="clm_physics"
-       group="clm_inparm"  >
+<entry id="firrig_data" type="logical" category="elm_physics"
+       group="elm_inparm"  >
 If TRUE, Firrig, Fsurf, and Fgrnd will be read from the ELM surface data.
 If False, use constant values.
 </entry>
 
-<entry id="maxpatch_glcmec" type="integer"  category="clm_physics"
-       group="clm_inparm" valid_values="0,1,3,5,10,36" >
+<entry id="maxpatch_glcmec" type="integer"  category="elm_physics"
+       group="elm_inparm" valid_values="0,1,3,5,10,36" >
 Number of  multiple elevation classes over glacier points.
 Normally this is ONLY used when running CESM with the active glacier model.
 </entry>
 
-<entry id="glc_grid" type="char*10" category="clm_physics"
-        group="clm_inparm" valid_values="gland20,gland10,gland5,gland5UM" >
+<entry id="glc_grid" type="char*10" category="elm_physics"
+        group="elm_inparm" valid_values="gland20,gland10,gland5,gland5UM" >
 Glacier model grid
     gland20  = Greenland at 20km resolution
     gland10  = Greenland at 10km resolution
@@ -223,148 +223,148 @@ Glacier model grid
     gland5UM = Greenland at  5km resolution, using new UMontana ice sheet data for present day Greenland
 </entry>
 
-<entry id="glc_smb" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="glc_smb" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, calculate surface mass balance for glacier multi-elevation class points.
 If false use growing degree day information for glaciers multi-elevation class points.
 Only works when glc_nec is greater than 0.
 (Only tested with glc_smb=.true., setting it to .false. is NOT tested)
 </entry>
 
-<entry id="glc_do_dynglacier" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="glc_do_dynglacier" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, dynamically change areas and topographic heights over glacier points.
 Only works when glc_nec is greater than zero, and when coupled to CISM.
 </entry>
 
-<entry id="glc_snow_persistence_max_days" type="integer" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="glc_snow_persistence_max_days" type="integer" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Number of days before one considers the perennially snow-covered point 'land ice'
 (and thus capable of generating a positive surface mass balance for CISM).
 Default: 7300 (20 years)
 </entry>
 
-<entry id="albice" type="real(2)" category="clm_physics"
-       group="clm_inparm" >
+<entry id="albice" type="real(2)" category="elm_physics"
+       group="elm_inparm" >
 Visible and Near-infrared albedo's for glacier ice
 </entry>
 
-<entry id="dtime" type="real"  category="clm_physics" 
-       group="clm_inparm" valid_values="">
+<entry id="dtime" type="real"  category="elm_physics"
+       group="elm_inparm" valid_values="">
 Time step (seconds)
 </entry>
 
-<entry id="override_nsrest" type="integer"  category="clm_restart" 
-       group="clm_inparm" valid_values="3">
+<entry id="override_nsrest" type="integer"  category="elm_restart"
+       group="elm_inparm" valid_values="3">
 Override the start type from the driver: it can only be
 set to 3 meaning branch.
 </entry>
 
 <entry id="fglcmask" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname of land-ice mask data file (on lnd grid).
 </entry>
 
 <entry id="flndtopo" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname of topography data file. Only required when 
 land-ice model is active.
 </entry>
 
-<entry id="glcmec_downscale_rain_snow_convert" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="glcmec_downscale_rain_snow_convert" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, downscale precipitation division into rain vs. snow over glc_mec landunits.
 WARNING: THIS BREAKS ENERGY CONSERVATION, SO SHOULD NOT BE USED IN COUPLED SIMULATIONS
 <default>Default: .false.</default>
 </entry>
 
-<entry id="glcmec_downscale_longwave" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="glcmec_downscale_longwave" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, downscale longwave radiation over glc_mec landunits.
 This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
 <entry id="use_betr" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the BeTR
 (BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
 <entry id="use_fates" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the FATES
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
 <entry id="fates_spitfire_mode" type="integer" category="physics"
-        group="clm_inparm" valid_values="0,1" >
+        group="elm_inparm" valid_values="0,1" >
 Set to 0 to keep fire off. Set to 1 to turn on fates spitfire module (only relevant if FATES is being used).
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
-       group="clm_inparm" valid_values="1">
+       group="elm_inparm" valid_values="1">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
 <entry id="use_fates_fixed_biogeog" type="logical" category="physics"
-        group="clm_inparm" valid_values=".false." value=".false."> 
+        group="elm_inparm" valid_values=".false." value=".false.">
 Toggle to turn on FATES fixed biogeography mode (STUB ONLY, MUST BE FALSE).
 </entry>
 
 <entry id="use_fates_logging" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the logging module (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_planthydro" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on plant hydraulics(only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_cohort_age_tracking" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
  Toggle to turn on cohort age tracking (only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_ed_st3" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on Static Stand Structure Mode (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_ed_prescribed_phys" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on prescribed physiology (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_inventory_init" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on inventory initialization(only relevant if FATES is being used).
 </entry>
 
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname to the inventory initialization control file.
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.
 </entry>
 
 <entry id="paramfile" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname datafile with plant function type (PFT) constants combined with
 constants for biogeochem modules
 </entry>
 
 <entry id="fates_paramfile" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname datafile with fates parameters
 </entry>
 
 <entry id="fsoilordercon" type="char*256" category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
        Full pathname datafile with soil order dependent constants
 </entry>
        
@@ -375,22 +375,22 @@ the initial surface dataset to vary over time.
 </entry>
 
 <entry id="fsurdat" type="char*256"     category="datasets"
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname of surface data file.
 </entry>
 
 <entry id="fsnowoptics" type="char*256" category="datasets" 
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 SNICAR (SNow, ICe, and Aerosol Radiative model) optical data file name
 </entry>
 
 <entry id="fsnowaging" type="char*256"  category="datasets" 
-       input_pathname="abs" group="clm_inparm" valid_values="" >
+       input_pathname="abs" group="elm_inparm" valid_values="" >
 SNICAR (SNow, ICe, and Aerosol Radiative model) snow aging data file name
 </entry>
 
 <entry id="hist_avgflag_pertape" type="char*1(6)" category="history"
-       group="clm_inparm" valid_values="A,I,X,M" >
+       group="elm_inparm" valid_values="A,I,X,M" >
 Per file averaging flag.
     'A' (average over history period)
     'I' (instantaneous)
@@ -399,7 +399,7 @@ Per file averaging flag.
 </entry>
 
 <entry id="hist_type1d_pertape" type="char*4(6)" category="history"
-       group="clm_inparm" valid_values="GRID,LAND,COLS,PFTS, " >
+       group="elm_inparm" valid_values="GRID,LAND,COLS,PFTS, " >
 Averaging type of output for 1D vector output (when hist_dov2xy is false).
     GRID means average all land-units up to the grid-point level
     LAND means average all columns up to the land-unit level
@@ -408,84 +408,84 @@ Averaging type of output for 1D vector output (when hist_dov2xy is false).
 </entry>
 
 <entry id="hist_dov2xy" type="logical(6)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 If TRUE, implies output data on a 2D latitude/longitude grid. False means
 output in 1D vector format.  One setting per history tape series.
 </entry>
 
 <entry id="hist_empty_htapes" type="logical" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 If TRUE, indicates do NOT output any default history fields (requires you to use
 hist_fincl* to set the exact output fields to use)..
 </entry>
 
 <entry id="hist_fexcl1" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series 1.
 </entry>
 
 <entry id="hist_fexcl2" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series  2.
 </entry>
 
 <entry id="hist_fexcl3" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series  3.
 </entry>
 
 <entry id="hist_fexcl4" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series  4.
 </entry>
 
 <entry id="hist_fexcl5" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series  5.
 </entry>
 
 <entry id="hist_fexcl6" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to exclude from history tape series  6.
 </entry>
 
 <entry id="hist_fincl1" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  1.
 </entry>
 
 <entry id="hist_fincl2" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  2.
 </entry>
 
 <entry id="hist_fincl3" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  3.
 </entry>
 
 <entry id="hist_fincl4" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  4.
 </entry>
 
 <entry id="hist_fincl5" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  5.
 </entry>
 
 <entry id="hist_fincl6" type="char*50(1000)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Fields to add to history tape series  6.
 </entry>
 
 <entry id="hist_mfilt" type="integer(6)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Per tape series  maximum number of time samples.
 </entry>
 
 <entry id="hist_ndens" type="integer(6)" category="history"
-       group="clm_inparm" valid_values="1,2" >
+       group="elm_inparm" valid_values="1,2" >
 Per tape series  history file density (i.e. output precision) 
     1=double precision
     2=single precision
@@ -493,7 +493,7 @@ Per tape series  history file density (i.e. output precision)
 </entry>
 
 <entry id="hist_nhtfrq" type="integer(6)" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 Per tape series history write frequency. 
     positive means in time steps
     0=monthly
@@ -503,61 +503,61 @@ Per tape series history write frequency.
 </entry>
 
 <entry id="metdata_type" type="char*400" category="datasets"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 </entry>
 
 <entry id="metdata_bypass" type="char*400" category="datasets"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 </entry>
 
 <entry id="metdata_biases" type="char*400" category="datasets"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 </entry>
 
 <entry id="co2_file" type="char*400" category="datasets"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 </entry>
 
 <entry id="aero_file" type="char*400" category="datasets"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 </entry>
 
-<entry id="nsegspc" type="integer" category="clm_performance"
-       group="clm_inparm" valid_values="" >
+<entry id="nsegspc" type="integer" category="elm_performance"
+       group="elm_inparm" valid_values="" >
 number of segments per clump for decomposition
 <default>Default: 20</default>
 </entry>
 
-<entry id="pertlim" type="real" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="pertlim" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 Perturbation limit when doing error growth test
 </entry>
 
-<entry id="rest_flag" type="logical" category="clm_restart"
-       group="clm_inparm" valid_values="" >
+<entry id="rest_flag" type="logical" category="elm_restart"
+       group="elm_inparm" valid_values="" >
 If FALSE, don't write any restart files.
 </entry>
 
-<entry id="urban_hac" type="char*16" category="clm_physics"
-       group="clm_inparm" valid_values="OFF,ON,ON_WASTEHEAT" >
+<entry id="urban_hac" type="char*16" category="elm_physics"
+       group="elm_inparm" valid_values="OFF,ON,ON_WASTEHEAT" >
 Turn urban air conditioning/heating ON or OFF and add wasteheat:
     OFF          = Air conditioning/heating is OFF in buildings, internal temperature allowed to float freely
     ON           = Air conditioning/heating is ON in buildings, internal temperature constrained
     ON_WASTEHEAT = Air conditioning/heating is ON and waste-heat sent to urban canyon
 </entry>
 
-<entry id="urban_traffic" type="logical" category="clm_physics"
-       group="clm_inparm" valid_values="" >
+<entry id="urban_traffic" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
 If TRUE, urban traffic flux will be activated (Currently NOT implemented).
 </entry>
 
 <entry id="wrtdia" type="logical" category="history"
-       group="clm_inparm" valid_values="" >
-If TRUE, write diagnostic of global radiative temperature written to CLM log file.
+       group="elm_inparm" valid_values="" >
+If TRUE, write diagnostic of global radiative temperature written to ELM log file.
 </entry>
 
-<entry id="subgridflag" type="integer" category="clm_physics"
-       group="clm_inparm" valid_values="0,1" >
+<entry id="subgridflag" type="integer" category="elm_physics"
+       group="elm_inparm" valid_values="0,1" >
 Subgrid fluxes for snow
 </entry>
 
@@ -565,98 +565,98 @@ Subgrid fluxes for snow
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->
 <entry id="use_nofire" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to make wild-fires inactive for biogeochemistry=CN mode
 </entry>
 
 <entry id="use_lch4" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
-Turn on methane model. Standard part of CLM45BGC model.
+       group="elm_inparm" valid_values="" value=".false.">
+Turn on methane model. Standard part of ELMBGC model.
 </entry>
 
 <entry id="use_cn" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
-CLM Biogeochemistry mode : Carbon Nitrogen model (CN) 
-(or CLM45BGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+       group="elm_inparm" valid_values="" value=".false.">
+ELM Biogeochemistry mode : Carbon Nitrogen model (CN)
+(or ELMBGC if phys=elm, vsoilc_centbgc='on', and elm4me='on')
 </entry>
 
 <entry id="use_cndv" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 CLM Biogeochemistry mode : Carbon Nitrogen with Dynamic Global Vegetation Model (CNDV)
-(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and elm4me='on')
 </entry>
 
 <entry id="use_nitrif_denitrif" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Nitrification/denitrification splits the prognostic mineral N pool into two 
    mineral N pools: NO3 and NH4, and includes the transformations between them.
 Requires the CN model to work (either CN or CNDV).
 </entry>
 
 <entry id="use_vertsoilc" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Turn on vertical soil carbon.
 Requires the CN model to work (either CN or CNDV).
 </entry>
 
 <entry id="use_century_decomp" type="logical" category="bgc"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Use parameters for decomposition from the CENTURY Carbon model
 Requires the CN model to work (either CN or CNDV).
 </entry>
 
 <entry id="use_extralakelayers" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to use 25 lake layers instead of 10
 (extralaklayers=".true." is EXPERIMENTAL NOT SUPPORTED! Nor is it Tested!)
 </entry>
 
 <entry id="use_vichydro" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the VIC hydrologic parameterizations
 (vichydro=".true." is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
 <entry id="use_crop" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the prognostic crop model
 </entry>
 
 <entry id="use_snicar_frc" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on calculation of SNow and Ice Aerosol Radiation model (SNICAR) radiative forcing
 (snicar_frc=".true." is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
 <entry id="use_snicar_ad" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".true.">
+       group="elm_inparm" valid_values="" value=".true.">
 Toggle to turn on SNICAR_AD snow shortwave algorithms
 The same snow shortwave algorithm can be turned on for sea-ice simulation
 with config_use_snicar_ad in mpas-seaice namelist
 </entry>
 
 <entry id="use_noio" type="logical" category="default_settings"
-       group="clm_inparm" valid_values="" value=".false." >
+       group="elm_inparm" valid_values="" value=".false." >
 Toggle to turn all history output completely OFF (possibly used for testing)
 </entry>
 
 <entry id="use_vancouver" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle for vancouver specific logic.
 </entry>
 
 <entry id="use_mexicocity" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle for mexico city specific logic.
 </entry>
 
 <entry id="maxpatch_pft" type="integer" category="physics"
-       group="clm_inparm" valid_values="" value="17">
+       group="elm_inparm" valid_values="" value="17">
 Max number of plant functional types in naturally vegetated landunit.
 </entry>
 
 <entry id="use_dynroot" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the dynamic root model.
 </entry>
 
@@ -664,7 +664,7 @@ Toggle to turn on the dynamic root model.
 <!-- mkmapdata  namelist                               -->
 <!--                                                   -->
 <entry id="scripgriddata" type="char*256" category="mkmapdata"
-       input_pathname="abs" group="clmexp" valid_values="" >
+       input_pathname="abs" group="elmexp" valid_values="" >
 SCRIP format grid data file
 </entry>
 
@@ -1084,7 +1084,7 @@ Mapping method from Phosphorus deposition input file to the model resolution
 
 <!-- LAI -->
 <entry id="use_lai_streams" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on use of LAI streams in place of the LAI on the surface dataset when using Satellite Phenology mode.
 (EXPERIMENTAL and NOT tested)
 </entry>
@@ -1355,121 +1355,121 @@ List of chemical constituents that dry deposition will be calculated for
 <!-- namelist elements associated with the vertical CN model                                   -->
 <!-- ========================================================================================  -->
 
-<entry id="override_bgc_restart_mismatch_dump" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="override_bgc_restart_mismatch_dump" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 Flag for overriding the crash that should occur if user tries to start the model from a restart file made with a different version of the soil decomposition structure than is currently being used.
 </entry>
 
-<entry id="spinup_state" type="integer" category="clm_vertcn"
-       group="clm_inparm" valid_values="0,1" >
+<entry id="spinup_state" type="integer" category="elm_vertcn"
+       group="elm_inparm" valid_values="0,1" >
 Flag for setting the state of the Accelerated decomposition spinup state for the model.  
    0 = normal model behavior; 
    1 = AD spinup.  
 Entering and exiting spinup mode occurs automatically by comparing the namelist and restart file values for this variable.
 </entry>
 
-<entry id="nyears_ad_carbon_only" type="integer" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="nyears_ad_carbon_only" type="integer" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 </entry>
 
-<entry id="spinup_mortality_factor" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="spinup_mortality_factor" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 </entry>
 
 <!-- vertical mixing switches    -->
-<entry id="som_adv_flux" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="som_adv_flux" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 Base advective flux (downwards) for SOM.
 </entry>
 
-<entry id="max_depth_cryoturb" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="max_depth_cryoturb" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 Maximum depth to mix soils to by croturbation, in permafrost soils.
 </entry>
 
 <!-- turnover time modifications    -->
-<entry id="decomp_depth_efolding" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="decomp_depth_efolding" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 E-folding depth over which decomposition is slowed with depth in all soils.
 </entry>
 
-<entry id="anoxia" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="anoxia" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If TRUE, reduce heterotrophic respiration according to available oxygen predicted by CH4 submodel.
 </entry>
 
-<entry id="anoxia_wtsat" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="anoxia_wtsat" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If TRUE, weight calculation of oxygen limitation by the inundated fraction and diagnostic saturated column gas
 concentration profile calculated in the CH4 submodel. Only applies if anoxia = TRUE.
 (EXPERIMENTAL AND NOT FUNCTIONAL!)
 (deprecated -- will be removed)
 </entry>
 
-<entry id="froz_q10" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="froz_q10" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 separate q10 for frozen soil respiration rates.  default to same as above zero rates
 </entry>
 
 <!-- rooting parameters    -->
 
-<entry id="pftspecific_rootingprofile" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="pftspecific_rootingprofile" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If TRUE, rooting profile depends on specific PFT
 </entry>
 
-<entry id="exponential_rooting_profile" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="exponential_rooting_profile" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If true, use a single exponential function to define the profile for distributing C and N from belowground components (following Jackson et al., 1999). If False, use the default CLM rootfrac double exponential for distributing C and N from belowground components.
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="rootprof_exp" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="rootprof_exp" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If pftspecific_rootingprofile is set to false, this sets a single exponential profile over which to distribute C and N coming from root pools (leaves, stem, grain).
 </entry>
 
 <entry id="hist_wrtch4diag" type="logical" category="history"
-       group="clm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" >
 If TRUE, add extra diagnostics for methane model to the history files
 </entry>
 
-<entry id="surfprof_exp" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="surfprof_exp" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 Profile over which to distribute C and N coming from surface pools (leaves, stem, grain).
 </entry>
 
 <!-- some N cycle flags  -->
-<entry id="no_frozen_nitrif_denitrif" type="logical" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="no_frozen_nitrif_denitrif" type="logical" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 If true, no denitrification or nitrification in frozen soil layers.
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="nfix_timeconst" type="real" category="clm_vertcn"
-       group="clm_inparm" valid_values="" >
+<entry id="nfix_timeconst" type="real" category="elm_vertcn"
+       group="elm_inparm" valid_values="" >
 Number of days over which to use exponential relaxation of NPP in N fixation calculation
 </entry>
 
 <!-- C isotope flags    -->
-<entry id="use_c13" type="logical" category="clm_isotope"
-       group="clm_inparm" valid_values="" >
+<entry id="use_c13" type="logical" category="elm_isotope"
+       group="elm_inparm" valid_values="" >
 Enable C13 model
 </entry>
 
-<entry id="use_c14" type="logical" category="clm_isotope"
-       group="clm_inparm" valid_values="" >
+<entry id="use_c14" type="logical" category="elm_isotope"
+       group="elm_inparm" valid_values="" >
 Enable C14 model
 </entry>
 
-<entry id="use_c14_bombspike" type="logical" category="clm_isotope"
-       group="clm_inparm" valid_values="" >
+<entry id="use_c14_bombspike" type="logical" category="elm_isotope"
+       group="elm_inparm" valid_values="" >
 Flag to use the atmospheric time series of C14 concentrations from bomb fallout, rather than natural abundance C14 (nominally set as 10^-12 mol C14 / mol C)
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="atm_c14_filename" type="char*256" category="clm_isotope"
-       group="clm_inparm" valid_values="" >
+<entry id="atm_c14_filename" type="char*256" category="elm_isotope"
+       group="elm_inparm" valid_values="" >
 Filename with time series of atmospheric Delta C14 data.  variables in file are "time" and "atm_delta_c14".  time variable is in format 1950.0, and time values must be monotonically increasing for interpolation, however spacing can be unequal. atm_delta_c14 variable has units of permil.  
 (EXPERIMENTAL and NOT tested)
 </entry>
@@ -1477,15 +1477,15 @@ Filename with time series of atmospheric Delta C14 data.  variables in file are 
 
 <!-- permfrost-specific flags    -->
 
-<entry id="perchroot" type="logical" category="clm_permafrost"
-       group="clm_inparm" valid_values="" >
+<entry id="perchroot" type="logical" category="elm_permafrost"
+       group="elm_inparm" valid_values="" >
 If TRUE, weight btran (vegetation soil moisture availability) by unfrozen layers only, assuming that vegetation
 will allocate roots preferentially to the active layer.
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="perchroot_alt" type="logical" category="clm_permafrost"
-       group="clm_inparm" valid_values="" >
+<entry id="perchroot_alt" type="logical" category="elm_permafrost"
+       group="elm_inparm" valid_values="" >
 If TRUE, weight btran (vegetation soil moisture availability) by the active layer, as defined by the greatest thaw depth over the current and prior years.
 (EXPERIMENTAL and NOT tested)
 </entry>
@@ -1495,20 +1495,20 @@ If TRUE, weight btran (vegetation soil moisture availability) by the active laye
 <!-- namelist elements associated with the LISSS Lake Model                                    -->
 <!-- ========================================================================================  -->
 
-<entry id="deepmixing_depthcrit" type="real" category="clm_lake"
-       group="clm_inparm" valid_values="" >
+<entry id="deepmixing_depthcrit" type="real" category="elm_lake"
+       group="elm_inparm" valid_values="" >
 Minimum lake depth to increase non-molecular thermal diffusivities by the factor deepmixing_mixfact.
 </entry>
 
-<entry id="deepmixing_mixfact" type="real" category="clm_lake"
-       group="clm_inparm" valid_values="" >
+<entry id="deepmixing_mixfact" type="real" category="elm_lake"
+       group="elm_inparm" valid_values="" >
 Factor to increase non-molecular thermal diffusivities for lakes deeper than deepmixing_depthcrit
 to account for unresolved 3D processes.
 Set to 1 to 
 </entry>
 
-<entry id="lake_melt_icealb" type="real(2)" category="clm_lake"
-       group="clm_inparm" valid_values="" >
+<entry id="lake_melt_icealb" type="real(2)" category="elm_lake"
+       group="elm_inparm" valid_values="" >
 Visible and Near-infrared albedo values for melting lakes. Albedo will relax to these values as temperature
 reaches melting when ice is present with no snow layers. Represents puddling, ice disintegration, and white ice.
 Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes without snow layers.
@@ -1517,32 +1517,32 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 <!-- ========================================================================================  -->
 <!-- namelist elements associated with the betr_initializeMod                                  -->
 <!-- ========================================================================================  -->
-<entry id="reaction_method" type="char*256" category="clm_betr"
+<entry id="reaction_method" type="char*256" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Specify what reaction module will be used within the betr framework. 
 </entry>
 
-<entry id="AppParNLFile" type="char*256" category="clm_betr"
+<entry id="AppParNLFile" type="char*256" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Specify file to input parameters that will be used within the betr framework.
 </entry>
 
-<entry id="advection_on" type="logical" category="clm_betr"
+<entry id="advection_on" type="logical" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Turn on advection in betr if it is true.
 </entry>
 
-<entry id="diffusion_on" type="logical" category="clm_betr"
+<entry id="diffusion_on" type="logical" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Turn on diffusion in betr if it is true.
 </entry>
 
-<entry id="ebullition_on" type="logical" category="clm_betr"
+<entry id="ebullition_on" type="logical" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Turn on ebullition in betr if it is true.
 </entry>
 
-<entry id="reaction_on" type="logical" category="clm_betr"
+<entry id="reaction_on" type="logical" category="elm_betr"
        group="betr_inparm" valid_values="" >
 Turn on reaction in betr if it is true.
 </entry>
@@ -1550,20 +1550,20 @@ Turn on reaction in betr if it is true.
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
 
-<entry id="oldfflag" type="integer" category="clm_physics"
-       group="clm_canopyhydrology_inparm" valid_values="0,1" >
+<entry id="oldfflag" type="integer" category="elm_physics"
+       group="elm_canopyhydrology_inparm" valid_values="0,1" >
 Use old snow cover fraction from Niu et al. 2007
 (deprecated -- will be removed)
 </entry>
 
-<entry id="h2osfcflag" type="integer" category="clm_physics"
-       group="clm_soilhydrology_inparm" valid_values="0,1" >
+<entry id="h2osfcflag" type="integer" category="elm_physics"
+       group="elm_soilhydrology_inparm" valid_values="0,1" >
 If surface water is active or not
 (deprecated -- will be removed)
 </entry>
 
-<entry id="origflag" type="integer" category="clm_physics"
-       group="clm_soilhydrology_inparm" valid_values="0,1" >
+<entry id="origflag" type="integer" category="elm_physics"
+       group="elm_soilhydrology_inparm" valid_values="0,1" >
 Use original CLM4 soil hydraulic properties
 (deprecated -- will be removed)
 </entry>
@@ -1572,7 +1572,7 @@ Use original CLM4 soil hydraulic properties
 <!-- namelist elements associated with the CH4 Model                                           -->
 <!-- ========================================================================================  -->
 
-<entry id="use_aereoxid_prog" type="logical" category="clm_methane"
+<entry id="use_aereoxid_prog" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 Allows user to tune the value of aereoxid.  If set to FALSE, then use the value of aereoxid from 
 the parameter file (set to 0.0, but may be tuned with values in the range {0.0,1.0}.  If set to TRUE,
@@ -1580,23 +1580,23 @@ then don't fix aere (see ch4Mod.F90).
 <default>Default: .true.</default>
 </entry>
 
-<entry id="allowlakeprod" type="logical" category="clm_methane"
+<entry id="allowlakeprod" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, turn on methane biogeochemistry model for lake columns, using a simplified version of the CH4 submodel.
 (EXPERIMENTAL)
 </entry>
 
-<entry id="usephfact" type="logical" category="clm_methane"
+<entry id="usephfact" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, apply a limitation to methane production based on the soil pH dataset.
 </entry>
 
-<entry id="vmax_oxid_unsat" type="real" category="clm_methane"
+<entry id="vmax_oxid_unsat" type="real" category="elm_methane"
        group="ch4par_in" valid_values="" >
 Michaelis-Mentin maximum methane oxidation rate (mol/m^3-water/s), in the unsaturated zone.
 </entry>
 
-<entry id="replenishlakec" type="logical" category="clm_methane"
+<entry id="replenishlakec" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, maintain constant soil carbon under lakes, and use the methane submodel simply to predict the net conversion of
 CO2 (via biological assimilation, decomposition, and methanogenesis) to CH4. If FALSE, transiently decompose initial
@@ -1605,7 +1605,7 @@ so the coupled system will NOT conserve carbon in this mode if the methane model
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="fin_use_fsat" type="logical" category="clm_methane"
+<entry id="fin_use_fsat" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, use the saturated fraction (fsat) calculated in Soil Hydrology to diagnose the inundated fraction (finundated)
 for the CH4 submodel (possibly affecting soil heterotrophic respiration and denitrification depending on the configuration),
@@ -1613,14 +1613,14 @@ rather than using the inversion to satellite-observed inundated fraction, which 
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="usefrootc" type="logical" category="clm_methane"
+<entry id="usefrootc" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, use the fine root carbon predicted by CN when calculating the aerenchyma area, rather than the parametrization
 based on annual NPP, aboveground NPP fraction, and LAI.
 (EXPERIMENTAL and NOT tested)
 </entry>
 
-<entry id="ch4offline" type="logical" category="clm_methane"
+<entry id="ch4offline" type="logical" category="elm_methane"
        group="ch4par_in" valid_values="" >
 If TRUE, run the methane submodel decoupled from the atmosphere. The atmospheric methane concentration is prescribed by
 atmch4, the methane flux is not passed to the atmosphere, and the CO2 flux to the atmosphere is not adjusted for
@@ -1692,19 +1692,19 @@ If TRUE, apply harvest from flanduse_timeseries file.
 <!-- Namelist options related to finidat consistency checks                                    -->
 <!-- ========================================================================================  -->
 
-<entry id="check_finidat_fsurdat_consistency" type="logical" category="clm_restart"
+<entry id="check_finidat_fsurdat_consistency" type="logical" category="elm_restart"
        group="finidat_consistency_checks" valid_values="" >
 If TRUE (which is the default), check consistency between surface dataset used to create the finidat file
 and the current fsurdat. This check is only done for a transient run.
 </entry>
 
-<entry id="check_finidat_year_consistency" type="logical" category="clm_restart"
+<entry id="check_finidat_year_consistency" type="logical" category="elm_restart"
        group="finidat_consistency_checks" valid_values="" >
 If TRUE (which is the default), check consistency between year on the finidat file
 and the current model year. This check is only done for a transient run.
 </entry>
 
-<entry id="check_finidat_pct_consistency" type="logical" category="clm_restart"
+<entry id="check_finidat_pct_consistency" type="logical" category="elm_restart"
        group="finidat_consistency_checks" valid_values="" >
 If TRUE (which is the default), check consistency between pct_pft on the finidat file
 and pct_pft read from the surface dataset. This check is only done for a NON-transient run.
@@ -1723,13 +1723,13 @@ and pct_nat_pft read from the surface dataset.
 <!-- =========================================================================================  -->
 <!-- Namelist options related to lateral grid connectivity
 <!-- ========================================================================================  -->
-<entry id="lateral_connectivity" type="logical" category="clm_initialization"
-       group="clm_inparm" valid_values="" >
+<entry id="lateral_connectivity" type="logical" category="elm_initialization"
+       group="elm_inparm" valid_values="" >
 If TRUE setup up lateral grid connectivity in CLM.
 </entry>
 
-<entry id="domain_decomp_type" type="char*256" category="clm_initialization"
-       group="clm_inparm" valid_values="round_robin,graph_partitioning" >
+<entry id="domain_decomp_type" type="char*256" category="elm_initialization"
+       group="elm_inparm" valid_values="round_robin,graph_partitioning" >
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
@@ -1737,28 +1737,28 @@ Specifies the method for decomposing CLM grids across processors.
 <!-- Namelist options related to the bgc & pflotran interface
 <!-- ========================================================================================  -->
 
-<entry id="use_clm_interface" type="logical" category="default_settings"
-    group="clm_inparm" valid_values="">
+<entry id="use_elm_interface" type="logical" category="default_settings"
+    group="elm_inparm" valid_values="">
     Runtime flag to turn on/off bgc interface.
 </entry>
 
-<entry id="use_clm_bgc" type="logical" category="default_settings"
-    group="clm_inparm" valid_values="">
+<entry id="use_elm_bgc" type="logical" category="default_settings"
+    group="elm_inparm" valid_values="">
     Runtime flag to turn on/off clm-bgc.
 </entry>
 
 <entry id="use_pflotran" type="logical" category="default_settings"
-    group="clm_inparm" valid_values="">
+    group="elm_inparm" valid_values="">
     Runtime flag to turn on/off pflotran interface.
 </entry>
 
-<entry id="pflotran_inputdir" type="char*256" category="clm_pflotran"
-    group="clm_pflotran_inparm" valid_values="" >
+<entry id="pflotran_inputdir" type="char*256" category="elm_pflotran"
+    group="elm_pflotran_inparm" valid_values="" >
     pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
 </entry>
 
-<entry id="pflotran_prefix" type="char*256" category="clm_pflotran"
-    group="clm_pflotran_inparm" valid_values="" >
+<entry id="pflotran_prefix" type="char*256" category="elm_pflotran"
+    group="elm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
 </entry>
 
@@ -1767,12 +1767,12 @@ Specifies the method for decomposing CLM grids across processors.
 <!-- ========================================================================================  -->
 
 <entry id="use_vsfm" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
+        group="elm_inparm" valid_values="">
 Runtime flag to turn on/off VSFM.
 </entry>
 
-<entry id="vsfm_satfunc_type" type="char*32" category="clm_physics"
-       group="clm_inparm"
+<entry id="vsfm_satfunc_type" type="char*32" category="elm_physics"
+       group="elm_inparm"
        valid_values="brooks_corey,smooth_brooks_corey_bz2,smooth_brooks_corey_bz3,van_genuchten" >
 Type of saturation function used in VSFM.
     brooks_corey             = use the Brooks Corey model
@@ -1782,11 +1782,11 @@ Type of saturation function used in VSFM.
 </entry>
 
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
-       group="clm_inparm" valid_values="">
+       group="elm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
 
-<entry id="vsfm_lateral_model_type" type="char*32" category="clm_physics"
-       group="clm_inparm"
+<entry id="vsfm_lateral_model_type" type="char*32" category="elm_physics"
+       group="elm_inparm"
        valid_values="none,source_sink,three_dimensional" >
 Type of lateral flow formulation supported in VSFM.
     none               = No lateral flow
@@ -1795,7 +1795,7 @@ Type of lateral flow formulation supported in VSFM.
 </entry>
 
 <entry id="vsfm_include_seepage_bc" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
+        group="elm_inparm" valid_values="">
 Runtime flag to add seepage boundary condition on the top soil layer to allow for exfiltration.
 </entry>
 
@@ -1804,7 +1804,7 @@ Runtime flag to add seepage boundary condition on the top soil layer to allow fo
 <!-- ========================================================================================  -->
 
 <entry id="use_petsc_thermal_model" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
+        group="elm_inparm" valid_values="">
 Runtime flag to turn on/off PETSc based thermal model.
 </entry>
 
@@ -1813,7 +1813,7 @@ Runtime flag to turn on/off PETSc based thermal model.
 <!-- ========================================================================================  -->
 
 <entry id="use_var_soil_thick" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
+        group="elm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
 </entry>
 
@@ -1823,7 +1823,7 @@ Runtime flag to turn on/off variable soil thickness.
 <entry id="do_budgets"
        type="logical"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values=".true.,.false."
        value=".false.">
 logical that turns on diagnostic budgets, false means budgets will never be written
@@ -1832,7 +1832,7 @@ logical that turns on diagnostic budgets, false means budgets will never be writ
 <entry id="budget_inst"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="0">
 sets the diagnotics level of the instantaneous budgets. [0,1],
@@ -1845,7 +1845,7 @@ default: 0
 <entry id="budget_daily"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="0">
 sets the diagnotics level of the daily budgets. [0,1],
@@ -1858,7 +1858,7 @@ default: 0
 <entry id="budget_month"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="1">
 sets the diagnotics level of the monthy budgets. [0,1],
@@ -1871,7 +1871,7 @@ default: 1
 <entry id="budget_ann"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="1">
 sets the diagnotics level of the annual budgets. [0,1],
@@ -1884,7 +1884,7 @@ default: 1
 <entry id="budget_ltann"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="1">
 sets the diagnotics level of the longterm budgets written at the end
@@ -1898,7 +1898,7 @@ default: 1
 <entry id="budget_ltend"
        type="integer"
        category="budget"
-       group="clm_inparm"
+       group="elm_inparm"
        valid_values="0,1"
        value="0">
 sets the diagnotics level of the longterm budgets written at the end
@@ -1914,12 +1914,12 @@ default: 0
 <!-- ========================================================================================  -->
 
 <entry id="use_erosion" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the soil erosion model.
 </entry>
 
 <entry id="ero_ccycle" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the soil erosion and OM pools feedback.
 </entry>
 

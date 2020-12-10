@@ -14,12 +14,12 @@ module restFileMod
   use subgridRestMod       , only : SubgridRest
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
-  use clm_varpar           , only : crop_prog
-  use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
-  use clm_varctl           , only : use_erosion
-  use clm_varctl           , only : create_glacier_mec_landunit, iulog 
-  use clm_varcon           , only : c13ratio, c14ratio
-  use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
+  use elm_varpar           , only : crop_prog
+  use elm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
+  use elm_varctl           , only : use_erosion
+  use elm_varctl           , only : create_glacier_mec_landunit, iulog 
+  use elm_varcon           , only : c13ratio, c14ratio
+  use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
   use CNCarbonFluxType     , only : carbonflux_type
   use CNCarbonStateType    , only : carbonstate_type
@@ -30,7 +30,7 @@ module restFileMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
 
-  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod , only : hlm_fates_interface_type
 
   use AerosolType          , only : aerosol_type
   use CanopyStateType      , only : canopystate_type
@@ -123,7 +123,7 @@ contains
     ! Define/write CLM restart file.
     !
     use WaterBudgetMod, only : WaterBudget_Restart
-    use clm_varctl    , only : do_budgets
+    use elm_varctl    , only : do_budgets
     !
     implicit none
     !
@@ -773,8 +773,8 @@ contains
     ! Determine and obtain netcdf restart file
     !
     ! !USES:
-    use clm_varctl, only : caseid, nrevsn, nsrest, brnch_retain_casename
-    use clm_varctl, only : nsrContinue, nsrBranch
+    use elm_varctl, only : caseid, nrevsn, nsrest, brnch_retain_casename
+    use elm_varctl, only : nsrContinue, nsrBranch
     use fileutils , only : getfil
     !
     ! !ARGUMENTS:
@@ -836,7 +836,7 @@ contains
     !
     ! !USES:
     use fileutils , only : opnfil, getavu, relavu
-    use clm_varctl, only : rpntfil, rpntdir, inst_suffix
+    use elm_varctl, only : rpntfil, rpntdir, inst_suffix
     !
     ! !ARGUMENTS:
     character(len=*), intent(out) :: pnamer ! full path of restart file
@@ -912,7 +912,7 @@ contains
     ! Open restart pointer file. Write names of current netcdf restart file.
     !
     ! !USES:
-    use clm_varctl, only : rpntdir, rpntfil, inst_suffix
+    use elm_varctl, only : rpntdir, rpntfil, inst_suffix
     use fileutils , only : relavu
     use fileutils , only : getavu, opnfil
     !
@@ -981,7 +981,7 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use clm_varctl, only : caseid, inst_suffix
+    use elm_varctl, only : caseid, inst_suffix
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: rdate   ! input date for restart file name 
@@ -1003,13 +1003,13 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only : get_nstep
-    use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
-    use clm_varctl           , only : conventions, source, use_hydrstress
-    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
-    use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
+    use elm_varctl           , only : conventions, source, use_hydrstress
+    use elm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
+    use elm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
-    use clm_varctl           , only : do_budgets
+    use elm_varctl           , only : do_budgets
     use WaterBudgetMod       , only : f_size, s_size, p_size
     !
     ! !ARGUMENTS:
@@ -1165,7 +1165,7 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use clm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
     use pftvarcon , only : pftname_len, pftname
     !
     ! !ARGUMENTS:
@@ -1197,8 +1197,8 @@ contains
     !
     ! !USES:
     use decompMod,  only : get_proc_global
-    use clm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
-    use clm_varctl, only : single_column, nsrest, nsrStartup
+    use elm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
+    use elm_varctl, only : single_column, nsrest, nsrStartup
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -1313,7 +1313,7 @@ contains
     !
     ! !USES:
     use fileutils      , only : getavu, relavu
-    use clm_nlUtilsMod , only : find_nlgroup_name
+    use elm_nlUtilsMod , only : find_nlgroup_name
     use controlMod     , only : NLFilename
     use shr_mpi_mod    , only : shr_mpi_bcast
     !
@@ -1375,7 +1375,7 @@ contains
     !
     ! !USES:
     use fileutils            , only : get_filename
-    use clm_varctl           , only : fname_len, fsurdat
+    use elm_varctl           , only : fname_len, fsurdat
     use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
@@ -1416,7 +1416,7 @@ contains
              write(iulog,*) '(3) If you are confident that you are using the correct surface dataset and initial conditions file,'
              write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
              write(iulog,*) '      check_finidat_fsurdat_consistency = .false.'
-             write(iulog,*) '    in user_nl_clm'
+             write(iulog,*) '    in user_nl_elm'
              write(iulog,*) ' '
           end if
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1433,7 +1433,7 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only : get_curr_date, get_rest_date
-    use clm_varctl           , only : fname_len
+    use elm_varctl           , only : fname_len
     use dynSubgridControlMod , only : get_flanduse_timeseries
     !
     ! !ARGUMENTS:
@@ -1492,7 +1492,7 @@ contains
                 write(iulog,*) '(3) If you are confident that you are using the correct start date and initial conditions file,'
                 write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
                 write(iulog,*) '      check_finidat_year_consistency = .false.'
-                write(iulog,*) '    in user_nl_clm'
+                write(iulog,*) '    in user_nl_elm'
                 write(iulog,*) ' '
              end if
              call endrun(msg=errMsg(__FILE__, __LINE__))

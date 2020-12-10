@@ -9,10 +9,10 @@ module pftvarcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use clm_varctl  , only : iulog, use_vertsoilc
-  use clm_varpar  , only : nlevdecomp_full, nsoilorder
-  use clm_varctl  , only : nu_com
+  use elm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
+  use elm_varctl  , only : iulog, use_vertsoilc
+  use elm_varpar  , only : nlevdecomp_full, nsoilorder
+  use elm_varctl  , only : nu_com
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -52,7 +52,7 @@ module pftvarcon
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
-  ! at all, as given by the mergetoclmpft list.
+  ! at all, as given by the mergetoelmpft list.
   integer :: num_cfts_known_to_model
 
   real(r8), allocatable :: dleaf(:)       !characteristic leaf dimension (m)
@@ -96,12 +96,12 @@ module pftvarcon
   ! for crop
 
   ! These arrays give information about the merge of unused crop types to the types CLM
-  ! knows about. mergetoclmpft(m) gives the crop type that CLM uses to simulate input
-  ! type m (and mergetoclmpft(m) == m implies that CLM simulates crop type m
+  ! knows about. mergetoelmpft(m) gives the crop type that CLM uses to simulate input
+  ! type m (and mergetoelmpft(m) == m implies that CLM simulates crop type m
   ! directly). is_pft_known_to_model(m) is true if CLM simulates crop type m, and false
   ! otherwise. Note that these do NOT relate to whether irrigation is on or off in a
   ! given simulation - that is handled separately.
-  integer , allocatable :: mergetoclmpft         (:)
+  integer , allocatable :: mergetoelmpft         (:)
   logical , allocatable :: is_pft_known_to_model (:)
 
   real(r8), allocatable :: graincn(:)      !grain C:N (gC/gN)
@@ -289,9 +289,9 @@ contains
     use fileutils ,  only : getfil
     use ncdio_pio ,  only : ncd_io, ncd_pio_closefile, ncd_pio_openfile, file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl,  only : paramfile, use_fates
-    use clm_varctl,  only : use_crop, use_dynroot
-    use clm_varcon,  only : tfrz
+    use elm_varctl,  only : paramfile, use_fates
+    use elm_varctl,  only : use_crop, use_dynroot
+    use elm_varcon,  only : tfrz
     use spmdMod   ,  only : masterproc
 
     !
@@ -384,7 +384,7 @@ contains
     allocate( grpnow        (0:mxpft) )       
     allocate( rootprof_beta (0:mxpft) )
 
-    allocate( mergetoclmpft (0:mxpft) )
+    allocate( mergetoelmpft (0:mxpft) )
     allocate( is_pft_known_to_model  (0:mxpft) )
 
     allocate( graincn       (0:mxpft) )      
@@ -911,10 +911,10 @@ contains
     call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) pftcc(:) = 1._r8
        
-    call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)  
+    call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
        do i = 0, mxpft
-          mergetoclmpft(i) = i
+          mergetoelmpft(i) = i
        end do
     end if
 
@@ -1012,7 +1012,7 @@ contains
   subroutine set_is_pft_known_to_model()
     !
     ! !DESCRIPTION:
-    ! Set is_pft_known_to_model based on mergetoclmpft
+    ! Set is_pft_known_to_model based on mergetoelmpft
     !
     ! !USES:
     !
@@ -1024,16 +1024,16 @@ contains
 
     is_pft_known_to_model(:) = .false.
 
-    ! NOTE(wjs, 2015-10-04) Currently, type 0 has mergetoclmpft = _FillValue in the file,
+    ! NOTE(wjs, 2015-10-04) Currently, type 0 has mergetoelmpft = _FillValue in the file,
     ! so we can't handle it in the general loop below. But CLM always uses type 0, so
     ! handle it specially here.
     is_pft_known_to_model(0) = .true.
 
-    ! NOTE(wjs, 2015-10-04) Currently, mergetoclmpft is only used for crop types.
+    ! NOTE(wjs, 2015-10-04) Currently, mergetoelmpft is only used for crop types.
     ! However, we handle it more generally here (treating ALL pft types), in case its use
     ! is ever extended to work with non-crop types as well.
     do m = 1, mxpft
-       merge_type                        = mergetoclmpft(m)
+       merge_type                        = mergetoelmpft(m)
        is_pft_known_to_model(merge_type) = .true.
     end do
 

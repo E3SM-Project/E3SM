@@ -37,11 +37,11 @@ contains
          phosphorusstate_vars, phosphorusflux_vars, &
          alm_fates, crop_vars)
       
-      use clm_varctl             , only : use_c13, use_c14, use_fates
+      use elm_varctl             , only : use_c13, use_c14, use_fates
       use decompMod              , only : bounds_type
-      use clm_varpar             , only : nlevgrnd, nlevdecomp_full 
-      use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
-      use clm_varctl             , only : use_century_decomp
+      use elm_varpar             , only : nlevgrnd, nlevdecomp_full 
+      use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+      use elm_varctl             , only : use_century_decomp
       use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
       use DecompCascadeCNMod   , only : decomp_rate_constants_cn
       use CarbonStateUpdate1Mod     , only : CarbonStateUpdate1
@@ -59,7 +59,7 @@ contains
       use PhosphorusStateType    , only : phosphorusstate_type
       use PhosphorusFluxType     , only : phosphorusflux_type
       use CNDecompCascadeConType , only : decomp_cascade_con
-      use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
+      use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
       use CropType               , only : crop_type
 
     !
@@ -300,8 +300,8 @@ contains
     use decompMod              , only : bounds_type
     use CNCarbonFluxType       , only : carbonflux_type
     use CNCarbonStateType      , only : carbonstate_type
-    use clm_varcon             , only : dzsoi_decomp, zisoi
-    use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
+    use elm_varcon             , only : dzsoi_decomp, zisoi
+    use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools 
     use CNDecompCascadeConType , only : decomp_cascade_con
     
     type(bounds_type)         , intent(in)    :: bounds  

@@ -92,8 +92,8 @@ module subgridWeightsMod
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
-  use clm_varctl   , only : iulog, all_active
-  use clm_varcon   , only : nameg, namel, namec, namep
+  use elm_varctl   , only : iulog, all_active
+  use elm_varcon   , only : nameg, namel, namec, namep
   use decompMod    , only : bounds_type
   use GridcellType , only : grc_pp
   use TopounitType , only : top_pp  
@@ -152,7 +152,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : max_lunit
-    use clm_varpar     , only : maxpatch_glcmec, natpft_size, cft_size
+    use elm_varpar     , only : maxpatch_glcmec, natpft_size, cft_size
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use decompMod      , only : BOUNDS_LEVEL_PROC
     use histFileMod    , only : hist_addfld2d
@@ -285,7 +285,7 @@ contains
        if (col_pp%active(c) .and. .not. lun_pp%active(l)) then
           write(iulog,*) trim(subname),' ERROR: active column found on inactive landunit', &
                          'at c = ', c, ', l = ', l
-          call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -295,7 +295,7 @@ contains
        if (veg_pp%active(p) .and. .not. col_pp%active(c)) then
           write(iulog,*) trim(subname),' ERROR: active pft found on inactive column', &
                          'at p = ', p, ', c = ', c
-          call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=p, elmlevel=namep, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -474,7 +474,7 @@ contains
     ! Get the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     real(r8) :: weight  ! function result
@@ -503,7 +503,7 @@ contains
     ! Set the subgrid weight of a given landunit type on a single topographic unit
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer , intent(in) :: t      ! topounit index
@@ -522,7 +522,7 @@ contains
     else if (weight > 0._r8) then
        write(iulog,*) subname//' ERROR: Attempt to assign non-zero weight to a non-existent landunit'
        write(iulog,*) 'g, t, l, ltype, weight = ', top_pp%gridcell(t), t, l, ltype, weight
-       call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
     end if
     
   end subroutine set_landunit_weight
@@ -797,7 +797,7 @@ contains
     ! !USES:
     use landunit_varcon, only : istice_mec
     use column_varcon, only : col_itype_to_icemec_class
-    use clm_varpar, only : maxpatch_glcmec
+    use elm_varpar, only : maxpatch_glcmec
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
@@ -832,7 +832,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istsoil, istcrop
-    use clm_varpar, only : natpft_lb, cft_lb
+    use elm_varpar, only : natpft_lb, cft_lb
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds

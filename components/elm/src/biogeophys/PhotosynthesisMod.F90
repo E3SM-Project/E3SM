@@ -11,11 +11,11 @@ module  PhotosynthesisMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
-  use clm_varpar          , only : nlevcan
-  use clm_varctl          , only : use_hydrstress
-  use clm_varpar          , only : nvegwcs, mxpft
-  use clm_varcon          , only : namep
+  use elm_varctl          , only : iulog, use_c13, use_c14, use_cn, use_fates
+  use elm_varpar          , only : nlevcan
+  use elm_varctl          , only : use_hydrstress
+  use elm_varpar          , only : nvegwcs, mxpft
+  use elm_varcon          , only : namep
   use decompMod           , only : bounds_type
   use QuadraticMod        , only : quadratic
   use VegetationPropertiesType      , only : veg_vp
@@ -30,10 +30,10 @@ module  PhotosynthesisMod
   use AllocationMod     , only : nu_com_leaf_physiology
   use PhosphorusStateType , only : phosphorusstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use clm_varctl          , only : cnallocate_carbon_only
-  use clm_varctl          , only : cnallocate_carbonnitrogen_only
-  use clm_varctl          , only : cnallocate_carbonphosphorus_only
-  use clm_varctl          , only : iulog
+  use elm_varctl          , only : cnallocate_carbon_only
+  use elm_varctl          , only : cnallocate_carbonnitrogen_only
+  use elm_varctl          , only : cnallocate_carbonphosphorus_only
+  use elm_varctl          , only : iulog
   use pftvarcon           , only : noveg
   use SharedParamsMod     , only : ParamsShareInst
   use TopounitDataType    , only : top_as
@@ -204,8 +204,8 @@ contains
     ! Note: This subroutine is not called via FATES (RGK)
     !
     ! !USES:
-    use clm_varcon     , only : rgas, tfrz
-    use clm_varctl     , only : cnallocate_carbon_only 
+    use elm_varcon     , only : rgas, tfrz
+    use elm_varctl     , only : cnallocate_carbon_only 
     use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     !
@@ -903,7 +903,7 @@ contains
                if (gs_mol(p,iv) < 0._r8) then
                   write (iulog,*)'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol= ',p,iv,gs_mol(p,iv)
-                  call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
@@ -1378,7 +1378,7 @@ contains
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
     !!USES
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
@@ -1402,7 +1402,7 @@ contains
     ! !REVISION HISTORY
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: tl  ! leaf temperature in photosynthesis temperature function (K)
@@ -1429,7 +1429,7 @@ contains
     ! Jinyun Tang separated it out from Photosynthesis, Feb. 07/2013
     !
     !!USES
-    use clm_varcon  , only : rgas, tfrz   
+    use elm_varcon  , only : rgas, tfrz   
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: hd    ! deactivation energy in photosynthesis temperature function (J/mol)
@@ -1589,10 +1589,10 @@ contains
     ! method
     !
     ! !USES:
-    use clm_varcon        , only : rgas, tfrz, rpi
-    use clm_varctl        , only : cnallocate_carbon_only
-    !use clm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
-    use clm_varpar        , only : nlevsoi
+    use elm_varcon        , only : rgas, tfrz, rpi
+    use elm_varctl        , only : cnallocate_carbon_only
+    !use elm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
+    use elm_varpar        , only : nlevsoi
     use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use pftvarcon         , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     use ColumnType        , only : col_pp        
@@ -2552,7 +2552,7 @@ contains
                if (gs_mol_sun(p,iv) < 0._r8 .or. gs_mol_sha(p,iv) < 0._r8) then
                   write (iulog,*)'Negative stomatal conductance:'
                   write (iulog,*)'p,iv,gs_mol_sun,gs_mol_sha= ',p,iv,gs_mol_sun(p,iv),gs_mol_sha(p,iv)
-                  call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+                  call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
                end if
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
@@ -3084,7 +3084,7 @@ contains
     !
     !
     ! !USES:
-    use clm_varpar        , only : nlevsoi
+    use elm_varpar        , only : nlevsoi
     implicit none
     !
     ! !ARGUMENTS:
@@ -3286,8 +3286,8 @@ contains
     ! calls spacF, spacA, and getvegwp
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varpar        , only : nlevsoi
+    use elm_varcon        , only : rgas
     !!
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3510,8 +3510,8 @@ contains
     ! example a LINPACK linear algebra solver.
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varpar        , only : nlevsoi
+    use elm_varcon        , only : rgas
     !
     ! !ARGUMENTS:
     integer                , intent(in)  :: p               ! pft index
@@ -3686,8 +3686,8 @@ contains
     !  calculated for vegwp(p,:) as passed in via x
     !
     ! USES
-    use clm_varpar        , only : nlevsoi
-    use clm_varcon        , only : rgas
+    use elm_varpar        , only : nlevsoi
+    use elm_varcon        , only : rgas
     use ColumnType        , only : col_pp
     !
     ! !ARGUMENTS:
@@ -3769,7 +3769,7 @@ contains
     !
     ! !USES:
     ! calls getqflx
-    use clm_varpar  , only : nlevsoi
+    use elm_varpar  , only : nlevsoi
     use ColumnType  , only : col_pp
     implicit none
     !
@@ -3870,7 +3870,7 @@ contains
     !  calculate sunlit and shaded transpiration using gb_MOL and gs_MOL
     ! !USES:
     !
-    use clm_varcon        , only : rgas
+    use elm_varcon        , only : rgas
     implicit none
     !
     ! !ARGUMENTS:

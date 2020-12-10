@@ -37,6 +37,10 @@ void post_timeloop() {
   auto &crm_output_qltend       = :: crm_output_qltend;
   auto &crm_output_qcltend      = :: crm_output_qcltend;
   auto &crm_output_qiltend      = :: crm_output_qiltend;
+#ifdef MMF_MOMENTUM_FEEDBACK
+  auto &crm_output_ultend       = :: crm_output_ultend;
+  auto &crm_output_vltend       = :: crm_output_vltend;
+#endif
   auto &icrm_run_time           = :: icrm_run_time;
   auto &crm_output_prectend     = :: crm_output_prectend;
   auto &crm_output_precstend    = :: crm_output_precstend;
@@ -123,6 +127,7 @@ void post_timeloop() {
   auto &vwsb                    = :: vwsb;
   auto &crm_output_tkesgsz      = :: crm_output_tkesgsz;
   auto &crm_output_tkez         = :: crm_output_tkez;
+  auto &crm_output_tkew         = :: crm_output_tkew;
   auto &crm_output_tkz          = :: crm_output_tkz;
   auto &crm_output_precflux     = :: crm_output_precflux;
   auto &crm_output_qp_fall      = :: crm_output_qp_fall;
@@ -238,11 +243,14 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) =      (qln  (k,icrm) - crm_input_ql  (k,icrm)) * icrm_run_time;
     crm_output_qcltend(k,icrm) =      (qccln(k,icrm) - crm_input_qccl(k,icrm)) * icrm_run_time;
     crm_output_qiltend(k,icrm) =      (qiiln(k,icrm) - crm_input_qiil(k,icrm)) * icrm_run_time;
+#ifdef MMF_MOMENTUM_FEEDBACK
+    crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
+    crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
+#endif
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-
     crm_output_prectend (icrm) = (colprec (icrm)-crm_output_prectend (icrm))/ggr*factor_xy * icrm_run_time;
     crm_output_precstend(icrm) = (colprecs(icrm)-crm_output_precstend(icrm))/ggr*factor_xy * icrm_run_time;
   });
@@ -259,6 +267,10 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) = 0.0;
     crm_output_qcltend(k,icrm) = 0.0;
     crm_output_qiltend(k,icrm) = 0.0;
+#ifdef MMF_MOMENTUM_FEEDBACK
+    crm_output_ultend (k,icrm) = 0.0;
+    crm_output_vltend (k,icrm) = 0.0;
+#endif
   });
 
   // Save the last step to the permanent core:
@@ -456,6 +468,7 @@ void post_timeloop() {
     }
     crm_output_tkesgsz   (l,icrm)= rho(k,icrm)*tmp*factor_xy;
     crm_output_tkez      (l,icrm)= rho(k,icrm)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output_tkesgsz(l,icrm);
+    crm_output_tkew      (l,icrm)= rho(k,icrm)*0.5*w2z*factor_xy;
 
     tmp = 0.0;
     for (int j=0; j<ny; j++) {

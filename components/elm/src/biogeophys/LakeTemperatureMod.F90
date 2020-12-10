@@ -112,11 +112,11 @@ contains
     use LakeCon           , only : lakepuddling, lake_no_ed
     use QSatMod            , only : QSat
     use TridiagonalMod     , only : Tridiagonal
-    use clm_varpar         , only : nlevlak, nlevgrnd, nlevsno
+    use elm_varpar         , only : nlevlak, nlevgrnd, nlevsno
     use clm_time_manager   , only : get_step_size
-    use clm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
-    use clm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
-    use clm_varctl         , only : iulog, use_lch4
+    use elm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
+    use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
+    use elm_varctl         , only : iulog, use_lch4
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds	  
@@ -1078,9 +1078,9 @@ contains
      ! For lakes, the proper soil layers (not snow) should always be saturated.
      !
      ! !USES:
-     use clm_varcon  , only : denh2o, denice, tfrz, tkwat, tkice, tkair
-     use clm_varcon  , only : cpice,  cpliq, thk_bedrock
-     use clm_varpar  , only : nlevsno, nlevsoi, nlevgrnd
+     use elm_varcon  , only : denh2o, denice, tfrz, tkwat, tkice, tkair
+     use elm_varcon  , only : cpice,  cpliq, thk_bedrock
+     use elm_varpar  , only : nlevsno, nlevsoi, nlevgrnd
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)  :: bounds  
@@ -1259,8 +1259,8 @@ contains
      !
      ! !USES:
      use clm_time_manager , only : get_step_size
-     use clm_varcon       , only : tfrz, hfus, denh2o, denice, cpliq, cpice
-     use clm_varpar       , only : nlevsno, nlevgrnd, nlevlak
+     use elm_varcon       , only : tfrz, hfus, denh2o, denice, cpliq, cpice
+     use elm_varpar       , only : nlevsno, nlevgrnd, nlevlak
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds                     

@@ -207,7 +207,7 @@ OPTIONS
 			      This turns on namelist variable: use_lch4
      -namelist "namelist"     Specify namelist settings directly on the commandline by supplying
                               a string containing FORTRAN namelist syntax, e.g.,
-                                 -namelist "&clm_inparm dt=1800 /"
+                                 -namelist "&elm_inparm dt=1800 /"
      -nitrif_denitrif         Toggle for nitrification-denitrification process.
                               This flag is only allowed for bgc=cn mode (default is off)
 			      This turns on namelist variable: use_nitrif_denitrif
@@ -1952,7 +1952,7 @@ sub process_namelist_inline_logic {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $envxml_ref, $physv) = @_;
 
   ##############################
-  # namelist group: clm_inparm #
+  # namelist group: elm_inparm #
   ##############################
   setup_logic_site_specific($nl_flags, $definition, $nl, $physv);
   setup_logic_lnd_frac($opts, $nl_flags, $definition, $defaults, $nl, $envxml_ref);
@@ -1982,7 +1982,7 @@ sub process_namelist_inline_logic {
 #  setup_logic_humanindex($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #######################################################################
-  # namelist groups: clm_hydrology1_inparm and clm_soilhydrology_inparm #
+  # namelist groups: clm_hydrology1_inparm and elm_soilhydrology_inparm #
   #######################################################################
   setup_logic_hydrology_switches($nl);
 
@@ -3402,17 +3402,17 @@ sub write_output_files {
   # CLM component
   my @groups;
   if ( $physv->as_long() == $physv->as_long("clm4_0") ) {
-    @groups = qw(clm_inparm);
+    @groups = qw(elm_inparm);
     # Eventually only list namelists that are actually used when CN on
     #if ( $nl_flags->{'bgc_mode'}  eq "cn" ) {
       push @groups, "ndepdyn_nml";
       push @groups, "pdepdyn_nml";
     #}
   } else {
-    @groups = qw(clm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams clm_canopyhydrology_inparm 
-                 clm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
-                 clmu_inparm clm_soilstate_inparm clm_pflotran_inparm betr_inparm);
-    #@groups = qw(clm_inparm clm_canopyhydrology_inparm clm_soilhydrology_inparm 
+    @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm 
+                 elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks 
+                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm);
+    #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm 
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on
     #if ( $nl_flags->{'bgc_mode'}  eq "cn" ) {
@@ -3422,7 +3422,7 @@ sub write_output_files {
       push @groups, "ch4par_in";
     }
     if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
-      push @groups, "clm_humanindex_inparm";
+      push @groups, "elm_humanindex_inparm";
     }
   }
 
@@ -3850,7 +3850,7 @@ sub list_options {
            my @vars = $definition->get_var_names( );
            my @demands = ( "null" );
            foreach my $var ( @vars ) {
-              if ( $definition->get_group_name( $var ) ne "clm_inparm" ) { next; }
+              if ( $definition->get_group_name( $var ) ne "elm_inparm" ) { next; }
               if ( defined($defaults->get_value($var, $opts_cmdl ) ) ) {
                  push( @demands, $var );
               }
@@ -3860,7 +3860,7 @@ sub list_options {
            chomp( $doc );
            exit_message("valid values for $var ($doc) :\n" .
                         "Namelist options to require: @demands\n" .
-                        "any valid namelist item for clm_inparm can be set. However, not all are\n" .
+                        "any valid namelist item for elm_inparm can be set. However, not all are\n" .
                         "available in the clm defaults file. The defaults are also dependent on\n" .
                         "resolution and landmask, as well as other settings. Hence, the list above\n" .
                         "will vary depending on what you set for resolution and landmask.\n");

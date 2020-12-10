@@ -27,7 +27,7 @@ CONTAINS
     ! Abort the model for abnormal termination
     !
     use shr_sys_mod , only: shr_sys_abort
-    use clm_varctl  , only: iulog
+    use elm_varctl  , only: iulog
     !
     ! !ARGUMENTS:
     implicit none
@@ -45,28 +45,28 @@ CONTAINS
   end subroutine endrun_vanilla
 
   !-----------------------------------------------------------------------
-  subroutine endrun_globalindex(decomp_index, clmlevel, msg)
+  subroutine endrun_globalindex(decomp_index, elmlevel, msg)
 
     !-----------------------------------------------------------------------
     ! Description:
     ! Abort the model for abnormal termination
     !
     use shr_sys_mod       , only: shr_sys_abort
-    use clm_varctl        , only: iulog
+    use elm_varctl        , only: iulog
     use GetGlobalValuesMod, only: GetGlobalWrite
     !
     ! Arguments:
     implicit none
     integer          , intent(in)           :: decomp_index
-    character(len=*) , intent(in)           :: clmlevel
+    character(len=*) , intent(in)           :: elmlevel
     character(len=*) , intent(in), optional :: msg    ! string to be printed
     !
     ! Local Variables:
     integer :: igrc, ilun, icol 
     !-----------------------------------------------------------------------
 
-    write(6,*)'calling getglobalwrite with decomp_index= ',decomp_index,' and clmlevel= ',trim(clmlevel)
-    call GetGlobalWrite(decomp_index, clmlevel)
+    write(6,*)'calling getglobalwrite with decomp_index= ',decomp_index,' and elmlevel= ',trim(elmlevel)
+    call GetGlobalWrite(decomp_index, elmlevel)
 
     if (present (msg)) then
        write(iulog,*)'ENDRUN:', msg

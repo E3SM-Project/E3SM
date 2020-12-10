@@ -24,7 +24,7 @@ module dynHarvestMod
   use CNCarbonFluxType      , only : carbonflux_type
   use CNNitrogenFluxType    , only : nitrogenflux_type
    use VegetationPropertiesType        , only : veg_vp
-  use clm_varcon            , only : grlnd
+  use elm_varcon            , only : grlnd
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
   use ColumnType            , only : col_pp
@@ -75,7 +75,7 @@ contains
     ! This also calls dynHarvest_interp for the initial time
     !
     ! !USES:
-    use clm_varctl            , only : use_cn
+    use elm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
@@ -130,7 +130,7 @@ contains
     ! year, with abrupt changes in the rate at annual boundaries.
     !
     ! !USES:
-    use clm_varctl     , only : use_cn
+    use elm_varctl     , only : use_cn
     use dynTimeInfoMod , only : time_info_type
     !
     ! !ARGUMENTS:
@@ -184,7 +184,7 @@ contains
     !
     ! !USES:
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
-    use clm_varcon      , only : secspday
+    use elm_varcon      , only : secspday
     use clm_time_manager, only : get_days_per_year
     !
     ! !ARGUMENTS:
@@ -486,7 +486,7 @@ contains
    ! to the column level and assign them to the three litter pools
    !
    ! !USES:
-   use clm_varpar , only : maxpatch_pft, nlevdecomp
+   use elm_varpar , only : maxpatch_pft, nlevdecomp
    !
    ! !ARGUMENTS:
    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter

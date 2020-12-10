@@ -282,11 +282,11 @@ struct RemapFunctor : public Remapper {
                 const Elements& elements,
                 const Tracers& tracers,
                 const HybridVCoord &hvcoord)
-   : m_fields_provider(elements)
-   , m_data(qsize)
+   : m_data(qsize)
+   , m_fields_provider(elements)
    , m_state(elements.m_state)
-   , m_qdp(tracers.qdp)
    , m_hvcoord(hvcoord)
+   , m_qdp(tracers.qdp)
    , m_remap(elements.num_elems(), this->num_to_remap())
    // Functor tags are irrelevant below
    , m_tu_ne(remap_team_policy<ComputeThicknessTag>(m_state.num_elems()))

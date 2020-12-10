@@ -87,7 +87,7 @@ contains
     use shr_log_mod    , only : errMsg => shr_log_errMsg   
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
-    use clm_varctl     , only : use_var_soil_thick
+    use elm_varctl     , only : use_var_soil_thick
     use VegetationType , only : veg_pp
     use ColumnType     , only : col_pp
     !

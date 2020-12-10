@@ -9,8 +9,8 @@ module TotalWaterAndHeatMod
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
-  use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
-  use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
+  use elm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
+  use elm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
   use subgridAveMod      , only : p2c
   use SoilHydrologyType  , only : soilhydrology_type
   use WaterstateType     , only : waterstate_type

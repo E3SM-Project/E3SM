@@ -3,7 +3,7 @@ module EMI_SoilHydrologyType_ExchangeMod
   use shr_kind_mod                          , only : r8 => shr_kind_r8
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
   use abortutils                            , only : endrun
-  use clm_varctl                            , only : iulog
+  use elm_varctl                            , only : iulog
   use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
   use SoilHydrologyType                     , only : soilhydrology_type
@@ -36,7 +36,7 @@ contains
     ! Pack data from ALM soilhydrology_vars for EM
     !
     ! !USES:
-    use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
+    use elm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
     !
@@ -120,7 +120,7 @@ contains
     ! Unpack data for ALM soilhydrology_vars from EM
     !
     ! !USES:
-    use clm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
+    use elm_varpar             , only : nlevsoi, nlevgrnd, nlevsno
     !
     implicit none
     !

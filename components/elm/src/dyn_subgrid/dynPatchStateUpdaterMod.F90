@@ -24,7 +24,7 @@ module dynPatchStateUpdaterMod
   use decompMod            , only : bounds_type, BOUNDS_LEVEL_PROC
   use VegetationType       , only : veg_pp
   use ColumnType           , only : col_pp
-  use clm_varpar           , only : mxpft
+  use elm_varpar           , only : mxpft
   use abortutils           , only : endrun
   !
   implicit none

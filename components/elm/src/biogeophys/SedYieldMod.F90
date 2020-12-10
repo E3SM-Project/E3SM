@@ -10,9 +10,9 @@ module SedYieldMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
-  use clm_varcon        , only : grav, denh2o, rpi
-  use clm_varpar        , only : mxpft, nlevsno, max_patch_per_col
-  use clm_varpar        , only : nlevslp
+  use elm_varcon        , only : grav, denh2o, rpi
+  use elm_varpar        , only : mxpft, nlevsno, max_patch_per_col
+  use elm_varpar        , only : nlevslp
   use atm2lndType       , only : atm2lnd_type
   use CanopyStateType   , only : CanopyState_type
   use EnergyFluxType    , only : energyflux_type
@@ -51,7 +51,7 @@ contains
     !
     ! !USES:
     use clm_time_manager, only : get_step_size
-    use clm_varctl      , only : iulog
+    use elm_varctl      , only : iulog
     use landunit_varcon , only : istcrop, istsoil
     use pftvarcon       , only : gcpsi, pftcc
     use pftvarcon       , only : nc4_grass

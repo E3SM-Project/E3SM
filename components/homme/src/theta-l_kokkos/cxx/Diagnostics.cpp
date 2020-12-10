@@ -15,11 +15,11 @@ namespace Homme
 {
 
 void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geometry,
-                             const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
-                             F90Ptr& elem_state_q_ptr,
-                             F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
-                             F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
-                             F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
+                        const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
+                        F90Ptr& elem_state_q_ptr,
+                        F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
+                        F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
+                        F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
   // Check state/geometry/hvcoord were inited
   assert (state.num_elems()>0);
