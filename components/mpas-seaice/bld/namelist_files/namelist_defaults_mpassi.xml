@@ -375,8 +375,8 @@
 <config_calc_surface_stresses>true</config_calc_surface_stresses>
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
-<config_use_high_frequency_coupling>false</config_use_high_frequency_coupling>
-<config_boundary_layer_iteration_number>5</config_boundary_layer_iteration_number>
+<config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
+<config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
 <config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
