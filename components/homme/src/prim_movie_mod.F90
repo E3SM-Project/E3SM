@@ -125,18 +125,11 @@ contains
     real (kind=real_kind) :: vartmp(np,np,nlev)
     real (kind=real_kind),allocatable :: var3d(:,:),var2d(:)
 
-    real (kind=real_kind) :: latlon_adj_factor
 #ifdef _MPI
     integer :: ierr
 #endif
 
     call PIO_setDebugLevel(0)
-
-    if (geometry=="sphere") then
-      latlon_adj_factor = 180.0D0/dd_pi
-    else if (geometry=="plane") then
-      latlon_adj_factor = 1.0D0
-    end if
 
     call nf_output_init_begin(ncdf,par%masterproc,par%nprocs,par%rank, &
          par%comm,test_case,runtype)
@@ -305,9 +298,11 @@ contains
             end if
           enddo
 
-          ! MAKE THIS AN ADJUSTMENT FACTOR!
-          latp=latp*latlon_adj_factor
-          lonp=lonp*latlon_adj_factor
+          ! only do conversion if we are on the sphere
+          if (geometry=="sphere") then
+          latp=latp*180/dd_pi
+          lonp=lonp*180/dd_pi
+          end if
           call nf_put_var(ncdf(ios),latp,start(1:1),count(1:1),name='lat', iodescin=iodesc2d)
           call nf_put_var(ncdf(ios),lonp,start(1:1),count(1:1),name='lon', iodescin=iodesc2d)
 
@@ -349,7 +344,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
-                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*latlon_adj_factor
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon*180/dd_pi
+                  else if (geometry=="plane")
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lon
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp, nlev, vartmp, var3d(st:en,:))
                 st=en+1
@@ -365,7 +365,12 @@ contains
                 en=st+elem(ie)%idxp%NumUniquePts-1
                 vartmp = 0
                 do k=1,kmax
-                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*latlon_adj_factor
+                  ! only do conversion if we are on the sphere
+                  if (geometry=="sphere") then
+                    vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat*180/dd_pi
+                  else if (geometry=="plane")
+                   vartmp(:,:,k)=cvlist(ie)%vert_latlon(k,:,:)%lat
+                  end if
                 enddo
                 call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                 st=en+1
