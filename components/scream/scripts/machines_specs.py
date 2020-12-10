@@ -82,9 +82,9 @@ MACHINE_METADATA = {
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", get_cpu_core_count(), get_cpu_core_count(),""),
 }
 
-if (pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file()):
+if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
     sys.path.append(str(pathlib.Path("~/.cime").expanduser()))
-    from scream_mach_specs import MACHINE_METADATA as LOCAL_MD
+    from scream_mach_specs import MACHINE_METADATA as LOCAL_MD # pylint: disable=import-error
     if len(LOCAL_MD) == 6:
         MACHINE_METADATA["local"] = LOCAL_MD
     else:
@@ -165,7 +165,7 @@ def get_mach_testing_resources(machine):
     return MACHINE_METADATA[machine][4]
 
 ###############################################################################
-def get_mach_baseline_root_dir(machine,default_dir):
+def get_mach_baseline_root_dir(machine):
 ###############################################################################
     expect(is_machine_supported(machine),
            "Machine {} is not currently supported by scream testing system.\n"
