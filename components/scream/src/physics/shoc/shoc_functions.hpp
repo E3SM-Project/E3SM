@@ -485,6 +485,13 @@ struct Functions
   static void pblintd_height(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<const Spack>& u, const uview_1d<const Spack>& v, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& thv, const uview_1d<const Spack>& thv_ref, const uview_1d<Spack>& pblh, const uview_1d<Spack>& rino, const uview_1d<bool>& check);
 
   KOKKOS_FUNCTION
+  static void pblintd_init(
+      const Scalar& z, 
+      bool& check, 
+      Scalar& rino, 
+      Scalar& pblh);
+  
+  KOKKOS_FUNCTION
   static void vd_shoc_decomp(
     const MemberType&            team,
     const Int&                   nlev,
@@ -584,6 +591,7 @@ struct Functions
 # include "shoc_dp_inverse_impl.hpp"
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
+# include "shoc_pblintd_init_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
 # include "shoc_pblintd_init_impl.hpp"
 # include "shoc_pblintd_surf_temp_impl.hpp"

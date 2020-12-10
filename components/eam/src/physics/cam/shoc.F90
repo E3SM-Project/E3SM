@@ -4248,6 +4248,11 @@ subroutine pblintd_init(&
        shcol,nlev,&             ! Input
        z,&                      ! Input
        check,rino,pblh)         ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_init_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4266,6 +4271,14 @@ subroutine pblintd_init(&
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_init_f(shcol,nlev,z,check,rino,pblh) 
+      return
+   endif
+#endif
+
     do i=1,shcol
        check(i)     = .true.
        rino(i,nlev) = 0.0_rtype

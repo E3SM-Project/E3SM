@@ -21,7 +21,7 @@ class TestAllScream(object):
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None,
+                 integration_test="JENKINS_HOME" in os.environ, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
@@ -34,6 +34,7 @@ class TestAllScream(object):
         self._fast_fail               = fast_fail
         self._baseline_ref            = baseline_ref
         self._machine                 = machine
+        self._local                   = local
         self._perform_tests           = not no_tests
         self._keep_tree               = keep_tree
         self._baseline_dir            = baseline_dir
@@ -63,7 +64,12 @@ class TestAllScream(object):
             if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
                 self._machine = os.environ["CIME_MACHINE"]
             else:
-                expect(False, "Machine is now required by test-all-scream")
+                expect(self._local,
+                       "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
+                       "which makes it lookf for machine specs in '~/.cime/scream_mach_specs.py'.")
+                self._machine = "local"
+        else:
+            expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
         # Unless the user claims to know what he/she is doing, we setup the env.
         if not self._preserve_env:
@@ -338,7 +344,10 @@ class TestAllScream(object):
     ###############################################################################
     def get_machine_file(self):
     ###############################################################################
-        return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
+        if self._local:
+            return pathlib.Path("~/.cime/scream_mach_file.cmake").expanduser()
+        else:
+            return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
 
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):

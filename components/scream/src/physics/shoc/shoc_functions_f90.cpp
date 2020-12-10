@@ -269,11 +269,12 @@ void shoc_main_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
 
 void pblintd_height_c(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 
+  void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
+
 void vd_shoc_decomp_c(Int shcol, Int nlev, Int nlevi, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
                       Real* flux, Real* du, Real* dl, Real* d);
 
 void vd_shoc_solve_c(Int shcol, Int nlev, Real* du, Real* dl, Real* d, Real* var);
-void pblintd_init_c(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
 void pblintd_surf_temp_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 void pblintd_check_pblh_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh);
 void pblintd_c(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
@@ -757,6 +758,14 @@ void pblintd_height(PblintdHeightData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void pblintd_init(PblintdInitData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  pblintd_init_c(d.shcol, d.nlev, d.z, d.check, d.rino, d.pblh);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
 void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
 {
   shoc_init(d.nlev, true);
@@ -778,13 +787,6 @@ void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
       d.var[n*size+s] = d.rhs[s];
     }
   }
-  d.transpose<ekat::TransposeDirection::f2c>();
-}
-void pblintd_init(PblintdInitData& d)
-{
-  shoc_init(d.nlev, true, true);
-  d.transpose<ekat::TransposeDirection::c2f>();
-  pblintd_init_c(d.shcol, d.nlev, d.z, d.check, d.rino, d.pblh);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -2864,6 +2866,60 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
   // TODO
 }
 
+void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+  using view_2d    = typename SHOC::view_2d<Spack>;
+
+  Kokkos::Array<view_2d, 2> views_2d;
+  ekat::host_to_device({z, rino}, shcol, nlev, views_2d, true);
+
+  view_2d z_2d   (views_2d[0]),
+          rino_2d(views_2d[1]);
+
+  view_1d pblh_d("rino", shcol);
+
+  SHOC::view_1d<bool> check_d("check", shcol);
+  const auto host_check_d = Kokkos::create_mirror_view(check_d);
+
+  Kokkos::parallel_for("pblintd_init", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    Scalar pblh_s{0.};
+    bool check_s{false};
+
+    const auto z_1d     = ekat::subview(z_2d, i);
+    const auto rino_1d  = ekat::subview(rino_2d, i);
+
+    const auto nlev_pack = ekat::npack<Spack>(nlev)-1;
+    const int nlev_indx  = (nlev-1)%Spack::n;
+    Scalar& rino_s        = rino_1d(nlev_pack)[nlev_indx];
+    Scalar& z_s           = z_1d(nlev_pack)[nlev_indx];
+
+    SHOC::pblintd_init(z_s, check_s, rino_s, pblh_s);
+
+    check_d(i)   = check_s;
+    pblh_d(i)[0] = pblh_s;
+  });
+
+  Kokkos::Array<view_2d, 1> out_2d_views = {rino_2d};
+  ekat::device_to_host<int, 1>({rino}, shcol, nlev, out_2d_views, true);
+
+  Kokkos::Array<view_1d, 1> out_1d_views = {pblh_d};
+  ekat::device_to_host<int, 1>({pblh}, shcol, out_1d_views);
+
+//  Kokkos::Array<SHOC::view_1d<bool>, 1> out_1d_bool_views = {check_d};
+//  ekat::device_to_host<int, 1>({check}, shcol, out_1d_bool_views);
+
+  Kokkos::deep_copy(host_check_d, check_d);
+  for (auto s = 0; s < shcol; ++s) {
+    check[s] = host_check_d(s);
+  }
+}
+
 void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
                                 Real* flux, Real* var)
 {
@@ -3056,10 +3112,6 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* z
   ekat::device_to_host<int,2>({tkh, tk}, shcol, nlev, inout_views, true);
 }
 
-void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
-{
-  // TODO
-}
 void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino)
 {
   // TODO
