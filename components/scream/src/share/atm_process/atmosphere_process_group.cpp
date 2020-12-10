@@ -125,94 +125,31 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
     atm_proc->set_grids(grids_manager);
-    const auto proc_name = atm_proc->name();
 
     auto& remap_in = m_inputs_remappers[iproc];
     auto& remap_out = m_outputs_remappers[iproc];
 
     // Any atm proc sub-group will take care of remapping input/outputs.
     // We only have to deal with 'individual' atm processes
-    const auto type = atm_proc->type();
-    const bool is_group = type==AtmosphereProcessType::Group;
-    if (!is_group) {
-      const auto& atm_proc_grids = atm_proc->get_required_grids();
-      // Note: in general, as of today, no atm process other than APG stores more than
-      //       one grid, so this for loop is somewhat overkill. Still, it doesn't hurt.
-      for (const auto& gname : atm_proc_grids) {
-        // Note: grid->name() might be different from gname. This happens if the GM
-        //       allows a few aliases for the same grid. So we store the remappers
-        //       with both gname and grid->name() as keys
-        const auto grid = grids_manager->get_grid(gname);
-        remap_in[gname] = remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
-        remap_out[gname] = remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
-        remap_in[grid->name()]->registration_begins();
-        remap_out[grid->name()]->registration_begins();
-      }
+    const auto& atm_proc_grids = atm_proc->get_required_grids();
+    // Note: in general, as of today, no atm process other than APG stores more than
+    //       one grid, so this for loop is somewhat overkill. Still, it doesn't hurt.
+    for (const auto& gname : atm_proc_grids) {
+      const auto grid = grids_manager->get_grid(gname);
+      remap_in[grid->name()] = grids_manager->create_remapper(ref_grid,grid);
+      remap_out[grid->name()] = grids_manager->create_remapper(grid,ref_grid);
+      remap_in[grid->name()]->registration_begins();
+      remap_out[grid->name()]->registration_begins();
     }
 
     // Add inputs to the list of inputs of the group
     for (const auto& fid : atm_proc->get_required_fields()) {
-      // Whether this fid is on the reference grid or not, we expose
-      // as input a copy of fid on the reference grid.
-      // If fid is not on the reference grid, we add fid to our 'computed' fields.
-      const auto& gname = fid.get_grid_name();
-
-      const bool is_ref_grid = (gname==ref_grid->name());
-
-      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[gname]);
-
-      if (m_group_schedule_type==ScheduleType::Sequential) {
-        // If the schedule is sequential, we do not add inputs if they are computed
-        // by a previous process (they are not an 'input' to the group).
-        if (computed.find(fid.name())==computed.end()) {
-          it_bool = m_required_fields.insert(ref_fid);
-        } else {
-          m_internal_fields.insert(fid);
-        }
-      } else {
-        // In parallel schedule, the inputs of all processes are inputs of the group
-        it_bool = m_required_fields.insert(ref_fid);
-      }
-
-      // If this field id is not on the reference grid, we need to remap,
-      // which means that we "compute" the input on this particular grid
-      if (!is_ref_grid) {
-        // We "compute" this field (on the non-reference grid) by means of remapping
-        computed.insert(fid.name());
-        m_computed_fields.insert(fid);
-
-        remap_in[gname]->register_field(ref_fid,fid);
-      }
+      process_required_field(fid,remap_in[fid.get_grid_name()]);
     }
 
     // Add outputs to the list of outputs of the group
     for (const auto& fid : atm_proc->get_computed_fields()) {
-      m_computed_fields.insert(fid);
-
-      const auto& gname = fid.get_grid_name();
-
-      // Update the list of fields computed by the processes processed so far
-      computed.insert(fid.name());
-
-      // If the grid of fid is not the reference one, we also remap it
-      // to the reference grid, hence "computing" ref_fid
-      // Exception: if atm proc is a group, then it should already take care of this.
-      if (!is_group && gname!=ref_grid->name()) {
-        auto& remapper = remap_out[gname];
-
-        const FieldIdentifier ref_fid = create_ref_fid(fid,remapper);
-        m_computed_fields.insert(ref_fid);
-
-        remapper->register_field(fid,ref_fid);
-      }
-    }
-
-    // Close registration in the remappers
-    for (auto it : m_inputs_remappers[iproc]) {
-      it.second->registration_ends();
-    }
-    for (auto it : m_outputs_remappers[iproc]) {
-      it.second->registration_ends();
+      process_computed_field(fid,remap_out[fid.get_grid_name()]);
     }
   }
 }
@@ -230,6 +167,8 @@ setup_remappers (const FieldRepository<Real>& field_repo) {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     for (auto& it : m_inputs_remappers[iproc]) {
       const auto& remapper = it.second;
+      // Close the registration
+      remapper->registration_ends();
       const int num_fields = remapper->get_num_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
         const auto& src_id = remapper->get_src_field_id(ifield);
@@ -244,6 +183,9 @@ setup_remappers (const FieldRepository<Real>& field_repo) {
 
     for (auto& it : m_outputs_remappers[iproc]) {
       const auto& remapper = it.second;
+
+      // Close the registration
+      remapper->registration_ends();
       const int num_fields = remapper->get_num_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
         const auto& src_id = remapper->get_src_field_id(ifield);
@@ -379,6 +321,58 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
   }
 }
 
+void AtmosphereProcessGroup::
+set_required_group (const ci_string_pair& group_and_grid,
+                    const std::set<Field<const Real>>& group)
+{
+  EKAT_REQUIRE_MSG(group.size()>0,
+    "Error! We were not expecting an empty field group.\n");
+
+  const auto& name = group_and_grid.first;
+  const auto& grid = group_and_grid.second;
+
+  for (int iproc=0; iproc<m_group_size; ++iproc) {
+    auto atm_proc = m_atm_processes[iproc];
+
+    if (atm_proc->requires_group(name,grid)) {
+      atm_proc->set_required_group(group_and_grid, group);
+      // We also might need to add each field of the group to the remap in/out
+      for (auto& f : group) {
+        const auto& fid = f.get_header().get_identifier();
+        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+        process_required_field(fid,r_in);
+      }
+    }
+  }
+}
+
+void AtmosphereProcessGroup::
+set_updated_group (const ci_string_pair& group_and_grid,
+                   const std::set<Field<Real>>& group)
+{
+  EKAT_REQUIRE_MSG(group.size()>0,
+    "Error! We were not expecting an empty field group.\n");
+
+  const auto& name = group_and_grid.first;
+  const auto& grid = group_and_grid.second;
+
+  for (int iproc=0; iproc<m_group_size; ++iproc) {
+    auto atm_proc = m_atm_processes[iproc];
+
+    if (atm_proc->updates_group(name,grid)) {
+      atm_proc->set_updated_group(group_and_grid, group);
+      // We also might need to add each field of the group to the remap in/out
+      for (auto& f : group) {
+        const auto& fid = f.get_header().get_identifier();
+        const auto r_in  = m_inputs_remappers[iproc].at(fid.get_grid_name());
+        const auto r_out = m_outputs_remappers[iproc].at(fid.get_grid_name());
+        process_required_field(fid,r_in);
+        process_computed_field(fid,r_out);
+      }
+    }
+  }
+}
+
 void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo) const {
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     const auto& atm_proc = m_atm_processes[iproc];
@@ -403,20 +397,40 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real>& field_repo)
     // of the stored atm processes. But there's no problem registering the same field
     // twice in the repo.
     for (auto it : m_inputs_remappers[iproc]) {
-      const int num_fields = it.second->get_num_fields();
+      const int num_fields = it.second->get_num_registered_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
         field_repo.register_field(it.second->get_src_field_id(ifield));
         field_repo.register_field(it.second->get_tgt_field_id(ifield));
       }
     }
     for (auto it : m_outputs_remappers[iproc]) {
-      const int num_fields = it.second->get_num_fields();
+      const int num_fields = it.second->get_num_registered_fields();
       for (int ifield=0; ifield<num_fields; ++ifield) {
         field_repo.register_field(it.second->get_src_field_id(ifield));
         field_repo.register_field(it.second->get_tgt_field_id(ifield));
       }
     }
   }
+}
+
+std::set<AtmosphereProcessGroup::ci_string_pair>
+AtmosphereProcessGroup::get_required_groups () const {
+  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  for (auto atm_proc : m_atm_processes) {
+    auto groups_i = atm_proc->get_required_groups();
+    groups.insert(groups_i.begin(),groups_i.end());
+  }
+  return groups;
+}
+
+std::set<AtmosphereProcessGroup::ci_string_pair>
+AtmosphereProcessGroup::get_updated_groups () const {
+  std::set<AtmosphereProcessGroup::ci_string_pair> groups;
+  for (auto atm_proc : m_atm_processes) {
+    auto groups_i = atm_proc->get_updated_groups();
+    groups.insert(groups_i.begin(),groups_i.end());
+  }
+  return groups;
 }
 
 void AtmosphereProcessGroup::set_required_field_impl (const Field<const Real>& f) {
@@ -493,31 +507,10 @@ views_are_equal(const field_type& f1, const field_type& f2) {
 }
 #endif
 
-void AtmosphereProcessGroup::set_internal_field (const Field<Real>& f)
-{
-  const auto& fid = f.get_header().get_identifier();
-  for (int iproc=0; iproc<m_group_size; ++iproc) {
-    auto proc  = m_atm_processes[iproc];
-    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
-    if (proc->requires(fid)) {
-      proc->set_required_field(f.get_const());
-    }
-    if (proc->computes(fid)) {
-      proc->set_computed_field(f);
-    }
-    if (static_cast<bool>(group)) {
-      if (ekat::contains(group->get_internal_fields(),fid)) {
-        group->set_internal_field(f);
-      }
-    }
-  }
-}
-
 FieldIdentifier
 AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
                                         const remapper_ptr_type& remapper)
 {
-
   const auto& fid_layout = fid.get_layout();
   const auto& grid_name = fid.get_grid_name();
 
@@ -532,6 +525,53 @@ AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
   } else {
     // Something went wrong
     EKAT_REQUIRE_MSG(false,"Error! Input FieldIdentifier's grid name is neither the source nor the target grid of the input remapper.\n");
+  }
+}
+
+void AtmosphereProcessGroup::
+process_required_field (const FieldIdentifier& fid,
+                        const remapper_ptr_type& remap_in) {
+  // Whether this fid is on the reference grid or not, we expose
+  // as input a copy of fid on the reference grid.
+  // If fid is not on the reference grid, we add fid to our 'computed' fields.
+  const auto& gname = fid.get_grid_name();
+  const bool is_ref_grid = (gname==m_ref_grid_name);
+  const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in);
+
+  if (m_group_schedule_type==ScheduleType::Sequential) {
+    // If the schedule is sequential, we do not add inputs if they are computed
+    // by a previous process (they are not an 'input' to the group).
+    if (!ekat::contains(m_computed_fields,ref_fid)) {
+      m_required_fields.insert(ref_fid);
+    }
+  } else {
+    // In parallel schedule, the inputs of all processes are inputs of the group
+    m_required_fields.insert(ref_fid);
+  }
+
+  // If this field id is not on the reference grid, we need to remap,
+  // which means that we "compute" the input on this particular grid
+  if (!is_ref_grid) {
+    // We "compute" this field (on the non-reference grid) by means of remapping
+    m_computed_fields.insert(fid);
+
+    remap_in->register_field(ref_fid,fid);
+  }
+}
+
+void AtmosphereProcessGroup::
+process_computed_field (const FieldIdentifier& fid,
+                        const remapper_ptr_type& remap_out) {
+  m_computed_fields.insert(fid);
+
+  // If the grid of fid is not the reference one, we also remap it
+  // to the reference grid, hence "computing" ref_fid
+  // Exception: if atm proc is a group, then it should already take care of this.
+  if (fid.get_grid_name()!=m_ref_grid_name) {
+    const FieldIdentifier ref_fid = create_ref_fid(fid,remap_out);
+    m_computed_fields.insert(ref_fid);
+
+    remap_out->register_field(fid,ref_fid);
   }
 }
 

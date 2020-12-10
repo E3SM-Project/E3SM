@@ -643,6 +643,10 @@ subroutine update_prognostics_implicit( &
          thetal,qw,tracer,tke,&           ! Input/Output
          u_wind,v_wind)                   ! Input/Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: update_prognostics_implicit_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -710,6 +714,20 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: du(shcol,nlev) ! Superdiagonal for solver
   real(rtype) :: dl(shcol,nlev) ! Factorized subdiagonal for solver
   real(rtype) :: d(shcol,nlev)  ! Factorized diagonal for solver
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call update_prognostics_implicit_f(&
+           shcol,nlev,nlevi,num_tracer,&    ! Input
+           dtime,dz_zt,dz_zi,rho_zt,&       ! Input
+           zt_grid,zi_grid,tk,tkh,&         ! Input
+           uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,& ! Input
+           wtracer_sfc,&                    ! Input
+           thetal,qw,tracer,tke,&           ! Input/Output
+           u_wind,v_wind)                   ! Input/Output
+     return
+  endif
+#endif
 
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
@@ -4230,6 +4248,11 @@ subroutine pblintd_init(&
        shcol,nlev,&             ! Input
        z,&                      ! Input
        check,rino,pblh)         ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_init_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4248,6 +4271,14 @@ subroutine pblintd_init(&
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_init_f(shcol,nlev,z,check,rino,pblh) 
+      return
+   endif
+#endif
+
     do i=1,shcol
        check(i)     = .true.
        rino(i,nlev) = 0.0_rtype
@@ -4353,7 +4384,7 @@ subroutine pblintd_surf_temp(&
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        check(i)  = (kbfs(i) > 0._rtype)
        if (check(i)) then
-          phiminv      = (1._rtype - binm*pblh(i)/obklen(i))**onet
+          phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
           rino(i,nlev) = 0.0_rtype
           tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv )
        end if

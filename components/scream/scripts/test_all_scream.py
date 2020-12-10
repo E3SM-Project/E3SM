@@ -21,7 +21,7 @@ class TestAllScream(object):
     def __init__(self, cxx_compiler, f90_compiler, c_compiler, submit=False, parallel=False, fast_fail=False,
                  baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, work_dir=None,
+                 integration_test="JENKINS_HOME" in os.environ, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
@@ -34,6 +34,7 @@ class TestAllScream(object):
         self._fast_fail               = fast_fail
         self._baseline_ref            = baseline_ref
         self._machine                 = machine
+        self._local                   = local
         self._perform_tests           = not no_tests
         self._keep_tree               = keep_tree
         self._baseline_dir            = baseline_dir
@@ -63,7 +64,12 @@ class TestAllScream(object):
             if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
                 self._machine = os.environ["CIME_MACHINE"]
             else:
-                expect(False, "Machine is now required by test-all-scream")
+                expect(self._local,
+                       "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
+                       "which makes it lookf for machine specs in '~/.cime/scream_mach_specs.py'.")
+                self._machine = "local"
+        else:
+            expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
         # Unless the user claims to know what he/she is doing, we setup the env.
         if not self._preserve_env:
@@ -121,7 +127,7 @@ class TestAllScream(object):
         self._original_branch = get_current_branch()
         self._original_commit = get_current_commit()
 
-        print_last_commit(git_ref=self._original_branch)
+        print_last_commit(git_ref=self._original_branch, dry_run=self._dry_run)
 
         ############################################
         #    Deduce compilers if needed/possible   #
@@ -134,9 +140,10 @@ class TestAllScream(object):
         if self._c_compiler is None:
             self._c_compiler = get_mach_c_compiler(self._machine)
 
-        self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
-        self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
-        self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
+        if not self._dry_run:
+            self._f90_compiler = run_cmd_no_fail("which {}".format(self._f90_compiler))
+            self._cxx_compiler = run_cmd_no_fail("which {}".format(self._cxx_compiler))
+            self._c_compiler   = run_cmd_no_fail("which {}".format(self._c_compiler))
 
         ###################################
         #      Compute baseline info      #
@@ -150,7 +157,7 @@ class TestAllScream(object):
                     self._baseline_ref = "HEAD"
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
-                    merge_git_ref(git_ref="origin/master",verbose=True)
+                    merge_git_ref(git_ref="origin/master", verbose=True, dry_run=self._dry_run)
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
@@ -163,7 +170,7 @@ class TestAllScream(object):
         else:
             # We treat the "AUTO" string as a request for automatic baseline dir.
             if self._baseline_dir == "AUTO":
-                self._baseline_dir = get_mach_baseline_root_dir(self._machine,default_baselines_root_dir)
+                self._baseline_dir = get_mach_baseline_root_dir(self._machine)
 
             self._baseline_dir = pathlib.Path(self._baseline_dir).absolute()
 
@@ -172,7 +179,7 @@ class TestAllScream(object):
 
             if self._integration_test:
                 self._baseline_ref = "origin/master"
-                merge_git_ref(git_ref=self._baseline_ref,verbose=True)
+                merge_git_ref(git_ref=self._baseline_ref, verbose=True, dry_run=self._dry_run)
             else:
                 for test in self._tests:
                     test_baseline_dir = self.get_preexisting_baseline(test)
@@ -254,7 +261,6 @@ class TestAllScream(object):
                 print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
         if self._keep_tree:
-            expect(not is_repo_clean(silent=True), "Makes no sense to use --keep-tree when repo is clean")
             expect(not self._integration_test, "Should not be doing keep-tree with integration testing")
             print("WARNING! You have uncommitted changes in your repo.",
                   "         The PASS/FAIL status may depend on these changes",
@@ -265,7 +271,7 @@ class TestAllScream(object):
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
         else:
-            expect(is_repo_clean(),
+            expect(self._dry_run or is_repo_clean(),
                    "Repo must be clean before running. If testing against HEAD or pre-built baselines, "
                    "you can pass `--keep-tree` to allow non-clean repo.")
 
@@ -338,7 +344,10 @@ class TestAllScream(object):
     ###############################################################################
     def get_machine_file(self):
     ###############################################################################
-        return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
+        if self._local:
+            return pathlib.Path("~/.cime/scream_mach_file.cmake").expanduser()
+        else:
+            return pathlib.Path(self._root_dir, "cmake", "machine-files", "{}.cmake".format(self._machine))
 
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
@@ -413,9 +422,13 @@ class TestAllScream(object):
         # on correct cores with taskset. On GPU, however, these ids are used to select
         # the kokkos device where the tests are run on.
 
-        it = itertools.takewhile(lambda name: name!=test, self._tests)
-        start = sum(self._testing_res_count[prevs] for prevs in it)
-        end   = start + self._testing_res_count[test]
+        if self._parallel:
+            it = itertools.takewhile(lambda name: name!=test, self._tests)
+            start = sum(self._testing_res_count[prevs] for prevs in it)
+            end   = start + self._testing_res_count[test]
+        else:
+            start = 0
+            end   = self._testing_res_count[test]
 
         data = {}
 
@@ -501,7 +514,7 @@ class TestAllScream(object):
         else:
             # Clean up the directory, by removing everything but the 'data' subfolder
             run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
-                            from_dir=test_dir,verbose=True)
+                            from_dir=test_dir, verbose=True, dry_run=self._dry_run)
 
         return True
 
@@ -524,7 +537,7 @@ class TestAllScream(object):
 
             test_dir.mkdir(parents=True)
 
-        checkout_git_ref(self._baseline_ref, verbose=True)
+        checkout_git_ref(self._baseline_ref, verbose=True, dry_run=self._dry_run)
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
@@ -551,7 +564,7 @@ class TestAllScream(object):
                 tmp_string += " {}".format(test)
             run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file))
 
-        checkout_git_ref(git_head_ref, verbose=True)
+        checkout_git_ref(git_head_ref, verbose=True, dry_run=self._dry_run)
 
         return success
 
@@ -568,7 +581,7 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        if self._quick_rerun:
+        if self._quick_rerun and pathlib.Path("{}/CMakeCache.txt".format(test_dir)).is_file():
             # Do not purge bld dir, and do not rerun config step.
             # Note: make will still rerun cmake if some cmake file has changed
             ctest_config += "-DSKIP_CONFIG_STEP=TRUE "
@@ -578,7 +591,7 @@ class TestAllScream(object):
             # This directory might have been used also to build the model to generate baselines.
             # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
             # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
-            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
+            run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir, dry_run=self._dry_run)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 
@@ -662,6 +675,6 @@ class TestAllScream(object):
         finally:
             if not self._keep_tree:
                 # Cleanup the repo if needed
-                cleanup_repo(self._original_branch, self._original_commit)
+                cleanup_repo(self._original_branch, self._original_commit, dry_run=self._dry_run)
 
         return success
