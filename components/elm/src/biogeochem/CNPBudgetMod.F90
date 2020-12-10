@@ -187,7 +187,7 @@ module CNPBudgetMod
        '          Total SOM', &
        ' Total wood product', &
        '    Truncation sink', &
-       '     Grid-level Err', &
+       '  Crop seed deficit', &
        '              TOTAL'  &
        /)
 
@@ -335,6 +335,8 @@ module CNPBudgetMod
   character(*),parameter :: C_FS_2 = "('    ',a25,f15.2,5x,f15.2,5x,' | ',f18.2)"
   character(*),parameter :: C_SA0  = "('    ',33x,2(5x,a3,8x),' | ',(8x,a12,2x))"
   character(*),parameter :: C_FS2_2= "('    ',a12,17x,f18.2,18x,' | ',f18.2)"
+  character(*),parameter :: C_SA0_2= "('    ',31x,2(5x,a3,9x),' |',(8x,a12,2x))"
+  character(*),parameter :: C_FS3_3= "('    ',a12,53x,' | ',(f18.2))"
 
 contains
 
@@ -919,6 +921,7 @@ contains
 #endif
 
     write(iulog,*)''
+    write(iulog,C_SA0_2)'beg','end','*NET CHANGE*'
     do s = 1,c_s_name_size-1
        s_beg = s_totc_beg + s
        s_end = s_totc_end + s
@@ -927,6 +930,7 @@ contains
             budg_stateG(s_end,ip)*unit_conversion, &
             (budg_stateG(s_end,ip) - budg_stateG(s_beg,ip))*unit_conversion
     end do
+    write(iulog,C_FS3_3)'Grid-level Err',budg_stateG(s_c_error,ip) *unit_conversion
 
     write(iulog,'(70("-"),"|",23("-"))')
 
