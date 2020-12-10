@@ -18,7 +18,8 @@ namespace scream
  * In particular, the map lid->idx is an identity, and the native
  * layout has only one tag: Column.
  *
- * This grid is typical of Physics parametrizations
+ * This grid is typical of Physics parametrizations, and is also used
+ * to interface to the component coupler.
  */
 
 class PointGrid : public AbstractGrid
@@ -26,38 +27,23 @@ class PointGrid : public AbstractGrid
 public:
 
   PointGrid (const std::string& grid_name,
-             const dofs_list_type& dofs_gids,
-             const int num_vertical_lev);
-  virtual ~PointGrid () = default;
+             const int num_global_cols,
+             const int num_my_cols,
+             const int num_vertical_levels);
 
-  // Grid description utilities
-  GridType type () const override { return GridType::Point; }
-  const std::string& name () const override { return m_grid_name; }
+  virtual ~PointGrid () = default;
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   // E.g., for a 2d structured grid, this could be a set of 2 indices.
   FieldLayout get_native_dof_layout () const override;
 
-  int get_num_vertical_levels () const override { return m_num_vl; }
-
-  // Dofs gids utilities
-  int get_num_local_dofs () const override { return m_num_my_cols; }
-  const dofs_list_type& get_dofs_gids () const override { return m_dofs_gids; }
-  lid_to_idx_map_type get_lid_to_idx_map () const override { return m_lid_to_idx; }
-
-protected:
-
-  const std::string     m_grid_name;
-
-  int                   m_num_my_cols;
-  int                   m_num_vl;
-  dofs_list_type        m_dofs_gids;
-  lid_to_idx_map_type   m_lid_to_idx;
+  void set_dofs (const dofs_list_type& dofs);
+  void set_geometry_data (const std::string& name, const geo_view_type& data) override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned
 // among the ranks in the given communicator.
-PointGrid
+std::shared_ptr<const PointGrid>
 create_point_grid (const std::string& name,
                    const int num_global_cols,
                    const int num_vertical_lev,

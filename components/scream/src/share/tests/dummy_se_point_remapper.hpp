@@ -46,40 +46,39 @@ public:
     using namespace ShortFieldTagsNames;
     auto ncol = this->get_src_grid()->get_native_dof_layout().dim(0);
 
-    if (tgt.rank()==3) {
-      FieldLayout src({COL},{ncol});
-      return src;
-    } else if (tgt.rank()==4) {
-      FieldLayout src({COL,VL},{ncol,tgt.dim(3)});
-      return src;
-    } else if (tgt.rank()==5) {
-      FieldLayout src({COL,CMP,VL},{ncol,tgt.dim(1),tgt.dim(4)});
-      return src;
-    } else {
-      EKAT_ERROR_MSG ("Error! Target layout not supported. Remember that this class has limited support.\n");
+    const auto rank = tgt.rank();
+    EKAT_REQUIRE_MSG (rank==3 || rank==4 || rank==5,
+      "Error! Target layout not supported. Remember that this class has limited support.\n");
+    switch (rank) {
+      case 3:
+        return FieldLayout ({COL},{ncol});
+      case 4:
+        return FieldLayout ({COL,VL},{ncol,tgt.dim(3)});
+      case 5:
+        return FieldLayout ({COL,CMP,VL},{ncol,tgt.dim(1),tgt.dim(4)});
+      default:
+        return FieldLayout ({},{});
     }
-    FieldLayout src({},{});
-    return src;
   }
+
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
     auto nele = this->get_tgt_grid()->get_native_dof_layout().dim(0);
-    if (src.rank()==1) {
-      FieldLayout tgt({EL,GP,GP},{nele,4,4});
-      return tgt;
-    } else if (src.rank()==2) {
-      auto tag = src.tag(1);
-      auto dim = src.dim(1);
-      FieldLayout tgt({EL,GP,GP,tag},{nele,4,4,dim});
-      return tgt;
-    } else if (src.rank()==3) {
-      FieldLayout tgt({EL,CMP,GP,GP,VL},{nele,4,4,src.dim(1),src.dim(2)});
-      return tgt;
-    } else {
-      EKAT_ERROR_MSG ("Error! Target layout not supported. Remember that this class has limited support.\n");
+
+    const auto rank = src.rank();
+    EKAT_REQUIRE_MSG (rank==1 || rank==2 || rank==3,
+      "Error! Source layout not supported. Remember that this class has limited support.\n");
+
+    switch (rank) {
+      case 1:
+        return FieldLayout ({EL,GP,GP},{nele,4,4});
+      case 2:
+        return FieldLayout ({EL,GP,GP,src.tag(1)},{nele,4,4,src.dim(1)});
+      case 3:
+        return FieldLayout ({EL,CMP,GP,GP,VL},{nele,src.dim(1),4,4,src.dim(2)});
+      default:
+        return FieldLayout ({},{});
     }
-    FieldLayout tgt ({},{});
-    return tgt;
   }
 
   bool compatible_layouts (const layout_type& src,

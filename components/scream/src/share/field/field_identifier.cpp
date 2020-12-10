@@ -64,9 +64,9 @@ void FieldIdentifier::set_grid_name (const std::string& grid_name) {
 
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
-  m_identifier = m_name + "[" + m_grid_name + "]<" + tag2string(m_layout.tags()[0]);
+  m_identifier = m_name + "[" + m_grid_name + "]<" + e2str(m_layout.tags()[0]);
   for (int dim=1; dim<m_layout.rank(); ++dim) {
-    m_identifier += "," + tag2string(m_layout.tags()[dim]);
+    m_identifier += "," + e2str(m_layout.tags()[dim]);
   }
   m_identifier += ">(" + std::to_string(m_layout.dims()[0]);
   for (int dim=1; dim<m_layout.rank(); ++dim) {
