@@ -3220,5 +3220,19 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
   Kokkos::Array<view_2d, 4> inout_views = {tke_d, tk_d, tkh_d, isotropy_d};
   ekat::device_to_host<int,4>({tke, tk, tkh, isotropy}, shcol, nlev, inout_views, true);
 }
+
+void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino)
+{
+  // TODO
+}
+void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh)
+{
+  // TODO
+}
+void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
+{
+  // TODO
+}
+
 } // namespace shoc
 } // namespace scream
