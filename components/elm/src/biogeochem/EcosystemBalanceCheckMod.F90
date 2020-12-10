@@ -770,23 +770,6 @@ contains
   end subroutine ColPBalanceCheck
 
   !-----------------------------------------------------------------------
-  subroutine bgc_c2g(bounds, col_var, grd_var)
-    !
-    ! !DESCRIPTION:
-    ! Upscale BGC states or fluxes from column to grid level
-    !
-    ! !ARGUMENTS:
-    type(bounds_type) , intent(in)  :: bounds
-    real(r8)          , intent(in)  :: col_var(:)
-    real(r8)          , intent(out) :: grd_var(:)
-    !
-
-    call c2g(bounds, col_var(bounds%begc:bounds%endc), grd_var(bounds%begg:bounds%endg), &
-         c2l_scale_type = 'unity', l2g_scale_type = 'unity')
-
-  end subroutine bgc_c2g
-
-  !-----------------------------------------------------------------------
   subroutine BeginGridCBalance(bounds, col_cs, grc_cs)
     !
     ! !DESCRIPTION:
@@ -818,14 +801,22 @@ contains
          beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
          )
 
-      call bgc_c2g(bounds, totcolc           , beg_totc              )
-      call bgc_c2g(bounds, totpftc           , beg_totpftc           )
-      call bgc_c2g(bounds, cwdc              , beg_cwdc              )
-      call bgc_c2g(bounds, totlitc           , beg_totlitc           )
-      call bgc_c2g(bounds, totsomc           , beg_totsomc           )
-      call bgc_c2g(bounds, totprodc          , beg_totprodc          )
-      call bgc_c2g(bounds, ctrunc            , beg_ctrunc            )
-      call bgc_c2g(bounds, cropseedc_deficit , beg_cropseedc_deficit )
+      call c2g(bounds, totcolc(bounds%begc:bounds%endc), beg_totc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, totpftc(bounds%begc:bounds%endc), beg_totpftc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, cwdc(bounds%begc:bounds%endc), beg_cwdc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, totlitc(bounds%begc:bounds%endc), beg_totlitc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, totsomc(bounds%begc:bounds%endc), beg_totsomc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, totprodc(bounds%begc:bounds%endc), beg_totprodc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, ctrunc(bounds%begc:bounds%endc), beg_ctrunc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, cropseedc_deficit(bounds%begc:bounds%endc), beg_cropseedc_deficit(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
     end associate
 
@@ -897,25 +888,42 @@ contains
          )
 
       ! c2g states
-      call bgc_c2g(bounds, col_totc              , end_totc              )
-      call bgc_c2g(bounds, col_totpftc           , end_totpftc           )
-      call bgc_c2g(bounds, col_cwdc              , end_cwdc              )
-      call bgc_c2g(bounds, col_totlitc           , end_totlitc           )
-      call bgc_c2g(bounds, col_totsomc           , end_totsomc           )
-      call bgc_c2g(bounds, col_totprodc          , end_totprodc          )
-      call bgc_c2g(bounds, col_ctrunc            , end_ctrunc            )
-      call bgc_c2g(bounds, col_cropseedc_deficit , end_cropseedc_deficit )
+      call c2g(bounds, col_totc(bounds%begc:bounds%endc), end_totc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_totpftc(bounds%begc:bounds%endc), end_totpftc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_cwdc(bounds%begc:bounds%endc), end_cwdc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_totlitc(bounds%begc:bounds%endc), end_totlitc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_totsomc(bounds%begc:bounds%endc), end_totsomc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_totprodc(bounds%begc:bounds%endc), end_totprodc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_ctrunc(bounds%begc:bounds%endc), end_ctrunc(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_cropseedc_deficit(bounds%begc:bounds%endc), end_cropseedc_deficit(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
       ! c2g fluxes
-      call bgc_c2g(bounds, col_gpp                 , grc_gpp                 )
-      call bgc_c2g(bounds, col_er                  , grc_er                  )
-      call bgc_c2g(bounds, col_fire_closs          , grc_fire_closs          )
-      call bgc_c2g(bounds, col_prod1c_loss         , grc_prod1c_loss         )
-      call bgc_c2g(bounds, col_prod10c_loss        , grc_prod10c_loss        )
-      call bgc_c2g(bounds, col_prod100c_loss       , grc_prod100c_loss       )
-      call bgc_c2g(bounds, col_hrv_xsmrpool_to_atm , grc_hrv_xsmrpool_to_atm )
-      call bgc_c2g(bounds, col_som_c_leached       , grc_som_c_leached       )
-      call bgc_c2g(bounds, col_som_c_yield         , grc_som_c_yield         )
+      call c2g(bounds, col_gpp(bounds%begc:bounds%endc), grc_gpp(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_er(bounds%begc:bounds%endc), grc_er(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_fire_closs(bounds%begc:bounds%endc), grc_fire_closs(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_prod1c_loss(bounds%begc:bounds%endc), grc_prod1c_loss(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_prod10c_loss(bounds%begc:bounds%endc), grc_prod10c_loss(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_prod100c_loss(bounds%begc:bounds%endc), grc_prod100c_loss(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_hrv_xsmrpool_to_atm(bounds%begc:bounds%endc), grc_hrv_xsmrpool_to_atm(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_som_c_leached(bounds%begc:bounds%endc), grc_som_c_leached(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+      call c2g(bounds, col_som_c_yield(bounds%begc:bounds%endc), grc_som_c_yield(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
       dt = real( get_step_size(), r8 )
       nstep = get_nstep()
