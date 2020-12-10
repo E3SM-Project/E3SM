@@ -60,7 +60,7 @@ TEST_CASE("restart","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  auto& out_fields = field_repo->get_field_groups().at("output");
+  auto& out_fields = field_repo->get_field_groups_names().at("output");
   Int max_steps = 17;  // Go a few steps past the last restart write to make sure that the last written file is on the 15th step.
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)

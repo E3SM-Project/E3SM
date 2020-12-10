@@ -56,7 +56,7 @@ TEST_CASE("input_output_basic","io")
   util::TimeStamp time (0,0,0,0);
 
   //  Cycle through data and write output
-  auto& out_fields = field_repo->get_field_groups().at("output");
+  auto& out_fields = field_repo->get_field_groups_names().at("output");
   Int max_steps = 10;
   Real dt = 1.0;
   for (Int ii=0;ii<max_steps;++ii)
