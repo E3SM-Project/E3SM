@@ -19,20 +19,9 @@ module atm_comp_mct
   use esmf,             only: ESMF_Clock
   use mct_mod,          only: mct_aVect, mct_gsMap, mct_gGrid
 
-  ! use perf_mod
-  ! use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
-  ! use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
-  ! use shr_strdata_mod , only: shr_strdata_type
-  ! use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
-  ! use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
-  ! use shr_file_mod    , only: shr_file_freeunit
-  ! use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
-  ! use seq_flds_mod    , only: seq_flds_a2x_fields, seq_flds_x2a_fields
-
-  ! !PUBLIC TYPES:
   implicit none
   save
-  private ! except
+  private
 
   !--------------------------------------------------------------------------
   ! Public interfaces
@@ -190,7 +179,6 @@ CONTAINS
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
-    character(*), parameter :: subName = "(atm_run_mct) "
     real(kind=c_double)              :: dt_scream
     !-------------------------------------------------------------------------------
 
@@ -204,13 +192,13 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
-    ! call dead_run_mct('atm', EClock, x2d, d2x, &
-    !    gsmap, ggrid, gbuf, mpicom_atm, ATM_ID, my_task, master_task, logunit)
-    dt_scream = 300.0
+    ! Get time step info
+    call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
+
+    ! Run scream
     call scream_run( dt_scream )
 
     ! Set time of next radiadtion computation
-    call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday)
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday)
 
     call shr_file_setLogUnit (shrlogunit)
@@ -231,14 +219,12 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2d        ! driver -> dead
     type(mct_aVect)             ,intent(inout) :: d2x        ! dead   -> driver
 
-    !--- formats ---
-    character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------
-    ! call dead_final_mct('atm', my_task, master_task, logunit)
+
     call scream_finalize()
 
   end subroutine atm_final_mct
@@ -318,19 +304,6 @@ CONTAINS
     ! Initialize attribute vector with special value
     call mct_gsMap_orderedPoints(gsMap_atm, my_task, idata)
     call mct_gGrid_importIAttr(dom_atm,'GlobGridNum',idata,lsize)
-    !
-    ! Determine domain (numbering scheme is: West to East and South to North to South pole)
-    ! ! Initialize attribute vector with special value
-    ! !
-    ! data(:) = -9999.0_R8 
-    ! call mct_gGrid_importRAttr(dom_atm,"lat"  ,data,lsize) 
-    ! call mct_gGrid_importRAttr(dom_atm,"lon"  ,data,lsize) 
-    ! call mct_gGrid_importRAttr(dom_atm,"area" ,data,lsize) 
-    ! call mct_gGrid_importRAttr(dom_atm,"aream",data,lsize) 
-    ! data(:) = 0.0_R8     
-    ! call mct_gGrid_importRAttr(dom_atm,"mask" ,data,lsize) 
-    ! data(:) = 1.0_R8
-    ! call mct_gGrid_importRAttr(dom_atm,"frac" ,data,lsize)
 
     ! Fill in correct values for domain components
     call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
