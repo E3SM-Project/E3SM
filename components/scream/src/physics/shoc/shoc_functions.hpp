@@ -391,7 +391,6 @@ struct Functions
   static void adv_sgs_tke(
     const MemberType&            team,
     const Int&                   nlev,
-    const Int&                   shcol,
     const Real&                  dtime,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& wthv_sec,
@@ -435,7 +434,6 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlevi,
     const Int&                   nlev,
-    const Int&                   shcol,
     const uview_1d<const Spack>& dz_zi,
     const uview_1d<const Spack>& u_wind,
     const uview_1d<const Spack>& v_wind,
@@ -463,7 +461,6 @@ struct Functions
   static void isotropic_ts(
     const MemberType&            team,
     const Int&                   nlev,
-    const Int&                   shcol,
     const Scalar&                brunt_int,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& a_diss,
@@ -547,6 +544,31 @@ struct Functions
     const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       tk);
 
+  KOKKOS_FUNCTION
+  static void shoc_tke(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                dtime,
+    const uview_1d<const Spack>& wthv_sec,
+    const uview_1d<const Spack>& shoc_mix,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& pres,
+    const uview_1d<const Spack>& u_wind,
+    const uview_1d<const Spack>& v_wind,
+    const uview_1d<const Spack>& brunt,
+    const Scalar&                obklen,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const Scalar&                pblh,
+    const uview_1d<Spack>&       sterm,
+    const uview_1d<Spack>&       sterm_zt,
+    const uview_1d<Spack>&       a_diss,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       tk,
+    const uview_1d<Spack>&       tkh,
+    const uview_1d<Spack>&       isotropy);
 }; // struct Functions
 
 } // namespace shoc
@@ -599,6 +621,7 @@ struct Functions
 # include "shoc_pblintd_impl.hpp"
 # include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
+# include "shoc_tke_impl.hpp"
 #endif // KOKKOS_ENABLE_CUDA
 
 #endif // SHOC_FUNCTIONS_HPP
