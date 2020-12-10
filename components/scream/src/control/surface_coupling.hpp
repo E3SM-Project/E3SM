@@ -21,6 +21,12 @@ public:
   using host_device_type = HostDevice;
   using device_type      = DefaultDevice;
 
+  template<typename DevT, typename DataT>
+  using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
+  template<typename DevT, typename DataT>
+  using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
+
+
   // Use const type for exports, to protect against bugs
   using import_field_type  = Field<      Real>;
   using export_field_type  = Field<const Real>;
@@ -60,12 +66,9 @@ public:
   const std::set<FieldIdentifier>& get_import_fids () const { return m_imports_fids; }
   const std::set<FieldIdentifier>& get_export_fids () const { return m_exports_fids; }
 
+#ifndef KOKKOS_ENABLE_CUDA
 protected:
-
-  template<typename DevT, typename DataT>
-  using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
-  template<typename DevT, typename DataT>
-  using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
+#endif
 
   // A device-friendly helper struct, storing information about the import/export.
   // Templated on the value type of the scream field associated with the import/export.
@@ -73,8 +76,10 @@ protected:
   template<typename ValueType>
   struct Info {
     // Set to invalid, for ease of checking
+    KOKKOS_INLINE_FUNCTION
     Info () : data(nullptr) {}
 
+    KOKKOS_INLINE_FUNCTION
     Info& operator= (const Info&) = default;
 
     // Index of the field inside the coupler 2d array
@@ -92,6 +97,10 @@ protected:
     // Pointer to the scream field device memory
     ValueType*  data;
   };
+
+#ifdef KOKKOS_ENABLE_CUDA
+protected:
+#endif
 
   using import_value_type  = import_field_type::value_type;
   using export_value_type  = export_field_type::value_type;
