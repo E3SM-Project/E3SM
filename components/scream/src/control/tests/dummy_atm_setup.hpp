@@ -27,8 +27,8 @@ void dummy_atm_init (const int num_cols, const int nvl, const ekat::Comm& comm) 
   // Recall that this class stores *static* members, so whatever
   // we set here, will be reflected in the GM built by the factory.
   UserProvidedGridsManager upgm;
-  auto dummy_grid_a = std::make_shared<PointGrid>(create_point_grid("Point Grid A",num_cols,nvl,comm));
-  auto dummy_grid_b = std::make_shared<PointGrid>(create_point_grid("Point Grid B",num_cols,nvl,comm));
+  auto dummy_grid_a = create_point_grid("Point Grid A",num_cols,nvl,comm);
+  auto dummy_grid_b = create_point_grid("Point Grid B",num_cols,nvl,comm);
 
   upgm.set_grid(dummy_grid_a);
   upgm.set_grid(dummy_grid_b);

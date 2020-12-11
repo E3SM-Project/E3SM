@@ -27,7 +27,10 @@ module homme_context_mod
   type (timelevel_t)          , public :: tl
   type (hybrid_t)             , public :: hybrid
   type (hvcoord_t)            , public :: hvcoord
-  ! type (derivative_t),          public :: deriv
+
+  integer, public :: npes        = 1
+  integer, public :: iam         = 0
+  logical, public :: masterproc  = .false.
 
   logical, public :: is_parallel_inited          = .false.
   logical, public :: is_params_inited            = .false.
@@ -36,9 +39,8 @@ module homme_context_mod
   logical, public :: is_model_inited             = .false.
   logical, public :: is_hommexx_functors_inited  = .false.
 
+  ! Functions callable from C, mostly to detect whether some parts were already inited
   public :: init_parallel_f90
-
-  ! Functions callable from C to detect whether some parts were already inited
   public :: is_parallel_inited_f90
   public :: is_params_inited_f90
   public :: is_geometry_inited_f90
@@ -95,6 +97,10 @@ contains
 
     ! Init the comm in Hommexx
     call reset_cxx_comm (f_comm)
+
+    npes = par%nprocs
+    iam  = par%rank
+    masterproc = par%masterproc
 
     is_parallel_inited = .true.
   end subroutine init_parallel_f90

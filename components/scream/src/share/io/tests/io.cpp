@@ -239,7 +239,7 @@ std::shared_ptr<UserProvidedGridsManager> get_test_gm(const ekat::Comm& io_comm,
 
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-  auto dummy_grid = std::make_shared<PointGrid>(create_point_grid("Physics",num_gcols,num_levs,io_comm));
+  auto dummy_grid = create_point_grid("Physics",num_gcols,num_levs,io_comm);
   auto upgm = std::make_shared<UserProvidedGridsManager>();
   upgm->set_grid(dummy_grid);
 

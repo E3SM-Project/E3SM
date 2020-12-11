@@ -1,9 +1,9 @@
 if (NOT DEFINED PROJECT_NAME)
   cmake_minimum_required(VERSION 3.3)
   cmake_policy(SET CMP0057 NEW)
-  set(CIME_BUILD FALSE)
+  set(SCREAM_CIME_BUILD FALSE)
 else()
-  set(CIME_BUILD TRUE)
+  set(SCREAM_CIME_BUILD TRUE)
   set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
   set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
@@ -27,6 +27,11 @@ list(APPEND CMAKE_MODULE_PATH
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
+if (SCREAM_CIME_BUILD)
+  list(APPEND CMAKE_MODULE_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
+endif ()
+
 include(EkatMpiUtils)
 
 # We should avoid cxx bindings in mpi; they are already deprecated,
@@ -45,7 +50,7 @@ endif()
 
 set (CMAKE_CXX_STANDARD 11)
 
-if (NOT CIME_BUILD)
+if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX Fortran)
 
   if (SCREAM_CORI_HACK)
@@ -119,7 +124,7 @@ set(DEFAULT_FPMODEL "precise")
 set(DEFAULT_MPIRUN_EXE "mpiexec")
 set(DEFAULT_MPI_NP_FLAG "-np")
 set(DEFAULT_LIB_ONLY FALSE)
-if (CIME_BUILD)
+if (SCREAM_CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
@@ -222,8 +227,12 @@ print_var(SCREAM_TPL_LIBRARIES)
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
+# Generate scream_config.h and scream_config.f
+include (EkatUtils)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 # Hooks for testing test-all-scream within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
@@ -238,7 +247,7 @@ endif()
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 
-if (CIME_BUILD)
+if (SCREAM_CIME_BUILD)
   if (SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
     set (SCREAM_DYNAMICS_DYCORE "Homme")
   endif()

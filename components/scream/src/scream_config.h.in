@@ -1,6 +1,9 @@
 #ifndef SCREAM_CONFIG_H
 #define SCREAM_CONFIG_H
 
+// Whether scream is built as a standalone project or as the atm component of E3SM
+#cmakedefine SCREAM_CIME_BUILD
+
 // If defined, Real is double; if not, Real is float.
 #cmakedefine SCREAM_DOUBLE_PRECISION
 
@@ -11,16 +14,16 @@
 #cmakedefine SCREAM_PACK_CHECK_BOUNDS
 
 // The number of scalars in a scream::pack::Pack and Mask.
-#cmakedefine SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
+#define SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
 
 // The number of scalars in a scream::pack::SmallPack and SmallMask.
-#cmakedefine SCREAM_SMALL_PACK_SIZE ${SCREAM_SMALL_PACK_SIZE}
+#define SCREAM_SMALL_PACK_SIZE ${SCREAM_SMALL_PACK_SIZE}
 
 // The number of scalars in a possibly-no-pack. Use this packsize when a routine does better with pksize=1 on some architectures (SKX).
-#cmakedefine SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_POSSIBLY_NO_PACK_SIZE}
+#define SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_POSSIBLY_NO_PACK_SIZE}
 
 // How many levels to use for the vertical grid
-#cmakedefine SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
+#define SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
 
 // Whether MPI errors should abort
 #cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
@@ -43,7 +46,4 @@
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME
 
-// Whether this is a standalone SCREAM build or CIME build
-#cmakedefine CIME_BUILD
-
-#endif // SCREAM_CONFIG_H
+#endif

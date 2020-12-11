@@ -190,25 +190,27 @@ public:
 
 std::shared_ptr<UserProvidedGridsManager>
 setup_upgm (const int ne) {
-  const int nelem = 6*ne*ne;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int num_local_elems = 4;
+  const int num_global_elems = 4*comm.size();
   const int np = 4;
   const int nvl = 128;
   const int ncols = 6*ne*ne*9 + 2;
 
-  ekat::Comm comm(MPI_COMM_WORLD);
-
   // Note: our test does not use actual dof info, but we need to set these
   //       views in the SEGrid's, so that the num local dofs is set
-  AbstractGrid::dofs_list_type dyn_dofs("",nelem*np*np);
+  AbstractGrid::dofs_list_type dyn_dofs("",num_local_elems*np*np);
   AbstractGrid::dofs_list_type phys_dofs("",ncols);
 
-  AbstractGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
+  AbstractGrid::lid_to_idx_map_type dyn_dofs_map ("",num_local_elems*np*np,3);
   AbstractGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
 
   // Create a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",nelem,np,nvl);
-  auto dummy_phys_grid = std::make_shared<PointGrid>(create_point_grid("Physics",ncols,nvl,comm));
+  auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",num_global_elems,num_local_elems,np,nvl);
+  auto dummy_phys_grid = create_point_grid("Physics",ncols,nvl,comm);
   dummy_dyn_grid->set_dofs(dyn_dofs,dyn_dofs_map);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
@@ -216,7 +218,6 @@ setup_upgm (const int ne) {
 
   using dummy_remapper = DummySEPointRemapper<Real>;
   using inverse_remapper = InverseRemapper<Real>;
-  using identity_remapper = IdentityRemapper<Real>;
   auto dummy_phys_dyn_remapper = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_phys_dyn_remapper2 = std::make_shared<dummy_remapper>(dummy_phys_grid,dummy_dyn_grid);
   auto dummy_dyn_phys_remapper = std::make_shared<inverse_remapper>(dummy_phys_dyn_remapper2);

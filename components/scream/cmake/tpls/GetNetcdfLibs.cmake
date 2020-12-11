@@ -1,10 +1,10 @@
 # Use Macros.cmake to get info on netcdf paths.
 # Note: the inputs are supposed to be *the name* of the variables storing the result
-# Note: Keep this a FUNCTION, not a MACRO, to avoit polluting the calling scope
+# Note: Keep this a FUNCTION, not a MACRO, to avoid polluting the calling scope
 #       with all the stuff from Macros.cmake
 function (GetNetcdfLibs)
   # Sanity check
-  if (NOT CIME_BUILD)
+  if (NOT SCREAM_CIME_BUILD)
     message (FATAL_ERROR "Error! Do not call 'GetNetcdfPaths' in a non-CIME build.\n")
   endif ()
 

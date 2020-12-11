@@ -81,7 +81,7 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using dofs_list_type = KokkosTypes<HostDevice>::view_1d<long>;
+  using dofs_list_type = AbstractGrid::dofs_list_type;
   using view_type      = typename KokkosTypes<HostDevice>::view_1d<Real>;
 
   virtual ~AtmosphereInput () = default;
@@ -262,13 +262,13 @@ inline void AtmosphereInput::register_dimensions(const std::string name)
   {
     // check tag against m_dims map.  If not in there, then add it.
     auto& tag = fid.get_layout().tags()[ii];
-    auto tag_loc = m_dims.find(tag2string(tag));
+    auto tag_loc = m_dims.find(e2str(tag));
     if (tag_loc == m_dims.end()) 
     { 
-      m_dims.emplace(std::make_pair(tag2string(tag),fid.get_layout().dim(ii)));
+      m_dims.emplace(std::make_pair(e2str(tag),fid.get_layout().dim(ii)));
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(tag2string(tag))==fid.get_layout().dim(ii),
-        "Error! Dimension " + tag2string(tag) + " on field " + name + " has conflicting lengths");
+      EKAT_REQUIRE_MSG(m_dims.at(e2str(tag))==fid.get_layout().dim(ii),
+        "Error! Dimension " + e2str(tag) + " on field " + name + " has conflicting lengths");
     }
   }
 } // register_dimensions
@@ -291,8 +291,8 @@ inline void AtmosphereInput::register_variables()
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
     for (auto& tag_ii : fid.get_layout().tags()) {
-      io_decomp_tag += "-" + tag2string(tag_ii); // Concatenate the dimension string to the io-decomp string
-      vec_of_dims.push_back(tag2string(tag_ii)); // Add dimensions string to vector of dims.
+      io_decomp_tag += "-" + e2str(tag_ii); // Concatenate the dimension string to the io-decomp string
+      vec_of_dims.push_back(e2str(tag_ii)); // Add dimensions string to vector of dims.
     }
     std::reverse(vec_of_dims.begin(),vec_of_dims.end()); // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO, may need to delete this line when switching to fully C++/C implementation.
     get_variable(m_filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);  // TODO  Need to change dtype to allow for other variables.  Currently the field_repo only stores Real variables so it is not an issue, but in the future if non-Real variables are added we will want to accomodate that.

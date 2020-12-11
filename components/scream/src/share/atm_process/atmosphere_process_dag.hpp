@@ -17,6 +17,9 @@ public:
 
   void add_field_initializer (const FieldInitializer& initializer);
 
+  void add_surface_coupling (const std::set<FieldIdentifier>& imports,
+                             const std::set<FieldIdentifier>& exports);
+
   void write_dag (const std::string& fname, const int verbosity = VERB_MAX) const;
 
   bool has_unmet_dependencies () const { return m_has_unmet_deps; }

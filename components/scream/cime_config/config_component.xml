@@ -15,8 +15,8 @@
 
   <entry id="ATM_DYN_TARGET">
     <type>char</type>
-    <valid_values>theta_kokkos</valid_values>
-    <default_value></default_value>
+    <valid_values>theta-l_kokkos</valid_values>
+    <default_value>theta-l_kokkos</default_value>
     <group>build_component_scream</group>
     <file>env_build.xml</file>
     <desc>Homme dycore to use in scream</desc>
