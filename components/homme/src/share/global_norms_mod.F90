@@ -109,7 +109,7 @@ contains
     use mesh_mod,     only : MeshUseMeshFile          
 
     use reduction_mod, only : ParallelMin,ParallelMax
-    use physical_constants, only : rrearth, rearth,dd_pi
+    use physical_constants, only : scale_factor,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t
     use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -385,12 +385,12 @@ contains
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
            elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * &
-                (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
+                (lambda_vis**2) * ((scale_factor_inv*elem(ie)%normDinv)**4)
 
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
                 stable_hv = sqrt( max_hypervis_courant / &
-                     (  dtnu * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4 ) )
+                     (  dtnu * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4 ) )
 
 #if 0
          ! Useful print statements for debugging the adjustments to hypervis 
@@ -403,7 +403,7 @@ contains
 
 !                make sure that: elem(ie)%hv_courant <=  max_hypervis_courant 
                 elem(ie)%variable_hyperviscosity = stable_hv
-                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4               
+                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4               
             end if
             normDinv_hypervis = max(normDinv_hypervis, elem(ie)%hv_courant/dtnu)
 
