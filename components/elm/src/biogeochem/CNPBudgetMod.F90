@@ -861,66 +861,6 @@ contains
     write(iulog,*)''
     write(iulog,*)'CARBON STATES (gC*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
 
-#if 0
-    write(iulog,C_FS0) &
-       '         PFT       ', &
-       '         CWD       ', &
-       '    Total litter   ', &
-       '      Total SOM    ', &
-       ' Total wood product', &
-       '   Truncation sink ', &
-       ' Crop seeed deficit', &
-       '   Grid-level Err  ', &
-       '       TOTAL       '
-    write(iulog,'(169("-"),"|",23("-"))')
-    write(iulog,C_FS) '         beg', &
-         budg_stateG(s_totpftc_beg           , ip)*unit_conversion, &
-         budg_stateG(s_cwdc_beg              , ip)*unit_conversion, &
-         budg_stateG(s_totlitc_beg           , ip)*unit_conversion, &
-         budg_stateG(s_totsomc_beg           , ip)*unit_conversion, &
-         budg_stateG(s_totprodc_beg          , ip)*unit_conversion, &
-         budg_stateG(s_ctrunc_beg            , ip)*unit_conversion, &
-         budg_stateG(s_cropseedc_deficit_beg , ip)*unit_conversion, &
-         budg_stateG(s_totc_beg              , ip)*unit_conversion
-    write(iulog,C_FS) '         end', &
-         budg_stateG(s_totpftc_end           , ip)*unit_conversion, &
-         budg_stateG(s_cwdc_end              , ip)*unit_conversion, &
-         budg_stateG(s_totlitc_end           , ip)*unit_conversion, &
-         budg_stateG(s_totsomc_end           , ip)*unit_conversion, &
-         budg_stateG(s_totprodc_end          , ip)*unit_conversion, &
-         budg_stateG(s_ctrunc_end            , ip)*unit_conversion, &
-         budg_stateG(s_cropseedc_deficit_end , ip)*unit_conversion, &
-         budg_stateG(s_totc_end              , ip)*unit_conversion
-    write(iulog,C_FS3)'*NET CHANGE*', &
-         (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion, &
-         (budg_stateG(s_cwdc_end              ,ip) - budg_stateG(s_cwdc_beg             ,ip))*unit_conversion, &
-         (budg_stateG(s_totlitc_end           ,ip) - budg_stateG(s_totlitc_beg          ,ip))*unit_conversion, &
-         (budg_stateG(s_totsomc_end           ,ip) - budg_stateG(s_totsomc_beg          ,ip))*unit_conversion, &
-         (budg_stateG(s_totprodc_end          ,ip) - budg_stateG(s_totprodc_beg         ,ip))*unit_conversion, &
-         (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion, &
-         (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion, &
-         budg_stateG(s_c_error,ip) *unit_conversion, &
-         (budg_stateG(s_totc_end,ip) - budg_stateG(s_totc_beg,ip))*unit_conversion
-    write(iulog,'(169("-"),"|",23("-"))')
-    write(iulog,C_FS2)'   *SUM*    ', &
-         (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion + &
-         (budg_stateG(s_cwdc_end              ,ip) - budg_stateG(s_cwdc_beg             ,ip))*unit_conversion + &
-         (budg_stateG(s_totlitc_end           ,ip) - budg_stateG(s_totlitc_beg          ,ip))*unit_conversion + &
-         (budg_stateG(s_totsomc_end           ,ip) - budg_stateG(s_totsomc_beg          ,ip))*unit_conversion + &
-         (budg_stateG(s_totprodc_end          ,ip) - budg_stateG(s_totprodc_beg         ,ip))*unit_conversion + &
-         (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion + &
-         (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion + &
-         budg_stateG(s_c_error,ip) *unit_conversion, &
-         (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion
-    write(iulog,'(169("-"),"|",23("-"))')
-    write(iulog,*)''
-    write(iulog,*)''
-
-    write(iulog,'(70("-"),"|",23("-"))')
-    write(iulog,C_SA0 )'beg','end','*NET CHANGE*'
-    write(iulog,'(70("-"),"|",23("-"))')
-#endif
-
     write(iulog,*)''
     write(iulog,C_SA0_2)'beg','end','*NET CHANGE*'
     do s = 1,c_s_name_size-1
