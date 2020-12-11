@@ -460,9 +460,9 @@ contains
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
+       pres, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
        inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
-       t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
+       t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
        ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, &
        nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
@@ -476,10 +476,10 @@ contains
     logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
     real(rtype), intent(in) :: dt, inv_dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,  &
+    real(rtype), intent(in), dimension(kts:kte) :: pres, exner, inv_cld_frac_l,  &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev
 
-    real(rtype), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,        &
+    real(rtype), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofaci, acn,        &
          qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld,                    &
          qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,      &
          cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,                            &
@@ -1363,11 +1363,11 @@ contains
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-            pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
+            pres(i,:), exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
             cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &
             t_atm(i,:), rho(i,:), inv_rho(i,:), qv_sat_l(i,:), &
-            qv_sat_i(i,:), qv_supersat_i(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th_atm(i,:), &
+            qv_sat_i(i,:), qv_supersat_i(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th_atm(i,:), &
             qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), qm(i,:), &
             bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:), latent_heat_fusion(i,:), qc_incld(i,:), qr_incld(i,:), &
             qi_incld(i,:), qm_incld(i,:), nc_incld(i,:), nr_incld(i,:), ni_incld(i,:), &
@@ -3356,7 +3356,7 @@ qr2qv_evap_tend,nr_evap_tend)
    real(rtype), intent(in)  :: t,t_prev,latent_heat_sublim,dqsdt,dt
    real(rtype), intent(out) :: qr2qv_evap_tend
    real(rtype), intent(out) :: nr_evap_tend
-   real(rtype) :: cld_frac, eps_eff, tau_eff, tau_r, ssat_r, A_c, sup_r,inv_dt
+   real(rtype) :: cld_frac, eps_eff, tau_eff, tau_r, ssat_r, A_c, inv_dt
    real(rtype) :: equilib_evap_tend, tscale_weight, instant_evap_tend
 
    !Initialize variables
@@ -4023,7 +4023,7 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
 
    type(realptr), intent(in), dimension(num_arrays), target :: vs, fluxes, qnx
 
-   integer :: tmpint1, k_temp, i
+   integer :: tmpint1, k_temp
    real(rtype) :: dt_sub
 
    !-- compute dt_sub

@@ -28,9 +28,9 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
     constexpr Scalar inv_dt           = 9.558E-04;
 
     //Loop over logicals being both true and false. Use boolean:integer equivalence to loop.
-    for (int do_predict_nc =0; do_predict_nc<2; do_predict_nc++){
-      for (int do_prescribed_CCN = 0; do_prescribed_CCN<2; do_prescribed_CCN++){
-    
+    for (bool do_predict_nc : {false, true}) {
+      for (bool do_prescribed_CCN : {false, true}) {
+
 	IceNucleationData self[max_pack_size] = {
 	  // temp,    inv_rho,   ni,     ni_activated,      qv_supersat_i,      inv_dt, do_predict_nc, do_prescribed_CCN
 	  {2.106E+02, 8.852E-01, 0.974E+04, 9.221E+03, 5.100E-01, inv_dt, do_predict_nc, do_prescribed_CCN },
@@ -81,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 	    // outputs
 	    Spack qv2qi_nucleat_tend{0.0};
 	    Spack ni_nucleat_tend{0.0};
-	    Functions::ice_nucleation(temp, inv_rho, ni, ni_activated, qv_supersat_i, self_device(0).inv_dt, do_predict_nc, 
+	    Functions::ice_nucleation(temp, inv_rho, ni, ni_activated, qv_supersat_i, self_device(0).inv_dt, do_predict_nc,
 				      do_prescribed_CCN, qv2qi_nucleat_tend, ni_nucleat_tend);
 
 	    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -91,7 +91,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 	  });
 
 	Kokkos::deep_copy(self_host, self_device);
-	
+
 	for (Int s = 0; s < max_pack_size; ++s) {
 	  REQUIRE(self[s].qv2qi_nucleat_tend == self_host(s).qv2qi_nucleat_tend);
 	  REQUIRE(self[s].ni_nucleat_tend    == self_host(s).ni_nucleat_tend);
