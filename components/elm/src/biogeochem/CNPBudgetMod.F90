@@ -632,7 +632,6 @@ contains
          nf = f_gpp                   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + gpp(g)                     *af
          nf = f_er                    ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - er(g)                      *af
          nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)              *af
-         nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)              *af
          nf = f_hrv_xsmrpool_to_atm   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - hrv_xsmrpool_to_atm(g)     *af
          nf = f_prod1c_loss           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod1c_loss(g)             *af
          nf = f_prod10c_loss          ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod10c_loss(g)            *af
