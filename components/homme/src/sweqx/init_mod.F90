@@ -16,7 +16,7 @@ contains
     ! --------------------------------
     use dimensions_mod, only : np, nelem, nlev, nelemd, nelemdmax,  &
 	GlobalUniqueCols
-    ! -------------------------------- 
+    ! --------------------------------
     use time_mod, only : time_at, nmax
     ! --------------------------------
     use quadrature_mod, only :  test_gauss, test_gausslobatto, quadrature_t, gausslobatto
@@ -81,7 +81,7 @@ contains
     ! --------------------------------
     use params_mod, only : SFCURVE
     ! ---------------------------------
-    use domain_mod, only: domain1d_t, decompose 
+    use domain_mod, only: domain1d_t, decompose
     ! ---------------------------------
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
@@ -98,12 +98,12 @@ contains
     implicit none
 #ifdef _MPI
 ! _EXTERNAL
-#include <mpif.h> 
+#include <mpif.h>
 #endif
-!   G95  "pointer attribute conflicts with INTENT attribute":  
+!   G95  "pointer attribute conflicts with INTENT attribute":
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-        
+
     type (EdgeBuffer_t)           :: edge1
     type (EdgeBuffer_t)           :: edge2
     type (EdgeBuffer_t)           :: edge3
@@ -171,20 +171,23 @@ contains
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
 
-
-    if (topology=="cube") then
-
        if (par%masterproc) then
-          write(6,*)"creating cube topology..."
+          write(6,*)"creating topology..."
        end if
-       
+
        if (MeshUseMeshFile) then
           nelem      = MeshCubeElemCount()
-          nelem_edge = MeshCubeEdgeCount() 
+          nelem_edge = MeshCubeEdgeCount()
        else
+         if (topology=="cube") then
           nelem      = CubeElemCount()
-          nelem_edge = CubeEdgeCount() 
-       end if
+          nelem_edge = CubeEdgeCount()
+         else if (topology=="plane") then
+          nelem      = PlaneElemCount()
+          nelem_edge = PlaneEdgeCount()
+         end if
+        end if
+
 
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
         if  (approx_elements_per_task < 1.0D0) then
@@ -195,7 +198,7 @@ contains
 
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
-       
+
        do j =1,nelem
           call allocate_gridvertex_nbrs(GridVertex(j))
        end do
@@ -204,19 +207,25 @@ contains
           if (par%masterproc) then
              write(6,*)"Set up grid vertex from mesh..."
           end if
-          call MeshCubeTopology(GridEdge,GridVertex)
-       else 
-          call CubeTopology(GridEdge,GridVertex)
-       end if
+          if (topology=="cube") then
+            call MeshCubeTopology(GridEdge,GridVertex)
+          else if  (topology=="plane") then
+            call MeshPlaneTopology(GridEdge,GridVertex)
+          end if
+        else
+          if (topology=="cube") then
+            call CubeTopology(GridEdge,GridVertex)
+          else if (topology=="plane") then
+            call PlaneTopology(GridEdge,GridVertex)
+          end if
+        end if
 
        if(par%masterproc) write(6,*)"...done."
-       
-    end if
 
     if(par%masterproc) write(6,*)"partitioning graph..."
 
 
-    if(partmethod .eq. SFCURVE) then 
+    if(partmethod .eq. SFCURVE) then
        call genspacepart(GridEdge,GridVertex)
     else
        call genmetispart(GridEdge,GridVertex)
@@ -243,7 +252,7 @@ contains
     allocate(Schedule(1))
 
     ! ====================================================
-    !  Generate the communication graph 
+    !  Generate the communication graph
     ! ====================================================
     !JMD call initMetaGraph(iam,MetaVertex(1),TailPartition,HeadPartition,GridVertex,GridEdge)
 
@@ -268,7 +277,7 @@ contains
     ! ====================================================
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
     !call PrintSchedule(Schedule(1))
-    
+
     deallocate(TailPartition)
     deallocate(HeadPartition)
 
@@ -286,26 +295,41 @@ contains
 
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
-    if (topology=="cube") then
        ! ========================================================================
-       ! Note it is more expensive to initialize each individual spectral element 
+       ! Note it is more expensive to initialize each individual spectral element
        ! ========================================================================
-       if(par%masterproc) write(6,*)"initializing cube elements..."
+       if(par%masterproc) write(6,*)"initializing elements..."
 
        if (MeshUseMeshFile) then
-          call MeshSetCoordinates(elem)
+         if (geometry=="sphere") then
+           call MeshSetCoordinates(elem)
+         else if  (geometry=="plane") then
+           call PlaneMeshSetCoordinates(elem)
+         end if
        else
+         if (geometry=="sphere") then
           do ie=1,nelemd
              call set_corner_coordinates(elem(ie))
           enddo
+         else if (geometry=="plane") then
+          do ie=1,nelemd
+             call plane_set_corner_coordinates(elem(ie))
+          enddo
+         end if
           !call assign_node_numbers_to_elem(elem, GridVertex)
        endif
 
+       if (geometry=="sphere") then
+          do ie=1,nelemd
+            call cube_init_atomic(elem(ie),gp%points)
+          enddo
+      else if (geometry=="plane") then
        do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points)
+          call plane_init_atomic(elem(ie),gp%points)
        enddo
+      end if
+
        if(par%masterproc) write(6,*)"...done."
-    end if
 
     ! This routine does not check whether gp is init-ed.
     if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
@@ -328,15 +352,15 @@ contains
     call mass_matrix(par,elem)
 
     ! =================================================================
-    ! Determine the global degree of freedome for each gridpoint 
+    ! Determine the global degree of freedome for each gridpoint
     ! =================================================================
 
     call global_dof(par,elem)
 
     ! =================================================================
-    ! Create Unique Indices 
+    ! Create Unique Indices
     ! =================================================================
-    
+
     do ie=1,nelemd
        call CreateUniqueIndex(elem(ie)%GlobalId,elem(ie)%gdofP,elem(ie)%idxP)
     enddo
@@ -380,7 +404,7 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    
+
     call t_stopf('init')
   end subroutine init
 
