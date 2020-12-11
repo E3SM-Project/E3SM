@@ -383,7 +383,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float, file_ind, scolumn)
+       use_float, file_ind, mask, scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -402,7 +402,7 @@ contains
     logical,optional,intent(in) :: use_float ! write output as float rather than double
     integer,optional,intent(in) :: file_ind
     logical,optional,intent(in) :: scolumn ! single column model flag
-
+    real(r8),optional,intent(in) :: mask(:)
     !EOP
 
     integer(in) :: rcode
@@ -556,10 +556,26 @@ contains
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
              call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              if(luse_float) then
-                tmpr4data = real(av%rattr(k,:), kind=r4)
+                if(present(mask)) then
+                   where(mask .ne. 0)
+                      tmpr4data = real(av%rattr(k,:), kind=r4)
+                   elsewhere
+                      tmpr4data = real(lfillvalue, kind=r4)
+                   end where
+                else
+                   tmpr4data = real(av%rattr(k,:), kind=r4)
+                endif
                 call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpr4data, rcode, fillval=real(lfillvalue, kind=r4))
              else
-                tmpdata = av%rattr(k,:)
+                if(present(mask)) then
+                   where(mask .ne. 0)
+                      tmpdata = av%rattr(k,:)
+                   elsewhere
+                      tmpdata = lfillvalue
+                   end where
+                else
+                   tmpdata = av%rattr(k,:)
+                endif
                 call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
              endif
              !-------tcraig

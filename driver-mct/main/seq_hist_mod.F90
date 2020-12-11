@@ -352,9 +352,9 @@ contains
              call seq_io_write(hist_file, gsmap, fractions_ix, 'fractions_ix',  &
                   nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='fraci')
              call seq_io_write(hist_file, ice, 'c2x', 'i2x_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x')
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x', mask=dom%data%rattr(1,:))
              call seq_io_write(hist_file, ice, 'x2c', 'x2i_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i')
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i', mask=dom%data%rattr(1,:))
           endif
 
           if (glc_present) then
