@@ -27,7 +27,11 @@ typename Functions<S,D>::Spack
 Functions<S,D>::get_exner(const Spack& P, const Smask& range_mask)
 {
   Spack result;
-  const Spack exner = pow( P/C::P0, C::RD*C::INV_CP );
+  
+  static constexpr Scalar p0     = C::P0;
+  static constexpr Scalar rd     = C::RD;
+  static constexpr Scalar inv_cp = C::INV_CP;
+  const Spack exner = pow( P/p0, rd*inv_cp );
   // Check that there are no obvious errors in the result.
   auto is_nan_exner = isnan(exner) && range_mask;
   EKAT_KERNEL_REQUIRE_MSG(!(is_nan_exner.any()), "Error in get_exner, Exner has NaN values.\n"); // exit with an error message

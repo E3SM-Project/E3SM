@@ -67,14 +67,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     const auto ratio = cwdc[0].qc/(cwdc[0].qc2qr_autoconv_tend * cwdc[0].dt);
-    REQUIRE(std::abs(cwdc_host(0).qc2qr_autoconv_tend - cwdc[0].qc2qr_autoconv_tend*ratio) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qc2qr_autoconv_tend - cwdc[0].qc2qr_autoconv_tend*ratio) <= C::macheps);
     REQUIRE(cwdc_host(0).qc2qr_accret_tend == 0.0);
     REQUIRE(cwdc_host(0).qc2qi_collect_tend == 0.0);
     REQUIRE(cwdc_host(0).qc2qi_hetero_freeze_tend == 0.0);
     REQUIRE(cwdc_host(0).qc2qr_ice_shed_tend == 0.0);
     REQUIRE(cwdc_host(0).qc2qi_berg_tend == 0.0);
-    REQUIRE(std::abs(cwdc_host(0).qi2qv_sublim_tend -(1.0 - ratio)) <= C::Tol);
-    REQUIRE(std::abs(cwdc_host(0).qv2qi_vapdep_tend - (1.0 - ratio)) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qi2qv_sublim_tend -(1.0 - ratio)) <= C::macheps);
+    REQUIRE(std::abs(cwdc_host(0).qv2qi_vapdep_tend - (1.0 - ratio)) <= C::macheps);
     REQUIRE(cwdc_host[0].qc2qr_autoconv_tend * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
@@ -125,7 +125,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(rwdc_host(0).qc2qr_ice_shed_tend == 0.0);
 
     //Check the value of qr2qv_evap_tend
-    REQUIRE(std::abs(rwdc_host(0).qr2qv_evap_tend- rwdc[0].qr2qv_evap_tend*ratio)<= C::Tol);
+    REQUIRE(std::abs(rwdc_host(0).qr2qv_evap_tend- rwdc[0].qr2qv_evap_tend*ratio)<= C::macheps);
 
     //Now test that conservation has actually been enforced
     REQUIRE( rwdc_host(0).qr2qv_evap_tend * rwdc_host(0).dt  <= rwdc_host(0).qr);

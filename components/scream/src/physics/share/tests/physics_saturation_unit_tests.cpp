@@ -104,10 +104,10 @@ struct UnitWrap::UnitTest<D>::TestSaturation
 
     //Set error tolerances
     //--------------------------------------
-    //: C::Tol is machine epsilon for single or double precision as appropriate. This will be
+    //: C::macheps is machine epsilon for single or double precision as appropriate. This will be
     //multiplied by a condition # to get the actual expected numerical uncertainty.
 
-    static constexpr Scalar tol = C::Tol;
+    static constexpr Scalar tol = C::macheps;
 
     //PMC note: original version looped over pack dimension, testing each entry. This isn't
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating

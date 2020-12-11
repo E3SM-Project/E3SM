@@ -21,8 +21,9 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 
     // Allow usage of universal functions
     using physics = scream::physics::Functions<Scalar, Device>;
-    // Gather the test tolerance
-    static constexpr Scalar tol = C::Tol;
+    // Gather the machine epsilon for the error tolerance
+    static constexpr Scalar eps = C::macheps;
+    Real tol = 1000*eps;
 
     //========================================================
     // Test calculation of exners function given a specific pressure
@@ -53,7 +54,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // Allow usage of universal functions
     using physics = scream::physics::Functions<Scalar, Device>;
     // Gather the test tolerance
-    static constexpr Scalar tol = C::Tol;
+    static constexpr Scalar eps = C::macheps;
+    Real tol = 1000*eps;
 
     //========================================================
     // Test conversion of temperature to potential temperature, and vice versa
@@ -94,19 +96,18 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 
     // Test that T_to_th and th_to_T are inverses of each other.
     // Test T to th as inverses of each other
-    Real tol_new = pow(10,-13);  // Tolerance of 1e-16 will cause erroneous failures given round off at machine precision.
     // Converting T to th and then back to T should return the same value again.
     const Spack th_temp = physics::T_to_th(T,exner,Smask(true));
     const Spack T_new   = physics::th_to_T(th_temp,exner,Smask(true));
-    if (std::abs(T_new[0]-T_in)>tol_new) {
-      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new,T_in,std::abs(T_new[0]-T_in),tol_new);
+    if (std::abs(T_new[0]-T_in)>tol) {
+      printf("T to th test: abs[ T_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",T_new,T_in,std::abs(T_new[0]-T_in),tol);
       errors++;
     }
     // and vice versa
     const Spack T_temp = physics::th_to_T(T,exner,Smask(true));
     const Spack th_new = physics::T_to_th(T_temp,exner,Smask(true));
-    if (std::abs(T_new[0]-T_in)>tol_new) {
-      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new,T_in,std::abs(th_new[0]-T_in),tol_new);
+    if (std::abs(T_new[0]-T_in)>tol) {
+      printf("T to th test: abs[ th_new (%.3e) - T_in (%.3e) ]=%e is larger than the tol=%e\n",th_new,T_in,std::abs(th_new[0]-T_in),tol);
       errors++;
     }
   } // T_th_conversion_test
@@ -116,7 +117,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     // Allow usage of universal functions
     using physics = scream::physics::Functions<Scalar, Device>;
     // Gather the test tolerance
-    static constexpr Scalar tol = C::Tol;
+    static constexpr Scalar eps = C::macheps;
+    Real tol = 1000*eps;
 
     //========================================================
     // Test calculation of layer thickness using get_dz 
@@ -148,7 +150,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
 
     int nerr = 0;
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("test_exnern", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
+    Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
 
       errors = 0;
 
