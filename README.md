@@ -1,17 +1,13 @@
-[![E3SM Logo](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)](https://e3sm.org)
+[![SCREAM Logo](https://portal.nersc.gov/cfs/e3sm/petercal/scream/SCREAM_Halloween_Logo.png)](https://e3sm.org)
 
-Energy Exascale Earth System Model (E3SM)
+Simple Cloud-Resolving E3SM Atmosphere Model (SCREAM)
 ================================================================================
 
-E3SM is a state-of-the-art fully coupled model of the Earth's climate including
-important biogeochemical and cryospheric processes. It is intended to address
-the most challenging and demanding climate-change research problems and
-Department of Energy mission needs while efficiently using DOE Leadership
-Computing Facilities.  
+SCREAM is a global atmosphere model targeted towards 3 km ("cloud resolving")
+resolution. It is part of the Energy Exascale Earth System Model (E3SM) and
+this git repo is forked from and follows https://github.com/E3SM-Project/scream
 
-DOI: [10.11578/E3SM/dc.20180418.36](http://dx.doi.org/10.11578/E3SM/dc.20180418.36)
-
-Please visit the [project website](https://e3sm.org) for further details.
+Please visit the [E3SM website](https://e3sm.org) for further details about E3SM. If you're part of the E3SM project, you can check in on SCREAM's internal happenings at [SCREAM confluence site](https://acme-climate.atlassian.net/wiki/spaces/NGDNA/overview).
 
 Table of Contents 
 --------------------------------------------------------------------------------
