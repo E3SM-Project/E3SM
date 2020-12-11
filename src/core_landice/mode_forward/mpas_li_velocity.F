@@ -51,7 +51,9 @@ module li_velocity
    public :: li_velocity_init, &
              li_velocity_finalize, &
              li_velocity_block_init, &
-             li_velocity_solve
+             li_velocity_solve, &
+             calculate_strain_rates
+
 
    !--------------------------------------------------------------------
    !
