@@ -843,7 +843,7 @@ contains
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
     write(iulog,C_FA0 )'  Time  ','  Time    '
     write(iulog,C_FA0 )'averaged','integrated'
-    write(iulog,C_FA0 )'kgC/s*1e6','kgC/s*1e6'
+    write(iulog,C_FA0 )'kgC/m2/s*1e6','kgC/m2*1e6'
 
     write(iulog,'(71("-"),"|",20("-"))')
 
