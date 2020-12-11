@@ -94,6 +94,7 @@ subroutine crm_physics_register()
 #ifdef MODAL_AERO
    integer, dimension(5) :: dims_crm_aer
 #endif
+   integer :: cnst_ind ! dummy for adding new constituents for variance transport
    !----------------------------------------------------------------------------
 #ifdef MMF_SAMXX
    call gator_init()
@@ -931,6 +932,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       call crm(ncol, pcols, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
+               crm_input%t_cvt, crm_input%q_cvt, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
                crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
                crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
@@ -944,6 +946,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
+               crm_output%t_cvt_tend, crm_output%q_cvt_tend, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
@@ -972,8 +975,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 #if defined(MMF_CVT)
       call cnst_get_ind( 'CVT_T', idx_cvt_t )
       call cnst_get_ind( 'CVT_Q', idx_cvt_q )
-      ptend%q(1:ncol,1:pver,idx_cvt_t) = crm_output%t_cvt_tend(1:ncol,1:pver,k)
-      ptend%q(1:ncol,1:pver,idx_cvt_q) = crm_output%q_cvt_tend(1:ncol,1:pver,k)
+      ptend%q(1:ncol,1:pver,idx_cvt_t) = crm_output%t_cvt_tend(1:ncol,1:pver)
+      ptend%q(1:ncol,1:pver,idx_cvt_q) = crm_output%q_cvt_tend(1:ncol,1:pver)
 #endif /* MMF_CVT */
 
       !---------------------------------------------------------------------------------------------

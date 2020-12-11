@@ -139,6 +139,10 @@ void pre_timeloop() {
   auto &crm_output_jt_crm        = :: crm_output_jt_crm;
   auto &crm_output_mx_crm        = :: crm_output_mx_crm;
   auto &ncrms                    = :: ncrms;
+  auto &crm_input_t_cvt          = :: crm_input_t_cvt;
+  auto &crm_input_q_cvt          = :: crm_input_q_cvt;
+  auto &t_cvt                    = :: t_cvt;
+  auto &q_cvt                    = :: q_cvt;
 
   crm_accel_ceaseflag = false;
 
@@ -308,6 +312,10 @@ void pre_timeloop() {
     colprecs(icrm)=0.0;
   });
 
+#if defined(MMF_CVT)
+  CVT_diagnose();
+#endif
+
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -381,6 +389,11 @@ void pre_timeloop() {
     vg0  (k,icrm) = vln(l,icrm);
     tg0  (k,icrm) = crm_input_tl(l,icrm)+gamaz(k,icrm)-fac_cond*crm_input_qccl(l,icrm)-fac_sub*crm_input_qiil(l,icrm);
     qg0  (k,icrm) = crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm);
+#if defined(MMF_CVT)
+    // variance transport input forcing
+    t_cvt_tend(k,icrm) = ( crm_input_t_cvt(l,icrm) - t_cvt(k,icrm) )*idt_gl ;
+    q_cvt_tend(k,icrm) = ( crm_input_q_cvt(l,icrm) - q_cvt(k,icrm) )*idt_gl ;
+#endif
   });
 
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {

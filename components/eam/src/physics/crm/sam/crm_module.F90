@@ -56,6 +56,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     use sgs
     use crmtracers
     use scalar_momentum_mod
+    use variance_transport_mod
 #ifdef MODAL_AERO
     use modal_aero_data       , only: ntot_amode
 #endif
@@ -565,7 +566,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       tg0  (icrm,k) = crm_input%tl(icrm,l)+gamaz(icrm,k)-fac_cond*crm_input%qccl(icrm,l)-fac_sub*crm_input%qiil(icrm,l)
       qg0  (icrm,k) = crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)
 #if defined(MMF_CVT)
-      ! variance transport tendencies
+      ! variance transport input forcing
       t_cvt_tend(icrm,k) = ( crm_input%t_cvt(icrm,l) - t_cvt(icrm,k) )*idt_gl
       q_cvt_tend(icrm,k) = ( crm_input%q_cvt(icrm,l) - q_cvt(icrm,k) )*idt_gl
 #endif

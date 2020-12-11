@@ -181,8 +181,8 @@ subroutine CVT_diagnose(ncrms)
       do icrm = 1,ncrms
          t_mean(icrm,k) = 0.
          q_mean(icrm,k) = 0.
-         t_cvt(icrm,k,1) = 0.
-         q_cvt(icrm,k,1) = 0.
+         t_cvt(icrm,k) = 0.
+         q_cvt(icrm,k) = 0.
       end do
    end do
 
@@ -256,8 +256,8 @@ subroutine CVT_diagnose(ncrms)
       do j = 1,ny
          do i = 1,nx
             do icrm = 1,ncrms
-               t_cvt(icrm,k,1) = t_cvt(icrm,k,1) + t_cvt_pert(icrm,i,j,k) * t_cvt_pert(icrm,i,j,k)
-               q_cvt(icrm,k,1) = q_cvt(icrm,k,1) + q_cvt_pert(icrm,i,j,k) * q_cvt_pert(icrm,i,j,k)
+               t_cvt(icrm,k) = t_cvt(icrm,k) + t_cvt_pert(icrm,i,j,k) * t_cvt_pert(icrm,i,j,k)
+               q_cvt(icrm,k) = q_cvt(icrm,k) + q_cvt_pert(icrm,i,j,k) * q_cvt_pert(icrm,i,j,k)
             end do
          end do
       end do
@@ -266,8 +266,8 @@ subroutine CVT_diagnose(ncrms)
    !$acc parallel loop collapse(2) async(asyncid)
    do k = 1,nzm
       do icrm = 1,ncrms
-         t_cvt(icrm,k,1) = t_cvt(icrm,k,1) * factor_xy
-         q_cvt(icrm,k,1) = q_cvt(icrm,k,1) * factor_xy
+         t_cvt(icrm,k) = t_cvt(icrm,k) * factor_xy
+         q_cvt(icrm,k) = q_cvt(icrm,k) * factor_xy
       end do
    end do
 
@@ -318,8 +318,8 @@ subroutine CVT_forcing(ncrms)
    !$acc parallel loop collapse(2) async(asyncid)
    do k=1,nzm
       do icrm = 1 , ncrms
-         t_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k,1) / t_cvt(icrm,k,1) )
-         q_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k,1) / q_cvt(icrm,k,1) )
+         t_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k) )
+         q_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k) )
          ! enforce minimum scaling
          t_pert_scale(icrm,k) = max( t_pert_scale(icrm,k), pert_scale_min )
          q_pert_scale(icrm,k) = max( q_pert_scale(icrm,k), pert_scale_min )

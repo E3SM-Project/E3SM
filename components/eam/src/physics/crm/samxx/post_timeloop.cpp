@@ -147,6 +147,13 @@ void post_timeloop() {
   auto &dtn                     = :: dtn;
   auto &crm_output_subcycle_factor= :: crm_output_subcycle_factor;
   auto &ncrms                   = :: ncrms;
+  auto &crm_output_t_cvt_tend    = :: crm_output_t_cvt_tend;
+  auto &crm_output_q_cvt_tend    = :: crm_output_q_cvt_tend;
+  auto &crm_input_t_cvt          = :: crm_input_t_cvt;
+  auto &crm_input_q_cvt          = :: crm_input_q_cvt;
+  auto &t_cvt                    = :: t_cvt;
+  auto &q_cvt                    = :: q_cvt;
+  
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
@@ -236,6 +243,11 @@ void post_timeloop() {
     vln  (k,icrm) = vln  (k,icrm) * factor_xy;
   });
 
+#if defined(MMF_CVT)
+  // extra diagnostic step here for output tendencies
+  CVT_diagnose();
+#endif
+
   // for (int k=0; k<plev; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(plev,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -246,6 +258,11 @@ void post_timeloop() {
 #ifdef MMF_MOMENTUM_FEEDBACK
     crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
     crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
+#endif
+#if defined(MMF_CVT)
+    int l = nzm-(k+1);
+    crm_output_t_cvt_tend(k,icrm) = ( t_cvt(l,icrm) - crm_input_t_cvt(k,icrm) ) * icrm_run_time;
+    crm_output_q_cvt_tend(k,icrm) = ( q_cvt(l,icrm) - crm_input_q_cvt(k,icrm) ) * icrm_run_time;
 #endif
   });
 
@@ -270,6 +287,10 @@ void post_timeloop() {
 #ifdef MMF_MOMENTUM_FEEDBACK
     crm_output_ultend (k,icrm) = 0.0;
     crm_output_vltend (k,icrm) = 0.0;
+#endif
+#if defined(MMF_CVT)
+    crm_output_t_cvt_tend(k,icrm) = 0.;
+    crm_output_q_cvt_tend(k,icrm) = 0.;
 #endif
   });
 

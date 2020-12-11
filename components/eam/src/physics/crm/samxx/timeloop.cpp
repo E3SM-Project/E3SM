@@ -45,6 +45,13 @@ void timeloop() {
       //       Buoyancy term:
       buoyancy();
 
+      //-----------------------------------------------------------
+      // variance transport forcing
+#if defined(MMF_CVT)
+      CVT_diagnose();
+      CVT_forcing();
+#endif
+
       //------------------------------------------------------------
       //       Large-scale and surface forcing:
       forcing();

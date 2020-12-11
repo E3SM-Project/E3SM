@@ -267,6 +267,7 @@ OPTIONS
   Options for MMF:
 
      -use_MMF           Build the MMF configuration (super-parameterized EAM)
+     -use_MMF_CVT       enable convective variance transport (CVT)
      -crm_nx <n>        CRM's x-grid.
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
@@ -339,6 +340,7 @@ GetOptions(
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "use_MMF"                   => \$opts{'use_MMF'},
+    "use_MMF_CVT"               => \$opts{'use_MMF_CVT'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
     "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},

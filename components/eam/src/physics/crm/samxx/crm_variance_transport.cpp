@@ -1,0 +1,223 @@
+#include "crm_variance_transport.h"
+
+//==============================================================================
+//==============================================================================
+
+// void CVT_filter() {
+//   // local variables
+//   integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
+//   real(crm_rknd), dimension(nx)    :: fft_out   ! for FFT input and output
+//   real(crm_rknd), dimension(nx)    :: work      ! work array
+//   real(crm_rknd), dimension(lensav):: wsave     ! prime factors of N and certain trig values used in rfft1f
+//   ! real(crm_rknd), dimension(nx)    :: wave_num    ! only for debugging
+//   integer :: i, j, k, icrm   ! loop iterators
+//   integer :: ier             ! FFT error return code
+//   //----------------------------------------------------------------------------
+//   // initialization for FFT
+//   // call rfft1i(nx,wsave,lensav,ier)
+//   // if(ier /= 0) write(0,*) 'ERROR: rfftmi(): CVT_filter - FFT initialization error ',ier
+
+//   // do k = 1,nzm
+//   //   do j = 1,ny
+//   //     do icrm = 1,ncrms
+//   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+          
+//           // initialize FFT input
+//           parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
+//              fft_out(i) = f_in(icrm,i,j,k)
+//           end do
+
+//           // do the forward transform
+//           call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+//           if (ier/=0) write(0,*) 'ERROR: rfftmf(): CVT_filter - forward FFT error ',ier
+
+//           // filter out high frequencies
+//           fft_out(2*(filter_wn_max+1):) = 0
+
+//           // transform back
+//           call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+//           if(ier /= 0) write(0,*) 'ERROR: rfftmb(): CVT_filter - backward FFT error ',ier
+
+//           // copy to output
+//           do i = 1,nx
+//              f_out(icrm,i,j,k) = fft_out(i)
+//           end do
+
+//   });
+
+// }
+
+//==============================================================================
+//==============================================================================
+
+void CVT_diagnose() {
+  auto &t            = :: t;
+  auto &qv           = :: qv;
+  auto &qcl          = :: qcl;
+  auto &qci          = :: qci;
+  auto &factor_xy    = :: factor_xy;
+  auto &t_cvt_pert   = :: t_cvt_pert;
+  auto &q_cvt_pert   = :: q_cvt_pert;
+  auto &t_cvt        = :: t_cvt;
+  auto &q_cvt        = :: q_cvt;
+  auto &ncrms        = :: ncrms;
+
+  // local variables
+  real2d t_mean("t_mean", nzm, ncrms);
+  real2d q_mean("q_mean", nzm, ncrms);
+  // real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
+  // real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
+
+  //----------------------------------------------------------------------------
+  // calculate horizontal mean
+  //----------------------------------------------------------------------------
+  // do k = 1,nzm
+  //   do icrm = 1,ncrms
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+      t_mean(k,icrm) = 0.0;
+      q_mean(k,icrm) = 0.0;
+      t_cvt(k,icrm)  = 0.0;
+      q_cvt(k,icrm)  = 0.0;
+  });
+
+  // do k = 1,nzm
+  //  do j = 1,ny
+  //    do i = 1,nx
+  //      do icrm = 1,ncrms
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real t_tmp = t(k,j,i,icrm);
+    real q_tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm) ;
+    yakl::atomicAdd( t_mean(k,icrm) , t_tmp);
+    yakl::atomicAdd( q_mean(k,icrm) , q_tmp);
+  });
+
+  // do k = 1,nzm
+  //   do icrm = 1,ncrms
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+      t_mean(k,icrm) = t_mean(k,icrm) * factor_xy ;
+      q_mean(k,icrm) = q_mean(k,icrm) * factor_xy ;
+  });
+
+  //----------------------------------------------------------------------------
+  // calculate anomalies
+  //----------------------------------------------------------------------------
+  // if (filter_wn_max>0) {
+  // // use filtered state for anomalies
+
+  //   // do k = 1,nzm
+  //   //   do j = 1,ny
+  //   //     do i = 1,nx
+  //   //       do icrm = 1,ncrms
+  //   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  //     tmp_t(k,j,i,icrm) = t(k,j,i,icrm) 
+  //     tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm)
+  //     tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm)
+  //     tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm)
+  //   });
+
+  //   CVT_filter( tmp_t, t_cvt_pert )
+  //   CVT_filter( tmp_q, q_cvt_pert )
+
+  // else { 
+  // // use total variance
+
+    // do k = 1,nzm
+    //   do j = 1,ny
+    //     do i = 1,nx
+    //       do icrm = 1,ncrms
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real qt_tmp = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
+      t_cvt_pert(k,j,i,icrm) = t(k,j,i,icrm) - t_mean(k,icrm);
+      q_cvt_pert(k,j,i,icrm) = qt_tmp        - q_mean(k,icrm);
+    });
+    
+  // }
+
+  //----------------------------------------------------------------------------
+  // calculate variance
+  //----------------------------------------------------------------------------
+
+  // do k = 1,nzm
+  //   do j = 1,ny
+  //     do i = 1,nx
+  //       do icrm = 1,ncrms
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real t_tmp = t_cvt_pert(k,j,i,icrm) * t_cvt_pert(k,j,i,icrm) ;
+    real q_tmp = q_cvt_pert(k,j,i,icrm) * q_cvt_pert(k,j,i,icrm) ;
+    yakl::atomicAdd( t_cvt(k,icrm) , t_tmp);
+    yakl::atomicAdd( q_cvt(k,icrm) , q_tmp);
+  });
+
+
+  // do k = 1,nzm
+  //   do icrm = 1,ncrms
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    t_cvt(k,icrm) = t_cvt(k,icrm) * factor_xy ;
+    q_cvt(k,icrm) = q_cvt(k,icrm) * factor_xy ;
+  });
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+}
+
+//==============================================================================
+//==============================================================================
+
+void CVT_forcing() {
+  auto &t            = :: t;
+  auto &micro_field  = :: micro_field;
+  auto &t_cvt_tend   = :: t_cvt_tend;
+  auto &q_cvt_tend   = :: q_cvt_tend;
+  auto &t_cvt_pert   = :: t_cvt_pert;
+  auto &q_cvt_pert   = :: q_cvt_pert;
+  auto &t_cvt        = :: t_cvt;
+  auto &q_cvt        = :: q_cvt;
+  auto &ncrms        = :: ncrms;
+
+  // local variables
+  real2d t_pert_scale("t_pert_scale",nzm,ncrms);
+  real2d q_pert_scale("q_pert_scale",nzm,ncrms);
+  real4d ttend_loc("ttend_loc", nzm, ny, nx, ncrms);
+  real4d qtend_loc("qtend_loc", nzm, ny, nx, ncrms);
+
+  int idx_qt = index_water_vapor;
+
+  real pert_scale_min = 1.0 - 0.1;
+  real pert_scale_max = 1.0 + 0.1;
+
+  //----------------------------------------------------------------------------
+  // calculate local tendencies scaled by local perturbations
+  //----------------------------------------------------------------------------
+  // do k=1,nzm
+  //   do icrm = 1 , ncrms
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    t_pert_scale(k,icrm) = sqrt( 1.0 + dtn * t_cvt_tend(k,icrm) / t_cvt(k,icrm) );
+    q_pert_scale(k,icrm) = sqrt( 1.0 + dtn * q_cvt_tend(k,icrm) / q_cvt(k,icrm) );
+    // enforce minimum scaling
+    t_pert_scale(k,icrm) = max( t_pert_scale(k,icrm), pert_scale_min );
+    q_pert_scale(k,icrm) = max( q_pert_scale(k,icrm), pert_scale_min );
+    // enforce maximum scaling
+    t_pert_scale(k,icrm) = min( t_pert_scale(k,icrm), pert_scale_max );
+    q_pert_scale(k,icrm) = min( q_pert_scale(k,icrm), pert_scale_max );
+  });
+
+  //----------------------------------------------------------------------------
+  // apply tendencies
+  //----------------------------------------------------------------------------
+  // do k = 1,nzm
+  //   do j = 1,ny
+  //     do i = 1,nx
+  //       do icrm = 1,ncrms
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real ttend_loc = ( t_pert_scale(k,icrm) * t_cvt_pert(k,j,i,icrm) - t_cvt_pert(k,j,i,icrm) ) / dtn;
+    real qtend_loc = ( q_pert_scale(k,icrm) * q_cvt_pert(k,j,i,icrm) - q_cvt_pert(k,j,i,icrm) ) / dtn;
+    t(k,j,i,icrm)                  = t(k,j,i,icrm)                  + ttend_loc * dtn;
+    micro_field(k,j,i,icrm,idx_qt) = micro_field(k,j,i,icrm,idx_qt) + qtend_loc * dtn;
+  });
+
+  //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+}
+
+//==============================================================================
+//==============================================================================
