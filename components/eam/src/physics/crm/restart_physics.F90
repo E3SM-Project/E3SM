@@ -53,6 +53,11 @@ module restart_physics
 
     type(var_desc_t) :: cospcnt_desc, rad_randn_seedrst_desc
 
+#ifdef MAML
+    type(var_desc_t) :: solld_mi_desc(num_inst_atm), solsd_mi_desc(num_inst_atm), sols_mi_desc(num_inst_atm), soll_mi_desc(num_inst_atm),&
+                        flwds_mi_desc(num_inst_atm), cflx1_mi_desc(num_inst_atm), lhf_mi_desc(num_inst_atm), shf_mi_desc(num_inst_atm)
+#endif                        
+
   CONTAINS
     subroutine init_restart_physics ( File, pbuf2d)
       
@@ -78,7 +83,7 @@ module restart_physics
     integer                      :: hdimcnt, ierr, i, vsize
     integer                      :: dimids(4)
     integer, allocatable         :: hdimids(:)
-    integer                      :: ndims, pver_id, pverp_id
+    integer                      :: ndims, pver_id, pverp_id,ninst_id
     integer                      :: kiss_seed_dim
 
     type(cam_grid_header_info_t) :: info
@@ -96,7 +101,6 @@ module restart_physics
     end do
     allocate(hdimids(hdimcnt))
     hdimids(1:hdimcnt) = dimids(1:hdimcnt)
-
     call cam_pio_def_dim(File, 'lev', pver, pver_id, existOK=.true.)
     call cam_pio_def_dim(File, 'ilev', pverp, pverp_id, existOK=.true.)
 
@@ -130,14 +134,6 @@ module restart_physics
        ierr = pio_def_var(File, 'SOLSD', pio_double, hdimids, solsd_desc)
        ierr = pio_def_var(File, 'SOLLD', pio_double, hdimids, solld_desc)
 
-#ifdef MAML       
-       ierr = pio_def_var(File, 'FLWDS_MI', pio_double, hdimids, flwds_desc)
-       ierr = pio_def_var(File, 'SOLS_MI', pio_double, hdimids, sols_desc)
-       ierr = pio_def_var(File, 'SOLL_MI', pio_double, hdimids, soll_desc)
-       ierr = pio_def_var(File, 'SOLSD_MI', pio_double, hdimids, solsd_desc)
-       ierr = pio_def_var(File, 'SOLLD_MI', pio_double, hdimids, solld_desc)
-#endif
-
        ierr = pio_def_var(File, 'BCPHIDRY', pio_double, hdimids, bcphidry_desc)
        ierr = pio_def_var(File, 'BCPHODRY', pio_double, hdimids, bcphodry_desc)
        ierr = pio_def_var(File, 'OCPHIDRY', pio_double, hdimids, ocphidry_desc)
@@ -166,9 +162,17 @@ module restart_physics
        ierr = pio_def_var(File, 'LHF',  pio_double, hdimids, lhf_desc)
        ierr = pio_def_var(File, 'SHF',  pio_double, hdimids, shf_desc)
 #ifdef MAML
-       ierr = pio_def_var(File, 'CFLX1_MI',  pio_double, hdimids, cflx_desc(i))
-       ierr = pio_def_var(File, 'LHF_MI',  pio_double, hdimids, lhf_desc)
-       ierr = pio_def_var(File, 'SHF_MI',  pio_double, hdimids, shf_desc)
+       do i = 1, num_inst_atm
+          write(num,'(i4.4)') i
+          ierr = pio_def_var(File, 'FLWDS_MI'//num, pio_double, hdimids, flwds_mi_desc(i))
+          ierr = pio_def_var(File, 'SOLS_MI'//num, pio_double, hdimids, sols_mi_desc(i))
+          ierr = pio_def_var(File, 'SOLL_MI'//num, pio_double, hdimids, soll_mi_desc(i))
+          ierr = pio_def_var(File, 'SOLSD_MI'//num, pio_double, hdimids, solsd_mi_desc(i))
+          ierr = pio_def_var(File, 'SOLLD_MI'//num, pio_double, hdimids, solld_mi_desc(i))
+          ierr = pio_def_var(File, 'CFLX1_MI'//num,  pio_double, hdimids, cflx1_mi_desc(i))
+          ierr = pio_def_var(File, 'LHF_MI'//num,  pio_double, hdimids, lhf_mi_desc(i))
+          ierr = pio_def_var(File, 'SHF_MI'//num,  pio_double, hdimids, shf_mi_desc(i))
+       end do ! i
 #endif
     end if
 
@@ -249,8 +253,6 @@ module restart_physics
       !
       type(io_desc_t), pointer :: iodesc
       real(r8):: tmpfield(pcols, begchunk:endchunk)
-      !for the multi-instance model (i.e. MMF-MAML)                                                         
-      real(r8):: tmpfieldmi(pcols*num_inst_atm, begchunk:endchunk)
       integer :: tmp_seedrst(pcols, kiss_seed_num, begchunk:endchunk)
       integer :: i,j,jj, m, iseed, icol          ! loop index
       integer :: ncol          ! number of vertical columns
@@ -365,59 +367,6 @@ module restart_physics
             tmpfield(:ncol, i) = cam_out(i)%ocphodry(:ncol)
          end do
          call pio_write_darray(File, ocphodry_desc, iodesc, tmpfield, ierr)
-#ifdef MAML
-         ! Only have to do this once (cam_in/out vars all same shape)
-         tmpfieldmi(:, :) = fillvalue ! for the case when ncol < pcols
-         do i=begchunk,endchunk
-            ncol = cam_out(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_out(i)%flwds_mi(j,jj)
-                end do
-            end do
-         end do
-         call pio_write_darray(File, flwds_desc, iodesc, tmpfieldmi, ierr)
-
-         do i=begchunk,endchunk
-            ncol = cam_out(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_out(i)%sols_mi(j,jj)
-               end do
-            end do
-         end do
-         call pio_write_darray(File, sols_desc, iodesc, tmpfieldmi, ierr)
-
-         do i=begchunk,endchunk
-            ncol = cam_out(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_out(i)%soll_mi(j,jj)
-               end do
-            end do
-         end do
-         call pio_write_darray(File, soll_desc, iodesc, tmpfieldmi, ierr)
-
-         do i=begchunk,endchunk
-            ncol = cam_out(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_out(i)%solsd_mi(j,jj)
-               end do
-            end do
-         end do
-         call pio_write_darray(File, solsd_desc, iodesc, tmpfieldmi, ierr)
-
-         do i=begchunk,endchunk
-            ncol = cam_out(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_out(i)%solld_mi(j,jj)
-               end do
-            end do
-         end do
-         call pio_write_darray(File, solld_desc, iodesc, tmpfieldmi, ierr)
-#endif
 
          do i = begchunk, endchunk
             ncol = cam_out(i)%ncol
@@ -478,35 +427,61 @@ module restart_physics
          call pio_write_darray(File, shf_desc, iodesc, tmpfield, ierr)
 
 #ifdef MAML
-         do i=begchunk,endchunk
-            ncol = cam_in(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_in(i)%cflx1_mi(j,jj)
-               end do
+         do m = 1, num_inst_atm
+            do i=begchunk,endchunk
+               ncol = cam_out(i)%ncol
+               tmpfield(:ncol, i) = cam_out(i)%flwds_mi(:ncol,m)
+               !! Jungmin
+               !do jj = 1,ncol
+               ! write(iulog,'("write_restart: i,j,jj,",I3,I3,I3,"index=",I3,"flwds_mi=",F7.3)') &
+               !                        i,jj,m,cam_out(i)%flwds_mi(jj,m)
+               !end do! jj                        
+               !! Jungmin
             end do
-         end do
-         call pio_write_darray(File, cflx_desc(1), iodesc, tmpfieldmi, ierr)
+            call pio_write_darray(File, flwds_mi_desc(m), iodesc, tmpfield, ierr)
 
-         do i=begchunk,endchunk
-            ncol = cam_in(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_in(i)%shf_mi(j,jj)
-               end do
+            do i=begchunk,endchunk
+               ncol = cam_out(i)%ncol
+               tmpfield(:ncol, i) = cam_out(i)%sols_mi(:ncol,m)
             end do
-         end do
-         call pio_write_darray(File, shf_desc, iodesc, tmpfieldmi, ierr)
-         
-         do i=begchunk,endchunk
-            ncol = cam_in(i)%ncol
-            do j=1,pcols
-               do jj=1,num_inst_atm
-                  if(j<=ncol) tmpfieldmi((j-1)*num_inst_atm+jj,i) = cam_in(i)%lhf_mi(j,jj)
-               end do
+            call pio_write_darray(File, sols_mi_desc(m), iodesc, tmpfield, ierr)
+
+            do i=begchunk,endchunk
+               ncol = cam_out(i)%ncol
+               tmpfield(:ncol, i) = cam_out(i)%soll_mi(:ncol,m)
             end do
-         end do
-         call pio_write_darray(File, lhf_desc, iodesc, tmpfieldmi, ierr)
+            call pio_write_darray(File, soll_mi_desc(m), iodesc, tmpfield, ierr)
+
+            do i=begchunk,endchunk
+               ncol = cam_out(i)%ncol
+               tmpfield(:ncol, i) = cam_out(i)%solsd_mi(:ncol,m)
+            end do
+            call pio_write_darray(File, solsd_mi_desc(m), iodesc, tmpfield, ierr)
+
+            do i=begchunk,endchunk
+               ncol = cam_out(i)%ncol
+               tmpfield(:ncol, i) = cam_out(i)%solld_mi(:ncol,m)
+            end do
+            call pio_write_darray(File, solld_mi_desc(m), iodesc, tmpfield, ierr)
+            
+            do i=begchunk,endchunk
+               ncol = cam_in(i)%ncol
+               tmpfield(:ncol, i) = cam_in(i)%cflx1_mi(:ncol,m)
+            end do
+            call pio_write_darray(File, cflx1_mi_desc(m), iodesc, tmpfield, ierr)
+
+            do i=begchunk,endchunk
+               ncol = cam_in(i)%ncol
+               tmpfield(:ncol, i) = cam_in(i)%shf_mi(:ncol,m)
+            end do
+            call pio_write_darray(File, shf_mi_desc(m), iodesc, tmpfield, ierr)
+            
+            do i=begchunk,endchunk
+               ncol = cam_in(i)%ncol
+               tmpfield(:ncol, i) = cam_in(i)%lhf_mi(:ncol,m)
+            end do
+            call pio_write_darray(File, lhf_mi_desc(m), iodesc, tmpfield, ierr)
+         end do ! m = 1, num_inst_atm   
 #endif
       end if
     !
@@ -612,11 +587,6 @@ module restart_physics
      ! Local workspace
      !
      real(r8), allocatable :: tmpfield2(:,:)
-#ifdef MAML
-     !tmpfield2mi: temporary storage to hold cam_in & cam_out with extra dimension
-     !for the multi-instance model (i.e. MMF-MAML)
-     real(r8), allocatable :: tmpfield2mi(:,:)
-#endif
      integer :: i, c, m, j, jj, k           ! loop index
      integer :: ierr             ! I/O status
      type(io_desc_t), pointer :: iodesc
@@ -725,62 +695,7 @@ module restart_physics
               cam_out(c)%solld(i) = tmpfield2(i, c)
            end do
         end do
-#ifdef MAML
-        ierr = pio_inq_varid(File, 'FLWDS_MI', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-        do c=begchunk,endchunk
-           do i=1,pcols
-              do jj=1,num_inst_atm
-                 cam_out(c)%flwds_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-              end do
-           end do
-        end do
-
-        tmpfield2mi = fillvalue
-        ierr = pio_inq_varid(File, 'SOLS_MI', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-        do c=begchunk,endchunk
-           do i=1,pcols
-              do jj=1,num_inst_atm
-                 cam_out(c)%sols_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-              end do
-           end do
-        end do
-
-        tmpfield2mi = fillvalue
-        ierr = pio_inq_varid(File, 'SOLL_MI', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-        do c=begchunk,endchunk
-           do i=1,pcols
-              do jj=1,num_inst_atm
-                 cam_out(c)%soll_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-              end do
-           end do
-        end do
-
-        tmpfield2mi = fillvalue
-        ierr = pio_inq_varid(File, 'SOLSD_MI', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-        do c=begchunk,endchunk
-           do i=1,pcols
-              do jj=1,num_inst_atm
-                 cam_out(c)%solsd_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-              end do
-           end do
-        end do
         
-        tmpfield2mi = fillvalue
-        ierr = pio_inq_varid(File, 'SOLLD_MI', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-        do c=begchunk,endchunk
-           do i=1,pcols
-              do jj=1,num_inst_atm
-                 cam_out(c)%solld_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c) 
-              end do
-           end do
-        end do
-
-#endif
         ierr = pio_inq_varid(File, 'BCPHIDRY', vardesc)
         call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
         do c=begchunk,endchunk
@@ -911,45 +826,89 @@ module restart_physics
            end do
         end do
 
-        deallocate(tmpfield2)
 #ifdef MAML
-        ierr = pio_inq_varid(File, 'SHF_MI', vardesc)
-        if (ierr == PIO_NOERR) then ! variable found on restart file
-           call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-           do c= begchunk, endchunk
-              do i = 1, pcols
-                 do jj=1,num_inst_atm
-                    cam_in(c)%shf_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
+        do m = 1, num_inst_atm
+
+           write(num,'(i4.4)') m
+
+           ierr = pio_inq_varid(File, 'FLWDS_MI'//num, vardesc)
+           if (ierr == PIO_NOERR) then 
+              call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+              do c= begchunk, endchunk
+                 do i = 1, pcols
+                    cam_out(c)%flwds_mi(i,m) = tmpfield2(i, c)
+                 !! Jungmin
+                 !write(iulog,'("read_physics: chunk=",I3," icol=",I3," jj=",I3,"cam_out(c)%flwds_mi(i,jj)=",F7.3," index=",I3)') &
+                 !             c,i,m,cam_out(c)%flwds_mi(i,m)
+                 !! Jungmin             
                  end do
               end do
-          end do
-        endif
+           end if
+           
+           ierr = pio_inq_varid(File, 'SOLS_MI'//num, vardesc)
+           call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+           do c=begchunk,endchunk
+              do i=1,pcols
+                    cam_out(c)%sols_mi(i,m) = tmpfield2(i,c)
+              end do
+           end do
 
-        ierr = pio_inq_varid(File, 'LHF_MI', vardesc)
-        if (ierr == PIO_NOERR) then ! variable found on restart file
-           call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-           do c= begchunk, endchunk
-              do i = 1, pcols
-                  do jj=1,num_inst_atm
-                      cam_in(c)%lhf_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-                  end do
+           ierr = pio_inq_varid(File, 'SOLL_MI'//num, vardesc)
+           call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+           do c=begchunk,endchunk
+              do i=1,pcols
+                    cam_out(c)%soll_mi(i,m) = tmpfield2(i,c)
               end do
            end do
-        endif
-        
-        ierr = pio_inq_varid(File, 'CFLX1_MI', vardesc)
-        if (ierr == PIO_NOERR) then ! variable found on restart file
-           call pio_read_darray(File, vardesc, iodesc, tmpfield2mi, ierr)
-           do c= begchunk, endchunk
-              do i = 1, pcols
-                  do jj=1,num_inst_atm
-                      cam_in(c)%cflx1_mi(i,jj) = tmpfield2mi((i-1)*num_inst_atm+jj,c)
-                  end do
+
+           ierr = pio_inq_varid(File, 'SOLSD_MI'//num, vardesc)
+           call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+           do c=begchunk,endchunk
+              do i=1,pcols
+                    cam_out(c)%solsd_mi(i,m) = tmpfield2(i,c)
               end do
            end do
-        endif
-        deallocate(tmpfield2mi)
+           
+           ierr = pio_inq_varid(File, 'SOLLD_MI'//num, vardesc)
+           call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+           do c=begchunk,endchunk
+              do i=1,pcols
+                    cam_out(c)%solld_mi(i,m) = tmpfield2(i,c)
+              end do
+           end do
+
+           ierr = pio_inq_varid(File, 'SHF_MI'//num, vardesc)
+           if (ierr == PIO_NOERR) then ! variable found on restart file
+              call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+              do c= begchunk, endchunk
+                 do i = 1, pcols
+                       cam_in(c)%shf_mi(i,m) = tmpfield2(i,c)
+                 end do
+             end do
+           endif
+
+           ierr = pio_inq_varid(File, 'LHF_MI'//num, vardesc)
+           if (ierr == PIO_NOERR) then ! variable found on restart file
+              call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+              do c= begchunk, endchunk
+                 do i = 1, pcols
+                         cam_in(c)%lhf_mi(i,m) = tmpfield2(i,c)
+                 end do
+              end do
+           endif
+           
+           ierr = pio_inq_varid(File, 'CFLX1_MI'//num, vardesc)
+           if (ierr == PIO_NOERR) then ! variable found on restart file
+              call pio_read_darray(File, vardesc, iodesc, tmpfield2, ierr)
+              do c= begchunk, endchunk
+                 do i = 1, pcols
+                         cam_in(c)%cflx1_mi(i,m) = tmpfield2(i,c) 
+                 end do
+              end do
+           endif
+      end do ! m = 1, num_inst_atm
 #endif
+     deallocate(tmpfield2)
      end if
 
      !
