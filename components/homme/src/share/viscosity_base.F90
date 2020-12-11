@@ -62,6 +62,7 @@ public :: make_c0
 public :: make_c0_vector
 public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
+public :: compute_eta_C0_contra
 
 type (EdgeBuffer_t)          :: edge1
 

@@ -10,7 +10,7 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, omp_set_num_threads
     ! --------------------------------
-    use control_mod, only : restartfreq, topology, partmethod, cubed_sphere_map
+    use control_mod, only : restartfreq, topology, geometry, partmethod, cubed_sphere_map
     ! --------------------------------
     use namelist_mod, only : readnl
     ! --------------------------------
@@ -25,16 +25,25 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
+
     use mesh_mod, only : MeshUseMeshFile
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
+    use cube_mod,  only : CubeEdgeCount , CubeElemCount, CubeTopology
     ! --------------------------------
     use mesh_mod, only :   MeshSetCoordinates,      &
                            MeshCubeTopology,  &
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
     ! --------------------------------
-    use cube_mod, only : cube_init_atomic, set_corner_coordinates, &
-        set_area_correction_map2
+    use cube_mod, only : cube_init_atomic, set_corner_coordinates
+    ! --------------------------------
+    use geometry_mod, only : set_area_correction_map0, set_area_correction_map2
+    ! --------------------------------
+  use planar_mod,  only : PlaneEdgeCount , PlaneElemCount, PlaneTopology
+  ! --------------------------------
+  use planar_mesh_mod, only :   PlaneMeshSetCoordinates,      &
+                         MeshPlaneTopology
+  ! --------------------------------
+  use planar_mod, only : plane_init_atomic, plane_set_corner_coordinates
 
     ! --------------------------------
     use edge_mod, only : initedgebuffer, edge_g
@@ -78,9 +87,9 @@ contains
     ! --------------------------------
     use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, repro_sum_setopts
     ! --------------------------------
-    use physical_constants, only : dd_pi
+    !use physical_constants, only : dd_pi
     ! -------------------------------
-    use coordinate_systems_mod, only : sphere_tri_area
+    !use coordinate_systems_mod, only : sphere_tri_area
     ! --------------------------------
     use common_io_mod, only : homme_pio_init
     ! --------------------------------
@@ -238,7 +247,11 @@ contains
     ! ====================================================
     !JMD call initMetaGraph(iam,MetaVertex(1),TailPartition,HeadPartition,GridVertex,GridEdge)
 
+    if(par%masterproc) write(6,*)"initialize MetaGraph..."
+
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
+
+    if(par%masterproc) write(6,*)"...done."
 
     nelemd = LocalElemCount(MetaVertex(1))
 #ifdef _MPI
