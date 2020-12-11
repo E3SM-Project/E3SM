@@ -41,6 +41,8 @@
          albocn    = 0.06_dbl_kind    ,&! ocean albedo
          gravit    = SHR_CONST_G     ,&! gravitational acceleration (m/s^2)
          viscosity_dyn = 1.79e-3_dbl_kind, & ! dynamic viscosity of brine (kg/m/s)
+         Tocnfrz= -34.0_dbl_kind*depressT,&! freezing temp of seawater (C),
+                                           ! used as Tsfcn for open water
          rhofresh  = SHR_CONST_RHOFW ,&! density of fresh water (kg/m^3)
          zvir      = SHR_CONST_ZVIR  ,&! rh2o/rair - 1.0
          vonkar    = SHR_CONST_KARMAN,&! von Karman constant
