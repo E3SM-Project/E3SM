@@ -341,8 +341,6 @@ contains
        if (use_cn) then
           call t_startf('cnpvegzero')
 
-          call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
-
           call veg_cs%ZeroDwt(bounds_clump)
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
@@ -400,6 +398,8 @@ contains
 
           call col_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
+          
+          call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
 
           call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
