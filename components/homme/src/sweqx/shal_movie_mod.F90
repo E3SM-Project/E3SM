@@ -62,7 +62,7 @@ module shal_movie_mod
        nf_close_all, &
        nf_get_frame, &
        nf_put_var => nf_put_var_netcdf, &
-       iodesc2d, iodesc3d, iodescT, pio_subsystem
+       iodesc2d, iodesc3d, iodescT
 
   use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, & 
                   pio_iotask_rank
@@ -255,7 +255,8 @@ endif
     real (kind=real_kind),pointer :: field1(:,:,:),field2(:,:,:,:)
     real (kind=real_kind) :: var3d(nxyp,nlev)
     character(len=280) :: namell
-
+    real (kind=real_kind) :: var2d(nxyp)
+    
     lenscale = rearth 
 
     allocate(field1(np,np,nets:nete))
@@ -332,6 +333,44 @@ endif
              call nf_put_var(ncdf(ios),var3d,start, count, name='zeta')
 	  endif 
 
+    if(nf_selectedvar('eta', output_varnames)) then
+             if (hybrid%par%masterproc) print *,'output: eta'
+
+             call compute_eta_C0_contra(varptmp2, elem, hybrid%par,tl%n0)
+             st=1
+             do ie=1,nelemd
+                 en=st+elem(ie)%idxp%NumUniquePts-1
+                 call UniquePoints(elem(ie)%idxp,nlev,varptmp2(:,:,:,ie),var3d(st:en,:))
+                 st=en+1
+             enddo
+
+             count(1:2)=-1  ! ignored by PIO
+             start(1:2)=-1  ! ignored by PIO
+             start(3)=nf_get_frame(ncdf(ios))
+             count(3)=1
+
+             call nf_put_var(ncdf(ios),var3d,start, count, name='eta')
+	  endif 
+    
+    if(nf_selectedvar('pv', output_varnames)) then
+             if (hybrid%par%masterproc) print *,'output: pv'
+
+             call compute_pv_C0_contra(varptmp2, elem, hybrid%par,tl%n0)
+             st=1
+             do ie=1,nelemd
+                 en=st+elem(ie)%idxp%NumUniquePts-1
+                 call UniquePoints(elem(ie)%idxp,nlev,varptmp2(:,:,:,ie),var3d(st:en,:))
+                 st=en+1
+             enddo
+
+             count(1:2)=-1  ! ignored by PIO
+             start(1:2)=-1  ! ignored by PIO
+             start(3)=nf_get_frame(ncdf(ios))
+             count(3)=1
+
+             call nf_put_var(ncdf(ios),var3d,start, count, name='pv')
+    endif 
+    
 	  if(nf_selectedvar('div', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: divergence'
 

@@ -172,19 +172,23 @@ contains
     ! ===============================================================
 
 
-    if (topology=="cube") then
 
        if (par%masterproc) then
-          write(6,*)"creating cube topology..."
+          write(6,*)"creating topology..."
        end if
        
        if (MeshUseMeshFile) then
           nelem      = MeshCubeElemCount()
-          nelem_edge = MeshCubeEdgeCount() 
+          nelem_edge = MeshCubeEdgeCount()
        else
+        if (topology=="cube") then
           nelem      = CubeElemCount()
-          nelem_edge = CubeEdgeCount() 
-       end if
+          nelem_edge = CubeEdgeCount()
+        else if (topology=="plane") then
+          nelem      = PlaneElemCount()
+          nelem_edge = PlaneEdgeCount()
+        end if
+      end if
 
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
         if  (approx_elements_per_task < 1.0D0) then
@@ -204,14 +208,21 @@ contains
           if (par%masterproc) then
              write(6,*)"Set up grid vertex from mesh..."
           end if
-          call MeshCubeTopology(GridEdge,GridVertex)
-       else 
-          call CubeTopology(GridEdge,GridVertex)
-       end if
+          if (topology=="cube") then
+            call MeshCubeTopology(GridEdge,GridVertex)
+          else if  (topology=="plane") then
+            call MeshPlaneTopology(GridEdge,GridVertex)
+          end if
+      else
+          if (topology=="cube") then
+            call CubeTopology(GridEdge,GridVertex)
+          else if (topology=="plane") then
+           call PlaneTopology(GridEdge,GridVertex)
+          end if
+      end if
 
        if(par%masterproc) write(6,*)"...done."
        
-    end if
 
     if(par%masterproc) write(6,*)"partitioning graph..."
 
@@ -286,27 +297,41 @@ contains
 
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
-    if (topology=="cube") then
+
        ! ========================================================================
        ! Note it is more expensive to initialize each individual spectral element 
        ! ========================================================================
-       if(par%masterproc) write(6,*)"initializing cube elements..."
+       if(par%masterproc) write(6,*)"initializing elements..."
 
        if (MeshUseMeshFile) then
+         if (geometry=="sphere") then
           call MeshSetCoordinates(elem)
+        else if  (geometry=="plane") then
+           call PlaneMeshSetCoordinates(elem)
+           end if
        else
+         if (geometry=="sphere") then
           do ie=1,nelemd
              call set_corner_coordinates(elem(ie))
           enddo
+        else if (geometry=="plane") then
+          do ie=1,nelemd
+             call plane_set_corner_coordinates(elem(ie))
+          enddo
+         end if
           !call assign_node_numbers_to_elem(elem, GridVertex)
        endif
 
-       do ie=1,nelemd
+       if (geometry=="sphere") then
+        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
-       enddo
-       if(par%masterproc) write(6,*)"...done."
-    end if
-
+        enddo
+       else if (geometry=="plane") then
+        do ie=1,nelemd
+          call plane_init_atomic(elem(ie),gp%points)
+        enddo
+       end if
+       
     ! This routine does not check whether gp is init-ed.
     if(( cubed_sphere_map == 2 ).AND.( np > 2 )) then
        call set_area_correction_map2(elem, nelemd, par, gp)

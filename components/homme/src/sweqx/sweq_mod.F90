@@ -297,7 +297,6 @@ contains
     ! Initialize geopotential and velocity for different test cases...
     ! =================================================================
 
-    if (topology == "cube") then
        if (runtype .eq. 1) then 
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
@@ -341,6 +340,10 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          else if (test_case == "planar_dbl_vrtx") then
+             if (hybrid%masterthread) print *,"Restarting planar double vortex..."
+             call planar_dbl_vrtx_init_state(elem,nets,nete,pmean,deriv)
+             call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if
           !============================
           ! Read in the restarted state 
@@ -448,7 +451,6 @@ contains
           endif  ! if time step taken
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        endif  ! if initial run 
-    end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise
@@ -964,7 +966,6 @@ contains
     ! Initialize geopotential and velocity for different test cases...
     ! =================================================================
 
-    if (topology == "cube") then
        if (runtype .eq. 1) then 
           if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
@@ -1014,6 +1015,13 @@ contains
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
              simday=0
              call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          else if (test_case == "planar_dbl_vrtx") then
+             if (hybrid%masterthread) print *,"Restarting planar double vortex..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call planar_dbl_vrtx_init_state(elem, nets,nete,pmean,deriv)
+             call planar_dbl_vrtx_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
           end if
           !============================
           ! Read in the restarted state 
@@ -1108,7 +1116,6 @@ contains
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        endif  ! if initial run 
-    end if ! if topology == "cube"
 
     ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
     ! one extra timestep to get started.  dont count that timestep, otherwise

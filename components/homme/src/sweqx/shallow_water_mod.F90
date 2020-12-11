@@ -175,7 +175,20 @@ module shallow_water_mod
 
   !subcase 4 is the same as subcase 2 but with added zonal flow, see below
  
-
+  ! ============================================
+  ! Shallow Water Test Case Parameters
+  ! Parameters for test case planar_dbl_vrtx,
+  ! Planar Double Vortex
+  ! ============================================
+  real (kind=real_kind), parameter, private :: h0_dbv    = 750.0D0     ! mean fluid depth (meters)
+  real (kind=real_kind), parameter, private :: dh_dbv  = 75.0D0       ! perturbation depth (meters)
+  real (kind=real_kind),  private           :: gh0_dbv   = g*h0_dbv      ! mean geopotential
+  real (kind=real_kind), private, parameter :: f_dbv    = 0.00006147D0        ! Coriolis parameter
+  real (kind=real_kind), private, parameter :: sigmax_dbv = 3.0D0/40.0D0 ! vortex size in y-dir as a fraction of Lx
+  real (kind=real_kind), private, parameter :: sigmay_dbv = 3.0D0/40.0D0 ! vortex size in x-dir as a fraction of Ly
+  real (kind=real_kind), private, parameter :: ox_dbv = 0.1D0         ! offset in x-dir for vortices
+  real (kind=real_kind), private, parameter :: oy_dbv = 0.1D0         ! offset in y-dir for vortices
+  
   public  :: sweq_invariants
   public  :: tc1_init_state  ! Initialize test case 1: Cosine Bell
   public  :: tc1_init_pmean  ! Initialize pmean for test case 1
@@ -1464,7 +1477,7 @@ contains
     pmean_adjust = 0  ! 340.284*g 
 
     do ie=nets,nete
-       elem(ie)%fcor=tc2_coreolis_init(elem(ie)%spherep)
+       elem(ie)%fcor=tc2_coriolis_init(elem(ie)%spherep)
        elem(ie)%state%ps(:,:)=tc5_mountain(elem(ie)%spherep(:,:))
 
        do k=1,nlev
