@@ -107,6 +107,8 @@ module GridcellDataType
   !-----------------------------------------------------------------------
   type, public :: gridcell_carbon_state
     real(r8), pointer :: seedc                 (:) => null() ! (gC/m2) pool for seeding new PFTs via dynamic landcover
+    real(r8), pointer :: tcs_month_beg         (:) => null()  ! grc total carbon storage at the beginning of a month
+    real(r8), pointer :: tcs_month_end         (:) => null()  ! grc total carbon storage at the end of a month
     real(r8), pointer :: begcb                 (:) => null() ! carbon mass, beginning of time step (gC/m**2)
     real(r8), pointer :: endcb                 (:) => null() ! carbon mass, end of time step (gC/m**2)
     real(r8), pointer :: errcb                 (:) => null() ! carbon balance error for the timestep (gC/m**2)
@@ -128,6 +130,7 @@ module GridcellDataType
     real(r8), pointer :: end_cropseedc_deficit (:) => null() ! (gC/m2) crop seed C deficit at end of the time step
   contains
     procedure, public :: Init    => grc_cs_init
+    procedure, public :: Restart => grc_cs_restart
     procedure, public :: Clean   => grc_cs_clean
   end type gridcell_carbon_state
   
@@ -552,6 +555,9 @@ contains
     ! allocate for each member of grc_cs
     !-----------------------------------------------------------------------
     allocate(this%seedc                 (begg:endg));     this%seedc                 (:) = nan
+    allocate(this%tcs_month_beg         (begg:endg));     this%tcs_month_beg         (:) = nan
+    allocate(this%tcs_month_end         (begg:endg));     this%tcs_month_end         (:) = nan
+    allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
     allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
     allocate(this%endcb                 (begg:endg));     this%endcb                 (:) = nan
     allocate(this%errcb                 (begg:endg));     this%errcb                 (:) = nan
@@ -598,6 +604,16 @@ contains
        end if 
     end if
     
+    this%tcs_month_beg(begg:endg) = spval
+    call hist_addfld1d (fname='TCS_MONTH_BEGIN',  units='mm',  &
+         avgflag='I', long_name='total carbon storage at the beginning of a month', &
+         ptr_lnd=this%tcs_month_beg)
+
+    this%tcs_month_end(begg:endg) = spval
+    call hist_addfld1d (fname='TCS_MONTH_END',  units='mm',  &
+         avgflag='I', long_name='total carbon storage at the end of a month', &
+         ptr_lnd=this%tcs_month_end)
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_cs
     !-----------------------------------------------------------------------
@@ -606,6 +622,30 @@ contains
     end do
     
   end subroutine grc_cs_init
+
+  !------------------------------------------------------------------------
+  subroutine grc_cs_restart(this, bounds, ncid, flag)
+    !
+    ! !DESCRIPTION:
+    ! Read/Write gridcell water state information to/from restart file.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(gridcell_carbon_state) :: this
+    type(bounds_type), intent(in)    :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
+    !
+    ! !LOCAL VARIABLES:
+    logical :: readvar   ! determine if variable is on initial file
+    !-----------------------------------------------------------------------
+    call restartvar(ncid=ncid, flag=flag, varname='TCS_MONTH_BEGIN', xtype=ncd_double,  &
+         dim1name='gridcell', &
+         long_name='surface watertotal carbon storage at the beginning of a month', units='mm', &
+          interpinic_flag='interp', readvar=readvar, data=this%tcs_month_beg)
+
+  end subroutine grc_cs_restart
 
   !------------------------------------------------------------------------
   subroutine grc_cs_clean(this)

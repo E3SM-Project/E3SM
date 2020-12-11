@@ -169,6 +169,7 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use CNPBudgetMod                , only : CNPBudget_Run, CNPBudget_Accum, CNPBudget_Print, CNPBudget_Reset
+  use CNPBudgetMod                , only : CNPBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
 
@@ -1299,6 +1300,9 @@ contains
        call t_stopf('gridbalchk')
 
        call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
+       if (use_cn) then
+          call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs)
+       endif
 
        if (use_cn .or. use_fates) then
           

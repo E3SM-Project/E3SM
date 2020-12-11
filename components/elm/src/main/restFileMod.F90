@@ -71,6 +71,7 @@ module restFileMod
   use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType   , only : veg_ns, veg_nf
   use VegetationDataType   , only : veg_ps, veg_pf
+  use GridcellDataType     , only : grc_cs
   
   !
   ! !PUBLIC TYPES:
@@ -288,6 +289,9 @@ contains
        call veg_ps%Restart(bounds, ncid, flag='define')
        call veg_pf%Restart(bounds, ncid, flag='define')
        call crop_vars%Restart(bounds, ncid, flag='define')
+
+       call grc_cs%Restart(bounds, ncid, flag='define')
+
     end if
 
 
