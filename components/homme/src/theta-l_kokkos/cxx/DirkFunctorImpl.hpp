@@ -703,7 +703,6 @@ struct DirkFunctorImpl {
                              const W& dl, const W& d, const W& du,
                              const int nlev = NUM_PHYSICAL_LEV) {
     using Kokkos::parallel_for;
-    using Scalar = typename R::value_type;
 
     const int n = npack;
     const auto pv = Kokkos::ThreadVectorRange(kv.team, n);

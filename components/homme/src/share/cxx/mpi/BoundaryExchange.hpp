@@ -145,9 +145,15 @@ public:
   void register_field (ExecView<Scalar*[NP][NP][NUM_LEV_IN], Properties...> field) {
     register_field_impl<NUM_LEV_IN,Properties...>(field);
   }
+  template<int NUM_LEV_IN, typename... Properties>
+  void register_field (ExecView<Scalar**[NP][NP][NUM_LEV_IN], Properties...> field, int num_dims, int start_dim) {
+    register_field_impl<NUM_LEV_IN,Properties...>(field,num_dims,start_dim);
+  }
   template<int NUM_LEV_IN, int DIM, typename... Properties>
   void register_field (ExecView<Scalar*[DIM][NP][NP][NUM_LEV_IN], Properties...> field, int num_dims, int start_dim) {
-    register_field_impl<NUM_LEV_IN,DIM,Properties...>(field,num_dims,start_dim);
+    using field_t = ExecView<Scalar**[NP][NP][NUM_LEV_IN],Properties...>;
+    Unmanaged<field_t> f(field.data(),field.extent(0),DIM);
+    register_field_impl<NUM_LEV_IN,Properties...>(f,num_dims,start_dim);
   }
 
   template<int NUM_LEV_IN, typename... Properties>
@@ -160,16 +166,16 @@ public:
         typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
                                 ExecView<Scalar*[NP][NP][NUM_LEV_P], Properties...>
                                >::type field);
-  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  template<int NUM_LEV_IN, typename... Properties>
   void register_field_impl (
         typename std::enable_if<NUM_LEV_IN==NUM_LEV,
-                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                                ExecView<Scalar**[NP][NP][NUM_LEV], Properties...>
                                >::type field,
         int num_dims, int start_dim);
-  template<int NUM_LEV_IN, int DIM, typename... Properties>
+  template<int NUM_LEV_IN, typename... Properties>
   void register_field_impl (
         typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
-                                ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                                ExecView<Scalar**[NP][NP][NUM_LEV_P], Properties...>
                                >::type field,
         int num_dims, int start_dim);
 
@@ -517,10 +523,10 @@ void BoundaryExchange::register_field_impl (
   ++m_num_3d_int_fields;
 }
 
-template<int NUM_LEV_IN, int DIM, typename... Properties>
+template<int NUM_LEV_IN, typename... Properties>
 void BoundaryExchange::register_field_impl (
     typename std::enable_if<NUM_LEV_IN==NUM_LEV,
-                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV], Properties...>
+                            ExecView<Scalar**[NP][NP][NUM_LEV], Properties...>
                            >::type field,
     int num_dims, int start_dim)
 {
@@ -528,8 +534,8 @@ void BoundaryExchange::register_field_impl (
 
   // Sanity checks
   assert (m_registration_started && !m_registration_completed);
-  assert (num_dims>0 && start_dim>=0 && DIM>0);
-  assert (start_dim+num_dims<=DIM);
+  assert (num_dims>0 && start_dim>=0);
+  assert (start_dim+num_dims<=field.extent_int(1));
   assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
   assert (m_num_1d_fields==0);
 
@@ -545,10 +551,10 @@ void BoundaryExchange::register_field_impl (
   m_num_3d_fields += num_dims;
 }
 
-template<int NUM_LEV_IN, int DIM, typename... Properties>
+template<int NUM_LEV_IN, typename... Properties>
 void BoundaryExchange::register_field_impl (
     typename std::enable_if<NUM_LEV_IN==NUM_LEV_P && NUM_LEV!=NUM_LEV_P,
-                            ExecView<Scalar*[DIM][NP][NP][NUM_LEV_P], Properties...>
+                            ExecView<Scalar**[NP][NP][NUM_LEV_P], Properties...>
                            >::type field,
     int num_dims, int start_dim)
 {
@@ -556,8 +562,8 @@ void BoundaryExchange::register_field_impl (
 
   // Sanity checks
   assert (m_registration_started && !m_registration_completed);
-  assert (num_dims>0 && start_dim>=0 && DIM>0);
-  assert (start_dim+num_dims<=DIM);
+  assert (num_dims>0 && start_dim>=0);
+  assert (start_dim+num_dims<=field.extent_int(1));
   assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
   assert (m_num_1d_fields==0);
 

@@ -365,22 +365,45 @@ void init_elements_2d_c (const int& ie,
                          CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                          CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv,
-                         CF90Ptr& phis, CF90Ptr& gradphis,
                          CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
 {
-  Elements& e = Context::singleton().get<Elements> ();
-  const SimulationParams& params = Context::singleton().get<SimulationParams>();
+  auto& c = Context::singleton();
+  Elements& e = c.get<Elements> ();
+  const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
+}
+
+void init_geopotential_c (const int& ie,
+                          CF90Ptr& phis, CF90Ptr& gradphis)
+{
+  auto& geo = Context::singleton().get<ElementsGeometry>();
+
+  geo.set_phis(ie,phis);
 
   // Note: yes, we *could* compute gradphis from grad, but at the time of this call,
   //       we do not yet have the SphereOperators functor initialized. For simplicity,
   //       we just require gradphis as input, and copy it manually.
-  //       We also create the view here (rather than in ElementsGeometry init function),
-  //       so that the view is not allocated in ElementsGeometry for the preqx model.
   HostViewUnmanaged<const Real [2][NP][NP]> h_gradphis(gradphis);
-  sync_to_device(h_gradphis,Homme::subview(e.m_geometry.m_gradphis,ie));
+  sync_to_device(h_gradphis,Homme::subview(geo.m_gradphis,ie));
+}
+
+void compute_gradphis_c ()
+{
+  auto& c = Context::singleton();
+  auto& geo = c.get<ElementsGeometry>();
+  auto& ref_FE = c.get<ReferenceElement>();
+  SphereOperators sph_op(geo,ref_FE);
+  auto p = get_default_team_policy<ExecSpace>(geo.num_elems());
+  sph_op.allocate_buffers(p);
+  Kokkos::parallel_for(p,KOKKOS_LAMBDA(const TeamMember& team) {
+    KernelVariables kv(team);
+    auto phis     = Homme::subview(geo.m_phis,kv.ie);
+    auto gradphis = Homme::subview(geo.m_gradphis,kv.ie);
+    sph_op.gradient_sphere_sl(kv,phis,gradphis);
+  });
 }
 
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_state_w_i_ptr, CF90Ptr& elem_state_vtheta_dp_ptr,

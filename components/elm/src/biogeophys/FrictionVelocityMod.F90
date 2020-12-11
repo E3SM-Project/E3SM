@@ -44,8 +44,8 @@ contains
     ! Vol. 11, 2628-2644.
     !
     ! !USES:
-    use clm_varcon, only : vkc
-    use clm_varctl, only : iulog
+    use elm_varcon, only : vkc
+    use elm_varctl, only : iulog
     !
     ! !ARGUMENTS:
     integer  , intent(in)    :: lbn, ubn                 ! pft/landunit array bounds
@@ -109,7 +109,7 @@ contains
          
          vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
          u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)        
-         u10_clm          => frictionvel_vars%u10_clm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)                         
+         u10_clm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)                         
          va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
          fv               => frictionvel_vars%fv_patch           & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
          )
@@ -450,7 +450,7 @@ contains
     ! Vol. 11, 2628-2644.
     !
     ! !USES:
-    use clm_varcon, only : grav
+    use elm_varcon, only : grav
     !
     ! !ARGUMENTS:
     implicit none

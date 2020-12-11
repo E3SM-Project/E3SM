@@ -11,9 +11,9 @@ module CropType
   use spmdMod             , only : masterproc
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : spval
-  use clm_varpar          , only : crop_prog
-  use clm_varctl          , only : iulog, use_crop
+  use elm_varcon          , only : spval
+  use elm_varpar          , only : crop_prog
+  use elm_varctl          , only : iulog, use_crop
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es
   !
@@ -712,8 +712,8 @@ contains
     !
     ! !ARGUMENTS:
     use clm_time_manager, only : get_driver_start_ymd, get_start_date
-    use clm_varctl      , only : iulog
-    use clm_varctl      , only : nsrest, nsrBranch, nsrStartup
+    use elm_varctl      , only : iulog
+    use elm_varctl      , only : nsrest, nsrBranch, nsrStartup
     !
     ! !LOCAL VARIABLES:
     integer :: stymd       ! Start date YYYYMMDD from driver

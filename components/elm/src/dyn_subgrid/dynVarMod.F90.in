@@ -28,7 +28,7 @@ module dynVarMod
   !
   ! !USES:
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   use dynFileMod     , only : dyn_file_type
   use dynTimeInfoMod , only : time_info_type
   use shr_log_mod    , only : errMsg => shr_log_errMsg

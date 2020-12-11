@@ -10,7 +10,7 @@ module SurfaceResistanceMod
   ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use shr_const_mod , only : SHR_CONST_TKFRZ
-  use clm_varctl    , only : iulog
+  use elm_varctl    , only : iulog
   use SoilStateType , only : soilstate_type
   use WaterStateType, only : waterstate_type
   use ColumnDataType, only : col_ws  
@@ -100,13 +100,13 @@ contains
      use shr_log_mod     , only : errMsg => shr_log_errMsg   
      use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
      use decompMod       , only : bounds_type
-     use clm_varcon      , only : denh2o, denice
+     use elm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
      use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col_pp
      use LandunitType    , only : lun_pp
-     use clm_varctl      , only : use_vsfm
+     use elm_varctl      , only : use_vsfm
      !
      implicit none
      type(bounds_type)     , intent(in)    :: bounds    ! bounds   
@@ -226,7 +226,7 @@ contains
      !   Sci = v/Di, Di is diffusivity of gas i
      !   v : kinetic viscosity
 
-     use clm_varcon         , only :  vkc
+     use elm_varcon         , only :  vkc
 
      real(r8), intent(in) :: rho
      real(r8), intent(in) :: temp              ! air temperature

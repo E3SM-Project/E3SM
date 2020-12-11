@@ -28,9 +28,6 @@
   <entry id="PIO_STRIDE">
     <values>
       <value>$MAX_MPITASKS_PER_NODE</value>
-      <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
-      <value mach="mira|cetus">128</value>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">-99</value>
     </values>
   </entry>
 
@@ -51,6 +48,7 @@
   <entry id="PIO_TYPENAME">
     <values>
       <value>pnetcdf</value>
+      <value mpilib="mpi-serial">netcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="melvin">netcdf</value>
       <value mach="mappy">netcdf</value>
@@ -67,7 +65,6 @@
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
       <value mach="badger">netcdf</value>
-      <value mpilib="mpi-serial">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
     </values>
   </entry>
@@ -95,12 +92,11 @@
   </entry>
   -->
 
-  <entry id="PIO_BUFFER_SIZE_LIMIT">
+  <!--entry id="PIO_BUFFER_SIZE_LIMIT">
     <values>
-      <value MACH="sandiatoss3">1</value>
-      <value MACH="ghost">1</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
 
   <!--- uncomment and fill in relevant sections
@@ -119,11 +115,11 @@
   </entry>
   -->
 
-  <entry id="OCN_PIO_NUMTASKS">
+  <!--entry id="OCN_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="OCN_PIO_TYPENAME">
@@ -156,11 +152,11 @@
   </entry>
   -->
 
-  <entry id="LND_PIO_NUMTASKS">
+  <!--entry id="LND_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <entry id="LND_PIO_TYPENAME">
     <values>
@@ -185,11 +181,11 @@
   </entry>
   -->
 
-  <entry id="ROF_PIO_NUMTASKS">
+  <!--entry id="ROF_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="ROF_PIO_TYPENAME">
@@ -215,11 +211,11 @@
   </entry>
   -->
 
-  <entry id="ICE_PIO_NUMTASKS">
+  <!--entry id="ICE_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="ICE_PIO_TYPENAME">
@@ -245,11 +241,11 @@
   </entry>
   -->
 
-  <entry id="ATM_PIO_NUMTASKS">
+  <!--entry id="ATM_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <entry id="ATM_PIO_TYPENAME">
     <values>
@@ -273,17 +269,17 @@
   </entry>
   -->
 
-  <entry id="CPL_PIO_NUMTASKS">
+  <!--entry id="CPL_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">16</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
-  <entry id="CPL_PIO_TYPENAME">
+  <!--entry id="CPL_PIO_TYPENAME">
     <values>
-      <value mach="mira" grid="a%ne120">netcdf</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="GLC_PIO_STRIDE">
@@ -301,11 +297,11 @@
   </entry>
   -->
 
-  <entry id="GLC_PIO_NUMTASKS">
+  <!--entry id="GLC_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">1</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="GLC_PIO_TYPENAME">
@@ -331,11 +327,11 @@
   </entry>
   -->
 
-  <entry id="WAV_PIO_NUMTASKS">
+  <!--entry id="WAV_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">1</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="WAV_PIO_TYPENAME">
@@ -361,11 +357,11 @@
   </entry>
   -->
 
-  <entry id="ESP_PIO_NUMTASKS">
+  <!--entry id="ESP_PIO_NUMTASKS">
     <values>
-      <value mach="mira" grid="a%ne120" compset=".*CAM5.+MPASO.*">1</value>
+      <value></value>
     </values>
-  </entry>
+  </entry-->
 
   <!--- uncomment and fill in relevant sections
   <entry id="ESP_PIO_TYPENAME">

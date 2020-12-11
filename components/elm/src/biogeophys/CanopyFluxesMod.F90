@@ -13,10 +13,10 @@ module CanopyFluxesMod
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
-  use clm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
-  use clm_varctl            , only : use_hydrstress
-  use clm_varpar            , only : nlevgrnd, nlevsno
-  use clm_varcon            , only : namep 
+  use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
+  use elm_varctl            , only : use_hydrstress
+  use elm_varpar            , only : nlevgrnd, nlevsno
+  use elm_varcon            , only : namep 
   use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
@@ -40,7 +40,7 @@ module CanopyFluxesMod
   use PhotosynthesisType    , only : photosyns_type
   use PhosphorusStateType   , only : phosphorusstate_type
   use CNNitrogenStateType   , only : nitrogenstate_type
-  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
   use GridcellType          , only : grc_pp 
   use TopounitDataType      , only : top_as, top_af  
   use ColumnType            , only : col_pp
@@ -104,11 +104,11 @@ contains
     ! !USES:
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
     use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
-    use clm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
-    use clm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
-    use clm_varcon         , only : isecspday, degpsec
+    use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
+    use elm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
+    use elm_varcon         , only : isecspday, degpsec
     use pftvarcon          , only : irrigated
-    use clm_varcon         , only : c14ratio
+    use elm_varcon         , only : c14ratio
     use perf_mod           , only : t_startf, t_stopf
     use domainMod          , only : ldomain
     use QSatMod            , only : QSat
@@ -732,7 +732,7 @@ contains
       if (found) then
          if ( .not. use_fates ) then
             write(iulog,*)'Error: Forcing height is below canopy height for pft index '
-            call endrun(decomp_index=index, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=index, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 

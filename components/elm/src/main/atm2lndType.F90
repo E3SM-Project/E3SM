@@ -9,9 +9,9 @@ module atm2lndType
   use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use shr_megan_mod , only : shr_megan_mechcomps_n
-  use clm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use clm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
+  use elm_varpar    , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
+  use elm_varcon    , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varctl    , only : iulog, use_c13, use_cn, use_lch4, use_fates
   use seq_drydep_mod, only : n_drydep, drydep_method, DD_XLND
   use decompMod     , only : bounds_type
   use abortutils    , only : endrun
@@ -483,7 +483,7 @@ contains
     ! restart file for restart or branch runs
     !
     ! !USES 
-    use clm_varcon  , only : spval
+    use elm_varcon  , only : spval
     use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:

@@ -12,9 +12,9 @@ module SurfaceAlbedoMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
-  use clm_varcon        , only : grlnd, namep
-  use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
-  use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
+  use elm_varcon        , only : grlnd, namep
+  use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
+  use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad  
   use VegetationPropertiesType    , only : veg_vp
   use SnowSnicarMod     , only : sno_nbr_aer, SNICAR_RT, SNICAR_AD_RT, DO_SNO_AER, DO_SNO_OC
   use AerosolType       , only : aerosol_type
@@ -203,8 +203,8 @@ contains
     use shr_orb_mod
     use clm_time_manager   , only : get_nstep
     use abortutils         , only : endrun
-    use clm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
-    use CLMFatesInterfaceMod, only : hlm_fates_interface_type
+    use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
+    use ELMFatesInterfaceMod, only : hlm_fates_interface_type
 
     !
     ! !ARGUMENTS:
@@ -973,7 +973,7 @@ contains
        if (abs(laisum-elai(p)) > 1.e-06_r8 .or. abs(saisum-esai(p)) > 1.e-06_r8) then
           write (iulog,*) 'multi-layer canopy error 01 in SurfaceAlbedo: ',&
                nrad(p),elai(p),laisum,esai(p),saisum
-          call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+          call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
        end if
 
        ! Repeat to find canopy layers buried by snow
@@ -1013,7 +1013,7 @@ contains
           if (abs(laisum-tlai(p)) > 1.e-06_r8 .or. abs(saisum-tsai(p)) > 1.e-06_r8) then
              write (iulog,*) 'multi-layer canopy error 02 in SurfaceAlbedo: ',nrad(p),ncan(p)
              write (iulog,*) tlai(p),elai(p),blai(p),laisum,tsai(p),esai(p),bsai(p),saisum
-             call endrun(decomp_index=p, clmlevel=namep, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=p, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
           end if
        end if
 
@@ -1109,8 +1109,8 @@ contains
      ! Determine ground surface albedo, accounting for snow
      !
      ! !USES:
-    use clm_varpar, only : numrad
-     use clm_varcon      , only : tfrz
+    use elm_varpar, only : numrad
+     use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak
      use LakeCon         , only : lakepuddling
     !
@@ -1248,9 +1248,9 @@ contains
      ! a multi-layer canopy to calculate APAR profile
      !
      ! !USES:
-     use clm_varpar, only : numrad, nlevcan
-     use clm_varcon, only : omegas, tfrz, betads, betais
-     use clm_varctl, only : iulog
+     use elm_varpar, only : numrad, nlevcan
+     use elm_varcon, only : omegas, tfrz, betads, betais
+     use elm_varctl, only : iulog
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds           

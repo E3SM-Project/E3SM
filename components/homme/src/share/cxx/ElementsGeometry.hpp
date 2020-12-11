@@ -55,9 +55,10 @@ public:
                       CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                       CF90Ptr& spheremp, CF90Ptr& rspheremp,
                       CF90Ptr& metdet, CF90Ptr& metinv,
-                      CF90Ptr& phis, CF90Ptr& tensorvisc,
+                      CF90Ptr& tensorvisc,
                       CF90Ptr& vec_sph2cart, const bool consthv);
 
+  void set_phis (const int ie, CF90Ptr& phis);
 
 private:
   bool m_consthv;

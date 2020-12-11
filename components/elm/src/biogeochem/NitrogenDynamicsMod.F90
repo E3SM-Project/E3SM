@@ -10,8 +10,8 @@ module NitrogenDynamicsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : dzsoi_decomp, zisoi
-  use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varcon          , only : dzsoi_decomp, zisoi
+  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -30,8 +30,8 @@ module NitrogenDynamicsMod
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : NFIX_PTASE_plant
-  use clm_varctl          , only : use_fates
+  use elm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : use_fates
  
   !
   implicit none
@@ -164,7 +164,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -240,7 +240,7 @@ contains
     ! as a function of soluble mineral N and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevdecomp, nlevsoi
+    use elm_varpar       , only : nlevdecomp, nlevsoi
     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
@@ -627,7 +627,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
         
     !

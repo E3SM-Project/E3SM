@@ -7,7 +7,7 @@ module VegStructUpdateMod
   use shr_kind_mod         , only: r8 => shr_kind_r8
   use shr_sys_mod          , only : shr_sys_flush
   use shr_const_mod        , only : SHR_CONST_PI
-  use clm_varctl           , only : iulog
+  use elm_varctl           , only : iulog
   use VegetationPropertiesType     , only : veg_vp
   use WaterStateType       , only : waterstate_type
   use FrictionVelocityType , only : frictionvel_type
@@ -42,7 +42,7 @@ contains
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
     use clm_time_manager , only : get_rad_step_size
-    use clm_varctl       , only : spinup_state, spinup_mortality_factor
+    use elm_varctl       , only : spinup_state, spinup_mortality_factor
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of column soil points in pft filter

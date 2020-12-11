@@ -333,7 +333,7 @@ module clm_varctl
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
   !
-  logical, private :: clmvarctl_isset = .false.
+  logical, private :: elmvarctl_isset = .false.
   !-----------------------------------------------------------------------
  
   !-----------------------------------------------------------------------
@@ -362,8 +362,8 @@ module clm_varctl
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
-  logical, public :: use_clm_interface  = .false.
-  logical, public :: use_clm_bgc        = .false.
+  logical, public :: use_elm_interface  = .false.
+  logical, public :: use_elm_bgc        = .false.
   logical, public :: use_pflotran       = .false.
   logical, public :: pf_surfaceflow     = .false.
   ! the following switches will allow flexibility of coupling CLM with PFLOTRAN (which in fact runs in 3 modes individually or coupled)
@@ -372,7 +372,7 @@ module clm_varctl
   logical, public :: pf_tmode     = .false.                 ! switch for 'T' mode coupling (will be updated in interface)
   logical, public :: pf_frzmode   = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
   logical, public :: initth_pf2clm= .false.                 ! switch for initializing CLM TH states from pflotran
-  integer, public :: pf_clmnstep0 = 0                       ! the CLM timestep of start/restart
+  integer, public :: pf_elmnstep0 = 0                       ! the CLM timestep of start/restart
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
@@ -416,7 +416,7 @@ contains
     character(len=256), optional, intent(IN) :: username_in              ! username running job
     !-----------------------------------------------------------------------
 
-    if ( clmvarctl_isset )then
+    if ( elmvarctl_isset )then
        call shr_sys_abort(' ERROR:: control variables already set, cannot call this routine')
     end if
 
