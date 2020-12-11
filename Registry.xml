@@ -1423,16 +1423,8 @@ is the value of that variable from the *previous* time level!
 	       description="minimum principal deviatoric stress"
 	       persistence="scratch"
 	       />
-	  <var name="sigmamax" type="real" dimensions="nCells" units="Pa"
-	       description="maximum principal deviatoric stress"
-	       persistence="scratch"
-	       />
 	  <var name="alpha" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"
-	       persistence="scratch"
-	       />
-	  <var name="ddamagedt" type="real" dimensions="nCells" units="s^{-1}"
-          description="d(damage) / dt"
 	       persistence="scratch"
 	       />
 	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"
