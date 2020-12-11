@@ -149,7 +149,7 @@ TEST_CASE("input_output_basic","io")
   }
   for (int jj=0;jj<num_levs;++jj)
   {
-    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.)<tol));
+    REQUIRE(std::abs(f2_hst(jj)-(max_steps*dt + (jj+1)/10.))<tol);
   }
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
