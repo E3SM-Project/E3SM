@@ -57,9 +57,7 @@
            colpkg_snow_temperature, &
            colpkg_liquidus_temperature, &
            colpkg_sea_freezing_temperature, &
-           colpkg_enthalpy_ice, &
-           colpkg_enthalpy_snow, &
-           colpkg_salinity_profile
+           colpkg_enthalpy_snow
 
       ! warning messages
       public :: &
@@ -386,31 +384,7 @@
       end subroutine colpkg_init_thermo
 
 !=======================================================================
-! Initial salinity profile
-!
-! authors: C. M. Bitz, UW
-!          William H. Lipscomb, LANL
 
-      function colpkg_salinity_profile(zn) result(salinity)
-
-        use ice_colpkg_shared, only: saltmax
-        use ice_constants_colpkg, only: c1, c2, pi
-
-        real(kind=dbl_kind), intent(in) :: &
-             zn ! depth
-
-        real(kind=dbl_kind) :: &
-             salinity ! initial salinity profile
-
-        real (kind=dbl_kind), parameter :: &
-             nsal    = 0.407_dbl_kind, &
-             msal    = 0.573_dbl_kind
-
-        salinity = (saltmax/c2)*(c1-cos(pi*zn**(nsal/(msal+zn))))
-
-      end function colpkg_salinity_profile
-
-!=======================================================================
 ! Compute orbital parameters for the specified date.
 !
 ! author:  Bruce P. Briegleb, NCAR 
@@ -1738,33 +1712,6 @@
 
 !=======================================================================
 
-      function colpkg_enthalpy_ice(zTin, zSin) result(qin)
-
-        use ice_colpkg_shared, only: ktherm
-        use ice_mushy_physics, only: enthalpy_mush
-        use ice_constants_colpkg, only: depressT, rhoi, cp_ice, Lfresh, cp_ocn, c1
-
-        real(kind=dbl_kind), intent(in) :: zTin
-        real(kind=dbl_kind), intent(in) :: zSin
-        real(kind=dbl_kind) :: qin
-
-        real(kind=dbl_kind) :: Tmlt
-
-        if (ktherm == 2) then
-
-           qin = enthalpy_mush(zTin, zSin)
-
-        else
-
-           Tmlt = -zSin*depressT
-           qin = -(rhoi * (cp_ice*(Tmlt-zTin) + Lfresh*(c1-Tmlt/zTin) - cp_ocn*Tmlt))
-
-        endif
-
-      end function colpkg_enthalpy_ice
-
-!=======================================================================
-
       function colpkg_enthalpy_snow(zTsn) result(qsn)
 
         use ice_mushy_physics, only: enthalpy_snow
@@ -2646,7 +2593,8 @@
       !  categories with very small areas.
       !-----------------------------------------------------------------
 
-      call cleanup_itd (dt,                   ntrcr,            &
+      call cleanup_itd (dt,                   Tf,               &
+                        ntrcr,                                  &
                         nilyr,                nslyr,            &
                         ncat,                 hin_max,          &
                         aicen,                trcrn(1:ntrcr,:), &
@@ -3358,7 +3306,7 @@
 ! authors: C. M. Bitz, UW
 !          W. H. Lipscomb, LANL
 
-      subroutine colpkg_aggregate (ncat,               &
+      subroutine colpkg_aggregate (ncat,     Tf,       &
                                    aicen,    trcrn,    &
                                    vicen,    vsnon,    &
                                    aice,     trcr,     &
@@ -3376,6 +3324,9 @@
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
          ntrcr     ! number of tracers in use
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature           (Celsius)
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
          aicen , & ! concentration of ice
@@ -3464,7 +3415,8 @@
                                    atrcr,     aice,          &
                                    vice ,     vsno,          &
                                    trcr_base, n_trcr_strata, &
-                                   nt_strata, trcr)   
+                                   nt_strata, trcr,          &
+                                   Tf)   
 
       deallocate (atrcr)
 

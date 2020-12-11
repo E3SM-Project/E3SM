@@ -164,9 +164,10 @@
                                          atrcrn,    aicen,          &
                                          vicen,     vsnon,          &
                                          trcr_base, n_trcr_strata,  &
-                                         nt_strata, trcrn)
+                                         nt_strata, trcrn,          &
+                                         Tf)
 
-      use ice_constants_colpkg, only: c0, c1, puny, Tocnfrz
+      use ice_constants_colpkg, only: c0, c1, puny
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr                 ! number of tracers in use
@@ -188,7 +189,8 @@
       real (kind=dbl_kind), intent(in) :: &
          aicen , & ! concentration of ice
          vicen , & ! volume per unit area of ice          (m)
-         vsnon     ! volume per unit area of snow         (m)
+         vsnon , & ! volume per unit area of snow         (m)
+         Tf        ! ocean freezing temperature           (Celsius)
 
       real (kind=dbl_kind), dimension (ntrcr), intent(out) :: &
          trcrn     ! ice tracers
@@ -221,7 +223,7 @@
                trcrn(it) = atrcrn(it) / aicen
             else
                trcrn(it) = c0
-               if (it == nt_Tsfc) trcrn(it) = Tocnfrz  ! surface temperature
+               if (it == nt_Tsfc) trcrn(it) = Tf      ! surface temperature
             endif
 
          else

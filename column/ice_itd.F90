@@ -28,7 +28,7 @@
 
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, p001, puny, p5, &
-          Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, Tocnfrz, rhoi
+          Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, rhoi
       use ice_warnings, only: &
           add_warning
 
@@ -744,7 +744,8 @@
 !
 ! author: William H. Lipscomb, LANL
 
-      subroutine cleanup_itd (dt,          ntrcr,      &
+      subroutine cleanup_itd (dt,          Tf,         &
+                              ntrcr,                   &
                               nilyr,       nslyr,      &
                               ncat,        hin_max,    &
                               aicen,       trcrn,      &
@@ -774,7 +775,8 @@
          n_aero    ! number of aerosol tracers
  
       real (kind=dbl_kind), intent(in) :: & 
-         dt        ! time step 
+         dt    , & ! time step 
+         Tf        ! ocean freezing temperature           (Celsius)
  
       real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max   ! category boundaries (m)
@@ -929,7 +931,8 @@
       !-----------------------------------------------------------------
 
       if (limit_aice) then
-         call zap_small_areas (dt,           ntrcr,         &
+         call zap_small_areas (dt,           Tf,            &
+                               ntrcr,                       &
                                ncat,         n_aero,        &
                                nblyr,                       &
                                nilyr,        nslyr,         &
@@ -1016,7 +1019,8 @@
 !
 ! author: William H. Lipscomb, LANL
 
-      subroutine zap_small_areas (dt,        ntrcr,        &
+      subroutine zap_small_areas (dt,        Tf,           &
+                                  ntrcr,                   &
                                   ncat,      n_aero,       &
                                   nblyr,                   &
                                   nilyr,     nslyr,        &
@@ -1049,7 +1053,8 @@
          nbtrcr       ! number of biology tracers
 
       real (kind=dbl_kind), intent(in) :: &
-         dt           ! time step
+         dt       , & ! time step
+         Tf           ! ocean freezing temperature           (Celsius)
 
       real (kind=dbl_kind), intent(inout) :: &
          aice     , & ! total ice concentration
@@ -1189,7 +1194,7 @@
             aice0 = aice0 + aicen(n)
             aicen(n) = c0
             vicen(n) = c0
-            trcrn(nt_Tsfc,n) = Tocnfrz
+            trcrn(nt_Tsfc,n) = Tf
 
       !-----------------------------------------------------------------
       ! Zap snow

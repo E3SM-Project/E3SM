@@ -1309,7 +1309,6 @@ contains
 
     logical, pointer :: &
          config_use_aerosols, &
-         config_use_prescribed_ice, &
          config_use_snow_liquid_ponds
 
     ! dimensions
@@ -1503,7 +1502,6 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
-       call MPAS_pool_get_config(block % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
        call MPAS_pool_get_config(block % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -1850,8 +1848,7 @@ contains
                freezeOnset(iCell), &
                dayOfYear, &
                abortFlag, &
-               abortMessage, &
-               config_use_prescribed_ice)
+               abortMessage)
           call column_write_warnings(abortFlag)
 
           ! cell-specific abort message
@@ -4219,7 +4216,8 @@ contains
          mesh, &
          tracers, &
          tracers_aggregate, &
-         icestate
+         icestate, &
+         ocean_coupling
 
     logical, pointer :: &
          config_use_column_biogeochemistry
@@ -4228,7 +4226,8 @@ contains
          iceAreaCell, &
          iceVolumeCell, &
          snowVolumeCell, &
-         openWaterArea
+         openWaterArea, &
+         seaFreezingTemperature
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -4269,6 +4268,8 @@ contains
 
        call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
 
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
@@ -4280,6 +4281,7 @@ contains
 
           call colpkg_aggregate(&
                nCategories, &
+               seaFreezingTemperature(iCell), &
                iceAreaCategory(1,:,iCell), &
                tracerArrayCategory, & ! trcrn
                iceVolumeCategory(1,:,iCell), &
