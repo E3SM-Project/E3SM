@@ -21,7 +21,7 @@ module EcosystemBalanceCheckMod
   use elm_varcon          , only : dzsoi_decomp
   use elm_varctl          , only : nu_com
   use elm_varctl          , only : ECA_Pconst_RGspin
-
+  use spmdMod             , only : masterproc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g
@@ -324,6 +324,10 @@ contains
             end if
 
             call endrun(msg=errMsg(__FILE__, __LINE__))
+         else
+             if (masterproc) then
+                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+             end if
          end if
       end if
 

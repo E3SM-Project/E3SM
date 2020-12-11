@@ -27,6 +27,7 @@ module CNPBudgetMod
   public :: CNPBudget_Run
   public :: CNPBudget_Accum
   public :: CNPBudget_Print
+  public :: CNPBudget_SetBeginningMonthlyStates
   public :: CNPBudget_SetEndingMonthlyStates
 
   integer, parameter :: carbon_budget     = 1
@@ -508,7 +509,7 @@ contains
     integer                :: ip, is
     integer                :: year_prev, month_prev, day_prev, sec_prev
     integer                :: year_curr, month_curr, day_curr, sec_curr
-    character(*),parameter :: subName = '(WaterBudget_Accum)'
+    character(*),parameter :: subName = '(CarbonBudget_Accum)'
     logical                :: update_state_beg, update_state_end
 
     call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
@@ -1083,7 +1084,7 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine CNPBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+  subroutine CNPBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
     !
     use GridcellDataType, only : gridcell_carbon_state
     use ColumnDataType  , only : column_carbon_state
@@ -1096,6 +1097,25 @@ contains
     type(gridcell_carbon_state), intent(inout) :: grc_cs
 
     call CBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
+
+  end subroutine CNPBudget_SetBeginningMonthlyStates
+
+
+  !-----------------------------------------------------------------------
+
+  subroutine CNPBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+    !
+    use GridcellDataType, only : gridcell_carbon_state
+    use ColumnDataType  , only : column_carbon_state
+    !
+    implicit none
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)          , intent(in)    :: bounds
+    type(column_carbon_state)  , intent(in)    :: col_cs
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
+
+    call CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
 
   end subroutine CNPBudget_SetEndingMonthlyStates
 
@@ -1136,8 +1156,8 @@ contains
       call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
 
-      ! If at the beginning of a simulation, save grid-level TWS based on
-      ! 'begwb' from the current time step
+      ! If at the beginning of a simulation, save grid-level TCS based on
+      ! 'begcb' from the current time step
       if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
          call c2g( bounds, &
               begcb(bounds%begc:bounds%endc), &
@@ -1146,7 +1166,7 @@ contains
       endif
 
       ! If multiple steps into a simulation and the last time step was the
-      ! end of a month, save grid-level TCS based on 'endwb' from the last
+      ! end of a month, save grid-level TCS based on 'endcb' from the last
       ! time step
       if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
          call c2g( bounds, &
@@ -1158,5 +1178,65 @@ contains
     end associate
 
   end subroutine CBudget_SetBeginningMonthlyStates
+
+  !-----------------------------------------------------------------------
+  subroutine CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+    !
+    ! !DESCRIPTION:
+    ! Set grid-level carbon states at the beginning of a month
+    !
+    ! !USES:
+    use subgridAveMod    , only : p2c, c2g
+    use elm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
+    use elm_varcon       , only : spval
+    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
+    use column_varcon    , only : icol_road_perv, icol_road_imperv
+    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
+    use GridcellDataType , only : gridcell_carbon_state
+    use ColumnDataType   , only : column_carbon_state
+    !
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)    :: bounds
+    type(column_carbon_state)  , intent(in)    :: col_cs
+    type(gridcell_carbon_state), intent(inout) :: grc_cs
+    !
+    ! !LOCAL VARIABLES:
+    integer :: year_prev, month_prev, day_prev, sec_prev
+    integer :: year_curr, month_curr, day_curr, sec_curr
+    !-----------------------------------------------------------------------
+
+    associate(                                                       &
+         begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+         endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+         tcs_month_end_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
+         )
+
+      ! Get current and previous dates to determine if a new month started
+      call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
+      call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
+
+      ! If at the beginning of a simulation, save grid-level TCS based on
+      ! 'begcb' from the current time step
+      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
+         call c2g( bounds, &
+              begcb(bounds%begc:bounds%endc), &
+              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      endif
+
+      ! If multiple steps into a simulation and the last time step was the
+      ! end of a month, save grid-level TCS based on 'endcb' from the last
+      ! time step
+      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
+         call c2g( bounds, &
+              endcb(bounds%begc:bounds%endc), &
+              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      endif
+
+    end associate
+
+  end subroutine CBudget_SetEndingMonthlyStates
 
 end module CNPBudgetMod
