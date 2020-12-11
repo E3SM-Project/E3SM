@@ -143,6 +143,8 @@ void pre_timeloop() {
   auto &crm_input_q_cvt          = :: crm_input_q_cvt;
   auto &t_cvt                    = :: t_cvt;
   auto &q_cvt                    = :: q_cvt;
+  auto &t_cvt_tend               = :: t_cvt_tend;
+  auto &q_cvt_tend               = :: q_cvt_tend;
 
   crm_accel_ceaseflag = false;
 

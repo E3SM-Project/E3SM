@@ -301,16 +301,16 @@ subroutine CVT_forcing(ncrms)
    real(crm_rknd), parameter   :: pert_scale_max = 1.0 + 0.1
    real(crm_rknd), allocatable :: t_pert_scale(:,:)
    real(crm_rknd), allocatable :: q_pert_scale(:,:)
-   real(crm_rknd), allocatable :: ttend_loc(:,:,:,:)
-   real(crm_rknd), allocatable :: qtend_loc(:,:,:,:)
+   real(crm_rknd) :: ttend_loc, qtend_loc
+   real(crm_rknd) :: tmp_t_scale, tmp_q_scale
    integer :: i, j, k, icrm   ! loop iterators
+   integer :: idx_qt
    !----------------------------------------------------------------------------
 
    allocate( t_pert_scale( ncrms, nzm ) )
    allocate( q_pert_scale( ncrms, nzm ) )
 
-   allocate( ttend_loc( ncrms, nx, ny, nzm ) )
-   allocate( qtend_loc( ncrms, nx, ny, nzm ) )
+   idx_qt = index_water_vapor
 
    !----------------------------------------------------------------------------
    ! calculate local tendencies scaled by local perturbations
@@ -318,26 +318,20 @@ subroutine CVT_forcing(ncrms)
    !$acc parallel loop collapse(2) async(asyncid)
    do k=1,nzm
       do icrm = 1 , ncrms
-         t_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k) )
-         q_pert_scale(icrm,k) = sqrt( 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k) )
+         ! initialize scaling factors to 1.0
+         t_pert_scale(icrm,k) = 1.0_crm_rknd
+         q_pert_scale(icrm,k) = 1.0_crm_rknd
+         ! set scaling factors as long as there are perturbations to scale
+         if (t_cvt(icrm,k)/=0) tmp_t_scale = 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k)
+         if (q_cvt(icrm,k)/=0) tmp_q_scale = 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k)
+         if (tmp_t_scale>0) t_pert_scale(icrm,k) = sqrt( tmp_t_scale )
+         if (tmp_q_scale>0) q_pert_scale(icrm,k) = sqrt( tmp_q_scale )
          ! enforce minimum scaling
          t_pert_scale(icrm,k) = max( t_pert_scale(icrm,k), pert_scale_min )
          q_pert_scale(icrm,k) = max( q_pert_scale(icrm,k), pert_scale_min )
          ! enforce maximum scaling
          t_pert_scale(icrm,k) = min( t_pert_scale(icrm,k), pert_scale_max )
          q_pert_scale(icrm,k) = min( q_pert_scale(icrm,k), pert_scale_max )
-      end do
-   end do
-
-   !$acc parallel loop collapse(4) async(asyncid)
-   do k = 1,nzm
-      do j = 1,ny
-         do i = 1,nx
-            do icrm = 1,ncrms
-               ttend_loc(icrm,i,j,k) = ( t_pert_scale(icrm,k) * t_cvt_pert(icrm,i,j,k) - t_cvt_pert(icrm,i,j,k) ) / dtn
-               qtend_loc(icrm,i,j,k) = ( q_pert_scale(icrm,k) * q_cvt_pert(icrm,i,j,k) - q_cvt_pert(icrm,i,j,k) ) / dtn
-            end do
-         end do
       end do
    end do
 
@@ -349,8 +343,11 @@ subroutine CVT_forcing(ncrms)
       do j = 1,ny
          do i = 1,nx
             do icrm = 1,ncrms
-               t(icrm,i,j,k) = t(icrm,i,j,k) + ttend_loc(icrm,i,j,k) * dtn
-               micro_field(icrm,i,j,k,index_water_vapor) = micro_field(icrm,i,j,k,index_water_vapor) + qtend_loc(icrm,i,j,k) * dtn
+               ttend_loc = ( t_pert_scale(icrm,k) * t_cvt_pert(icrm,i,j,k) - t_cvt_pert(icrm,i,j,k) ) / dtn
+               qtend_loc = ( q_pert_scale(icrm,k) * q_cvt_pert(icrm,i,j,k) - q_cvt_pert(icrm,i,j,k) ) / dtn
+
+               t(icrm,i,j,k)                  = t(icrm,i,j,k)                  + ttend_loc * dtn
+               micro_field(icrm,i,j,k,idx_qt) = micro_field(icrm,i,j,k,idx_qt) + qtend_loc * dtn
             end do
          end do
       end do

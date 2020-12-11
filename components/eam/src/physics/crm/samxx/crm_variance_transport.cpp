@@ -85,8 +85,8 @@ void CVT_diagnose() {
   //    do i = 1,nx
   //      do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    real t_tmp = t(k,j,i,icrm);
-    real q_tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm) ;
+    real t_tmp = t(k,j+offy_s,i+offx_s,icrm);
+    real q_tmp = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) ;
     yakl::atomicAdd( t_mean(k,icrm) , t_tmp);
     yakl::atomicAdd( q_mean(k,icrm) , q_tmp);
   });
@@ -109,7 +109,7 @@ void CVT_diagnose() {
   //   //     do i = 1,nx
   //   //       do icrm = 1,ncrms
   //   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-  //     tmp_t(k,j,i,icrm) = t(k,j,i,icrm) 
+  //     tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)
   //     tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm)
   //     tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm)
   //     tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm)
@@ -126,9 +126,8 @@ void CVT_diagnose() {
     //     do i = 1,nx
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      real qt_tmp = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
-      t_cvt_pert(k,j,i,icrm) = t(k,j,i,icrm) - t_mean(k,icrm);
-      q_cvt_pert(k,j,i,icrm) = qt_tmp        - q_mean(k,icrm);
+      t_cvt_pert(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - t_mean(k,icrm);
+      q_cvt_pert(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) - q_mean(k,icrm);
     });
     
   // }
@@ -173,10 +172,11 @@ void CVT_forcing() {
   auto &t_cvt        = :: t_cvt;
   auto &q_cvt        = :: q_cvt;
   auto &ncrms        = :: ncrms;
+  auto &dtn          = :: dtn;
 
   // local variables
-  real2d t_pert_scale("t_pert_scale",nzm,ncrms);
-  real2d q_pert_scale("q_pert_scale",nzm,ncrms);
+  real2d t_pert_scale("t_pert_scale", nzm, ncrms);
+  real2d q_pert_scale("q_pert_scale", nzm, ncrms);
   real4d ttend_loc("ttend_loc", nzm, ny, nx, ncrms);
   real4d qtend_loc("qtend_loc", nzm, ny, nx, ncrms);
 
@@ -186,13 +186,21 @@ void CVT_forcing() {
   real pert_scale_max = 1.0 + 0.1;
 
   //----------------------------------------------------------------------------
-  // calculate local tendencies scaled by local perturbations
+  // calculate scaling factor for local perturbations
   //----------------------------------------------------------------------------
-  // do k=1,nzm
-  //   do icrm = 1 , ncrms
+  // do k = 1,nzm
+  //   do icrm = 1,ncrms
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
-    t_pert_scale(k,icrm) = sqrt( 1.0 + dtn * t_cvt_tend(k,icrm) / t_cvt(k,icrm) );
-    q_pert_scale(k,icrm) = sqrt( 1.0 + dtn * q_cvt_tend(k,icrm) / q_cvt(k,icrm) );
+    // initialize scaling factors to 1.0
+    t_pert_scale(k,icrm) = 1.0;
+    q_pert_scale(k,icrm) = 1.0;
+    real tmp_t_scale = -1;
+    real tmp_q_scale = -1;
+    // set scaling factors as long as there are perturbations to scale
+    if (t_cvt(k,icrm)!=0.0) { tmp_t_scale = 1.0 + dtn * t_cvt_tend(k,icrm) / t_cvt(k,icrm); }
+    if (q_cvt(k,icrm)!=0.0) { tmp_q_scale = 1.0 + dtn * q_cvt_tend(k,icrm) / q_cvt(k,icrm); }
+    if (tmp_t_scale>0.0) { t_pert_scale(k,icrm) = sqrt( tmp_t_scale ); }
+    if (tmp_q_scale>0.0) { q_pert_scale(k,icrm) = sqrt( tmp_q_scale ); }
     // enforce minimum scaling
     t_pert_scale(k,icrm) = max( t_pert_scale(k,icrm), pert_scale_min );
     q_pert_scale(k,icrm) = max( q_pert_scale(k,icrm), pert_scale_min );
@@ -201,8 +209,12 @@ void CVT_forcing() {
     q_pert_scale(k,icrm) = min( q_pert_scale(k,icrm), pert_scale_max );
   });
 
+  real dummy_tmp = 1;
+
+  dummy_tmp = 0;
+
   //----------------------------------------------------------------------------
-  // apply tendencies
+  // apply variance forcing tendency
   //----------------------------------------------------------------------------
   // do k = 1,nzm
   //   do j = 1,ny
@@ -211,8 +223,8 @@ void CVT_forcing() {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real ttend_loc = ( t_pert_scale(k,icrm) * t_cvt_pert(k,j,i,icrm) - t_cvt_pert(k,j,i,icrm) ) / dtn;
     real qtend_loc = ( q_pert_scale(k,icrm) * q_cvt_pert(k,j,i,icrm) - q_cvt_pert(k,j,i,icrm) ) / dtn;
-    t(k,j,i,icrm)                  = t(k,j,i,icrm)                  + ttend_loc * dtn;
-    micro_field(k,j,i,icrm,idx_qt) = micro_field(k,j,i,icrm,idx_qt) + qtend_loc * dtn;
+    t(k,j+offy_s,i+offx_s,icrm)                  = t(k,j+offy_s,i+offx_s,icrm)                  + ttend_loc * dtn;
+    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) + qtend_loc * dtn;
   });
 
   //----------------------------------------------------------------------------
