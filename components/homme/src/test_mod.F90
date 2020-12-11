@@ -27,6 +27,12 @@ use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test
                                 dcmip2016_test1_pg, dcmip2016_test1_pg_forcing, dcmip2016_init
 use held_suarez_mod,      only: hs0_init_state
 
+use dry_planar_tests,     only: planar_hydro_gravity_wave_init, planar_nonhydro_gravity_wave_init
+use dry_planar_tests,     only: planar_hydro_mountain_wave_init, planar_nonhydro_mountain_wave_init, planar_schar_mountain_wave_init
+use dry_planar_tests,     only: planar_rising_bubble_init, planar_density_current_init, planar_baroclinic_instab_init
+use moist_planar_tests,   only: planar_moist_rising_bubble_init, planar_moist_density_current_init, planar_moist_baroclinic_instab_init
+use moist_planar_tests,   only: planar_tropical_cyclone_init, planar_supercell_init
+
 implicit none
 
 public :: set_prescribed_wind
@@ -76,6 +82,19 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('mtest3');
     case('held_suarez0');
     case('jw_baroclinic');
+    case('planar_hydro_gravity_wave');
+    case('planar_nonhydro_gravity_wave');
+    case('planar_hydro_mtn_wave');
+    case('planar_nonhydro_mtn_wave');
+    case('planar_schar_mtn_wave');
+    case('planar_rising_bubble');
+    case('planar_density_current');
+    case('planar_baroclinic_instab');
+    case('planar_moist_rising_bubble');
+    case('planar_moist_density_current');
+    case('planar_moist_baroclinic_instab');
+    case('planar_tropical_cyclone');
+    case('planar_supercell');
     case default;               call abortmp('unrecognized test case')
   endselect
 
@@ -113,6 +132,19 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
       case('mtest3');             call mtest_init       (elem,hybrid,hvcoord,nets,nete,3)
       case('held_suarez0');       call hs0_init_state   (elem,hybrid,hvcoord,nets,nete,300.0_rl)
       case('jw_baroclinic');      call jw_baroclinic    (elem,hybrid,hvcoord,nets,nete)
+      case('planar_hydro_gravity_wave');            call planar_hydro_gravity_wave_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_nonhydro_gravity_wave');         call planar_nonhydro_gravity_wave_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_hydro_mtn_wave');                call planar_hydro_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_nonhydro_mtn_wave');             call planar_nonhydro_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_schar_mtn_wave');                call planar_schar_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_rising_bubble');                 call planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_density_current');               call planar_density_current_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_baroclinic_instab');             call planar_baroclinic_instab_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_moist_rising_bubble');           call planar_moist_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_moist_density_current');         call planar_moist_density_current_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_moist_baroclinic_instab');       call planar_moist_baroclinic_instab_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_tropical_cyclone');              call planar_tropical_cyclone_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_supercell');                     call planar_supercell_init(elem,hybrid,hvcoord,nets,nete)
       case default;               call abortmp('unrecognized test case')
 
     endselect

@@ -11,7 +11,7 @@ module derivative_mod_base
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
   use control_mod,    only : hypervis_scaling, hypervis_power
-  use physical_constants, only : rrearth
+  use physical_constants, only : scale_factor_inv, laplacian_rigid_factor
 
 implicit none
 private
@@ -441,8 +441,8 @@ contains
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
           end do
-          v1(l  ,j  ) = dsdx00*rrearth
-          v2(j  ,l  ) = dsdy00*rrearth
+          v1(l  ,j  ) = dsdx00*scale_factor_inv
+          v2(j  ,l  ) = dsdy00*scale_factor_inv
        end do
     end do
     ! convert covarient to latlon
@@ -626,9 +626,9 @@ contains
 !DIR$ UNROLL(NP)
           do j=1,np
              ! phi(m)_x  sum over first index, second index fixed at n
-             dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
+             dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*scale_factor_inv
              ! phi(n)_y  sum over second index, 1st index fixed at m
-             dscov(m,n,2)=dscov(m,n,2)-(elem%mp(m,j)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) )*rrearth
+             dscov(m,n,2)=dscov(m,n,2)-(elem%mp(m,j)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) )*scale_factor_inv
           enddo
        enddo
     enddo
@@ -767,8 +767,8 @@ contains
              dsdx00 = dsdx00 + deriv%Dvv(i,l  )*s(i,j  )
              dsdy00 = dsdy00 + deriv%Dvv(i,l  )*s(j  ,i)
           end do
-          v2(l  ,j  ) = -dsdx00*rrearth
-          v1(j  ,l  ) =  dsdy00*rrearth
+          v2(l  ,j  ) = -dsdx00*scale_factor_inv
+          v1(j  ,l  ) =  dsdy00*scale_factor_inv
        end do
     end do
     ! convert contra -> latlon *and* divide by jacobian
@@ -828,7 +828,7 @@ contains
           do j=1,np
              div(m,n)=div(m,n)-(elem%spheremp(j,n)*vtemp(j,n,1)*deriv%Dvv(m,j) &
                               +elem%spheremp(m,j)*vtemp(m,j,2)*deriv%Dvv(n,j)) &
-                              * rrearth
+                              * scale_factor_inv
           enddo
 
 #if 0
@@ -1057,7 +1057,7 @@ contains
 
     do j=1,np
        do i=1,np
-          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
+          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*scale_factor_inv)
        end do
     end do
 
@@ -1294,8 +1294,8 @@ contains
 #define UNDAMPRRCART
 #ifdef UNDAMPRRCART
     ! add in correction so we dont damp rigid rotation
-    laplace(:,:,1)=laplace(:,:,1) + 2*elem%spheremp(:,:)*v(:,:,1)*(rrearth**2)
-    laplace(:,:,2)=laplace(:,:,2) + 2*elem%spheremp(:,:)*v(:,:,2)*(rrearth**2)
+    laplace(:,:,1)=laplace(:,:,1) + 2*elem%spheremp(:,:)*v(:,:,1)*(laplacian_rigid_factor**2)
+    laplace(:,:,2)=laplace(:,:,2) + 2*elem%spheremp(:,:)*v(:,:,2)*(laplacian_rigid_factor**2)
 #endif
   end function vlaplace_sphere_wk_cartesian
 
@@ -1340,10 +1340,11 @@ contains
     do n=1,np
        do m=1,np
           ! add in correction so we dont damp rigid rotation
+
 #define UNDAMPRR
 #ifdef UNDAMPRR
-          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
-          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
+          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(laplacian_rigid_factor**2)
+          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(laplacian_rigid_factor**2)
 #endif
        enddo
     enddo
@@ -1542,10 +1543,10 @@ contains
     flux_l(:,:) = MATMUL(boundary_interp_matrix(:,1,:),lr)
     flux_r(:,:) = MATMUL(boundary_interp_matrix(:,2,:),lr)
 
-    fluxes(:,:,1) = -flux_b(:,:)*rrearth
-    fluxes(:,:,2) =  flux_r(:,:)*rrearth
-    fluxes(:,:,3) =  flux_t(:,:)*rrearth
-    fluxes(:,:,4) = -flux_l(:,:)*rrearth
+    fluxes(:,:,1) = -flux_b(:,:)*scale_factor_inv
+    fluxes(:,:,2) =  flux_r(:,:)*scale_factor_inv
+    fluxes(:,:,3) =  flux_t(:,:)*scale_factor_inv
+    fluxes(:,:,4) = -flux_l(:,:)*scale_factor_inv
 
   end function subcell_div_fluxes
 
@@ -1577,7 +1578,7 @@ contains
        div(i,j,2) = -SUM(elem%spheremp(i,:)*v(i,:,2)*deriv%Dvv(j,:))
     end do
     end do
-    div = div * rrearth
+    div = div * scale_factor_inv
 
     div(:,:,1) = div(:,:,1) / elem%spheremp(:,:)
     div(:,:,2) = div(:,:,2) / elem%spheremp(:,:)

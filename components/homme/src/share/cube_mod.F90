@@ -84,7 +84,6 @@ module cube_mod
   public  :: CubeSetupEdgeIndex
   public  :: ref2sphere
 
-  public  :: set_area_correction_map0, set_area_correction_map2
 
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC
@@ -105,7 +104,7 @@ module cube_mod
   ! ===============================
   private :: coordinates_atomic
   private :: metric_atomic
-  private :: coreolis_init_atomic
+  private :: coriolis_init_atomic
 
 contains
 
@@ -129,7 +128,7 @@ contains
 
     call metric_atomic(elem,gll_points,alpha)
 
-    call coreolis_init_atomic(elem)
+    call coriolis_init_atomic(elem)
 
 
   end subroutine cube_init_atomic
@@ -766,13 +765,13 @@ contains
 
 
   ! ========================================
-  ! coreolis_init_atomic:
+  ! coriolis_init_atomic:
   !
-  ! Initialize coreolis term ...
+  ! Initialize coriolis term ...
   !
   ! ========================================
 
-  subroutine coreolis_init_atomic(elem)
+  subroutine coriolis_init_atomic(elem)
     use element_mod, only : element_t
     use physical_constants, only : omega
 
@@ -797,7 +796,7 @@ contains
        end do
     end do
 
-  end subroutine coreolis_init_atomic
+  end subroutine coriolis_init_atomic
 
 
   subroutine set_corner_coordinates(elem)
