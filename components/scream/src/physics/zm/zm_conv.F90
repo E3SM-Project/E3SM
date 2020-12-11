@@ -4,7 +4,7 @@ module zm_conv
 !---------------------------------------------------------------------------------
 ! Purpose:
 !
-! Interface from Zhang-McFarlane convection scheme, includes evaporation of convective 
+! Interface from Zhang-McFarlane convection scheme, includes evaporation of convective
 ! precip from the ZM scheme
 !
 ! Apr 2006: RBN: Code added to perform a dilute ascent for closure of the CM mass flux
@@ -24,7 +24,7 @@ module zm_conv
    !                          cpwv, cpliq, rh2o
 !  use cam_abortutils,  only: endrun
 !  use cam_logfile,     only: iulog
-  use scream_abortutils, only: endscreamrun 
+  use scream_abortutils, only: endscreamrun
   implicit none
 
 #include "scream_config.f"
@@ -46,7 +46,7 @@ module zm_conv
 ! AaronDonahue - TODO Question: Are convtran and momtran going to be used?  Do
 ! not appear to be used by zm_convr
   public convtran                 ! convective transport
-  public momtran                  ! convective momentum transport  
+  public momtran                  ! convective momentum transport
   public trigmem                  ! true if convective memory
   public trigdcape_ull            ! true if to use dcape-ULL trigger
   public is_first_step
@@ -65,25 +65,14 @@ module zm_conv
    real(kind=c_real) :: latvap =    2501000.00000000
    real(kind=c_real) :: latice =    333700.000000000
    real(kind=c_real) :: tmelt  =    273.150000000000
-   real(kind=c_real) :: rair   =    287.042311365049 
+   real(kind=c_real) :: rair   =    287.042311365049
    real(kind=c_real) :: cpliq  =    4188.00000000000
    real(kind=c_real) :: cpwv   =    1.810e3
    real(kind=c_real) :: epsilo =    18.0160000000000/28.9660000000000 !mwh20/mwdry
-  
+
    real(r8), parameter :: unset_r8   = huge(1.0_r8)
    integer , parameter :: unset_int  = huge(1)
-   real(r8) :: zmconv_c0_lnd         = unset_r8    
-   real(r8) :: zmconv_c0_ocn         = unset_r8    
-   real(r8) :: zmconv_ke             = unset_r8 
-   real(r8) :: zmconv_tau            = unset_r8   
-   real(r8) :: zmconv_dmpdz          = unset_r8   
-   real(r8) :: zmconv_alfa           = unset_r8   
-   real(r8) :: zmconv_tiedke_add     = unset_r8   
-   logical  :: zmconv_trigmem        = .false.    
-   logical  :: zmconv_trigdcape_ull  = .false.    
-   integer  :: zmconv_cape_cin       = unset_int
-   integer  :: zmconv_mx_bot_lyr_adj = unset_int
-   real(r8) :: zmconv_tp_fac         = unset_r8
+   real(r8) :: zmconv_alfa           = unset_r8
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -94,7 +83,7 @@ module zm_conv
 
 !DCAPE-ULL
    real(r8), parameter :: trigdcapelmt = 0._r8  ! threshold value of dcape for deep convection
-   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and -ULL 
+   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and -ULL
    integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
 !  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
 !$omp threadprivate (dcapemx)
@@ -103,7 +92,7 @@ module zm_conv
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
    real(r8) :: dmpdz          = unset_r8  ! Parcel fractional mass entrainment rate (/m)
-   real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction  
+   real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction
    real(r8) ::  tiedke_add    = unset_r8
    logical  :: trigmem      ! set from namelist input zmconv_trigmem
    integer  :: num_cin        = unset_int !number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
@@ -114,18 +103,18 @@ module zm_conv
    real(r8),parameter :: c3 = 243.5_r8
    real(r8) :: tfreez
    real(r8) :: eps1
-      
+
 
    logical :: no_deep_pbl ! default = .false.
-                          ! no_deep_pbl = .true. eliminates deep convection entirely within PBL 
-   
+                          ! no_deep_pbl = .true. eliminates deep convection entirely within PBL
+
 
 !moved from moistconvection.F90
    real(r8) :: rgrav       ! reciprocal of grav
    real(r8) :: rgas        ! gas constant for dry air
    real(r8) :: grav        ! = gravit
    real(r8) :: cp          ! = cpres = cpair
-   
+
    integer  limcnv       ! top interface level limit for convection
 
    real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert
@@ -148,7 +137,7 @@ subroutine zmconv_readnl()!nlfile)
 !   integer :: unitn, ierr
 !   character(len=*), parameter :: subname = 'zmconv_readnl'
 
-!   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
+!   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, &
 !           zmconv_dmpdz, zmconv_alfa, zmconv_trigmem, zmconv_tiedke_add,     &
 !           zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac, zmconv_trigdcape_ull
 !   !-----------------------------------------------------------------------------
@@ -179,14 +168,14 @@ subroutine zmconv_readnl()!nlfile)
       mx_bot_lyr_adj = 2          ! zmconv_mx_bot_lyr_adj
       dmpdz          = -0.7e-3_r8 ! zmconv_dmpdz
       tp_fac         = 0.0_r8     ! zmconv_tp_fac
-      
+
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
       else
            alfa_scalar = 0.1_r8
       end if
 
-      if (trigdcape_ull) then 
+      if (trigdcape_ull) then
          write(*,*)'**** ZMCONV-DCAPE trigger with unrestricted launch level:', trigdcape_ull
       endif
 
@@ -215,7 +204,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
 
 
    integer, intent(in)           :: limcnv_in       ! top interface level limit for convection
-   logical, intent(in), optional :: no_deep_pbl_in  ! no_deep_pbl = .true. eliminates ZM convection entirely within PBL 
+   logical, intent(in), optional :: no_deep_pbl_in  ! no_deep_pbl = .true. eliminates ZM convection entirely within PBL
 
    ! local variables
 !   character(len=32)   :: hgrid           ! horizontal grid specifier   ! AaronDonahue - Doesn't appear to be used
@@ -237,7 +226,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
       no_deep_pbl = .false.
    endif
 
-   ! tau=4800. were used in canadian climate center. however, in echam3 t42, 
+   ! tau=4800. were used in canadian climate center. however, in echam3 t42,
    ! convection is too weak, thus adjusted to 2400.
 
 !   hgrid = get_resolution()  ! AaronDonahue - Doesn't appear to be used.
@@ -245,7 +234,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
 
    if ( masterproc ) then
       write(*,*) 'tuning parameters zm_convi: tau',tau
-      write(*,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn 
+      write(*,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn
       write(*,*) 'tuning parameters zm_convi: ke',ke
       write(*,*) 'tuning parameters zm_convi: dmpdz',dmpdz
       write(*,*) 'tuning parameters zm_convi: alfa',alfa_scalar
@@ -268,15 +257,15 @@ subroutine zm_convr(lchnk   ,ncol    , &
                     dp      ,dsubcld ,jt      ,maxg    ,ideep   , &
                     lengath ,ql      ,rliq    ,landfrac,hu_nm1  , &
                     cnv_nm1 ,tm1     ,qm1     ,t_star  ,q_star, dcape)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! Main driver for zhang-mcfarlane convection scheme 
-! 
-! Method: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! Main driver for zhang-mcfarlane convection scheme
+!
+! Method:
 ! performs deep convective adjustment based on mass-flux closure
 ! algorithm.
-! 
+!
 ! Author:guang jun zhang, m.lazare, n.mcfarlane. CAM Contact: P. Rasch
 !
 ! This is contributed code not fully standardized by the CAM core group.
@@ -284,7 +273,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! The current procedure will be reimplemented in a subsequent version
 ! of the CAM where it will include a more straightforward formulation
 ! and will make use of the standard CAM nomenclature
-! 
+!
 !-----------------------------------------------------------------------
 !   use time_manager, only: is_first_step, is_first_restart_step   !songxl 2014-05-20
 !
@@ -295,7 +284,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !  wg * capeg    gathered convective available potential energy.
 !  c  * capelmt  threshold value for cape for deep convection.
 !  ic  * cpres    specific heat at constant pressure in j/kg-degk.
-!  i  * dpp      
+!  i  * dpp
 !  ic  * delt     length of model time-step in seconds.
 !  wg * dp       layer thickness in mbs (between upper/lower interface).
 !  wg * dqdt     mixing ratio tendency at gathered points.
@@ -351,7 +340,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !  wg * sg       grid slice of gathered values of s.
 !  wg * shat     grid slice of upper interface dry static energy.
 !  wg * su       grid slice of dry static energy in updraft.
-!  i/o * t       
+!  i/o * t
 !  o  * jctop    row of top-of-deep-convection indices passed out.
 !  O  * jcbot    row of base of cloud indices passed out.
 !  wg * tg       grid slice of gathered values of t.
@@ -389,7 +378,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 
    real(r8), intent(in) :: t(pcols,pver)          ! grid slice of temperature at mid-layer.
    real(r8), intent(in) :: qh(pcols,pver)   ! grid slice of specific humidity.
-   real(r8), intent(in) :: pap(pcols,pver)     
+   real(r8), intent(in) :: pap(pcols,pver)
    real(r8), intent(in) :: paph(pcols,pver+1)
    real(r8), intent(in) :: dpp(pcols,pver)        ! local sigma half-level thickness (i.e. dshj).
    real(r8), intent(in) :: zm(pcols,pver)
@@ -474,10 +463,10 @@ subroutine zm_convr(lchnk   ,ncol    , &
 
    real(r8) tl(pcols)                  ! w  row of parcel temperature at lcl.
 !<songxl 2014-05-20-----------------
-   real(r8) tpm1(pcols,pver)           ! w parcel temperatures at n-1 time step. 
+   real(r8) tpm1(pcols,pver)           ! w parcel temperatures at n-1 time step.
    real(r8) qstpm1(pcols,pver)         ! w parcel temp. saturation mixing ratio at n-1 time step
    real(r8) tlm1(pcols)                ! w LCL parcel Temperature at n-1 time step
-   real(r8) capem1(pcols)              ! w CAPE at n-1 time step 
+   real(r8) capem1(pcols)              ! w CAPE at n-1 time step
    integer lclm1(pcols)                ! w base level index of deep cumulus convection.
    integer lelm1(pcols)                ! w index of highest theoretical convective plume.
    integer lonm1(pcols)                ! w index of onset level for deep convection.
@@ -493,7 +482,6 @@ subroutine zm_convr(lchnk   ,ncol    , &
    integer lon(pcols)                  ! w  index of onset level for deep convection.
    integer maxi(pcols)                 ! w  index of level with largest moist static energy.
    integer index(pcols)
-   real(r8) precip
 !
 ! gathered work fields:
 !
@@ -514,7 +502,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) rprdg(pcols,pver)           ! wg gathered rain production rate
    real(r8) capeg(pcols)               ! wg gathered convective available potential energy.
    real(r8) tlg(pcols)                 ! wg grid slice of gathered values of tl.
-   real(r8) landfracg(pcols)            ! wg grid slice of landfrac  
+   real(r8) landfracg(pcols)            ! wg grid slice of landfrac
 
    integer lclg(pcols)       ! wg gathered values of lcl.
    integer lelg(pcols)
@@ -552,12 +540,11 @@ subroutine zm_convr(lchnk   ,ncol    , &
    integer ii
    integer k
    integer msg                      !  ic number of missing moisture levels at the top of model.
-   integer ierror
 
    real(r8) qdifr
    real(r8) sdifr
 
-   logical :: is_first_step
+   logical :: is_first_step = .false.
 
 !
 !--------------------------Data statements------------------------------
@@ -609,9 +596,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
 
       jctop(i) = pver
       jcbot(i) = 1
-      if(trigmem)dcape(i) = 0._r8               !songxl 2014-05-20   
+      if(trigmem)dcape(i) = 0._r8               !songxl 2014-05-20
    end do
-   
+
 
 !
 ! calculate local pressure (mbs) and height (m) for both interface
@@ -656,7 +643,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
   if(trigmem)then
      do i = 1,ncol
         do k = 1,pver
-           if (cnv_nm1(i,k).ne.1._r8) hu_nm1(i,k) = cpres*t(i,k) + grav*z(i,k) + rl*q(i,k) 
+           if (cnv_nm1(i,k).ne.1._r8) hu_nm1(i,k) = cpres*t(i,k) + grav*z(i,k) + rl*q(i,k)
         end do
      end do
   endif
@@ -672,7 +659,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    end do
 
 
-      !  Evaluate Tparcel, qs(Tparcel), buoyancy and CAPE, 
+      !  Evaluate Tparcel, qs(Tparcel), buoyancy and CAPE,
       !     lcl, lel, parcel launch level at index maxi()=hmax
       !
 
@@ -687,7 +674,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                   pblt    ,lcl     ,lel     ,lon     ,maxi     , &
                   rgas    ,grav    ,cpres   ,msg     , &
                   tpert   ,iclosure)
-         
+
   !    if (trigdcape_ull) then
   !       if (.not. allocated(dcapemx)) then
   !          allocate (dcapemx(pcols), stat=ierror)
@@ -695,7 +682,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
   !       endif
   !       dcapemx(:ncol) = maxi(:ncol)
   !    endif
-        
+
       if(trigmem)then
          call buoyan_dilute(lchnk   ,ncol    , &
                   qm1     ,tm1     ,p       ,z       ,pf       , &
@@ -901,7 +888,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
          mb(i) = 0._r8
       endif
    end do
-   ! If no_deep_pbl = .true., don't allow convection entirely 
+   ! If no_deep_pbl = .true., don't allow convection entirely
    ! within PBL (suggestion of Bjorn Stevens, 8-2000)
 
    if (no_deep_pbl) then
@@ -1031,14 +1018,14 @@ subroutine zm_conv_evap(ncol,lchnk, &
 !------------------------------Arguments--------------------------------
     integer,intent(in) :: ncol, lchnk             ! number of columns and chunk index
     real(r8),intent(in), dimension(pcols,pver) :: t          ! temperature (K)
-    real(r8),intent(in), dimension(pcols,pver) :: pmid       ! midpoint pressure (Pa) 
+    real(r8),intent(in), dimension(pcols,pver) :: pmid       ! midpoint pressure (Pa)
     real(r8),intent(in), dimension(pcols,pver) :: pdel       ! layer thickness (Pa)
     real(r8),intent(in), dimension(pcols,pver) :: q          ! water vapor (kg/kg)
     real(r8),intent(inout), dimension(pcols,pver) :: tend_s     ! heating rate (J/kg/s)
     real(r8),intent(inout), dimension(pcols,pver) :: tend_q     ! water vapor tendency (kg/kg/s)
     real(r8),intent(out  ), dimension(pcols,pver) :: tend_s_snwprd ! Heating rate of snow production
     real(r8),intent(out  ), dimension(pcols,pver) :: tend_s_snwevmlt ! Heating rate of evap/melting of snow
-    
+
 
 
     real(r8), intent(in   ) :: prdprec(pcols,pver)! precipitation production (kg/ks/s)
@@ -1068,7 +1055,6 @@ subroutine zm_conv_evap(ncol,lchnk, &
     real(r8) :: flxsntm(pcols)         ! flux of snow into layer, after melting
 
     real(r8) :: evplimit               ! temp variable for evaporation limits
-    real(r8) :: rlat(pcols)
 
     integer :: i,k                     ! longitude,level indices
 
@@ -1097,7 +1083,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
     do k = 1, pver
        do i = 1, ncol
 
-! Melt snow falling into layer, if necessary. 
+! Melt snow falling into layer, if necessary.
           if (t(i,k) > tmelt) then
              flxsntm(i) = 0._r8
              snowmlt(i) = flxsnow(i,k) * gravit/ pdel(i,k)
@@ -1149,7 +1135,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! net snow production is precip production * ice fraction - evaporation - melting
 !pjrworks ntsnprd(i,k) = prdprec(i,k)*fice(i,k) - evpsnow(i) - snowmlt(i)
 !pjrwrks2 ntsnprd(i,k) = prdprec(i,k)*fsnow_conv(i,k) - evpsnow(i) - snowmlt(i)
-! the small amount added to flxprec in the work1 expression has been increased from 
+! the small amount added to flxprec in the work1 expression has been increased from
 ! 1e-36 to 8.64e-11 (1e-5 mm/day).  This causes the temperature based partitioning
 ! scheme to be used for small flxprec amounts.  This is to address error growth problems.
 #ifdef PERGRO
@@ -1178,7 +1164,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! more protection (pjr)
 !         flxsnow(i,k+1) = min(flxsnow(i,k+1), flxprec(i,k+1))
 
-! heating (cooling) and moistening due to evaporation 
+! heating (cooling) and moistening due to evaporation
 ! - latent heat of vaporization for precip production has already been accounted for
 ! - snow is contained in prec
           tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
@@ -1203,19 +1189,19 @@ subroutine convtran(lchnk   , &
                     du      ,eu      ,ed      ,dp      ,dsubcld , &
                     jt      ,mx      ,ideep   ,il1g    ,il2g    , &
                     nstep   ,fracis  ,dqdt    ,dpdry   )
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 ! Convective transport of trace species
 !
 ! Mixing ratios may be with respect to either dry or moist air
-! 
-! Method: 
-! <Describe the algorithm(s) used in the routine.> 
-! <Also include any applicable external references.> 
-! 
+!
+! Method:
+! <Describe the algorithm(s) used in the routine.>
+! <Also include any applicable external references.>
+!
 ! Author: P. Rasch
-! 
+!
 !-----------------------------------------------------------------------
 !   use constituents,    only: cnst_get_type_byind
 !   use ppgrid
@@ -1306,7 +1292,7 @@ subroutine convtran(lchnk   , &
       if (doconvtran(m)) then
 
 !         TODO: Meredith Fossitt, find a way to sub dependency for
-!         cnst_get_type_blind       
+!         cnst_get_type_blind
 !         if (cnst_get_type_byind(m).eq.'dry') then
           if (.true.) then
             do k = 1,pver
@@ -1502,19 +1488,19 @@ subroutine momtran(lchnk, ncol, &
                     du      ,eu      ,ed      ,dp      ,dsubcld , &
                     jt      ,mx      ,ideep   ,il1g    ,il2g    , &
                     nstep   ,dqdt    ,pguall     ,pgdall, icwu, icwd, dt, seten    )
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 ! Convective transport of momentum
 !
 ! Mixing ratios may be with respect to either dry or moist air
-! 
-! Method: 
+!
+! Method:
 ! Based on the convtran subroutine by P. Rasch
-! <Also include any applicable external references.> 
-! 
+! <Also include any applicable external references.>
+!
 ! Author: J. Richter and P. Rasch
-! 
+!
 !-----------------------------------------------------------------------
    use physics_utils, only: r8 => rtype, rtype8, itype, btype
 !   use constituents,    only: cnst_get_type_byind
@@ -1566,9 +1552,6 @@ subroutine momtran(lchnk, ncol, &
    integer m                 ! Work index
    integer ii                 ! Work index
 
-   real(r8) cabv                 ! Mix ratio of constituent above
-   real(r8) cbel                 ! Mix ratio of constituent below
-   real(r8) cdifr                ! Normalized diff between cabv and cbel
    real(r8) chat(pcols,pver)     ! Mix ratio in env at interfaces
    real(r8) cond(pcols,pver)     ! Mix ratio in downdraft at interfaces
    real(r8) const(pcols,pver)    ! Gathered wind array
@@ -1577,17 +1560,12 @@ subroutine momtran(lchnk, ncol, &
    real(r8) small                ! A small number
    real(r8) mbsth                ! Threshold for mass fluxes
    real(r8) mupdudp              ! A work variable
-   real(r8) minc                 ! A work variable
-   real(r8) maxc                 ! A work variable
-   real(r8) fluxin               ! A work variable
-   real(r8) fluxout              ! A work variable
-   real(r8) netflux              ! A work variable
 
    real(r8) momcu                ! constant for updraft pressure gradient term
    real(r8) momcd                ! constant for downdraft pressure gradient term
    real(r8) sum                  ! sum
    real(r8) sum2                  ! sum2
- 
+
    real(r8) mududp(pcols,pver) ! working variable
    real(r8) mddudp(pcols,pver)     ! working variable
 
@@ -1608,7 +1586,7 @@ subroutine momtran(lchnk, ncol, &
    real(r8)  wind0(pcols,pver,ncnst)       !  gathered  wind before time step
    real(r8)  windf(pcols,pver,ncnst)       !  gathered  wind after time step
    real(r8) fkeb, fket, ketend_cons, ketend, utop, ubot, vtop, vbot, gset2
-   
+
 
 !-----------------------------------------------------------------------
 !
@@ -1684,9 +1662,9 @@ subroutine momtran(lchnk, ncol, &
 
 !
 ! Pressure Perturbation Term
-! 
+!
 
-      !Top boundary:  assume mu is zero 
+      !Top boundary:  assume mu is zero
 
          k=1
          pgu(:il2g,k) = 0.0_r8
@@ -1696,14 +1674,14 @@ subroutine momtran(lchnk, ncol, &
             km1 = max(1,k-1)
             kp1 = min(pver,k+1)
             do i = il1g,il2g
-            
+
                !interior points
 
                mududp(i,k) =  ( mu(i,k) * (const(i,k)- const(i,km1))/dp(i,km1) &
                            +  mu(i,kp1) * (const(i,kp1) - const(i,k))/dp(i,k))
 
                pgu(i,k) = - momcu * 0.5_r8 * mududp(i,k)
-                           
+
 
                mddudp(i,k) =  ( md(i,k) * (const(i,k)- const(i,km1))/dp(i,km1) &
                            +  md(i,kp1) * (const(i,kp1) - const(i,k))/dp(i,k))
@@ -1714,20 +1692,20 @@ subroutine momtran(lchnk, ncol, &
             end do
          end do
 
-       ! bottom boundary 
+       ! bottom boundary
        k = pver
        km1 = max(1,k-1)
        do i=il1g,il2g
 
           mududp(i,k) =   mu(i,k) * (const(i,k)- const(i,km1))/dp(i,km1)
           pgu(i,k) = - momcu *  mududp(i,k)
-          
-          mddudp(i,k) =   md(i,k) * (const(i,k)- const(i,km1))/dp(i,km1) 
+
+          mddudp(i,k) =   md(i,k) * (const(i,k)- const(i,km1))/dp(i,km1)
 
           pgd(i,k) = - momcd * mddudp(i,k)
-          
+
        end do
-       
+
 
 !
 ! In-cloud velocity calculations
@@ -1741,14 +1719,14 @@ subroutine momtran(lchnk, ncol, &
          do i = il1g,il2g
             mupdudp = mu(i,kk) + du(i,kk)*dp(i,kk)
             if (mupdudp > mbsth) then
-                 
+
                conu(i,kk) = (+eu(i,kk)*const(i,kk)*dp(i,kk)+pgu(i,kk)*dp(i,kk))/mupdudp
             endif
             if (md(i,k) < -mbsth) then
                cond(i,k) =  (-ed(i,km1)*const(i,km1)*dp(i,km1))-pgd(i,km1)*dp(i,km1)/md(i,k)
             endif
 
-                        
+
          end do
 
 
@@ -1760,7 +1738,7 @@ subroutine momtran(lchnk, ncol, &
             do i = il1g,il2g
                mupdudp = mu(i,kk) + du(i,kk)*dp(i,kk)
                if (mupdudp > mbsth) then
-            
+
                   conu(i,kk) = (  mu(i,kkp1)*conu(i,kkp1)+eu(i,kk)* &
                                   const(i,kk)*dp(i,kk)+pgu(i,kk)*dp(i,kk))/mupdudp
                endif
@@ -1774,7 +1752,7 @@ subroutine momtran(lchnk, ncol, &
             km1 = max(1,k-1)
             do i = il1g,il2g
                if (md(i,k) < -mbsth) then
-                            
+
                   cond(i,k) =  (  md(i,km1)*cond(i,km1)-ed(i,km1)*const(i,km1) &
                                   *dp(i,km1)-pgd(i,km1)*dp(i,km1) )/md(i,k)
 
@@ -1792,7 +1770,7 @@ subroutine momtran(lchnk, ncol, &
             kp1 = min(pver,k+1)
             do i = il1g,il2g
                ii = ideep(i)
-	
+
 ! version 1 hard to check for roundoff errors
                dcondt(i,k) =  &
                            +(mu(i,kp1)* (conu(i,kp1)-chat(i,kp1)) &
@@ -1813,7 +1791,7 @@ subroutine momtran(lchnk, ncol, &
                 if (k == mx(i)) then
 
                    ! version 1
-                   dcondt(i,k) = (1._r8/dp(i,k))*   &  
+                   dcondt(i,k) = (1._r8/dp(i,k))*   &
                         (-mu(i,k)*(conu(i,k)-chat(i,k)) &
                         -md(i,k)*(cond(i,k)-chat(i,k)) &
                         )
@@ -1836,7 +1814,7 @@ subroutine momtran(lchnk, ncol, &
             end do
          end do
 
-          ! Calculate momentum flux in units of mb*m/s2 
+          ! Calculate momentum flux in units of mb*m/s2
 
           do k = ktm,pver
              do i = il1g,il2g
@@ -1848,7 +1826,7 @@ subroutine momtran(lchnk, ncol, &
           end do
 
 
-          ! Calculate winds at the end of the time step 
+          ! Calculate winds at the end of the time step
 
           do k = ktm,pver
              do i = il1g,il2g
@@ -1874,7 +1852,7 @@ subroutine momtran(lchnk, ncol, &
 
           ii = ideep(i)
 
-          ! calculate the KE fluxes at top and bot of layer 
+          ! calculate the KE fluxes at top and bot of layer
           ! based on a discrete approximation to b&b eq(35) F_KE = u*F_u + v*F_v at interface
           utop = (wind0(i,k,1)+wind0(i,km1,1))/2._r8
           vtop = (wind0(i,k,2)+wind0(i,km1,2))/2._r8
@@ -1908,7 +1886,7 @@ subroutine momtran(lchnk, ncol, &
 
    return
 end subroutine momtran
-!endif  
+!endif
 ! AaronDonahue - skip convtran and momtran for now
 !=========================================================================================
 
@@ -1918,20 +1896,20 @@ subroutine buoyan(lchnk   ,ncol    , &
                   pblt    ,lcl     ,lel     ,lon     ,mx      , &
                   rd      ,grav    ,cp      ,msg     , &
                   tpert   )
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! <Say what the routine does> 
-! 
-! Method: 
-! <Describe the algorithm(s) used in the routine.> 
-! <Also include any applicable external references.> 
-! 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! <Say what the routine does>
+!
+! Method:
+! <Describe the algorithm(s) used in the routine.>
+! <Also include any applicable external references.>
+!
 ! Author:
 ! This is contributed code not fully standardized by the CCM core group.
 ! The documentation has been enhanced to the degree that we are able.
 ! Reviewed:          P. Rasch, April 1996
-! 
+!
 !-----------------------------------------------------------------------
    implicit none
 !-----------------------------------------------------------------------
@@ -2229,15 +2207,15 @@ subroutine cldprp(lchnk   , &
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac,  &
                   hu_nm1, tpert  )
 !>songxl 2014-05-20-------
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! <Say what the routine does> 
-! 
-! Method: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! <Say what the routine does>
+!
+! Method:
 ! may 09/91 - guang jun zhang, m.lazare, n.mcfarlane.
 !             original version cldprop.
-! 
+!
 ! Author: See above, modified by P. Rasch
 ! This is contributed code not fully standardized by the CCM core group.
 !
@@ -2377,7 +2355,7 @@ subroutine cldprp(lchnk   , &
       ftemp(i) = 0._r8
       expnum(i) = 0._r8
       expdif(i) = 0._r8
-      c0mask(i)  = c0_ocn * (1._r8-landfrac(i)) +   c0_lnd * landfrac(i) 
+      c0mask(i)  = c0_ocn * (1._r8-landfrac(i)) +   c0_lnd * landfrac(i)
    end do
 !
 !jr Change from msg+1 to 1 to prevent blowup
@@ -2561,7 +2539,7 @@ subroutine cldprp(lchnk   , &
                         hsat(i,k)* (z(i,k-1)-zf(i,k)))/(z(i,k-1)-z(i,k))
          end if
          if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. &
-	     k1(i,k) > expnum(i)*dz(i,k)) then
+            k1(i,k) > expnum(i)*dz(i,k)) then
             ftemp(i) = expnum(i)/k1(i,k)
             f(i,k) = ftemp(i) + i2(i,k)/k1(i,k)*ftemp(i)**2 + &
                      (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2* &
@@ -2681,8 +2659,8 @@ subroutine cldprp(lchnk   , &
       do i=1,il2g
          if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
            if(trigmem)then
-  	     if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) &
-	       .and. mu(i,k) >= 0.02_r8) then
+             if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) &
+                  .and. mu(i,k) >= 0.02_r8) then
                if (hu(i,k)-hsthat(i,k) < -2000._r8) then
                   jt(i) = k + 1
                   doit(i) = .false.
@@ -2704,8 +2682,8 @@ subroutine cldprp(lchnk   , &
                end if
              end if
            else ! not trigmem
-  	     if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) &
-	       .and. mu(i,k) >= 0.02_r8) then
+             if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) &
+                  .and. mu(i,k) >= 0.02_r8) then
                if (hu(i,k)-hsthat(i,k) < -2000._r8) then
                   jt(i) = k + 1
                   doit(i) = .false.
@@ -2718,7 +2696,7 @@ subroutine cldprp(lchnk   , &
                doit(i) = .false.
              end if
           end if ! end trigmem
-!>songxl 2014-06-20------------------------ 
+!>songxl 2014-06-20------------------------
          end if
       end do
    end do
@@ -2750,7 +2728,7 @@ subroutine cldprp(lchnk   , &
 !
 ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
 !
-      alfa(i) = alfa_scalar 
+      alfa(i) = alfa_scalar
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
@@ -2954,15 +2932,15 @@ subroutine closure(lchnk   , &
                    lcl     ,lel     ,jt      ,mx      ,il1g    , &
                    il2g    ,rd      ,grav    ,cp      ,rl      , &
                    msg     ,capelmt )
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! <Say what the routine does> 
-! 
-! Method: 
-! <Describe the algorithm(s) used in the routine.> 
-! <Also include any applicable external references.> 
-! 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! <Say what the routine does>
+!
+! Method:
+! <Describe the algorithm(s) used in the routine.>
+! <Also include any applicable external references.>
+!
 ! Author: G. Zhang and collaborators. CCM contact:P. Rasch
 ! This is contributed code not fully standardized by the CCM core group.
 !
@@ -2970,7 +2948,7 @@ subroutine closure(lchnk   , &
 ! We expect to release cleaner code in a future release
 !
 ! the documentation has been enhanced to the degree that we are able
-! 
+!
 !-----------------------------------------------------------------------
 
    implicit none
@@ -3170,17 +3148,17 @@ subroutine q1q2_pjr(lchnk   , &
 
    implicit none
 
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
-! <Say what the routine does> 
-! 
-! Method: 
-! <Describe the algorithm(s) used in the routine.> 
-! <Also include any applicable external references.> 
-! 
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! <Say what the routine does>
+!
+! Method:
+! <Describe the algorithm(s) used in the routine.>
+! <Also include any applicable external references.>
+!
 ! Author: phil rasch dec 19 1995
-! 
+!
 !-----------------------------------------------------------------------
 
 
@@ -3293,30 +3271,30 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
                   pblt    ,lcl     ,lel     ,lon     ,mx      , &
                   rd      ,grav    ,cp      ,msg     , &
                   tpert   ,iclosure)
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 ! Calculates CAPE the lifting condensation level and the convective top
 ! where buoyancy is first -ve.
-! 
+!
 ! Method: Calculates the parcel temperature based on a simple constant
 ! entraining plume model. CAPE is integrated from buoyancy.
-! 09/09/04 - Simplest approach using an assumed entrainment rate for 
-!            testing (dmpdp). 
-! 08/04/05 - Swap to convert dmpdz to dmpdp  
+! 09/09/04 - Simplest approach using an assumed entrainment rate for
+!            testing (dmpdp).
+! 08/04/05 - Swap to convert dmpdz to dmpdp
 !
-! SCAM Logical Switches - DILUTE:RBN - Now Disabled 
+! SCAM Logical Switches - DILUTE:RBN - Now Disabled
 ! ---------------------
 ! switch(1) = .T. - Uses the dilute parcel calculation to obtain tendencies.
 ! switch(2) = .T. - Includes entropy/q changes due to condensate loss and freezing.
 ! switch(3) = .T. - Adds the PBL Tpert for the parcel temperature at all levels.
-! 
+!
 ! References:
-! Raymond and Blythe (1992) JAS 
-! 
+! Raymond and Blythe (1992) JAS
+!
 ! Author:
 ! Richard Neale - September 2004
-! 
+!
 !-----------------------------------------------------------------------
    implicit none
 !-----------------------------------------------------------------------
@@ -3353,14 +3331,9 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8) tpv(pcols,pver)      !
    real(r8) buoy(pcols,pver)
 
-   real(r8) a1(pcols)
-   real(r8) a2(pcols)
-   real(r8) estp(pcols)
    real(r8) pl(pcols)
-   real(r8) plexp(pcols)
    real(r8) hmax(pcols)
    real(r8) hmn(pcols)
-   real(r8) y(pcols)
 
    logical plge600(pcols)
    integer knt(pcols)
@@ -3370,7 +3343,6 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8) pblt600(pcols)
 
    real(r8) cp
-   real(r8) e
    real(r8) grav
 
    integer i
@@ -3515,7 +3487,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
             buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add  ! +0.5K or not?
          else
             qstp(i,k) = q(i,k)
-            tp(i,k)   = t(i,k)            
+            tp(i,k)   = t(i,k)
             tpv(i,k)  = tv(i,k)
          endif
       end do
@@ -3576,7 +3548,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 end subroutine buoyan_dilute
 
 subroutine parcel_dilute (lchnk, ncol, msg, klaunch, p, t, q, tpert, tp, tpv, qstp, pl, tl, lcl)
-! Routine  to determine 
+! Routine  to determine
 !   1. Tp   - Parcel temperature
 !   2. qstp - Saturated mixing ratio at the parcel temperature.
 
@@ -3598,7 +3570,7 @@ real(r8), intent(in), dimension(pcols) :: tpert ! PBL temperature perturbation.
 real(r8), intent(inout), dimension(pcols,pver) :: tp    ! Parcel temp.
 real(r8), intent(inout), dimension(pcols,pver) :: qstp  ! Parcel water vapour (sat value above lcl).
 real(r8), intent(inout), dimension(pcols) :: tl         ! Actual temp of LCL.
-real(r8), intent(inout), dimension(pcols) :: pl          ! Actual pressure of LCL. 
+real(r8), intent(inout), dimension(pcols) :: pl          ! Actual pressure of LCL.
 
 integer, intent(inout), dimension(pcols) :: lcl ! Lifting condesation level (first model level with saturation).
 
@@ -3658,7 +3630,7 @@ integer i,k,ii   ! Loop counters.
 !  9/9/04 - Assumes parcel is initiated from level of maxh (klaunch)
 !           and entrains at each level with a specified entrainment rate.
 !
-! 15/9/04 - Calculates lcl(i) based on k where qsmix is first < qtmix.          
+! 15/9/04 - Calculates lcl(i) based on k where qsmix is first < qtmix.
 !
 !======================================================================
 !
@@ -3694,14 +3666,14 @@ new_s = 0._r8
 ! **** Begin loops ****
 
 do k = pver, msg+1, -1
-   do i=1,ncol 
+   do i=1,ncol
 
 ! Initialize parcel values at launch level.
 
-      if (k == klaunch(i)) then 
+      if (k == klaunch(i)) then
          qtp0(i) = q(i,k)   ! Parcel launch total water (assuming subsaturated) - OK????.
          sp0(i)  = entropy(t(i,k),p(i,k),qtp0(i))  ! Parcel launch entropy.
-         mp0(i)  = 1._r8       ! Parcel launch relative mass (i.e. 1 parcel stays 1 parcel for dmpdp=0, undilute). 
+         mp0(i)  = 1._r8       ! Parcel launch relative mass (i.e. 1 parcel stays 1 parcel for dmpdp=0, undilute).
          smix(i,k)  = sp0(i)
          qtmix(i,k) = qtp0(i)
          tfguess = t(i,k)
@@ -3710,17 +3682,17 @@ do k = pver, msg+1, -1
       end if
 
 ! Entraining levels
-      
-      if (k < klaunch(i)) then 
 
-! Set environmental values for this level.                 
-         
+      if (k < klaunch(i)) then
+
+! Set environmental values for this level.
+
          dp = (p(i,k)-p(i,k+1)) ! In -ve mb as p decreasing with height - difference between center of layers.
          qtenv = 0.5_r8*(q(i,k)+q(i,k+1))         ! Total water of environment.
-         tenv  = 0.5_r8*(t(i,k)+t(i,k+1)) 
+         tenv  = 0.5_r8*(t(i,k)+t(i,k+1))
          penv  = 0.5_r8*(p(i,k)+p(i,k+1))
 
-         senv  = entropy(tenv,penv,qtenv)  ! Entropy of environment.   
+         senv  = entropy(tenv,penv,qtenv)  ! Entropy of environment.
 
 ! Determine fractional entrainment rate /pa given value /m.
 
@@ -3732,10 +3704,10 @@ do k = pver, msg+1, -1
 ! entrains q,s out of intervening dp layers, in which linear variation is assumed
 ! so really it entrains the mean of the 2 stored values.
 
-         sp(i)  = sp(i)  - dmpdp*dp*senv 
-         qtp(i) = qtp(i) - dmpdp*dp*qtenv 
+         sp(i)  = sp(i)  - dmpdp*dp*senv
+         qtp(i) = qtp(i) - dmpdp*dp*qtenv
          mp(i)  = mp(i)  - dmpdp*dp
-            
+
 ! Entrain s and qt to next level.
 
          smix(i,k)  = (sp0(i)  +  sp(i)) / (mp0(i) + mp(i))
@@ -3746,7 +3718,7 @@ do k = pver, msg+1, -1
 
          tfguess = tmix(i,k+1)
          rcall = 2
-         call ientropy(rcall,i,lchnk,smix(i,k),p(i,k),qtmix(i,k),tmix(i,k),qsmix(i,k),tfguess)   
+         call ientropy(rcall,i,lchnk,smix(i,k),p(i,k),qtmix(i,k),tmix(i,k),qsmix(i,k),tfguess)
 
 !
 ! Determine if this is lcl of this column if qsmix <= qtmix.
@@ -3760,7 +3732,7 @@ do k = pver, msg+1, -1
             pl(i)  = p(i,k+1) - qxskp1/dqxsdp    ! pressure level of actual lcl.
             dsdp   = (smix(i,k)  - smix(i,k+1))/dp
             dqtdp  = (qtmix(i,k) - qtmix(i,k+1))/dp
-            slcl   = smix(i,k+1)  +  dsdp* (pl(i)-p(i,k+1))  
+            slcl   = smix(i,k+1)  +  dsdp* (pl(i)-p(i,k+1))
             qtlcl  = qtmix(i,k+1) +  dqtdp*(pl(i)-p(i,k+1))
 
             tfguess = tmix(i,k)
@@ -3775,10 +3747,10 @@ do k = pver, msg+1, -1
 !            write(iulog,*)'qs',qsmix(i,k+1),qslcl,qsmix(i,lcl(i))
 
          endif
-!         
+!
       end if !  k < klaunch
 
- 
+
    end do ! Levels loop
 end do ! Columns loop
 
@@ -3788,15 +3760,15 @@ end do ! Columns loop
 !! without the effects of freezing/condensation taken into account for tmix.
 
 !! So we now have a profile of entropy and total water of the entraining parcel
-!! Varying with height from the launch level klaunch parcel=environment. To the 
+!! Varying with height from the launch level klaunch parcel=environment. To the
 !! top allowed level for the existence of convection.
 
-!! Now we have to adjust these values such that the water held in vaopor is < or 
+!! Now we have to adjust these values such that the water held in vaopor is < or
 !! = to qsmix. Therefore, we assume that the cloud holds a certain amount of
-!! condensate (lwmax) and the rest is rained out (xsh2o). This, obviously 
-!! provides latent heating to the mixed parcel and so this has to be added back 
+!! condensate (lwmax) and the rest is rained out (xsh2o). This, obviously
+!! provides latent heating to the mixed parcel and so this has to be added back
 !! to it. But does this also increase qsmix as well? Also freezing processes
- 
+
 
 xsh2o = 0._r8
 ds_xsh2o = 0._r8
@@ -3808,50 +3780,50 @@ ds_freeze = 0._r8
 
 
 do k = pver, msg+1, -1
-   do i=1,ncol    
-      
+   do i=1,ncol
+
 ! Initialize variables at k=klaunch
-      
+
       if (k == klaunch(i)) then
 
-! Set parcel values at launch level assume no liquid water.            
+! Set parcel values at launch level assume no liquid water.
 
          tp(i,k)    = tmix(i,k)
-         qstp(i,k)  = q(i,k) 
+         qstp(i,k)  = q(i,k)
          tpv(i,k)   =  (tp(i,k) + tp_fac*tpert(i)) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+qstp(i,k))
-         
+
       end if
 
       if (k < klaunch(i)) then
-            
+
 ! Initiaite loop if switch(2) = .T. - RBN:DILUTE - TAKEN OUT BUT COULD BE RETURNED LATER.
 
 ! Iterate nit_lheat times for s,qt changes.
 
-         do ii=0,nit_lheat-1            
+         do ii=0,nit_lheat-1
 
 ! Rain (xsh2o) is excess condensate, bar LWMAX (Accumulated loss from qtmix).
 
             xsh2o(i,k) = max (0._r8, qtmix(i,k) - qsmix(i,k) - lwmax)
 
-! Contribution to ds from precip loss of condensate (Accumulated change from smix).(-ve)                     
-                     
+! Contribution to ds from precip loss of condensate (Accumulated change from smix).(-ve)
+
             ds_xsh2o(i,k) = ds_xsh2o(i,k+1) - cpliq * log (tmix(i,k)/tfreez) * max(0._r8,(xsh2o(i,k)-xsh2o(i,k+1)))
 !
 ! Entropy of freezing: latice times amount of water involved divided by T.
 !
- 
-            if (tmix(i,k) <= tfreez+tscool .and. ds_freeze(i,k+1) == 0._r8) then ! One off freezing of condensate. 
+
+            if (tmix(i,k) <= tfreez+tscool .and. ds_freeze(i,k+1) == 0._r8) then ! One off freezing of condensate.
                ds_freeze(i,k) = (latice/tmix(i,k)) * max(0._r8,qtmix(i,k)-qsmix(i,k)-xsh2o(i,k)) ! Gain of LH
             end if
-            
+
             if (tmix(i,k) <= tfreez+tscool .and. ds_freeze(i,k+1) /= 0._r8) then ! Continual freezing of additional condensate.
                ds_freeze(i,k) = ds_freeze(i,k+1)+(latice/tmix(i,k)) * max(0._r8,(qsmix(i,k+1)-qsmix(i,k)))
             end if
-            
+
 ! Adjust entropy and accordingly to sum of ds (be careful of signs).
 
-            new_s = smix(i,k) + ds_xsh2o(i,k) + ds_freeze(i,k) 
+            new_s = smix(i,k) + ds_xsh2o(i,k) + ds_freeze(i,k)
 
 ! Adjust liquid water and accordingly to xsh2o.
 
@@ -3862,11 +3834,11 @@ do k = pver, msg+1, -1
             tfguess = tmix(i,k)
             rcall =4
             call ientropy (rcall,i,lchnk,new_s, p(i,k), new_q, tmix(i,k), qsmix(i,k), tfguess)
-            
+
          end do  ! Iteration loop for freezing processes.
 
 ! tp  - Parcel temp is temp of mixture.
-! tpv - Parcel v. temp should be density temp with new_q total water. 
+! tpv - Parcel v. temp should be density temp with new_q total water.
 
          tp(i,k)    = tmix(i,k)
 
@@ -3878,12 +3850,12 @@ do k = pver, msg+1, -1
             qstp(i,k) = new_q
          end if
 
-         tpv(i,k) = (tp(i,k)+tp_fac*tpert(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q) 
+         tpv(i,k) = (tp(i,k)+tp_fac*tpert(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q)
 
       end if ! k < klaunch
-      
+
    end do ! Loop for columns
-   
+
 end do  ! Loop for vertical levels.
 
 
@@ -3918,17 +3890,17 @@ end FUNCTION entropy
 SUBROUTINE ientropy (rcall,icol,lchnk,s,p,qt,T,qst,Tfg)
 !-----------------------------------------------------------------------------------------
 !
-! p(mb), Tfg/T(K), qt/qv(kg/kg), s(J/kg). 
-! Inverts entropy, pressure and total water qt 
+! p(mb), Tfg/T(K), qt/qv(kg/kg), s(J/kg).
+! Inverts entropy, pressure and total water qt
 ! for T and saturated vapor mixing ratio
-! 
+!
 
 !  use phys_grid, only: get_rlon_p, get_rlat_p
 
   integer, intent(in) :: icol, lchnk, rcall
   real(r8), intent(in)  :: s, p, Tfg, qt
   real(r8), intent(out) :: qst, T
-  real(r8) :: est, this_lat,this_lon
+  real(r8) :: est
   real(r8) :: a,b,c,d,ebr,fa,fb,fc,pbr,qbr,rbr,sbr,tol1,xm,tol
   integer :: i
 
@@ -3945,8 +3917,8 @@ SUBROUTINE ientropy (rcall,icol,lchnk,s,p,qt,T,qst,Tfg)
 
   T = Tfg                  ! Better first guess based on Tprofile from conv.
 
-  a = Tfg-10			!low bracket
-  b = Tfg+10			!high bracket
+  a = Tfg-10               !low bracket
+  b = Tfg+10               !high bracket
 
   fa = entropy(a, p, qt) - s
   fb = entropy(b, p, qt) - s
@@ -4059,13 +4031,13 @@ function is_first_restart_step() result(val)
   val = .false.
 end function is_first_restart_step
 ! AaronDonahue - Taken from cloud_fraction.F90 and adapted for local use.
-! TODO, we should probably use the ice cloud fraction from macrophysics 
+! TODO, we should probably use the ice cloud fraction from macrophysics
   subroutine cldfrc_fice(ncol, t, fice, fsnow)
 !
 ! Compute the fraction of the total cloud water which is in ice phase.
-! The fraction depends on temperature only. 
+! The fraction depends on temperature only.
 ! This is the form that was used for radiation, the code came from cldefr originally
-! 
+!
 ! Author: B. A. Boville Sept 10, 2002
 !  modified: PJR 3/13/03 (added fsnow to ascribe snow production for convection )
 !
@@ -4113,7 +4085,7 @@ end function is_first_restart_step
              fice(i,k) = 1.0_r8
 
 ! Otherwise mixed phase, with ice fraction decreasing linearly from tmin to tmax
-          else 
+          else
              fice(i,k) =(tmax_fice - t(i,k)) / (tmax_fice - tmin_fice)
           end if
 
@@ -4128,7 +4100,7 @@ end function is_first_restart_step
              fsnow(i,k) = 1.0_r8
 
 ! Otherwise mixed phase, with ice fraction decreasing linearly from tmin to tmax
-          else 
+          else
              fsnow(i,k) =(tmax_fsnow - t(i,k)) / (tmax_fsnow - tmin_fsnow)
           end if
 
@@ -4158,7 +4130,7 @@ end function is_first_restart_step
     real(r8), intent(IN)    :: t_atm  !temperature [K]
     real(r8), intent(IN)    :: p_atm  !pressure    [Pa]
     real(r8), intent(OUT)   :: e_pres         !saturation vapor pressure [Pa]
-    real(r8), intent(OUT)   :: qv_sat         !saturation mixing ratio         
+    real(r8), intent(OUT)   :: qv_sat         !saturation mixing ratio
     integer, intent(IN)        :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:

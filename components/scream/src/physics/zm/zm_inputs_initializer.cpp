@@ -10,21 +10,21 @@ namespace scream
 {
 
 using namespace std;
-std::vector<string> zm_inputs = {"limcnv_in", "no_deep_pbl_in","lchnk", "ncol", "t", "qh", "prec", 
-			"jctop", "jcbot", "pblh", "zm", "geos", "zi", "qtnd", "heat", 
+std::vector<string> zm_inputs = {"limcnv_in", "no_deep_pbl_in","lchnk", "ncol", "t", "qh", "prec",
+			"jctop", "jcbot", "pblh", "zm", "geos", "zi", "qtnd", "heat",
 			"pap", "paph", "dpp", "delt", "mcon", "cme", "cape", "tpert",
-			"dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed", 
-			"dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql", 
-			"rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star", 
-			"q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow", 
-			"ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall", 
+			"dlf", "pflx", "zdu", "rprd", "mu", "md", "du", "eu", "ed",
+			"dp", "dsubcld", "jt", "maxg", "ideep", "lengath", "ql",
+			"rliq", "landfrac", "hu_nm1", "cnv_nm1", "tm1", "qm1", "t_star",
+			"q_star", "dcape", "q", "tend_s", "tend_q", "cld", "snow",
+			"ntprprd", "ztodt", "ntsnprd", "flxprec", "flxsnow", "pguall",
 			"pgdall", "icwu", "ncnst", "fracis"};
 
 
 const int INPUT_SIZE = 63;
 
 
-//Layout options are set as an int 
+//Layout options are set as an int
 //to be passed into the GridOpts struct
 const int SCALAR_3D_MID = 0;
 const int SCALAR_3D_INT = 1;
@@ -58,7 +58,7 @@ void set_grid_opts_helper(GridOpts O, string n, bool out, const Units* unit, int
 
 void set_grid_opts(){
 
-  // Declares the field structs 
+  // Declares the field structs
   GridOpts limcnv_in;
   GridOpts no_deep_pbl_in;
   GridOpts lchnk;
@@ -122,9 +122,9 @@ void set_grid_opts(){
   GridOpts icwu;
   GridOpts ncnst;
   GridOpts fracis;
-  
+
   // Sets the value of the grid opt struct categories
-  set_grid_opts_helper(limcnv_in, "limcnv_in", true, NULL, NULL);
+  set_grid_opts_helper(limcnv_in, "limcnv_in", true, NULL, 0);
   set_grid_opts_helper(no_deep_pbl_in, "no_deep_pbl_in", true, NULL, VECTOR_3D_MID);
   set_grid_opts_helper(lchnk, "lchnk", true, &Pa, SCALAR_3D_MID); //temperature(K)
   set_grid_opts_helper(ncol, "ncol", true, &Pa, SCALAR_3D_MID); //temperature(K)
@@ -187,12 +187,12 @@ void set_grid_opts(){
   set_grid_opts_helper(icwu, "icwu", true, NULL, VECTOR_3D_MID);
   set_grid_opts_helper(ncnst, "ncnst", true, NULL, VECTOR_3D_MID);
   set_grid_opts_helper(fracis, "fracis", true, NULL, VECTOR_3D_MID);
-} 
+}
 
 void ZMInputsInitializer::add_field (const field_type &f)
 {
   const auto& id = f.get_header().get_identifier();
-  
+
   m_fields.emplace(id.name(),f);
   m_fields_id.insert(id);
 }
@@ -234,7 +234,7 @@ void ZMInputsInitializer :: initialize_fields(){
       return;
     }
   }
-  
+
 
     EKAT_REQUIRE_MSG (count==INPUT_SIZE,
     "Error! ZMInputsInitializer is expected to init _______________.\n"
@@ -258,5 +258,3 @@ void ZMInputsInitializer :: initialize_fields(){
 
 
 } // namespace scream
-
-

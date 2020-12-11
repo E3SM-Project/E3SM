@@ -1252,10 +1252,7 @@ void linear_interp_f(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, I
 {
   using SHF = Functions<Real, DefaultDevice>;
 
-  using Scalar     = typename SHF::Scalar;
   using Spack      = typename SHF::Spack;
-  using Pack1d     = typename ekat::Pack<Real,1>;
-  using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
@@ -1392,7 +1389,7 @@ void shoc_energy_integrals_f(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   });
 
   // Sync back to host
-  std::vector<view_2d> inout_views = {se_int_d, ke_int_d, wv_int_d, wl_int_d};
+  std::vector<view_1d> inout_views = {se_int_d, ke_int_d, wv_int_d, wl_int_d};
   ekat::device_to_host({se_int,ke_int,wv_int,wl_int}, shcol, inout_views);
 }
 
@@ -1466,7 +1463,6 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
           Real* wtke_sec, Real* w_sec)
 {
   using SHOC       = Functions<Real, DefaultDevice>;
-  using Scalar     = typename SHOC::Scalar;
   using Spack      = typename SHOC::Spack;
   using view_2d    = typename SHOC::view_2d<Spack>;
   using KT         = typename SHOC::KT;
@@ -1563,7 +1559,6 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
   using Scalar        = typename SHOC::Scalar;
   using Spack         = typename SHOC::Spack;
   using view_2d       = typename SHOC::view_2d<Spack>;
-  using view_1d       = typename SHOC::view_1d<Spack>;
   using KT            = typename SHOC::KT;
   using ExeSpace      = typename KT::ExeSpace;
   using MemberType    = typename SHOC::MemberType;
@@ -1772,8 +1767,8 @@ void check_length_scale_shoc_length_f(Int nlev, Int shcol, Real* host_dx, Real* 
   using MemberType = typename SHF::MemberType;
 
   // Sync to device
-  std::vector<view_1d, 2> temp_1d_d;
-  std::vector<view_2d, 1> temp_2d_d;
+  std::vector<view_1d> temp_1d_d(2);
+  std::vector<view_2d> temp_2d_d(1);
   ekat::host_to_device({host_dx,host_dy}, shcol, temp_1d_d);
   ekat::host_to_device({shoc_mix}, shcol, nlev, temp_2d_d, true);
 
@@ -1870,9 +1865,6 @@ void shoc_diag_obklen_f(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, R
   using Scalar     = typename SHF::Scalar;
   using Pack1d     = typename ekat::Pack<Real,1>;
   using view_1d    = typename SHF::view_1d<Pack1d>;
-  using KT         = typename SHF::KT;
-  using ExeSpace   = typename KT::ExeSpace;
-  using MemberType = typename SHF::MemberType;
 
   // Sync to device
   std::vector<view_1d> temp_d(7);
@@ -1939,7 +1931,7 @@ void shoc_pblintd_cldcheck_f(Int shcol, Int nlev, Int nlevi, Real* zi, Real* cld
     zi_2d  (cldcheck_2d[0]),
     cldn_2d(cldcheck_2d[1]);
 
-  std::vector<view_1d, 1> cldcheck_1d;
+  std::vector<view_1d> cldcheck_1d(1);
   ekat::host_to_device({pblh}, shcol, cldcheck_1d);
 
   view_1d pblh_1d (cldcheck_1d[0]);
@@ -2011,8 +2003,8 @@ void shoc_length_f(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
   std::vector<int> dim1_sizes(10, shcol);
   std::vector<int> dim2_sizes = {nlev, nlev, nlevi, nlev, nlevi,
                                  nlev, nlev, nlev,  nlev, nlev};
-  std::vector<const Real*, 10> ptr_array = {tke,      zt_grid, zi_grid, dz_zt, dz_zi,
-                                            wthv_sec, thetal,  thv,     brunt, shoc_mix};
+  std::vector<const Real*> ptr_array = {tke,      zt_grid, zi_grid, dz_zt, dz_zi,
+                                        wthv_sec, thetal,  thv,     brunt, shoc_mix};
   // Sync to device
   ekat::host_to_device({host_dx, host_dy, pblh}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
@@ -2881,7 +2873,7 @@ void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Rea
 
   std::vector<int> dim1_sizes(num_2d_arrays, shcol);
   std::vector<int> dim2_sizes = {nlevi, nlevi, nlev};
-  std::vector<const Real*, num_2d_arrays> ptr_array = {kv_term, tmpi, rdp_zt};
+  std::vector<const Real*> ptr_array = {kv_term, tmpi, rdp_zt};
 
   // Sync to device
   ekat::host_to_device({flux}, shcol, temp_1d_d);
@@ -2932,7 +2924,6 @@ void shoc_grid_f(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, R
 {
   using SHF = Functions<Real, DefaultDevice>;
 
-  using Scalar     = typename SHF::Scalar;
   using Spack      = typename SHF::Spack;
   using view_2d    = typename SHF::view_2d<Spack>;
   using KT         = typename SHF::KT;
@@ -2975,7 +2966,7 @@ void shoc_grid_f(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, R
 
   // Sync back to host
   std::vector<view_2d> inout_views = {dz_zt_d, dz_zi_d, rho_zt_d};
-  ekat::device_to_host({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views, true);
+  ekat::device_to_host<Int>({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views, true);
 }
 
 void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* zt_grid, Real* shoc_mix, Real* sterm_zt,

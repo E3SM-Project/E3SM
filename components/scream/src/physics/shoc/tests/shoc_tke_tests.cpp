@@ -70,8 +70,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real pblh = 1000;
     // Define pressure [Pa]
     Real pres[nlev] = {85000, 87500, 90000, 95000, 100000};
-    // Define brunt Vaisalla frequency
-    Real brunt[nlev] = {0.1, 0.1, 0.1, 0.1, 0.1};
 
     // Define TKE initial [m2/s2]
     Real tke_init[nlev] = {0.01, 0.01, 0.01, 0.01, 0.01};
