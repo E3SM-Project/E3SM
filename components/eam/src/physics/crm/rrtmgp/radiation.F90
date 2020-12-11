@@ -1286,8 +1286,8 @@ contains
                crm_qrs, crm_qrsc, crm_qrl, crm_qrlc
 
       ! Albedo for shortwave calculations
-      real(r8), dimension(nswbands,pcols) :: albedo_dir_col, albedo_dif_col, &
-                                             albedo_dir_day, albedo_dif_day
+      real(r8), dimension(nswbands,pcols,crm_nx_rad,crm_ny_rad) :: albedo_dir_col, albedo_dif_col
+      real(r8), dimension(nswbands,pcols) :: albedo_dir_day, albedo_dif_day
       real(r8), dimension(nswbands,pcols * crm_nx_rad * crm_ny_rad) :: &
                                              albedo_dir_all, albedo_dif_all
 
@@ -1439,11 +1439,11 @@ contains
 
                ! Get albedo. This uses CAM routines internally and just provides a
                ! wrapper to improve readability of the code here.
-               call set_albedo(cam_in, albedo_dir_col(1:nswbands,1:ncol), albedo_dif_col(1:nswbands,1:ncol))
+               call set_albedo(cam_in, albedo_dir_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad), albedo_dif_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad))
 
                ! Send albedos to history buffer (useful for debugging)
-               call outfld('SW_ALBEDO_DIR', transpose(albedo_dir_col(1:nswbands,1:ncol)), ncol, state%lchnk)
-               call outfld('SW_ALBEDO_DIF', transpose(albedo_dif_col(1:nswbands,1:ncol)), ncol, state%lchnk)
+               call outfld('SW_ALBEDO_DIR', transpose(albedo_dir_col(1:nswbands,1:ncol,1,1)), ncol, state%lchnk)
+               call outfld('SW_ALBEDO_DIF', transpose(albedo_dif_col(1:nswbands,1:ncol,1,1)), ncol, state%lchnk)
 
                ! Get cosine solar zenith angle for current time step, and send to
                ! history buffer
@@ -1582,6 +1582,7 @@ contains
                      ! Setup state arrays, which may contain an extra level
                      ! above model top to handle heating above the model
                      call t_startf('rad_set_state')
+                     ! Jungmin: Note: tint_col is converted from cam_in%lwup. Although lwup_mi (CRM level lwup) is present, tmid_col, pmid_col and pint_col are determined from the GCM physics state. For now, I leave tint_col as it is even for MAML case.
                      call set_rad_state(                                            &
                         state                      , cam_in                       , &
                         tmid_col(1:ncol,1:nlev_rad), tint_col(1:ncol,1:nlev_rad+1), &
@@ -1682,8 +1683,8 @@ contains
                      call t_startf('rad_pack_columns')
                      do ic = 1,ncol
                         coszrs_all(j) = coszrs(ic)
-                        albedo_dir_all(:,j) = albedo_dir_col(:,ic)
-                        albedo_dif_all(:,j) = albedo_dif_col(:,ic)
+                        albedo_dir_all(:,j) = albedo_dir_col(:,ic,ix,iy)
+                        albedo_dif_all(:,j) = albedo_dif_col(:,ic,ix,iy)
                         pmid(j,:) = pmid_col(ic,:)
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
@@ -1805,7 +1806,7 @@ contains
                call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
 
                ! Set surface fluxes that are used by the land model
-               call export_surface_fluxes(fluxes_allsky, cam_out, 'shortwave')
+               call export_surface_fluxes(fluxes_allsky, fluxes_allsky_all, cam_out, 'shortwave')
                
                ! Free memory allocated for shortwave fluxes
                call free_fluxes(fluxes_allsky)
@@ -1899,7 +1900,7 @@ contains
                call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
 
                ! Export surface fluxes that are used by the land model
-               call export_surface_fluxes(fluxes_allsky, cam_out, 'longwave')
+               call export_surface_fluxes(fluxes_allsky,fluxes_allsky_all, cam_out, 'longwave')
 
                ! Free memory allocated for fluxes
                call free_fluxes(fluxes_allsky)
@@ -2248,17 +2249,21 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine export_surface_fluxes(fluxes, cam_out, band)
+   subroutine export_surface_fluxes(fluxes, fluxes_all, cam_out, band)
       use mo_fluxes_byband, only: ty_fluxes_byband
       use camsrfexch, only: cam_out_t
 
-      type(ty_fluxes_byband), intent(in) :: fluxes
+      type(ty_fluxes_byband), intent(in) :: fluxes, fluxes_all
       type(cam_out_t), intent(inout) :: cam_out
       character(len=*), intent(in) :: band
-      integer :: icol
+      integer :: icol,j,ix,jx
       real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
                           size(fluxes%bnd_flux_dn,2), &
                           size(fluxes%bnd_flux_dn,3)) :: flux_dn_diffuse
+      
+      real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
+                          size(fluxes%bnd_flux_dn,2), &
+                          size(fluxes%bnd_flux_dn,3)) :: flux_all_dn_diffuse
 
       ! TODO: check this code! This seems to differ from what is in RRTMG. 
       !
@@ -2289,9 +2294,16 @@ contains
          cam_out%sols = 0
          cam_out%solld = 0
          cam_out%solsd = 0
+         
+         ! Reset fluxes - for MAML
+         cam_out%soll_mi = 0
+         cam_out%sols_mi = 0
+         cam_out%solld_mi = 0
+         cam_out%solsd_mi = 0
 
          ! Calculate diffuse flux from total and direct
          flux_dn_diffuse = fluxes%bnd_flux_dn - fluxes%bnd_flux_dn_dir
+         flux_all_dn_diffuse = fluxes_all%bnd_flux_dn - fluxes_all%bnd_flux_dn_dir
 
          ! Calculate broadband surface solar fluxes (UV/visible vs near IR) for
          ! each column.
@@ -2316,10 +2328,62 @@ contains
             ! Net shortwave flux at surface
             cam_out%netsw(icol) = fluxes%flux_net(icol,kbot+1)
          end do
+         
+         ! Jungmin. Calculate broadband surface solar fluxes (UV/visible vs near IR) for
+         ! each radiation column and unpack it to the CRM-level
+         if(num_inst_atm.eq.1) then ! for non-MAML case.
+            ! copy GCM columm level fluxes to CRM column level fluxes
+            do icol = 1, size(fluxes%bnd_flux_dn,1)
+               cam_out%sols_mi(icol,:) = cam_out%sols(icol)
+               cam_out%soll_mi(icol,:) = cam_out%soll(icol)
+               cam_out%solld_mi(icol,:) = cam_out%solld(icol)
+               cam_out%solsd_mi(icol,:) = cam_out%solsd(icol)
+            end do ! icol = 1, ncol
+         else
+            ! For MAML case, unpack radiation column level fluxes to CRM level fluxes
+            j = 1
+            do iy = 1,crm_ny_rad
+               do ix = 1,crm_nx_rad
+                  do icol = 1,size(fluxes%bnd_flux_dn,1)
+                     ! Direct fluxes
+                     cam_out%soll_mi(icol,ix) &
+                        = sum(fluxes_all%bnd_flux_dn_dir(j,kbot+1,1:9)) &
+                        + 0.5_r8 * fluxes_all%bnd_flux_dn_dir(j,kbot+1,10)
+                     cam_out%sols_mi(icol,ix) &
+                        = 0.5_r8 * fluxes_all%bnd_flux_dn_dir(j,kbot+1,10) &
+                        + sum(fluxes_all%bnd_flux_dn_dir(j,kbot+1,11:14))
+
+                     ! Diffuse fluxes
+                     cam_out%solld_mi(icol,ix) &
+                        = sum(flux_all_dn_diffuse(j,kbot+1,1:9)) &
+                        + 0.5_r8 * flux_all_dn_diffuse(j,kbot+1,10)
+                     cam_out%solsd_mi(icol,ix) &
+                        = 0.5_r8 * flux_all_dn_diffuse(j,kbot+1,10) &
+                        + sum(flux_all_dn_diffuse(j,kbot+1,11:14))
+                     j = j+1
+                  end do ! icol
+               end do ! ix = 1, crm_nx_rad
+            end do ! iy = 1, crm_ny_rad
+         end if ! num_inst_atm.eq.1   
       else if (trim(band) == 'longwave') then
          do icol = 1,size(fluxes%flux_dn, 1)
             cam_out%flwds(icol) = fluxes%flux_dn(icol,kbot+1)
          end do
+         if(num_inst_atm.eq.1) then ! for non-MAML case
+            do icol = 1,size(fluxes%flux_dn, 1)
+               cam_out%flwds_mi(icol,:) = cam_out%flwds(icol)
+            end do   
+         else   
+            ! For MAML case, unpack radiation column level fluxes to CRM level fluxes
+            j = 1
+            do iy = 1,crm_ny_rad
+               do ix = 1,crm_nx_rad
+                  do icol = 1,size(fluxes%flux_dn,1)
+                     cam_out%flwds_mi(icol,ix) = fluxes_all%flux_dn(j,kbot+1)
+                  end do
+               end do
+            end do   
+         end if
       else
          call endrun('flux_type ' // band // ' not known.')
       end if
@@ -2511,14 +2575,16 @@ contains
       use radiation_utils, only: clip_values
 
       type(cam_in_t), intent(in) :: cam_in
-      real(r8), intent(inout) :: albedo_dir(:,:)   ! surface albedo, direct radiation
-      real(r8), intent(inout) :: albedo_dif(:,:)  ! surface albedo, diffuse radiation
+      real(r8), intent(inout) :: albedo_dir(:,:,:,:)   ! surface albedo, direct radiation
+      real(r8), intent(inout) :: albedo_dif(:,:,:,:)  ! surface albedo, diffuse radiation
 
       ! Local namespace
       real(r8) :: wavenumber_limits(2,nswbands)
       integer :: ncol, iband
       character(len=10) :: subname = 'set_albedo'
-
+      real(r8) :: area_factor, crm_nx_rad_fac, crm_ny_rad_fac
+      integer :: ii,jj, i_rad, j_rad
+      
       ! Check dimension sizes of output arrays.
       ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
       ! can change so we just check that it is less than or equal to pcols (the
@@ -2527,48 +2593,68 @@ contains
                   'set_albedo: size(albedo_dir, 1) /= nswbands')
       call assert(size(albedo_dir, 2) <= pcols, &
                   'set_albedo: size(albedo_dir, 2) > pcols')
+      call assert(size(albedo_dir, 3) <= pcols, &
+                  'set_albedo: size(albedo_dir, 3) = crm_nx_rad > num_inst_atm') ! For MAML
       call assert(all(shape(albedo_dir) == shape(albedo_dif)), &
                   'set_albedo: albedo_dir and albedo_dif have inconsistent shapes')
       
       ncol = size(albedo_dir, 2)
-
+      crm_nx_rad_fac = real(crm_nx_rad,r8)/real(crm_nx,r8)
+      crm_ny_rad_fac = real(crm_ny_rad,r8)/real(crm_ny,r8)
+      area_factor    = crm_nx_rad_fac * crm_ny_rad_fac
       ! Initialize albedo
-      albedo_dir(:,:) = 0._r8
-      albedo_dif(:,:) = 0._r8
+      albedo_dir(:,:,:,:) = 0._r8
+      albedo_dif(:,:,:,:) = 0._r8
 
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
       wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
 
-      ! Loop over bands, and determine for each band whether it is broadly in the
-      ! visible or infrared part of the spectrum (visible or "not visible")
-      do iband = 1,nswbands
-         if (is_visible(wavenumber_limits(1,iband)) .and. &
-             is_visible(wavenumber_limits(2,iband))) then
+      ! Jungmin : Loop over CRM level albedoes and make it into a packed array
+      do jj=1,crm_ny
+         do ii = 1, num_inst_atm
+            i_rad = (ii-1) / (num_inst_atm/crm_nx_rad) + 1
+            j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
+      
+            ! Loop over bands, and determine for each band whether it is broadly in the
+            ! visible or infrared part of the spectrum (visible or "not visible")
+            do iband = 1,nswbands
+               if (is_visible(wavenumber_limits(1,iband)) .and. &
+                   is_visible(wavenumber_limits(2,iband))) then
 
-            ! Entire band is in the visible
-            albedo_dir(iband,1:ncol) = cam_in%asdir(1:ncol)
-            albedo_dif(iband,1:ncol) = cam_in%asdif(1:ncol)
+                  ! Entire band is in the visible
+                  albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%asdir_mi(1:ncol,ii)
+                  albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%asdif_mi(1:ncol,ii)
 
-         else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
-                  .not.is_visible(wavenumber_limits(2,iband))) then
+               else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
+                        .not.is_visible(wavenumber_limits(2,iband))) then
 
-            ! Entire band is in the longwave (near-infrared)
-            albedo_dir(iband,1:ncol) = cam_in%aldir(1:ncol)
-            albedo_dif(iband,1:ncol) = cam_in%aldif(1:ncol)
+                  ! Entire band is in the longwave (near-infrared)
+                  albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%aldir_mi(1:ncol,ii)
+                  albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%aldif_mi(1:ncol,ii)
 
-         else
+               else
 
-            ! Band straddles the visible to near-infrared transition, so we take
-            ! the albedo to be the average of the visible and near-infrared
-            ! broadband albedos
-            albedo_dir(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-            albedo_dif(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+                  ! Band straddles the visible to near-infrared transition, so we take
+                  ! the albedo to be the average of the visible and near-infrared
+                  ! broadband albedos
+                  albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + &
+                                                         0.5 * (cam_in%aldir_mi(1:ncol,ii) + cam_in%asdir_mi(1:ncol,ii))
+                  albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + 0.5 * (cam_in%aldif_mi(1:ncol,ii) + cam_in%asdif_mi(1:ncol,ii))
 
-         end if
-      end do
+               end if
+            end do ! iband = 1, nswbands
+         end do! ii = 1, num_inst_atm
+      end do! jj = 1, crm_ny
+      albedo_dir(:,:,:,:) = albedo_dir(:,:,:,:) * area_factor 
+      albedo_dif(:,:,:,:) = albedo_dif(:,:,:,:) * area_factor 
 
+      if(num_inst_atm.eq.1) then
+         ! for non-MAML case
+         albedo_dir(:,:,2:,:) = albedo_dir(:,:,1,:)
+         albedo_dif(:,:,2:,:) = albedo_dif(:,:,1,:)
+      end if
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
       ! was never checked for RRTMG, so albedos will probably be slight different
