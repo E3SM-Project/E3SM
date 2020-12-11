@@ -7,12 +7,12 @@
 namespace scream {
 namespace physics {
 
-using PC = Constants<Real>;
 /*
  * Implementation of universal physics functions. Clients should NOT #include
  * this file, #include physics_functions.hpp instead.
  */
 
+//-----------------------------------------------------------------------------------------------//
 // Applies Exners Function which follows:
 //   Exner = (P/P0)^(Rd/Cp),
 // where,
@@ -27,7 +27,7 @@ typename Functions<S,D>::Spack
 Functions<S,D>::get_exner(const Spack& P, const Smask& range_mask)
 {
   Spack result;
-  const Spack exner = pow( P/PC::P0, PC::RD*PC::INV_CP );
+  const Spack exner = pow( P/C::P0, C::RD*C::INV_CP );
   // Check that there are no obvious errors in the result.
   auto is_nan_exner = isnan(exner) && range_mask;
   EKAT_KERNEL_REQUIRE_MSG(!(is_nan_exner.any()), "Error in get_exner, Exner has NaN values.\n"); // exit with an error message
@@ -37,7 +37,7 @@ Functions<S,D>::get_exner(const Spack& P, const Smask& range_mask)
   result.set(range_mask,exner);
   return result;
 }
-
+//-----------------------------------------------------------------------------------------------//
 // Converts temperature to potential temperature using Exners function:
 //   th_atm = T_atm/exner,
 // where
@@ -57,7 +57,7 @@ Functions<S,D>::T_to_th(const Spack& T_atm, const Spack& exner, const Smask& ran
   result.set(range_mask,th_atm);
   return result;
 }
-
+//-----------------------------------------------------------------------------------------------//
 // Converts potential temperature to temperature using Exners function:
 //   T_atm = th_atm*exner,
 // where
@@ -77,7 +77,7 @@ Functions<S,D>::th_to_T(const Spack& th_atm, const Spack& exner, const Smask& ra
   result.set(range_mask,T_atm);
   return result;
 }
-
+//-----------------------------------------------------------------------------------------------//
 // Determines the vertical layer thickness given the interface heights:
 //   dz = zi_top-zi_bot,
 // where
@@ -100,6 +100,7 @@ Functions<S,D>::get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& ra
   result.set(range_mask,dz);
   return result;
 }
+//-----------------------------------------------------------------------------------------------//
 
 
 } // namespace physics

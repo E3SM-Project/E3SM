@@ -131,6 +131,7 @@ struct Functions
   //   zi_bot is the distance above the surface of the bottom of the layer.  Units in m
   KOKKOS_FUNCTION
   static Spack get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& range_mask);
+
 };
 
 } // namespace physics
@@ -140,6 +141,7 @@ struct Functions
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
 # include "physics_saturation_impl.hpp"
+# include "physics_universal_impl.hpp"
 #endif
 
 #endif // PHYSICS_FUNCTIONS_HPP
