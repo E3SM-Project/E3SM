@@ -188,9 +188,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
     <append DEBUG="FALSE"> -O </append>
   </CXXFLAGS>
-  <CMAKE_OPTS>
-    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
@@ -494,7 +491,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
     <append compile_threaded="TRUE"> -mp </append>
-    <append COMP_NAME="cam"> </append>
+    <append COMP_NAME="eam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
     <append COMP_NAME="datm"> -Mnovect </append>
     <append COMP_NAME="dlnd"> -Mnovect </append>
@@ -532,7 +529,7 @@ flags should be captured within MPAS CMake files.
   <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
   <FFLAGS>
     <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append COMP_NAME="cam"> -qspill=6000 </append>
+    <append COMP_NAME="eam"> -qspill=6000 </append>
   </FFLAGS>
   <LDFLAGS>
     <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
@@ -961,7 +958,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="TRUE">  -C=all  -g  -O0 -v  </append>
-    <append DEBUG="TRUE" COMP_NAME="cam">  -C=all  -g  -nan -O0 -v  </append>
+    <append DEBUG="TRUE" COMP_NAME="eam">  -C=all  -g  -nan -O0 -v  </append>
   </FFLAGS>
   <MPI_PATH MPILIB="mvapich2"> $ENV{MPI_LIB}</MPI_PATH>
   <NETCDF_PATH>$ENV{NETCDF_ROOT}</NETCDF_PATH>
@@ -969,6 +966,28 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append> -L$ENV{NETCDF_ROOT}/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH} -lmkl_rt</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="sooty" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan </append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
+  <SLIBS>
+    <base> -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -lpmi -L$ENV{MKL_PATH} -lmkl_rt</base>
   </SLIBS>
 </compiler>
 
@@ -1083,7 +1102,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
-    <append COMP_NAME="cam">-Mnovect</append>
+    <append COMP_NAME="eam">-Mnovect</append>
     <append COMP_NAME="cice">-Mnovect</append>
   </FFLAGS>
   <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
@@ -1853,6 +1872,20 @@ flags should be captured within MPAS CMake files.
     <append> -L$ENV{NETCDF_DIR}/lib -lnetcdff -L$ENV{NETCDF_DIR}/lib -lnetcdf -Wl,-rpath -Wl,$ENV{NETCDF_DIR}/lib </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
+</compiler>
+
+<compiler MACH="tulip" COMPILER="gnu">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <SLIBS>
+    <append> $SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs} -llapack -lblas</append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="jlse" COMPILER="intel">

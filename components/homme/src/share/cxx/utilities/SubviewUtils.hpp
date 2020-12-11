@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
+#include "ViewUtils.hpp"
 
 #include <functional>
 
@@ -150,6 +151,20 @@ subview(
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
           typename MemSpace, typename... Properties>
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM4], MemSpace>
+subview(ViewType<ScalarType [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
+            v_in, int idim1, int idim2, int idim3) {
+  assert(v_in.data() != nullptr);
+  assert(idim1>=0 && idim1 < v_in.extent_int(0));
+  assert(idim2>=0 && idim2 < v_in.extent_int(1));
+  assert(idim3>=0 && idim3 < v_in.extent_int(2));
+  return ViewUnmanaged<ScalarType[DIM4], MemSpace>(
+      &v_in.impl_map().reference(idim1, idim2, idim3, 0));
+}
+
+
+template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
+          typename MemSpace, typename... Properties>
+KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM4], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int ie, int tl, int igp, int jgp) {
   assert(v_in.data() != nullptr);
@@ -271,6 +286,19 @@ subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3], MemSpace,
     &v_in.impl_map().reference(ie, 0, 0, 0, 0), v_in.extent_int(1));
 }
 
+template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
+          typename MemSpace, typename... Properties>
+KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace>
+subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
+                 Properties...> v_in,
+        int ie) {
+  assert(v_in.data() != nullptr);
+  assert(ie < v_in.extent_int(0));
+  assert(ie >= 0);
+  return ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace>(
+    &v_in.impl_map().reference(ie, 0, 0, 0, 0), v_in.extent_int(1));
+}
+
 template <typename ScalarType, int DIM1, int DIM2, int DIM3,
           typename MemSpace, typename... Properties>
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3], MemSpace>
@@ -322,6 +350,18 @@ subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
   assert(idim2 >= 0);
   return ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>(
     &v_in.impl_map().reference(ie, remap_idx, idim1, idim2, 0, 0));
+}
+
+// Force a subview to be const
+template<typename View, typename... Ints>
+KOKKOS_INLINE_FUNCTION
+auto
+subviewConst(const View& v, const Ints... idx) ->
+  // The compile will match the correct method above.
+ typename ViewConst<decltype(Homme::subview(v,idx...))>::type
+{
+  // Upon return, the view will be copied into one with const scalar type
+  return Homme::subview(v,idx...);
 }
 
 } // namespace Homme

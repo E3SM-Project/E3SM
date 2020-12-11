@@ -27,8 +27,11 @@ module prim_driver_base
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
 #ifndef CAM
+#ifndef SCREAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
+#endif
+! For SCREAM, we might do unit tests, so enable setting of initial conditions
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
@@ -516,7 +519,7 @@ contains
        call MeshSetCoordinates(elem)
      else if  (geometry=="plane") then
         call PlaneMeshSetCoordinates(elem)
-        end if
+      end if
     else
       if (geometry=="sphere") then
        do ie=1,nelemd
@@ -592,7 +595,7 @@ contains
     use parallel_mod,   only : parallel_t
     use control_mod,    only : runtype, restartfreq, transport_alg
     use bndry_mod,      only : sort_neighbor_buffer_mapping
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use restart_io_mod, only : RestFile,readrestart
 #endif
 
@@ -624,7 +627,7 @@ contains
     !  This routines initalizes a Restart file.  This involves:
     !      I)  Setting up the MPI datastructures
     ! ==========================================================
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     if(restartfreq > 0 .or. runtype>=1)  then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
@@ -889,7 +892,7 @@ contains
     !$OMP BARRIER
 #endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 
     ! =================================
     ! HOMME stand alone initialization
@@ -1515,6 +1518,7 @@ contains
     enddo
 #endif
   endif
+
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
 
@@ -1555,6 +1559,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,            only : bfb_pow
+#endif
 #endif
   implicit none
   type (element_t),       intent(inout) :: elem
@@ -1701,7 +1708,11 @@ contains
       endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#ifdef HOMMEXX_BFB_TESTING
+         exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
+#else
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
+#endif
       enddo
    endif
 
@@ -1727,8 +1738,6 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
 
 #endif
-
-
 
   end subroutine applyCAMforcing_tracers
 

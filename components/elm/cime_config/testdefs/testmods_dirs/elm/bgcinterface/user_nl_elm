@@ -1,0 +1,2 @@
+use_elm_interface = .true.
+use_elm_bgc = .true.

@@ -556,4 +556,12 @@
     </queues>
   </batch_system>
 
+   <batch_system MACH="tulip" type="slurm">
+    <queues>
+      <queue walltimemax="01:00:00" strict="true" nodemin="1" nodemax="2" default="true">v100</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="5">amdMI60</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="7">amdMI100</queue>
+    </queues>
+   </batch_system>
+
 </config_batch>

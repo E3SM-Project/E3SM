@@ -13,7 +13,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
 
-  TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} kokkos)
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
@@ -23,8 +23,13 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   IF(UNIX AND NOT APPLE)
     TARGET_LINK_LIBRARIES(${target_name} rt)
   ENDIF()
-
-  link_to_kokkos(${target_name})
+  IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    IF(HOMME_USE_SCORPIO)
+      TARGET_LINK_LIBRARIES(${target_name} piof pioc)
+    ELSE ()
+      TARGET_LINK_LIBRARIES(${target_name} pio)
+    ENDIF ()
+  ENDIF ()
 
   IF (NOT "${target_f90_srcs}" EQUAL "")
     # Fortran modules
@@ -34,6 +39,9 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
 
   # Compile definitions and flags
   SET_TARGET_PROPERTIES(${target_name} PROPERTIES COMPILE_DEFINITIONS "${config_defines}")
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_COMPILE_DEFINITIONS(${target_name} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+  ENDIF()
 
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${HOMME_SOURCE_DIR}/test/unit_tests/catch2/include")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${include_dirs}")
