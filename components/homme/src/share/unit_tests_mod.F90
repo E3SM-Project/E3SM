@@ -172,8 +172,8 @@ contains
     call make_C0(divbig,elem,hybrid,nets,nete)
     
     do ie=nets,nete
-       if (maxval(abs(divbig(:,:,ie)))*rearth**2 > .8e-12) then
-          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))*rearth**2
+       if (maxval(abs(divbig(:,:,ie)))*scale_factor**2 > .8e-12) then
+          write(iulog,'(a,i4,2e20.10)') 'maxval: [curl([gradl])]=',ie,maxval(abs(divbig(:,:,ie)))*scale_factor**2
        endif
     enddo
 #endif
@@ -240,7 +240,7 @@ contains
 #endif
     ! test function is O(1). gradient is O(1/rearth).  lets require agreement to
     ! 1e-11/rearth
-    mx = rearth*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
+    mx = scale_factor*maxval(abs(divbig(:,:,:)-wdivbig(:,:,:)))
     if (hybrid%masterthread) then   
        write(iulog,'(a,2e20.10)') 'div vs. weak div, max error on masterthread: ',mx
     endif
@@ -466,7 +466,7 @@ contains
       end if
 
       fluxes = subcell_div_fluxes(v, np, intervals, metdet) 
-      fluxes = rearth*fluxes
+      fluxes = scale_factor*fluxes
 
       if (ie <= np*np) then
         t = 4./(intervals*intervals)

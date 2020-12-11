@@ -510,19 +510,36 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-    if (topology=="cube") then
-       if(par%masterproc) write(iulog,*) "initializing cube elements..."
-       if (MeshUseMeshFile) then
-           call MeshSetCoordinates(elem)
-       else
-           do ie=1,nelemd
+        if(par%masterproc) write(6,*)"initializing elements..."
+    
+         if (MeshUseMeshFile) then
+          if (geometry=="sphere") then
+            call MeshSetCoordinates(elem)
+          else if  (geometry=="plane") then
+            call PlaneMeshSetCoordinates(elem)
+          end if
+         else
+          if (geometry=="sphere") then
+            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
-           end do
-       end if
-       do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points)
-       enddo
-    end if
+            enddo
+          else if (geometry=="plane") then
+           do ie=1,nelemd
+              call plane_set_corner_coordinates(elem(ie))
+           enddo
+          end if
+           !call assign_node_numbers_to_elem(elem, GridVertex)
+         endif
+    
+      if (geometry=="sphere") then
+         do ie=1,nelemd
+            call cube_init_atomic(elem(ie),gp%points)
+         enddo
+      else if (geometry=="plane") then
+        do ie=1,nelemd
+           call plane_init_atomic(elem(ie),gp%points)
+        enddo
+      end if
 
     ! =================================================================
     ! Initialize mass_matrix
