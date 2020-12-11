@@ -408,7 +408,7 @@ contains
          atm2lnd_vars, nitrogenflux_vars)
     call t_stopf('CNDeposition')
 
-    if (.not. nu_com_nfix .or. use_fates) then 
+    if ( (.not. nu_com_nfix) .or. use_fates) then 
        call t_startf('CNFixation')
        call NitrogenFixation( num_soilc, filter_soilc, &
             waterflux_vars, carbonflux_vars, nitrogenflux_vars)
