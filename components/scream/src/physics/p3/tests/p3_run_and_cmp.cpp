@@ -115,7 +115,7 @@ struct Baseline {
     for (int i = i_start; i < i_end; ++i) { // predict_nc is false or true
       for (int j = j_start; j< j_end; ++j) { //prescribed_CCN is false or true
 	//                 initial condit,     dt,  nsteps, prescribe or predict nc, prescribe CCN or not
-	params_.push_back({ic::Factory::mixed, 300, nsteps, i,                       j });
+	params_.push_back({ic::Factory::mixed, 300, nsteps, i>0,                     j>0 });
       }
     }
   }

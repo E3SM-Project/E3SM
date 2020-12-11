@@ -1373,11 +1373,11 @@ void ice_deposition_sublimation_f(Real qi_incld_, Real ni_incld_, Real T_atm_, R
   *qc2qi_berg_tend_ = t_h(3);
 }
 
-template <int N, typename T>
-Kokkos::Array<T*, N> ptr_to_arr(T** data)
+template <typename T>
+std::vector<T*> ptr_to_arr(T** data, int n)
 {
-  Kokkos::Array<T*, N> result;
-  for (int i = 0; i < N; ++i) result[i] = data[i];
+  std::vector<T*> result(n);
+  for (int i = 0; i < n; ++i) result[i] = data[i];
 
   return result;
 }
@@ -1410,16 +1410,16 @@ void calc_first_order_upwind_step_f_impl(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Setup views
-  Kokkos::Array<view_1d, 3> temp_d;
-  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+  std::vector<view_1d> temp_d(3);
+  std::vector<view_1d> fluxes_d(N), vs_d(N), qnx_d(N);
 
   ekat::host_to_device({rho, inv_rho, inv_dz}, nk, temp_d);
 
   view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dz_d(temp_d[2]);
 
-  ekat::host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
-  ekat::host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
-  ekat::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+  ekat::host_to_device(ptr_to_arr((const Real**)fluxes, N), nk, fluxes_d);
+  ekat::host_to_device(ptr_to_arr((const Real**)vs, N)    , nk, vs_d);
+  ekat::host_to_device(ptr_to_arr((const Real**)qnx, N)   , nk, qnx_d);
 
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
@@ -1435,8 +1435,8 @@ void calc_first_order_upwind_step_f_impl(
   });
 
   // Sync back to host
-  ekat::device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
-  ekat::device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
+  ekat::device_to_host(ptr_to_arr(fluxes, N), nk, fluxes_d);
+  ekat::device_to_host(ptr_to_arr(qnx, N), nk, qnx_d);
 }
 
 template <int N>
@@ -1472,9 +1472,9 @@ void generalized_sedimentation_f_impl(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, 3> temp_d;
-  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
-  Kokkos::Array<view_1ds, 1> scalar_temp;
+  std::vector<view_1d> temp_d(3);
+  std::vector<view_1d> fluxes_d(N), vs_d(N), qnx_d(N);
+  std::vector<view_1ds> scalar_temp(1);
   std::vector<Real> scalars = {*prt_accum, *dt_left, static_cast<Real>(*k_qxbot)};
 
   host_to_device({rho, inv_rho, inv_dz}, nk, temp_d);
@@ -1483,9 +1483,9 @@ void generalized_sedimentation_f_impl(
   view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dz_d(temp_d[2]);
   view_1ds scalars_d(scalar_temp[0]);
 
-  host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
-  host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
-  host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+  host_to_device(ptr_to_arr((const Real**)fluxes, N), nk, fluxes_d);
+  host_to_device(ptr_to_arr((const Real**)vs, N)    , nk, vs_d);
+  host_to_device(ptr_to_arr((const Real**)qnx, N)   , nk, qnx_d);
 
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
@@ -1512,8 +1512,8 @@ void generalized_sedimentation_f_impl(
   });
 
   // Sync back to host
-  device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
-  device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
+  device_to_host(ptr_to_arr(fluxes, N), nk, fluxes_d);
+  device_to_host(ptr_to_arr(qnx, N), nk, qnx_d);
   device_to_host({scalars.data()}, scalars.size(), scalar_temp);
 
   // Set scalars
@@ -1591,7 +1591,7 @@ void cloud_sedimentation_f(
   // Set up views
   const auto dnu = P3GlobalForFortran::dnu();
 
-  Kokkos::Array<view_1d, CloudSedData::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(CloudSedData::NUM_ARRAYS);
 
   ekat::host_to_device({qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend},
                        nk, temp_d);
@@ -1626,7 +1626,7 @@ void cloud_sedimentation_f(
   }, *precip_liq_surf);
 
   // Sync back to host
-  Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
+  std::vector<view_1d> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
   ekat::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
 }
 
@@ -1657,7 +1657,7 @@ void ice_sedimentation_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, IceSedData::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(IceSedData::NUM_ARRAYS);
 
   ekat::host_to_device({rho, inv_rho, rhofaci, cld_frac_i, inv_dz, qi, qi_incld, ni, qm, qm_incld, bm, bm_incld, ni_incld, qi_tend, ni_tend},
                        nk, temp_d);
@@ -1698,8 +1698,8 @@ void ice_sedimentation_f(
   *precip_ice_surf += my_precip_ice_surf;
 
   // Sync back to host
-  Kokkos::Array<view_1d, 10> inout_views = {qi_d, qi_incld_d, ni_d, ni_incld_d, qm_d, qm_incld_d,
-                                            bm_d, bm_incld_d, qi_tend_d, ni_tend_d};
+  std::vector<view_1d> inout_views = {qi_d, qi_incld_d, ni_d, ni_incld_d, qm_d, qm_incld_d,
+                                      bm_d, bm_incld_d, qi_tend_d, ni_tend_d};
   ekat::device_to_host({qi, qi_incld, ni, ni_incld, qm, qm_incld, bm, bm_incld, qi_tend, ni_tend}, nk, inout_views);
 }
 
@@ -1729,9 +1729,8 @@ void rain_sedimentation_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, RainSedData::NUM_ARRAYS> temp_d;
-  Kokkos::Array<size_t, RainSedData::NUM_ARRAYS> sizes;
-  for (size_t i = 0; i < RainSedData::NUM_ARRAYS; ++i) sizes[i] = nk;
+  std::vector<view_1d> temp_d(RainSedData::NUM_ARRAYS);
+  std::vector<size_t> sizes(RainSedData::NUM_ARRAYS, nk);
   sizes[RainSedData::NUM_ARRAYS - 1] = nk+1;
 
   ekat::host_to_device({qr_incld, rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, precip_liq_flux},
@@ -1772,11 +1771,10 @@ void rain_sedimentation_f(
   *precip_liq_surf += my_precip_liq_surf;
 
   // Sync back to host
-  Kokkos::Array<size_t, 8> sizes_out;
-  for (int i = 0; i < 8; ++i) sizes_out[i] = nk;
+  std::vector<size_t> sizes_out(8, nk);
   sizes_out[7] = nk+1;
 
-  Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, precip_liq_flux_d};
+  std::vector<view_1d> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, precip_liq_flux_d};
   ekat::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, precip_liq_flux}, sizes_out, inout_views);
 }
 
@@ -2216,7 +2214,7 @@ void homogeneous_freezing_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, HomogeneousFreezingData::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(HomogeneousFreezingData::NUM_ARRAYS);
 
   ekat::host_to_device({T_atm, exner, latent_heat_fusion, qc, nc, qr, nr, qi, ni, qm, bm, th_atm},
                        nk, temp_d);
@@ -2247,7 +2245,7 @@ void homogeneous_freezing_f(
   });
 
   // Sync back to host
-  Kokkos::Array<view_1d, 9> inout_views = {qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, th_atm_d};
+  std::vector<view_1d> inout_views = {qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, th_atm_d};
 
   ekat::device_to_host({qc, nc, qr, nr, qi, ni, qm, bm, th_atm}, nk, inout_views);
 }
@@ -2565,7 +2563,7 @@ void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Rea
 
   P3F::get_latent_heat(nj, nk, v_d, s_d, f_d);
 
-  Kokkos::Array<view_2d, 3> out_views = {v_d, s_d, f_d};
+  std::vector<view_2d> out_views = {v_d, s_d, f_d};
   ekat::device_to_host({v, s, f}, nj, nk, out_views, true);
 }
 
@@ -2615,9 +2613,9 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   kend -= 1;
   const auto nk = (kend - kstart) + 1;
   const Int nk_pack = ekat::npack<Spack>(nk);
-  Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
+  std::vector<view_1d> cvd_d(CheckValuesData::NUM_ARRAYS+1);
 
-  ekat::host_to_device<Int,3>({qv, temp, col_loc}, {nk, nk, 3}, cvd_d);
+  ekat::host_to_device<Int>({qv, temp, col_loc}, {nk, nk, 3}, cvd_d);
 
   view_1d qv_d(cvd_d[0]), temp_d(cvd_d[1]), col_loc_d(cvd_d[2]);
   suview_1d ucol_loc_d(reinterpret_cast<Real*>(col_loc_d.data()), 3);
@@ -2888,7 +2886,7 @@ void p3_main_part1_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPart1Data::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(P3MainPart1Data::NUM_ARRAYS);
 
   ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci,
@@ -2954,7 +2952,7 @@ void p3_main_part1_f(
   });
 
   // Sync back to host
-  Kokkos::Array<view_1d, 28> inout_views = {
+  std::vector<view_1d> inout_views = {
     t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
     acn_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
     qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d};
@@ -3003,7 +3001,7 @@ void p3_main_part2_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPart2Data::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS);
 
   ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
@@ -3103,7 +3101,7 @@ void p3_main_part2_f(
   });
 
   // Sync back to host. Skip intent in variables.
-  Kokkos::Array<view_1d, 48> inout_views = {
+  std::vector<view_1d> inout_views = {
     t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
     qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d,
     latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d, qc_incld_d, qr_incld_d, qi_incld_d, qm_incld_d,
@@ -3158,7 +3156,7 @@ void p3_main_part3_f(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPart3Data::NUM_ARRAYS> temp_d;
+  std::vector<view_1d> temp_d(P3MainPart3Data::NUM_ARRAYS);
 
   ekat::host_to_device({
       exner, cld_frac_l, cld_frac_r, cld_frac_i, rho, inv_rho, rhofaci, qv, th_atm, qc,
@@ -3219,7 +3217,7 @@ void p3_main_part3_f(
   });
 
   // Sync back to host
-  Kokkos::Array<view_1d, 29> inout_views = {
+  std::vector<view_1d> inout_views = {
     rho_d, inv_rho_d, rhofaci_d, qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d,
     ni_d, qm_d, bm_d, latent_heat_vapor_d, latent_heat_sublim_d, mu_c_d, nu_d, lamc_d, mu_r_d,
     lamr_d, vap_liq_exchange_d, ze_rain_d, ze_ice_d, diag_vm_qi_d, diag_eff_radius_qi_d,
@@ -3264,18 +3262,15 @@ Int p3_main_f(
   const Int nk    = (kte - kts) + 1;
 
   // Set up views, pretend all views are input views for the sake of initializing kokkos views
-  Kokkos::Array<view_2d, P3MainData::NUM_ARRAYS> temp_d;
-  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS> dim1_sizes;
-  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS> dim2_sizes;
-  Kokkos::Array<const Real*, P3MainData::NUM_ARRAYS> ptr_array = {
+  std::vector<view_2d> temp_d(P3MainData::NUM_ARRAYS);
+  std::vector<size_t> dim1_sizes(P3MainData::NUM_ARRAYS, nj);
+  std::vector<size_t> dim2_sizes(P3MainData::NUM_ARRAYS, nk);
+  std::vector<const Real*> ptr_array = {
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi,
     rho_qi, mu_c, lamc, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, liq_ice_exchange,
     vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
   };
-
-  for (size_t i = 0; i < P3MainData::NUM_ARRAYS; ++i) dim1_sizes[i] = nj;
-  for (size_t i = 0; i < P3MainData::NUM_ARRAYS; ++i) dim2_sizes[i] = nk;
 
   //PMC - hardcoding the index for each variable is very brittle :-(.
   dim2_sizes[35] = nk+1; // precip_liq_flux
@@ -3371,16 +3366,14 @@ Int p3_main_f(
   });
 
   // Sync back to host
-  Kokkos::Array<view_2d, P3MainData::NUM_ARRAYS - 13> inout_views = {
+  std::vector<view_2d> inout_views = {
     qc_d, nc_d, qr_d, nr_d, qi_d, qm_d, ni_d, bm_d, qv_d, th_atm_d,
     diag_eff_radius_qc_d, diag_eff_radius_qi_d, rho_qi_d, mu_c_d, lamc_d, qv2qi_depos_tend_d, precip_total_tend_d,
     nevapr_d, qr_evap_tend_d, liq_ice_exchange_d, vap_liq_exchange_d,
     vap_ice_exchange_d, precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
-  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 13> dim1_sizes_out;
-  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 13> dim2_sizes_out;
-  for (size_t i = 0; i < P3MainData::NUM_ARRAYS - 13; ++i) dim1_sizes_out[i] = nj;
-  for (size_t i = 0; i < P3MainData::NUM_ARRAYS - 13; ++i) dim2_sizes_out[i] = nk;
+  std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
+  std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
 
   dim2_sizes_out[22] = nk+1; // precip_liq_flux
   dim2_sizes_out[23] = nk+1; // precip_ice_flux
