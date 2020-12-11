@@ -80,8 +80,8 @@ def run_diag(parameter):
         using_ref_mat_file = False
         if parameter.gauges_path is None:
             raise Exception(
-                'To use a non-GSIM reference, please specify streamflow_param.gauges_path. This might be /{}/{}'.format(
-                    parameter.reference_data_path.strip('/'),
+                'To use a non-GSIM reference, please specify streamflow_param.gauges_path. This might be {}/{}'.format(
+                    parameter.reference_data_path.rstrip('/'),
                     'GSIM/GSIM_catchment_characteristics_all_1km2.csv'
                 ))
         else:
@@ -92,7 +92,7 @@ def run_diag(parameter):
         # This file includes 25765 gauges, which is a subset of the entire
         # dataset (30959 gauges). The removed gauges are associated with very
         # small drainage area (<1km2), which is not meaningful to be included.
-        gauges_path = '/{}/GSIM/GSIM_catchment_characteristics_all_1km2.csv'.format(parameter.reference_data_path.strip('/'))
+        gauges_path = '{}/GSIM/GSIM_catchment_characteristics_all_1km2.csv'.format(parameter.reference_data_path.rstrip('/'))
     else:
         raise Exception('parameter.run_type={} not supported'.format(parameter.run_type))
 
@@ -124,7 +124,7 @@ def run_diag(parameter):
             # the data has been reorganized to a 1380 * 30961 matrix. 1380 is the month
             # number from 1901.1 to 2015.12. 30961 include two columns for year and month plus
             # streamflow at 30959 gauge locations reported by GSIM
-            ref_mat_file = '/{}/GSIM/GSIM_198601_199512.mat'.format(parameter.reference_data_path.strip('/'))
+            ref_mat_file = '{}/GSIM/GSIM_198601_199512.mat'.format(parameter.reference_data_path.rstrip('/'))
             if parameter.short_ref_name != '':
                 ref_name = parameter.short_ref_name
             elif parameter.reference_name != '':
@@ -169,7 +169,7 @@ def run_diag(parameter):
                     parameter.test_data_path))
             else:
                 raise Exception('No .mat file in parameter.test_data_path={}'.format(parameter.test_data_path))
-            test_mat_file = '/{}/{}'.format(parameter.test_data_path.strip('/'), mat_file)
+            test_mat_file = '{}/{}'.format(parameter.test_data_path.rstrip('/'), mat_file)
             parameter.test_name_yrs = '{} ({}-{})'.format(parameter.test_start_yr, parameter.test_end_yr)
             data_mat = scipy.io.loadmat(test_mat_file)
             if 'E3SMflow' in data_mat.keys():
