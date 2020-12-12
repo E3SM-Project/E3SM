@@ -851,6 +851,7 @@ flags should be captured within MPAS CMake files.
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="bebop" COMPILER="intel">

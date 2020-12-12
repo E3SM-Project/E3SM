@@ -1123,7 +1123,7 @@
     <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
     <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
@@ -1133,7 +1133,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lcrc/group/e3sm/baselines/chrys/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -1160,6 +1160,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">subversion/1.14.0-e4smcy3</command>
+        <command name="load">perl/5.32.0-bsnc6lt</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/20.0.4-kodw73g</command>
@@ -1173,13 +1174,25 @@
         <command name="load">netcdf-fortran/4.5.3-3i4qf2w</command>
         <command name="load">parallel-netcdf/1.12.1-sr56aqs</command>
       </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/9.2.0-ugetvbp</command>
+        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">openmpi/4.0.4-hpcx-hghvhj5</command>
+        <command name="load">hdf5/1.10.7-sbsigon</command>
+        <command name="load">netcdf-c/4.7.4-a4uk6zy</command>
+        <command name="load">netcdf-cxx/4.2-fz347dw</command>
+        <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
+        <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
+      </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
