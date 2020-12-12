@@ -913,6 +913,23 @@ if ($co2_cycle) {
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
 	}
+
+        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.false.');
+
+        # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
+        # (user specification has higher precedence than the true value set above)
+        if ($nl->get_value('co2_readflux_aircraft') =~ /$TRUE/io) {
+            my $rel_filepath = get_default_value('ac_CO2_emis');
+            my $emisval = quote_string('ac_CO2 -> ' . $rel_filepath);
+            add_default($nl, 'aircraft_specifier', 'val'=>$emisval);
+
+            add_default($nl, 'aircraft_datapath');
+            add_default($nl, 'aircraft_type');
+            # This should be the same file as the one in the aircraft_specifier file.
+            # This is a workaround to get this filepath into the cam.input_data_list file
+            # to allow the CESM scripts to obtain all required data for a run.
+            add_default($nl, 'aircraft_co2_file');
+       }
     }
 }
 
@@ -4692,11 +4709,13 @@ sub add_default {
 
     # check whether the variable has a value in the namelist object -- if so then return
     $val = $nl->get_variable_value($group, $var);
+    print "$var $val\n";  
     if (defined $val) {return;}
 
     # Look for a specified value in the options hash
     if (defined $opts{'val'}) {
 	$val = $opts{'val'};
+        print "$var $val\n";
     }
     # or else get a value from namelist defaults object.
     # Note that if the 'val' key isn't in the hash, then just pass anything else
@@ -4705,22 +4724,20 @@ sub add_default {
     else {
 	$val = get_default_value($var, \%opts);
     }
-
     # if no value is found then exit w/ error (unless 'nofail' option set)
     unless (defined $val) {
-	unless ($opts{'nofail'}) {
-	    print "$ProgName - ERROR: No default value found for $var\n".
-		"user defined attributes:\n";
-	    foreach my $key (keys(%opts)) {
-		if ($key ne 'nofail' and $key ne 'val') {
-		    print "key=$key  val=$opts{$key}\n";
-		}
-	    }
-	    die;
-	}
-	else {
-	    return;
-	}
+        unless ($opts{'nofail'}) {
+            print "$ProgName - ERROR: No default value found for $var\n".
+            "user defined attributes:\n";
+            foreach my $key (keys(%opts)) {
+                if ($key ne 'nofail' and $key ne 'val') {
+                    print "key=$key  val=$opts{$key}\n";
+                }
+            }
+            die;
+        } else {
+            return;
+        }
     }
 
     # query the definition to find out if the variable is an input pathname

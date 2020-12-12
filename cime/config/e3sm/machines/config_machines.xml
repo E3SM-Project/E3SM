@@ -1763,12 +1763,12 @@
          <RUNDIR>/pic/scratch/$USER/csmruns/$CASE/run</RUNDIR>
          <EXEROOT>/pic/scratch/$USER/csmruns/$CASE/bld</EXEROOT>
          <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
-         <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/pic/projects/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DIN_LOC_ROOT>/pic/projects/global_ice/csmdata/</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/pic/projects/global_ice/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/pic/scratch/$USER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
-         <BASELINE_ROOT>/pic/projects/climate/acme_baselines/$COMPILER</BASELINE_ROOT>
-         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
+         <BASELINE_ROOT>/pic/projects/global_ice/acme_baselines/$COMPILER</BASELINE_ROOT>
+         <CCSM_CPRNC>/pic/projects/global_ice/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
 	 <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
          <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>

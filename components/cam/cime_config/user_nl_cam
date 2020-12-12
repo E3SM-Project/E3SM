@@ -1,3 +1,9 @@
 ! Users should add all user specific namelist changes below in the form of 
 ! namelist_var = new_namelist_value 
- 
+co2_readFlux_fuel = .true.
+co2flux_fuel_file = '/pic/projects/global_ice/inputdata/atm/cam/ggas/ne30_eam_CO2-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gr_175001-201412_c20201111.nc'
+
+nhtfrq = 0
+ndens  = 1
+mfilt  = 1
+fincl1 = 'CO2','CO2_LND','CO2_OCN','CO2_FFF','SFCO2','SFCO2_LND','SFCO2_OCN','SFCO2_FFF','TMCO2','TMCO2_LND:I','TMCO2_OCN:I','TMCO2_FFF:I','TAFCO2','AFCO2' 

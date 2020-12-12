@@ -156,7 +156,7 @@ contains
              else if (co2_readFlux_ocn) then 
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
                 cam_in(c)%cflx(i,c_i(1)) = &
-                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+                     -data_flux_ocn%co2flx(i,1,c)*(1._r8- cam_in(c)%landfrac(i)) &
                      *mwco2*1.0e-3_r8
              else
                 cam_in(c)%cflx(i,c_i(1)) = 0._r8
@@ -164,7 +164,7 @@ contains
              
              ! co2 flux from fossil fuel
              if (co2_readFlux_fuel) then
-                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
              end if
