@@ -1639,7 +1639,7 @@
       function colpkg_sea_freezing_temperature(sss) result(Tf)
 
         use ice_colpkg_shared, only: tfrz_option
-        use ice_constants_colpkg, only: depressT
+        use ice_constants_colpkg, only: depressT, Tocnfrz
 
         real(dbl_kind), intent(in) :: sss
         real(dbl_kind) :: Tf
@@ -1654,7 +1654,7 @@
 
         else
 
-           Tf = -1.8_dbl_kind
+           Tf = Tocnfrz 
 
         endif
 
@@ -5327,7 +5327,7 @@
                            nblyr, nilyr, nslyr, n_algae, n_zaero, ncat, &
                            n_doc, n_dic,  n_don, n_fed, n_fep,  &
                            meltbn, melttn, congeln, snoicen, &
-                           sst, sss, fsnow, meltsn, hmix, salinz, &
+                           sst, sss, Tf, fsnow, meltsn, hmix, salinz, &
                            hin_old, flux_bio, flux_bio_atm, &
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
@@ -5433,6 +5433,7 @@
          sss     , & ! sea surface salinity (ppt)
          sst     , & ! sea surface temperature (C)
          hmix    , & ! mixed layer depth (m)
+         Tf      , & ! basal freezing temperature (C)
          fsnow       ! snowfall rate (kg/m^2 s)
 
       logical (kind=log_kind), intent(in) :: &
@@ -5690,13 +5691,13 @@
 
             elseif (skl_bgc) then
 
-               call sklbio (dt,                      ntrcr,               &
-                            nilyr,                                        &
+               call sklbio (dt,                      Tf,                  &
+                            ntrcr,                   nilyr,               &
                             nbtrcr,                  n_algae,             &
                             n_zaero,                 n_doc,               &
                             n_dic,                   n_don,               &
                             n_fed,                   n_fep,               &
-                            flux_bio (1:nbtrcr),     ocean_bio(:), &
+                            flux_bio (1:nbtrcr),     ocean_bio(:),        &
                             hmix,                    aicen    (n),        &
                             meltbn   (n),            congeln  (n),        &
                             fswthrun (n),            first_ice(n),        &

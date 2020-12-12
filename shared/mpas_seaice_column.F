@@ -1577,8 +1577,8 @@ contains
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
-       call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+       call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
 
        call MPAS_pool_get_array(drag, "airOceanDragCoefficientRatio", airOceanDragCoefficientRatio)
        call MPAS_pool_get_array(drag, "oceanDragCoefficient", oceanDragCoefficient)
@@ -3463,6 +3463,7 @@ contains
          verticalGrid, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
+         seaFreezingTemperature, &
          snowfallRate, &
          zSalinityFlux, &
          zSalinityGDFlux, &
@@ -3684,6 +3685,7 @@ contains
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
 
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
@@ -3849,6 +3851,7 @@ contains
                snowiceFormationCategory(:,iCell), &
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
+               seaFreezingTemperature(iCell), &
                snowfallRate(iCell), &
                snowMeltCategory(:,iCell), &
                oceanMixedLayerDepth(iCell), &
