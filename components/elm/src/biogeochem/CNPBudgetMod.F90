@@ -48,8 +48,11 @@ module CNPBudgetMod
   integer, parameter :: f_prod100c_loss        =  7
   integer, parameter :: f_som_c_leached        =  8
   integer, parameter :: f_som_c_yield          =  9
+  integer, parameter :: f_dwt_conv_cflux       = 10
+  integer, parameter :: f_dwt_seedc_to_leaf    = 11
+  integer, parameter :: f_dwt_seedc_to_deadstem= 12
 
-  integer, parameter, public :: c_f_size = f_som_c_yield
+  integer, parameter, public :: c_f_size = f_dwt_seedc_to_deadstem
 
   character(len=51), parameter :: c_f_name(c_f_size) = &
        (/&
@@ -61,34 +64,37 @@ module CNPBudgetMod
        '       decomposition loss from 10-year product pool', &
        '      decomposition loss from 100-year product pool', &
        '                 SOM C loss from vertical transport', &
-       '                                         SOM C loss'  &
+       '                                         SOM C loss', &
+       '          flux to atmosphere due to dynamic weights', &
+       '         seed source to leaf due to dynamic weights', &
+       '   seed source to dead steam due to dynamic weights'  &
        /)
        
        
   ! N inputs
-  integer, parameter :: f_ndep_to_sminn        = 10
-  integer, parameter :: f_nfix_to_ecosysn      = 11
-  integer, parameter :: f_nfix_to_sminn        = 12
-  integer, parameter :: f_supplement_to_sminn  = 13
-  integer, parameter :: f_fert_to_sminn        = 14
-  integer, parameter :: f_soyfixn_to_sminn     = 15
-  integer, parameter :: f_supplement_to_plantn = 16
-  integer, parameter :: f_nfert_dose           = 17
+  integer, parameter :: f_ndep_to_sminn        = 13
+  integer, parameter :: f_nfix_to_ecosysn      = 14
+  integer, parameter :: f_nfix_to_sminn        = 15
+  integer, parameter :: f_supplement_to_sminn  = 16
+  integer, parameter :: f_fert_to_sminn        = 17
+  integer, parameter :: f_soyfixn_to_sminn     = 18
+  integer, parameter :: f_supplement_to_plantn = 19
+  integer, parameter :: f_nfert_dose           = 20
 
   ! N outputs
-  integer, parameter :: f_denit                = 18
-  integer, parameter :: f_fire_ploss           = 19
-  integer, parameter :: f_n2o_nit              = 20
-  integer, parameter :: f_smin_no3_leached     = 21
-  integer, parameter :: f_smin_no3_runoff      = 22
-  integer, parameter :: f_sminn_leached        = 23
-  integer, parameter :: f_col_prod1n_loss      = 24
-  integer, parameter :: f_col_prod10n_loss     = 25
-  integer, parameter :: f_col_prod100n_loss    = 26
-  integer, parameter :: f_som_n_leached        = 27
-  integer, parameter :: f_som_n_yield          = 28
+  integer, parameter :: f_denit                = 21
+  integer, parameter :: f_fire_ploss           = 22
+  integer, parameter :: f_n2o_nit              = 23
+  integer, parameter :: f_smin_no3_leached     = 24
+  integer, parameter :: f_smin_no3_runoff      = 25
+  integer, parameter :: f_sminn_leached        = 26
+  integer, parameter :: f_col_prod1n_loss      = 27
+  integer, parameter :: f_col_prod10n_loss     = 28
+  integer, parameter :: f_col_prod100n_loss    = 29
+  integer, parameter :: f_som_n_leached        = 30
+  integer, parameter :: f_som_n_yield          = 31
 
-  integer, parameter, public :: n_f_size = f_som_n_yield     - f_som_c_yield
+  integer, parameter, public :: n_f_size = f_som_n_yield - f_dwt_seedc_to_deadstem
 
   character(len=39), parameter :: n_f_name(n_f_size) = &
        (/&
@@ -114,24 +120,24 @@ module CNPBudgetMod
        /)
 
   ! P inputs
-  integer, parameter :: f_primp_to_labilep     = 29
-  integer, parameter :: f_supplement_to_sminp  = 30
-  integer, parameter :: f_supplement_to_plantp = 31
-  integer, parameter :: f_pfert_dose           = 32
+  integer, parameter :: f_primp_to_labilep     = 32
+  integer, parameter :: f_supplement_to_sminp  = 33
+  integer, parameter :: f_supplement_to_plantp = 34
+  integer, parameter :: f_pfert_dose           = 35
 
   ! P outputs
-  integer, parameter :: f_secondp_to_occlp     = 33
-  integer, parameter :: f_sminp_leached        = 34
-  integer, parameter :: f_col_fire_ploss       = 35
-  integer, parameter :: f_solutionp            = 36
-  integer, parameter :: f_labilep              = 37
-  integer, parameter :: f_secondp              = 38
-  integer, parameter :: f_col_prod1p_loss      = 39
-  integer, parameter :: f_col_prod10p_loss     = 40
-  integer, parameter :: f_col_prod100p_loss    = 41
-  integer, parameter :: f_som_p_yield          = 42
-  integer, parameter :: f_labilep_yield        = 43
-  integer, parameter :: f_secondp_yield        = 44
+  integer, parameter :: f_secondp_to_occlp     = 36
+  integer, parameter :: f_sminp_leached        = 37
+  integer, parameter :: f_col_fire_ploss       = 38
+  integer, parameter :: f_solutionp            = 39
+  integer, parameter :: f_labilep              = 40
+  integer, parameter :: f_secondp              = 41
+  integer, parameter :: f_col_prod1p_loss      = 42
+  integer, parameter :: f_col_prod10p_loss     = 43
+  integer, parameter :: f_col_prod100p_loss    = 44
+  integer, parameter :: f_som_p_yield          = 45
+  integer, parameter :: f_labilep_yield        = 46
+  integer, parameter :: f_secondp_yield        = 47
 
   integer, parameter, public :: p_f_size = f_secondp_yield - f_som_n_yield
 
@@ -593,33 +599,36 @@ contains
     integer  :: g, nf, ns, ip
     real(r8) :: af, one_over_re2
 
-    associate(                                                   &
-         beg_totc              => grc_cs%beg_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
-         beg_totpftc           => grc_cs%beg_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         beg_cwdc              => grc_cs%beg_cwdc           , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
-         beg_totsomc           => grc_cs%beg_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
-         beg_totlitc           => grc_cs%beg_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
-         beg_totprodc          => grc_cs%beg_totprodc           , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
-         beg_ctrunc            => grc_cs%beg_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
-         beg_cropseedc_deficit => grc_cs%beg_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
-         end_totc              => grc_cs%end_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
-         end_totpftc           => grc_cs%end_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         end_cwdc              => grc_cs%end_cwdc             , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
-         end_totsomc           => grc_cs%end_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
-         end_totlitc           => grc_cs%end_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
-         end_totprodc          => grc_cs%end_totprodc           , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
-         end_ctrunc            => grc_cs%end_ctrunc           , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
-         end_cropseedc_deficit => grc_cs%end_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
-         errcb                 => grc_cs%errcb                 , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
-         gpp                   => grc_cf%gpp                   , & ! Input: [real(r8) (:)] (gC/m2/s) gross primary production
-         er                    => grc_cf%er                    , & ! Input: [real(r8) (:)] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         fire_closs            => grc_cf%fire_closs            , & ! Input: [real(r8) (:)] (gC/m2/s) total column-level fire C loss
-         prod1c_loss           => grc_cf%prod1_loss            , & ! Input: [real(r8) (:)] (gC/m2/s) crop leafc harvested
-         prod10c_loss          => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 10-year wood C harvested
-         prod100c_loss         => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 100-year wood C harvested 
-         hrv_xsmrpool_to_atm   => grc_cf%hrv_xsmrpool_to_atm   , & ! Input: [real(r8) (:)] (gC/m2/s) excess MR pool harvest mortality
-         som_c_leached         => grc_cf%som_c_leached         , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss from vertical transport
-         som_c_yield           => grc_cf%somc_yield              & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
+    associate(                                                       &
+         beg_totc                  => grc_cs%beg_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         beg_totpftc               => grc_cs%beg_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         beg_cwdc                  => grc_cs%beg_cwdc              , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         beg_totsomc               => grc_cs%beg_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         beg_totlitc               => grc_cs%beg_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         beg_totprodc              => grc_cs%beg_totprodc          , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         beg_ctrunc                => grc_cs%beg_ctrunc            , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         beg_cropseedc_deficit     => grc_cs%beg_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         end_totc                  => grc_cs%end_totc              , & ! Input: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         end_totpftc               => grc_cs%end_totpftc           , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         end_cwdc                  => grc_cs%end_cwdc              , & ! Input: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
+         end_totsomc               => grc_cs%end_totsomc           , & ! Input: [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         end_totlitc               => grc_cs%end_totlitc           , & ! Input: [real(r8) (:)] (gC/m2) total column litter carbon
+         end_totprodc              => grc_cs%end_totprodc          , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
+         end_ctrunc                => grc_cs%end_ctrunc            , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         end_cropseedc_deficit     => grc_cs%end_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         errcb                     => grc_cs%errcb                 , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
+         gpp                       => grc_cf%gpp                   , & ! Input: [real(r8) (:)] (gC/m2/s) gross primary production
+         er                        => grc_cf%er                    , & ! Input: [real(r8) (:)] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
+         fire_closs                => grc_cf%fire_closs            , & ! Input: [real(r8) (:)] (gC/m2/s) total column-level fire C loss
+         prod1c_loss               => grc_cf%prod1_loss            , & ! Input: [real(r8) (:)] (gC/m2/s) crop leafc harvested
+         prod10c_loss              => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 10-year wood C harvested
+         prod100c_loss             => grc_cf%prod10_loss           , & ! Input: [real(r8) (:)] (gC/m2/s) 100-year wood C harvested 
+         hrv_xsmrpool_to_atm       => grc_cf%hrv_xsmrpool_to_atm   , & ! Input: [real(r8) (:)] (gC/m2/s) excess MR pool harvest mortality
+         som_c_leached             => grc_cf%som_c_leached         , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss from vertical transport
+         som_c_yield               => grc_cf%somc_yield            , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
+         grc_dwt_conv_cflux        => grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:)] (gC/m^2/s) flux to atmosphere during transient run
+         grc_dwt_seedc_to_leaf     => grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:)] (gC/m^2/s) seed to leaf flux during transient run
+         grc_dwt_seedc_to_deadstem => grc_cf%dwt_seedc_to_deadstem   & !Input: [real(r8) (:)] (gC/m^2/s) seed to dead stem flux during transient run
          )
 
       ip = p_inst
@@ -631,15 +640,18 @@ contains
               ldomain%frac(g)                      ! land fraction
 
          ! fluxes
-         nf = f_gpp                   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + gpp(g)                     *af
-         nf = f_er                    ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - er(g)                      *af
-         nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)              *af
-         nf = f_hrv_xsmrpool_to_atm   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - hrv_xsmrpool_to_atm(g)     *af
-         nf = f_prod1c_loss           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod1c_loss(g)             *af
-         nf = f_prod10c_loss          ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod10c_loss(g)            *af
-         nf = f_prod100c_loss         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod100c_loss(g)           *af
-         nf = f_som_c_leached         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_leached(g)           *af
-         nf = f_som_c_yield           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_yield(g)             *af
+         nf = f_gpp                   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + gpp(g)                       *af
+         nf = f_er                    ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - er(g)                        *af
+         nf = f_fire_closs            ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - fire_closs(g)                *af
+         nf = f_hrv_xsmrpool_to_atm   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - hrv_xsmrpool_to_atm(g)       *af
+         nf = f_prod1c_loss           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod1c_loss(g)               *af
+         nf = f_prod10c_loss          ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod10c_loss(g)              *af
+         nf = f_prod100c_loss         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - prod100c_loss(g)             *af
+         nf = f_som_c_leached         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_leached(g)             *af
+         nf = f_som_c_yield           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_yield(g)               *af
+         nf = f_dwt_conv_cflux        ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_conv_cflux(g)        *af
+         nf = f_dwt_seedc_to_leaf     ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_seedc_to_leaf(g)     *af
+         nf = f_dwt_seedc_to_deadstem ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_seedc_to_deadstem(g) *af
 
          ! states
          ns = s_totc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totc(g)              *af
