@@ -355,7 +355,7 @@ endif
     if(nf_selectedvar('pv', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: pv'
 
-             call compute_pv_C0_contra(varptmp2, elem, hybrid%par,tl%n0)
+             call compute_pv_C0_contra(varptmp2, elem, phimean, hybrid%par,tl%n0)
              st=1
              do ie=1,nelemd
                  en=st+elem(ie)%idxp%NumUniquePts-1
