@@ -114,6 +114,7 @@ contains
     use edgetype_mod, only : EdgeBuffer_t
     use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
+    use control_mod, only : geometry
 
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
