@@ -878,6 +878,9 @@ contains
          end_ctrunc              => grc_cs%end_ctrunc                , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit   => grc_cs%end_cropseedc_deficit     , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
          grc_errcb               => grc_cs%errcb                     , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
+         grc_dwt_conv_cflux      =>    grc_cf%dwt_conv_cflux        , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_dwt_seedc_to_leaf   =>    grc_cf%dwt_seedc_to_leaf     , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_dwt_seedc_to_deadstem =>    grc_cf%dwt_seedc_to_deadstem , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_gpp                 => grc_cf%gpp                       , & ! Output: [real(r8) (:) ] (gC/m2/s) gross primary production
          grc_er                  => grc_cf%er                        , & ! Output: [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          grc_fire_closs          => grc_cf%fire_closs                , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
@@ -933,10 +936,11 @@ contains
       nstep = get_nstep()
 
       do g = bounds%begg, bounds%endg
-         grc_cinputs(g) = grc_gpp(g)
+         grc_cinputs(g) = grc_gpp(g) + grc_dwt_seedc_to_leaf(g) + grc_dwt_seedc_to_deadstem(g)
 
          grc_coutputs(g) = grc_er(g) + grc_fire_closs(g) + grc_hrv_xsmrpool_to_atm(g) + &
-              grc_prod1c_loss(g) + grc_prod10c_loss(g) + grc_prod100c_loss(g) - grc_som_c_leached(g)
+              grc_prod1c_loss(g) + grc_prod10c_loss(g) + grc_prod100c_loss(g) - grc_som_c_leached(g) + &
+              grc_dwt_conv_cflux(g)
 
          if (ero_ccycle) then
             grc_coutputs(g) = grc_coutputs(g) + grc_som_c_yield(g)
