@@ -1340,7 +1340,7 @@ contains
   end subroutine update_prognostics_implicit_c
 
   subroutine pblintd_height_c(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check) bind(C)
-    use shoc, only : pblintd_height
+    use shoc, only : npbl, pblintd_height
 
     integer(kind=c_int) , value, intent(in) :: shcol, nlev
     real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z, u, v, thv
@@ -1349,6 +1349,8 @@ contains
     real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: rino
     logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
 
+    ! setup npbl
+    npbl = nlev
     call pblintd_height(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check)
   end subroutine pblintd_height_c
 

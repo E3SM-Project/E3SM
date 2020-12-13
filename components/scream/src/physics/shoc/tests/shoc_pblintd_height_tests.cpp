@@ -170,7 +170,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
   static void run_bfb()
   {
     PblintdHeightData f90_data[] = {
-      // TODO
+      PblintdHeightData(36, 72),
+      PblintdHeightData(54, 72),
+      PblintdHeightData(54, 72),
+      PblintdHeightData(36, 72),      
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
@@ -178,13 +181,16 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize({{d.z, {10., 2000}}, {d.check, {1, 1}}, {d.thv, {1., 2.}}, {d.ustar, {0.1, 1.0}}, {d.u, {0.1, 1.0}}, {d.v, {0.1, 1.0}} });
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     PblintdHeightData cxx_data[] = {
-      // TODO
+      PblintdHeightData(f90_data[0]),
+      PblintdHeightData(f90_data[1]),
+      PblintdHeightData(f90_data[2]),
+      PblintdHeightData(f90_data[3]),       
     };
 
     // Assume all data is in C layout

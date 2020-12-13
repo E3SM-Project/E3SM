@@ -817,6 +817,7 @@ struct PblintdHeightData : public PhysicsTestData {
 
   PTD_STD_DEF(PblintdHeightData, 2, shcol, nlev);
 };
+
 struct VdShocDecompandSolveData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi, n_rhs;

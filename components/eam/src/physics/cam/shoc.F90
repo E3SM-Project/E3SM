@@ -4291,6 +4291,11 @@ subroutine pblintd_height(&
        z,u,v,ustar,&             ! Input
        thv,thv_ref,&             ! Input
        pblh,rino,check)          ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_height_f
+#endif
+
     !------------------------------Arguments--------------------------------
     !
     ! Input arguments
@@ -4319,6 +4324,15 @@ subroutine pblintd_height(&
     integer  :: k                       ! level index
     real(rtype) :: vvk                     ! velocity magnitude squared
     real(rtype) :: th
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_height_f(shcol,nlev,z,u,v,ustar,thv,thv_ref,&             ! Input
+                            pblh,rino,check)          ! Output
+      return
+   endif
+#endif
+
     !
     ! PBL height calculation:  Scan upward until the Richardson number between
     ! the first level and the current level exceeds the "critical" value.
@@ -4326,15 +4340,15 @@ subroutine pblintd_height(&
     do k=nlev-1,nlev-npbl+1,-1
        do i=1,shcol
           if (check(i)) then
-             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 +fac*ustar(i)**2
+             vvk = bfb_pow((u(i,k) - u(i,nlev)), 2.) + bfb_pow((v(i,k) - v(i,nlev)), 2.) +fac*bfb_pow(ustar(i),2.)
              vvk = max(vvk,tiny)
              rino(i,k) = ggr*(thv(i,k) -thv_ref(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then
                 pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) -rino(i,k+1)) * &
                      (z(i,k) - z(i,k+1))
                 check(i) = .false.
-             end if
-          end if
+             endif
+          endif
        end do
     end do
     return
