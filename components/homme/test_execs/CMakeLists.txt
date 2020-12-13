@@ -246,32 +246,6 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
 
 ENDIF()
 
-IF (${BUILD_HOMME_THETA_KOKKOS})
-  #summit-gpu will have only gpu targets
-  if (${HOMME_MACHINE} MATCHES "summit-gpu")
-
-    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-
-  else()
-
-    ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
-
-    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-
-    # This one we build it only if both theta and theta_kokkos are requested,
-    # since it's just needed for perf/correctness comparisons
-    IF (BUILD_HOMME_THETA)
-      ADD_SUBDIRECTORY(theta-nlev128)
-    ENDIF()
-
-    IF (HOMMEXX_BFB_TESTING)
-      ADD_SUBDIRECTORY(thetal_kokkos_ut)
-    ENDIF()
-  endif()
-
-ENDIF()
-
 # Add the test exec subdirs for the prim executable
 IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(primA)

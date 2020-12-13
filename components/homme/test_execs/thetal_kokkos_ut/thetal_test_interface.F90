@@ -6,6 +6,7 @@ module thetal_test_interface
   use kinds,          only: real_kind 
   use hybvcoord_mod,  only: hvcoord_t 
   use parallel_mod,   only: abortmp
+  use geometry_mod,   only: set_area_correction_map0
 
   implicit none
 
@@ -20,8 +21,7 @@ contains
 
   subroutine init_f90 (ne, hyai, hybi, hyam, hybm, dvv, mp, ps0) bind(c)
     use control_mod,            only: cubed_sphere_map
-    use cube_mod,               only: cube_init_atomic, set_corner_coordinates, &
-                                      set_area_correction_map0
+    use cube_mod,               only: cube_init_atomic, set_corner_coordinates
     use derivative_mod,         only: derivinit
     use dimensions_mod,         only: nelemd, nlev, nlevp, np
     use geometry_interface_mod, only: initmp_f90, init_cube_geometry_f90, init_connectivity_f90

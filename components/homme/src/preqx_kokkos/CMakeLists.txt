@@ -105,6 +105,9 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
     ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+    ${SRC_SHARE_DIR}/planar_mod.F90
+    ${SRC_SHARE_DIR}/geometry_mod.F90
+    ${SRC_SHARE_DIR}/planar_mesh_mod.F90
   )
 
   SET(TEST_SRC_F90
