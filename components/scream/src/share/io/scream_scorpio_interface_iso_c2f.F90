@@ -15,7 +15,6 @@ contains
 !=====================================================================!
   subroutine eam_init_pio_subsystem_c2f(mpicom,compid,local) bind(c)
     use scream_scorpio_interface, only : eam_init_pio_subsystem
-    use physics_utils, only: rtype
     integer(kind=c_int), value, intent(in) :: mpicom
     integer(kind=c_int), value, intent(in) :: compid
     logical(kind=c_bool),value, intent(in) :: local
@@ -79,12 +78,18 @@ contains
     integer(kind=c_int), value, intent(in)              :: dof_len
     integer(kind=c_int), intent(in), dimension(dof_len) :: dof_vec
 
-    character(len=256)       :: filename
-    character(len=256)       :: varname
+    character(len=256)          :: filename
+    character(len=256)          :: varname
+    integer, dimension(dof_len) :: dof_vec_f90
+    integer                     :: ii
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call set_dof(trim(filename),trim(varname),dof_len,dof_vec)
+    ! Need to add 1 to the dof_vec because C++ starts indices at 0 not 1:
+    do ii = 1,dof_len
+      dof_vec_f90(ii) = dof_vec(ii) + 1
+    end do
+    call set_dof(trim(filename),trim(varname),dof_len,dof_vec_f90)
   end subroutine set_dof_c2f
 !=====================================================================!
   subroutine eam_pio_closefile_c2f(filename_in) bind(c)
@@ -195,6 +200,12 @@ contains
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
+  subroutine count_pio_atm_file_c2f() bind(c)
+    use scream_scorpio_interface, only : count_pio_atm_file
+
+    call count_pio_atm_file()
+  end subroutine count_pio_atm_file_c2f
+!=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
   ! Purpose: To convert a c_string pointer to the proper fortran string format.
     type(c_ptr), intent(in) :: c_string_ptr
@@ -211,7 +222,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_real_1d(filename_in,varname_in,dim1_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -229,7 +239,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_real_2d(filename_in,varname_in,dim1_length,dim2_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -247,7 +256,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_real_3d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -265,7 +273,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_real_4d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,dim4_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -283,7 +290,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_int_1d(filename_in,varname_in,dim1_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -301,7 +307,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_int_2d(filename_in,varname_in,dim1_length,dim2_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -319,7 +324,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_int_3d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -337,7 +341,6 @@ contains
 !=====================================================================!
   subroutine grid_write_data_array_c2f_int_4d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,dim4_length,hbuf_in) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -355,7 +358,6 @@ contains
 !=====================================================================!
   subroutine grid_read_data_array_c2f_int(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in
@@ -373,7 +375,6 @@ contains
 !=====================================================================!
   subroutine grid_read_data_array_c2f_real(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
 
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: varname_in

@@ -1,3 +1,5 @@
+set (SCREAM_TPLS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
+
 macro (CreateCsmShareTarget)
 
   # Some sanity checks
@@ -14,25 +16,29 @@ macro (CreateCsmShareTarget)
     message (FATAL_ERROR "Error! The cmake variable 'NINST_VALUE' is not defined.")
   endif ()
 
-  if (USE_ESMF_LIB)
-    set(ESMFDIR "esmf")
-  else()
-    set(ESMFDIR "noesmf")
-  endif()
-
-  set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
-
-  # If we didn't already parse this script, create interface lib
+  # If we didn't already parse this script, create imported target
   if (NOT TARGET csm_share)
-    include(tpls/Scorpio)
-    CreateScorpioTarget(TRUE)
 
+    # Build the name of the path where libcsm_share should be located
+    if (USE_ESMF_LIB)
+      set(ESMFDIR "esmf")
+    else()
+      set(ESMFDIR "noesmf")
+    endif()
+    set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
+
+    # Look for libcsm_share in the complex path we built above
     find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
 
-    # Create the imported library that scream targets can link to
+    # Create the imported target that scream targets can link to
     add_library(csm_share UNKNOWN IMPORTED GLOBAL)
     set_target_properties(csm_share PROPERTIES IMPORTED_LOCATION ${CSM_SHARE_LIB})
     set_target_properties(csm_share PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CSM_SHARE})
+
+    # Create the piof imported target, and link it to csm_share, so that cmake will correctly
+    # attach it to any downstream target linking against csm_share
+    include(${SCREAM_TPLS_MODULE_DIR}/Scorpio)
+    CreateScorpioTarget(TRUE)
     target_link_libraries(csm_share INTERFACE piof)
   endif ()
 endmacro()

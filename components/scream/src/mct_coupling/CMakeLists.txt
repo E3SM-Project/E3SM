@@ -28,9 +28,6 @@ set(ATM_SRC
   ekat_string_utils.F90
   scream_f2c_mod.F90
   scream_cpl_indices.F90
-  scream_scorpio_interface.F90
-  scream_scorpio_interface.cpp
-  scream_scorpio_interface_iso_c2f.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
 )
 
@@ -53,7 +50,3 @@ set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR
 
 # Link libraries
 target_link_libraries(atm PRIVATE ${SCREAM_LIBS} mct)
-
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-endif()

@@ -43,13 +43,6 @@ public:
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
 
-  // Ask for dimensions for specific tags. Note: requested tags MUST appear only once.
-  std::vector<int> dims (const std::vector<FieldTag>& tags) const;
-  std::vector<int> dims (const std::initializer_list<FieldTag>& tags) const;
-
-  template<typename... Tags>
-  std::array<int,sizeof...(Tags)> dims (const Tags... t) const;
-
   int      size ()               const;
 
   bool is_dimension_set  (const int idim) const;
@@ -62,8 +55,6 @@ public:
   void set_dimensions (const std::vector<int>& dims);
 
 protected:
-  template<typename... Tags>
-  std::array<int,sizeof...(Tags)> dims_impl (const Tags... t) const;
 
   int                   m_rank;
   std::vector<FieldTag> m_tags;
@@ -91,21 +82,6 @@ inline int FieldLayout::dim (const FieldTag t) const {
 inline int FieldLayout::dim (const int idim) const {
   ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
   return m_dims[idim];
-}
-
-inline std::vector<int>
-FieldLayout::dims (const std::vector<FieldTag>& tags) const {
-  std::vector<int> dims;
-  dims.reserve(tags.size());
-  for (auto t : tags) {
-    dims.push_back(dim(t));
-  }
-  return dims;
-}
-
-inline std::vector<int>
-FieldLayout::dims (const std::initializer_list<FieldTag>& tags) const {
-  return dims(std::vector<FieldTag>(tags));
 }
 
 inline int FieldLayout::size () const {
