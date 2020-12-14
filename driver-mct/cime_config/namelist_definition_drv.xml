@@ -3084,6 +3084,34 @@
     </values>
   </entry>
 
+  <entry id="info_mprof">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      Sets level of memory profile logging:
+      0: log mem-usage from component ROOTPE tasks
+      1: log mem-usage from all tasks
+      2: aggregate logging to node-level mem-usage on ROOTPE nodes
+      3: aggregate logging to node-level mem-usage on all nodes
+    </desc>
+    <values>
+      <value>$INFO_MPROF</value>
+    </values>
+  </entry>
+
+  <entry id="info_mprof_dt">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      number of seconds between memory profiling logs
+    </desc>
+    <values>
+      <value>$INFO_MPROF_DT</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- group prof_inparm           -->
   <!--  in perf_mod.F90            -->
