@@ -52,7 +52,7 @@
   <entry id="INFO_TASKMAP_MODEL">
     <type>integer</type>
     <valid_values>0,1,2</valid_values>
-    <default_value>0</default_value>
+    <default_value>1</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Sets level of task-to-node mapping output for the whole model
