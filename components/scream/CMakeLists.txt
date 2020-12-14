@@ -129,6 +129,20 @@ if (SCREAM_CIME_BUILD)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
 
+find_path(DEFAULT_NetCDF_Fortran_PATHS nf-config)
+if (DEFAULT_NetCDF_Fortran_PATHS)
+  get_filename_component(DEFAULT_NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} DIRECTORY)
+else()
+  set(DEFAULT_NetCDF_Fortran_PATHS "")
+endif()
+
+find_path(DEFAULT_NetCDF_C_PATHS nc-config)
+if (DEFAULT_NetCDF_C_PATHS)
+  get_filename_component(DEFAULT_NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} DIRECTORY)
+else()
+  set(DEFAULT_NetCDF_C_PATHS "")
+endif()
+
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -137,6 +151,8 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
+set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
