@@ -341,18 +341,6 @@
     </queues>
   </batch_system>
 
-    <batch_system MACH="mira" type="cobalt">
-      <queues>
-        <queue walltimemax="03:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="cetus" type="cobalt">
-      <queues>
-        <queue walltimemax="01:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
-
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
         <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>

@@ -823,9 +823,6 @@ flags should be captured within MPAS CMake files.
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-  <MPICC  MPILIB="impi">mpiicc</MPICC>
-  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
-  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
   <CFLAGS>
     <append>-static-intel</append>
   </CFLAGS>
