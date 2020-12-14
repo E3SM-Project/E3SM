@@ -179,8 +179,8 @@ struct UnitWrap::UnitTest<D>::TestUniversal
         Real T_atm = tmelt + k;
         T_th_conversion_test(T_atm,pres,errors);
         // DZ Test
-        zi_bot = exp(k);
-        zi_top = exp(k+1);
+        zi_bot = log(k);
+        zi_top = log(k+1);
         dz_tests(zi_top,zi_bot,errors);
       }
 
