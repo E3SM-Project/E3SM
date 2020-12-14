@@ -102,14 +102,6 @@ contains
 
     tl = 1
 
-#ifdef MODEL_THETA_L
-    ! not going to wrap each scm call in ifdef for now,
-    ! but some calls have to be wrapped
-    if (single_column) then
-       call endrun("read_inidat: SCM does not work with cam target theta-l.")
-    endif
-#endif
-
     if(par%dynproc) then
        elem=> dyn_in%elem
     else
@@ -240,7 +232,7 @@ contains
           do i = 1, np
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
-             !no scm in theta-l yet
+             if (single_column) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)

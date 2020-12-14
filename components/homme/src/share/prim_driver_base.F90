@@ -1743,8 +1743,6 @@ contains
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
-
-    dt_q = dt*dt_tracer_factor
  
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
@@ -1783,7 +1781,7 @@ contains
       
     enddo
 
-  end subroutine prim_step_scm  
+  end subroutine prim_step_scm
 
 
 !=======================================================================================================!
@@ -1880,22 +1878,32 @@ contains
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
     
     do k=1,nlev
-      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)   
+      eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)
     enddo  
-    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev) 
+    eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev)
     
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
-        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))    
-    enddo       
+        + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
+    enddo
+
+    ! If running theta_l model then the floating potential temperature
+    !   needs to be updated with the new floating levels
+#ifdef MODEL_THETA_L
+    do k=1,nlev
+      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
+                elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
+    enddo
+#endif
 
     do p=1,qsize
       do k=1,nlev
-        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*elem(1)%state%dp3d(:,:,k,np1)
+        elem(1)%state%Qdp(:,:,k,p,np1_qdp)=elem(1)%state%Q(:,:,k,p)*&
+          elem(1)%state%dp3d(:,:,k,np1)
       enddo
     enddo
     
-  end subroutine set_prescribed_scm        
+  end subroutine set_prescribed_scm
     
 end module prim_driver_base
 
