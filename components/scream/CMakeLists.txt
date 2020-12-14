@@ -129,18 +129,28 @@ if (SCREAM_CIME_BUILD)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
 
-find_path(DEFAULT_NetCDF_Fortran_PATHS nf-config)
-if (DEFAULT_NetCDF_Fortran_PATHS)
-  get_filename_component(DEFAULT_NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} DIRECTORY)
-else()
-  set(DEFAULT_NetCDF_Fortran_PATHS "")
+find_path(NF_CONFIG_SEARCH nf-config)
+if (NF_CONFIG_SEARCH)
+  execute_process(COMMAND ${NF_CONFIG_SEARCH}/nf-config --prefix
+    RESULT_VARIABLE NF_STATUS
+    OUTPUT_VARIABLE NF_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NF_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+  endif()
 endif()
 
-find_path(DEFAULT_NetCDF_C_PATHS nc-config)
-if (DEFAULT_NetCDF_C_PATHS)
-  get_filename_component(DEFAULT_NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} DIRECTORY)
-else()
-  set(DEFAULT_NetCDF_C_PATHS "")
+find_path(NC_CONFIG_SEARCH nc-config)
+if (NC_CONFIG_SEARCH)
+  execute_process(COMMAND ${NC_CONFIG_SEARCH}/nc-config --prefix
+    RESULT_VARIABLE NC_STATUS
+    OUTPUT_VARIABLE NC_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NC_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+  endif()
 endif()
 
 ### Set CACHE vars
