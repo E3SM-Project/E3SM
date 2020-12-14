@@ -3471,6 +3471,7 @@ contains
          verticalGrid, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
+         seaFreezingTemperature, &
          snowfallRate, &
          zSalinityFlux, &
          zSalinityGDFlux, &
@@ -3858,6 +3859,7 @@ contains
                snowiceFormationCategory(:,iCell), &
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
+               seaFreezingTemperature(iCell), &
                snowfallRate(iCell), &
                snowMeltCategory(:,iCell), &
                oceanMixedLayerDepth(iCell), &

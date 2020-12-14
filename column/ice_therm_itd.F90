@@ -89,7 +89,9 @@
          ncat    , & ! number of thickness categories
          nilyr   , & ! number of ice layers
          nslyr   , & ! number of snow layers
-         ntrcr   , & ! number of tracers in use
+         ntrcr       ! number of tracers in use
+
+      real (kind=dbl_kind), intent(in) :: &
          Tf          ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
