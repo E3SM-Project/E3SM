@@ -66,6 +66,10 @@ close(file);
 chdir $exedir;
 `mv ww3_grid $RUNDIR`;
 
+# Run ww3_grid
+chdir $RUNDIR;
+`./ww3_grid`;
+
 # Cleanup untracked file
 chdir $modeldir;
 `rm makefile`;

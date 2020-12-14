@@ -124,7 +124,7 @@ my $NML_TYPE    = $opts{'nml_type'};
 
 if ($print>=2) { print "Setting ww3 configuration script directory to $cfgdir$eol"; }
 
-if ($NML_TYPE ne "ww3" && $NML_TYPE ne "ww3_grid") {  
+if ($NML_TYPE ne "ww3" && $NML_TYPE ne "ww3_grid" && $NML_TYPE ne "ww3_grid_nml") {  
 die  "NML_TYPE not recognized";
 }
 
@@ -342,6 +342,10 @@ if ($NML_TYPE eq "ww3_grid") {
     add_default($nl, 'inbnd_point(2)%y_index');
     add_default($nl, 'inbnd_point(2)%connect');
 }
+if ($NML_TYPE eq "ww3_grid_nml") {
+    add_default($nl, 'ugobcauto');
+    add_default($nl, 'expfsn');
+}
 
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid
@@ -362,7 +366,11 @@ if ($NML_TYPE eq "ww3") {
 }
 if ($NML_TYPE eq "ww3_grid") {
     @groups = qw(spectrum_nml run_nml timesteps_nml grid_nml unst_nml inbnd_count_nml inbnd_point_nml);
-    $outfile = "./ww3_grid_in";
+    $outfile = "./ww3_grid.nml";
+}
+if ($NML_TYPE eq "ww3_grid_nml") {
+    @groups = qw(unst);
+    $outfile = "./ww3_grid_namelists.nml";
 }
 
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );

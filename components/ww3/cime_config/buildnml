@@ -85,6 +85,7 @@ def buildnml(case, caseroot, compname):
         # call build-namelist
         # -----------------------------------------------------
 
+        # Runtime namelist for WW3 component
         sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
         sysmod += " -infile {}/cesm_namelist".format(wavconf_dir)
         sysmod += " -caseroot {}".format(caseroot)
@@ -94,12 +95,20 @@ def buildnml(case, caseroot, compname):
         sysmod += ' -inst_string "{}" '.format(inst_string)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 
+        # Namelist for ww3_grid preprocessing program
         sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
         sysmod += " -caseroot {}".format(caseroot)
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += " -nml_type {}".format('ww3_grid')
         sysmod += ' -inst_string "{}" '.format(inst_string)
-        sysmod += ' -print "{}" '.format('2')
+        run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
+
+        # Additional namelist for ww3_grid preprocessing program
+        sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += " -nml_type {}".format('ww3_grid_nml')
+        sysmod += ' -inst_string "{}" '.format(inst_string)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 
         # -----------------------------------------------------
@@ -109,7 +118,10 @@ def buildnml(case, caseroot, compname):
             safe_copy(os.path.join(wavconf_dir, "ww3_in"), os.path.join(rundir, "ww3_in{}".format(inst_string)))
 
         if os.path.exists(rundir):
-            safe_copy(os.path.join(wavconf_dir, "ww3_grid_in"), os.path.join(rundir, "ww3_grid_in{}".format(inst_string)))
+            safe_copy(os.path.join(wavconf_dir, "ww3_grid.nml"), os.path.join(rundir, "ww3_grid.nml{}".format(inst_string)))
+
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(wavconf_dir, "ww3_grid_namelists.nml"), os.path.join(rundir, "ww3_grid_namelists.nml{}".format(inst_string)))
 ###############################################################################
 def _main_func():
 ###############################################################################

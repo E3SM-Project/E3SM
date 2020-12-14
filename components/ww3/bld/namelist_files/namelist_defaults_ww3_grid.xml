@@ -30,7 +30,7 @@ attributes to express the dependency.
 <timesteps%dtmin>30.0</timesteps%dtmin>
 
 <grid%name>glo_unst</grid%name>
-<grid%nml>namelists.nml</grid%nml>
+<grid%nml>ww3_grid_namelists.nml</grid%nml>
 <grid%type>UNST</grid%type>
 <grid%coord>SPHE</grid%coord>
 <grid%clos>SMPL</grid%clos>
@@ -45,11 +45,6 @@ attributes to express the dependency.
 <unst%format>(....)</unst%format>
 
 <inbnd_count%n_point>2</inbnd_count%n_point>
-
-<!--
-<inbnd_point(1)>0 0 f</inbnd_point(1)>
-<inbnd_point(2)>0 0 f</inbnd_point(2)>
--->
 
 <inbnd_point(1)%x_index>0</inbnd_point(1)%x_index>
 <inbnd_point(1)%y_index>0</inbnd_point(1)%y_index>
