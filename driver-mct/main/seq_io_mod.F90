@@ -828,7 +828,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn)
+       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn, mask)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -847,7 +847,7 @@ contains
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
     integer          ,optional,intent(in) :: file_ind
     logical          ,optional,intent(in) :: scolumn    ! single column model flag
-
+    real(r8)         ,optional,intent(in) :: mask(:)
     !EOP
 
     type(mct_gsMap), pointer :: gsmap     ! global seg map on coupler processes
@@ -1037,10 +1037,18 @@ contains
              do k1 = 1,ni
                 if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
                 if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))
-                do k2 = 1,ns
-                   n = n + 1
-                   data(n) = avcomp%rAttr(k,k2)
-                enddo
+                if (present(mask)) then
+                   where(mask /= 0)
+                      data = avcomp%rattr(k,:)
+                   elsewhere
+                      data = lfillvalue
+                   endwhere
+                else
+                   do k2 = 1,ns
+                      n = n + 1
+                      data(n) = avcomp%rAttr(k,k2)
+                   enddo
+                endif
              enddo
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
              !-------tcraig
