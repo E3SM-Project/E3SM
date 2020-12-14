@@ -3125,6 +3125,7 @@ contains
          tracers_aggregate, &
          ponds, &
          ocean_fluxes, &
+         ocean_coupling, &
          ridging, &
          aerosols, &
          biogeochemistry, &
@@ -3156,6 +3157,7 @@ contains
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
+         seaFreezingTemperature, &
          iceAreaCell, &
          ridgeConvergence, &
          ridgeShear, &
@@ -3248,6 +3250,8 @@ contains
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
@@ -3310,6 +3314,7 @@ contains
                categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
                ridgeConvergence(iCell), &
                ridgeShear(iCell), &
+               seaFreezingTemperature(iCell), &
                iceAreaCategory(1,:,iCell), &
                tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
                iceVolumeCategory(1,:,iCell), &
