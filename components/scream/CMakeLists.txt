@@ -22,6 +22,7 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
@@ -197,25 +198,15 @@ include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 
-# Init scream TPLs info to whatever EKAT set.
-set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
-set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
-
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
 
-set (SCREAM_INCLUDE_DIRS
-  ${SCREAM_SRC_DIR}
-  ${EKAT_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/src
-)
-
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64 ")
+    set(SCREAM_Fortran_FLAGS -real-size 64)
   else()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
@@ -227,13 +218,11 @@ print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
-print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
-print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.

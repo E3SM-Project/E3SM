@@ -1,3 +1,5 @@
+set (SCREAM_TPLS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
+
 macro (CreateMctTarget)
 
   # Some sanity checks
@@ -8,9 +10,9 @@ macro (CreateMctTarget)
     message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
   endif ()
 
-  # If we didn't already parse this script, create interface lib
+  # If we didn't already parse this script, proceed
   if (NOT TARGET mct)
-    message ("looking for mct lib in ${INSTALL_SHAREDPATH}/lib")
+    # Look for libmct in INSTALL_SHAREDPATH/lib
     find_library(MCT_LIB mct REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the imported library that scream targets can link to
@@ -18,7 +20,9 @@ macro (CreateMctTarget)
     set_target_properties(mct PROPERTIES IMPORTED_LOCATION ${MCT_LIB})
     set_target_properties(mct PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
 
-    include(tpls/CsmShare)
+    # Create the csm_share imported target, and link it to mct, so that cmake will correctly
+    # attach it to any downstream target linking against mct
+    include(${SCREAM_TPLS_MODULE_DIR}/CsmShare)
     CreateCsmShareTarget()
     target_link_libraries(mct INTERFACE csm_share)
   endif ()

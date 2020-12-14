@@ -159,6 +159,19 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     }
   }
 
+  // Now that all fields have been set and checked we can establish an output manager
+  // for all output streams.
+  if (m_atm_params.isSublist("Output Manager"))
+  {
+    auto& out_params = m_atm_params.sublist("Output Manager");
+    m_output_manager.set_params(out_params);
+    m_output_manager.set_comm(atm_comm);
+    m_output_manager.set_grids(m_grids_manager);
+    m_output_manager.set_repo(m_field_repo);
+    // If not true then m_output_manager.init() won't do anything, leaving no_output flag as true and skipping output throughout simulation.
+  }
+  m_output_manager.init();
+
 #if defined(SCREAM_CIME_BUILD)
   // If this is a CIME build, we need to prepare the surface coupling
   m_surface_coupling = std::make_shared<SurfaceCoupling>(m_grids_manager->get_reference_grid(),*m_field_repo);
@@ -196,6 +209,9 @@ void AtmosphereDriver::run (const Real dt) {
   // Update current time stamps
   m_current_ts += dt;
 
+  // Update output streams
+  m_output_manager.run(m_current_ts);
+
   if (m_surface_coupling) {
     // Export fluxes from the component coupler (if any)
     m_surface_coupling->do_export();
@@ -204,6 +220,9 @@ void AtmosphereDriver::run (const Real dt) {
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_process_group->finalize( /* inputs ? */ );
+
+  // Finalize output streams, make sure files are closed
+  m_output_manager.finalize();
 
   m_field_repo->clean_up();
 #ifdef SCREAM_DEBUG
