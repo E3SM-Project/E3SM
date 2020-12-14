@@ -97,12 +97,14 @@
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr , & ! number of tracers in use
-         ncat  , & ! number of thickness categories
-         Tf        ! ocean freezing temperature (C)
+         ncat      ! number of thickness categories
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
          n_trcr_strata  ! number of underlying tracer layers
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension (:,:), intent(in) :: &
          trcr_base      ! = 0 or 1 depending on tracer dependency
@@ -357,12 +359,14 @@
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
-         ntrcr , & ! number of tracers in use
-         Tf        ! ocean freezing temperature (C)
+         ntrcr     ! number of tracers in use
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
          n_trcr_strata  ! number of underlying tracer layers
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension (:,:), intent(in) :: &
          trcr_base      ! = 0 or 1 depending on tracer dependency
