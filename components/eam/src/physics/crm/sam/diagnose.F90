@@ -121,7 +121,7 @@ contains
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
-          psfc_xy(icrm,i,j) = psfc_xy(icrm,i,j) + (100.*pres(icrm,1) + p(icrm,i,j,1))*dtfactor
+          psfc_xy(icrm,i,j) = psfc_xy(icrm,i,j) + (100.D0*pres(icrm,1) + p(icrm,i,j,1))*dtfactor
         enddo
       enddo
     enddo
@@ -149,7 +149,7 @@ contains
           tmp_lwp = 0.
           do k = nzm,1,-1
             tmp_lwp = tmp_lwp + (qcl(icrm,i,j,k)+qci(icrm,i,j,k))*rho(icrm,k)*dz(icrm)*adz(icrm,k)
-            if (tmp_lwp.gt.0.01) then
+            if (tmp_lwp.gt.0.01D0) then
               cloudtopheight(icrm,i,j) = z(icrm,k)
               cloudtoptemp(icrm,i,j) = tabs(icrm,i,j,k)
               cld_xy(icrm,i,j) = cld_xy(icrm,i,j) + dtfactor
@@ -158,7 +158,7 @@ contains
           enddo
           ! FIND ECHO TOP HEIGHT
           do k = nzm,1,-1
-            if (qpl(icrm,i,j,k)+qpi(icrm,i,j,k).gt.1.e-6) then
+            if (qpl(icrm,i,j,k)+qpi(icrm,i,j,k).gt.1.D-6) then
               echotopheight(icrm,i,j) = z(icrm,k)
               EXIT
             endif

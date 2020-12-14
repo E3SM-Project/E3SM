@@ -24,7 +24,7 @@ contains
     call prefetch( qpoz )
     call prefetch( nneg )
 
-    coef = 1./3600.
+    coef = 1.D0/3600.D0
 
     !$acc parallel loop collapse(2) async(asyncid)
     do k=1,nzm

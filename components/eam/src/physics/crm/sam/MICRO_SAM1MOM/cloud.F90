@@ -60,7 +60,7 @@ contains
             if(q(icrm,i,j,k).gt.qsatt) then
               niter=0
               dtabs = 100.
-              do while(abs(dtabs).gt.0.01.and.niter.lt.10)
+              do while(abs(dtabs).gt.0.01D0.and.niter.lt.10)
                 if(tabs1.ge.tbgmax) then
                   om=1.
                   lstarn=fac_cond

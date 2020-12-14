@@ -70,13 +70,13 @@ void damping() {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp;
 
-    tmp = u(k,offy_u+j,offx_u+i,icrm)/(nx*ny);
+    tmp = u(k,offy_u+j,offx_u+i,icrm)/( (real) nx * (real) ny );
     yakl::atomicAdd(u0loc(k,icrm),tmp);
 
-    tmp = v(k,offy_v+j,offx_v+i,icrm)/(nx*ny);
+    tmp = v(k,offy_v+j,offx_v+i,icrm)/( (real) nx * (real) ny );
     yakl::atomicAdd(v0loc(k,icrm),tmp);
 
-    tmp = t(k,offy_s+j,offx_s+i,icrm)/(nx*ny);
+    tmp = t(k,offy_s+j,offx_s+i,icrm)/( (real) nx * (real) ny );
     yakl::atomicAdd(t0loc(k,icrm),tmp);
   });
 

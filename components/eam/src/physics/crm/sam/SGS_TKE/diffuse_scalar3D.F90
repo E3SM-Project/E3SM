@@ -43,8 +43,8 @@ contains
     call prefetch( flx_z )
     call prefetch( dfdt  )
 
-    rdx2=1./(dx*dx)
-    rdy2=1./(dy*dy)
+    rdx2=1.D0/(dx*dx)
+    rdy2=1.D0/(dy*dy)
     dxy=dx/dy
     dyx=dy/dx
 
@@ -133,13 +133,13 @@ contains
           do icrm = 1 , ncrms
             if (j >= 1) then
               ic=i+1
-              rdx5=0.5*rdx2  * grdf_x(icrm,k)
+              rdx5=0.5D0*rdx2  * grdf_x(icrm,k)
               tkx=rdx5*(tkh(icrm,i,j,k)+tkh(icrm,ic,j,k))
               flx_x(icrm,i,j,k)=-tkx*(field(icrm,ic,j,k)-field(icrm,i,j,k))
             endif
             if (i >= 1) then
               jc=j+1
-              rdy5=0.5*rdy2  * grdf_y(icrm,k)
+              rdy5=0.5D0*rdy2  * grdf_y(icrm,k)
               tky=rdy5*(tkh(icrm,i,j,k)+tkh(icrm,i,jc,k))
               flx_y(icrm,i,j,k)=-tky*(field(icrm,i,jc,k)-field(icrm,i,j,k))
             endif
@@ -177,15 +177,15 @@ contains
             if (k <= nzm-1) then
               kc=k+1
               rhoi = rhow(icrm,kc)/adzw(icrm,kc)
-              rdz2=1./(dz(icrm)*dz(icrm))
-              rdz5=0.5*rdz2 * grdf_z(icrm,k)
+              rdz2=1.D0/(dz(icrm)*dz(icrm))
+              rdz5=0.5D0*rdz2 * grdf_z(icrm,k)
               tkz=rdz5*(tkh(icrm,i,j,k)+tkh(icrm,i,j,kc))
               flx_z(icrm,i,j,k)=-tkz*(field(icrm,i,j,kc)-field(icrm,i,j,k))*rhoi
               !$acc atomic update
               flux(icrm,kc) = flux(icrm,kc) + flx_z(icrm,i,j,k)
             elseif (k == nzm) then
-              tmp=1./adzw(icrm,nz)
-              rdz=1./dz(icrm)
+              tmp=1.D0/adzw(icrm,nz)
+              rdz=1.D0/dz(icrm)
               flx_z(icrm,i,j,0)=fluxb(icrm,i,j)*rdz*rhow(icrm,1)
               flx_z(icrm,i,j,nzm)=fluxt(icrm,i,j)*rdz*tmp*rhow(icrm,nz)
               !$acc atomic update
@@ -202,7 +202,7 @@ contains
         do i=1,nx
           do icrm = 1 , ncrms
             kb=k-1
-            rhoi = 1./(adz(icrm,k)*rho(icrm,k))
+            rhoi = 1.D0/(adz(icrm,k)*rho(icrm,k))
             dfdt(icrm,i,j,k)=dtn*(dfdt(icrm,i,j,k)-(flx_z(icrm,i,j,k)-flx_z(icrm,i,j,kb))*rhoi)
             field(icrm,i,j,k)=field(icrm,i,j,k)+dfdt(icrm,i,j,k)
           enddo

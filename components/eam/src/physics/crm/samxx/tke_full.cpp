@@ -183,7 +183,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   
   // for (int k=0; k<nzm-1; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm-1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     tkelediss(k,icrm) = 0.0;
     tkesbdiss(k,icrm) = 0.0;
     tkesbshear(k,icrm) = 0.0;
@@ -236,7 +236,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     tk(ind_tk,k,j+offy_d,i+offx_d,icrm)  = min(tk(ind_tk,k,j+offy_d,i+offx_d,icrm),tkmax);
     tkh(ind_tkh,k,j+offy_d,i+offx_d,icrm) = Pr*tk(ind_tk,k,j+offy_d,i+offx_d,icrm);
 
-    tmp = a_prod_sh/(nx*ny);
+    tmp = a_prod_sh/( (real) nx * (real) ny );
     yakl::atomicAdd(tkelediss(k,icrm),-tmp);
     yakl::atomicAdd(tkesbdiss(k,icrm),a_diss);
     yakl::atomicAdd(tkesbshear(k,icrm),a_prod_sh);
