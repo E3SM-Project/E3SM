@@ -13,10 +13,25 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::pblintd_check_pblh(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const bool>& check, const uview_1d<Spack>& pblh)
+void Functions<S,D>::pblintd_check_pblh(const Int& nlevi, const Int& npbl, 
+       const uview_1d<const Spack>& z, const Scalar& ustar, const bool& check, Scalar& pblh)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+   // PBL height must be greater than some minimum mechanical mixing depth
+   // Several investigators have proposed minimum mechanical mixing depth
+   // relationships as a function of the local friction velocity, u*.  We
+   // make use of a linear relationship of the form h = c u* where c=700.
+   // The scaling arguments that give rise to this relationship most often
+   // represent the coefficient c as some constant over the local coriolis
+   // parameter.  Here we make use of the experimental results of Koracin
+   // and Berkowicz (1988) [BLM, Vol 43] for which they recommend 0.07/f
+   // where f was evaluated at 39.5 N and 52 N.  Thus we use a typical mid
+   // latitude value for f so that c = 0.07/f = 700.  Also, do not allow
+   // PBL to exceed some maximum (npbl) number of allowable points
+   //
+   const auto npbl_pack = (nlevi-npbl-1)/Spack::n;
+   const auto npbl_indx = (nlevi-npbl-1)%Spack::n;
+   if (check) pblh = z(npbl_pack)[npbl_indx];
+   pblh = ekat::impl::max(pblh, sp(700)*ustar);
 }
 
 } // namespace shoc

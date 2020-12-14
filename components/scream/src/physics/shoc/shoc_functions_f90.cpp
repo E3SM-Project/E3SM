@@ -3099,10 +3099,52 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
 {
   // TODO
 }
+
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh)
 {
-  // TODO
+  using SHOC         = Functions<Real, DefaultDevice>;
+  using Spack        = typename SHOC::Spack;
+  using Scalar       = typename SHOC::Scalar;
+  using Pack1        = typename ekat::Pack<Real, 1>;
+  using Bpack1       = typename ekat::Pack<bool, 1>;
+  using view_bool_1d = typename SHOC::view_1d<Bpack1>;
+  using view_1d      = typename SHOC::view_1d<Pack1>;
+  using view_2d      = typename SHOC::view_2d<Spack>;
+
+  std::vector<view_2d> views_2d(1);
+  ekat::host_to_device({z}, shcol, nlev, views_2d, true);
+  view_2d z_2d (views_2d[0]);
+
+  std::vector<view_1d> views_1d(2);
+  ekat::host_to_device({ustar, pblh}, shcol, views_1d);
+  view_1d ustar_1d (views_1d[0]),
+          pblh_1d  (views_1d[1]);
+
+  SHOC::view_1d<bool> check_1d("check", shcol);
+  const auto host_check_1d = Kokkos::create_mirror_view(check_1d);
+  for (auto k=0; k<shcol; ++k) {
+    host_check_1d(k) = check[k];
+  }
+  Kokkos::deep_copy(check_1d, host_check_1d);
+
+  Int npbl = nlev;
+
+  Kokkos::parallel_for("pblintd_check_pblh", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    const auto z_1d  = ekat::subview(z_2d, i);
+    Scalar& ustar_s  = ustar_1d(i)[0];
+    Scalar pblh_s {0.};
+
+    bool& check_s = check_1d(i);
+
+    SHOC::pblintd_check_pblh(nlevi, npbl, z_1d, ustar_s, check_s, pblh_s);
+    pblh_1d(i)[0] = pblh_s;
+ });
+
+  std::vector<view_1d> out_1d_views = {pblh_1d};
+  ekat::device_to_host({pblh}, shcol, out_1d_views);
 }
+
 void pblintd_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh)
 {
   // TODO
