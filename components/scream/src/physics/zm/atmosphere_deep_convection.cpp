@@ -15,7 +15,7 @@ ZMDeepConvection::ZMDeepConvection (const ekat::Comm& comm,const ekat::Parameter
   , m_zm_params(params)
 {
   m_initializer = create_field_initializer<ZMInputsInitializer>();
-  
+
 }
 
 void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
@@ -41,19 +41,19 @@ void ZMDeepConvection::set_grids(const std::shared_ptr<const GridsManager> grids
   FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
   FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
   FieldLayout scalar2d_layout{ {COL}, {nc} };
- 
+
   std::vector<FieldLayout> layout_opts = {scalar3d_layout_mid, scalar3d_layout_int,
 					vector3d_layout_mid, tracers_layout, scalar2d_layout};
- 
+
   set_grid_opts();
-  
+
   for ( auto i = opt_map.begin(); i != opt_map.end(); ++i) {
     m_required_fields.emplace((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
     if ( (i->second).isOut == true ) {
       m_computed_fields.emplace((i->second).name, layout_opts[((i->second).field_idx)], Q, grid->name());
     }
   }
-  
+
 }
 
 // =========================================================================================
@@ -66,9 +66,8 @@ void ZMDeepConvection::initialize_impl (const util::TimeStamp& t0)
   using strvec = std::vector<std::string>;
   const strvec& allowed_to_init = m_zm_params.get<strvec>("Initializable Inputs",strvec(0));
   const bool can_init_all = m_zm_params.get<bool>("Can Initialize All Inputs", false);
-  const bool init_all_or_none = m_zm_params.get<bool>("Must Init All Inputs Or None", true);
   const strvec& initable = can_init_all ? zm_inputs : allowed_to_init;
-  
+
   if (initable.size()>0) {
     bool all_inited = true, all_uninited = true;
     for (const auto& name : initable) {
@@ -102,31 +101,31 @@ void ZMDeepConvection::run_impl (const Real dt)
 
   Real** temp = &m_raw_ptrs_out["fracis"];
   Real*** fracis = &temp;
- 
-  zm_main_f90(*m_raw_ptrs_out["lchnk"], *m_raw_ptrs_out["ncol"], m_raw_ptrs_out["t"], 
-  	      m_raw_ptrs_out["qh"], m_raw_ptrs_out["prec"], m_raw_ptrs_out["jctop"], 
-              m_raw_ptrs_out["jcbot"], m_raw_ptrs_out["pblh"], m_raw_ptrs_out["zm"], 
-              m_raw_ptrs_out["geos"], m_raw_ptrs_out["zi"], m_raw_ptrs_out["qtnd"], 
-              m_raw_ptrs_out["heat"], m_raw_ptrs_out["pap"], m_raw_ptrs_out["paph"], 
-              m_raw_ptrs_out["dpp"], *m_raw_ptrs_out["delt"], m_raw_ptrs_out["mcon"], 
-	      m_raw_ptrs_out["cme"], m_raw_ptrs_out["cape"], m_raw_ptrs_out["tpert"], 
-              m_raw_ptrs_out["dlf"], m_raw_ptrs_out["plfx"], m_raw_ptrs_out["zdu"], 
-	      m_raw_ptrs_out["rprd"], m_raw_ptrs_out["mu"], m_raw_ptrs_out["md"], 
-              m_raw_ptrs_out["du"], m_raw_ptrs_out["eu"], m_raw_ptrs_out["ed"], 
-	      m_raw_ptrs_out["dp"], m_raw_ptrs_out["dsubcld"], m_raw_ptrs_out["jt"], 
-	      m_raw_ptrs_out["maxg"], m_raw_ptrs_out["ideep"], *m_raw_ptrs_out["lengath"], 
-              m_raw_ptrs_out["ql"], m_raw_ptrs_out["rliq"], m_raw_ptrs_out["landfrac"], 
-              m_raw_ptrs_out["hu_nm1"], m_raw_ptrs_out["cnv_nm1"], m_raw_ptrs_out["tm1"], 
-              m_raw_ptrs_out["qm1"], &m_raw_ptrs_out["t_star"], &m_raw_ptrs_out["q_star"], 
-              m_raw_ptrs_out["dcape"], m_raw_ptrs_out["q"], &m_raw_ptrs_out["tend_s"], 
-              &m_raw_ptrs_out["tend_q"], &m_raw_ptrs_out["cld"], m_raw_ptrs_out["snow"], 
-              m_raw_ptrs_out["ntprprd"], m_raw_ptrs_out["ntsnprd"], 
-              &m_raw_ptrs_out["flxprec"], &m_raw_ptrs_out["flxsnow"], 
-              *m_raw_ptrs_out["ztodt"], m_raw_ptrs_out["pguall"], m_raw_ptrs_out["pgdall"], 
-              m_raw_ptrs_out["icwu"], *m_raw_ptrs_out["ncnst"], fracis); 
+
+  zm_main_f90(*m_raw_ptrs_out["lchnk"], *m_raw_ptrs_out["ncol"], m_raw_ptrs_out["t"],
+  	      m_raw_ptrs_out["qh"], m_raw_ptrs_out["prec"], m_raw_ptrs_out["jctop"],
+              m_raw_ptrs_out["jcbot"], m_raw_ptrs_out["pblh"], m_raw_ptrs_out["zm"],
+              m_raw_ptrs_out["geos"], m_raw_ptrs_out["zi"], m_raw_ptrs_out["qtnd"],
+              m_raw_ptrs_out["heat"], m_raw_ptrs_out["pap"], m_raw_ptrs_out["paph"],
+              m_raw_ptrs_out["dpp"], *m_raw_ptrs_out["delt"], m_raw_ptrs_out["mcon"],
+	      m_raw_ptrs_out["cme"], m_raw_ptrs_out["cape"], m_raw_ptrs_out["tpert"],
+              m_raw_ptrs_out["dlf"], m_raw_ptrs_out["plfx"], m_raw_ptrs_out["zdu"],
+	      m_raw_ptrs_out["rprd"], m_raw_ptrs_out["mu"], m_raw_ptrs_out["md"],
+              m_raw_ptrs_out["du"], m_raw_ptrs_out["eu"], m_raw_ptrs_out["ed"],
+	      m_raw_ptrs_out["dp"], m_raw_ptrs_out["dsubcld"], m_raw_ptrs_out["jt"],
+	      m_raw_ptrs_out["maxg"], m_raw_ptrs_out["ideep"], *m_raw_ptrs_out["lengath"],
+              m_raw_ptrs_out["ql"], m_raw_ptrs_out["rliq"], m_raw_ptrs_out["landfrac"],
+              m_raw_ptrs_out["hu_nm1"], m_raw_ptrs_out["cnv_nm1"], m_raw_ptrs_out["tm1"],
+              m_raw_ptrs_out["qm1"], &m_raw_ptrs_out["t_star"], &m_raw_ptrs_out["q_star"],
+              m_raw_ptrs_out["dcape"], m_raw_ptrs_out["q"], &m_raw_ptrs_out["tend_s"],
+              &m_raw_ptrs_out["tend_q"], &m_raw_ptrs_out["cld"], m_raw_ptrs_out["snow"],
+              m_raw_ptrs_out["ntprprd"], m_raw_ptrs_out["ntsnprd"],
+              &m_raw_ptrs_out["flxprec"], &m_raw_ptrs_out["flxsnow"],
+              *m_raw_ptrs_out["ztodt"], m_raw_ptrs_out["pguall"], m_raw_ptrs_out["pgdall"],
+              m_raw_ptrs_out["icwu"], *m_raw_ptrs_out["ncnst"], fracis);
   m_current_ts += dt;
-  for (int i = 0; i < zm_inputs.size(); i++){
-  	m_zm_fields_out.at(zm_inputs[i]).get_header().get_tracking().update_time_stamp(m_current_ts);
+  for (size_t i = 0; i < zm_inputs.size(); i++){
+    m_zm_fields_out.at(zm_inputs[i]).get_header().get_tracking().update_time_stamp(m_current_ts);
   }
 }
 // =========================================================================================
@@ -145,8 +144,8 @@ void ZMDeepConvection::register_fields (FieldRepository<Real>& field_repo) const
  }
 
 void ZMDeepConvection::set_required_field_impl (const Field<const Real>& f) {
-  // @Meredith: Diff between add_me_as_a_customer and get_tracking().add_customer? 
-  
+  // @Meredith: Diff between add_me_as_a_customer and get_tracking().add_customer?
+
   // Store a copy of the field. We need this in order to do some tracking checks
   // at the beginning of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr

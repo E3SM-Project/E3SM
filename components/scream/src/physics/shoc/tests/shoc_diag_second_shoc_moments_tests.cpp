@@ -60,7 +60,6 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
 
     // establish reasonable bounds for checking result
     static constexpr Real thl_sec_ubound = 1000; // [K^s]
-    static constexpr Real qw_sec_ubound = 1e-3; // [kg/kg]
     static constexpr Real qwthl_sec_bound = 1e-1; // [K kg/kg]
     static constexpr Real wthl_sec_bound = 10; // [K m/s]
     static constexpr Real wqw_sec_bound = 1e-3; // [kg/kg m/s]

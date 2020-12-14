@@ -89,7 +89,6 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     Real zt_grid[nlev];
     Real dz_zt[nlev];
     Real dz_zi[nlevi];
-    Real w_sec[nlev];
     // Compute heights on midpoint grid
     for(Int n = 0; n < nlev; ++n) {
       zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);

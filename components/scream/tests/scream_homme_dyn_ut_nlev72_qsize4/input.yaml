@@ -11,5 +11,7 @@ Atmosphere Processes:
 
 Grids Manager:
   Type: Dynamics Driven
-  Reference Grid: Physics
+  Reference Grid: Physics GLL
+  Dynamics Driven:
+    Dynamics Namelist File Name: namelist.nl
 ...

@@ -40,8 +40,9 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
     if dry_run:
         return 0, "", ""
 
-    if (input_str is not None):
+    if input_str is not None:
         stdin = subprocess.PIPE
+        input_str = input_str.encode('utf-8')
     else:
         stdin = None
 
@@ -51,17 +52,18 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir,
-                            env=env,
-                            universal_newlines=True)
+                            env=env)
 
     output, errput = proc.communicate(input_str)
     if output is not None:
         try:
+            output = output.decode('utf-8', errors='ignore')
             output = output.strip()
         except AttributeError:
             pass
     if errput is not None:
         try:
+            errput = errput.decode('utf-8', errors='ignore')
             errput = errput.strip()
         except AttributeError:
             pass
@@ -85,7 +87,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None, dry_run=Fa
         ...
     SystemExit: ERROR: Command: 'echo THE ERROR >&2; false' failed with error ...
 
-    >>> run_cmd_no_fail('grep foo', input_str=b'foo') == 'foo'
+    >>> run_cmd_no_fail('grep foo', input_str='foo') == 'foo'
     True
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
@@ -358,7 +360,7 @@ def update_submodules(repo=None):
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
-def merge_git_ref(git_ref, repo=None, verbose=False):
+def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
 ###############################################################################
     """
     Merge given git ref into the current branch, and updates submodules
@@ -367,36 +369,45 @@ def merge_git_ref(git_ref, repo=None, verbose=False):
     # Even thoguh it can allow some extra corner cases (dirty repo, but ahead of git_ref),
     # this check is mostly for debugging purposes, as it will inform that no merge occurred
     out = get_common_ancestor(git_ref)
-    if out==get_current_commit(commit=git_ref):
+    if out == get_current_commit(commit=git_ref):
         if verbose:
             print ("Merge of '{}' not necessary. Current HEAD is already ahead.".format(git_ref))
         return
 
-    expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
-    run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
-    update_submodules(repo=repo)
-    expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
-    if verbose:
-        print ("git ref {} successfully merged.".format(git_ref))
-        print_last_commit()
+    merge_cmd = "git merge {0} -m 'Automatic merge of {0}'".format(git_ref)
+    if dry_run:
+        print("Would run: {}".format(merge_cmd))
+    else:
+        expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
+        run_cmd_no_fail(merge_cmd, from_dir=repo)
+        update_submodules(repo=repo)
+        expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
+        if verbose:
+            print ("git ref {} successfully merged.".format(git_ref))
+            print_last_commit()
 
 ###############################################################################
-def print_last_commit(git_ref=None, repo=None):
+def print_last_commit(git_ref=None, repo=None, dry_run=False):
 ###############################################################################
     """
     Prints a one-liner of the last commit
     """
-    git_ref = get_current_head(repo) if git_ref is None else git_ref
-    last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
-    print("Last commit on ref '{}': {}".format(git_ref, last_commit))
+    if dry_run:
+        print("Last commit on ref '{}'".format(git_ref))
+    else:
+        git_ref = get_current_head(repo) if git_ref is None else git_ref
+        last_commit = run_cmd_no_fail("git log {} -1 --oneline".format(git_ref), from_dir=repo)
+        print("Last commit on ref '{}': {}".format(git_ref, last_commit))
 
 ###############################################################################
-def checkout_git_ref(git_ref, verbose=False, repo=None):
+def checkout_git_ref(git_ref, verbose=False, repo=None, dry_run=False):
 ###############################################################################
     """
     Checks out 'branch_ref', and updates submodules
     """
-    if get_current_commit() != get_current_commit(commit=git_ref):
+    if dry_run:
+        print("Would checkout {}".format(git_ref))
+    elif get_current_commit() != get_current_commit(commit=git_ref):
         expect(is_repo_clean(repo=repo), "If we need to change HEAD, then the repo must be clean before running")
         expect(git_ref is not None, "Missing git-ref")
 
@@ -419,7 +430,7 @@ def get_git_toplevel_dir(repo=None):
     return output if stat == 0 else None
 
 ###############################################################################
-def cleanup_repo(orig_branch, orig_commit, repo=None):
+def cleanup_repo(orig_branch, orig_commit, repo=None, dry_run=False):
 ###############################################################################
     """
     Discards all unstaged changes, as well as untracked files
@@ -427,29 +438,28 @@ def cleanup_repo(orig_branch, orig_commit, repo=None):
     curr_commit = get_current_commit(repo=repo)
 
     # Is this a pointless check? Maybe.
-    if not is_repo_clean(repo=repo):
+    if not dry_run and not is_repo_clean(repo=repo):
         # Discard any modifications to the repo (either tracked or untracked),
         # but keep the ctest-build directory
         run_cmd_no_fail("git clean -df --exclude=ctest-build", from_dir=repo)
         toplevel_dir = get_git_toplevel_dir(repo=repo)
         run_cmd_no_fail("git checkout -- {}".format(toplevel_dir), from_dir=repo)
 
-    checkout_git_ref(orig_branch, repo=repo)
+    checkout_git_ref(orig_branch, repo=repo, dry_run=dry_run)
 
     # This *can* happen. test_all_scream can merge origin/master into current branch.
     # Checking out orig_branch doesn't do anything if we were on a branch (not detached
     # head mode), since the branch tip moved with the master merge. In that case,
     # what we really need is a hard reset to the original commit.
     # NOTE: if you reset the branch, don't forget to re-update the modules!!
-    if curr_commit != orig_commit:
+    if curr_commit != orig_commit and not dry_run:
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
         update_submodules(repo=repo)
 
 ###############################################################################
-def get_cpu_core_count ():
+def get_cpu_core_count():
 ###############################################################################
     """
     Get the number of CPU processors available on the current node
     """
-
     return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))

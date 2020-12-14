@@ -39,7 +39,7 @@ public:
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("Physics");
+    s.insert(m_shoc_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -71,6 +71,7 @@ protected:
   std::map<std::string,field_type>        m_shoc_fields_out;
 
   ekat::Comm              m_shoc_comm;
+  ekat::ParameterList     m_shoc_params;
 
 }; // class SHOCMacrophysics
 

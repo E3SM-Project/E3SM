@@ -18,7 +18,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
   static void run_property()
   {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
-    static constexpr Real maxtke = scream::shoc::Constants<Real>::maxtke;
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;

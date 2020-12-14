@@ -92,7 +92,6 @@ set (DynamicsLibsCreated   "" CACHE INTERNAL "List of created dynamics libraries
 #       and a scream dynamics one.
 macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
   if (NOT ${HOMME_TARGET} STREQUAL "theta-l_kokkos")
-    message ("HOMME TARGET: ${HOMME_TARGET}")
     message (FATAL_ERROR "Error! So far, SCREAM only supports 'theta-l_kokkos' as dynamics target.")
   endif()
 
@@ -111,7 +110,6 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
          CACHE INTERNAL "List of created dynamics libraries names"
     )
     # Set the dynamics library directory
-    set (dynLibDir ${SCREAM_BINARY_DIR}/src/dynamics/homme/${hommeLibName})
 
     set (PREQX_NP ${NP})
     set (PREQX_PLEV ${PLEV})
@@ -125,6 +123,21 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     # Gather sources
     THETAL_KOKKOS_SETUP()
 
+    if (SCREAM_CIME_BUILD)
+      ### HACK ALERT! ###
+
+      # Remove shr_blah_mod.F90 from homme/utils/csm_share,
+      # since we use those from cime/src/share/util.
+      # Note: the cleanest thing is to mod homme, to use cime stuff
+      set (REMOVE_FILES)
+      foreach (file IN_LIST ${THETAL_DEPS})
+        if (file MATCHES "csm_share/shr_")
+          list (APPEND REMOVE_FILES ${file})
+        endif ()
+      endforeach()
+      list (REMOVE_ITEM THETAL_DEPS ${REMOVE_FILES})
+    endif ()
+
     # Re-set this, so that it is visible from wherever the macro is called
     set (HOMME_USE_KOKKOS TRUE)
 
@@ -132,12 +145,10 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     createExecLib (${hommeLibName} ${HOMME_TARGET} "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
                    ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
-    set_target_properties (${hommeLibName}
-      PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY "${dynLibDir}"
-      LIBRARY_OUTPUT_DIRECTORY "${dynLibDir}"
-      RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
-    )
+    if (SCREAM_CIME_BUILD)
+      # Link to cime's csm_share lib
+      target_link_libraries (${hommeLibName} csm_share)
+    endif ()
 
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details
@@ -164,8 +175,10 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_driver_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_grid_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_params_mod.F90
+      ${SCREAM_DYNAMICS_SRC_DIR}/interface/dyn_grid_mod.F90
+      ${SCREAM_DYNAMICS_SRC_DIR}/interface/phys_grid_mod.F90
     )
-    if (NOT SCREAM_LIB_ONLY)
+    if (NOT SCREAM_CIME_BUILD)
       # We will also have unit tests, so add inputs initialization stuff
       list (APPEND SCREAM_DYNAMICS_SOURCES
         ${SCREAM_DYNAMICS_SRC_DIR}/homme_inputs_initializer.cpp
@@ -177,13 +190,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_link_libraries(${dynLibName} scream_share ${hommeLibName})
-
-    set_target_properties (${dynLibName}
-      PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY "${dynLibDir}"
-      LIBRARY_OUTPUT_DIRECTORY "${dynLibDir}"
-      RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
-    )
+    get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
+    set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
+    target_include_directories(${dynLibName} PUBLIC ${modulesDir})
   endif()
 endmacro(CreateDynamicsLib)
 

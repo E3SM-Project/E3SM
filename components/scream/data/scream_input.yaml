@@ -2,19 +2,21 @@
 ---
 Atmosphere Driver:
   Atmosphere Processes:
-    Number of Entries: 2
+    Number of Entries: 3
     Schedule Type: Sequential
     Process 0:
-      Process Name: P3
-      Grid:         Physics
-      Can Initialize All Inputs: true
+      Process Name: Homme
+      Grid:         Dynamics
     Process 1:
+      Process Name: P3
+      Grid:         Physics GLL
+      Can Initialize All Inputs: true
+    Process 2:
       Process Name: SHOC
-      Grid:         Physics
+      Grid:         Physics GLL
   Grids Manager:
-    Type: Physics Only
-    Reference Grid: Physics
-    Physics Only:
-      Number of global columns: 1024
-      Number of vertical levels: 128
+    Type: Dynamics Driven
+    Reference Grid: Physics GLL
+    Dynamics Driven:
+      Dynamics Namelist File Name: ./data/theta.nl
 ...

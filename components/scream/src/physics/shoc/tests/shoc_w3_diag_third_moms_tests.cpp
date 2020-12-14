@@ -58,9 +58,6 @@ struct UnitWrap::UnitTest<D>::TestW3diagThirdMoms {
     // Verify result is negative
     REQUIRE(SDS.w3 < 0);
 
-    // save output
-    Real w3_test1 = SDS.w3;
-
     // TEST TWO
     // Modify parameters to decrease w3
     // decrease this term
@@ -73,9 +70,6 @@ struct UnitWrap::UnitTest<D>::TestW3diagThirdMoms {
 
     // Verify result has decreased
     REQUIRE(SDS.w3 < SDS.aa1);
-
-    // Save result
-    Real w3_test2 = SDS.w3;
 
     // TEST THREE
     // Modify parameters to get positive result

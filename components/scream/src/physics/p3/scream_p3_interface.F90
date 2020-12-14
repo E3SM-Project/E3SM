@@ -137,11 +137,8 @@ contains
     ! real(kind=c_real) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(kind=c_real) :: precip_liq_surf(pcols)         !precipitation rate, liquid             m s-1
     real(kind=c_real) :: precip_ice_surf(pcols)         !precipitation rate, solid              m s-1
-    real(kind=c_real) :: diag_equiv_reflectivity(pcols,pver)    !equivalent reflectivity                dBZ
     ! real(kind=c_real) :: diag_eff_radius_qc(pcols,pver)  !effective radius, cloud                m
     ! real(kind=c_real) :: diag_eff_radius_qi(pcols,pver)  !effective radius, ice                  m
-    real(kind=c_real) :: diag_vm_qi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
-    real(kind=c_real) :: diag_diam_qi(pcols,pver)    !mean diameter of ice                   m
     real(kind=c_real) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
     real(kind=c_real) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(kind=c_real) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
@@ -156,8 +153,6 @@ contains
     real(kind=c_real) :: precip_total_tend(pcols,pver)      !total precip
     real(kind=c_real) :: nevapr(pcols,pver)     !evap. of total precip
     real(kind=c_real) :: qr_evap_tend(pcols,pver)  !rain evaporation
-    real(kind=c_real) :: pratot(pcols,pver)     !accretion of cloud by rain
-    real(kind=c_real) :: prctot(pcols,pver)     !autoconversion of cloud by rain
     real(kind=c_real) :: mu(pcols,pver)         !Size distribution shape parameter for radiation
     real(kind=c_real) :: lambdac(pcols,pver)    !Size distribution slope parameter for radiation
     real(kind=c_real) :: dei(pcols,pver)        !Diameter for ice

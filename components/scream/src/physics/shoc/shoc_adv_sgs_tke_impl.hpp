@@ -17,7 +17,6 @@ void Functions<S,D>
 ::adv_sgs_tke(
   const MemberType&            team,
   const Int&                   nlev,
-  const Int&                   shcol,
   const Real&                  dtime,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& wthv_sec,

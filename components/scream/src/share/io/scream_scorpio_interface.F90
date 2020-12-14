@@ -42,16 +42,10 @@ module scream_scorpio_interface
 ! Finalization: 
 !==============================================================================!
 
-  ! TODO: have the code rely on shr_pio_mod only when the build is of the full
-  ! model. Note, these three variables from shr_pio_mod are only needed in the
-  ! case when we want to use the pio_subsystem that has already been defined by
-  ! the component coupler. 
-  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
   !------------
-  use physics_utils, only: rtype, rtype8, itype, btype
   use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
       PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe, &
-      pio_init
+      pio_init, pio_freedecomp
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
@@ -63,10 +57,16 @@ module scream_scorpio_interface
   use pionfatt_mod, only : PIO_put_att   => put_att
   use pionfput_mod, only : PIO_put_var   => put_var
 
+  use iso_c_binding
   implicit none
   save
 
 #include "scream_config.f"
+#ifdef SCREAM_DOUBLE_PRECISION
+# define rtype c_double
+#else
+# define rtype c_float
+#endif
                      
   public :: & 
             eam_pio_closefile,      & ! Close a specfic pio file.
@@ -83,7 +83,8 @@ module scream_scorpio_interface
             grid_write_data_array,  & ! Write gridded data to a pio managed netCDF file
             grid_read_data_array,   & ! Read gridded data from a pio managed netCDF file
             eam_sync_piofile,       & ! Syncronize the piofile, to be done after all output is written during a single timestep
-            eam_update_time           ! Update the timestamp (i.e. time variable) for a given pio netCDF file
+            eam_update_time,        & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
+            count_pio_atm_file        ! Diagnostic to count how many files are still open
  
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -142,6 +143,7 @@ module scream_scorpio_interface
     character(tag_len)           :: tag              ! Unique tag associated with this decomposition
     type(io_desc_t),     pointer :: iodesc => NULL() ! PIO - decomposition
     type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition
+    logical                      :: iodesc_set = .false.
   end type iodesc_list_t
   ! Define the first iodesc_list_t 
   type(iodesc_list_t), target :: iodesc_list_top
@@ -165,8 +167,11 @@ module scream_scorpio_interface
   type(pio_file_list_t), pointer :: pio_file_list_bottom
 !----------------------------------------------------------------------
   type, public :: pio_atm_file_t
-        !> @brief Output filename.
+        !> @brief Filename.
         character(len=max_chars) :: filename = ""
+
+        !> @brief Purpose (in/out).
+        character(len=max_chars) :: purpose = ""
 
         !> @brief Contains data identifying the file.
         type(file_desc_t)     :: pioFileDesc
@@ -230,6 +235,7 @@ contains
 
     type(pio_atm_file_t), pointer :: current_atm_file => null()
 
+    if (.not.associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
     call get_new_pio_atm_file(filename,current_atm_file,1)
     call eam_pio_createHeader(current_atm_file%pioFileDesc)
     
@@ -308,7 +314,7 @@ contains
     curr => prev%next
     allocate(curr%coord)
     hist_coord => curr%coord
-    pio_atm_file%dimcounter = pio_atm_file%dimcounter + 1
+    pio_atm_file%DimCounter = pio_atm_file%DimCounter + 1  ! AaronDonahue - Is this even still needed?
     ! Register this dimension
     hist_coord%name      = trim(shortname)
     hist_coord%long_name = trim(longname)
@@ -562,6 +568,12 @@ contains
   ! that has been initialized by the component coupler.  Otherwise, it will be
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
+#ifdef CIME_BUILD
+  ! Note, these three variables from shr_pio_mod are only needed in the
+  ! case when we want to use the pio_subsystem that has already been defined by
+  ! the component coupler.
+  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
+#endif
     
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
@@ -580,11 +592,13 @@ contains
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
    
+#ifdef CIME_BUILD
     if (.not.local) then 
       pio_subsystem  => shr_pio_getiosys(atm_id)
       pio_iotype     = shr_pio_getiotype(atm_id)
       pio_rearranger = shr_pio_getrearranger(atm_id)
     else
+#endif
       allocate(pio_subsystem)
       stride         = 1
       num_aggregator = 0
@@ -593,7 +607,9 @@ contains
       base           = 0
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
+#ifdef CIME_BUILD
     end if
+#endif
 
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
@@ -654,6 +670,7 @@ contains
 
     integer :: ierr
     type(pio_file_list_t), pointer :: curr => NULL()
+    type(iodesc_list_t),   pointer :: curr_iodesc=>NULL()
 
     ! Close all the PIO Files 
     curr => pio_file_list_top
@@ -664,6 +681,16 @@ contains
       end if
       curr => curr%next
     end do
+    ! Free all decompositions from PIO
+    curr_iodesc => iodesc_list_top
+    do while(associated(curr_iodesc))
+      if (associated(curr_iodesc%iodesc).and.curr_iodesc%iodesc_set) then
+        call pio_freedecomp(pio_subsystem,curr_iodesc%iodesc)
+      end if
+      curr_iodesc => curr_iodesc%next
+    end do
+    
+
     call PIO_finalize(pio_subsystem, ierr)
     nullify(pio_subsystem)
 
@@ -687,7 +714,7 @@ contains
     type(pio_file_list_t), pointer :: curr => NULL()
 
     if (retVal .ne. PIO_NOERR) then
-      write(*,'(I8,2x,A100)') retVal,trim(errMsg)
+      write(*,'(I8,2x,A200)') retVal,trim(errMsg)
       ! Kill run
       call eam_pio_finalize() 
       call finalize_scream_session()
@@ -779,6 +806,7 @@ contains
         allocate(curr%iodesc)
       else
         call pio_initdecomp(pio_subsystem, dtype, dimension_len, compdof, curr%iodesc, rearr=pio_rearranger)
+        curr%iodesc_set = .true.
       end if
       iodesc => curr%iodesc
     end if 
@@ -885,8 +913,8 @@ contains
   end subroutine get_var
 !=====================================================================!
   ! Diagnostic routine to determine how many pio files are currently open:
-  subroutine count_pio_atm_file(total_count)
-    integer, intent(out) :: total_count
+  subroutine count_pio_atm_file()
+    integer :: total_count
 
     type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
 
@@ -894,11 +922,15 @@ contains
     curr => pio_file_list_top
     do while (associated(curr))
       if (associated(curr%pio_file)) then
-        if (curr%pio_file%isopen) total_count = total_count+1
+        if (curr%pio_file%isopen) then 
+          total_count = total_count+1
+          write(*,*) "File: ", trim(curr%pio_file%filename), " is open"
+        end if
       end if
       prev => curr
       curr => prev%next
     end do
+    write(*,*) "Total number of files open: ", total_count
   end subroutine count_pio_atm_file
 !=====================================================================!
   ! Lookup pointer for pio file based on filename.
@@ -953,11 +985,13 @@ contains
     ! Create and initialize the new pio file:
     pio_file%filename = trim(filename)
     pio_file%isopen = .true.
+    pio_file%numRecs = 0
     if (purpose == 1) then  ! Will be used for output.  Set numrecs to zero and create the new file.
-      pio_file%numRecs = 0
       call eam_pio_createfile(pio_file%pioFileDesc,trim(pio_file%filename))
+      pio_file%purpose = "output"
     elseif (purpose == 2) then ! Will be used for input, just open it
       call eam_pio_openfile(pio_file%pioFileDesc,trim(pio_file%filename))
+      pio_file%purpose = "input"
     else
       call errorHandle("PIO Error: get_pio_atm_file with filename = "//trim(filename)//", purpose (int) assigned to this lookup is not valid" ,-999)
     end if

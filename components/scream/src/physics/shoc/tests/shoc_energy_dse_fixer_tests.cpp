@@ -25,8 +25,6 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
   static void run_property()
   {
-    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
-    static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
     static constexpr Int shcol    = 6;
     static constexpr Int nlev     = 5;
 

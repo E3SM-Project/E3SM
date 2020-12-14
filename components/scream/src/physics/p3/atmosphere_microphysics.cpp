@@ -20,10 +20,6 @@ P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterLis
 /* Anything that can be initialized without grid information can be initialized here.
  * Like universal constants, table lookups, p3 options.
 */
-  if (!m_p3_params.isParameter("Grid")) {
-    m_p3_params.set("Grid",std::string("SE Physics"));
-  }
-
   m_initializer = create_field_initializer<P3InputsInitializer>();
 }
 

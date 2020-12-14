@@ -6,8 +6,9 @@ namespace scream
 {
 
 // =========================================================================================
-SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::ParameterList& /* params */)
-  : m_shoc_comm (comm)
+SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::ParameterList& params)
+  : m_shoc_comm   (comm)
+  , m_shoc_params (params)
 {
 /* Anything that can be initialized without grid information can be initialized here.
  * Like universal constants, shoc options.
@@ -24,20 +25,21 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  constexpr int NVL = SCREAM_NUM_VERTICAL_LEV;
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
-  auto grid = grids_manager->get_grid("Physics");
-  const int num_dofs = grid->get_num_local_dofs();
-  const int nc = num_dofs;
+  const auto& grid_name = m_shoc_params.get<std::string>("Grid");
+  auto grid = grids_manager->get_grid(grid_name);
+
+  const int ncols = grid->get_num_local_dofs();
+  const int nlevs = grid->get_num_vertical_levels();
 
   auto VL = FieldTag::VerticalLevel;
   auto CO = FieldTag::Column;
   auto VR = FieldTag::Variable;
 
-  FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
-  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,QSZ,NVL} };
+  FieldLayout scalar3d_layout { {CO,VL}, {ncols,nlevs} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout vector3d_layout { {CO,VR,VL}, {ncols,QSZ,nlevs} };
+  FieldLayout q_forcing_layout  { {CO,VR,VL}, {ncols,QSZ,nlevs} };
 
   // Input
   m_required_fields.emplace("dp", scalar3d_layout,  Pa, grid->name());

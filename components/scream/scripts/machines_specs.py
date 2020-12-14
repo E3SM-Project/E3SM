@@ -12,8 +12,8 @@
 #       subdirs are located (full_debug, full_sp_debug, debug_no_fpe).
 
 from utils import expect, get_cpu_core_count, run_cmd_no_fail
-import os
-import pathlib
+
+import os, sys, pathlib
 
 MACHINE_METADATA = {
     "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],
@@ -22,19 +22,23 @@ MACHINE_METADATA = {
                   24,
                   24,
                   ""),
-    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3 python/3.7.3"],
+    "blake"    : (["module purge", "module load openmpi/2.1.2 zlib git/2.9.4 cmake/3.12.3 python/3.7.3",
+                   "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
+                   "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
+                   "export PATH=/ascldap/users/projects/e3sm/scream/libs/pnetcdf-/install/blake/bin:$PATH",
+                  ],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc -N 1 srun -n1 --preserve-env",
                   48,
                   48,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
-    "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0"],
+    "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0", "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/bin:$PATH"],
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel7W -n 4",
                   40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-env sems-python/3.5.2 sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2"],
+    "mappy"   : (["module purge", "module load sems-env sems-python/3.5.2 sems-gcc/9.2.0 sems-cmake/3.12.2 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   48,
@@ -42,17 +46,17 @@ MACHINE_METADATA = {
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
     "lassen" : (["module --force purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi lapack python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -q pbatch -W 45",
+                  "bsub -Ip -qpdebug",
                   44,
                   4,
                   ""),
-    "quartz" : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
+    "quartz" : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   36,
                   36,
                   ""),
-    "syrah"  : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
+    "syrah"  : (["module --force purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   16,
@@ -82,6 +86,19 @@ MACHINE_METADATA = {
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", get_cpu_core_count(), get_cpu_core_count(),""),
 }
 
+if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
+    sys.path.append(str(pathlib.Path("~/.cime").expanduser()))
+    from scream_mach_specs import MACHINE_METADATA as LOCAL_MD # pylint: disable=import-error
+    if len(LOCAL_MD) == 6:
+        MACHINE_METADATA["local"] = LOCAL_MD
+    else:
+        print("WARNING! File '~/.cime/scream_mach_specs.py' was found, but the MACHINE_METADATA in there is badly formatted. Ignoring it.")
+
+###############################################################################
+def get_all_supported_machines():
+###############################################################################
+    return MACHINE_METADATA.keys()
+
 ###############################################################################
 def is_machine_supported(machine):
 ###############################################################################
@@ -90,66 +107,82 @@ def is_machine_supported(machine):
 ###############################################################################
 def get_mach_env_setup_command(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][0]
 
 ###############################################################################
 def get_mach_cxx_compiler(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][1][0]
 
 ###############################################################################
 def get_mach_f90_compiler(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][1][1]
 
 ###############################################################################
 def get_mach_c_compiler(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][1][2]
+
 
 ###############################################################################
 def get_mach_batch_command(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][2]
 
 ###############################################################################
 def get_mach_compilation_resources(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][3]
 
 ###############################################################################
 def get_mach_testing_resources(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     return MACHINE_METADATA[machine][4]
 
 ###############################################################################
-def get_mach_baseline_root_dir(machine,default_dir):
+def get_mach_baseline_root_dir(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
-    if MACHINE_METADATA[machine][5]=="":
-        return default_dir
-    else:
-        return MACHINE_METADATA[machine][5]
+    return MACHINE_METADATA[machine][5]
 
 ###############################################################################
 def is_cuda_machine(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     env_setup     = get_mach_env_setup_command(machine)
     env_setup_str = " && ".join(env_setup)
@@ -159,7 +192,9 @@ def is_cuda_machine(machine):
 ###############################################################################
 def setup_mach_env(machine):
 ###############################################################################
-    expect(is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+    expect(is_machine_supported(machine),
+           "Machine {} is not currently supported by scream testing system.\n"
+           " Note: you can also create a file `~/.cime/scream_mach_specs.py` with your local machine specs.".format(machine))
 
     env_setup = get_mach_env_setup_command(machine)
 

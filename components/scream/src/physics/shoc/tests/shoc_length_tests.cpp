@@ -58,9 +58,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     // compute geometric grid mesh
     const auto grid_mesh = sqrt(host_dx*host_dy);
 
-    // set bound to check output
-    static constexpr Real brunt_bound = 1;
-
     // Grid stuff to compute based on zi_grid
     Real zt_grid[nlev];
     Real dz_zt[nlev];

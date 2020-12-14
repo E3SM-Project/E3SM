@@ -16,6 +16,10 @@ TEST_CASE("field_identifier", "") {
   using namespace scream;
   using namespace ekat::units;
 
+#ifdef SCREAM_FORCE_RUN_FAIL
+  REQUIRE(false); // force this test to fail
+#endif
+
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
 
@@ -46,6 +50,10 @@ TEST_CASE("field_identifier", "") {
   REQUIRE_THROWS(fid2.set_dimensions(dims2));
 
   REQUIRE (fid1!=fid2);
+
+  // Check that has_tag option works
+  REQUIRE(fid1.get_layout().has_tag(FieldTag::GaussPoint));
+  REQUIRE(!fid1.get_layout().has_tag(FieldTag::Component));
 }
 
 TEST_CASE("field_tracking", "") {
