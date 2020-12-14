@@ -2560,21 +2560,21 @@
 
          if (aice > puny) then
 
-            call linear_itd (ncat,     hin_max,        &
-                             nilyr,    nslyr,          &
-                             ntrcr,    trcr_depend,    &
-                             trcr_base,        & 
-                             n_trcr_strata,   &
-                             nt_strata,                &
+            call linear_itd (ncat,     hin_max,     &
+                             nilyr,    nslyr,       &
+                             ntrcr,    trcr_depend, &
+                             trcr_base,             & 
+                             n_trcr_strata,         &
+                             nt_strata,   Tf,       &
                              aicen_init,            &
                              vicen_init,            &
                              aicen,                 &
-                             trcrn,           & 
+                             trcrn,                 & 
                              vicen,                 &
                              vsnon,                 &
-                             aice      ,         &
-                             aice0     ,         &
-                             fpond,       l_stop,      &
+                             aice,                  &
+                             aice0,                 &
+                             fpond,       l_stop,   &
                              stop_label)
 
             if (l_stop) return
@@ -3175,6 +3175,7 @@
                                     nblyr,                       &
                                     ncat,         hin_max,       &
                                     rdg_conv,     rdg_shear,     &
+                                    Tf,                          &
                                     aicen,                       &
                                     trcrn,                       &
                                     vicen,        vsnon,         &
@@ -3202,7 +3203,8 @@
       use ice_colpkg_tracers, only: tr_pond_topo, tr_aero, tr_brine, ntrcr, nbtrcr
 
       real (kind=dbl_kind), intent(in) :: &
-         dt           ! time step
+         dt    , & ! time step
+         Tf        ! ocean freezing temperature
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
@@ -3317,7 +3319,8 @@
                          aredistn,     vredistn,       &
                          dardg1ndt,    dardg2ndt,      &
                          dvirdgndt,                    &
-                         araftn,       vraftn)        
+                         araftn,       vraftn,         &
+                         Tf)        
 
          if (l_stop) return
 
@@ -3327,7 +3330,8 @@
       !-----------------------------------------------------------------
 
       dtt = dt * ndtd  ! for proper averaging over thermo timestep
-      call cleanup_itd (dtt,                  ntrcr,            &
+      call cleanup_itd (dtt,                  Tf,               &
+                        ntrcr,                                  &
                         nilyr,                nslyr,            &
                         ncat,                 hin_max,          &
                         aicen,                trcrn,            &

@@ -100,7 +100,8 @@
                             aredistn,    vredistn,   &
                             dardg1ndt,   dardg2ndt,  &
                             dvirdgndt,               &
-                            araftn,      vraftn)
+                            araftn,      vraftn,     &
+                            Tf)
 
       use ice_colpkg_tracers, only: nt_qice, nt_qsno, nt_fbri, nt_sice
 
@@ -114,7 +115,8 @@
 
       real (kind=dbl_kind), intent(in) :: &
          mu_rdg , & ! gives e-folding scale of ridged ice (m^.5) 
-         dt             ! time step
+         dt     , & ! time step
+         Tf         ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
          hin_max   ! category limits (m)
@@ -371,7 +373,8 @@
                            msnow_mlt,   esnow_mlt,   &
                            maero,       mpond,       &
                            l_stop,      stop_label,  &
-                           aredistn,    vredistn)    
+                           aredistn,    vredistn,    &
+                           Tf)    
 
          if (l_stop) return
 
@@ -1043,7 +1046,8 @@
                               msnow_mlt,   esnow_mlt,       &
                               maero,       mpond,           &
                               l_stop,      stop_label,      &
-                              aredistn,    vredistn)
+                              aredistn,    vredistn,        &
+                              Tf)
 
       use ice_colpkg_tracers, only: nt_qsno, nt_fbri, &
                              nt_alvl, nt_vlvl, nt_aero, tr_aero, &
@@ -1058,7 +1062,8 @@
          krdg_redist      ! selects redistribution function
 
       real (kind=dbl_kind), intent(in) :: &
-         dt             ! time step (s)
+         dt,     & ! time step (s)
+         Tf        ! ocean freezing temperature (C)
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
@@ -1529,7 +1534,8 @@
                                          atrcrn(:,n), aicen(n),      &
                                          vicen(n),    vsnon(n),      &
                                          trcr_base,   n_trcr_strata, &
-                                         nt_strata,   trcrn(:,n))
+                                         nt_strata,   trcrn(:,n),    &
+                                         Tf)
       enddo
 
       end subroutine ridge_shift

@@ -89,7 +89,7 @@
       subroutine rebin (ntrcr,    trcr_depend,     &
                         trcr_base,                 &
                         n_trcr_strata,             &
-                        nt_strata,                 &
+                        nt_strata,   Tf,           &
                         aicen,    trcrn,           &
                         vicen,    vsnon,           &
                         ncat,     hin_max,         &
@@ -97,7 +97,8 @@
 
       integer (kind=int_kind), intent(in) :: &
          ntrcr , & ! number of tracers in use
-         ncat      ! number of thickness categories
+         ncat  , & ! number of thickness categories
+         Tf        ! ocean freezing temperature (C)
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
@@ -207,7 +208,7 @@
                             trcr_depend,          &
                             trcr_base,            &
                             n_trcr_strata,        &
-                            nt_strata,            &
+                            nt_strata,   Tf,      &
                             aicen,    trcrn,      &
                             vicen,    vsnon,      &
                             hicen,    donor,      &
@@ -255,7 +256,7 @@
                             trcr_depend,          &
                             trcr_base,            &
                             n_trcr_strata,        &
-                            nt_strata,            &
+                            nt_strata,   Tf,      &
                             aicen,    trcrn,      &
                             vicen,    vsnon,      &
                             hicen,    donor,      &
@@ -345,7 +346,7 @@
                             trcr_depend,           &
                             trcr_base,             &
                             n_trcr_strata,         &
-                            nt_strata,             &
+                            nt_strata,   Tf,       &
                             aicen,    trcrn,       &
                             vicen,    vsnon,       &
                             hicen,    donor,       &
@@ -356,7 +357,8 @@
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
-         ntrcr     ! number of tracers in use
+         ntrcr , & ! number of tracers in use
+         Tf        ! ocean freezing temperature (C)
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
@@ -647,11 +649,12 @@
       ! Compute new tracers
       !-----------------------------------------------------------------
 
-         call colpkg_compute_tracers (ntrcr,       trcr_depend, &
-                                      atrcrn(:,n), aicen(n),    &
-                                      vicen(n),    vsnon(n),    &
+         call colpkg_compute_tracers (ntrcr,       trcr_depend,    &
+                                      atrcrn(:,n), aicen(n),       &
+                                      vicen(n),    vsnon(n),       &
                                       trcr_base,   n_trcr_strata,  &
-                                      nt_strata,   trcrn(:,n))
+                                      nt_strata,   trcrn(:,n),     &
+                                      Tf)
 
       enddo                     ! ncat
 
@@ -918,7 +921,7 @@
          call rebin (ntrcr,      trcr_depend, &
                      trcr_base,               &
                      n_trcr_strata,           &
-                     nt_strata,               &
+                     nt_strata,  Tf,          &
                      aicen,      trcrn,       &
                      vicen,      vsnon,       &
                      ncat,       hin_max,     &
