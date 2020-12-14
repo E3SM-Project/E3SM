@@ -1309,6 +1309,7 @@ contains
 
     logical, pointer :: &
          config_use_aerosols, &
+         config_use_prescribed_ice, &
          config_use_snow_liquid_ponds
 
     ! dimensions
@@ -1502,6 +1503,7 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+       call MPAS_pool_get_config(block % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
        call MPAS_pool_get_config(block % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -1577,8 +1579,8 @@ contains
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
-       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        call MPAS_pool_get_array(drag, "airOceanDragCoefficientRatio", airOceanDragCoefficientRatio)
        call MPAS_pool_get_array(drag, "oceanDragCoefficient", oceanDragCoefficient)
@@ -1848,7 +1850,8 @@ contains
                freezeOnset(iCell), &
                dayOfYear, &
                abortFlag, &
-               abortMessage)
+               abortMessage, &
+               config_use_prescribed_ice)
           call column_write_warnings(abortFlag)
 
           ! cell-specific abort message
@@ -3463,7 +3466,6 @@ contains
          verticalGrid, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
-         seaFreezingTemperature, &
          snowfallRate, &
          zSalinityFlux, &
          zSalinityGDFlux, &
@@ -3851,7 +3853,6 @@ contains
                snowiceFormationCategory(:,iCell), &
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
-               seaFreezingTemperature(iCell), &
                snowfallRate(iCell), &
                snowMeltCategory(:,iCell), &
                oceanMixedLayerDepth(iCell), &
