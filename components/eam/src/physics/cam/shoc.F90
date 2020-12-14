@@ -4396,6 +4396,11 @@ subroutine pblintd_check_pblh(&
        shcol,nlev,nlevi,&             ! Input
        z,ustar,check,&                ! Input
        pblh)                          ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_check_pblh_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4414,6 +4419,14 @@ subroutine pblintd_check_pblh(&
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_check_pblh_f(shcol,nlev,nlevi, z, ustar, check, pblh)
+      return
+   endif
+#endif
+
     !
     ! PBL height must be greater than some minimum mechanical mixing depth
     ! Several investigators have proposed minimum mechanical mixing depth

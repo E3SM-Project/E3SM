@@ -513,8 +513,11 @@ struct Functions
   static void pblintd_init(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<bool>& check, const uview_1d<Spack>& rino, const uview_1d<Spack>& pblh);
   KOKKOS_FUNCTION
   static void pblintd_surf_temp(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& thv, const uview_1d<Spack>& tlv, const uview_1d<Spack>& pblh, const uview_1d<bool>& check, const uview_1d<Spack>& rino);
+
   KOKKOS_FUNCTION
-  static void pblintd_check_pblh(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const bool>& check, const uview_1d<Spack>& pblh);
+  static void pblintd_check_pblh(const Int& nlevi, const Int& npbl,
+              const uview_1d<const Spack>& z, const Scalar& ustar, const bool& check, Scalar& pblh);
+
   KOKKOS_FUNCTION
   static void pblintd(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& zi, const uview_1d<const Spack>& thl, const uview_1d<const Spack>& ql, const uview_1d<const Spack>& q, const uview_1d<const Spack>& u, const uview_1d<const Spack>& v, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& cldn, const uview_1d<Spack>& pblh);
 
