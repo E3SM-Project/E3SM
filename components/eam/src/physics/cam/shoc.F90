@@ -3200,7 +3200,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
+        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*bfb_square(tscale)))
      enddo
   enddo
 
