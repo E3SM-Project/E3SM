@@ -31,6 +31,7 @@ contains
                                       nlev_tom, nu_scale_top
     use mass_matrix_mod,        only: mass_matrix
     use quadrature_mod,         only: gausslobatto, quadrature_t
+    use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
     !
     ! Inputs
     !
@@ -44,6 +45,10 @@ contains
     integer :: ie, k
     type (quadrature_t) :: gp
 
+    scale_factor = rearth
+    scale_factor_inv = rrearth
+    laplacian_rigid_factor = rrearth
+    
     call derivinit(deriv)
 
     call initmp_f90()
