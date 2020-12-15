@@ -1814,10 +1814,10 @@ contains
       call t_startf('rad_calculations_lw')
       call rrtmgpxx_run_lw( &
             size(active_gases), ncol, nlev_rad, &
-            gas_names, gas_vmr, &
-            surface_emissivity, &
-            pmid, tmid, pint, tint, &
-            cld_tau_gpt_rad, aer_tau_bnd_rad, &
+            gas_names, gas_vmr(:,1:ncol,:), &
+            surface_emissivity(1:nlwbands,1:ncol), &
+            pmid(1:ncol,:), tmid(1:ncol,:), pint(1:ncol,:), tint(1:ncol,:), &
+            cld_tau_gpt_rad(1:ncol,:,:), aer_tau_bnd_rad(1:ncol,:,:), &
             fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
             fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
             fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
