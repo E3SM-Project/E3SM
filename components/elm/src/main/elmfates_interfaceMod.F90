@@ -60,7 +60,7 @@ module ELMFatesInterfaceMod
    use elm_varcon        , only : spval 
    use elm_varcon        , only : denice
    use elm_varcon        , only : ispval
-   use elm_varcon        , only : nu_com
+   use elm_varctl        , only : nu_com
    use elm_varpar        , only : natpft_size
    use elm_varpar        , only : numrad
    use elm_varpar        , only : ivis

@@ -43,7 +43,7 @@ module EcosystemDynMod
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType  , only : veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
-  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
 
   ! bgc interface & pflotran
   use elm_varctl          , only : use_elm_interface, use_elm_bgc, use_pflotran, pf_cmode, pf_hmode
