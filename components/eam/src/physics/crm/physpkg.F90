@@ -972,7 +972,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
-
+    !! Jungmin
+    use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
+    use shr_const_mod ,only: SHR_CONST_PI
+    use cam_instance     , only: inst_index
+    !! Jungmin
     !
     ! Input arguments
     !
@@ -1001,7 +1005,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer(i8) :: irtc_rate                     ! irtc clock rate
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
-
+    !! Jungmin
+    integer(i8) :: ii,jj,rcol
+    real(r8) :: rlat, rlon
+    !! Jungmin
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
 
@@ -1069,7 +1076,39 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_startf ('diag_physvar_ic')
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
-
+#ifdef MAML
+          ! Average albedos and lwup before tphysbc
+          cam_in(c)%aldir = SUM(cam_in(c)%aldir_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%asdir = SUM(cam_in(c)%asdir_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%aldif = SUM(cam_in(c)%aldif_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%asdif = SUM(cam_in(c)%asdif_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%lwup = SUM(cam_in(c)%lwup_mi,DIM=2)/real(num_inst_atm,r8)
+#endif
+          !! Jungmin
+          do ii = 1, cam_in(c)%ncol
+            rlat = get_rlat_p(c,ii)*180._r8/SHR_CONST_PI 
+            rlon = get_rlon_p(c,ii)*180._r8/SHR_CONST_PI 
+            rcol = get_gcol_p(c,ii)
+            if(rcol.eq.223) then
+            !if(cam_in(c)%landfrac(ii).eq.1) then
+               !if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
+               write(iulog,'("B4 tphysbc CALL: chunk ind=",I5," icol=",I5," inst_index=",I3,&
+                             " lat=",F8.3," lon=",F8.3, " rcol=",I5, &
+                             " landfrac=",F7.3," icefrac=",F7.3, &
+                             " cam_in%aldir=",F7.3," cam_in%aldif=",F7.3, &
+                             " cam_in%asdir=",F7.3," cam_in%asdif=",F7.3)') &
+                             c,ii,inst_index,& 
+                             rlat, rlon, rcol,  &
+                             cam_in(c)%landfrac(ii), cam_in(c)%icefrac(ii),&
+                             cam_in(c)%aldir(ii),cam_in(c)%aldif(ii),cam_in(c)%asdir(ii),cam_in(c)%asdif(ii)
+               do jj = 1, num_inst_atm
+                  write(iulog,'("      jj=",I3," aldir_mi=",F7.3," aldif_mi=",F7.3," asdir_mi=",F7.3," asdif_mi=",F7.3)') &
+                              jj,cam_in(c)%aldir_mi(ii,jj),cam_in(c)%aldif_mi(ii,jj),cam_in(c)%asdir_mi(ii,jj),cam_in(c)%asdif_mi(ii,jj)
+               end do! jj
+               !end if
+            end if   
+          end do !! ii
+          !! Jungmin
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )

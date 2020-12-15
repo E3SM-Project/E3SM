@@ -1594,8 +1594,8 @@ end function radiation_nextsw_cday
                j_rad = (jj-1) / (crm_ny/crm_ny_rad) + 1
                !! Jungmin
                if(masterproc) then
-                  write(iulog,'("RADIATION.F90: num_inst_atm=",I3,"  crm_nx_rad=",I3," crm_ny_rad=",I3," i_rad=",I3," j_rad=",I3," icol=",I3)') &
-                  num_inst_atm,crm_nx_rad,crm_ny_rad,i_rad,j_rad,icol
+                  write(iulog,'("RADIATION.F90: num_inst_atm=",I3,"  crm_nx_rad=",I3," crm_ny_rad=",I3," i_rad=",I3," j_rad=",I3," ii=",I3," jj=",I3," icol=",I3)') &
+                  num_inst_atm,crm_nx_rad,crm_ny_rad,i_rad,j_rad,ii,jj,icol
                end if   
                !! Jungmin
                
@@ -1618,15 +1618,6 @@ end function radiation_nextsw_cday
                aldif_col(1:ncol,i_rad,j_rad) = cam_in%aldif(1:ncol)
                asdir_col(1:ncol,i_rad,j_rad) = cam_in%asdir(1:ncol)
                asdif_col(1:ncol,i_rad,j_rad) = cam_in%asdif(1:ncol)
-               !! Jungmin
-               if(masterproc) then
-                  do ii = 1,ncol
-                     write(iulog,'("RADIATION.F90: num_inst_atm=",I3," c=",I3," crm_nx_rad=",I3," crm_ny_rad=",I3," i_rad=",I3," j_rad=",I3," icol=",I3,&
-                                   " aldir_col(icol,i_rad,j_rad)=",F6.5," cam_in%aldir(icol)=",F6.5," cam_in%aldir_mi(icol,:)=",F6.5)') &
-                                   num_inst_atm,cam_in%lchnk,crm_nx_rad,crm_ny_rad,i_rad,j_rad,ii,aldir_col(ii,i_rad,j_rad),cam_in%aldir(ii),cam_in%aldir_mi(ii,:)
-                  end do !ii
-               end if   
-               !! Jungmin
             end do ! j_rad
          end do ! i_rad   
       end if
@@ -1897,13 +1888,18 @@ end function radiation_nextsw_cday
 
                 ! Run the shortwave radiation driver
                 call t_startf ('rad_rrtmg_sw')
+                !!Jungmin
+                !if(masterproc) then
+                !   write(iulog,'("before rad_rrtmg_sw: ii=",I3," jj=",I3," asdir_col=",F5.3," aldir_col=",F5.3," asdif_col=",F5.3," aldif_col=",F5.3)') (ii,jj,asdir_col(k,ii,jj),aldir_col(k,ii,jj),asdif_col(k,ii,jj),aldif_col(k,ii,jj),k=1,ncol)
+                !end if
+                !! Jungmin
                 call rad_rrtmg_sw( &
                      lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
                      state%pmid,   cldfprime,                                                &
                      aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
                      eccf,         coszrs,       solin,        sfac,                         &
-                     asdir_col(1:ncol,ii,jj),  asdif_col(1:ncol,ii,jj),                  &
-                     aldir_col(1:ncol,ii,jj),  aldif_col(1:ncol,ii,jj),                  &
+                     asdir_col(:,ii,jj),  asdif_col(:,ii,jj),                  &
+                     aldir_col(:,ii,jj),  aldif_col(:,ii,jj),                  &
                      qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
                      fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                      fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
@@ -1914,12 +1910,12 @@ end function radiation_nextsw_cday
                      old_convert = .false.)
                 call t_stopf ('rad_rrtmg_sw')
                 !! Jungmin
-                if(masterproc) then
-                  do i = 1,ncol
-                     write(iulog,'("after rad_rrtmg_sw: icall=",I3," icol=",I3," ii=",I3," jj=",I3," cam_out%sols(i)=",F7.3)') &
-                                 icall,i, ii, jj, cam_out%sols(i)
-                  end do ! i
-                end if
+                !if(masterproc) then
+                !  do i = 1,ncol
+                !     write(iulog,'("after rad_rrtmg_sw: icall=",I3," icol=",I3," ii=",I3," jj=",I3," cam_out%sols(i)=",F7.3)') &
+                !                 icall,i, ii, jj, cam_out%sols(i)
+                !  end do ! i
+                !end if
                 !! Jungmin
 
                 ! Output net fluxes at 200 mb
@@ -2240,12 +2236,12 @@ end function radiation_nextsw_cday
                          clm_seed,     lu,           ld                                            )
                 call t_stopf ('rad_rrtmg_lw')
                 !! Jungmin
-                if(masterproc) then
-                  do i = 1,ncol
-                     write(iulog,'("after rad_rrtmg_lw: icall=",I3," icol=",I3," ii=",I3," jj=",I3,"cam_out%flwds(i)=",F7.3," lwrad_off=",L)') &
-                                 icall,i, ii, jj, cam_out%flwds(i), lwrad_off
-                  end do ! i
-                end if
+                !if(masterproc) then
+                !  do i = 1,ncol
+                !     write(iulog,'("after rad_rrtmg_lw: icall=",I3," icol=",I3," ii=",I3," jj=",I3,"cam_out%flwds(i)=",F7.3," lwrad_off=",L)') &
+                !                 icall,i, ii, jj, cam_out%flwds(i), lwrad_off
+                !  end do ! i
+                !end if
                 !! Jungmin
                 if (lwrad_off) then
                   qrl(:,:) = 0._r8
@@ -2382,12 +2378,12 @@ end function radiation_nextsw_cday
             cam_out%solld_mi(icol,:) = cam_out%solld(icol)
             cam_out%flwds_mi(icol,:) = cam_out%flwds(icol)
          !! Jungmin
-         if(masterproc) then
-            write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%sols(icol)=",F7.3," cam_out%sols_mi(icol,:)=",F7.3)') &
-                           cam_out%lchnk,icol,cam_out%sols(icol),cam_out%sols_mi(icol,:)
-            write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%flwds(icol)=",F7.3," cam_out%flwds_mi(icol,:)=",F7.3)') &
-                           cam_out%lchnk,icol,cam_out%flwds(icol),cam_out%flwds_mi(icol,:)
-         end if
+         !if(masterproc) then
+         !   write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%sols(icol)=",F7.3," cam_out%sols_mi(icol,:)=",F7.3)') &
+         !                  cam_out%lchnk,icol,cam_out%sols(icol),cam_out%sols_mi(icol,:)
+         !   write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," cam_out%flwds(icol)=",F7.3," cam_out%flwds_mi(icol,:)=",F7.3)') &
+         !                  cam_out%lchnk,icol,cam_out%flwds(icol),cam_out%flwds_mi(icol,:)
+         !end if
          !! Jungmin
          end do ! icol
       else   
@@ -2403,10 +2399,10 @@ end function radiation_nextsw_cday
                   cam_out%flwds_mi(icol,ii) = flwds_col(icol,i_rad,j_rad)
          
                   !! Jungmin
-                  if(masterproc) then
-                     write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," ii=",I3," jj=",I3," i_rad=",I3," j_rad=",I3," cam_out%flwds_mi(icol,ii)=",F7.3," flwds_col(icol,i_rad,j_rad)=",F7.3)') & 
-                     cam_out%lchnk,icol,ii,jj,i_rad,j_rad,cam_out%flwds_mi(icol,ii),flwds_col(icol,i_rad,j_rad)
-                  end if
+                  !if(masterproc) then
+                  !   write(iulog,'("Unpacking: chunk_index=",I3," icol=",I3," ii=",I3," jj=",I3," i_rad=",I3," j_rad=",I3," cam_out%flwds_mi(icol,ii)=",F7.3," flwds_col(icol,i_rad,j_rad)=",F7.3)') & 
+                  !   cam_out%lchnk,icol,ii,jj,i_rad,j_rad,cam_out%flwds_mi(icol,ii),flwds_col(icol,i_rad,j_rad)
+                  !end if
                   !! Jungmin
                end do! icol = 1,ncol
             end do ! ii = 1,crm_nx

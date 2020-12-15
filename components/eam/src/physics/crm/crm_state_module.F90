@@ -26,6 +26,7 @@ module crm_state_module
       real(crm_rknd), pointer :: v_wind(:,:,:,:)       ! CRM v-wind component
       real(crm_rknd), pointer :: w_wind(:,:,:,:)       ! CRM w-wind component
       real(crm_rknd), pointer :: temperature(:,:,:,:)  ! CRM temperuture
+      real(crm_rknd), pointer :: qv    (:,:,:,:)       ! CRM specific humidity
 
       ! Microphysics
       real(crm_rknd), pointer :: qt(:,:,:,:) 
@@ -67,6 +68,7 @@ contains
       this%v_wind => null()
       this%w_wind => null()
       this%temperature => null()
+      this%qv     => null()
 
       this%qt => null()
       this%qc => null()
@@ -93,6 +95,7 @@ contains
       this%v_wind => null()
       this%w_wind => null()
       this%temperature => null()
+      this%qv     => null()
 
 #ifdef m2005
       this%qt => null()

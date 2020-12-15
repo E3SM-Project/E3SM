@@ -173,6 +173,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), pointer :: crm_state_v_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_w_wind     (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_temperature(:,:,:,:)
+    real(crm_rknd), pointer :: crm_state_qv         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qt         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qp         (:,:,:,:)
     real(crm_rknd), pointer :: crm_state_qn         (:,:,:,:)
@@ -268,6 +269,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_state_v_wind      => crm_state%v_wind     (1:ncrms,:,:,:)
   crm_state_w_wind      => crm_state%w_wind     (1:ncrms,:,:,:)
   crm_state_temperature => crm_state%temperature(1:ncrms,:,:,:)
+  crm_state_qv          => crm_state%qv         (1:ncrms,:,:,:)
   crm_state_qt          => crm_state%qt         (1:ncrms,:,:,:)
   crm_state_qp          => crm_state%qp         (1:ncrms,:,:,:)
   crm_state_qn          => crm_state%qn         (1:ncrms,:,:,:)
@@ -1290,6 +1292,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
           crm_state_v_wind     (icrm,i,j,k) = v   (icrm,i,j,k)
           crm_state_w_wind     (icrm,i,j,k) = w   (icrm,i,j,k)
           crm_state_temperature(icrm,i,j,k) = tabs(icrm,i,j,k)
+          crm_state_qv         (icrm,i,j,k) = qv  (icrm,i,j,k)
 #ifdef m2005
           crm_state%qt(icrm,i,j,k) = micro_field(icrm,i,j,k,1 )
           crm_state%nc(icrm,i,j,k) = micro_field(icrm,i,j,k,2 )

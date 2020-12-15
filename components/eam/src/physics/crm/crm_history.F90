@@ -367,7 +367,7 @@ subroutine crm_history_init(species_class)
 end subroutine crm_history_init
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
-subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
+subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, cam_in,crm_ecpp_output, qrs, qrl)
    use physics_types,          only: physics_state, physics_tend, physics_ptend
    use phys_control,           only: phys_getopts
    use crm_state_module,       only: crm_state_type
@@ -388,6 +388,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    type(crm_rad_type),        target,intent(in) :: crm_rad           ! CRM rad variables
    type(crm_output_type),     target,intent(in) :: crm_output        ! CRM output
    type(crm_ecpp_output_type),       intent(in) :: crm_ecpp_output   ! CRM output for ECPP
+   type(cam_in_t),                   intent(in) :: cam_in           ! atm input from coupler 
 
    real(r8), dimension(:,:), intent(in) :: qrs        ! shortwave radiative heating rate
    real(r8), dimension(:,:), intent(in) :: qrl        ! longwave radiative heating rate
@@ -408,8 +409,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    integer :: i, k                     ! loop iterators
    logical :: use_ECPP
    character(len=16) :: MMF_microphysics_scheme
-
-   type(cam_in_t) :: cam_in           ! atm input from coupler 
    !----------------------------------------------------------------------------
 
    call cnst_get_ind('CLDLIQ', ixcldliq)

@@ -16,9 +16,9 @@ contains
     !-----------------------------------------------------------------------
     use cam_cpl_indices
     use camsrfexch,     only: cam_in_t
-    use phys_grid ,     only: get_ncols_p
+    use phys_grid ,     only: get_ncols_p,get_gcol_p, get_rlat_p, get_rlon_p
     use ppgrid    ,     only: begchunk, endchunk       
-    use shr_const_mod,  only: shr_const_stebol
+    use shr_const_mod,  only: shr_const_stebol, shr_const_pi
     use seq_drydep_mod, only: n_drydep
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
@@ -43,6 +43,11 @@ contains
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
+    !! Jungmin
+    integer :: ii, jj
+    real(r8) :: rlat, rlon
+    integer :: rcol
+    !! Jungmin
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
@@ -60,7 +65,6 @@ contains
        ! time step making cflx(:,1)=0.0 for the first restart time step.
        ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
        cam_in(c)%cflx(:,2:) = 0._r8 
-                                               
        do i =1,ncols                                                               
           if (overwrite_flds) then
              ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
@@ -102,13 +106,6 @@ contains
              cam_in(c)%aldir_mi(i,1) = cam_in(c)%aldir(i)
              cam_in(c)%asdif_mi(i,1) = cam_in(c)%asdif(i)
              cam_in(c)%aldif_mi(i,1) = cam_in(c)%aldif(i)
-         !! Jungmin
-         !if(masterproc) then
-         !   write(iulog,'("atm_import: num_inst_index=",I3," inst_index=",I3," c=",I3," icol=",I3," cam_in(c)%asdir(icol)=",F7.5," cam_in(c)%asdir_mi(icol)=",F7.5 &
-         !                  " cam_in(c)%aldir(icol)=",F7.5," cam_in(c)%aldir_mi(icol,1)=",F7.5)') &
-         !                  num_inst_atm,inst_index,c,i,cam_in(c)%asdir(i),cam_in(c)%asdir_mi(i,1),cam_in(c)%aldir(i),cam_in(c)%aldir_mi(i,1)
-         !end if
-         !! Jungmin
          else  
              ! For MMF-MAML
              ! Modified for MAML
@@ -126,10 +123,7 @@ contains
              cam_in(c)%aldif_mi    (i,inst_index) =  x2a(index_x2a_Sx_anidf, ig)
              cam_in(c)%snowhland_mi(i,inst_index) =  x2a(index_x2a_Sl_snowh, ig)
              cam_in(c)%ts_mi       (i,inst_index) =  x2a(index_x2a_Sx_t,     ig)  
-             
-             ! Average cam_in%[X]_mi across the land instances and put it to cam_in%[X]
-             !call cam_in_avg_mi(cam_in)
-             ! Above operation moved at the end of this subroutine
+         
           end if ! num_inst_index.eq.1
 
           cam_in(c)%sst      (i) =  x2a(index_x2a_So_t,     ig)             
@@ -140,6 +134,30 @@ contains
           cam_in(c)%icefrac  (i) =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac  (i) =  x2a(index_x2a_Sf_ofrac, ig)
 	       cam_in(c)%landfrac (i) =  x2a(index_x2a_Sf_lfrac, ig)
+          
+          !! Jungmin
+          rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
+          rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
+          rcol = get_gcol_p(c,i) 
+          !if(cam_in(c)%landfrac(i).eq.1) then
+          !  if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
+          if(rcol.eq.223) then 
+            write(iulog,'("ATM_IMPORT: chunk ind=",I5," icol=",I5," ig=",I3," inst_index=",I3,&
+                          " lat=",F8.3," lon=",F8.3," rcol=",I5,&
+                          " landfrac=",F7.3," icefrac=",F7.3, &
+                          " cam_in%aldir=",F7.3," cam_in%aldif=",F7.3, &
+                          " cam_in%asdir=",F7.3," cam_in%asdif=",F7.3)') &
+                          c,i,ig,inst_index,&
+                          rlat, rlon, rcol, &
+                          cam_in(c)%landfrac(i), cam_in(c)%icefrac(i),&
+                          cam_in(c)%aldir(i),cam_in(c)%aldif(i),cam_in(c)%asdir(i),cam_in(c)%asdif(i)
+               do jj = 1, num_inst_atm
+                  write(iulog,'("      jj=",I3," aldir_mi=",F7.3," aldif_mi=",F7.3," asdir_mi=",F7.3," asdif_mi=",F7.3)') &
+                        jj,cam_in(c)%aldir_mi(i,jj),cam_in(c)%aldif_mi(i,jj),cam_in(c)%asdir_mi(i,jj),cam_in(c)%asdif_mi(i,jj)
+               end do! jj
+          end if
+          !! Jungmin
+          
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
@@ -265,9 +283,9 @@ contains
     ! For MMF-MAML configuration, cam_in fields that are specific to the
     ! multi-instance functionality are averaged across the instances.
     !
-    do c = begchunk, endchunk
-      call cam_in_avg_mi_all(cam_in(c))
-    end do! c  
+    !do c = begchunk, endchunk
+    !  call cam_in_avg_mi_all(cam_in(c))
+    !end do! c  
 
   end subroutine atm_import
 
@@ -277,7 +295,7 @@ contains
 
     !-------------------------------------------------------------------
     use camsrfexch, only: cam_out_t
-    use phys_grid , only: get_ncols_p
+    use phys_grid , only: get_ncols_p, get_rlat_p, get_rlon_p, get_gcol_p
     use ppgrid    , only: begchunk, endchunk       
     use cam_cpl_indices
     !
@@ -291,6 +309,11 @@ contains
     integer :: avsize, avnat
     integer :: i,m,c,n,ig       ! indices
     integer :: ncols            ! Number of columns
+    !! Jungmin
+    integer :: ii, jj
+    real(r8) :: rlat, rlon
+    integer :: rcol
+    !! Jungmin
     !-----------------------------------------------------------------------
 
     ! Copy from component arrays into chunk array data structure
@@ -320,12 +343,31 @@ contains
           a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols_mi(i,inst_index)
           a2x(index_a2x_Faxa_swndf,ig) = cam_out(c)%solld_mi(i,inst_index)
           a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd_mi(i,inst_index)
-
+          
           !! Jungmin
-          !if(masterproc) then
-          !   write(iulog,'("ATM_EXPORT: inst_index=",I3," index_a2x_Faxa_lwdn=",I3," ig=",I3," c=",I3," i=",I3," cam_out(c)%flwds_mi(i,inst_index)=",F7.3," a2x=",F7.3)') &
-          !   inst_index,index_a2x_Faxa_lwdn,ig,c,i,cam_out(c)%flwds_mi(i,inst_index),a2x(index_a2x_Faxa_lwdn,ig)
-          !end if              
+          rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
+          rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
+          rcol = get_gcol_p(c,i) 
+          !if(cam_in(c)%landfrac(i).eq.1) then
+          !  if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
+          if(rcol.eq.223) then 
+            write(iulog,'("ATM_EXPORT: chunk ind=",I5," icol=",I5," ig=",I3," inst_index=",I3,&
+                          " lat=",F8.3," lon=",F8.3," rcol=",I5,&
+                          " cam_out%soll_mi=",F7.3," a2x=",F7.3, &
+                          " cam_out%sols_mi=",F7.3," a2x=",F7.3,  &
+                          " cam_out%solld_mi=",F7.3," a2x=",F7.3, &
+                          " cam_out%solsd_mi=",F7.3," a2x=",F7.3, &
+                          "cam_out%flwds_mi=",F7.3," a2x=",F7.3)') &
+                          c,i,ig,inst_index,&
+                          rlat, rlon, rcol, &
+                          cam_out(c)%soll_mi(i,inst_index), a2x(index_a2x_Faxa_swndr,ig), &
+                          cam_out(c)%sols_mi(i,inst_index),a2x(index_a2x_Faxa_swvdr,ig), &
+                          cam_out(c)%solld_mi(i,inst_index),a2x(index_a2x_Faxa_swndf,ig), &
+                          cam_out(c)%solsd_mi(i,inst_index), a2x(index_a2x_Faxa_swvdf,ig),&
+                          cam_out(c)%flwds_mi(i,inst_index), a2x(index_a2x_Faxa_lwdn ,ig)
+          end if
+          !! Jungmin
+
 
           ! aerosol deposition fluxes
           a2x(index_a2x_Faxa_bcphidry,ig) = cam_out(c)%bcphidry(i)

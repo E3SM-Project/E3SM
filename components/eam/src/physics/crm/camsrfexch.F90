@@ -11,7 +11,7 @@ module camsrfexch
   use shr_kind_mod,  only: r8 => shr_kind_r8, r4 => shr_kind_r4
   use constituents,  only: pcnst
   use ppgrid,        only: pcols, begchunk, endchunk
-  use phys_grid,     only: get_ncols_p, phys_grid_initialized
+  use phys_grid,     only: get_ncols_p, get_gcol_p,get_rlat_p,get_rlon_p, phys_grid_initialized
   use infnan,        only: posinf, assignment(=)
   use cam_abortutils,    only: endrun
   use cam_logfile,   only: iulog
@@ -457,7 +457,7 @@ CONTAINS
     integer :: ierror       ! Error code
     !----------------------------------------------------------------------- 
     !! Jungmin
-    if(masterproc) write(iulog,*) 'atm2hub_alloc: num_inst_atm:',num_inst_atm
+    !if(masterproc) write(iulog,*) 'atm2hub_alloc: num_inst_atm:',num_inst_atm
     !! Jungmin
     if ( .not. phys_grid_initialized() ) call endrun( "ATM2HUB_ALLOC error: phys_grid not called yet" )
     allocate (cam_out(begchunk:endchunk), stat=ierror)
@@ -841,6 +841,10 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    use cam_control_mod,  only: rair
    use physics_buffer,   only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
    use phys_control,     only: phys_getopts
+   !! Jungmin
+   use shr_const_mod,  only: shr_const_pi
+   use cam_instance     , only: inst_index
+   !! Jungmin
    !use maml_module,      only: cam_out_avg_mi
    implicit none
 
@@ -895,6 +899,10 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    logical :: use_MAML
    real(r8) :: avgfac
    integer :: iter_max(10)
+
+   !! Jungmin
+   real(r8) :: clat,clon
+   integer :: rcol
    !-----------------------------------------------------------------------
    iter_max = 10
 
@@ -932,7 +940,9 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    if (co2_transport()) then
       cam_out%co2prog(1:ncol) = state%q(1:ncol,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
    end if
-   
+   !! Jungmin
+   !write(iulog,'("num_inst_atm:",I)') num_inst_atm
+   !! Jungmin
    if(.not.use_MAML) then
       ! for default MMF, without MAML
    
@@ -1000,7 +1010,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    else   
       ! for MMF-MAML, surfaces are coupled to CRM atmosphere 
       crm_t_idx     = pbuf_get_index('CRM_T')
-      crm_qv_idx    = pbuf_get_index('CRM_QV_RAD')
+      crm_qv_idx    = pbuf_get_index('CRM_QV')
       crm_u_idx     = pbuf_get_index('CRM_U')
       crm_v_idx     = pbuf_get_index('CRM_V')
       crm_pcp_idx   = pbuf_get_index('CRM_PCP')
@@ -1047,25 +1057,39 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
       cam_out%vbot = 0.
 
       ! for non-MAML, num_inst_atm = avgfac = 1
-      print*,'cam_export()'
-      print*,'num_inst_atm:', num_inst_atm
       do i = 1,ncol
          do j = 1,num_inst_atm
-            print*,'i:',i,'j:',j,'tbot_mi:',cam_out%tbot_mi(i,j),'avgfac:',avgfac
             cam_out%tbot(i)   = cam_out%tbot(i)   + cam_out%tbot_mi(i,j)  *avgfac
             cam_out%thbot(i)  = cam_out%thbot(i)  + cam_out%thbot_mi(i,j) *avgfac
             cam_out%qbot(i,1) = cam_out%qbot(i,1) + cam_out%qbot_mi(i,1,j)*avgfac
             cam_out%ubot(i)   = cam_out%ubot(i)   + cam_out%ubot_mi(i,j)  *avgfac
             cam_out%vbot(i)   = cam_out%vbot(i)   + cam_out%vbot_mi(i,j)  *avgfac
             cam_out%rho(i)    = cam_out%rho(i)    + cam_out%rho_mi(i,j)   *avgfac
-            print*,'i:',i,'j:',j,'precsc_mi:',cam_out%precsc_mi(i,j),'avgfac:',avgfac
             cam_out%precsc(i) = cam_out%precsc(i) + cam_out%precsc_mi(i,j)*avgfac
-            print*,'i:',i,'j:',j,'precsl_mi:',cam_out%precsl_mi(i,j),'avgfac:',avgfac
             cam_out%precsl(i) = cam_out%precsl(i) + cam_out%precsl_mi(i,j)*avgfac
             cam_out%precc(i)  = cam_out%precc(i)  + cam_out%precc_mi(i,j) *avgfac
             cam_out%precl(i)  = cam_out%precl(i)  + cam_out%precl_mi(i,j) *avgfac
          end do
       end do! i = 1, ncol
+      !! Jungmin
+      do i = 1,ncol
+         rcol = get_gcol_p(lchnk,i)         
+         if(rcol.eq.223) then
+            clat = get_rlat_p(lchnk,i)*180_r8/SHR_CONST_PI
+            clon = get_rlon_p(lchnk,i)*180_r8/SHR_CONST_PI
+
+            write(iulog,'("ATM_EXPORT: chunk_index=",I3," icol=",I3," rcol=",I5," inst_index=",I5, &
+                          "lat=",F8.3," lon=",F8.3, &
+                          " tbot=",F7.3)') &
+                          lchnk,i,rcol,inst_index,&
+                          clat,clon,&
+                          cam_out%tbot(i)
+            do j = 1, num_inst_atm
+               write(iulog,'("      j=",I3," tbot_mi=",F7.3)')j,cam_out%tbot_mi(i,j)
+            end do
+         end if   
+      end do
+      !! Jungmin
    end if ! .not.use_MAML
    !
    ! total snowfall rate: needed by slab ocean model

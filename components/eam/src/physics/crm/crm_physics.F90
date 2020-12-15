@@ -138,6 +138,7 @@ subroutine crm_physics_register()
    call pbuf_add_field('CRM_V', 'global', dtype_r8, dims_crm_3D, idx)
    call pbuf_add_field('CRM_W', 'global', dtype_r8, dims_crm_3D, idx)
    call pbuf_add_field('CRM_T', 'global', dtype_r8, dims_crm_3D, idx)
+   call pbuf_add_field('CRM_QV','global', dtype_r8, dims_crm_3D, idx)
 
    ! Radiation
    call pbuf_add_field('CRM_T_RAD',   'physpkg', dtype_r8, dims_crm_rad, idx)
@@ -585,6 +586,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_V'), crm_state%v_wind)
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_W'), crm_state%w_wind)
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_T'), crm_state%temperature)
+   call pbuf_get_field (pbuf, pbuf_get_index('CRM_QV'), crm_state%qv)
 
    ! Set pointers to microphysics fields in crm_state
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_state%qt)
@@ -629,6 +631,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             crm_state%v_wind(i,:,:,k) = state%v(i,m) * cos( crm_angle(i) ) - state%u(i,m) * sin( crm_angle(i) )
             crm_state%w_wind(i,:,:,k) = 0.
             crm_state%temperature(i,:,:,k) = state%t(i,m)
+            crm_state%qv(i,:,:,k) = state%q(i,m,1)
 
             ! Initialize microphysics arrays
             if (MMF_microphysics_scheme .eq. 'sam1mom') then
@@ -648,7 +651,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_state%qg(i,:,:,k) = 0.0_r8
                crm_state%ng(i,:,:,k) = 0.0_r8
             end if
-
+            ! Initialize CRM 
          end do
       end do
 
@@ -1045,7 +1048,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! Write out data for history files
       !---------------------------------------------------------------------------------------------
 
-      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecpp_output, qrs, qrl)
+      call crm_history_out(state, ptend, crm_state, crm_rad, crm_output, cam_in,crm_ecpp_output, qrs, qrl)
 
       ! Convert heating rate to Q*dp to conserve energy across timesteps
       do m = 1,crm_nz

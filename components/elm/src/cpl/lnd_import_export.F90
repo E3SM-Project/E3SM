@@ -39,6 +39,10 @@ contains
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
     use elm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
+    !! Jungmin
+    use decompMod   , only : ldecomp
+    use clm_varctl       , only : inst_index
+    !! Jungmin
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
@@ -46,6 +50,8 @@ contains
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
     !
     ! !LOCAL VARIABLES:
+    !! Jungmin
+    integer :: gcol
     integer  :: g,topo,i,m,thism,nstep,ier  ! indices, number of steps, and error code
     integer status(MPI_STATUS_SIZE)
     real(r8) :: forc_rainc           ! rainxy Atm flux mm/s
@@ -1075,18 +1081,27 @@ contains
        atm2lnd_vars%forc_pbot_not_downscaled_grc(g)  = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy  Atm state Pa
        atm2lnd_vars%forc_t_not_downscaled_grc(g)     = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
        atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
+         
+       !! Jungmin
+       gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
+       if(gcol.eq.223) then
+         write(iulog,'("LND_IMPORT: inst_index=",I3," g=",I3," i=",I3, "igarr=",I3, &
+                        " lat=",F8.3," lon=",F8.3,&
+                        " sollxy=",F7.3," solsxy=",F7.3," solldxy=",F7.3," solsdxy=",F7.3," flwdsxy=",F7.3)') &
+                        inst_index,g,i,gcol,&
+                        grc_pp%latdeg(g),grc_pp%londeg(g),&
+                        x2l(index_x2l_Faxa_swndr,i), &
+                        x2l(index_x2l_Faxa_swvdr,i), &
+                        x2l(index_x2l_Faxa_swndf,i), &
+                        x2l(index_x2l_Faxa_swvdf,i), &
+                        x2l(index_x2l_Faxa_lwdn,i)
+       end if           
+       !! Jungmin        
 
        forc_rainc                                    = x2l(index_x2l_Faxa_rainc,i)   ! mm/s
        forc_rainl                                    = x2l(index_x2l_Faxa_rainl,i)   ! mm/s
        forc_snowc                                    = x2l(index_x2l_Faxa_snowc,i)   ! mm/s
        forc_snowl                                    = x2l(index_x2l_Faxa_snowl,i)   ! mm/s
-
-       !! Jungmin
-       if(masterproc) then
-          write(iulog,'("lnd_import: forc_solsxy=",F7.3," flwdsxy=",F7.3," i=",I3," g=",I3," index_x2l_Faxa_swvdr=",I3)') &
-                                     x2l(index_x2l_Faxa_swvdr,i),x2l(index_x2l_Faxa_lwdn,i),i,g,index_x2l_Faxa_swvdr
-       end if   
-       !! Jungmin
 
        ! atmosphere coupling, for prognostic/prescribed aerosols
        atm2lnd_vars%forc_aer_grc(g,1)  =  x2l(index_x2l_Faxa_bcphidry,i)
@@ -1142,12 +1157,6 @@ contains
          ! derived flux forcings
          top_af%solar(topo) = top_af%solad(topo,2) + top_af%solad(topo,1) + &
                               top_af%solai(topo,2) + top_af%solai(topo,1)
-         !! Jungmin
-         if(masterproc) then
-            write(iulog,'("lnd_import: topounit: solad=",F7.3," lwrad=",F7.3," topo=",I3," i=",I3)') &
-                         top_af%solad(topo,1),top_af%lwrad(topo),topo,i
-         end if
-         !! Jungmin
        end do
          
 #endif
@@ -1330,7 +1339,8 @@ contains
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     !! Jungmin
-    use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
+    use decompMod   , only : ldecomp
+    use clm_varctl       , only : inst_index
     !! Jungmin
     !
     ! !ARGUMENTS:
@@ -1347,6 +1357,9 @@ contains
     integer  :: dtime ! time step   
     integer  :: num   ! counter
     character(len=*), parameter :: sub = 'lnd_export_mct'
+    !! Jungmin
+    integer :: gcol
+    !! Jungmin
     !---------------------------------------------------------------------------
 
     ! cesm sign convention is that fluxes are positive downward
@@ -1362,11 +1375,18 @@ contains
        l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
        l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
        !! Jungmin
-       if(masterproc) then
-          write(iulog,'("lnd_export:avsdr=",F7.5," anidr=",F7.5," avsdf=",F7.5," anidf=",F7.5," i=",I3," g=",I3)') &
-          l2x(index_l2x_Sl_avsdr,i),l2x(index_l2x_Sl_anidr,i),l2x(index_l2x_Sl_avsdf,i),l2x(index_l2x_Sl_anidf,i),i,g
-       end if
-       !! Jungmin
+       !if(grc_pp%latdeg(g).gt.-15 .and. grc_pp%latdeg(g).lt.15.) then
+       gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
+       if(gcol.eq.223) then
+         write(iulog,'("LND_EXPORT: inst_index=",I3," g=",I3," i=",I3, "igarr=",I3, &
+                        " lat=",F8.3," lon=",F8.3,&
+                        " asdir=",F7.3," aldir=",F7.3," asdif=",F7.3," aldif=",F7.3)') &
+                        inst_index,g,i,gcol,&
+                        grc_pp%latdeg(g),grc_pp%londeg(g),&
+                        lnd2atm_vars%albd_grc(g,1),lnd2atm_vars%albd_grc(g,2),&
+                        lnd2atm_vars%albi_grc(g,1),lnd2atm_vars%albi_grc(g,2)
+       end if           
+       !! Jungmin        
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)

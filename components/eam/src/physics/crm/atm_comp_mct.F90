@@ -162,7 +162,6 @@ CONTAINS
     logical :: perpetual_run    ! If in perpetual mode or not
     integer :: perpetual_ymd    ! Perpetual date (YYYYMMDD)
     integer :: shrlogunit,shrloglev ! old values
-    logical :: first_time = .true.
     character(len=cs) :: calendar      ! Calendar type
     character(len=cs) :: starttype     ! infodata start type
     character(len=8)           :: c_inst_index  ! instance number
@@ -173,8 +172,11 @@ CONTAINS
                                 ! hdim2_d == 1.
     character(len=64) :: filein ! Input namelist filename
 #ifdef MAML                                                                                                 
+    logical :: first_time = .false.
     logical,save :: first_call = .true.    ! check for sequential calls of multi-instances
     integer :: atm_phase                   ! passed from driver
+#else
+    logical :: first_time = .true.
 #endif 
 
     !-----------------------------------------------------------------------
@@ -194,12 +196,7 @@ CONTAINS
 #ifdef MAML
     call seq_infodata_getData(infodata,atm_phase=atm_phase)
     call cam_instance_init(ATMID)
-    ![lee1046]
-    write(*,*) '### atm_init_mct: ATMID = ',ATMID
-    write(*,*) '### atm_init_mct: inst_index = ',inst_index
-    ![lee1046]
     !--- auto detect sequence_instances based on calling this more than once in phase 1 ---
-    write(*,*) '### atm_init_mct: atm_phase,first_call,sequence_instances = ',atm_phase,first_call,sequence_instances
     if (atm_phase == 1 .and. .not.first_call .and. .not.sequence_instances) then
        sequence_instances = .true.
        write(6,*) "Setting sequence_instances to true"
