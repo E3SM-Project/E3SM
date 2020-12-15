@@ -3058,20 +3058,16 @@ void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Rea
   view_1d ustar_1d (views_1d[0]),
           pblh_1d  (views_1d[1]);
 
-  SHOC::view_1d<bool> check_1d("check", shcol);
-  const auto host_check_1d = Kokkos::create_mirror_view(check_1d);
-  for (auto k=0; k<shcol; ++k) {
-    host_check_1d(k) = check[k];
-  }
-  Kokkos::deep_copy(check_1d, host_check_1d);
+  std::vector<view_bool_1d> bool_views_1d(1);
+  ekat::host_to_device({check}, shcol, bool_views_1d);
+  view_bool_1d check_1d(bool_views_1d[0]);
 
   Kokkos::parallel_for("pblintd_check_pblh", shcol, KOKKOS_LAMBDA (const int& i) {
 
     const auto z_1d  = ekat::subview(z_2d, i);
     Scalar& ustar_s  = ustar_1d(i)[0];
     Scalar& pblh_s   = pblh_1d(i)[0];
-
-    bool& check_s = check_1d(i);
+    bool check_s     = (bool)(check_1d(i)[0]);
 
     SHOC::pblintd_check_pblh(nlevi, npbl, z_1d, ustar_s, check_s, pblh_s);
  });
