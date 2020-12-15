@@ -17,7 +17,6 @@ void Functions<S,D>
 ::isotropic_ts(
   const MemberType&            team,
   const Int&                   nlev,
-  const Int&                   shcol,
   const Scalar&                brunt_int,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& a_diss,

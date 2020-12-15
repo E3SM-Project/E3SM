@@ -93,8 +93,8 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   if (CreateUnitTest_COMPILER_CXX_FLAGS)
     list(APPEND cut_options COMPILER_CXX_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
   endif ()
-  if (CreateUnitTest_COMPILER_F_FLAGS)
-    list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS})
+  if (CreateUnitTest_COMPILER_F_FLAGS OR SCREAM_Fortran_FLAGS)
+    list(APPEND cut_options COMPILER_F_FLAGS ${CreateUnitTest_C_COMPILER_DEFS} ${SCREAM_Fortran_FLAGS})
   endif ()
 
 

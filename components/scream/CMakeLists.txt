@@ -1,9 +1,9 @@
 if (NOT DEFINED PROJECT_NAME)
   cmake_minimum_required(VERSION 3.3)
   cmake_policy(SET CMP0057 NEW)
-  set(CIME_BUILD FALSE)
+  set(SCREAM_CIME_BUILD FALSE)
 else()
-  set(CIME_BUILD TRUE)
+  set(SCREAM_CIME_BUILD TRUE)
   set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
   set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
@@ -22,10 +22,16 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
+if (SCREAM_CIME_BUILD)
+  list(APPEND CMAKE_MODULE_PATH
+       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
+endif ()
+
 include(EkatMpiUtils)
 
 # We should avoid cxx bindings in mpi; they are already deprecated,
@@ -44,7 +50,7 @@ endif()
 
 set (CMAKE_CXX_STANDARD 11)
 
-if (NOT CIME_BUILD)
+if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX Fortran)
 
   if (SCREAM_CORI_HACK)
@@ -118,10 +124,34 @@ set(DEFAULT_FPMODEL "precise")
 set(DEFAULT_MPIRUN_EXE "mpiexec")
 set(DEFAULT_MPI_NP_FLAG "-np")
 set(DEFAULT_LIB_ONLY FALSE)
-if (CIME_BUILD)
+if (SCREAM_CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
+
+find_path(NF_CONFIG_SEARCH nf-config)
+if (NF_CONFIG_SEARCH)
+  execute_process(COMMAND ${NF_CONFIG_SEARCH}/nf-config --prefix
+    RESULT_VARIABLE NF_STATUS
+    OUTPUT_VARIABLE NF_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NF_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+  endif()
+endif()
+
+find_path(NC_CONFIG_SEARCH nc-config)
+if (NC_CONFIG_SEARCH)
+  execute_process(COMMAND ${NC_CONFIG_SEARCH}/nc-config --prefix
+    RESULT_VARIABLE NC_STATUS
+    OUTPUT_VARIABLE NC_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NC_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+  endif()
+endif()
 
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
@@ -131,6 +161,8 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
+set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
@@ -192,25 +224,15 @@ include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 
-# Init scream TPLs info to whatever EKAT set.
-set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
-set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
-
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
 
-set (SCREAM_INCLUDE_DIRS
-  ${SCREAM_SRC_DIR}
-  ${EKAT_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/src
-)
-
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64 ")
+    set(SCREAM_Fortran_FLAGS -real-size 64)
   else()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
@@ -222,19 +244,21 @@ print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
-print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
-print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
+# Generate scream_config.h and scream_config.f
+include (EkatUtils)
+EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 # Hooks for testing test-all-scream within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
@@ -249,7 +273,7 @@ endif()
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 
-if (CIME_BUILD)
+if (SCREAM_CIME_BUILD)
   if (SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
     set (SCREAM_DYNAMICS_DYCORE "Homme")
   endif()

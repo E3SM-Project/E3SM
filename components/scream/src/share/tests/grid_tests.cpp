@@ -21,20 +21,20 @@ TEST_CASE("point_grid", "") {
   const int num_cols = 128*num_procs, num_levels = 72;
 
   auto grid = create_point_grid("my_grid", num_cols, num_levels, comm);
-  REQUIRE(grid.type() == GridType::Point);
-  REQUIRE(grid.name() == "my_grid");
-  REQUIRE(grid.get_num_vertical_levels() == num_levels);
-  REQUIRE(grid.get_num_local_dofs() == 128);
+  REQUIRE(grid->type() == GridType::Point);
+  REQUIRE(grid->name() == "my_grid");
+  REQUIRE(grid->get_num_vertical_levels() == num_levels);
+  REQUIRE(grid->get_num_local_dofs() == 128);
 
-  auto lid_to_idx = grid.get_lid_to_idx_map();
+  auto lid_to_idx = grid->get_lid_to_idx_map();
   auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
   Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);
-  for (int i = 0; i < grid.get_num_local_dofs(); ++i) {
+  for (int i = 0; i < grid->get_num_local_dofs(); ++i) {
     REQUIRE(host_lid_to_idx.extent_int(1) == 1);
     REQUIRE(i == host_lid_to_idx(i, 0));
   }
 
-  auto layout = grid.get_native_dof_layout();
+  auto layout = grid->get_native_dof_layout();
   REQUIRE(layout.tags().size() == 1);
   REQUIRE(layout.tag(0) == COL);
 }
@@ -42,9 +42,11 @@ TEST_CASE("point_grid", "") {
 TEST_CASE("se_grid", "") {
 
   // Make the grid and check its initial state.
-  int num_elems = 64;
+  ekat::Comm comm(MPI_COMM_WORLD);
+  int num_my_elems = 10;
+  int num_elems = 10*comm.size();
   int num_gp = 4, num_levels = 72;
-  SEGrid grid("se_grid",num_elems, num_gp, num_levels);
+  SEGrid grid("se_grid",num_elems,num_my_elems, num_gp, num_levels);
   REQUIRE(grid.type() == GridType::SE);
   REQUIRE(grid.name() == "se_grid");
   REQUIRE(grid.get_num_vertical_levels() == num_levels);

@@ -38,21 +38,25 @@ public:
     return get_grid("Reference");
   }
 
-  void build_grids (const std::set<std::string>& grid_names,
-                    const std::string& reference_grid) {
-    for (const auto& name : grid_names) {
-      build_grid(name);
-    }
-    build_grid(reference_grid);
+  // The list of grids that this GM can build
+  virtual std::set<std::string> supported_grids () const = 0;
+
+  // Check if the given grid has been built
+  bool has_grid (const std::string& grid_name) const {
+    const auto& grids = get_repo ();
+    return grids.find(grid_name)!=grids.end();
   }
 
+  virtual void build_grids (const std::set<std::string>& grid_names,
+                            const std::string& reference_grid) = 0;
+
   remapper_ptr_type
-  create_remapper (const grid_ptr_type from_grid,
-                   const grid_ptr_type to_grid) const {
-    EKAT_REQUIRE_MSG( supports_grid(from_grid->name()),
-                        "Error! Source grid '" + from_grid->name() + "' is not supported.\n");
-    EKAT_REQUIRE_MSG( supports_grid(to_grid->name()),
-                        "Error! Target grid '" + to_grid->name() + "' is not supported.\n");
+  create_remapper (const grid_ptr_type& from_grid,
+                   const grid_ptr_type& to_grid) const {
+    EKAT_REQUIRE_MSG( has_grid(from_grid->name()),
+                      "Error! Source grid '" + from_grid->name() + "' is not supported.\n");
+    EKAT_REQUIRE_MSG( has_grid(to_grid->name()),
+                      "Error! Target grid '" + to_grid->name() + "' is not supported.\n");
 
     remapper_ptr_type remapper;
 
@@ -66,7 +70,7 @@ public:
     EKAT_REQUIRE_MSG(
       remapper!=nullptr,
       "Error! A remapper from grid '" + from_grid->name() + "' to grid '" + to_grid->name() + "' is not available.\n"
-      "       Perhaps you forgot to add it creation to the implementation of the grids manager?\n");
+      "       Perhaps you forgot to add its creation to the implementation of the grids manager?\n");
 
     return remapper;
   }
@@ -79,19 +83,12 @@ public:
 
 protected:
 
-  virtual void build_grid (const std::string& grid_name) = 0;
-
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const = 0;
 
-  bool supports_grid (const std::string& grid_name) const {
-    const auto& grids = get_repo ();
-    return grids.find(grid_name)!=grids.end();
-  }
-
-  // This mini-function simply prints the supported grids names as "name1, name2, name3"
-  std::string print_supported_grids () const {
+  // This mini-function simply prints the names of the grids built, as "name1, name2, name3"
+  std::string print_available_grids () const {
     const auto& grids = get_repo ();
 
     std::string str;
@@ -106,15 +103,32 @@ protected:
     return str;
   }
 
+  // This mini-function simply prints the names of the supported grids (not necessarily built), as "name1, name2, name3"
+  std::string print_supported_grids () const {
+    const auto& grids = supported_grids ();
+
+    std::string str;
+    if (grids.size()==0) {
+      return str;
+    }
+    auto it = grids.begin();
+    str += *it;
+    for (; it!=grids.end(); ++it) {
+      str += ", " + *it;
+    }
+    return str;
+  }
+
   virtual const grid_repo_type& get_repo () const = 0;
 };
 
 inline GridsManager::grid_ptr_type
 GridsManager::get_grid(const std::string& name) const
 {
-  EKAT_REQUIRE_MSG (supports_grid(name),
+  EKAT_REQUIRE_MSG (has_grid(name),
                       "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
-                      "       Supported grids are: " + print_supported_grids()  + "\n");
+                      "       Avaialble grids (built only) are: " + print_available_grids()  + "\n"
+                      "       Supported grids (inculdes non built ones) are: " + print_supported_grids()  + "\n");
 
   return get_repo().at(name);
 }

@@ -540,6 +540,17 @@ end subroutine dp_inverse_f
     real(kind=c_real) , intent(out), dimension(shcol, nlev) :: tkh, tk
   end subroutine eddy_diffusivities_f
 
+  subroutine shoc_tke_f(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: shcol, nlev, nlevi
+    real(kind=c_real) , value, intent(in) :: dtime
+    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: wthv_sec, shoc_mix, dz_zt, pres, u_wind, v_wind, brunt, zt_grid
+    real(kind=c_real) , intent(in), dimension(shcol, nlevi) :: dz_zi, zi_grid
+    real(kind=c_real) , intent(in), dimension(shcol) :: obklen, pblh
+    real(kind=c_real) , intent(inout), dimension(shcol, nlev) :: tke, tk, tkh
+    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: isotropy
+  end subroutine shoc_tke_f
 end interface
 
 end module shoc_iso_f

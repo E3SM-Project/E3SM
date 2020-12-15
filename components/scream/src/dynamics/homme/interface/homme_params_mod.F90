@@ -297,7 +297,7 @@ contains
     endif
 
     if (ndays>0) then
-      nmax = ndays * (secpday/tstep)
+      nmax = INT(ndays * (secpday/tstep))
     end if
     nEndStep = nmax
 
@@ -512,10 +512,9 @@ contains
   end function get_homme_bool_param_f90
 
   subroutine set_homme_int_param_f90 (param_name_c, param_value) bind(c)
-    use dimensions_mod,    only: nelemd, qsize, nlev, np
+    use dimensions_mod,    only: qsize, nlev, np
     use control_mod,       only: ftype
     use time_mod,          only: nmax
-    use homme_context_mod, only: elem
     !
     ! Input(s)
     !
@@ -526,7 +525,6 @@ contains
     !
     character(len=256), pointer :: param_name
     integer :: len
-    integer :: dims(4)
 
     call c_f_pointer(param_name_c,param_name)
     len = index(param_name, C_NULL_CHAR) -1

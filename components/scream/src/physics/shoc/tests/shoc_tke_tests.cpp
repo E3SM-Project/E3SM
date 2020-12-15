@@ -70,8 +70,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real pblh = 1000;
     // Define pressure [Pa]
     Real pres[nlev] = {85000, 87500, 90000, 95000, 100000};
-    // Define brunt Vaisalla frequency
-    Real brunt[nlev] = {0.1, 0.1, 0.1, 0.1, 0.1};
 
     // Define TKE initial [m2/s2]
     Real tke_init[nlev] = {0.01, 0.01, 0.01, 0.01, 0.01};
@@ -250,9 +248,63 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 
   static void run_bfb()
   {
-    // TODO
-  }
+    ShocTkeData f90_data[] = {
+      ShocTkeData(10, 71, 72, 300),
+      ShocTkeData(10, 12, 13, 100),
+      ShocTkeData(7,  16, 17, 50),
+      ShocTkeData(2, 7, 8, 5),
+    };
 
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocTkeData);
+
+    // Generate random input data
+    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
+    for (auto& d : f90_data) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    ShocTkeData cxx_data[] = {
+      ShocTkeData(f90_data[0]),
+      ShocTkeData(f90_data[1]),
+      ShocTkeData(f90_data[2]),
+      ShocTkeData(f90_data[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : f90_data) {
+      // expects data in C layout
+      shoc_tke(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : cxx_data) {
+      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      shoc_tke_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt,
+                 d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen, d.zt_grid, d.zi_grid, d.pblh,
+                 d.tke, d.tk, d.tkh, d.isotropy);
+      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      ShocTkeData& d_f90 = f90_data[i];
+      ShocTkeData& d_cxx = cxx_data[i];
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tk));
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tkh));
+      REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.isotropy));
+      for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
+        REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
+        REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+        REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
+        REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
+      }
+    }
+  } // run_bfb
 };
 
 }  // namespace unit_test

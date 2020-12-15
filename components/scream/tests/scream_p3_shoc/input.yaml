@@ -18,6 +18,6 @@ Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns:   32
-    Number of vertical levels: 128
+    Number of global columns:  32
+    Number of vertical levels: 72
 ...

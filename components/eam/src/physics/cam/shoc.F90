@@ -3200,7 +3200,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
+        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*bfb_square(tscale)))
      enddo
   enddo
 
@@ -4340,7 +4340,7 @@ subroutine pblintd_height(&
     do k=nlev-1,nlev-npbl+1,-1
        do i=1,shcol
           if (check(i)) then
-             vvk = bfb_pow((u(i,k) - u(i,nlev)), 2.) + bfb_pow((v(i,k) - v(i,nlev)), 2.) +fac*bfb_pow(ustar(i),2.)
+             vvk = bfb_square(u(i,k) - u(i,nlev)) + bfb_square(v(i,k) - v(i,nlev)) + fac*bfb_square(ustar(i))
              vvk = max(vvk,tiny)
              rino(i,k) = ggr*(thv(i,k) -thv_ref(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then
