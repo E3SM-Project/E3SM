@@ -356,8 +356,6 @@ subroutine CVT_forcing(ncrms)
    !----------------------------------------------------------------------------
    ! clean up
    !----------------------------------------------------------------------------
-   deallocate( ttend_loc )
-   deallocate( qtend_loc )
    deallocate( t_pert_scale )
    deallocate( q_pert_scale )
 
