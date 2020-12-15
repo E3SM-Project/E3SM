@@ -129,6 +129,30 @@ if (SCREAM_CIME_BUILD)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
 
+find_path(NF_CONFIG_SEARCH nf-config)
+if (NF_CONFIG_SEARCH)
+  execute_process(COMMAND ${NF_CONFIG_SEARCH}/nf-config --prefix
+    RESULT_VARIABLE NF_STATUS
+    OUTPUT_VARIABLE NF_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NF_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+  endif()
+endif()
+
+find_path(NC_CONFIG_SEARCH nc-config)
+if (NC_CONFIG_SEARCH)
+  execute_process(COMMAND ${NC_CONFIG_SEARCH}/nc-config --prefix
+    RESULT_VARIABLE NC_STATUS
+    OUTPUT_VARIABLE NC_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NC_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+  endif()
+endif()
+
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -137,6 +161,8 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
+set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
