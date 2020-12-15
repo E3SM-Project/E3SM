@@ -650,8 +650,8 @@ contains
          nf = f_som_c_leached         ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_leached(g)             *af
          nf = f_som_c_yield           ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - som_c_yield(g)               *af
          nf = f_dwt_conv_cflux        ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_conv_cflux(g)        *af
-         nf = f_dwt_seedc_to_leaf     ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_seedc_to_leaf(g)     *af
-         nf = f_dwt_seedc_to_deadstem ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_seedc_to_deadstem(g) *af
+         nf = f_dwt_seedc_to_leaf     ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + grc_dwt_seedc_to_leaf(g)     *af
+         nf = f_dwt_seedc_to_deadstem ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + grc_dwt_seedc_to_deadstem(g) *af
 
          ! states
          ns = s_totc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totc(g)              *af
@@ -883,7 +883,9 @@ contains
             budg_stateG(s_end,ip)*unit_conversion, &
             (budg_stateG(s_end,ip) - budg_stateG(s_beg,ip))*unit_conversion
     end do
-    write(iulog,C_FS3_3)'Grid-level Err',budg_stateG(s_c_error,ip) *unit_conversion
+    write(iulog,C_FS_2)'Grid-level Err',0._r8, budg_stateG(s_c_error,ip) *unit_conversion, &
+       budg_stateG(s_c_error,ip) *unit_conversion
+
 
     write(iulog,'(70("-"),"|",23("-"))')
 
@@ -896,7 +898,8 @@ contains
          (budg_stateG(s_ctrunc_end            ,ip) - budg_stateG(s_ctrunc_beg           ,ip))*unit_conversion + &
          (budg_stateG(s_cropseedc_deficit_end ,ip) - budg_stateG(s_cropseedc_deficit_beg,ip))*unit_conversion + &
          budg_stateG(s_c_error,ip) *unit_conversion, &
-         (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion
+         (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion + &
+         budg_stateG(s_c_error,ip) *unit_conversion
 
     write(iulog,'(70("-"),"|",23("-"))')
 
