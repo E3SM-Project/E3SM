@@ -27,6 +27,7 @@ module CNPBudgetMod
   public :: CNPBudget_Run
   public :: CNPBudget_Accum
   public :: CNPBudget_Print
+  public :: CNPBudget_Restart
   public :: CNPBudget_SetBeginningMonthlyStates
   public :: CNPBudget_SetEndingMonthlyStates
 
@@ -326,7 +327,7 @@ module CNPBudgetMod
 
   real(r8) :: c_budg_stateL(c_s_size, p_size) ! local sum, valid on all pes
   real(r8) :: n_budg_stateL(n_s_size, p_size) ! local sum, valid on all pes
-  real(r8) :: p_budg_stateL(n_s_size, p_size) ! local sum, valid on all pes
+  real(r8) :: p_budg_stateL(p_s_size, p_size) ! local sum, valid on all pes
 
   real(r8), public :: c_budg_stateG(c_s_size, p_size) ! global sum, valid only on root pe
   real(r8), public :: n_budg_stateG(n_s_size, p_size) ! global sum, valid only on root pe
@@ -450,7 +451,7 @@ contains
   end subroutine Reset
 
   !-----------------------------------------------------------------------
-  subroutine CNP_Restart(bounds, ncid, flag)
+  subroutine CNPBudget_Restart(bounds, ncid, flag)
     !
     use ncdio_pio, only : file_desc_t, ncd_io, ncd_double, ncd_int
     use ncdio_pio, only : ncd_defvar
@@ -474,23 +475,23 @@ contains
             c_budg_fluxL, c_budg_fluxG, c_budg_fluxN, c_budg_stateL, c_budg_stateG)
        call Restart_Write(bounds, ncid, flag, 'N', n_f_size, n_s_size, &
             n_budg_fluxL, n_budg_fluxG, n_budg_fluxN, n_budg_stateL, n_budg_stateG)
-       call Restart_Write(bounds, ncid, flag, 'P', n_f_size, n_s_size, &
-            n_budg_fluxL, n_budg_fluxG, n_budg_fluxN, n_budg_stateL, n_budg_stateG)
+       call Restart_Write(bounds, ncid, flag, 'P', p_f_size, p_s_size, &
+            p_budg_fluxL, p_budg_fluxG, p_budg_fluxN, p_budg_stateL, p_budg_stateG)
 
     case ('read')
        call Restart_Read(bounds, ncid, flag, 'C', c_f_size, c_s_size, &
             c_budg_fluxG, c_budg_fluxN, c_budg_stateL)
        call Restart_Read(bounds, ncid, flag, 'N', n_f_size, n_s_size, &
             n_budg_fluxG, n_budg_fluxN, n_budg_stateL)
-       call Restart_Read(bounds, ncid, flag, 'P', n_f_size, n_s_size, &
-            n_budg_fluxG, n_budg_fluxN, n_budg_stateL)
+       call Restart_Read(bounds, ncid, flag, 'P', p_f_size, p_s_size, &
+            p_budg_fluxG, p_budg_fluxN, n_budg_stateL)
 
     case default
        write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
-  end subroutine CNP_Restart
+  end subroutine CNPBudget_Restart
 
 !-----------------------------------------------------------------------
   subroutine CNPBudget_Accum()
@@ -914,19 +915,19 @@ contains
     !
     type(bounds_type), intent(in)    :: bounds
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    character(len=1)                 :: name
+    character(len=*)                 :: name
 
-    call ncd_defvar(varname=name//'_budg_fluxG', xtype=ncd_double, &
-         dim1name=name//'_budg_flux', &
-         long_name=name//'_budg_fluxG', units='mm', ncid=ncid)
+    call ncd_defvar(varname=trim(name)//'_budg_fluxG', xtype=ncd_double, &
+         dim1name=trim(name)//'_budg_flux', &
+         long_name=trim(name)//'_budg_fluxG', units='mm', ncid=ncid)
 
-    call ncd_defvar(varname=name//'_budg_fluxN', xtype=ncd_double, &
-         dim1name=name//'_budg_flux', &
-         long_name=name//'_budg_fluxN', units='-', ncid=ncid)
+    call ncd_defvar(varname=trim(name)//'_budg_fluxN', xtype=ncd_double, &
+         dim1name=trim(name)//'_budg_flux', &
+         long_name=trim(name)//'_budg_fluxN', units='-', ncid=ncid)
 
-    call ncd_defvar(varname=name//'_budg_stateG', xtype=ncd_double, &
-         dim1name=name//'_budg_state', &
-         long_name=name//'_budg_stateG', units='mm', ncid=ncid)
+    call ncd_defvar(varname=trim(name)//'_budg_stateG', xtype=ncd_double, &
+         dim1name=trim(name)//'_budg_state', &
+         long_name=trim(name)//'_budg_stateG', units='-', ncid=ncid)
 
   end subroutine Restart_Define
 
@@ -944,7 +945,7 @@ contains
     type(bounds_type), intent(in)    :: bounds
     type(file_desc_t), intent(inout) :: ncid                               ! netcdf id
     character(len=*) , intent(in)    :: flag                               ! 'read' or 'write'
-    character(len=1), intent(in)     :: name                               ! name of bgc 
+    character(len=*), intent(in)     :: name                               ! name of bgc
     integer                          :: f_size, s_size                     ! size of fluxes and states
     real(r8)                         :: budg_fluxL(:,:), budg_fluxG(:,:)   ! fluxes local and global
     real(r8)                         :: budg_fluxN(:,:)                    ! count
@@ -981,9 +982,11 @@ contains
        end do
     end do
 
-    call ncd_io(flag=flag, varname=name//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname=name//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname=name//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
 
   end subroutine Restart_Write
 
@@ -998,11 +1001,12 @@ contains
     type(bounds_type), intent(in)    :: bounds
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
-    character(len=1), intent(in)     :: name
+    character(len=*) , intent(in)     :: name
     integer                          :: f_size, s_size
     real(r8)                         :: budg_fluxG(:,:)
     real(r8)                         :: budg_fluxN(:,:)
     real(r8)                         :: budg_stateL(:,:)
+    character(len=20)                :: var_name
     !
     ! !LOCAL VARIABLES:
     real(r8) :: budg_fluxG_1D (f_size*p_size)
@@ -1010,9 +1014,9 @@ contains
     real(r8) :: budg_stateG_1D(s_size*p_size)
     integer  :: f, s, p, count
 
-    call ncd_io(flag=flag, varname=name//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname=name//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname=name//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname=trim(name)//'_budg_stateG', data=budg_stateG_1D, ncid=ncid)
 
     ! Copy data from 1D into 2D array
     count = 0

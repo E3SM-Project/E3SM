@@ -124,7 +124,8 @@ contains
     ! Define/write CLM restart file.
     !
     use WaterBudgetMod, only : WaterBudget_Restart
-    use elm_varctl    , only : do_budgets
+    use CNPBudgetMod  , only : CNPBudget_Restart
+    use elm_varctl    , only : do_budgets, use_cn
     !
     implicit none
     !
@@ -312,6 +313,9 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='define')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='define')
+       endif
     end if
 
     call restFile_enddef( ncid )
@@ -444,6 +448,9 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='write')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='write')
+       endif
     end if
 
     ! --------------------------------------------
@@ -490,6 +497,8 @@ contains
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
     use WaterBudgetMod   , only : WaterBudget_Restart
+    use CNPBudgetMod     , only : CNPBudget_Restart
+    use clm_varctl       , only : do_budgets, use_cn
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -673,7 +682,12 @@ contains
         
     call hist_restart_ncd (bounds, ncid, flag='read')
 
-    call WaterBudget_Restart(bounds, ncid, flag='read')
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='read')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='read')
+       endif
+    endif
 
     ! Do error checking on file
     
@@ -939,6 +953,7 @@ contains
     use decompMod            , only : get_proc_global
     use elm_varctl           , only : do_budgets
     use WaterBudgetMod       , only : f_size, s_size, p_size
+    use CNPBudgetMod         , only : c_f_size, c_s_size, n_f_size, n_s_size, p_f_size, p_s_size
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -991,6 +1006,14 @@ contains
     if (do_budgets) then
        call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
        call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
+       if (use_cn) then
+          call ncd_defdim(ncid , 'C_budg_flux' , c_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'C_budg_state', c_s_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'N_budg_flux' , n_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'N_budg_state', n_s_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'P_budg_flux' , p_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'P_budg_state', p_s_size*p_size,  dimid)
+       endif
     end if
 
     ! Define global attributes
