@@ -2491,19 +2491,15 @@ contains
                         0, mpicom_GLOID, ierr)
 
        if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
-          if (info_taskmap_model < 1) then ! no task-to-node mapping
-             call shr_sys_abort('cime_run: Node-level mem-logging requires info_taskmap_model>0')
-          else
-             allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
-             if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
-             msizeOnNode(:) = 0
-             mrssOnNode(:) = 0
-             do i=0,npes_GLOID-1
-                nodeId = driver_task_node_map(i)
-                msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
-                mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
-             enddo
-          endif
+          allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
+          if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
+          msizeOnNode(:) = 0
+          mrssOnNode(:) = 0
+          do i=0,npes_GLOID-1
+             nodeId = driver_task_node_map(i)
+             msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
+             mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
+          enddo
        endif ! aggregate
 
        ! write to standalone file
