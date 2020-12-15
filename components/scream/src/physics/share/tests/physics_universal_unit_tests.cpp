@@ -160,27 +160,26 @@ struct UnitWrap::UnitTest<D>::TestUniversal
       static constexpr Scalar tmelt  = C::Tmelt;
       int num_levs = 100; // Number of levels to use for tests.
 
-      // Setup Exner
+      // Create dummy level data for testing:
       Real pres_top = 200.;
-      Real pres     = p0;
-      // Setup zi
-      Real zi_bot;
-      Real zi_top;
+      Real dp       = (p0-pres_top)/(num_levs-1);
+
       // Run tests
-      Real p_val    = pow( pres/p0, rd*inv_cp);
-      exner_tests(pres,p_val,errors);
-      for (int k=1;k<num_levs;++k)
+      for (int k=0;k<num_levs;++k)
       {
         // Exner test
-        pres = pres + (pres-pres_top)/2;
-        p_val  = pow( pres/p0, rd*inv_cp);
+        //   - Pressure at level k is just k*dp, so each pressure level is dp in thickness.
+        Real pres = p0 + k*dp;
+        Real p_val  = pow( pres/p0, rd*inv_cp);
         exner_tests(pres,p_val,errors);
         // T and TH conversion TEST
         Real T_atm = tmelt + k;
         T_th_conversion_test(T_atm,pres,errors);
         // DZ Test
-        zi_bot = log(k);
-        zi_top = log(k+1);
+        //   - Determine the z-layer bottom and top as being the (k+1) thick.
+        //     Allow for varying interface heights by setting zi_bot equal to the sum(0,...,k).
+        Real zi_bot = (pow(k,2)+k)/2.0;
+        Real zi_top = zi_bot + (k+1); 
         dz_tests(zi_top,zi_bot,errors);
       }
 
