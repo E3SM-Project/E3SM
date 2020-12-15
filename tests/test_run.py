@@ -48,9 +48,8 @@ class TestRun(unittest.TestCase):
         enso_param.end_yr = '2004'
 
         streamflow_param = StreamflowParameter()
-        # TODO: Replace these paths with paths that automated testing tools can access (in future pull request).
-        #streamflow_param.gauges_path =
-        #streamflow_param.ref_mat_file =
+        streamflow_param.test_data_path = 'unit_test_data/3yr_nc'
+        streamflow_param.reference_data_path = 'unit_test_data'
 
         parameters = self.runner.get_final_parameters([self.core_param, ts_param, enso_param, streamflow_param])
         # Counts the number of each set and each seasons to run the diags on.
