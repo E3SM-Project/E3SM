@@ -71,15 +71,18 @@
 
   <entry id="INFO_MPROF">
     <type>integer</type>
-    <valid_values>0,1,2,3</valid_values>
-    <default_value>2</default_value>
+    <valid_values>0,1,2,3,4</valid_values>
+    <default_value>3</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Sets level of memory profile logging:
-      0: log mem-usage from component ROOTPE tasks
-      1: log mem-usage from all tasks
-      2: aggregate logging to node-level mem-usage on ROOTPE nodes
-      3: aggregate logging to node-level mem-usage on all nodes</desc>
+      0: no output
+      1: log mem-usage from component ROOTPE tasks
+      2: log mem-usage from all tasks
+      3: aggregate logging to node-level mem-usage on ROOTPE nodes
+      4: aggregate logging to node-level mem-usage on all nodes
+      Aggregation requires INFO_TASKMAP_MODEL>0.
+    </desc>
   </entry>
 
   <entry id="INFO_MPROF_DT">

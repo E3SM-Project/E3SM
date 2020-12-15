@@ -62,7 +62,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
 
   ! mpi comm data & routines, plus logunit and loglevel
-  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp, info_mprof, info_mprof_dt
+  use seq_comm_mct, only: CPLID, GLOID, logunit, loglevel, info_taskmap_comp, info_taskmap_model, info_mprof, info_mprof_dt
   use seq_comm_mct, only: ATMID, LNDID, OCNID, ICEID, GLCID, ROFID, WAVID, ESPID
   use seq_comm_mct, only: ALLATMID,ALLLNDID,ALLOCNID,ALLICEID,ALLGLCID,ALLROFID,ALLWAVID,ALLESPID
   use seq_comm_mct, only: CPLALLATMID,CPLALLLNDID,CPLALLOCNID,CPLALLICEID
@@ -2460,30 +2460,6 @@ contains
     ! Report on memory usage
     call shr_mem_getusage(msize,mrss)
 
-    allocate( msizeOnTask(0:npes_GLOID-1), mrssOnTask(0:npes_GLOID-1), stat=ierr)
-    if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnTask,mrssOnTask failed')
-    allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
-    if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
-
-    ! log from cpl_rootpe only, so gather from all tasks
-    msizeOnTask(:) = -1
-    mrssOnTask(:) = -1
-    call mpi_gather (msize, 1, mpi_real8, &
-                     msizeOnTask, 1, mpi_real8, &
-                     0, mpicom_GLOID, ierr)
-    call mpi_gather (mrss, 1, mpi_real8, &
-                     mrssOnTask, 1, mpi_real8, &
-                     0, mpicom_GLOID, ierr)
-
-    ! aggregate task-level to node-level mem-usage
-    msizeOnNode(:) = 0
-    mrssOnNode(:) = 0
-    do i=0,npes_GLOID-1
-       nodeId = driver_task_node_map(i)
-       msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
-       mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
-    enddo
-
     ! (For now, just look at the first instance of each component)
     if ( iamroot_CPLID .or. &
          ocn(ens1)%iamroot_compid .or. &
@@ -2499,51 +2475,94 @@ contains
             ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
             '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
     endif
-    ! write memory highwater and usage to standalone file
-    if ( iamroot_CPLID) then
-       mlog = shr_file_getUnit()
-       ! log-name: memory.{0,1,2,3}.{nsecs}.log
-       write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
-       inquire(file=trim(c_mprof_file),exist=exists)
-       if (exists) then
-          open(mlog, file=trim(c_mprof_file), status='old', position='append')
-       else
-          open(mlog, file=trim(c_mprof_file), status='new', position='append')
-       endif
 
-       ! log memory highwater and usage
-       write(c_ymdtod,'(f14.5)') ymd+tod/86400.
-       if (info_mprof == 1) then      ! log each task
-          !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
-       else if (info_mprof == 0) then ! log ROOTPE tasks only
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",  &
-             (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID), &
-               msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe),&
-               msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe),&
-               msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe),&
-               msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe),&
-               msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe),&
-               msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe),&
-               msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe),&
-               msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
-       else if (info_mprof == 3) then  ! log each node
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
-       else if (info_mprof == 2) then  ! log ROOTPE nodes
-          write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",", &
-             (/msizeOnNode(driver_task_node_map(iam_GLOID)), mrssOnNode(driver_task_node_map(iam_GLOID)), &
-               msizeOnNode(driver_task_node_map(atm_rootpe)),mrssOnNode(driver_task_node_map(atm_rootpe)),&
-               msizeOnNode(driver_task_node_map(lnd_rootpe)),mrssOnNode(driver_task_node_map(lnd_rootpe)),&
-               msizeOnNode(driver_task_node_map(ice_rootpe)),mrssOnNode(driver_task_node_map(ice_rootpe)),&
-               msizeOnNode(driver_task_node_map(ocn_rootpe)),mrssOnNode(driver_task_node_map(ocn_rootpe)),&
-               msizeOnNode(driver_task_node_map(glc_rootpe)),mrssOnNode(driver_task_node_map(glc_rootpe)),&
-               msizeOnNode(driver_task_node_map(rof_rootpe)),mrssOnNode(driver_task_node_map(rof_rootpe)),&
-               msizeOnNode(driver_task_node_map(wav_rootpe)),mrssOnNode(driver_task_node_map(wav_rootpe)),&
-               msizeOnNode(driver_task_node_map(iac_rootpe)),mrssOnNode(driver_task_node_map(iac_rootpe))/)
-       else
-          write(logunit,*) "cime_run: valid info_mprof values:0,1,10,11, given:",info_mprof
-       endif
-    endif
+    if (info_mprof > 0) then ! memory profiling is enabled
+       allocate( msizeOnTask(0:npes_GLOID-1), mrssOnTask(0:npes_GLOID-1), stat=ierr)
+       if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnTask,mrssOnTask failed')
+
+       ! log from cpl_rootpe only: first, gather from all tasks
+       msizeOnTask(:) = 0
+       mrssOnTask(:)  = 0
+       call mpi_gather (msize, 1, mpi_real8, &
+                        msizeOnTask, 1, mpi_real8, &
+                        0, mpicom_GLOID, ierr)
+       call mpi_gather (mrss, 1, mpi_real8, &
+                        mrssOnTask, 1, mpi_real8, &
+                        0, mpicom_GLOID, ierr)
+
+       if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
+          if (info_taskmap_model < 1) then ! no task-to-node mapping
+             call shr_sys_abort('cime_run: Node-level mem-logging requires info_taskmap_model>0')
+          else
+             allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
+             if (ierr /= 0) call shr_sys_abort('cime_run: allocate msizeOnNode,mrssOnNode failed')
+             msizeOnNode(:) = 0
+             mrssOnNode(:) = 0
+             do i=0,npes_GLOID-1
+                nodeId = driver_task_node_map(i)
+                msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
+                mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
+             enddo
+          endif
+       endif ! aggregate
+
+       ! write to standalone file
+       if ( iamroot_CPLID) then
+          mlog = shr_file_getUnit()
+          ! log-name: memory.{0,1,2,3,4}.$nsecs.log
+          write(c_mprof_file,'(a7,i1,a1,i0,a4)') 'memory.',info_mprof,'.',info_mprof_dt,'.log'
+          inquire(file=trim(c_mprof_file),exist=exists)
+          if (exists) then
+             open(mlog, file=trim(c_mprof_file), status='old', position='append')
+          else
+             open(mlog, file=trim(c_mprof_file), status='new', position='append')
+          endif
+
+          ! log memory highwater and usage
+          write(c_ymdtod,'(f14.5)') ymd+tod/86400.
+          if (info_mprof == 2) then        ! log each task
+             !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
+             write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
+          else if (info_mprof == 1) then  ! log ROOTPE tasks only
+             write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod,",", &
+                (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
+                & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
+                & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
+                & msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
+                & msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
+                & msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
+                & msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
+                & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
+                & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
+          else if (info_mprof == 4) then  ! log each node
+             write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
+          else if (info_mprof == 3) then  ! log ROOTPE nodes
+             write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
+                &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
+                & msizeOnNode(driver_task_node_map(atm_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(atm_rootpe)), &
+                & msizeOnNode(driver_task_node_map(lnd_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(lnd_rootpe)), &
+                & msizeOnNode(driver_task_node_map(ice_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(ice_rootpe)), &
+                & msizeOnNode(driver_task_node_map(ocn_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(ocn_rootpe)), &
+                & msizeOnNode(driver_task_node_map(glc_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(glc_rootpe)), &
+                & msizeOnNode(driver_task_node_map(rof_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(rof_rootpe)), &
+                & msizeOnNode(driver_task_node_map(wav_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(wav_rootpe)), &
+                & msizeOnNode(driver_task_node_map(iac_rootpe)), &
+                &  mrssOnNode(driver_task_node_map(iac_rootpe))/)
+          else
+             write(logunit,*) "cime_run: valid info_mprof values:0-4; given:",info_mprof
+          endif
+       endif ! iamroot_CPLID
+    endif ! info_mprof > 0
 #endif
     ! Write out a timing file checkpoint
     write(timing_file,'(a,i8.8,a1,i5.5)') &
@@ -3427,22 +3446,6 @@ contains
           !! Report on memory usage
           call shr_mem_getusage(msize,mrss)
 
-          call mpi_gather (msize, 1, mpi_real8, &
-                           msizeOnTask, 1, mpi_real8, &
-                           0, mpicom_GLOID, ierr)
-          call mpi_gather (mrss, 1, mpi_real8, &
-                           mrssOnTask, 1, mpi_real8, &
-                           0, mpicom_GLOID, ierr)
-
-          ! aggregate task-level to node-level mem-usage
-          msizeOnNode(:) = 0
-          mrssOnNode(:) = 0
-          do i=0,npes_GLOID-1
-             nodeId = driver_task_node_map(i)
-             msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
-             mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
-          enddo
-
           !! For now, just look at the first instance of each component
           if ((tod == 0 .or. info_debug > 1) .and. &
               (iamroot_CPLID .or. &
@@ -3459,40 +3462,70 @@ contains
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
                   '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
           endif
-          if (iamroot_CPLID) then
-             ! log memory highwater and usage
-             write(c_ymdtod,'(f14.5)') ymd+tod/86400.
-             if (info_mprof == 1) then      ! log each task
-                !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
-             else if (info_mprof == 0) then ! ROOTPEs only
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",&
-                (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
-                  msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
-                  msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
-                  msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
-                  msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
-                  msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
-                  msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
-                  msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
-                  msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
-             else if (info_mprof == 3) then  ! log each node
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",",(msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
-             else if (info_mprof == 2) then  ! log ROOTPE nodes
-                write(mlog,'(a15,a,*(f10.3,:,","))') c_ymdtod,",", &
-                   (/msizeOnNode(driver_task_node_map(iam_GLOID)),mrssOnNode(driver_task_node_map(iam_GLOID)), &
-                     msizeOnNode(driver_task_node_map(atm_rootpe)),mrssOnNode(driver_task_node_map(atm_rootpe)),&
-                     msizeOnNode(driver_task_node_map(lnd_rootpe)),mrssOnNode(driver_task_node_map(lnd_rootpe)),&
-                     msizeOnNode(driver_task_node_map(ice_rootpe)),mrssOnNode(driver_task_node_map(ice_rootpe)),&
-                     msizeOnNode(driver_task_node_map(ocn_rootpe)),mrssOnNode(driver_task_node_map(ocn_rootpe)),&
-                     msizeOnNode(driver_task_node_map(glc_rootpe)),mrssOnNode(driver_task_node_map(glc_rootpe)),&
-                     msizeOnNode(driver_task_node_map(rof_rootpe)),mrssOnNode(driver_task_node_map(rof_rootpe)),&
-                     msizeOnNode(driver_task_node_map(wav_rootpe)),mrssOnNode(driver_task_node_map(wav_rootpe)),&
-                     msizeOnNode(driver_task_node_map(iac_rootpe)),mrssOnNode(driver_task_node_map(iac_rootpe))/)
-             else
-                write(logunit,*) "cime_run: valid info_mprof values:0,1,2,3, given:",info_mprof
+          if (info_mprof > 0) then ! memory profiling is enabled
+             call mpi_gather (msize, 1, mpi_real8, &
+                              msizeOnTask, 1, mpi_real8, &
+                              0, mpicom_GLOID, ierr)
+             call mpi_gather (mrss, 1, mpi_real8, &
+                              mrssOnTask, 1, mpi_real8, &
+                              0, mpicom_GLOID, ierr)
+
+             if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
+                msizeOnNode(:) = 0
+                mrssOnNode(:) = 0
+                do i=0,npes_GLOID-1
+                   nodeId = driver_task_node_map(i)
+                   msizeOnNode(nodeId) =  msizeOnNode(nodeId) + msizeOnTask(i)
+                   mrssOnNode(nodeId)  =  mrssOnNode(nodeId)  + mrssOnTask(i)
+                enddo
              endif
-          endif ! iamroot_CPLID
+
+             if (iamroot_CPLID) then
+                ! log memory highwater and usage
+                write(c_ymdtod,'(f14.5)') ymd+tod/86400.
+                if (info_mprof == 2) then      ! log each task
+                   !---YMMDD.HHMMSS,--1234.567,--1234.567, msize,mrss (in MB) for each task
+                   write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                      (msizeOnTask(i),mrssOnTask(i),i=0,npes_GLOID-1)
+                else if (info_mprof == 1) then ! ROOTPEs only
+                   write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                      (/msizeOnTask(iam_GLOID), mrssOnTask(iam_GLOID),  &
+                      & msizeOnTask(atm_rootpe),mrssOnTask(atm_rootpe), &
+                      & msizeOnTask(lnd_rootpe),mrssOnTask(lnd_rootpe), &
+                      & msizeOnTask(ice_rootpe),mrssOnTask(ice_rootpe), &
+                      & msizeOnTask(ocn_rootpe),mrssOnTask(ocn_rootpe), &
+                      & msizeOnTask(glc_rootpe),mrssOnTask(glc_rootpe), &
+                      & msizeOnTask(rof_rootpe),mrssOnTask(rof_rootpe), &
+                      & msizeOnTask(wav_rootpe),mrssOnTask(wav_rootpe), &
+                      & msizeOnTask(iac_rootpe),mrssOnTask(iac_rootpe)/)
+                else if (info_mprof == 4) then  ! log each node
+                   write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                      (msizeOnNode(i),mrssOnNode(i),i=0,driver_nnodes-1)
+                else if (info_mprof == 3) then  ! log ROOTPE nodes
+                   write(mlog,'(a15, a, *(f10.3,:,","))') c_ymdtod, ",", &
+                      (/msizeOnNode(driver_task_node_map(iam_GLOID)),  &
+                      &  mrssOnNode(driver_task_node_map(iam_GLOID)),  &
+                      & msizeOnNode(driver_task_node_map(atm_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(atm_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(lnd_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(lnd_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(ice_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(ice_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(ocn_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(ocn_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(glc_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(glc_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(rof_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(rof_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(wav_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(wav_rootpe)), &
+                      & msizeOnNode(driver_task_node_map(iac_rootpe)), &
+                      &  mrssOnNode(driver_task_node_map(iac_rootpe))/)
+                else
+                   write(logunit,*) "cime_run: valid info_mprof values:0-4; given:",info_mprof
+                endif
+             endif ! iamroot_CPLID
+          endif ! info_mprof > 0
        endif ! tod == 0
 #endif
        if (info_debug > 1) then
@@ -3607,10 +3640,17 @@ contains
        write(logunit,FormatR) subname,' pes max memory last usage (MB)  = ',mrss1
        write(logunit,'(//)')
        close(logunit)
-       close(mlog)
-       call shr_file_freeUnit(mlog)
+       if (info_mprof > 0) then
+          close(mlog)
+          call shr_file_freeUnit(mlog)
+       endif
     endif
-    deallocate(msizeOnTask,mrssOnTask,msizeOnNode,mrssOnNode)
+    if (info_mprof > 0) then
+       deallocate(msizeOnTask, mrssOnTask)
+       if (info_mprof > 2) then
+          deallocate(msizeOnNode, mrssOnNode, driver_task_node_map)
+       endif
+    endif
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_final')
