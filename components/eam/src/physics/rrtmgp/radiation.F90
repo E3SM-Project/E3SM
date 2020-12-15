@@ -33,11 +33,13 @@ module radiation
       rrtmgp_get_max_temperature => get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw
    use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, get_nband_sw, get_nband_lw, &
+      rrtmgpxx_initialize, rrtmgpxx_finalize, &
+      rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
       rrtmgpxx_get_min_temperature => get_min_temperature, &
       rrtmgpxx_get_max_temperature => get_max_temperature, &
       rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
       rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
+      get_nband_sw, get_nband_lw, &
       get_ngpt_sw, get_ngpt_lw, &
       nswgpts, nlwgpts
 
@@ -1631,7 +1633,7 @@ contains
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_calculations_sw')
-      call rrtmgp_run_sw( &
+      call rrtmgpxx_run_sw( &
          size(active_gases), nday, nlev_rad, &
          gas_names, gas_vmr_day, &
          pmid_day(1:nday,1:nlev_rad), &
@@ -1810,7 +1812,7 @@ contains
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_calculations_lw')
-      call rrtmgp_run_lw( &
+      call rrtmgpxx_run_lw( &
             size(active_gases), ncol, nlev_rad, &
             gas_names, gas_vmr, &
             surface_emissivity, &

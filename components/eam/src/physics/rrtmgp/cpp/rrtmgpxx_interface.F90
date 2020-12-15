@@ -17,6 +17,7 @@ module rrtmgpxx_interface
    use mo_optical_props, only: ty_optical_props_2str, ty_optical_props_1scl
    use mo_fluxes_byband, only: ty_fluxes_byband
    use mo_rrtmgp_clr_all_sky, only: rte_sw, rte_lw
+   use assertions, only: assert
    use iso_c_binding
 
    implicit none
@@ -33,7 +34,7 @@ module rrtmgpxx_interface
    integer, public :: nswbands, nlwbands, nswgpts, nlwgpts
 
    public :: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, rrtmgp_run_sw, rrtmgp_run_lw, &
+      rrtmgpxx_initialize, rrtmgpxx_finalize, rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
       get_nband_sw, get_nband_lw, &
       get_ngpt_sw, get_ngpt_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
@@ -91,12 +92,40 @@ module rrtmgpxx_interface
 
       subroutine rrtmgpxx_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
          use iso_c_binding, only: C_CHAR, C_NULL_CHAR
+         implicit none
          character(kind=c_char) :: coefficients_file_sw(*)
          character(kind=c_char) :: coefficients_file_lw(*)
       end subroutine rrtmgpxx_initialize_cpp
 
       subroutine rrtmgpxx_finalize() bind(C, name="rrtmgpxx_finalize")
       end subroutine rrtmgpxx_finalize
+
+      subroutine rrtmgpxx_run_sw_cpp( &
+         ngas, ncol, nlev, &
+         gas_vmr, &
+         pmid, tmid, pint, coszrs, &
+         albedo_dir, albedo_dif, &
+         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+         aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
+         allsky_flux_up, allsky_flux_dn, allsky_flux_net, allsky_flux_dn_dir, &
+         allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir, &
+         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
+         tsi_scaling &
+         ) bind(C, name="rrtmgpxx_run_sw_cpp")
+         use iso_c_binding
+         implicit none
+         integer(kind=c_int), value :: ngas, ncol, nlev
+         real(kind=c_double), dimension(*) :: &
+            gas_vmr, pmid, tmid, pint, coszrs, albedo_dir, albedo_dif, &
+            cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
+            aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
+            allsky_flux_up, allsky_flux_dn, allsky_flux_net, allsky_flux_dn_dir, &
+            allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
+            clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir, &
+            clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
+         real(kind=c_double), value :: tsi_scaling
+      end subroutine rrtmgpxx_run_sw_cpp
 
       subroutine add_gas_name(gas_name) bind(C, name="add_gas_name")
          use iso_c_binding, only: C_CHAR
@@ -141,7 +170,7 @@ contains
    end subroutine rrtmgpxx_initialize
 
 
-   subroutine rrtmgp_run_sw( &
+   subroutine rrtmgpxx_run_sw( &
          ngas, ncol, nlev, &
          gas_names, gas_vmr, &
          pmid, tmid, pint, coszrs, &
@@ -174,7 +203,17 @@ contains
 
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
       type(ty_gas_concs) :: gas_concentrations
-      type(ty_optical_props_2str) :: cld_optics_sw, aer_optics_sw
+      type(ty_optical_props_2str) :: cld_optics, aer_optics
+
+      real(wp), allocatable, dimension(:,:,:) :: gas_vmr_rad
+
+      ! Fluxes from the cxx code
+      real(wp), dimension(ncol,nlev+1) :: &
+         allsky_flux_up_cxx, allsky_flux_dn_cxx, allsky_flux_net_cxx, allsky_flux_dn_dir_cxx, &
+         clrsky_flux_up_cxx, clrsky_flux_dn_cxx, clrsky_flux_net_cxx, clrsky_flux_dn_dir_cxx
+      real(wp), dimension(ncol,nlev+1,nswbands) :: &
+         allsky_bnd_flux_up_cxx, allsky_bnd_flux_dn_cxx, allsky_bnd_flux_net_cxx, allsky_bnd_flux_dn_dir_cxx, &
+         clrsky_bnd_flux_up_cxx, clrsky_bnd_flux_dn_cxx, clrsky_bnd_flux_net_cxx, clrsky_bnd_flux_dn_dir_cxx
 
       ! Loop indices
       integer :: iband, igas, iday, icol
@@ -198,16 +237,16 @@ contains
       fluxes_clrsky%bnd_flux_dn_dir => clrsky_bnd_flux_dn_dir
 
       ! Populate RRTMGP optics
-      call handle_error(cld_optics_sw%alloc_2str(ncol, nlev, k_dist_sw, name='shortwave cloud optics'))
-      cld_optics_sw%tau = 0
-      cld_optics_sw%ssa = 1
-      cld_optics_sw%g   = 0
-      cld_optics_sw%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,:,:)
-      cld_optics_sw%ssa(1:ncol,2:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
-      cld_optics_sw%g  (1:ncol,2:nlev,:) = cld_asm_gpt(1:ncol,:,:)
+      call handle_error(cld_optics%alloc_2str(ncol, nlev, k_dist_sw, name='shortwave cloud optics'))
+      cld_optics%tau = 0
+      cld_optics%ssa = 1
+      cld_optics%g   = 0
+      cld_optics%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,:,:)
+      cld_optics%ssa(1:ncol,2:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
+      cld_optics%g  (1:ncol,2:nlev,:) = cld_asm_gpt(1:ncol,:,:)
 
       ! Apply delta scaling to account for forward-scattering
-      call handle_error(cld_optics_sw%delta_scale())
+      call handle_error(cld_optics%delta_scale())
 
       ! Initialize aerosol optics; passing only the wavenumber bounds for each
       ! "band" rather than passing the full spectral discretization object, and
@@ -216,24 +255,32 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aer_optics_sw%alloc_2str( &
+      call handle_error(aer_optics%alloc_2str( &
          ncol, nlev, k_dist_sw%get_band_lims_wavenumber(), &
          name='shortwave aerosol optics' &
       ))
-      aer_optics_sw%tau = 0
-      aer_optics_sw%ssa = 1
-      aer_optics_sw%g   = 0
-      aer_optics_sw%tau(1:ncol,2:nlev,:) = aer_tau_bnd(1:ncol,1:pver,:)
-      aer_optics_sw%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
-      aer_optics_sw%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
+      aer_optics%tau = 0
+      aer_optics%ssa = 1
+      aer_optics%g   = 0
+      aer_optics%tau(1:ncol,2:nlev,:) = aer_tau_bnd(1:ncol,1:pver,:)
+      aer_optics%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
+      aer_optics%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
 
       ! Apply delta scaling to account for forward-scattering
-      call handle_error(aer_optics_sw%delta_scale())
+      call handle_error(aer_optics%delta_scale())
 
       ! Set gas concentrations
       call t_startf('rad_set_gases_sw')
       call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
       call t_stopf('rad_set_gases_sw')
+
+      ! DEBUG
+      !cld_optics%tau = 0
+      !cld_optics%ssa = 0
+      !cld_optics%g   = 0
+      !aer_optics%tau = 0
+      !aer_optics%ssa = 0
+      !aer_optics%g   = 0
 
       call handle_error(rte_sw( &
          k_dist_sw, gas_concentrations, &
@@ -243,20 +290,52 @@ contains
          coszrs(1:ncol), &
          albedo_dir(1:nswbands,1:ncol), &
          albedo_dif(1:nswbands,1:ncol), &
-         cld_optics_sw, &
+         cld_optics, &
          fluxes_allsky, fluxes_clrsky, &
-         aer_props=aer_optics_sw, &
+         aer_props=aer_optics, &
          tsi_scaling=tsi_scaling &
       ))
 
+      ! Try calling C++ version
+      allocate(gas_vmr_rad(ngas, ncol, nlev))
+      gas_vmr_rad(:,1:ncol,1) = gas_vmr(:,1:ncol,1)
+      gas_vmr_rad(:,1:ncol,2:nlev) = gas_vmr(:,1:ncol,:)
+      call rrtmgpxx_run_sw_cpp( &
+         ngas, ncol, nlev, &
+         gas_vmr_rad(1:ngas,1:ncol,1:nlev), &
+         pmid, tmid, pint, coszrs, &
+         albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol), &
+         cld_optics%tau, cld_optics%ssa, cld_optics%g, &
+         aer_optics%tau, aer_optics%ssa, aer_optics%g, &
+         allsky_flux_up_cxx, allsky_flux_dn_cxx, allsky_flux_net_cxx, allsky_flux_dn_dir_cxx, &
+         allsky_bnd_flux_up_cxx, allsky_bnd_flux_dn_cxx, allsky_bnd_flux_net_cxx, allsky_bnd_flux_dn_dir_cxx, &
+         clrsky_flux_up_cxx, clrsky_flux_dn_cxx, clrsky_flux_net_cxx, clrsky_flux_dn_dir_cxx, &
+         clrsky_bnd_flux_up_cxx, clrsky_bnd_flux_dn_cxx, clrsky_bnd_flux_net_cxx, clrsky_bnd_flux_dn_dir_cxx, &
+         tsi_scaling &
+         )
+      deallocate(gas_vmr_rad)
+
+      ! Check values
+      !print *, 'CXX min/max flux_dn: ', minval(allsky_flux_dn_cxx), ', ', maxval(allsky_flux_dn_cxx)
+      !print *, 'CXX-F90 flux_dn: ', allsky_flux_dn_cxx(1,:) - allsky_flux_dn(1,:), ', ', allsky_flux_dn_cxx(1,:) - allsky_flux_dn(1,:)
+      !print *, 'CXX/F90 flux_dn: ', allsky_flux_dn_cxx(1,2), ', ', allsky_flux_dn(1,2)
+      !print *, 'CXX - F90 flux_up error: ', maxval(abs(allsky_flux_up_cxx - allsky_flux_up))
+      !print *, 'CXX - F90 flux_dn error: ', maxval(abs(allsky_flux_dn_cxx - allsky_flux_dn))
+      !print *, 'CXX - F90 flux_dn_dir error: ', maxval(abs(allsky_flux_dn_dir_cxx - allsky_flux_dn_dir))
+      !print *, 'CXX - F90 flux_net error: ', maxval(abs(allsky_flux_net_cxx - allsky_flux_net))
+      call assert(all(abs(allsky_flux_up_cxx - allsky_flux_up) < 1e-5), 'F90 and CXX allsky_flux_up differs.')
+      call assert(all(abs(allsky_flux_dn_cxx - allsky_flux_dn) < 1e-5), 'F90 and CXX allsky_flux_dn differs.')
+      call assert(all(abs(allsky_flux_net_cxx - allsky_flux_net) < 1e-5), 'F90 and CXX allsky_flux_net differs.')
+      call assert(all(abs(allsky_flux_dn_dir_cxx - allsky_flux_dn_dir) < 1e-5), 'F90 and CXX allsky_flux_dn_dir differs.')
+
       ! Clean up after ourselves
-      call free_optics_sw(cld_optics_sw)
-      call free_optics_sw(aer_optics_sw)
+      call free_optics_sw(cld_optics)
+      call free_optics_sw(aer_optics)
 
-   end subroutine rrtmgp_run_sw
+   end subroutine rrtmgpxx_run_sw
 
 
-   subroutine rrtmgp_run_lw( &
+   subroutine rrtmgpxx_run_lw( &
          ngas, ncol, nlev, &
          gas_names, gas_vmr, &
          surface_emissivity, &
@@ -341,7 +420,7 @@ contains
          n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
       ))
 
-   end subroutine rrtmgp_run_lw
+   end subroutine rrtmgpxx_run_lw
 
    ! --------------------------------------------------------------------------
    ! Private routines
