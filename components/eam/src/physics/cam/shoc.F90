@@ -4308,7 +4308,7 @@ subroutine pblintd_height(&
     !
     ! Output arguments
     !
-    real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout)   :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(inout) :: rino(shcol,nlev)                     ! bulk Richardson no. from level to ref lev
     logical(btype), intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
@@ -4383,6 +4383,7 @@ subroutine pblintd_surf_temp(&
     do i=1,shcol
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        check(i)  = (kbfs(i) > 0._rtype)
+       tlv(i)    = thv(i,nlev)
        if (check(i)) then
           phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
           rino(i,nlev) = 0.0_rtype
@@ -4409,7 +4410,7 @@ subroutine pblintd_check_pblh(&
     !
     ! Output arguments
     !
-    real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout) :: pblh(shcol)             ! boundary-layer height [m]
     !
     !---------------------------Local workspace-----------------------------
     !
