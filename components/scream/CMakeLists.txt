@@ -22,6 +22,7 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
@@ -128,6 +129,30 @@ if (SCREAM_CIME_BUILD)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
 
+find_path(NF_CONFIG_SEARCH nf-config)
+if (NF_CONFIG_SEARCH)
+  execute_process(COMMAND ${NF_CONFIG_SEARCH}/nf-config --prefix
+    RESULT_VARIABLE NF_STATUS
+    OUTPUT_VARIABLE NF_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NF_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+  endif()
+endif()
+
+find_path(NC_CONFIG_SEARCH nc-config)
+if (NC_CONFIG_SEARCH)
+  execute_process(COMMAND ${NC_CONFIG_SEARCH}/nc-config --prefix
+    RESULT_VARIABLE NC_STATUS
+    OUTPUT_VARIABLE NC_CONFIG_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (NC_STATUS EQUAL 0)
+    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+  endif()
+endif()
+
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -136,6 +161,8 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
+set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
@@ -197,25 +224,15 @@ include(EkatBuildEkat)
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 
-# Init scream TPLs info to whatever EKAT set.
-set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
-set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
-
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
 
-set (SCREAM_INCLUDE_DIRS
-  ${SCREAM_SRC_DIR}
-  ${EKAT_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}/src
-)
-
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -real-size 64 ")
+    set(SCREAM_Fortran_FLAGS -real-size 64)
   else()
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -fdefault-double-8")
+    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
@@ -227,13 +244,11 @@ print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
-print_var(SCREAM_INCLUDE_DIRS)
 print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
-print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.

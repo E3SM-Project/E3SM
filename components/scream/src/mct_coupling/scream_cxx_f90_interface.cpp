@@ -5,12 +5,10 @@
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
-
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
 
-#include "control/tests/dummy_grid.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"

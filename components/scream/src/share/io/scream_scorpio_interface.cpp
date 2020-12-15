@@ -4,6 +4,8 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/scream_types.hpp"
 
+#include "gptl.h"
+
 #include <string>
 
 using scream::Real;
@@ -36,20 +38,29 @@ extern "C" {
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
 
+  void count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
 namespace scorpio {
 /* ----------------------------------------------------------------- */
-void eam_init_pio_subsystem(const int mpicom, const int compid, const bool local) {
-  eam_init_pio_subsystem_c2f(mpicom,compid,local);
+void eam_init_pio_subsystem(const int mpicom) {
+  // TODO: Right now the compid has been hardcoded to 0 and the flag
+  // to create a init a subsystem in SCREAM is hardcoded to true.
+  // When surface coupling is established we will need to refactor this
+  // routine to pass the appropriate values depending on if we are running
+  // the full model or a unit test.
+  GPTLinitialize();
+  eam_init_pio_subsystem_c2f(mpicom,0,true);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_finalize() {
   eam_pio_finalize_c2f();
+  GPTLfinalize();
 }
 /* ----------------------------------------------------------------- */
 void register_outfile(const std::string& filename) {
+
 
   register_outfile_c2f(filename.c_str());
 }
@@ -89,9 +100,33 @@ void register_dimension(const std::string &filename, const std::string& shortnam
   register_dimension_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), length);
 }
 /* ----------------------------------------------------------------- */
+void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
+
+  /* Convert the vector of strings that contains the variable dimensions to a char array */
+  const char** var_dimensions_c = new const char*[numdims];
+  for (int ii = 0;ii<numdims;++ii) 
+  {
+    var_dimensions_c[ii] = var_dimensions[ii].c_str();
+  }
+  get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+  delete[] var_dimensions_c;
+}
+/* ----------------------------------------------------------------- */
 void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
+}
+/* ----------------------------------------------------------------- */
+void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
+
+  /* Convert the vector of strings that contains the variable dimensions to a char array */
+  const char** var_dimensions_c = new const char*[numdims];
+  for (int ii = 0;ii<numdims;++ii) 
+  {
+    var_dimensions_c[ii] = var_dimensions[ii].c_str();
+  }
+  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+  delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
@@ -168,6 +203,12 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   grid_write_data_array_c2f_int_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
 
 };
+/* ----------------------------------------------------------------- */
+void count_pio_atm_file() {
+
+  count_pio_atm_file_c2f();
+
+}
 /* ----------------------------------------------------------------- */
 
 } // namespace scorpio

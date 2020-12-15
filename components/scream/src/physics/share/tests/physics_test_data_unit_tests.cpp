@@ -35,6 +35,20 @@ struct FakeClass1 : public PhysicsTestData
   PTD_STD_DEF(FakeClass1, 5, dim1, dim2, dim3, dim4, scalar);
 };
 
+struct AllTrue : public PhysicsTestData
+{
+  Int dim1;
+  bool *bools;
+
+  AllTrue(Int dim1_) :
+    PhysicsTestData({ {dim1_} }, {/*no reals*/}, {/*no ints*/},
+                    { {&bools} }),
+    dim1(dim1_)
+  {}
+
+  PTD_STD_DEF(AllTrue, 1, dim1);
+};
+
 } // empty namespace
 
 template <typename D>
@@ -214,9 +228,22 @@ struct UnitWrap::UnitTest<D>::TestTestData
     }
   }
 
+  static void test_all_true()
+  {
+    static constexpr int size = 42;
+    AllTrue at(size);
+
+    at.randomize({ {at.bools, {1.0, 1.0}} });
+
+    for (int i = 0; i < size; ++i) {
+      REQUIRE(at.bools[i]);
+    }
+  }
+
   static void run()
   {
     test_fake_class1();
+    test_all_true();
   }
 
 };

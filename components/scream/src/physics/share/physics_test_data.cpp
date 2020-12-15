@@ -46,6 +46,7 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
     const auto& range = p.second;
     const Real bottom_range = range.first;
     const Real top_range    = range.second;
+    EKAT_REQUIRE_MSG(bottom_range <= top_range, "Expect bottom of range <= top of range");
     void* member = p.first;
 
     const auto real_search = get_index(reinterpret_cast<Real*>(member));
@@ -65,8 +66,8 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
       else {
         const auto bool_search = get_index(reinterpret_cast<bool*>(member));
         EKAT_REQUIRE_MSG(bool_search.first != std::string::npos, "Failed to find member for randomization");
-//        EKAT_REQUIRE_MSG(bottom_range == 0.0, "Use of non-zero for bottom of bool random range:" << bottom_range);
-//        EKAT_REQUIRE_MSG(top_range == 0.0, "Use of non-1 for top of bool random range:" << top_range);
+        EKAT_REQUIRE_MSG(bottom_range == 0.0 || bottom_range == 1.0, "Use 0 or 1 for bool ranges, not:" << bottom_range);
+        EKAT_REQUIRE_MSG(top_range == 0.0 || top_range == 1.0, "Use 0 or 1 for bool ranges, not:" << top_range);
         std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range), std::lround(top_range));
         m_bools.randomize(generator, data_dist, bool_search);
       }

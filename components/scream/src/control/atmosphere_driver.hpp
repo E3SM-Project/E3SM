@@ -7,6 +7,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
+#include "share/io/output_manager.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -95,6 +96,8 @@ protected:
   std::shared_ptr<GridsManager>                       m_grids_manager;
 
   ekat::ParameterList                                 m_atm_params;
+
+  OutputManager                                       m_output_manager;
 
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
