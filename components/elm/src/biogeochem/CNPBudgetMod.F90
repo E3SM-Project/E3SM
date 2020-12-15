@@ -871,7 +871,7 @@ contains
     write(iulog,'(71("-"),"|",20("-"))')
 
     write(iulog,*)''
-    write(iulog,*)'CARBON STATES (gC*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
+    write(iulog,*)'CARBON STATES (kgC/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
 
     write(iulog,*)''
     write(iulog,C_SA0_2)'beg','end','*NET CHANGE*'
