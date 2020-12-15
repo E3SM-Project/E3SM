@@ -325,7 +325,7 @@ contains
 
             call endrun(msg=errMsg(__FILE__, __LINE__))
          else
-             if (masterproc) then
+             if (masterproc .and. nstep < 2) then
                 write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
              end if
          end if
