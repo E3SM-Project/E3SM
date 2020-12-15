@@ -511,8 +511,14 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void pblintd_init(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<bool>& check, const uview_1d<Spack>& rino, const uview_1d<Spack>& pblh);
+
   KOKKOS_FUNCTION
-  static void pblintd_surf_temp(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& thv, const uview_1d<Spack>& tlv, const uview_1d<Spack>& pblh, const uview_1d<bool>& check, const uview_1d<Spack>& rino);
+  static void pblintd_surf_temp(const Int& nlev, const Int& nlevi, const Int& npbl,
+      const uview_1d<const Spack>& z, const Scalar& ustar,
+      const Scalar& obklen, const Scalar& kbfs,
+      const uview_1d<const Spack>& thv, Scalar& tlv,
+      Scalar& pblh, bool& check, const uview_1d<Spack>& rino);
+
   KOKKOS_FUNCTION
   static void pblintd_check_pblh(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const bool>& check, const uview_1d<Spack>& pblh);
   KOKKOS_FUNCTION

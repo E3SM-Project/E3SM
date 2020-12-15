@@ -13,10 +13,35 @@ namespace shoc {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::pblintd_surf_temp(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& thv, const uview_1d<Spack>& tlv, const uview_1d<Spack>& pblh, const uview_1d<bool>& check, const uview_1d<Spack>& rino)
+void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const Int& npbl,
+      const uview_1d<const Spack>& z, const Scalar& ustar, 
+      const Scalar& obklen, const Scalar& kbfs, 
+      const uview_1d<const Spack>& thv, Scalar& tlv, 
+      Scalar& pblh, bool& check, const uview_1d<Spack>& rino)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  // const parameter for Diagnosis of PBL depth
+  const auto onet  = 1./3.;
+  const auto fak   =  8.5;
+  const auto betam = 15.0;
+  const auto sffrac=  0.1;
+  const auto binm  = betam*sffrac;
+
+  //
+  // Estimate an effective surface temperature to account for surface
+  // fluctuations
+  //
+  const auto zs    = scalarize(z);
+  const auto thvs  = scalarize(thv);
+  const auto rinos = scalarize(rino);
+
+  if (check) pblh = zs(nlevi-npbl-1);
+  check  = kbfs > 0.;
+  tlv    = thvs(nlev-1);
+  if (check) {
+     const auto phiminv = pow((1 - binm*pblh/obklen), onet);
+     rinos(nlev-1) = 0.0;
+     tlv  = thvs(nlev-1) + kbfs*fak/(ustar*phiminv);
+  }
 }
 
 } // namespace shoc

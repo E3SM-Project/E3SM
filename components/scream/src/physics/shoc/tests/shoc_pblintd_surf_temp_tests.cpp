@@ -111,7 +111,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
   static void run_bfb()
   {
     PblintdSurfTempData f90_data[] = {
-      // TODO
+      PblintdSurfTempData(6, 7, 8),
+      PblintdSurfTempData(64, 72, 73),
+      PblintdSurfTempData(128, 72, 73),
+      PblintdSurfTempData(256, 72, 73),      
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
@@ -119,13 +122,16 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize({ {d.obklen, {100., 200.}} });     
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     PblintdSurfTempData cxx_data[] = {
-      // TODO
+      PblintdSurfTempData(f90_data[0]),
+      PblintdSurfTempData(f90_data[1]),
+      PblintdSurfTempData(f90_data[2]),
+      PblintdSurfTempData(f90_data[3]),      
     };
 
     // Assume all data is in C layout

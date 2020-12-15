@@ -4345,6 +4345,11 @@ subroutine pblintd_surf_temp(&
        z,ustar,obklen,kbfs,thv,&   ! Input
        tlv,&                       ! Output
        pblh,check,rino)            ! InOutput
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_surf_temp_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4376,6 +4381,15 @@ subroutine pblintd_surf_temp(&
     real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
     real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_surf_temp_f(shcol,nlev,nlevi,&          ! Input
+                         z,ustar,obklen,kbfs,thv,&   ! Input
+                         tlv,pblh,check,rino)            ! InOutput
+      return
+   endif
+#endif
+
     !
     ! Estimate an effective surface temperature to account for surface
     ! fluctuations
@@ -4383,6 +4397,7 @@ subroutine pblintd_surf_temp(&
     do i=1,shcol
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        check(i)  = (kbfs(i) > 0._rtype)
+       tlv(i)    = thv(i,nlev)
        if (check(i)) then
           phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
           rino(i,nlev) = 0.0_rtype
