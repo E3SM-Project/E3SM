@@ -4437,7 +4437,7 @@ subroutine pblintd_check_pblh(&
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call pblintd_check_pblh_f(shcol,nlev,nlevi, z, ustar, check, pblh)
+      call pblintd_check_pblh_f(shcol,nlev,nlevi,npbl,z,ustar,check,pblh)
       return
    endif
 #endif

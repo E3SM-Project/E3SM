@@ -114,7 +114,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_check_pblh_f(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+      pblintd_check_pblh_f(d.shcol, d.nlev, d.nlevi, d.nlev, d.z, d.ustar, d.check, d.pblh);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
