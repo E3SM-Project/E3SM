@@ -3038,7 +3038,7 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
   // TODO
 }
 
-void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, bool* check, Real* pblh)
+void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh)
 {
   using SHOC         = Functions<Real, DefaultDevice>;
   using Spack        = typename SHOC::Spack;
@@ -3064,8 +3064,6 @@ void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, 
     host_check_1d(k) = check[k];
   }
   Kokkos::deep_copy(check_1d, host_check_1d);
-
-  Int npbl = nlev;
 
   Kokkos::parallel_for("pblintd_check_pblh", shcol, KOKKOS_LAMBDA (const int& i) {
 

@@ -31,7 +31,7 @@ void Functions<S,D>::pblintd_check_pblh(const Int& nlevi, const Int& npbl,
    const auto npbl_pack = (nlevi-npbl-1)/Spack::n;
    const auto npbl_indx = (nlevi-npbl-1)%Spack::n;
    if (check) pblh = z(npbl_pack)[npbl_indx];
-   pblh = ekat::impl::max(pblh, sp(700)*ustar);
+   pblh = ekat::impl::max(pblh, 700*ustar);
 }
 
 } // namespace shoc
