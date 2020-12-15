@@ -24,6 +24,11 @@ module radiation
    use cam_history_support, only: add_hist_coord
    use physconst, only: cpair, cappa
 
+   !! Jungmin
+   use cam_instance     , only: inst_index
+   use phys_grid,       only: get_rlat_p,get_rlon_p,get_gcol_p,get_rlat_all_p, get_rlon_all_p
+   use shr_const_mod ,only: SHR_CONST_PI
+   !! Jungmin
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
@@ -37,7 +42,10 @@ module radiation
                               handle_error, clip_values
 
    ! For MMF
-   use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
+   use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz, crm_nx, crm_ny
+
+   ! For MAML
+   use seq_comm_mct,         only: num_inst_atm
 
    implicit none
    private
@@ -482,7 +490,9 @@ contains
       character(len=32) :: subname = 'radiation_init'
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
-
+      !! Jungmin
+      integer :: j
+      character(len=4) :: num
       !-----------------------------------------------------------------------
 
       ! Initialize cloud optics
@@ -619,13 +629,17 @@ contains
                   'Cloud longwave absorption optical depth', sampling_seq='rad_lwsw', flag_xyfill=.true.) 
 
       ! Band-by-band shortwave albedos
-      call addfld('SW_ALBEDO_DIR', (/'swband'/), 'I', '1', &
+      !! Jungmin
+      do j = 1, crm_nx_rad
+               write(num,'(i4.4)') j
+      call addfld('SW_ALBEDO_DIR'//num, (/'swband'/), 'I', '1', &
                   'Shortwave direct-beam albedo', &
                   flag_xyfill=.true., sampling_seq='rad_lwsw') 
-      call addfld('SW_ALBEDO_DIF', (/'swband'/), 'I', '1', &
+      call addfld('SW_ALBEDO_DIF'//num, (/'swband'/), 'I', '1', &
                   'Shortwave diffuse-beam albedo', &
                   flag_xyfill=.true., sampling_seq='rad_lwsw') 
-
+      end do
+      !! Jungmin
       ! get list of active radiation calls
       call rad_cnst_get_call_list(active_calls)
 
@@ -1159,7 +1173,9 @@ contains
 #ifdef MODAL_AERO
       use modal_aero_data, only: ntot_amode
 #endif
-
+      !! Jungmin
+      use cam_logfile,     only: iulog
+      !! Jungmin
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1332,7 +1348,10 @@ contains
 
       ! Loop variables
       integer :: icol, ilay
-
+      !! Jungmin
+      character(len=4) :: num
+      integer :: rcol
+      real(r8) :: clat, clon
       !----------------------------------------------------------------------
 
       ! Copy state so we can use CAM routines with arrays replaced with data
@@ -1439,12 +1458,17 @@ contains
 
                ! Get albedo. This uses CAM routines internally and just provides a
                ! wrapper to improve readability of the code here.
-               call set_albedo(cam_in, albedo_dir_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad), albedo_dif_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad))
+               call set_albedo(landfrac,icefrac,cam_in, albedo_dir_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad), albedo_dif_col(1:nswbands,1:ncol,1:crm_nx_rad,1:crm_ny_rad))
 
                ! Send albedos to history buffer (useful for debugging)
-               call outfld('SW_ALBEDO_DIR', transpose(albedo_dir_col(1:nswbands,1:ncol,1,1)), ncol, state%lchnk)
-               call outfld('SW_ALBEDO_DIF', transpose(albedo_dif_col(1:nswbands,1:ncol,1,1)), ncol, state%lchnk)
+               !! Jungmin
+               do j = 1, crm_nx_rad
 
+               write(num,'(i4.4)') j
+               call outfld('SW_ALBEDO_DIR'//num, transpose(albedo_dir_col(1:nswbands,1:ncol,j,1)), ncol, state%lchnk)
+               call outfld('SW_ALBEDO_DIF'//num, transpose(albedo_dif_col(1:nswbands,1:ncol,j,1)), ncol, state%lchnk)
+               end do! j
+               !! Jungmin
                ! Get cosine solar zenith angle for current time step, and send to
                ! history buffer
                call set_cosine_solar_zenith_angle(state, dt_avg, coszrs(1:ncol))
@@ -1583,6 +1607,14 @@ contains
                      ! above model top to handle heating above the model
                      call t_startf('rad_set_state')
                      ! Jungmin: Note: tint_col is converted from cam_in%lwup. Although lwup_mi (CRM level lwup) is present, tmid_col, pmid_col and pint_col are determined from the GCM physics state. For now, I leave tint_col as it is even for MAML case.
+                     !! Jungmin:
+#ifdef MAML   
+                     !do icol = 1,ncol
+                     !   write(*,'("icol=",I4," cam_in%lwup=",F7.2)') icol,cam_in%lwup(icol)
+                     !   write(*,'("     cam_in%lwup_mi=",F7.2)') cam_in%lwup_mi(icol,:)
+                     !end do! icol   
+                     !! Jungmin
+#endif
                      call set_rad_state(                                            &
                         state                      , cam_in                       , &
                         tmid_col(1:ncol,1:nlev_rad), tint_col(1:ncol,1:nlev_rad+1), &
@@ -1698,6 +1730,23 @@ contains
                         aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
                         aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
+                        !! Jungmin
+                        rcol = get_gcol_p(cam_in%lchnk,ic)
+                        if(rcol.eq.223) then
+                           clat = get_rlat_p(cam_in%lchnk,ic)*180._r8/SHR_CONST_PI
+                           clon = get_rlon_p(cam_in%lchnk,ic)*180._r8/SHR_CONST_PI
+                           do iband = 1,nswbands
+                              write(iulog,'(" Pack Data: rcol=",I5," ic=",I3," j=",I5, &
+                                       "lat=",F8.3,"lon=",F8.3, &
+                                       "ix=",I3," iy=",I3,"coszrs=",F7.3, &
+                                       "iband=",I3," albedo_dir_all=",F7.3, "albedo_dif_all=",F7.3,&
+                                       "albedo_dir_col=",F7.3, "albedo_dif_col=",F7.3)') &
+                                       rcol,ic,j,clat,clon,ix,iy,coszrs_all(j),&
+                                       iband,albedo_dir_all(iband,j),albedo_dif_all(iband,j),&
+                                       albedo_dir_col(iband,ic,ix,iy),albedo_dif_col(iband,ic,ix,iy)
+                           end do! iband
+                        end if
+                        !! Jungmin
                         j = j + 1
                      end do  ! ic = 1,ncol
                      call t_stopf('rad_pack_columns')
@@ -1778,6 +1827,40 @@ contains
                   call average_packed_array(fluxes_clrsky_all%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
                   call average_packed_array(fluxes_clrsky_all%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn_dir(1:ncol,:,iband))
                end do
+               !! Jungmin
+               j = 1
+               do iy = 1, crm_ny_rad
+                  do ix = 1, crm_nx_rad
+                     do icol = 1, ncol
+                     rcol = get_gcol_p(cam_in%lchnk,icol)
+                     if(rcol.eq.223) then
+                        clat = get_rlat_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
+                        clon = get_rlon_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
+                        do iband=1,1!nswbands
+                           write(iulog,'(" SW all fluxes: rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
+                                          "lat=",F8.3," lon=",F8.3, &
+                                          "flux_up=",F8.3, "flux_dn=",F8.3,&
+                                          "flux_net=",F8.3)') &
+                                          rcol, icol,j,iband,&
+                                          clat, clon,&
+                                          fluxes_allsky_all%flux_up(j,kbot+1), fluxes_allsky_all%flux_dn(j,kbot+1),&
+                                          fluxes_allsky_all%flux_net(j,kbot+1)
+                           write(iulog,'(" SW clear fluxes: rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
+                                          "lat=",F8.3," lon=",F8.3, &
+                                          "flux_up=",F8.3, "flux_dn=",F8.3,&
+                                          "flux_net=",F8.3)') &
+                                          rcol, icol,j,iband,&
+                                          clat, clon,&
+                                          fluxes_clrsky_all%flux_up(j,kbot+1), fluxes_clrsky_all%flux_dn(j,kbot+1),&
+                                          fluxes_clrsky_all%flux_net(j,kbot+1)
+                        end do!iband                  
+                     end if
+                     j = j + 1
+                     end do! icol
+                  end do ! ix
+               end do ! iy   
+               !! Jungmin
+               
                call t_stopf('rad_average_fluxes_sw')
 
                ! Send fluxes to history buffer
@@ -1895,6 +1978,38 @@ contains
                   call outfld('CRM_QRL', crm_qrl(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                   call outfld('CRM_QRLC', crm_qrlc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                end if
+               
+               !! Jungmin
+               j = 1
+               do iy = 1, crm_ny_rad
+                  do ix = 1, crm_nx_rad
+                     do icol = 1, ncol
+                     rcol = get_gcol_p(cam_in%lchnk,icol)
+                     if(rcol.eq.223) then
+                        clat = get_rlat_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
+                        clon = get_rlon_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
+                        write(iulog,'(" LW all fluxes: rcol=",I5," icol=",I3," j=",I5,&
+                                       "lat=",F8.3," lon=",F8.3, &
+                                       "flux_up=",F8.3, "flux_dn=",F8.3,&
+                                       "flux_net=",F8.3)') &
+                                       rcol, icol,j,&
+                                       clat, clon,&
+                                       fluxes_allsky_all%flux_up(j,kbot+1), fluxes_allsky_all%flux_dn(j,kbot+1),&
+                                       fluxes_allsky_all%flux_net(j,kbot+1)
+                        write(iulog,'(" LW clear fluxes: rcol=",I5," icol=",I3," j=",I5,&
+                                       "lat=",F8.3," lon=",F8.3, &
+                                       "flux_up=",F8.3, "flux_dn=",F8.3,&
+                                       "flux_net=",F8.3)') &
+                                       rcol, icol,j,&
+                                       clat, clon,&
+                                       fluxes_clrsky_all%flux_up(j,kbot+1), fluxes_clrsky_all%flux_dn(j,kbot+1),&
+                                       fluxes_clrsky_all%flux_net(j,kbot+1)
+                     end if
+                     j = j + 1
+                     end do! icol
+                  end do! ix   
+               end do! iy
+               !! Jungmin
 
                ! Set net fluxes used in other components
                call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
@@ -2252,18 +2367,24 @@ contains
    subroutine export_surface_fluxes(fluxes, fluxes_all, cam_out, band)
       use mo_fluxes_byband, only: ty_fluxes_byband
       use camsrfexch, only: cam_out_t
-
+      !! Jungmin
+      use cam_logfile,     only: iulog
+      !! Jungmin
       type(ty_fluxes_byband), intent(in) :: fluxes, fluxes_all
       type(cam_out_t), intent(inout) :: cam_out
       character(len=*), intent(in) :: band
-      integer :: icol,j,ix,jx
+      integer :: icol,j,ix,iy,imi
+      !! Jungmin
+      integer :: rcol
+      real(r8) :: rlat, rlon
+      !! Jungmin
       real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
                           size(fluxes%bnd_flux_dn,2), &
                           size(fluxes%bnd_flux_dn,3)) :: flux_dn_diffuse
       
-      real(r8), dimension(size(fluxes%bnd_flux_dn,1), &
-                          size(fluxes%bnd_flux_dn,2), &
-                          size(fluxes%bnd_flux_dn,3)) :: flux_all_dn_diffuse
+      real(r8), dimension(size(fluxes_all%bnd_flux_dn,1), &
+                          size(fluxes_all%bnd_flux_dn,2), &
+                          size(fluxes_all%bnd_flux_dn,3)) :: flux_all_dn_diffuse
 
       ! TODO: check this code! This seems to differ from what is in RRTMG. 
       !
@@ -2341,29 +2462,33 @@ contains
             end do ! icol = 1, ncol
          else
             ! For MAML case, unpack radiation column level fluxes to CRM level fluxes
-            j = 1
+            do imi = 1, num_inst_atm
             do iy = 1,crm_ny_rad
                do ix = 1,crm_nx_rad
+                  if(ix.eq.((imi-1)/(num_inst_atm/crm_nx_rad)+1)) then
                   do icol = 1,size(fluxes%bnd_flux_dn,1)
+                     j = icol + (ix-1)*size(fluxes%bnd_flux_dn,1) + (iy-1)*size(fluxes%bnd_flux_dn,1)*crm_nx_rad
                      ! Direct fluxes
-                     cam_out%soll_mi(icol,ix) &
+                     cam_out%soll_mi(icol,imi) &
                         = sum(fluxes_all%bnd_flux_dn_dir(j,kbot+1,1:9)) &
                         + 0.5_r8 * fluxes_all%bnd_flux_dn_dir(j,kbot+1,10)
-                     cam_out%sols_mi(icol,ix) &
+                     cam_out%sols_mi(icol,imi) &
                         = 0.5_r8 * fluxes_all%bnd_flux_dn_dir(j,kbot+1,10) &
                         + sum(fluxes_all%bnd_flux_dn_dir(j,kbot+1,11:14))
 
                      ! Diffuse fluxes
-                     cam_out%solld_mi(icol,ix) &
+                     cam_out%solld_mi(icol,imi) &
                         = sum(flux_all_dn_diffuse(j,kbot+1,1:9)) &
                         + 0.5_r8 * flux_all_dn_diffuse(j,kbot+1,10)
-                     cam_out%solsd_mi(icol,ix) &
+                     cam_out%solsd_mi(icol,imi) &
                         = 0.5_r8 * flux_all_dn_diffuse(j,kbot+1,10) &
                         + sum(flux_all_dn_diffuse(j,kbot+1,11:14))
-                     j = j+1
+                  
                   end do ! icol
+                  end if
                end do ! ix = 1, crm_nx_rad
             end do ! iy = 1, crm_ny_rad
+            end do! imi
          end if ! num_inst_atm.eq.1   
       else if (trim(band) == 'longwave') then
          do icol = 1,size(fluxes%flux_dn, 1)
@@ -2375,18 +2500,72 @@ contains
             end do   
          else   
             ! For MAML case, unpack radiation column level fluxes to CRM level fluxes
-            j = 1
+            do imi = 1, num_inst_atm
             do iy = 1,crm_ny_rad
                do ix = 1,crm_nx_rad
+                  if(ix.eq.((imi-1)/(num_inst_atm/crm_nx_rad)+1)) then
                   do icol = 1,size(fluxes%flux_dn,1)
-                     cam_out%flwds_mi(icol,ix) = fluxes_all%flux_dn(j,kbot+1)
+                     j = icol + (ix-1)*size(fluxes%bnd_flux_dn,1) + (iy-1)*size(fluxes%bnd_flux_dn,1)*crm_nx_rad
+                     cam_out%flwds_mi(icol,imi) = fluxes_all%flux_dn(j,kbot+1)
                   end do
+                  end if
                end do
             end do   
+            end do! imi
          end if
       else
          call endrun('flux_type ' // band // ' not known.')
       end if
+      
+      !! Jungmin
+      do iy = 1, crm_ny
+         do ix = 1, crm_nx
+            do icol = 1,size(fluxes%flux_dn, 1)
+               rcol = get_gcol_p(cam_out%lchnk,icol)
+               if(rcol.eq.223) then
+                  rlat = get_rlat_p(cam_out%lchnk,icol)*180._r8/SHR_CONST_PI
+                  rlon = get_rlon_p(cam_out%lchnk,icol)*180._r8/SHR_CONST_PI
+                  if(ix.eq.1 .and. iy.eq.1) then
+                     if(trim(band) == "shortwave") then
+                        write(iulog,'("EXPORT SW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                                       " lat=",F8.3," lon=",F8.3, &
+                                       " soll=",F8.3," sols=",F8.3," solld=",F8.3," solsd=",F8.3)') &
+                                       rcol, cam_out%lchnk,icol,&
+                                       rlat, rlon, &
+                                       cam_out%soll(icol),cam_out%sols(icol),cam_out%solld(icol),cam_out%solsd(icol)
+                     else if(trim(band) == "longwave") then                  
+                        write(iulog,'("EXPORT LW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                                       " lat=",F8.3," lon=",F8.3, &
+                                       " flwds=",F8.3)') &
+                                       rcol, cam_out%lchnk,icol,&
+                                       rlat, rlon, &
+                                       cam_out%flwds(icol)
+                     end if
+                  end if
+                  if(trim(band) == "shortwave") then
+                     write(iulog,'("EXPORT SW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                                    " ix=",I3," iy=",I3,&
+                                    " lat=",F8.3," lon=",F8.3, &
+                                    " soll=",F8.3," sols=",F8.3," solld=",F8.3," solsd=",F8.3)') &
+                                    rcol, cam_out%lchnk,icol,&
+                                    ix,iy,&
+                                    rlat, rlon, &
+                                    cam_out%soll_mi(icol,ix),cam_out%sols_mi(icol,ix),cam_out%solld_mi(icol,ix),cam_out%solsd_mi(icol,ix)
+                  else if(trim(band) == "longwave") then                  
+                     write(iulog,'("EXPORT LW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                                    " ix=",I3," iy=",I3,&
+                                    " lat=",F8.3," lon=",F8.3, &
+                                    " flwds=",F8.3)') &
+                                    rcol, cam_out%lchnk,icol,&
+                                    ix,iy,&
+                                    rlat, rlon, &
+                                    cam_out%flwds_mi(icol,ix)
+                  end if
+               end if   
+            end do ! icol
+         end do! ix
+      end do! iy
+      !! Jungmin
 
    end subroutine export_surface_fluxes
 
@@ -2570,10 +2749,12 @@ contains
    ! Set surface albedos from cam surface exchange object for direct and diffuse
    ! beam radiation. This code was copied from the RRTMG implementation, but moved
    ! to a subroutine with some better variable names.
-   subroutine set_albedo(cam_in, albedo_dir, albedo_dif)
+   subroutine set_albedo(landfrac,icefrac,cam_in, albedo_dir, albedo_dif)
       use camsrfexch, only: cam_in_t
       use radiation_utils, only: clip_values
-
+      use cam_logfile,     only: iulog
+      use spmd_utils,      only: masterproc
+      real(r8), intent(in)    :: landfrac(pcols),icefrac(pcols)  ! land fraction
       type(cam_in_t), intent(in) :: cam_in
       real(r8), intent(inout) :: albedo_dir(:,:,:,:)   ! surface albedo, direct radiation
       real(r8), intent(inout) :: albedo_dif(:,:,:,:)  ! surface albedo, diffuse radiation
@@ -2583,7 +2764,8 @@ contains
       integer :: ncol, iband
       character(len=10) :: subname = 'set_albedo'
       real(r8) :: area_factor, crm_nx_rad_fac, crm_ny_rad_fac
-      integer :: ii,jj, i_rad, j_rad
+      integer :: ii,jj, i_rad, j_rad,icol,gcol
+      real(r8), dimension(cam_in%ncol) :: clat, clon
       
       ! Check dimension sizes of output arrays.
       ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
@@ -2602,6 +2784,10 @@ contains
       crm_nx_rad_fac = real(crm_nx_rad,r8)/real(crm_nx,r8)
       crm_ny_rad_fac = real(crm_ny_rad,r8)/real(crm_ny,r8)
       area_factor    = crm_nx_rad_fac * crm_ny_rad_fac
+      call get_rlat_all_p(cam_in%lchnk,cam_in%ncol,clat(1:cam_in%ncol))
+      call get_rlon_all_p(cam_in%lchnk,cam_in%ncol,clon(1:cam_in%ncol))
+      clat = clat * 180._r8/SHR_CONST_PI
+      clon = clon * 180._r8/SHR_CONST_PI
       ! Initialize albedo
       albedo_dir(:,:,:,:) = 0._r8
       albedo_dif(:,:,:,:) = 0._r8
@@ -2626,13 +2812,22 @@ contains
                   ! Entire band is in the visible
                   albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%asdir_mi(1:ncol,ii)
                   albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%asdif_mi(1:ncol,ii)
-
+                  !! Jungmin
+                  !if(icol.gt.0) then
+                  !   write(*,'("VISIBLE:icol=",I3," jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "asdir_mi=",F7.3, "asdif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%asdir_mi(icol,ii),cam_in%asdif_mi(icol,ii)
+                  !end if
+                  !! Jungmin
                else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
                         .not.is_visible(wavenumber_limits(2,iband))) then
 
                   ! Entire band is in the longwave (near-infrared)
                   albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%aldir_mi(1:ncol,ii)
                   albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%aldif_mi(1:ncol,ii)
+                  !! Jungmin
+                  !if(icol.gt.0) then
+                  !   write(*,'("NIR: icol=",I3,"jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "aldir_mi=",F7.3, "aldif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%aldir_mi(icol,ii),cam_in%aldif_mi(icol,ii)
+                  !end if
+                  !! Jungmin
 
                else
 
@@ -2641,7 +2836,13 @@ contains
                   ! broadband albedos
                   albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + &
                                                          0.5 * (cam_in%aldir_mi(1:ncol,ii) + cam_in%asdir_mi(1:ncol,ii))
-                  albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + 0.5 * (cam_in%aldif_mi(1:ncol,ii) + cam_in%asdif_mi(1:ncol,ii))
+                  albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + &
+                                                         0.5 * (cam_in%aldif_mi(1:ncol,ii) + cam_in%asdif_mi(1:ncol,ii))
+                  !! Jungmin
+                  !if(icol.gt.0) then
+                  !   write(*,'("MIDWAY: icol=",I3,"jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "aldir_mi=",F7.3, " asdir_mi=",F7.3,"aldif_mi=",F7.3," asdif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%aldir_mi(icol,ii),cam_in%asdir_mi(icol,ii),cam_in%aldif_mi(icol,ii),cam_in%asdif_mi(icol,ii)
+                  !end if
+                  !! Jungmin
 
                end if
             end do ! iband = 1, nswbands
@@ -2649,22 +2850,48 @@ contains
       end do! jj = 1, crm_ny
       albedo_dir(:,:,:,:) = albedo_dir(:,:,:,:) * area_factor 
       albedo_dif(:,:,:,:) = albedo_dif(:,:,:,:) * area_factor 
-
+      !! Jungmin
+      do icol=1,ncol
+         gcol = get_gcol_p(cam_in%lchnk,icol)
+         if(gcol.eq.223) then
+            do j_rad = 1, crm_ny_rad
+               do i_rad = 1, crm_nx_rad
+                  do iband = 1, nswbands
+                     write(*,'("FINAL: chunk_index=",I3," icol=",I3," inst_index=",I3,&
+                                 " lat=",F8.3," lon=",F8.3, "gcol=",I5,&
+                                 "landfrac=",F7.3," icefrac=",F7.3,&
+                                 " j_rad=",I3," i_rad=",I3,&
+                                 " iband=",I3," albedo_dir=",F7.3," albedo_dif=",F7.3)') &
+                                 cam_in%lchnk,icol,inst_index,&
+                                 clat(icol),clon(icol),gcol,&
+                                 landfrac(icol),icefrac(icol),&
+                                 j_rad,i_rad,&
+                                 iband,albedo_dir(iband,icol,i_rad,j_rad), albedo_dif(iband,icol,i_rad,j_rad)
+                  end do
+               end do
+            end do   
+         end if
+      end do! icol
+      !! Jungmin
       if(num_inst_atm.eq.1) then
          ! for non-MAML case
-         albedo_dir(:,:,2:,:) = albedo_dir(:,:,1,:)
-         albedo_dif(:,:,2:,:) = albedo_dif(:,:,1,:)
+         do i_rad = 2, crm_nx_rad
+            albedo_dir(:,:,i_rad,:) = albedo_dir(:,:,1,:)
+            albedo_dif(:,:,i_rad,:) = albedo_dif(:,:,1,:)
+         end do   
       end if
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
       ! was never checked for RRTMG, so albedos will probably be slight different
       ! than the implementation in RRTMG!
-      call handle_error(clip_values( &
-         albedo_dir, 0._r8, 1._r8, trim(subname) // ': albedo_dir', tolerance=0.01_r8) &
-      )
-      call handle_error(clip_values( &
-         albedo_dif, 0._r8, 1._r8, trim(subname) // ': albedo_dif', tolerance=0.01_r8) &
-      )
+      do j_rad = 1, crm_ny_rad
+         call handle_error(clip_values( &
+            albedo_dir(:,:,:,j_rad), 0._r8, 1._r8, trim(subname) // ': albedo_dir', tolerance=0.01_r8) &
+         )
+         call handle_error(clip_values( &
+            albedo_dif(:,:,:,j_rad), 0._r8, 1._r8, trim(subname) // ': albedo_dif', tolerance=0.01_r8) &
+         )
+      end do   
 
 
    end subroutine set_albedo
@@ -2869,6 +3096,8 @@ contains
       ! Check values
       call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%optical_depth')
+      !! Jungmin
+      write(*,'("SSA:",F7.3)') ssa
       call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%single_scattering_albedo')
       call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &
