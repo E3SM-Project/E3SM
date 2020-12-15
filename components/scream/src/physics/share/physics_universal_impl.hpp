@@ -16,11 +16,16 @@ namespace physics {
 // Applies Exners Function which follows:
 //   Exner = (P/P0)^(Rd/Cp),
 // where,
-//   P  is the pressue at this location, Pa
+//   P  is the pressure at this location, Pa
 //   P0 is a reference pressure, Pa
 //   Rd is the gas constant, J/K
-//   Cp is heat capacity of dry air, J/K
+//   Cp is heat capacity of dry air, J/Ki
 // All universal constants, P0, Rd, and Cp, are defined in physics_constants.hpp
+// Note: Another experssion for Exner is,
+//   Exner = T/th
+// whre,
+//   T  is the temperature, K
+//   th is the potential temperature, K
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
