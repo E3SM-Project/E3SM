@@ -187,8 +187,8 @@
 		            description="Selection of the method for initializing the ice temperature (as described further below)."
 		            possible_values="'sfc_air_temperature', 'linear', 'file'"
 		/>
-		<nml_option name="config_thermal_thickness" type="real" default_value="1.0" units="m of ice"
-		            description="Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver."
+		<nml_option name="config_thermal_thickness" type="real" default_value="0.0" units="m of ice"
+		            description="Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver.  Default set to 0 to ensure reasonable values everywhere there is ice, which is needed for realistic behavior when using Albany due to the way temperature is handled in extended cells."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
@@ -432,8 +432,8 @@
 
 
 	<nml_record name="decomposition" in_defaults="true">
-		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
-		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice)."
+		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The extension of the mesh for Albany requires 3 to cover all geometric possibilities.  The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice)."
 		            possible_values="Any positive interger value."
 		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
