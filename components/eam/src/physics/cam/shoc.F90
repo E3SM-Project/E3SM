@@ -4455,6 +4455,7 @@ subroutine pblintd_check_pblh(&
     ! PBL to exceed some maximum (npbl) number of allowable points
     !
     do i=1,shcol
+       pblh(i) = 0.0_rtype
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
        pblh(i) = max(pblh(i),700.0_rtype*ustar(i))
     end do
