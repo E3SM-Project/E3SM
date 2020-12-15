@@ -170,6 +170,7 @@ extern "C" void rrtmgpxx_run_sw_cpp (
     auto clrsky_flux_dn_dir = real2d("clrsky_flux_dn_dir", clrsky_flux_dn_dir_p, ncol, nlay+1);
     auto clrsky_flux_net = real2d("clrsky_flux_net", clrsky_flux_net_p, ncol, nlay+1);
 
+    // Populate gas concentrations
     string1d gas_names("gas_names", gas_names_vect.size());
     convert_gas_names(gas_names);
     GasConcs gas_concs;
@@ -184,13 +185,6 @@ extern "C" void rrtmgpxx_run_sw_cpp (
         }
         gas_concs.set_vmr(gas_names(igas), tmp2d);
     }
-
-    // Build fluxes
-    FluxesBroadband fluxes;
-    fluxes.flux_up = allsky_flux_up;
-    fluxes.flux_dn = allsky_flux_dn;
-    fluxes.flux_dn_dir = allsky_flux_dn_dir;
-    fluxes.flux_net = allsky_flux_net;
 
     // Populate optical property objects
     OpticalProps2str combined_optics;
@@ -224,6 +218,14 @@ extern "C" void rrtmgpxx_run_sw_cpp (
     });
     aerosol_optics.increment(combined_optics);
 
+    // Do the clearsky calculation before adding in clouds
+    FluxesBroadband fluxes_clrsky;
+    fluxes_clrsky.flux_up = clrsky_flux_up;
+    fluxes_clrsky.flux_dn = clrsky_flux_dn;
+    fluxes_clrsky.flux_dn_dir = clrsky_flux_dn_dir;
+    fluxes_clrsky.flux_net = clrsky_flux_net;
+    rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes_clrsky);
+
     // Add in clouds
     OpticalProps2str cloud_optics;
     cloud_optics.alloc_2str(ncol, nlay, k_dist_sw);
@@ -235,5 +237,10 @@ extern "C" void rrtmgpxx_run_sw_cpp (
     cloud_optics.increment(combined_optics);
 
     // Call SW flux driver
-    rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes);
+    FluxesBroadband fluxes_allsky;
+    fluxes_allsky.flux_up = allsky_flux_up;
+    fluxes_allsky.flux_dn = allsky_flux_dn;
+    fluxes_allsky.flux_dn_dir = allsky_flux_dn_dir;
+    fluxes_allsky.flux_net = allsky_flux_net;
+    rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes_allsky);
 } 

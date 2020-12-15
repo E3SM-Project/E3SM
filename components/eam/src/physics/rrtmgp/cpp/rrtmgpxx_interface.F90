@@ -327,6 +327,10 @@ contains
       call assert(all(abs(allsky_flux_dn_cxx - allsky_flux_dn) < 1e-5), 'F90 and CXX allsky_flux_dn differs.')
       call assert(all(abs(allsky_flux_net_cxx - allsky_flux_net) < 1e-5), 'F90 and CXX allsky_flux_net differs.')
       call assert(all(abs(allsky_flux_dn_dir_cxx - allsky_flux_dn_dir) < 1e-5), 'F90 and CXX allsky_flux_dn_dir differs.')
+      call assert(all(abs(clrsky_flux_up_cxx - clrsky_flux_up) < 1e-5), 'F90 and CXX clrsky_flux_up differs.')
+      call assert(all(abs(clrsky_flux_dn_cxx - clrsky_flux_dn) < 1e-5), 'F90 and CXX clrsky_flux_dn differs.')
+      call assert(all(abs(clrsky_flux_net_cxx - clrsky_flux_net) < 1e-5), 'F90 and CXX clrsky_flux_net differs.')
+      call assert(all(abs(clrsky_flux_dn_dir_cxx - clrsky_flux_dn_dir) < 1e-5), 'F90 and CXX clrsky_flux_dn_dir differs.')
 
       ! Clean up after ourselves
       call free_optics_sw(cld_optics)
