@@ -325,6 +325,8 @@ contains
          call ep_betr%SetClock(dtime= dtime, nelapstep=nstep)
          call ep_betr%BeginMassBalanceCheck(bounds_clump)
        endif
+
+       call t_startf('cnpinit')
        
        if (use_cn) then
           call t_startf('cnpvegzero')
@@ -390,9 +392,9 @@ contains
           call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
           call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
           
-          call t_stopf('cnpinit')
        end if
-
+       
+       call t_stopf('cnpinit')
       
 
     end do
@@ -566,13 +568,8 @@ contains
 
 #ifndef CPL_BYPASS
 
-    if (use_cn) then
-       call t_startf('fireinterp')
-       call FireInterp(bounds_proc)
-       call t_stopf('fireinterp')       
-    end if
-    
     if (use_cn .or. use_fates) then
+
        ! ============================================================================
        ! Update dynamic N deposition field, on albedo timestep
        ! currently being done outside clumps loop, but no reason why it couldn't be
@@ -583,7 +580,16 @@ contains
        ! PET: switching CN timestep
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('ndep_interp')
+    end if
+
        
+    if (use_cn) then
+       call t_startf('fireinterp')
+       call FireInterp(bounds_proc)
+       call t_stopf('fireinterp')       
+    end if
+    
+    if (use_cn .or. use_fates) then
        ! ============================================================================
        ! Update dynamic P deposition field, on albedo timestep
        ! currently being done outside clumps loop, but no reason why it couldn't be
