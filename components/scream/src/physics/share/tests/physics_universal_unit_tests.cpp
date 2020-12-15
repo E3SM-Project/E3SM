@@ -152,7 +152,7 @@ struct UnitWrap::UnitTest<D>::TestUniversal
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
 
-      errors = 0;
+      errors += 0;
 
       static constexpr Scalar p0     = C::P0;
       static constexpr Scalar rd     = C::RD;
