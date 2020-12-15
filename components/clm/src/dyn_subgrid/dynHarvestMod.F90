@@ -42,7 +42,6 @@ module dynHarvestMod
   private
   save
   public :: dynHarvest_init    ! initialize data structures for harvest information
-  public :: dynHarvest_interp  ! get harvest data for current time step, if needed
   public :: dynHarvest_interp_harvest_types  ! get harvest data for each harvest type, if needed
   public :: CNHarvest          ! harvest mortality routine for CN code (non-FATES)
   !
@@ -99,8 +98,6 @@ contains
     ! Initialize data structures for harvest information.
     ! This should be called once, during model initialization.
     !
-    ! this call doesn't appear to be necessary
-    ! This also calls dynHarvest_interp for the initial time
     !
     ! !USES:
     use clm_varctl            , only : use_cn
@@ -140,68 +137,10 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=[num_points])
        end do
-       !call dynHarvest_interp(bounds)
+
     end if
     
   end subroutine dynHarvest_init
-
-! delete this one as it is not used
-  !-----------------------------------------------------------------------
-  subroutine dynHarvest_interp(bounds)
-    !
-    ! !DESCRIPTION:
-    ! Get harvest data for model time, when needed.
-    !
-    ! Note that harvest data are stored as rates (not weights) and so time interpolation
-    ! is not necessary - the harvest rate is held constant through the year.  This is
-    ! consistent with the treatment of changing PFT weights, where interpolation of the
-    ! annual endpoint weights leads to a constant rate of change in PFT weight through the
-    ! year, with abrupt changes in the rate at annual boundaries.
-    !
-    ! !USES:
-    use clm_varctl     , only : use_cn
-    use dynTimeInfoMod , only : time_info_type
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer               :: varnum       ! counter for harvest variables
-    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
-
-    character(len=*), parameter :: subname = 'dynHarvest_interp'
-    !-----------------------------------------------------------------------
-
-    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
-
-    ! As a workaround for an internal compiler error with ifort 13.1.2 on goldbach, call
-    ! the specific name of this procedure rather than using its generic name
-    call dynHarvest_file%time_info%set_current_year_get_year()
-
-    ! Get total harvest for this time step
-    if (use_cn) then
-       harvest(bounds%begg:bounds%endg) = 0._r8
-
-       if (dynHarvest_file%time_info%is_before_time_series()) then
-          ! Turn off harvest before the start of the harvest time series
-          do_harvest = .false.
-       else
-          ! Note that do_harvest stays true even past the end of the time series. This
-          ! means that harvest rates will be maintained at the rate given in the last
-          ! year of the file for all years past the end of this specified time series.
-          do_harvest = .true.
-          allocate(this_data(bounds%begg:bounds%endg))
-          do varnum = 1, num_harvest_vars
-             call harvest_vars(varnum)%get_current_data(this_data)
-             harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
-                                                this_data(bounds%begg:bounds%endg)
-          end do
-          deallocate(this_data)
-       end if
-    end if
-
-  end subroutine dynHarvest_interp
-
 
 !-----------------------------------------------------------------------
   subroutine dynHarvest_interp_harvest_types(bounds)
@@ -216,7 +155,7 @@ contains
     ! annual endpoint weights leads to a constant rate of change in PFT weight through the
     ! year, with abrupt changes in the rate at annual boundaries.
     !
-    ! Note the difference between this and dynHarvest_interp is that here, we keep the different
+    ! Note the difference between this and the old dynHarvest_interp is that here, we keep the different
     ! forcing sets distinct (e.g., for passing to FATES which has distinct primary and secondary lands)
     ! and thus store it in harvest_rates
     !
