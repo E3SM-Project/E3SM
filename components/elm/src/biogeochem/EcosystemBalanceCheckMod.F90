@@ -886,7 +886,7 @@ contains
          grc_fire_closs            => grc_cf%fire_closs            , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
          grc_prod1c_loss           => grc_cf%prod1_loss            , & ! Output: [real(r8) (:) ] (gC/m2/s) crop leafc harvested
          grc_prod10c_loss          => grc_cf%prod10_loss           , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
-         grc_prod100c_loss         => grc_cf%prod10_loss           , & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
+         grc_prod100c_loss         => grc_cf%prod100_loss          , & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
          grc_hrv_xsmrpool_to_atm   => grc_cf%hrv_xsmrpool_to_atm   , & ! Output: [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
          grc_som_c_leached         => grc_cf%som_c_leached         , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
          grc_som_c_yield           => grc_cf%somc_yield            , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
