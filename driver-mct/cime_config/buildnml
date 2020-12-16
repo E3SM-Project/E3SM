@@ -171,6 +171,19 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
 
+    # Sanity checks on mem-prof options
+    info_mprof = case.get_value('INFO_MPROF')
+    info_taskmap_model = case.get_value('INFO_TASKMAP_MODEL')
+    expect(not (info_mprof > 2 and info_taskmap_model < 1),
+           "Node-level memory profiling (INFO_MPROF={:d}) expects positive INFO_TASKMAP_MODEL, given {:d}".\
+           format(info_mprof, info_taskmap_model))
+
+    info_mprof_dt = case.get_value('INFO_MPROF_DT')
+    expect(info_mprof_dt >= 0 and 
+           info_mprof_dt <= 86400,
+           "Expected INFO_MPROF_DT between 0 and 86400 secs; given {:d}".format(info_mprof_dt))
+    # end mprof checks
+
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
     #--------------------------------
