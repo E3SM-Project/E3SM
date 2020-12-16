@@ -1736,7 +1736,7 @@ end if ! l_gw_drag
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
-    call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
+!    call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
 
     if (shallow_scheme .eq. 'UNICON') then
 
@@ -1787,7 +1787,6 @@ if (l_ac_energy_chk) then
 
     state%ps = state%oldps
     state%pdel = state%oldpdel
-    state%q = state%oldq
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk

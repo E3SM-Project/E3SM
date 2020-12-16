@@ -90,8 +90,7 @@ module physics_types
           zm        ! geopotential height above surface at midpoints (m)
 
      real(r8), dimension(:,:,:),allocatable      :: &
-          q,         &! constituent mixing ratio (kg/kg moist or dry air depending on type)
-          oldq        ! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
 
      real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
@@ -1223,7 +1222,6 @@ end subroutine physics_ptend_copy
 !save old values
     state%oldpdel=state%pdel
     state%oldps=state%ps
-    state%oldq=state%q
 
     ! adjust dry mass in each layer back to input value, while conserving
     ! constituents, momentum, and total energy
@@ -1231,11 +1229,6 @@ end subroutine physics_ptend_copy
 
        ! adjusment factor is just change in water vapor
        fdq(:ncol) = 1._r8 + state%q(:ncol,k,1) - qini(:ncol,k)
-
-       ! adjust constituents to conserve mass in each layer
-       do m = 1, pcnst
-          state%q(:ncol,k,m) = state%q(:ncol,k,m) / fdq(:ncol)
-       end do
 
 ! compute new total pressure variables
        state%pdel  (:ncol,k  ) = state%pdel(:ncol,k  ) * fdq(:ncol)
@@ -1600,9 +1593,6 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%q(psetcols,pver,pcnst), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
   
-  allocate(state%oldq(psetcols,pver,pcnst), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oldq')
-
   allocate(state%pint(psetcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pint')
   
@@ -1676,7 +1666,6 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   state%oldps(:) = inf
   state%oldpdel(:,:) = inf
-  state%oldq(:,:,:) = inf
 
 end subroutine physics_state_alloc
 
@@ -1799,9 +1788,6 @@ subroutine physics_state_dealloc(state)
 
   deallocate(state%oldpdel, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%oldpdel')
-
-  deallocate(state%oldq, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%oldq')
 
 end subroutine physics_state_dealloc
 
