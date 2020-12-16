@@ -1096,24 +1096,24 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-        <nml_record name="semi_implicit_ts" mode="forward">
-                <nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
-                                        description="Type of preconditioner for the barotropic mode solver"
-                                        possible_values="ras, block_jacobi, jacobi, none"
-                />
-                <nml_option name="config_btr_si_tolerance" type="real" default_value="1.0e-9" units="unitless"
-                                        description="Tolerance for the barotropic mode solver"
-                                        possible_values="any positive real, but typically less than 1.0e-9"
-                />
-                <nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
-                                        description="number of outer iterations"
-                                        possible_values="any positive integer, but typically 2"
-                />
+	<nml_record name="semi_implicit_ts" mode="forward">
+		<nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
+					description="Type of preconditioner for the barotropic mode solver"
+					possible_values="ras, block_jacobi, jacobi, none"
+		/>
+		<nml_option name="config_btr_si_tolerance" type="real" default_value="1.0e-9" units="unitless"
+					description="Tolerance for the barotropic mode solver"
+					possible_values="any positive real, but typically less than 1.0e-9"
+		/>
+		<nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
+					description="number of outer iterations"
+					possible_values="any positive integer, but typically 2"
+		/>
 		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false." units="unitless"
 					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
 		/>
-        </nml_record>
+	</nml_record>
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
@@ -2804,123 +2804,123 @@
 		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height adjusted by sea surface pressure"
 		/>
-                <!-- FIELD semi_implicit time stepping -->
-                <var name="barotropicCoriolisTerm" type="real" dimensions="nEdges Time" nits="m s^{-2}"
-                         description="f * uPerp for the semi-implicit time stepping"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_r0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_r1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_rh0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_rh1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_r00" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_ph0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_ph1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_v0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_v1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_s0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_s1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_sh0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_sh1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_w0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_w1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_wh0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_wh1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_q0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_q1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_qh0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_qh1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_z0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_z1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_zh0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_zh1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_t0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_t1" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="CGvec_y0" type="real" dimensions="nCells Time" nits="unitless"
-                         description="A vector used in the semi-implicit barotropic mode solver"
-                         packages="forwardMode;analysisMode"
-                />
+		<!-- FIELD semi_implicit time stepping -->
+		<var name="barotropicCoriolisTerm" type="real" dimensions="nEdges Time" nits="m s^{-2}"
+			description="f * uPerp for the semi-implicit time stepping"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_r0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_r1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_rh0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_rh1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_r00" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_ph0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_ph1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_v0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_v1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_s0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_s1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_sh0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_sh1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_w0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_w1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_wh0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_wh1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_q0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_q1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_qh0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_qh1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_z0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_z1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_zh0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_zh1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_t0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_t1" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
+		<var name="CGvec_y0" type="real" dimensions="nCells Time" nits="unitless"
+			description="A vector used in the semi-implicit barotropic mode solver"
+			packages="forwardMode;analysisMode"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
