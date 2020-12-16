@@ -20,12 +20,11 @@
 
 module ocn_vel_forcing_explicit_bottom_drag
 
-   use mpas_derived_types
-   use mpas_pool_routines
    use mpas_timer
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_forcing
 
    implicit none
@@ -53,8 +52,11 @@ module ocn_vel_forcing_explicit_bottom_drag
    !
    !--------------------------------------------------------------------
 
-   logical :: explicitBottomDragOn
-   real (kind=RKIND) :: explicitBottomDragCoef
+   logical :: &
+      explicitBottomDragOff  ! on/off switch for explicit bottom drag
+
+   real (kind=RKIND) :: &
+      dragCoeff          ! drag coefficient
 
 !***********************************************************************
 
@@ -73,83 +75,81 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_explicit_bottom_drag_tend(meshPool, normalVelocity, & !{{{
-                                     kineticEnergyCell, layerThicknessEdge, tend, err)
+   subroutine ocn_vel_forcing_explicit_bottom_drag_tend(normVelocity, &
+                                 KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity,       &!< Input: velocity
-         kineticEnergyCell,    &!< Input: kinetic energy at cell
-         layerThicknessEdge     !< Input: thickness at edge
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         normVelocity,  &!< [in] normal velocity
+         KECell,        &!< [in] kinetic energy at cell
+         layerThickEdge  !< [in] layer thickness at edge
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend            !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, nEdges
-      integer, dimension(:), pointer :: nEdgesArray
-      integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer :: &
+         iEdge,      &! loop index for edge loop
+         k,          &! vertical index of lowest active layer at edge
+         cell1, cell2 ! neighbor cell addresses across edge
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Initialize error code and return if not turned on
+      !*** Otherwise start timer
 
       err = 0
-
-      if ( .not. explicitBottomDragOn ) return
-
+      if (explicitBottomDragOff) return
       call mpas_timer_start('vel explicit bottom drag')
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      ! Explicit bottom drag term:
+      ! du/dt = ... - c |u| u / h
+      ! appied to bottom layer only.
+      ! This term comes from the bottom boundary condition in the vertical
+      ! momentum mixing, and is explicit if both |u| and u are chosen to be at
+      ! time level n. 
 
-      nEdges = nEdgesArray( 1 )
-
+      #ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
+      !$acc            tend, normVelocity, layerThickEdge) &
+      !$acc    private(k, cell1, cell2)
+      #else
       !$omp parallel
       !$omp do schedule(runtime) private(k, cell1, cell2)
-      do iEdge = 1, nEdges
+      #endif
+      do iEdge = 1, nEdgesOwned
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
         k =  maxLevelEdgeTop(iEdge)
 
-        ! Explicit bottom drag term:
-        ! du/dt = ... - c |u| u / h
-        ! appied to bottom layer only.
-        ! This term comes from the bottom boundary condition in the vertical
-        ! momentum mixing, and is explicit if both |u| and u are chosen to be at
-        ! time level n. 
-
-        tend(k,iEdge) = tend(k,iEdge) - explicitBottomDragCoef * & 
-           sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) * normalVelocity(k,iEdge) / layerThicknessEdge(k,iEdge)
+        tend(k,iEdge) = tend(k,iEdge) - dragCoeff* & 
+                        sqrt(KECell(k,cell1) + KECell(k,cell2))* &
+                        normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
 
       enddo
+      #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+      #endif
 
       call mpas_timer_stop('vel explicit bottom drag')
 
@@ -172,26 +172,33 @@ contains
 
    subroutine ocn_vel_forcing_explicit_bottom_drag_init(err)!{{{
 
-   !--------------------------------------------------------------------
-
       !-----------------------------------------------------------------
-      !
-      ! call individual init routines for each parameterization
-      !
+      ! output variables
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Initialize return error code and set module defaults
       err = 0
 
-      explicitBottomDragCoef = 0.0_RKIND
+      explicitBottomDragOff  = .true.
+      dragCoeff = 0.0_RKIND
+
+      !*** Reset values based on input model configuration
 
       if (config_use_explicit_bottom_drag) then
-          explicitBottomDragOn = .true.
-          explicitBottomDragCoef = config_explicit_bottom_drag_coeff
+         explicitBottomDragOff = .false.
+         dragCoeff = config_explicit_bottom_drag_coeff
       endif
 
-      if (config_disable_vel_explicit_bottom_drag) explicitBottomDragOn = .false.
+      if (config_disable_vel_explicit_bottom_drag) then
+         explicitBottomDragOff = .true.
+         dragCoeff = 0.0_RKIND
+      endif
 
    !--------------------------------------------------------------------
 

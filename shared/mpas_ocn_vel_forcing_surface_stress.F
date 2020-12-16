@@ -20,13 +20,12 @@
 
 module ocn_vel_forcing_surface_stress
 
-   use mpas_derived_types
-   use mpas_pool_routines
    use mpas_timer
 
    use ocn_constants
    use ocn_config
    use ocn_forcing
+   use ocn_mesh
 
    implicit none
    private
@@ -53,7 +52,12 @@ module ocn_vel_forcing_surface_stress
    !
    !--------------------------------------------------------------------
 
-   logical :: surfaceStressOn
+   logical :: &
+      surfaceStressOff  !< on/off switch for surface stress
+
+   real (kind=RKIND), parameter :: &
+      maxAttDepth = -100.0_RKIND ! max attenuation depth to prevent
+                                 !  underflow in exponential
 
 !***********************************************************************
 
@@ -72,112 +76,118 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, surfaceStress, & !{{{
-                                                  layerThicknessEdge, tend, err)
+   subroutine ocn_vel_forcing_surface_stress_tend(sfcFlxAttCoeff, &
+                               sfcStress, layerThickEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceStress, & !< Input: Wind stress at surface
-         surfaceFluxAttenuationCoefficient !< Input: attenuation coefficient for surface fluxes
+         sfcStress,    & !< [in] Wind stress at surface
+         sfcFlxAttCoeff  !< [in] attenuation coefficient for sfc fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: thickness at edge
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         layerThickEdge  !< [in] thickness at edge
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend            !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, k, cell1, cell2, nEdges
-      integer, dimension(:), pointer :: nEdgesArray
-      integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge
+      integer ::      &
+         iEdge, k,    &! loop indices for edge, vertical loops
+         kmax,        &! index of deepest active edge
+         cell1, cell2  ! neighbor cell addresses across edge
 
-      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress, &
-                           attenuationCoeff
+      real (kind=RKIND) :: &
+         transCoeffTop,    &! transmission coefficent at top of edge
+         transCoeffBot,    &! transmission coefficent at bottom of edge
+         zTop, zBot,       &! depths at top and bottom of edge
+         remainingStress,  &! stress remaining at bottom of edge
+         absorb,           &! absorption fraction within layer
+         attDepth,         &! depth scaled by attenuation length
+         attCoeff           ! attenuation coefficient on edge
 
+      ! End preamble
       !-----------------------------------------------------------------
-      !
-      ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the
-      !   tendencies will be added together
-      !
-      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Initialize error code and return if not on
+      !*** If turned on, start timer.
 
       err = 0
-
-      if ( .not. surfaceStressOn ) return
-
+      if (surfaceStressOff) return
       call mpas_timer_start('vel surface stress')
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-
-      nEdges = nEdgesArray ( 1 )
-
+      #ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
+      !$acc            sfcFlxAttCoeff, sfcStress, layerThickEdge, &
+      !$acc            tend) &
+      !$acc    private(k, kmax, cell1, cell2, zBot, zTop, &
+      !$acc            attCoeff, attDepth, remainingStress, &
+      !$acc            transCoeffTop, transCoeffBot, absorb)
+      #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(zTop, cell1, cell2, attenuationCoeff, transmissionCoeffTop, &
-      !$omp         remainingStress, k, zBot, transmissionCoeffBot)
-      do iEdge = 1, nEdges
-        zTop = 0.0_RKIND
+      !$omp    private(k, kmax, cell1, cell2, zBot, zTop, &
+      !$omp            attCoeff, attDepth, remainingStress, &
+      !$omp            transCoeffTop, transCoeffBot, absorb)
+      #endif
+      do iEdge = 1, nEdgesOwned
+        zTop     = 0.0_RKIND
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
-        attenuationCoeff = 0.5_RKIND * (surfaceFluxAttenuationCoefficient(cell1) &
-                                      + surfaceFluxAttenuationCoefficient(cell2))
-        transmissionCoeffTop = ocn_forcing_transmission(zTop, attenuationCoeff)
+        attCoeff = 0.5_RKIND*(sfcFlxAttCoeff(cell1) &
+                            + sfcFlxAttCoeff(cell2))
+        attDepth = 0.0_RKIND
+        transCoeffTop = 1.0_RKIND
         remainingStress = 1.0_RKIND
-        do k = 1, maxLevelEdgeTop(iEdge)
-           zBot = zTop - layerThicknessEdge(k, iEdge)
+        kmax = maxLevelEdgeTop(iEdge)
+        do k = 1, kmax
+           zBot = zTop - layerThickEdge(k,iEdge)
+           attDepth = max(zBot/attCoeff, maxAttDepth)
 
-           transmissionCoeffBot = ocn_forcing_transmission(zBot, attenuationCoeff)
+           transCoeffBot = exp(attDepth)
 
-           remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
+           absorb = transCoeffTop - transCoeffBot
+           remainingStress = remainingStress - absorb
 
-           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceStress(iEdge) &
-                         * (transmissionCoeffTop - transmissionCoeffBot) / rho_sw / layerThicknessEdge(k,iEdge)
+           tend(k,iEdge) =  tend(k,iEdge) + &
+                            edgeMask(k,iEdge)*sfcStress(iEdge) * &
+                            absorb/rho_sw/layerThickEdge(k,iEdge)
 
            zTop = zBot
-           transmissionCoeffTop = transmissionCoeffBot
+           transCoeffTop = transCoeffBot
         enddo
 
-        if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then
-           tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) &
-                         + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceStress(iEdge) * remainingStress &
-                         / rho_sw / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
+        !*** if there is any remaining stress at the bottom, add it
+        !*** to the bottom layer
+
+        if ( kmax > 0 .and. remainingStress > 0.0_RKIND) then
+           tend(kmax,iEdge) = tend(kmax,iEdge) &
+                            + edgeMask(kmax,iEdge)*sfcStress(iEdge)* &
+                              remainingStress/rho_sw/ &
+                              layerThickEdge(kmax,iEdge)
         end if
       enddo
+      #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+      #endif
 
       call mpas_timer_stop('vel surface stress')
 
@@ -200,21 +210,24 @@ contains
 
    subroutine ocn_vel_forcing_surface_stress_init(err)!{{{
 
-   !--------------------------------------------------------------------
-
       !-----------------------------------------------------------------
-      !
-      ! call individual init routines for each parameterization
-      !
+      ! output variables
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
-      surfaceStressOn = .true.
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
 
-      if(config_disable_vel_surface_stress) surfaceStressOn = .false.
+      !*** Initialize return error code and set module defaults
 
       err = 0
+      surfaceStressOff = .false.
+
+      !*** Reset based on input model configuration
+
+      if (config_disable_vel_surface_stress) surfaceStressOff = .true.
 
    !--------------------------------------------------------------------
 
