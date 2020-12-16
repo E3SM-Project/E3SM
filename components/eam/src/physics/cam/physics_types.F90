@@ -90,8 +90,8 @@ module physics_types
           zm        ! geopotential height above surface at midpoints (m)
 
      real(r8), dimension(:,:,:),allocatable      :: &
-          q,         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
-          oldq       ! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          q,         &! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          oldq        ! constituent mixing ratio (kg/kg moist or dry air depending on type)
 
      real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
