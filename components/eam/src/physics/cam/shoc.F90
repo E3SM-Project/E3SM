@@ -4308,7 +4308,7 @@ subroutine pblintd_height(&
     !
     ! Output arguments
     !
-    real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout)   :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(inout) :: rino(shcol,nlev)                     ! bulk Richardson no. from level to ref lev
     logical(btype), intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
 
@@ -4411,6 +4411,11 @@ subroutine pblintd_check_pblh(&
        shcol,nlev,nlevi,&             ! Input
        z,ustar,check,&                ! Input
        pblh)                          ! Output
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: pblintd_check_pblh_f
+#endif
+
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -4424,11 +4429,19 @@ subroutine pblintd_check_pblh(&
     !
     ! Output arguments
     !
-    real(rtype), intent(out) :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout) :: pblh(shcol)             ! boundary-layer height [m]
     !
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call pblintd_check_pblh_f(shcol,nlev,nlevi,npbl,z,ustar,check,pblh)
+      return
+   endif
+#endif
+
     !
     ! PBL height must be greater than some minimum mechanical mixing depth
     ! Several investigators have proposed minimum mechanical mixing depth

@@ -4,6 +4,7 @@ set(NEED_LIBS physics_share scream_share)
 set(PHYSICS_TESTS_SRCS
   physics_saturation_unit_tests.cpp
   physics_test_data_unit_tests.cpp
+  physics_universal_unit_tests.cpp
 )
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
