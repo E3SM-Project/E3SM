@@ -851,6 +851,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: f, s, s_beg, s_end ! data array indicies
+    real(r8) :: time_integrated_flux, state_net_change
+    real(r8), parameter :: error_tol = 0.01_r8
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -868,6 +870,8 @@ contains
 
     write(iulog,C_FF)'   *SUM*', &
          sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
+
+    time_integrated_flux = sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()
 
     write(iulog,'(71("-"),"|",20("-"))')
 
@@ -901,6 +905,16 @@ contains
          budg_stateG(s_c_error,ip) *unit_conversion, &
          (budg_stateG(s_totc_end     ,ip) - budg_stateG(s_totc_beg     ,ip))*unit_conversion + &
          budg_stateG(s_c_error,ip) *unit_conversion
+
+    state_net_change = (budg_stateG(s_totc_end, ip) - budg_stateG(s_totc_beg, ip))*unit_conversion + &
+         budg_stateG(s_c_error,ip) *unit_conversion
+
+    if (abs(time_integrated_flux - state_net_change) > error_tol) then
+       write(iulog,*)'time integrated flux = ',time_integrated_flux
+       write(iulog,*)'net change in state  = ',state_net_change
+       write(iulog,*)'error                = ',abs(time_integrated_flux - state_net_change)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
 
     write(iulog,'(70("-"),"|",23("-"))')
 
