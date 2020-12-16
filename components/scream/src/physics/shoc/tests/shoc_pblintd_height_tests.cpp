@@ -173,7 +173,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       PblintdHeightData(36, 72),
       PblintdHeightData(54, 72),
       PblintdHeightData(54, 72),
-      PblintdHeightData(36, 72),      
+      PblintdHeightData(128, 72),      
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);

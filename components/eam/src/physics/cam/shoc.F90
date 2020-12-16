@@ -4340,7 +4340,7 @@ subroutine pblintd_height(&
     do k=nlev-1,nlev-npbl+1,-1
        do i=1,shcol
           if (check(i)) then
-             vvk = bfb_square(u(i,k) - u(i,nlev)) + bfb_square(v(i,k) - v(i,nlev)) + fac*bfb_square(ustar(i))
+             vvk = bfb_square((u(i,k) - u(i,nlev))) + bfb_square((v(i,k) - v(i,nlev))) + fac*bfb_square(ustar(i))
              vvk = max(vvk,tiny)
              rino(i,k) = ggr*(thv(i,k) -thv_ref(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then

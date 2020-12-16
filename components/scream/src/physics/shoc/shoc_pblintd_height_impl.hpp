@@ -57,7 +57,7 @@ void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, con
 
     if ((lmask && rmask).any()) {
       vvk.set(lmask && rmask, 
-              pow((u(k) - u_nlev), 2) + pow((v(k) - v_nlev),2) + fac*pow(ustar,2));
+              ekat::square((u(k) - u_nlev)) + ekat::square((v(k) - v_nlev)) + fac*(ustar*ustar));
       vvk.set(lmask && rmask,  ekat::max(vvk, tiny));
 
       rino_sp.set(lmask && rmask,  
@@ -94,7 +94,7 @@ void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, con
        const auto z_nlev    = z(nlev_pack-1)[nlev_indx];
 
        vvk.set(max_index,
-               pow((u(k) - u_nlev), 2) + pow((v(k) - v_nlev),2) + fac*pow(ustar,2));
+               ekat::square((u(k) - u_nlev)) + ekat::square((v(k) - v_nlev)) + fac*(ustar*ustar));
        vvk.set(max_index,  ekat::max(vvk, tiny));
 
        rino(k).set(max_index,

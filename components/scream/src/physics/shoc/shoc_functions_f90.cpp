@@ -2798,12 +2798,14 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
   using Spack      = typename SHOC::Spack;
   using Scalar     = typename SHOC::Scalar;
   using Pack1      = typename ekat::Pack<Real, 1>;
+  using BPack1     = typename ekat::Pack<bool, 1>;
   using view_1d    = typename SHOC::view_1d<Pack1>;
+  using bview_1d   = typename SHOC::view_1d<BPack1>;
   using view_2d    = typename SHOC::view_2d<Spack>;
   using ExeSpace   = typename SHOC::KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
 
-  Kokkos::Array<view_2d, 5> views_2d;
+  std::vector<view_2d> views_2d(5);
   ekat::host_to_device({z, u, v, thv, rino}, shcol, nlev, views_2d, true);
 
   view_2d z_2d   (views_2d[0]),
@@ -2812,19 +2814,15 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
           thv_2d (views_2d[3]),
           rino_2d(views_2d[4]);
 
-  Kokkos::Array<view_1d, 2> views_1d;
-  ekat::host_to_device({ustar, thv_ref}, shcol, views_1d);
+  std::vector<view_1d> views_1d(3);
+  ekat::host_to_device({ustar, thv_ref, pblh}, shcol, views_1d);
   view_1d ustar_1d   (views_1d[0]),
-          thv_ref_1d (views_1d[1]);
+          thv_ref_1d (views_1d[1]),
+          pblh_1d    (views_1d[2]);
 
-  SHOC::view_1d<bool> check_1d("check", shcol);
-  const auto host_check_1d = Kokkos::create_mirror_view(check_1d);
-  for (auto s = 0; s < shcol; ++s) {
-    host_check_1d(s) = check[s];
-  }
-  Kokkos::deep_copy(check_1d, host_check_1d);
-
-  view_1d pblh_1d("pblh_1d", shcol);
+  std::vector<bview_1d> views_bool_1d(1);
+  ekat::host_to_device({check}, shcol, views_bool_1d);
+  bview_1d check_1d (views_bool_1d[0]);
 
   Int npbl = nlev;
 
@@ -2842,21 +2840,19 @@ void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* usta
     Scalar& ustar_s   = ustar_1d(i)[0];
     Scalar& thv_ref_s = thv_ref_1d(i)[0];
     Scalar& pblh_s    = pblh_1d(i)[0];
-    bool& check_s     = check_1d(i);
+    bool& check_s     = check_1d(i)[0];
 
     SHOC::pblintd_height(team, nlev, npbl, z_1d, u_1d, v_1d, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
  });
 
-  Kokkos::Array<view_1d, 1> out_1d_views = {pblh_1d};
-  ekat::device_to_host<int, 1>({pblh}, {shcol}, out_1d_views);
+  std::vector<view_1d> out_1d_views = {pblh_1d};
+  ekat::device_to_host({pblh}, shcol, out_1d_views);
 
-  Kokkos::Array<view_2d, 1> out_2d_views = {rino_2d};
-  ekat::device_to_host<int, 1>({rino}, {shcol}, {nlev}, out_2d_views, true);
+  std::vector<view_2d> out_2d_views = {rino_2d};
+  ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
 
-  Kokkos::deep_copy(host_check_1d, check_1d);
-  for (auto s = 0; s < shcol; ++s) {
-    check[s] = host_check_1d(s);
-  }
+  std::vector<bview_1d> out_bool_1d_views = {check_1d};
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
