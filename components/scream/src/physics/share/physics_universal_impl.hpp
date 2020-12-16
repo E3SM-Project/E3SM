@@ -38,10 +38,8 @@ Functions<S,D>::get_exner(const Spack& P, const Smask& range_mask)
   static constexpr Scalar inv_cp = C::INV_CP;
   const Spack exner = pow( P/p0, rd*inv_cp );
   // Check that there are no obvious errors in the result.
-  auto is_nan_exner = isnan(exner) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_nan_exner.any()), "Error in get_exner, Exner has NaN values.\n"); // exit with an error message
-  auto is_neg_exner = (exner <= 0) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_neg_exner.any()), "Error in get_exner, Exner has negative values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!((isnan(exner) && range_mask).any()), "Error in get_exner, Exner has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!(((exner <= 0) && range_mask).any()), "Error in get_exner, Exner has negative values.\n"); // exit with an error message
   // Set the values of the result
   result.set(range_mask,exner);
   return result;
@@ -101,10 +99,8 @@ Functions<S,D>::get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& ra
   Spack result;
   const Spack dz = zi_top-zi_bot;
   // Check that there are no obvious errors in the result.
-  auto is_nan_dz = isnan(dz) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_nan_dz.any()), "Error in get_dz, dz has NaN values.\n"); // exit with an error message
-  auto is_neg_dz = (dz <= 0) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_neg_dz.any()), "Error in get_dz, dz has negative values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!((isnan(dz) && range_mask).any()), "Error in get_dz, dz has NaN values.\n"); // exit with an error message
+  EKAT_KERNEL_ASSERT_MSG(!(((dz <= 0) && range_mask).any()), "Error in get_dz, dz has negative values.\n"); // exit with an error message
   // Set the values of the result
   result.set(range_mask,dz);
   return result;
