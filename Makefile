@@ -593,10 +593,21 @@ endif
 	LIBS += -L$(PNETCDF)/$(PNETCDFLIBLOC) -lpnetcdf
 endif
 
-ifneq "$(LAPACK)" ""
-        LIBS += -L$(LAPACK)
-        LIBS += -llapack
-        LIBS += -lblas
+ifeq "$(USE_LAPACK)" "true"
+ifndef LAPACK
+$(error LAPACK is not set.  Please set LAPACK to the LAPACK install directory when USE_LAPACK=true)
+endif
+
+ifneq (, $(shell ls $(LAPACK)/liblapack.*))
+	LIBS += -L$(LAPACK)
+else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
+	LIBS += -L$(LAPACK)/lib
+else
+$(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)
+endif
+	LIBS += -llapack
+	LIBS += -lblas
+	override CPPFLAGS += -DUSE_LAPACK
 endif
 
 RM = rm -f
@@ -1045,8 +1056,9 @@ errmsg:
 	@echo "    USE_PIO2=true - links with the PIO 2 library. Default is to use the PIO 1.x library."
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
+	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
 	@echo ""
-	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
+	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
 ifdef CORE
