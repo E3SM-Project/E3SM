@@ -153,14 +153,6 @@ module ELMFatesInterfaceMod
    implicit none
 
 
-
-   ! Vegetation Structures Needed to be allocated and functional when FATES is ON
-   ! veg_pp
-   ! veg_es
-   ! veg_wf
-
-
-   
    type, public :: f2hmap_type
 
       ! This is the associated column index of each FATES site
