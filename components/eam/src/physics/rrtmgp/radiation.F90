@@ -1654,6 +1654,8 @@ contains
       aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd_day(:,:,:)
       aer_ssa_bnd_rad(:,ktop:kbot,:) = aer_ssa_bnd_day(:,:,:)
       aer_asm_bnd_rad(:,ktop:kbot,:) = aer_asm_bnd_day(:,:,:)
+      gas_vmr_rad(:,:nday,1) = gas_vmr_day(:,:nday,1)
+      gas_vmr_rad(:,:nday,ktop:kbot) = gas_vmr_day(:,:nday,1:pver)
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_rrtmgp_run_sw')
@@ -1676,8 +1678,6 @@ contains
       )
       call t_stopf('rad_rrtmgp_run_sw')
       call t_startf('rad_rrtmgpxx_run_sw')
-      gas_vmr_rad(:,:nday,1) = gas_vmr_day(:,:nday,1)
-      gas_vmr_rad(:,:nday,2:nlev_rad) = gas_vmr_day(:,:nday,1:pver)
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_cxx, do_direct=.true.)
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_cxx, do_direct=.true.)
       call rrtmgpxx_run_sw( &
@@ -1691,9 +1691,9 @@ contains
          albedo_dif_day(1:nswbands,1:nday), &
          cld_tau_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), &
          aer_tau_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_rad(1:nday,1:nlev_rad,1:nswbands), &
-         fluxes_allsky_cxx%flux_up, fluxes_allsky_cxx%flux_dn, fluxes_allsky_cxx%flux_net, fluxes_allsky_cxx%flux_dn_dir, &
+         fluxes_allsky_cxx%flux_up    , fluxes_allsky_cxx%flux_dn    , fluxes_allsky_cxx%flux_net    , fluxes_allsky_cxx%flux_dn_dir    , &
          fluxes_allsky_cxx%bnd_flux_up, fluxes_allsky_cxx%bnd_flux_dn, fluxes_allsky_cxx%bnd_flux_net, fluxes_allsky_cxx%bnd_flux_dn_dir, &
-         fluxes_clrsky_cxx%flux_up, fluxes_clrsky_cxx%flux_dn, fluxes_clrsky_cxx%flux_net, fluxes_clrsky_cxx%flux_dn_dir, &
+         fluxes_clrsky_cxx%flux_up    , fluxes_clrsky_cxx%flux_dn    , fluxes_clrsky_cxx%flux_net    , fluxes_clrsky_cxx%flux_dn_dir    , &
          fluxes_clrsky_cxx%bnd_flux_up, fluxes_clrsky_cxx%bnd_flux_dn, fluxes_clrsky_cxx%bnd_flux_net, fluxes_clrsky_cxx%bnd_flux_dn_dir, &
          tsi_scaling &
       )

@@ -183,6 +183,10 @@ extern "C" void rrtmgpxx_run_sw (
     auto clrsky_flux_net = real2d("clrsky_flux_net", clrsky_flux_net_p, ncol, nlay+1);
 
     // Populate gas concentrations object
+    // TODO: clean this up. We could keep gas_concs in file scope, and then
+    // also maybe update the gas concs directly from gas_vmr via a parallel_for
+    // rather than going through the set_vmr method, since we are not passing
+    // the gas names through this interface anyways.
     string1d gas_names("gas_names", gas_names_vect.size());
     convert_gas_names(gas_names);
     GasConcs gas_concs;
@@ -199,6 +203,7 @@ extern "C" void rrtmgpxx_run_sw (
     }
 
     // Do gas optics
+    // TODO: should we avoid allocating here?
     OpticalProps2str combined_optics;
     combined_optics.alloc_2str(ncol, nlay, k_dist_sw);
     auto pmid_host = pmid.createHostCopy();
@@ -212,6 +217,7 @@ extern "C" void rrtmgpxx_run_sw (
     });
 
     // Add in aerosol
+    // TODO: should we avoid allocating here?
     OpticalProps2str aerosol_optics;
     if (true) {
         aerosol_optics.alloc_2str(ncol, nlay, k_dist_sw);
@@ -233,6 +239,7 @@ extern "C" void rrtmgpxx_run_sw (
     aerosol_optics.increment(combined_optics);
 
     // Do the clearsky calculation before adding in clouds
+    // TODO: we need band-by-band fluxes too
     FluxesBroadband fluxes_clrsky;
     fluxes_clrsky.flux_up = clrsky_flux_up;
     fluxes_clrsky.flux_dn = clrsky_flux_dn;

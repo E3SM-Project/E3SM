@@ -5,28 +5,11 @@
 ! code.
 module rrtmgpxx_interface
 
-   use perf_mod, only: t_startf, t_stopf
-   use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
-   use radiation_utils, only: compress_day_columns, expand_day_columns
-   use radiation_state, only: ktop, kbot, nlev_rad
-
-   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
-   use mo_gas_concentrations, only: ty_gas_concs
-   use mo_load_coefficients, only: load_and_init
-   use mo_rte_kind, only: wp
-   use mo_optical_props, only: ty_optical_props_2str, ty_optical_props_1scl
-   use mo_fluxes_byband, only: ty_fluxes_byband
-   use mo_rrtmgp_clr_all_sky, only: rte_sw, rte_lw
-   use assertions, only: assert
    use iso_c_binding
 
    implicit none
 
    private
-
-   ! Gas optics objects that hold k-distribution information. These are made
-   ! module variables because we only want to initialize them once at init time.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! Make these module variables so that we do not have to provide access to
    ! k_dist objects; this just makes it easier to switch between F90 and C++
@@ -165,20 +148,6 @@ contains
       use iso_c_binding, only: C_CHAR, C_NULL_CHAR
       character(len=*), intent(in) :: active_gases(:)
       character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
-      type(ty_gas_concs) :: available_gases
-      ! Read gas optics coefficients from file
-      ! Need to initialize available_gases here! The only field of the
-      ! available_gases type that is used int he kdist initialize is
-      ! available_gases%gas_name, which gives the name of each gas that would be
-      ! present in the ty_gas_concs object. So, we can just set this here, rather
-      ! than trying to fully populate the ty_gas_concs object here, which would be
-      ! impossible from this initialization routine because I do not thing the
-      ! rad_cnst objects are setup yet.
-      ! the other tasks!
-      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
-      call set_available_gases(active_gases, available_gases)
-      call load_and_init(k_dist_sw, coefficients_file_sw, available_gases)
-      call load_and_init(k_dist_lw, coefficients_file_lw, available_gases)
       ! Add active gases
       call add_gases(active_gases)
       ! Initialize RRTMGP
@@ -198,26 +167,6 @@ contains
    ! Private routines
    ! --------------------------------------------------------------------------
 
-   subroutine set_available_gases(gases, gas_concentrations)
-
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      type(ty_gas_concs), intent(inout) :: gas_concentrations
-      character(len=*), intent(in) :: gases(:)
-      character(len=32), dimension(size(gases)) :: gases_lowercase
-      integer :: igas
-
-      ! Initialize with lowercase gas names; we should work in lowercase
-      ! whenever possible because we cannot trust string comparisons in RRTMGP
-      ! to be case insensitive
-      do igas = 1,size(gases)
-         gases_lowercase(igas) = trim(lower_case(gases(igas)))
-      end do
-      call handle_error(gas_concentrations%init(gases_lowercase))
-
-   end subroutine set_available_gases
-
    subroutine add_gases(gases)
       use mo_rrtmgp_util_string, only: lower_case
       use iso_c_binding, only: C_CHAR, C_NULL_CHAR
@@ -227,97 +176,6 @@ contains
          call add_gas_name(trim(lower_case(gases(igas)))//C_NULL_CHAR)
       end do
    end subroutine add_gases
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_sw(optics)
-      use mo_optical_props, only: ty_optical_props_2str
-      type(ty_optical_props_2str), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      if (allocated(optics%ssa)) deallocate(optics%ssa)
-      if (allocated(optics%g)) deallocate(optics%g)
-      call optics%finalize()
-   end subroutine free_optics_sw
-
-   !----------------------------------------------------------------------------
-
-   subroutine free_optics_lw(optics)
-      use mo_optical_props, only: ty_optical_props_1scl
-      type(ty_optical_props_1scl), intent(inout) :: optics
-      if (allocated(optics%tau)) deallocate(optics%tau)
-      call optics%finalize()
-   end subroutine free_optics_lw
-
-   !----------------------------------------------------------------------------
-
-   ! Compress optics arrays to smaller arrays containing only daytime columns.
-   ! This is to work with the RRTMGP shortwave routines that will fail if they
-   ! encounter non-sunlit columns, and also allows us to perform less
-   ! computations. This routine is primarily a convenience routine to do all of
-   ! the shortwave optics arrays at once, as we do this for individual arrays
-   ! elsewhere in the code.
-   subroutine compress_optics_sw(day_indices, tau, ssa, asm, tau_day, ssa_day, asm_day)
-      integer, intent(in), dimension(:) :: day_indices
-      real(wp), intent(in), dimension(:,:,:) :: tau, ssa, asm
-      real(wp), intent(out), dimension(:,:,:) :: tau_day, ssa_day, asm_day
-      integer :: nday, iday, ilev, ibnd
-      nday = count(day_indices > 0)
-      do ibnd = 1,size(tau,3)
-         do ilev = 1,size(tau,2)
-            do iday = 1,nday
-               tau_day(iday,ilev,ibnd) = tau(day_indices(iday),ilev,ibnd)
-               ssa_day(iday,ilev,ibnd) = ssa(day_indices(iday),ilev,ibnd)
-               asm_day(iday,ilev,ibnd) = asm(day_indices(iday),ilev,ibnd)
-            end do
-         end do
-      end do
-   end subroutine compress_optics_sw
-
-
-   subroutine set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      integer, intent(in) :: ncol
-      character(len=*), intent(in), dimension(:) :: gas_names
-      real(wp), intent(in), dimension(:,:,:) :: gas_vmr
-      type(ty_gas_concs), intent(out) :: gas_concentrations
-
-      ! Local variables
-      real(wp), dimension(ncol,nlev_rad) :: vol_mix_ratio_out
-
-      ! Loop indices
-      integer :: igas
-
-      ! Character array to hold lowercase gas names
-      character(len=32), allocatable :: gas_names_lower(:)
-
-      ! Name of subroutine for error messages
-      character(len=32) :: subname = 'set_gas_concentrations'
-
-      ! Initialize gas concentrations with lower case names
-      allocate(gas_names_lower(size(gas_names)))
-      do igas = 1,size(gas_names)
-         gas_names_lower(igas) = trim(lower_case(gas_names(igas)))
-      end do
-      call handle_error(gas_concentrations%init(gas_names_lower))
-
-      ! For each gas, add level above model top and set values in RRTMGP object
-      do igas = 1,size(gas_names)
-         vol_mix_ratio_out = 0
-         ! Map to radiation grid
-         vol_mix_ratio_out(1:ncol,ktop:kbot) = gas_vmr(igas,1:ncol,1:pver)
-         ! Copy top-most model level to top-most rad level (which could be above
-         ! the top of the model)
-         vol_mix_ratio_out(1:ncol,1) = gas_vmr(igas,1:ncol,1)
-         ! Set volumn mixing ratio in gas concentration object for just columns
-         ! in this chunk
-         call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_names(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) &
-         )
-      end do
-
-   end subroutine set_gas_concentrations
 
    !----------------------------------------------------------------------------
 
