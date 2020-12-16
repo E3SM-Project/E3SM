@@ -152,9 +152,9 @@ contains
       cld_optics_sw%tau = 0
       cld_optics_sw%ssa = 1
       cld_optics_sw%g   = 0
-      cld_optics_sw%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,:,:)
-      cld_optics_sw%ssa(1:ncol,2:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
-      cld_optics_sw%g  (1:ncol,2:nlev,:) = cld_asm_gpt(1:ncol,:,:)
+      cld_optics_sw%tau(1:ncol,1:nlev,:) = cld_tau_gpt(1:ncol,:,:)
+      cld_optics_sw%ssa(1:ncol,1:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
+      cld_optics_sw%g  (1:ncol,1:nlev,:) = cld_asm_gpt(1:ncol,:,:)
 
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_sw%delta_scale())
@@ -173,9 +173,9 @@ contains
       aer_optics_sw%tau = 0
       aer_optics_sw%ssa = 1
       aer_optics_sw%g   = 0
-      aer_optics_sw%tau(1:ncol,2:nlev,:) = aer_tau_bnd(1:ncol,1:pver,:)
-      aer_optics_sw%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
-      aer_optics_sw%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
+      aer_optics_sw%tau(1:ncol,1:nlev,:) = aer_tau_bnd(1:ncol,1:nlev,:)
+      aer_optics_sw%ssa(1:ncol,1:nlev,:) = aer_ssa_bnd(1:ncol,1:nlev,:)
+      aer_optics_sw%g  (1:ncol,1:nlev,:) = aer_asm_bnd(1:ncol,1:nlev,:)
 
       ! Apply delta scaling to account for forward-scattering
       call handle_error(aer_optics_sw%delta_scale())

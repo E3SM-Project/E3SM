@@ -22,7 +22,7 @@ extern "C" double get_max_temperature();
 extern "C" void get_gpoint_bands_sw(int *gpoint_bands);
 extern "C" void get_gpoint_bands_lw(int *gpoint_bands);
 extern "C" void rrtmgpxx_finalize();
-extern "C" void rrtmgpxx_run_sw_cpp (
+extern "C" void rrtmgpxx_run_sw (
         int ngas, int ncol, int nlay,
         double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
@@ -145,7 +145,7 @@ extern "C" void get_gpoint_bands_lw(int *gpoint_bands_p) {
     tmp.deep_copy_to(gpoint_bands_lw);
 }
 
-extern "C" void rrtmgpxx_run_sw_cpp (
+extern "C" void rrtmgpxx_run_sw (
         int ngas, int ncol, int nlay,
         double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
@@ -229,6 +229,7 @@ extern "C" void rrtmgpxx_run_sw_cpp (
             aerosol_optics.g  (icol,ilay,ibnd) = aer_asm_bnd(icol,ilay,ibnd);
         });
     }
+    aerosol_optics.delta_scale();
     aerosol_optics.increment(combined_optics);
 
     // Do the clearsky calculation before adding in clouds
@@ -247,6 +248,7 @@ extern "C" void rrtmgpxx_run_sw_cpp (
         cloud_optics.ssa(icol,ilay,igpt) = cld_ssa_gpt(icol,ilay,igpt);
         cloud_optics.g  (icol,ilay,igpt) = cld_asm_gpt(icol,ilay,igpt);
     });
+    cloud_optics.delta_scale();
     cloud_optics.increment(combined_optics);
 
     // Call SW flux driver

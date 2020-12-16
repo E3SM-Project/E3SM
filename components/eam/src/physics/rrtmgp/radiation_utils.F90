@@ -37,7 +37,6 @@ module radiation_utils
       real(r8), allocatable :: bnd_flux_dn_dir(:,:,:)
    end type
 
-
    ! Max length for character strings
    integer, parameter :: max_char_len = 512
 

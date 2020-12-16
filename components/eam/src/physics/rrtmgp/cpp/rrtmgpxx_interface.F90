@@ -101,7 +101,7 @@ module rrtmgpxx_interface
       subroutine rrtmgpxx_finalize() bind(C, name="rrtmgpxx_finalize")
       end subroutine rrtmgpxx_finalize
 
-      subroutine rrtmgpxx_run_sw_cpp( &
+      subroutine rrtmgpxx_run_sw( &
          ngas, ncol, nlev, &
          gas_vmr, &
          pmid, tmid, pint, coszrs, &
@@ -113,7 +113,7 @@ module rrtmgpxx_interface
          clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir, &
          clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
          tsi_scaling &
-         ) bind(C, name="rrtmgpxx_run_sw_cpp")
+         ) bind(C, name="rrtmgpxx_run_sw")
          use iso_c_binding
          implicit none
          integer(kind=c_int), value :: ngas, ncol, nlev
@@ -126,7 +126,7 @@ module rrtmgpxx_interface
             clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir, &
             clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
          real(kind=c_double), value :: tsi_scaling
-      end subroutine rrtmgpxx_run_sw_cpp
+      end subroutine rrtmgpxx_run_sw
 
       subroutine rrtmgpxx_run_lw ( &
          ngas, ncol, nlev, &
@@ -193,164 +193,6 @@ contains
       nswgpts = get_ngpt_sw()
       nlwgpts = get_ngpt_lw()
    end subroutine rrtmgpxx_initialize
-
-
-   subroutine rrtmgpxx_run_sw( &
-         ngas, ncol, nlev, &
-         gas_names, gas_vmr, &
-         pmid, tmid, pint, coszrs, &
-         albedo_dir, albedo_dif, &
-         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
-         aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
-         allsky_flux_up, allsky_flux_dn, allsky_flux_net, allsky_flux_dn_dir, &
-         allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
-         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir, &
-         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
-         tsi_scaling &
-         )
-      integer, intent(in) :: ngas, ncol, nlev
-      character(len=*), dimension(:) :: gas_names
-      real(wp), intent(in), dimension(:,:,:) :: gas_vmr
-      real(wp), intent(in), dimension(:,:) :: &
-         pmid, tmid, pint
-      real(wp), intent(in), dimension(:) :: coszrs
-      real(wp), intent(in), dimension(:,:) :: albedo_dir, albedo_dif
-      real(wp), intent(in), dimension(:,:,:) :: &
-         cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
-         aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd
-      real(wp), intent(inout), target, dimension(:,:) :: &
-         allsky_flux_up, allsky_flux_dn, allsky_flux_net, allsky_flux_dn_dir, &
-         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, clrsky_flux_dn_dir
-      real(wp), intent(inout), target, dimension(:,:,:) :: &
-         allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, allsky_bnd_flux_dn_dir, &
-         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir
-      real(wp), intent(in) :: tsi_scaling
-
-      type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
-      type(ty_gas_concs) :: gas_concentrations
-      type(ty_optical_props_2str) :: cld_optics, aer_optics
-
-      real(wp), allocatable, dimension(:,:,:) :: gas_vmr_rad
-
-      ! Fluxes from the cxx code
-      real(wp), dimension(ncol,nlev+1) :: &
-         allsky_flux_up_cxx, allsky_flux_dn_cxx, allsky_flux_net_cxx, allsky_flux_dn_dir_cxx, &
-         clrsky_flux_up_cxx, clrsky_flux_dn_cxx, clrsky_flux_net_cxx, clrsky_flux_dn_dir_cxx
-      real(wp), dimension(ncol,nlev+1,nswbands) :: &
-         allsky_bnd_flux_up_cxx, allsky_bnd_flux_dn_cxx, allsky_bnd_flux_net_cxx, allsky_bnd_flux_dn_dir_cxx, &
-         clrsky_bnd_flux_up_cxx, clrsky_bnd_flux_dn_cxx, clrsky_bnd_flux_net_cxx, clrsky_bnd_flux_dn_dir_cxx
-
-      ! Loop indices
-      integer :: iband, igas, iday, icol
-
-      ! Allocate shortwave fluxes (allsky and clearsky)
-      fluxes_allsky%flux_up => allsky_flux_up
-      fluxes_allsky%flux_dn => allsky_flux_dn
-      fluxes_allsky%flux_net => allsky_flux_net
-      fluxes_allsky%flux_dn_dir => allsky_flux_dn_dir
-      fluxes_allsky%bnd_flux_up => allsky_bnd_flux_up
-      fluxes_allsky%bnd_flux_dn => allsky_bnd_flux_dn
-      fluxes_allsky%bnd_flux_net => allsky_bnd_flux_net
-      fluxes_allsky%bnd_flux_dn_dir => allsky_bnd_flux_dn_dir
-      fluxes_clrsky%flux_up => clrsky_flux_up
-      fluxes_clrsky%flux_dn => clrsky_flux_dn
-      fluxes_clrsky%flux_net => clrsky_flux_net
-      fluxes_clrsky%flux_dn_dir => clrsky_flux_dn_dir
-      fluxes_clrsky%bnd_flux_up => clrsky_bnd_flux_up
-      fluxes_clrsky%bnd_flux_dn => clrsky_bnd_flux_dn
-      fluxes_clrsky%bnd_flux_net => clrsky_bnd_flux_net
-      fluxes_clrsky%bnd_flux_dn_dir => clrsky_bnd_flux_dn_dir
-
-      ! Populate RRTMGP optics
-      call handle_error(cld_optics%alloc_2str(ncol, nlev, k_dist_sw, name='shortwave cloud optics'))
-      cld_optics%tau = 0
-      cld_optics%ssa = 1
-      cld_optics%g   = 0
-      cld_optics%tau(1:ncol,2:nlev,:) = cld_tau_gpt(1:ncol,:,:)
-      cld_optics%ssa(1:ncol,2:nlev,:) = cld_ssa_gpt(1:ncol,:,:)
-      cld_optics%g  (1:ncol,2:nlev,:) = cld_asm_gpt(1:ncol,:,:)
-
-      ! Apply delta scaling to account for forward-scattering
-      call handle_error(cld_optics%delta_scale())
-
-      ! Initialize aerosol optics; passing only the wavenumber bounds for each
-      ! "band" rather than passing the full spectral discretization object, and
-      ! omitting the "g-point" mapping forces the optics to be indexed and
-      ! stored by band rather than by g-point. This is most consistent with our
-      ! treatment of aerosol optics in the model, and prevents us from having to
-      ! map bands to g-points ourselves since that will all be handled by the
-      ! private routines internal to the optics class.
-      call handle_error(aer_optics%alloc_2str( &
-         ncol, nlev, k_dist_sw%get_band_lims_wavenumber(), &
-         name='shortwave aerosol optics' &
-      ))
-      aer_optics%tau = 0
-      aer_optics%ssa = 1
-      aer_optics%g   = 0
-      aer_optics%tau(1:ncol,2:nlev,:) = aer_tau_bnd(1:ncol,1:pver,:)
-      aer_optics%ssa(1:ncol,2:nlev,:) = aer_ssa_bnd(1:ncol,1:pver,:)
-      aer_optics%g  (1:ncol,2:nlev,:) = aer_asm_bnd(1:ncol,1:pver,:)
-
-      ! Apply delta scaling to account for forward-scattering
-      call handle_error(aer_optics%delta_scale())
-
-      ! Set gas concentrations
-      call t_startf('rad_set_gases_sw')
-      call set_gas_concentrations(ncol, gas_names, gas_vmr, gas_concentrations)
-      call t_stopf('rad_set_gases_sw')
-
-      call handle_error(rte_sw( &
-         k_dist_sw, gas_concentrations, &
-         pmid(1:ncol,1:nlev), &
-         tmid(1:ncol,1:nlev), &
-         pint(1:ncol,1:nlev+1), &
-         coszrs(1:ncol), &
-         albedo_dir(1:nswbands,1:ncol), &
-         albedo_dif(1:nswbands,1:ncol), &
-         cld_optics, &
-         fluxes_allsky, fluxes_clrsky, &
-         aer_props=aer_optics, &
-         tsi_scaling=tsi_scaling &
-      ))
-
-      ! Try calling C++ version
-      allocate(gas_vmr_rad(ngas, ncol, nlev))
-      gas_vmr_rad(:,1:ncol,1) = gas_vmr(:,1:ncol,1)
-      gas_vmr_rad(:,1:ncol,2:nlev) = gas_vmr(:,1:ncol,:)
-      call rrtmgpxx_run_sw_cpp( &
-         ngas, ncol, nlev, &
-         gas_vmr_rad(1:ngas,1:ncol,1:nlev), &
-         pmid, tmid, pint, coszrs, &
-         albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol), &
-         cld_optics%tau, cld_optics%ssa, cld_optics%g, &
-         aer_optics%tau, aer_optics%ssa, aer_optics%g, &
-         allsky_flux_up_cxx, allsky_flux_dn_cxx, allsky_flux_net_cxx, allsky_flux_dn_dir_cxx, &
-         allsky_bnd_flux_up_cxx, allsky_bnd_flux_dn_cxx, allsky_bnd_flux_net_cxx, allsky_bnd_flux_dn_dir_cxx, &
-         clrsky_flux_up_cxx, clrsky_flux_dn_cxx, clrsky_flux_net_cxx, clrsky_flux_dn_dir_cxx, &
-         clrsky_bnd_flux_up_cxx, clrsky_bnd_flux_dn_cxx, clrsky_bnd_flux_net_cxx, clrsky_bnd_flux_dn_dir_cxx, &
-         tsi_scaling &
-         )
-      deallocate(gas_vmr_rad)
-
-      ! Check values
-      !print *, 'CXX - F90 flux_up error: ', maxval(abs(allsky_flux_up_cxx - allsky_flux_up))
-      !print *, 'CXX - F90 flux_dn error: ', maxval(abs(allsky_flux_dn_cxx - allsky_flux_dn))
-      !print *, 'CXX - F90 flux_dn_dir error: ', maxval(abs(allsky_flux_dn_dir_cxx - allsky_flux_dn_dir))
-      !print *, 'CXX - F90 flux_net error: ', maxval(abs(allsky_flux_net_cxx - allsky_flux_net))
-      call assert(all(abs(allsky_flux_up_cxx - allsky_flux_up) < 1e-5), 'F90 and CXX allsky_flux_up differs.')
-      call assert(all(abs(allsky_flux_dn_cxx - allsky_flux_dn) < 1e-5), 'F90 and CXX allsky_flux_dn differs.')
-      call assert(all(abs(allsky_flux_net_cxx - allsky_flux_net) < 1e-5), 'F90 and CXX allsky_flux_net differs.')
-      call assert(all(abs(allsky_flux_dn_dir_cxx - allsky_flux_dn_dir) < 1e-5), 'F90 and CXX allsky_flux_dn_dir differs.')
-      call assert(all(abs(clrsky_flux_up_cxx - clrsky_flux_up) < 1e-5), 'F90 and CXX clrsky_flux_up differs.')
-      call assert(all(abs(clrsky_flux_dn_cxx - clrsky_flux_dn) < 1e-5), 'F90 and CXX clrsky_flux_dn differs.')
-      call assert(all(abs(clrsky_flux_net_cxx - clrsky_flux_net) < 1e-5), 'F90 and CXX clrsky_flux_net differs.')
-      call assert(all(abs(clrsky_flux_dn_dir_cxx - clrsky_flux_dn_dir) < 1e-5), 'F90 and CXX clrsky_flux_dn_dir differs.')
-
-      ! Clean up after ourselves
-      call free_optics_sw(cld_optics)
-      call free_optics_sw(aer_optics)
-
-   end subroutine rrtmgpxx_run_sw
 
    ! --------------------------------------------------------------------------
    ! Private routines

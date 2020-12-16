@@ -1682,15 +1682,15 @@ contains
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_cxx, do_direct=.true.)
       call rrtmgpxx_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         gas_names, gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
          coszrs_day(1:nday), &
          albedo_dir_day(1:nswbands,1:nday), &
          albedo_dif_day(1:nswbands,1:nday), &
-         cld_tau_gpt_day(1:nday,1:pver,1:nswgpts), cld_ssa_gpt_day(1:nday,1:pver,1:nswgpts), cld_asm_gpt_day(1:nday,1:pver,1:nswgpts), &
-         aer_tau_bnd_day(1:nday,1:pver,1:nswbands), aer_ssa_bnd_day(1:nday,1:pver,1:nswbands), aer_asm_bnd_day(1:nday,1:pver,1:nswbands), &
+         cld_tau_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), &
+         aer_tau_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_rad(1:nday,1:nlev_rad,1:nswbands), &
          fluxes_allsky_cxx%flux_up, fluxes_allsky_cxx%flux_dn, fluxes_allsky_cxx%flux_net, fluxes_allsky_cxx%flux_dn_dir, &
          fluxes_allsky_cxx%bnd_flux_up, fluxes_allsky_cxx%bnd_flux_dn, fluxes_allsky_cxx%bnd_flux_net, fluxes_allsky_cxx%bnd_flux_dn_dir, &
          fluxes_clrsky_cxx%flux_up, fluxes_clrsky_cxx%flux_dn, fluxes_clrsky_cxx%flux_net, fluxes_clrsky_cxx%flux_dn_dir, &
