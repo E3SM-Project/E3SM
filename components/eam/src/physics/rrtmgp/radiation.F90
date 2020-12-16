@@ -1561,9 +1561,20 @@ contains
       real(r8), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day
       real(r8), dimension(size(gas_names),ncol,pver) :: gas_vmr_day
+      real(r8), dimension(size(gas_names),ncol,nlev_rad) :: gas_vmr_rad
       real(r8), dimension(ncol,nlev_rad-1,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(ncol,nlev_rad-1,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
+
+      real(r8), dimension(size(cld_tau_gpt,1),size(cld_tau_gpt,2)+1,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
+      real(r8), dimension(size(cld_ssa_gpt,1),size(cld_ssa_gpt,2)+1,size(cld_ssa_gpt,3)) :: cld_ssa_gpt_rad
+      real(r8), dimension(size(cld_asm_gpt,1),size(cld_asm_gpt,2)+1,size(cld_asm_gpt,3)) :: cld_asm_gpt_rad
+      real(r8), dimension(size(aer_tau_bnd,1),size(aer_tau_bnd,2)+1,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
+      real(r8), dimension(size(aer_ssa_bnd,1),size(aer_ssa_bnd,2)+1,size(aer_ssa_bnd,3)) :: aer_ssa_bnd_rad
+      real(r8), dimension(size(aer_asm_bnd,1),size(aer_asm_bnd,2)+1,size(aer_asm_bnd,3)) :: aer_asm_bnd_rad
+
+      ! Fluxes from C++ interface for comparison
+      type(fluxes_t) :: fluxes_allsky_cxx, fluxes_clrsky_cxx
 
       ! Scaling factor for total sky irradiance; used to account for orbital
       ! eccentricity, and could be used to scale total sky irradiance for different
@@ -1629,11 +1640,24 @@ contains
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
-      ! Add a level above model top to optical properties!
+      ! Add an empty level above model top
+      ! TODO: handle gases here too
+      cld_tau_gpt_rad = 0
+      cld_ssa_gpt_rad = 0
+      cld_asm_gpt_rad = 0
+      cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt_day(:,:,:)
+      cld_ssa_gpt_rad(:,ktop:kbot,:) = cld_ssa_gpt_day(:,:,:)
+      cld_asm_gpt_rad(:,ktop:kbot,:) = cld_asm_gpt_day(:,:,:)
+      aer_tau_bnd_rad = 0
+      aer_ssa_bnd_rad = 0
+      aer_asm_bnd_rad = 0
+      aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd_day(:,:,:)
+      aer_ssa_bnd_rad(:,ktop:kbot,:) = aer_ssa_bnd_day(:,:,:)
+      aer_asm_bnd_rad(:,ktop:kbot,:) = aer_asm_bnd_day(:,:,:)
 
       ! Do shortwave radiative transfer calculations
-      call t_startf('rad_calculations_sw')
-      call rrtmgpxx_run_sw( &
+      call t_startf('rad_rrtmgp_run_sw')
+      call rrtmgp_run_sw( &
          size(active_gases), nday, nlev_rad, &
          gas_names, gas_vmr_day, &
          pmid_day(1:nday,1:nlev_rad), &
@@ -1642,15 +1666,49 @@ contains
          coszrs_day(1:nday), &
          albedo_dir_day(1:nswbands,1:nday), &
          albedo_dif_day(1:nswbands,1:nday), &
-         cld_tau_gpt_day(1:nday,1:pver,1:nswgpts), cld_ssa_gpt_day(1:nday,1:pver,1:nswgpts), cld_asm_gpt_day(1:nday,1:pver,1:nswgpts), &
-         aer_tau_bnd_day(1:nday,1:pver,1:nswbands), aer_ssa_bnd_day(1:nday,1:pver,1:nswbands), aer_asm_bnd_day(1:nday,1:pver,1:nswbands), &
+         cld_tau_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_rad(1:nday,1:nlev_rad,1:nswgpts), &
+         aer_tau_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_rad(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_rad(1:nday,1:nlev_rad,1:nswbands), &
          fluxes_allsky_day%flux_up, fluxes_allsky_day%flux_dn, fluxes_allsky_day%flux_net, fluxes_allsky_day%flux_dn_dir, &
          fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, fluxes_allsky_day%bnd_flux_dn_dir, &
          fluxes_clrsky_day%flux_up, fluxes_clrsky_day%flux_dn, fluxes_clrsky_day%flux_net, fluxes_clrsky_day%flux_dn_dir, &
          fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
          tsi_scaling &
       )
-      call t_stopf('rad_calculations_sw')
+      call t_stopf('rad_rrtmgp_run_sw')
+      call t_startf('rad_rrtmgpxx_run_sw')
+      gas_vmr_rad(:,:nday,1) = gas_vmr_day(:,:nday,1)
+      gas_vmr_rad(:,:nday,2:nlev_rad) = gas_vmr_day(:,:nday,1:pver)
+      call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_cxx, do_direct=.true.)
+      call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_cxx, do_direct=.true.)
+      call rrtmgpxx_run_sw( &
+         size(active_gases), nday, nlev_rad, &
+         gas_names, gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         pmid_day(1:nday,1:nlev_rad), &
+         tmid_day(1:nday,1:nlev_rad), &
+         pint_day(1:nday,1:nlev_rad+1), &
+         coszrs_day(1:nday), &
+         albedo_dir_day(1:nswbands,1:nday), &
+         albedo_dif_day(1:nswbands,1:nday), &
+         cld_tau_gpt_day(1:nday,1:pver,1:nswgpts), cld_ssa_gpt_day(1:nday,1:pver,1:nswgpts), cld_asm_gpt_day(1:nday,1:pver,1:nswgpts), &
+         aer_tau_bnd_day(1:nday,1:pver,1:nswbands), aer_ssa_bnd_day(1:nday,1:pver,1:nswbands), aer_asm_bnd_day(1:nday,1:pver,1:nswbands), &
+         fluxes_allsky_cxx%flux_up, fluxes_allsky_cxx%flux_dn, fluxes_allsky_cxx%flux_net, fluxes_allsky_cxx%flux_dn_dir, &
+         fluxes_allsky_cxx%bnd_flux_up, fluxes_allsky_cxx%bnd_flux_dn, fluxes_allsky_cxx%bnd_flux_net, fluxes_allsky_cxx%bnd_flux_dn_dir, &
+         fluxes_clrsky_cxx%flux_up, fluxes_clrsky_cxx%flux_dn, fluxes_clrsky_cxx%flux_net, fluxes_clrsky_cxx%flux_dn_dir, &
+         fluxes_clrsky_cxx%bnd_flux_up, fluxes_clrsky_cxx%bnd_flux_dn, fluxes_clrsky_cxx%bnd_flux_net, fluxes_clrsky_cxx%bnd_flux_dn_dir, &
+         tsi_scaling &
+      )
+      call t_stopf('rad_rrtmgpxx_run_sw')
+      ! Check fluxes
+      if (.true.) then
+         call assert(all(abs(fluxes_allsky_cxx%flux_up - fluxes_allsky_day%flux_up) < 1e-5), 'F90 and CXX allsky_flux_up differs.')
+         call assert(all(abs(fluxes_allsky_cxx%flux_dn - fluxes_allsky_day%flux_dn) < 1e-5), 'F90 and CXX allsky_flux_dn differs.')
+         call assert(all(abs(fluxes_allsky_cxx%flux_net - fluxes_allsky_day%flux_net) < 1e-5), 'F90 and CXX allsky_flux_net differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%flux_up - fluxes_clrsky_day%flux_up) < 1e-5), 'F90 and CXX clrsky_flux_up differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%flux_dn - fluxes_clrsky_day%flux_dn) < 1e-5), 'F90 and CXX clrsky_flux_dn differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%flux_net - fluxes_clrsky_day%flux_net) < 1e-5), 'F90 and CXX clrsky_flux_net differs.')
+      end if
+      call free_fluxes(fluxes_allsky_cxx)
+      call free_fluxes(fluxes_clrsky_cxx)
 
       ! Expand fluxes from daytime-only arrays to full chunk arrays
       call t_startf('rad_expand_fluxes_sw')
