@@ -498,7 +498,7 @@ contains
     use reweightMod      , only : reweight_wrapup
     use WaterBudgetMod   , only : WaterBudget_Restart
     use CNPBudgetMod     , only : CNPBudget_Restart
-    use clm_varctl       , only : do_budgets, use_cn
+    use elm_varctl       , only : do_budgets, use_cn
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
