@@ -321,9 +321,11 @@ subroutine CVT_forcing(ncrms)
          ! initialize scaling factors to 1.0
          t_pert_scale(icrm,k) = 1.0_crm_rknd
          q_pert_scale(icrm,k) = 1.0_crm_rknd
+         tmp_t_scale = -1
+         tmp_q_scale = -1
          ! set scaling factors as long as there are perturbations to scale
-         if (t_cvt(icrm,k)/=0) tmp_t_scale = 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k)
-         if (q_cvt(icrm,k)/=0) tmp_q_scale = 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k)
+         if (t_cvt(icrm,k)>0) tmp_t_scale = 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k)
+         if (q_cvt(icrm,k)>0) tmp_q_scale = 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k)
          if (tmp_t_scale>0) t_pert_scale(icrm,k) = sqrt( tmp_t_scale )
          if (tmp_q_scale>0) q_pert_scale(icrm,k) = sqrt( tmp_q_scale )
          ! enforce minimum scaling

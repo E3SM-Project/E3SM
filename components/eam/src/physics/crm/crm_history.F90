@@ -285,8 +285,10 @@ subroutine crm_history_init(species_class)
 
    call addfld('MMF_SUBCYCLE_FAC', horiz_only,'A',' ', 'CRM subcycle ratio: 1.0 = no subcycling' )
 
-   call addfld('MMF_CVT_T',(/'lev'/), 'A',' ','CRM T Variance')
-   call addfld('MMF_CVT_Q',(/'lev'/), 'A',' ','CRM Q Variance')
+   call addfld('MMF_CVT_T'     ,(/'lev'/), 'A',' ','CRM T Variance')
+   call addfld('MMF_CVT_Q'     ,(/'lev'/), 'A',' ','CRM Q Variance')
+   call addfld('MMF_CVT_TEND_T',(/'lev'/), 'A',' ','CRM T Variance Tendency')
+   call addfld('MMF_CVT_TEND_Q',(/'lev'/), 'A',' ','CRM Q Variance Tendency')
 
    !----------------------------------------------------------------------------
    ! add dropmixnuc tendencies for all modal aerosol species
@@ -640,8 +642,10 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
 #if defined( MMF_CVT )
    call cnst_get_ind( 'CVT_T', idx_cvt_t )
    call cnst_get_ind( 'CVT_Q', idx_cvt_q )
-   call outfld('MMF_CVT_T', state%q(:,:,idx_cvt_t), pcols, lchnk )
-   call outfld('MMF_CVT_Q', state%q(:,:,idx_cvt_q), pcols, lchnk )
+   call outfld('MMF_CVT_T',      state%q(:,:,idx_cvt_t), pcols, lchnk )
+   call outfld('MMF_CVT_Q',      state%q(:,:,idx_cvt_q), pcols, lchnk )
+   call outfld('MMF_CVT_TEND_T', ptend%q(:,:,idx_cvt_t), pcols, lchnk )
+   call outfld('MMF_CVT_TEND_Q', ptend%q(:,:,idx_cvt_q), pcols, lchnk )
 #endif
 
 end subroutine crm_history_out

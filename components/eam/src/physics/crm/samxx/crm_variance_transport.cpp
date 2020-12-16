@@ -197,8 +197,8 @@ void CVT_forcing() {
     real tmp_t_scale = -1;
     real tmp_q_scale = -1;
     // set scaling factors as long as there are perturbations to scale
-    if (t_cvt(k,icrm)!=0.0) { tmp_t_scale = 1.0 + dtn * t_cvt_tend(k,icrm) / t_cvt(k,icrm); }
-    if (q_cvt(k,icrm)!=0.0) { tmp_q_scale = 1.0 + dtn * q_cvt_tend(k,icrm) / q_cvt(k,icrm); }
+    if (t_cvt(k,icrm)>0.0) { tmp_t_scale = 1.0 + dtn * t_cvt_tend(k,icrm) / t_cvt(k,icrm); }
+    if (q_cvt(k,icrm)>0.0) { tmp_q_scale = 1.0 + dtn * q_cvt_tend(k,icrm) / q_cvt(k,icrm); }
     if (tmp_t_scale>0.0) { t_pert_scale(k,icrm) = sqrt( tmp_t_scale ); }
     if (tmp_q_scale>0.0) { q_pert_scale(k,icrm) = sqrt( tmp_q_scale ); }
     // enforce minimum scaling
@@ -208,10 +208,6 @@ void CVT_forcing() {
     t_pert_scale(k,icrm) = min( t_pert_scale(k,icrm), pert_scale_max );
     q_pert_scale(k,icrm) = min( q_pert_scale(k,icrm), pert_scale_max );
   });
-
-  real dummy_tmp = 1;
-
-  dummy_tmp = 0;
 
   //----------------------------------------------------------------------------
   // apply variance forcing tendency
