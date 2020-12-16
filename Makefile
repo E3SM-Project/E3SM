@@ -1,4 +1,4 @@
-MODEL_FORMULATION =
+MODEL_FORMULATION = 
 
 ifneq "${MPAS_SHELL}" ""
         SHELL = ${MPAS_SHELL}
@@ -218,11 +218,11 @@ ifort:
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3 " \
+	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -g -convert big_endian -free -CU -CB -check all -fpe0 -traceback" \
 	"CFLAGS_DEBUG = -g -traceback" \
 	"CXXFLAGS_DEBUG = -g -traceback" \
-	"LDFLAGS_DEBUG = -g -fpe0 -traceback " \
+	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"FFLAGS_OMP = -qopenmp" \
 	"CFLAGS_OMP = -qopenmp" \
 	"PICFLAG = -fpic" \
@@ -507,9 +507,9 @@ llvm:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-CPPINCLUDES =
-FCINCLUDES =
-LIBS =
+CPPINCLUDES = 
+FCINCLUDES = 
+LIBS = 
 
 #
 # If user has indicated a PIO2 library, define USE_PIO2 pre-processor macro
@@ -593,21 +593,10 @@ endif
 	LIBS += -L$(PNETCDF)/$(PNETCDFLIBLOC) -lpnetcdf
 endif
 
-ifeq "$(USE_LAPACK)" "true"
-ifndef LAPACK
-$(error LAPACK is not set.  Please set LAPACK to the LAPACK install directory when USE_LAPACK=true)
-endif
-
-ifneq (, $(shell ls $(LAPACK)/liblapack.*))
-         LIBS += -L$(LAPACK)
-else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
-         LIBS += -L$(LAPACK)/lib
-else
-$(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)
-endif
-         LIBS += -llapack
-         LIBS += -lblas
-         override CPPFLAGS += -DUSE_LAPACK
+ifneq "$(LAPACK)" ""
+        LIBS += -L$(LAPACK)
+        LIBS += -llapack
+        LIBS += -lblas
 endif
 
 RM = rm -f
@@ -1056,9 +1045,8 @@ errmsg:
 	@echo "    USE_PIO2=true - links with the PIO 2 library. Default is to use the PIO 1.x library."
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
-	@echo "    USE_LAPACK=true    - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
 	@echo ""
-	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
+	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
 ifdef CORE
