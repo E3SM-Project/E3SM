@@ -783,8 +783,10 @@ contains
     ! Read in soilorder data 
     ! --------------------------------------------------------------------
 
-    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. ((use_cn .or. use_fates) .and. .not. use_crop) )  then
+    ! (RGK-2020, fates should use SOIL ORDER too, but this dataset is not available at 4x5 and coarse grids
+    !! if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. ((use_cn .or. use_fates) .and. .not. use_crop) )  then
 
+    if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_crop) )  then
        allocate(soilorder_rdin(bounds%begg:bounds%endg))
        call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
