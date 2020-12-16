@@ -1035,6 +1035,12 @@ Whether or not to enable gravity waves produced by convection.
 Default: set by build-namelist.
 </entry>
 
+<entry id="use_gw_energy_fix2" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable GWD brute-force energy fix.
+Default: set by build-namelist.
+</entry>
+
 <entry id="pgwv" type="integer" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Gravity wave spectrum dimension (wave numbers are from -pgwv to pgwv).

@@ -255,7 +255,7 @@ subroutine momentum_energy_conservation(ncol, tend_level, dt, taucd, &
   integer, intent(in) :: tend_level(ncol)
   real(r8), intent(in) :: dt
   real(r8), intent(in) :: taucd(ncol,0:pver,4)
-  real(r8), intent(in) :: pint(ncol,pver)
+  real(r8), intent(in) :: pint(ncol,pver+1)
   real(r8), intent(in) :: pdel(ncol,pver)
   real(r8), intent(in) :: u(ncol,pver)
   real(r8), intent(in) :: v(ncol,pver)
@@ -305,7 +305,7 @@ subroutine momentum_energy_conservation(ncol, tend_level, dt, taucd, &
   end do
 
   do i = 1, ncol
-     dE(i) = dE(i)/(pint(i,pver)-pint(i,tend_level(i)))
+     dE(i) = dE(i)/(pint(i,pver+1)-pint(i,tend_level(i)+1))
   end do
 
   ! Subtract net gain/loss of total energy below source level.

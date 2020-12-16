@@ -138,6 +138,9 @@ logical, public, protected :: use_gw_front = .false.
 ! Convective
 logical, public, protected :: use_gw_convect = .false.
 
+!GW energy fix #1
+logical, public, protected :: use_gw_energy_fix2 = .false.
+
 ! Switches that turn on/off individual parameterizations.
 !
 ! Comment by Hui Wan (PNNL, 2014-12):
@@ -193,6 +196,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
+      use_gw_energy_fix2, &
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
@@ -261,6 +265,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_energy_fix2,              1 , mpilog,  0, mpicom)
    call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
    call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
    call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)

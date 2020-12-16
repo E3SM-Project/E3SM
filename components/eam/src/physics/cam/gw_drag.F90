@@ -18,6 +18,11 @@ module gw_drag
 ! Author: Byron Boville
 !
 !--------------------------------------------------------------------------
+!
+! Nov 2020  O. Guba Option for energy fix in GWD
+!
+!--------------------------------------------------------------------------
+
   use shr_kind_mod,  only: r8 => shr_kind_r8
   use ppgrid,        only: pcols, pver
   use constituents,  only: pcnst
@@ -31,7 +36,7 @@ module gw_drag
   use physconst,     only: cpair
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix2
 
 ! Typical module header
   implicit none
@@ -488,6 +493,10 @@ subroutine gw_init()
   call addfld ('TTGW',(/ 'lev' /), 'A','K/s', &
        'T tendency - gravity wave drag')
 
+  if (masterproc) then
+     write (iulog,*) 'using GW energy fix2   =',use_gw_energy_fix2
+  end if
+
   if ( history_budget ) then
      call add_default ('TTGW', history_budget_histfile_num, ' ')
   end if
@@ -666,6 +675,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: dpm(state%ncol,pver)
   real(r8) :: rdpm(state%ncol,pver)
   real(r8) :: zm(state%ncol,pver)
+
+  real(r8) :: dE(state%ncol)
 
   ! local override option for constituents cnst_type
   character(len=3), dimension(pcnst) :: cnst_type_loc
@@ -881,19 +892,44 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      ! Add the orographic tendencies to the spectrum tendencies
      ! Compute the temperature tendency from energy conservation
      ! (includes spectrum).
-     do k = 1, pver
-        utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
-        ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
-        vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
-        ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
-        ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
+
+     if(.not. use_gw_energy_fix2) then
+        !original
+        do k = 1, pver
+           utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
+           ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
+           vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
+           ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+           ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
-        ttgw(:,k) = ttgw(:,k) &
+           ttgw(:,k) = ttgw(:,k) &
              -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
              +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
-        ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
-     end do
+           ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
+        end do
+    else
+        do k = 1, pver
+           utgw(:,k) = utgw(:,k) * cam_in%landfrac(:ncol)
+           ptend%u(:ncol,k) = ptend%u(:ncol,k) + utgw(:,k)
+           vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
+           ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
+        enddo
+
+        dE = 0.0
+        do k = 1, pver
+           dE(:ncol) = dE(:ncol) &
+                     - dpm(:ncol,k)*(ptend%u(:ncol,k) * (u(:ncol,k)+ptend%u(:ncol,k)*0.5_r8*dt) &
+                                    +ptend%v(:ncol,k) * (v(:ncol,k)+ptend%v(:ncol,k)*0.5_r8*dt) &
+                                    +ptend%s(:ncol,k) )
+        enddo
+        dE(:ncol)=dE(:ncol) / (pint(:ncol,pver+1) - pint(:ncol,1))
+
+        do k = 1, pver
+           ptend%s(:ncol,k) = ptend%s(:ncol,k) + dE(:ncol)
+           ttgw(:ncol,k) = ptend%s(:ncol,k) / cpairv(:ncol, k, lchnk)
+        enddo
+     endif ! gw energy fix 2
 
      do m = 1, pcnst
         do k = 1, pver

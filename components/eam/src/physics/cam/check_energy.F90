@@ -22,7 +22,10 @@ module check_energy
 !               2. Better printout information for energy and water conservation check 
 !               3. Additional water conservation check utilities 
 !---------------------------------------------------------------------------------
-
+!
+!   2020-01  O. Guba Correct energy density function
+!
+!---------------------------------------------------------------------------------
   use shr_kind_mod,    only: r8 => shr_kind_r8
   use ppgrid,          only: pcols, pver, begchunk, endchunk
   use spmd_utils,      only: masterproc
