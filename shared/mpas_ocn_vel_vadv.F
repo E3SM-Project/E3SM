@@ -22,10 +22,9 @@
 module ocn_vel_vadv
 
    use mpas_timer
-   use mpas_derived_types
-   use mpas_pool_routines
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    implicit none
    private
@@ -52,7 +51,8 @@ module ocn_vel_vadv
    !
    !--------------------------------------------------------------------
 
-   logical :: velVadvOn
+   logical :: &
+      velVadvOff  ! on/off switch for vertical advection
 
 
 !***********************************************************************
@@ -72,102 +72,119 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend, err)!{{{
+   subroutine ocn_vel_vadv_tend(normalVelocity, layerThickEdge, &
+                                vertAleTransportTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity    !< Input: Horizontal velocity
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge,&!< Input: thickness at edge
-         vertAleTransportTop  !< Input: Vertical velocity on top layer
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         normalVelocity,     &!< [in] Horizontal velocity
+         layerThickEdge,     &!< [in] Layer thickness at edge
+         vertAleTransportTop  !< [in] Vertical velocity on top layer
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend          !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, cell1, cell2, k, nEdges
-      integer, pointer :: nVertLevels
-      integer, dimension(:), pointer :: nEdgesArray
-      integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask
+      integer ::       &
+         iEdge, k,     &! loop indices for edge, vertical loops
+         kmax,         &! deepest active layer on edge
+         cell1, cell2   ! neighbor cell indices across edge
 
-      real (kind=RKIND) :: vertAleTransportTopEdge
-      real (kind=RKIND), dimension(:), allocatable :: w_dudzTopEdge
+      real (kind=RKIND) :: &
+         wAvg           ! ALE transport velocity across top edge
 
-      if (.not. velVadvOn) return
+      real (kind=RKIND), dimension(:,:), allocatable :: & 
+         w_dudzTopEdge  ! w*du/dz at top of edge
 
-      call mpas_timer_start("vel vadv")
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Set return error code and return early if not turned on
+      !*** Start relevant timer
 
       err = 0
+      if (velVadvOff) return
+      call mpas_timer_start("vel vadv")
 
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
-      allocate(w_dudzTopEdge(nVertLevels+1))
-      w_dudzTopEdge = 0.0_RKIND
+      allocate(w_dudzTopEdge(nVertLevels+1,nEdgesAll))
+      !$acc enter data create(w_dudzTopEdge)
 
-      nEdges = nEdgesArray( 1 )
-
-#ifndef CPRPGI
-      !$omp parallel
+      #ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, maxLevelEdgeTop, w_dudzTopEdge, &
+      !$acc            vertAleTransportTop, normalVelocity, &
+      !$acc            layerThickEdge) &
+      !$acc    private(cell1, cell2, k, kmax, wAvg)
+      #else
       !$omp do schedule(runtime) &
-      !$omp private(iEdge, cell1, cell2, k, vertAleTransportTopEdge) &
-      !$omp firstprivate(w_dudzTopEdge)
-#endif
-      do iEdge = 1, nEdges
-        cell1 = cellsOnEdge(1,iEdge)
-        cell2 = cellsOnEdge(2,iEdge)
+      !$omp    private(cell1, cell2, k, kmax, wAvg)
+      #endif
+      do iEdge = 1, nEdgesOwned
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         kmax  = maxLevelEdgeTop(iEdge)
 
-        do k = 2, maxLevelEdgeTop(iEdge)
-          ! Average w from cell center to edge
-          vertAleTransportTopEdge = 0.5_RKIND*(vertAleTransportTop(k,cell1) + vertAleTransportTop(k,cell2))
+         w_dudzTopEdge(1,iEdge) = 0.0_RKIND ! flux is zero at top
+         do k = 2,kmax
 
-          ! compute dudz at vertical interface with first order derivative.
-          w_dudzTopEdge(k) = vertAleTransportTopEdge * (normalVelocity(k-1,iEdge)-normalVelocity(k,iEdge)) &
-                       / (0.5_RKIND*(layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)))
-        end do
-        w_dudzTopEdge(maxLevelEdgeTop(iEdge)+1) = 0.0_RKIND
-        ! Average w*du/dz from vertical interface to vertical middle of cell
-        do k = 1, maxLevelEdgeTop(iEdge)
+            ! Average w from cell center to edge
+            wAvg = 0.5_RKIND*(vertAleTransportTop(k,cell1) + &
+                              vertAleTransportTop(k,cell2))
 
-          tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * 0.5 * (w_dudzTopEdge(k) + w_dudzTopEdge(k+1))
-        enddo
+            ! compute dudz at vertical interface with first order derivative.
+            w_dudzTopEdge(k,iEdge) = wAvg* &
+                                     (normalVelocity(k-1,iEdge) - &
+                                      normalVelocity(k,  iEdge))/ &
+                         (0.5_RKIND*(layerThickEdge(k-1,iEdge) + &
+                                     layerThickEdge(k  ,iEdge)))
+         end do
+         ! transport is zero at bottom
+         w_dudzTopEdge(kmax+1,iEdge) = 0.0_RKIND
+      end do
+      #ifndef MPAS_OPENACC
+      !$omp end do
+      #endif
+
+      ! Average w*du/dz from vertical interface to vertical middle of cell
+      #ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(maxLevelEdgeTop, tend, edgeMask, w_dudzTopEdge)&
+      !$acc    private(k)
+      #else
+      !$omp do schedule(runtime) &
+      !$omp    private(k)
+      #endif
+      do iEdge = 1, nEdgesOwned
+      do k = 1, maxLevelEdgeTop(iEdge)
+         tend(k,iEdge) = tend(k,iEdge) - edgeMask(k,iEdge)* &
+                         0.5_RKIND*(w_dudzTopEdge(k  ,iEdge) + &
+                                    w_dudzTopEdge(k+1,iEdge))
       enddo
-#ifndef CPRPGI
+      enddo
+      #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-#endif
+      #endif
 
+      !$acc exit data delete(w_dudzTopEdge)
       deallocate(w_dudzTopEdge)
 
       call mpas_timer_stop("vel vadv")
@@ -191,25 +208,30 @@ contains
 
    subroutine ocn_vel_vadv_init(err)!{{{
 
-   !--------------------------------------------------------------------
-
       !-----------------------------------------------------------------
-      !
       ! Output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** initialize error code and default values
 
       err = 0
+      velVadvOff = .true.
 
-      velVadvOn = .false.
+      !*** Set values based on input configuration
 
-      if (config_vert_coord_movement .ne.'impermeable_interfaces') then
-          velVadvOn = .true.
+      if (config_vert_coord_movement == 'impermeable_interfaces') then
+         velVadvOff = .true.
+      else
+         velVadvOff = .false.
       end if
 
-      if ( config_disable_vel_vadv ) velVadvOn = .false.
+      if (config_disable_vel_vadv ) velVadvOff = .true.
 
    !--------------------------------------------------------------------
 
