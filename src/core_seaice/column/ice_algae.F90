@@ -385,8 +385,8 @@
 
 !=======================================================================
 
-      subroutine sklbio       (dt,       ntrcr,      &
-                               nilyr,                &
+      subroutine sklbio       (dt,       Tf,         &
+                               ntrcr,    nilyr,      &
                                nbtrcr,   n_algae,    &
                                n_zaero,  n_doc,      &
                                n_dic,    n_don,      &
@@ -419,6 +419,7 @@
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       &  ! time step
+         Tf,       &  ! basal freezing temperature (C)
          hmix,     &  ! mixed layer depth (m)
          aicen,    &  ! ice area fraction
          meltb,    &  ! bottom melt (m)
@@ -472,8 +473,8 @@
                                       fswthru,   first_ice, &
                                       trcrn,     upNOn,     &
                                       upNHn,     grow_alg,  &
-                                      hin,       l_stop,    &
-                                      stop_label)
+                                      hin,       Tf,        &
+                                      l_stop,    stop_label)
 
      if (l_stop) return
 
@@ -503,8 +504,8 @@
                                       fswthru,    first_ice,    &
                                       trcrn,      upNOn,        &
                                       upNHn,      grow_alg_skl, &
-                                      hin,        l_stop,       &
-                                      stop_label)
+                                      hin,        Tf,           &
+                                      l_stop,     stop_label)
 
       use ice_constants_colpkg, only: p5, p05, p1, c1, c0, puny, c10, sk_l
       use ice_colpkg_tracers, only: nt_bgc_N,  ntrcr, bio_index 
@@ -522,6 +523,7 @@
          aicen  , & ! ice area 
          meltb  , & ! bottom ice melt
          congel , & ! bottom ice growth 
+         Tf     , & ! bottom freezing temperature
          fswthru    ! shortwave passing through ice to ocean
 
       logical (kind=log_kind), intent(in) :: &
@@ -579,7 +581,6 @@
          PV_scale_growth = p5           , & ! scale factor in Jin code PV during ice growth
          PV_scale_melt = p05            , & ! scale factor in Jin code PV during ice melt
          growth_max = 1.85e-10_dbl_kind , & ! PVt function reaches maximum here.  (m/s)
-         Tin_bot = -1.8_dbl_kind        , & ! temperature of the ice bottom (oC)
          MJ1 = 9.667e-9_dbl_kind        , & ! (m/s) coefficients in Jin2008
          MJ2 = 38.8_dbl_kind            , & ! (1) from:4.49e-4_dbl_kind*secday   
          MJ3 = 1.04e7_dbl_kind          , & ! 1/(m/s) from: 1.39e-3_dbl_kind*secday^2  
@@ -599,7 +600,7 @@
       Zoo_skl    = c0
       rphi_sk    = c1/phi_sk
       PVt        = c0
-      iTin       = Tin_bot
+      iTin       = Tf
 
       do nn = 1, nbtrcr 
          cinit     (nn) = c0

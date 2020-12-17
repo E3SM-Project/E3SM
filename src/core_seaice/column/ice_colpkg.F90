@@ -1665,7 +1665,7 @@
       function colpkg_sea_freezing_temperature(sss) result(Tf)
 
         use ice_colpkg_shared, only: tfrz_option
-        use ice_constants_colpkg, only: depressT
+        use ice_constants_colpkg, only: depressT, Tocnfrz
 
         real(dbl_kind), intent(in) :: sss
         real(dbl_kind) :: Tf
@@ -1680,7 +1680,7 @@
 
         else
 
-           Tf = -1.8_dbl_kind
+           Tf = Tocnfrz 
 
         endif
 
@@ -2560,21 +2560,21 @@
 
          if (aice > puny) then
 
-            call linear_itd (ncat,     hin_max,        &
-                             nilyr,    nslyr,          &
-                             ntrcr,    trcr_depend,    &
-                             trcr_base,        & 
-                             n_trcr_strata,   &
-                             nt_strata,                &
+            call linear_itd (ncat,     hin_max,     &
+                             nilyr,    nslyr,       &
+                             ntrcr,    trcr_depend, &
+                             trcr_base,             & 
+                             n_trcr_strata,         &
+                             nt_strata,   Tf,       &
                              aicen_init,            &
                              vicen_init,            &
                              aicen,                 &
-                             trcrn,           & 
+                             trcrn,                 & 
                              vicen,                 &
                              vsnon,                 &
-                             aice      ,         &
-                             aice0     ,         &
-                             fpond,       l_stop,      &
+                             aice,                  &
+                             aice0,                 &
+                             fpond,       l_stop,   &
                              stop_label)
 
             if (l_stop) return
@@ -2646,7 +2646,8 @@
       !  categories with very small areas.
       !-----------------------------------------------------------------
 
-      call cleanup_itd (dt,                   ntrcr,            &
+      call cleanup_itd (dt,                   Tf,               &
+                        ntrcr,                                  &
                         nilyr,                nslyr,            &
                         ncat,                 hin_max,          &
                         aicen,                trcrn(1:ntrcr,:), &
@@ -3174,6 +3175,7 @@
                                     nblyr,                       &
                                     ncat,         hin_max,       &
                                     rdg_conv,     rdg_shear,     &
+                                    Tf,                          &
                                     aicen,                       &
                                     trcrn,                       &
                                     vicen,        vsnon,         &
@@ -3201,7 +3203,8 @@
       use ice_colpkg_tracers, only: tr_pond_topo, tr_aero, tr_brine, ntrcr, nbtrcr
 
       real (kind=dbl_kind), intent(in) :: &
-         dt           ! time step
+         dt    , & ! time step
+         Tf        ! ocean freezing temperature
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
@@ -3316,7 +3319,8 @@
                          aredistn,     vredistn,       &
                          dardg1ndt,    dardg2ndt,      &
                          dvirdgndt,                    &
-                         araftn,       vraftn)        
+                         araftn,       vraftn,         &
+                         Tf)        
 
          if (l_stop) return
 
@@ -3326,7 +3330,8 @@
       !-----------------------------------------------------------------
 
       dtt = dt * ndtd  ! for proper averaging over thermo timestep
-      call cleanup_itd (dtt,                  ntrcr,            &
+      call cleanup_itd (dtt,                  Tf,               &
+                        ntrcr,                                  &
                         nilyr,                nslyr,            &
                         ncat,                 hin_max,          &
                         aicen,                trcrn,            &
@@ -3358,7 +3363,7 @@
 ! authors: C. M. Bitz, UW
 !          W. H. Lipscomb, LANL
 
-      subroutine colpkg_aggregate (ncat,               &
+      subroutine colpkg_aggregate (ncat,     Tf,       &
                                    aicen,    trcrn,    &
                                    vicen,    vsnon,    &
                                    aice,     trcr,     &
@@ -3376,6 +3381,9 @@
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
          ntrcr     ! number of tracers in use
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature           (Celsius)
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
          aicen , & ! concentration of ice
@@ -3464,7 +3472,8 @@
                                    atrcr,     aice,          &
                                    vice ,     vsno,          &
                                    trcr_base, n_trcr_strata, &
-                                   nt_strata, trcr)   
+                                   nt_strata, trcr,          &
+                                   Tf)   
 
       deallocate (atrcr)
 
@@ -5375,7 +5384,7 @@
                            nblyr, nilyr, nslyr, n_algae, n_zaero, ncat, &
                            n_doc, n_dic,  n_don, n_fed, n_fep,  &
                            meltbn, melttn, congeln, snoicen, &
-                           sst, sss, fsnow, meltsn, hmix, salinz, &
+                           sst, sss, Tf, fsnow, meltsn, hmix, salinz, &
                            hin_old, flux_bio, flux_bio_atm, &
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
@@ -5481,6 +5490,7 @@
          sss     , & ! sea surface salinity (ppt)
          sst     , & ! sea surface temperature (C)
          hmix    , & ! mixed layer depth (m)
+         Tf      , & ! basal freezing temperature (C)
          fsnow       ! snowfall rate (kg/m^2 s)
 
       logical (kind=log_kind), intent(in) :: &
@@ -5738,13 +5748,13 @@
 
             elseif (skl_bgc) then
 
-               call sklbio (dt,                      ntrcr,               &
-                            nilyr,                                        &
+               call sklbio (dt,                      Tf,                  &
+                            ntrcr,                   nilyr,               &
                             nbtrcr,                  n_algae,             &
                             n_zaero,                 n_doc,               &
                             n_dic,                   n_don,               &
                             n_fed,                   n_fep,               &
-                            flux_bio (1:nbtrcr),     ocean_bio(:), &
+                            flux_bio (1:nbtrcr),     ocean_bio(:),        &
                             hmix,                    aicen    (n),        &
                             meltbn   (n),            congeln  (n),        &
                             fswthrun (n),            first_ice(n),        &
