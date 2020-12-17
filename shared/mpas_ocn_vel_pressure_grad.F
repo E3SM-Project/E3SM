@@ -184,7 +184,7 @@ contains
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            tend, edgeMask, ssh) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMax)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
@@ -216,7 +216,7 @@ contains
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, zMid, &
          !$acc            tend, edgeMask, pressure, density) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMax)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
@@ -252,7 +252,7 @@ contains
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            tend, edgeMask, montgomeryPotential) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMax)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
@@ -290,7 +290,7 @@ contains
          !$acc            edgeMask, tend, montgomeryPotential, &
          !$acc            pressure, potentialDensity) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMax)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
@@ -329,7 +329,7 @@ contains
          !$acc            JacobianDxDs) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMax, pGrad, &
          !$acc            Area, zStar, zC, zGamma, rhoL, rhoR)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax, pGrad, &
@@ -427,7 +427,7 @@ contains
          !$acc            JacobianTz, JacobianSz, JacobianDxDs) &
          !$acc    private(cell1, cell2, invdcEdge, k,kMax, alpha, beta,&
          !$acc         TL, TR, SL, SR, Area, zStar, zC, zGamma, pGrad)
-         #else
+#else
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp private(cell1, cell2, invdcEdge, k, kMax, alpha, beta, &

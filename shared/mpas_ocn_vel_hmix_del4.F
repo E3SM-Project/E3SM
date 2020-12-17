@@ -154,7 +154,7 @@ contains
       !$acc            dvEdge, dcEdge, del2u, div, relVort) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, vertex1, vertex2, &
@@ -192,7 +192,7 @@ contains
       !$acc            areaTriangle, edgeSignOnVertex, del2u, &
       !$acc            del2relVort) &
       !$acc    private(i, k, iEdge, areaTriInv)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(i, k, iEdge, areaTriInv)
 #endif
@@ -221,7 +221,7 @@ contains
       !$acc    present(nEdgesOnCell, edgesOnCell, maxLevelCell, dvEdge,&
       !$acc            edgeSignOnCell, areaCell, del2u, del2div) &
       !$acc    private(i, k, iEdge, areaCellInv)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(i, k, iEdge, areaCellInv)
 #endif
@@ -253,7 +253,7 @@ contains
       !$acc            del2div, del2relVort, tend) &
       !$acc private(k, cell1, cell2, vertex1, vertex2, &
       !$acc         dcEdgeInv, dvEdgeInv, visc4, uDiff)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(k, cell1, cell2, vertex1, vertex2, &

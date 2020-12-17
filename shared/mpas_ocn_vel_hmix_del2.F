@@ -134,7 +134,7 @@ contains
       !$acc            div, relVort, tend) &
       !$acc    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
