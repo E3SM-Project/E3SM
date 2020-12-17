@@ -3125,6 +3125,7 @@ contains
          tracers_aggregate, &
          ponds, &
          ocean_fluxes, &
+         ocean_coupling, &
          ridging, &
          aerosols, &
          biogeochemistry, &
@@ -3156,6 +3157,7 @@ contains
          oceanFreshWaterFlux, &
          oceanSaltFlux, &
          oceanHeatFlux, &
+         seaFreezingTemperature, &
          iceAreaCell, &
          ridgeConvergence, &
          ridgeShear, &
@@ -3225,6 +3227,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
        call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
@@ -3247,6 +3250,8 @@ contains
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
        call MPAS_pool_get_array(ocean_fluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
@@ -3310,6 +3315,7 @@ contains
                categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
                ridgeConvergence(iCell), &
                ridgeShear(iCell), &
+               seaFreezingTemperature(iCell), &
                iceAreaCategory(1,:,iCell), &
                tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
                iceVolumeCategory(1,:,iCell), &
@@ -3466,6 +3472,7 @@ contains
          verticalGrid, &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
+         seaFreezingTemperature, &
          snowfallRate, &
          zSalinityFlux, &
          zSalinityGDFlux, &
@@ -3687,6 +3694,7 @@ contains
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
 
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
@@ -3852,6 +3860,7 @@ contains
                snowiceFormationCategory(:,iCell), &
                seaSurfaceTemperature(iCell), &
                seaSurfaceSalinity(iCell), &
+               seaFreezingTemperature(iCell), &
                snowfallRate(iCell), &
                snowMeltCategory(:,iCell), &
                oceanMixedLayerDepth(iCell), &
@@ -4219,7 +4228,8 @@ contains
          mesh, &
          tracers, &
          tracers_aggregate, &
-         icestate
+         icestate, &
+         ocean_coupling
 
     logical, pointer :: &
          config_use_column_biogeochemistry
@@ -4228,7 +4238,8 @@ contains
          iceAreaCell, &
          iceVolumeCell, &
          snowVolumeCell, &
-         openWaterArea
+         openWaterArea, &
+         seaFreezingTemperature
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -4253,6 +4264,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
        call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
@@ -4269,6 +4281,8 @@ contains
 
        call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
 
+       call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
@@ -4280,6 +4294,7 @@ contains
 
           call colpkg_aggregate(&
                nCategories, &
+               seaFreezingTemperature(iCell), &
                iceAreaCategory(1,:,iCell), &
                tracerArrayCategory, & ! trcrn
                iceVolumeCategory(1,:,iCell), &
