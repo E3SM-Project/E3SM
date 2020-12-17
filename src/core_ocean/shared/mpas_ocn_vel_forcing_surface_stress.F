@@ -140,7 +140,7 @@ contains
       !$acc    private(k, kmax, cell1, cell2, zBot, zTop, &
       !$acc            attCoeff, attDepth, remainingStress, &
       !$acc            transCoeffTop, transCoeffBot, absorb)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, kmax, cell1, cell2, zBot, zTop, &

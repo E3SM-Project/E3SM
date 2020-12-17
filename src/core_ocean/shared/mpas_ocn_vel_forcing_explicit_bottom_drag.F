@@ -132,7 +132,7 @@ contains
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
       !$acc            tend, normVelocity, layerThickEdge) &
       !$acc    private(k, cell1, cell2)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k, cell1, cell2)
 #endif
