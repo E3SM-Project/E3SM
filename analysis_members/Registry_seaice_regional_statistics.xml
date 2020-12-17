@@ -28,12 +28,6 @@
 		<package name="regionalStatisticsAMPKG" description="This package includes variables required for the regionalStatistics analysis member."/>
 	</packages>
 	<var_struct name="regionalStatisticsAM" time_levs="1" packages="regionalStatisticsAMPKG">
-		<var name="uVelocityCell" type="real" dimensions="nCells" units="m/s"
-			description="U ice velocity on cells"
-		/>
-		<var name="vVelocityCell" type="real" dimensions="nCells" units="m/s"
-			description="V ice velocity on cells"
-		/>
 		<var name="totalIceArea" type="real" dimensions="nRegions Time" units="km^2"
 			description="Total sea-ice area by region"
 		/>
