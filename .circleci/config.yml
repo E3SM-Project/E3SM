@@ -1,11 +1,13 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
-jobs:
-  build:
-    machine:
-      image: ubuntu-2004:202010-01
-    steps:
-      - checkout
-      - run: bash .circleci/setup.sh
-      - run: bash .circleci/checkout.sh
-      - run: wget https://dabdceba-6d04-11e5-ba46-22000b92c6ec.e.globus.org/containers/public/e3sm.sif
-      - run: singularity exec --hostname singularity e3sm.sif .travis/run.sh
+# Use a package of configuration called an orb.
+orbs:
+  # Declare a dependency on the welcome-orb
+  welcome: circleci/welcome-orb@0.4.1
+# Orchestrate or schedule a set of jobs
+workflows:
+  # Name the workflow "welcome"
+  welcome:
+    # Run the welcome/run job in its own container
+    jobs:
+      - welcome/run
