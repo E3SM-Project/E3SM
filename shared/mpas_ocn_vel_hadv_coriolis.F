@@ -140,58 +140,61 @@ contains
                        qArr(nVertLevels,nEdgesAll))
       !$acc enter data create(tmpVorticity, qArr)
 
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp parallel
-      #endif
+#endif
       if (usePlanetVorticity) then
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge, &
          !$acc            normPlanetVortEdge) &
          !$acc    private(k)
-         #else
+#else
          !$omp do schedule(runtime) &
          !$omp    private(k)
-         #endif
+#endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
             tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge) + &
                                  normPlanetVortEdge(k,iEdge)
          end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
-         #endif
+#endif
       else
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge) &
          !$acc    private(k)
-         #else
+#else
          !$omp do schedule(runtime) &
          !$omp    private(k)
-         #endif
+#endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
             tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge)
          end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
-         #endif
+#endif
       endif
+#ifndef MPAS_OPENACC
+         !$omp end parallel
+#endif
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
       !$acc            maxLevelEdgeTop, qArr, tmpVorticity, &
       !$acc            normalVelocity, layerThickEdge) &
       !$acc    private(k, j, eoe, edgeWeight, avgVorticity)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, j, eoe, edgeWeight, avgVorticity)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
 
          do k = 1, nVertLevels
@@ -213,19 +216,19 @@ contains
 
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
-      #endif
+#endif
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
       !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
       !$acc    private(cell1, cell2, invLength, k)
-      #else
+#else
       !$omp do schedule(runtime) &
       !$omp    private(cell1, cell2, invLength, k)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -238,10 +241,10 @@ contains
                           - kineticEnergyCell(k,cell1))*invLength)
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       !$acc exit data delete(tmpVorticity, qArr)
       deallocate(qArr,tmpVorticity)

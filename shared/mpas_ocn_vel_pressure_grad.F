@@ -179,7 +179,7 @@ contains
 
          ! pressure for sea surface height = - g grad ssh
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            tend, edgeMask, ssh) &
@@ -188,7 +188,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -201,17 +201,17 @@ contains
                                (ssh(cell2) - ssh(cell1))
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
       case (pGradTypePZmid)
 
          ! pressure for generalized coordinates
          ! -1/density_0 (grad p_k + density g grad z_k^{mid})
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, zMid, &
          !$acc            tend, edgeMask, pressure, density) &
@@ -220,7 +220,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -237,17 +237,17 @@ contains
                                  (zMid(k,cell2)-zMid(k,cell1)))
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
       case (pGradTypeMontPot)
 
          ! For pure isopycnal coordinates, this is just grad(M),
          ! the gradient of Montgomery Potential
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            tend, edgeMask, montgomeryPotential) &
@@ -256,7 +256,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -270,10 +270,10 @@ contains
                                   montgomeryPotential(k,cell1)))
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
       case (pGradTypeMontPotDens)
 
@@ -284,7 +284,7 @@ contains
          ! Where rho is the potential density.
          ! See Bleck (2002) equation 1, and last equation in Appendix A.
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, dcEdge, maxLevelEdgeTop, &
          !$acc            edgeMask, tend, montgomeryPotential, &
@@ -294,7 +294,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -312,17 +312,17 @@ contains
                               - 1.0_RKIND/potentialDensity(k,cell1)))
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
       case (pGradTypeJacobDens)
 
          allocate(JacobianDxDs(nVertLevels,nEdgesAll))
          !$acc enter data create (JacobianDxDs)
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            edgeMask, pressure, density, zMid, tend, &
@@ -334,7 +334,7 @@ contains
          !$omp do schedule(runtime) &
          !$omp    private(cell1, cell2, invdcEdge, k, kMax, pGrad, &
          !$omp            Area, zStar, zC, zGamma, rhoL, rhoR)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -402,10 +402,10 @@ contains
 
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
          !$acc exit data delete(JacobianDxDs)
          deallocate(JacobianDxDs)
@@ -418,7 +418,7 @@ contains
          !$acc enter data create(JacobianDxDs, &
          !$acc                   JacobianTz, JacobianSz)
 
-         #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, &
          !$acc            zMid, tracers, edgeMask, pressure, &
@@ -432,7 +432,7 @@ contains
          !$omp do schedule(runtime) &
          !$omp private(cell1, cell2, invdcEdge, k, kMax, alpha, beta, &
          !$omp         TL, TR, SL, SR, Area, zStar, zC, zGamma, pGrad)
-         #endif
+#endif
          do iEdge=1,nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -529,10 +529,10 @@ contains
 
             end do
          end do
-         #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-         #endif
+#endif
 
          !$acc exit data delete (JacobianDxDs, JacobianTz, JacobianSz)
          deallocate(JacobianDxDs, JacobianTz, JacobianSz)
