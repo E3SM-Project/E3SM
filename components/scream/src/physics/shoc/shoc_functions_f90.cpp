@@ -3039,8 +3039,10 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
   using Spack      = typename SHOC::Spack;
   using Scalar     = typename SHOC::Scalar;
   using Pack1      = typename ekat::Pack<Real, 1>;
-  using view_1d    = typename SHOC::view_1d<Pack1>;
-  using view_2d    = typename SHOC::view_2d<Spack>;
+  using BPack1       = typename ekat::Pack<bool, 1>;
+  using view_1d      = typename SHOC::view_1d<Pack1>;
+  using view_bool_1d = typename SHOC::view_1d<BPack1>;
+  using view_2d      = typename SHOC::view_2d<Spack>;
 
   std::vector<view_2d> views_2d(3);
   ekat::host_to_device({z, thv, rino}, shcol, nlev, views_2d, true);
@@ -3056,12 +3058,9 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
           pblh_1d  (views_1d[3]),
           tlv_1d   (views_1d[4]);
 
-  SHOC::view_1d<bool> check_1d("check", shcol);
-  const auto host_check_1d = Kokkos::create_mirror_view(check_1d);
-  for (auto k=0; k<shcol; ++k) {
-     host_check_1d(k) = check[k];
-  }
-  Kokkos::deep_copy(check_1d, host_check_1d);
+  std::vector<view_bool_1d> bviews_1d(1);
+  ekat::host_to_device({check}, shcol, bviews_1d);
+  view_bool_1d check_1d (bviews_1d[0]);
 
   Int npbl = nlev;
 
@@ -3077,7 +3076,7 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
     Scalar& pblh_s         = pblh_1d(i)[0];
 
     Scalar& tlv_s = tlv_1d(i)[0];
-    bool& check_s = check_1d(i);
+    bool& check_s = check_1d(i)[0];
 
     SHOC::pblintd_surf_temp(nlev, nlevi, npbl, z_1d, ustar_s, obklen_s, kbfs_s,
                thv_1d, tlv_s, pblh_s, check_s, rino_1d);
@@ -3089,10 +3088,8 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
   std::vector<view_2d> out_2d_views = {rino_2d};
   ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
 
-  Kokkos::deep_copy(host_check_1d, check_1d);
-  for (auto s = 0; s < shcol; ++s) {
-    check[s] = host_check_1d(s);
-  }
+  std::vector<view_bool_1d> out_bool_1d_views = {check_1d};
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 
