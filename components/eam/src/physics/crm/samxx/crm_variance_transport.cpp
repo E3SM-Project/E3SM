@@ -3,15 +3,14 @@
 //==============================================================================
 //==============================================================================
 
-// void VT_filter() {
-//   // local variables
-//   integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
-//   real(crm_rknd), dimension(nx)    :: fft_out   ! for FFT input and output
-//   real(crm_rknd), dimension(nx)    :: work      ! work array
-//   real(crm_rknd), dimension(lensav):: wsave     ! prime factors of N and certain trig values used in rfft1f
-//   ! real(crm_rknd), dimension(nx)    :: wave_num    ! only for debugging
-//   integer :: i, j, k, icrm   ! loop iterators
-//   integer :: ier             ! FFT error return code
+// void VT_filter(real4D &f_in, real4D &f_out) {
+//   // // local variables
+//   // integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
+//   // real(crm_rknd), dimension(nx)    :: fft_out   ! for FFT input and output
+//   // real(crm_rknd), dimension(nx)    :: work      ! work array
+//   // real(crm_rknd), dimension(lensav):: wsave     ! prime factors of N and certain trig values used in rfft1f
+//   // integer :: i, j, k, icrm   ! loop iterators
+//   // integer :: ier             ! FFT error return code
 //   //----------------------------------------------------------------------------
 //   // initialization for FFT
 //   // call rfft1i(nx,wsave,lensav,ier)
@@ -22,26 +21,28 @@
 //   //     do icrm = 1,ncrms
 //   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
           
-//           // initialize FFT input
-//           parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
-//              fft_out(i) = f_in(icrm,i,j,k)
-//           end do
+//           real dummy = 1; 
 
-//           // do the forward transform
-//           call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-//           if (ier/=0) write(0,*) 'ERROR: rfftmf(): VT_filter - forward FFT error ',ier
+//           // // initialize FFT input
+//           // parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
+//           //    fft_out(i) = f_in(k,j,i,icrm);
+//           // });
 
-//           // filter out high frequencies
-//           fft_out(2*(filter_wn_max+1):) = 0
+//           // // // do the forward transform
+//           // // call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+//           // // if (ier/=0) write(0,*) 'ERROR: rfftmf(): VT_filter - forward FFT error ',ier
 
-//           // transform back
-//           call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-//           if(ier /= 0) write(0,*) 'ERROR: rfftmb(): VT_filter - backward FFT error ',ier
+//           // // // filter out high frequencies
+//           // // fft_out(2*(filter_wn_max+1):) = 0
 
-//           // copy to output
-//           do i = 1,nx
-//              f_out(icrm,i,j,k) = fft_out(i)
-//           end do
+//           // // // transform back
+//           // // call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
+//           // // if(ier /= 0) write(0,*) 'ERROR: rfftmb(): VT_filter - backward FFT error ',ier
+
+//           // // copy to output
+//           // parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
+//           //    f_out(k,j,i,icrm) = fft_out(i);
+//           // });
 
 //   });
 
@@ -56,10 +57,10 @@ void VT_diagnose() {
   auto &qcl          = :: qcl;
   auto &qci          = :: qci;
   auto &factor_xy    = :: factor_xy;
-  auto &t_vt_pert   = :: t_vt_pert;
-  auto &q_vt_pert   = :: q_vt_pert;
-  auto &t_vt        = :: t_vt;
-  auto &q_vt        = :: q_vt;
+  auto &t_vt_pert    = :: t_vt_pert;
+  auto &q_vt_pert    = :: q_vt_pert;
+  auto &t_vt         = :: t_vt;
+  auto &q_vt         = :: q_vt;
   auto &ncrms        = :: ncrms;
 
   // local variables
@@ -76,8 +77,8 @@ void VT_diagnose() {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       t_mean(k,icrm) = 0.0;
       q_mean(k,icrm) = 0.0;
-      t_vt(k,icrm)  = 0.0;
-      q_vt(k,icrm)  = 0.0;
+      t_vt(k,icrm) = 0.0;
+      q_vt(k,icrm) = 0.0;
   });
 
   // do k = 1,nzm
@@ -163,27 +164,25 @@ void VT_diagnose() {
 //==============================================================================
 
 void VT_forcing() {
-  auto &t            = :: t;
-  auto &micro_field  = :: micro_field;
+  auto &t           = :: t;
+  auto &micro_field = :: micro_field;
   auto &t_vt_tend   = :: t_vt_tend;
   auto &q_vt_tend   = :: q_vt_tend;
   auto &t_vt_pert   = :: t_vt_pert;
   auto &q_vt_pert   = :: q_vt_pert;
   auto &t_vt        = :: t_vt;
   auto &q_vt        = :: q_vt;
-  auto &ncrms        = :: ncrms;
-  auto &dtn          = :: dtn;
+  auto &ncrms       = :: ncrms;
+  auto &dtn         = :: dtn;
 
   // local variables
   real2d t_pert_scale("t_pert_scale", nzm, ncrms);
   real2d q_pert_scale("q_pert_scale", nzm, ncrms);
-  real4d ttend_loc("ttend_loc", nzm, ny, nx, ncrms);
-  real4d qtend_loc("qtend_loc", nzm, ny, nx, ncrms);
 
   int idx_qt = index_water_vapor;
 
-  real pert_scale_min = 1.0 - 0.1;
-  real pert_scale_max = 1.0 + 0.1;
+  real constexpr pert_scale_min = 1.0 - 0.1;
+  real constexpr pert_scale_max = 1.0 + 0.1;
 
   //----------------------------------------------------------------------------
   // calculate scaling factor for local perturbations
@@ -194,8 +193,8 @@ void VT_forcing() {
     // initialize scaling factors to 1.0
     t_pert_scale(k,icrm) = 1.0;
     q_pert_scale(k,icrm) = 1.0;
-    real tmp_t_scale = -1;
-    real tmp_q_scale = -1;
+    real tmp_t_scale = -1.0;
+    real tmp_q_scale = -1.0;
     // set scaling factors as long as there are perturbations to scale
     if (t_vt(k,icrm)>0.0) { tmp_t_scale = 1.0 + dtn * t_vt_tend(k,icrm) / t_vt(k,icrm); }
     if (q_vt(k,icrm)>0.0) { tmp_q_scale = 1.0 + dtn * q_vt_tend(k,icrm) / q_vt(k,icrm); }

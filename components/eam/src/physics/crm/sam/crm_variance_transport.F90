@@ -316,8 +316,8 @@ subroutine VT_forcing(ncrms)
    ! calculate local tendencies scaled by local perturbations
    !----------------------------------------------------------------------------
    !$acc parallel loop collapse(2) async(asyncid)
-   do k=1,nzm
-      do icrm = 1 , ncrms
+   do k = 1,nzm
+      do icrm = 1,ncrms
          ! initialize scaling factors to 1.0
          t_pert_scale(icrm,k) = 1.0_crm_rknd
          q_pert_scale(icrm,k) = 1.0_crm_rknd
