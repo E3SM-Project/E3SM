@@ -30,6 +30,7 @@ module ocn_wetting_drying
    use ocn_constants
    use ocn_config
    use ocn_diagnostics
+   use ocn_diagnostics_variables
    use ocn_gm
 
    implicit none
@@ -238,13 +239,9 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: provisStatePool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessProvis
-      real (kind=RKIND), dimension(:, :), pointer :: layerThicknessEdge
-      real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
-      real (kind=RKIND), dimension(:, :), pointer :: wettingVelocity
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:), pointer :: maxLevelEdgeBot
@@ -253,16 +250,12 @@ contains
 
       err = 0
 
-     call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
      call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
      call mpas_pool_get_subpool(block % structs, 'state', statePool)
      call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
-     call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
-     call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-     call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', wettingVelocity)
      ! use thickness at n because constraint is h_n + dt*T_h > h_min
      call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
      call mpas_pool_get_array(provisStatePool, 'layerThickness', layerThicknessProvis, 1)

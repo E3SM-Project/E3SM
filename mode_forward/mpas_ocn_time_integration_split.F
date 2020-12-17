@@ -1965,7 +1965,7 @@ module ocn_time_integration_split
  !          call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
  !             meshPool, scratchPool, timeLevelIn=2)
  !       end if
-        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
+        call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
         block => block % next
       end do
