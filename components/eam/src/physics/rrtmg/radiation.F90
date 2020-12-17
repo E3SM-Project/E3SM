@@ -315,10 +315,6 @@ function radiation_do(op, timestep)
                     .or. (mod(nstep-1,iradlw) == 0  .and.  nstep /= 1) &
                     .or. nstep <= irad_always
 
-   case ('aeres') ! write absorptivity/emissivity to restart file this timestep?
-      ! for RRTMG there is no abs/ems restart file
-      radiation_do = .false.
-         
    case default
       call endrun('radiation_do: unknown operation:'//op)
 
