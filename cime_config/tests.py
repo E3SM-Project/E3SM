@@ -226,7 +226,7 @@ _TESTS = {
 
     "fates" : {
         "tests" : (
-            "ERS_Ld9.1xFATESbrazil.IELMFATES",
+            "ERS_Ld9.1x1_brazil.IELMFATES",
             "ERS_D_Ld9.1x1_brazil.IELMFATES",
             "SMS_D_Lm6.1x1_brazil.IELMFATES",
             )
