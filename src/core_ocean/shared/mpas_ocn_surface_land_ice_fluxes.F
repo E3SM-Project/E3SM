@@ -147,16 +147,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_vel(topDrag, topDragMag, &
+   subroutine ocn_surface_land_ice_fluxes_vel(diagnosticsPool, &
                                       sfcStress, sfcStressMag, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         topDrag,  &!< [in] drag at top of ocean on edge
-         topDragMag !< [in] magnitude of drag at top of ocean at center
+      type(mpas_pool_type), intent(in) :: diagnosticsPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -179,6 +177,10 @@ contains
       integer :: &
          iEdge, iCell  ! loop indices for edge, cell loops
 
+      real (kind=RKIND), dimension(:), pointer :: &
+         topDrag,  &!< [in] drag at top of ocean on edge
+         topDragMag !< [in] magnitude of drag at top of ocean at center
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -191,35 +193,46 @@ contains
 
       call mpas_timer_start("top_drag", .false.)
 
+      call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
+      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
+
+      !*** Transfer data to device
+      !$acc enter data &
+      !$acc    copyin(topDrag, topDragMag)
+
       !*** simply add input values to accumulated stresses
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(sfcStress, topDrag)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime)
-      #endif
+#endif
       do iEdge = 1, nEdgesAll
         sfcStress(iEdge) = sfcStress(iEdge) + topDrag(iEdge)
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
-      #endif
+#endif
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(sfcStressMag, topDragMag)
-      #else
+#else
       !$omp do schedule(runtime)
-      #endif
+#endif
       do iCell = 1, nCellsAll
         sfcStressMag(iCell) = sfcStressMag(iCell) + topDragMag(iCell)
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
+
+      !*** Transfer any needed data back to host and delete inputs
+      !$acc exit data &
+      !$acc    delete(topDrag, topDragMag)
 
       call mpas_timer_stop("top_drag")
 

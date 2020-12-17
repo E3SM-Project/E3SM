@@ -142,16 +142,15 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_bulk_forcing_vel( &
-                               windStressZonal, windStressMeridional, &
-                               sfcStress, sfcStressMag, err)!{{{
+                               forcingPool, sfcStress, &
+                               sfcStressMag, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         windStressZonal,    &!< [in] zonal      wind stress cell center
-         windStressMeridional !< [in] meridional wind stress cell center
+      type (mpas_pool_type), intent(in) :: &
+         forcingPool         !< [in] Forcing structure w/ sfc stresses
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -180,6 +179,10 @@ contains
          meridWSEdge,      &! meridional wind stress avg to edge
          zonalWSEdge        ! zonal wind stress averaged to edge
 
+      real (kind=RKIND), dimension(:), pointer :: &
+         windStressZonal, &! zonal wind stress from forcing
+         windStressMerid   ! meridional wind stress from forcing
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -192,60 +195,71 @@ contains
 
       call mpas_timer_start("bulk_ws", .false.)
 
+      call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+      call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMerid)
+
+      !*** Transfer data to device
+      !$acc enter data &
+      !$acc    copyin(windStressZonal, windStressMerid)
+
       !*** Forcing needed over halo regions
 
       nEdges = nEdgesHalo(3)
       nCells = nCellsHalo(2)
 
-      !*** Convert coupled climate model wind stress to internal 
-      !*** ocean model wind stress by averaging cell-centered wind 
+      !*** Convert coupled climate model wind stress to internal
+      !*** ocean model wind stress by averaging cell-centered wind
       !*** stress to edges and then rotating vectors
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, angleEdge, sfcStress, &
-      !$acc            windStressZonal, windStressMeridional) &
-      !$acc    private(cell1, cell2, zonalWSEdge, meridWSEdge) 
-      #else
+      !$acc            windStressZonal, windStressMerid) &
+      !$acc    private(cell1, cell2, zonalWSEdge, meridWSEdge)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, zonalWSEdge, meridWSEdge) 
-      #endif
+      !$omp    private(cell1, cell2, zonalWSEdge, meridWSEdge)
+#endif
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
 
         zonalWSEdge = 0.5_RKIND * (windStressZonal(cell1) + &
                                    windStressZonal(cell2))
-        meridWSEdge = 0.5_RKIND * (windStressMeridional(cell1) + &
-                                   windStressMeridional(cell2))
+        meridWSEdge = 0.5_RKIND * (windStressMerid(cell1) + &
+                                   windStressMerid(cell2))
 
         sfcStress(iEdge) = sfcStress(iEdge) + &
                            cos(angleEdge(iEdge))*zonalWSEdge + &
                            sin(angleEdge(iEdge))*meridWSEdge
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
-      #endif
+#endif
 
       ! Calculate surface flux magnitude at cell centers
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(sfcStressMag, windStressZonal, &
-      !$acc                          windStressMeridional)
-      #else
+      !$acc                          windStressMerid)
+#else
       !$omp do schedule(runtime)
-      #endif
+#endif
       do iCell = 1, nCells
         sfcStressMag(iCell) = sfcStressMag(iCell) + &
                               sqrt( windStressZonal(iCell)**2 &
-                                  + windStressMeridional(iCell)**2 )
+                                  + windStressMerid(iCell)**2 )
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
+
+      !*** Transfer any needed data back to host and delete inputs
+      !$acc exit data &
+      !$acc    delete(windStressZonal, windStressMerid)
 
       call mpas_timer_stop("bulk_ws")
 

@@ -259,10 +259,6 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:), pointer :: &
-         windStressZonal, &! zonal wind stress from forcing
-         windStressMerid, &! meridional wind stress from forcing
-         topDrag,         &! drag at top surface
-         topDragMag,      &! magnitude of drag at top
          sfcFlxAttCoeff,  &! surface flux attenuation coefficient
          ssh               ! sea surface height
 
@@ -355,16 +351,8 @@ contains
                                                  thermExpCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff',  &
                                                  salineContractCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'topDrag', &
-                                                 topDrag)
-      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', &
-                                                 topDragMag)
       call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', &
                                                  wettingVelocity)
-      call mpas_pool_get_array(forcingPool, 'windStressZonal', &
-                                             windStressZonal)
-      call mpas_pool_get_array(forcingPool, 'windStressMeridional', &
-                                             windStressMerid)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tendVel)
 
@@ -376,7 +364,6 @@ contains
       !*** Transfer data to device
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
-      !$acc    windStressZonal, windStressMerid, topDrag, topDragMag, &
       !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
       !$acc    tangentialVelocity, density, potentialDensity, zMid, &
       !$acc    pressure, layerThickness, circulation, activeTracers, &
@@ -387,35 +374,34 @@ contains
 
       !*** Set output variables to zero before accumulating results
       
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop present(sfcStress, tendVel) private(k)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
-      #endif
+#endif
       do iEdge = 1, nEdgesAll
          sfcStress(iEdge) = 0.0_RKIND
          do k=1,nVertLevels
             tendVel(k,iEdge) = 0.0_RKIND
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
-      #endif
+#endif
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop present(sfcStressMag)
-      #else
-      !$omp end do
+#else
       !$omp do schedule(runtime)
-      #endif
+#endif
       do iCell = 1, nCellsAll
          sfcStressMag(iCell) = 0.0_RKIND
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       !*** Return early if all vel tendencies disabled
       !*** Otherwise, start timer
@@ -425,11 +411,11 @@ contains
 
       ! Compute bulk forcing surface stress
       call ocn_surface_bulk_forcing_vel( &
-                                    windStressZonal, windStressMerid, &
-                                    sfcStress, sfcStressMag, err)
+                                    forcingPool, sfcStress, &
+                                    sfcStressMag, err)
 
       ! Add top drag to surface stress
-      call ocn_surface_land_ice_fluxes_vel(topDrag, topDragMag, &
+      call ocn_surface_land_ice_fluxes_vel(diagnosticsPool, &
                                        sfcStress, sfcStressMag, err)
 
       ! Add nonlinear Coriolis term and horizontal advection of
@@ -469,29 +455,28 @@ contains
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
       !$acc    present(tendVel, wettingVelocity)
-      #else
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
-      #endif
+#endif
       do iEdge = 1, nEdgesAll
       do k=1,nVertLevels
          tendVel(k,iEdge) = tendVel(k,iEdge)* &
                             (1.0_RKIND - wettingVelocity(k,iEdge))
       end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       !*** Transfer any needed data back to host and delete inputs
       !$acc exit data &
       !$acc    copyout(tendVel, sfcStress, sfcStressMag) &
       !$acc    delete( &
-      !$acc    windStressZonal, windStressMerid, topDrag, topDragMag, &
       !$acc    sfcFlxAttCoeff, ssh, layerThickEdge, normalVelocity, &
       !$acc    tangentialVelocity, density, potentialDensity, zMid, &
       !$acc    pressure, layerThickness, circulation, activeTracers, &
