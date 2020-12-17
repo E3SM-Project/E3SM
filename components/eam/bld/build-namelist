@@ -717,8 +717,7 @@ my $rad_prog_sslt  = (($prog_species =~ "SSLT" or $aero_chem) and !($chem_rad_pa
 my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "superfast" or $chem =~ "linoz") and !($chem_rad_passive));
 
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
-# only if using BAM and the camrt radiation package (cam4 physics)
-# or if using MAM and the rrtmg package  (cam5 physics)
+# only if using MAM and the rrtmg package  (cam5 physics)
 # They will only be added to mode_defs for radiation if the prescribed emission file has 
 # MMR (mass mixing ratio) for the volcanic aerosols. 
 # For CMIP6 style volcanic input file, where input file has extinction, ssa and asymmetry 
@@ -858,13 +857,6 @@ add_default($nl, 'bnd_topo', 'nofail'=>1);
 
 # Tropopause climatology
 add_default($nl, 'tropopause_climo_file');
-
-# Radiation
-if ($rad_pkg eq 'camrt') {
-    # Only needed for CAM3/4 RT code
-    # Absorptivity and emissivity data
-    add_default($nl, 'absems_data');
-}
 
 # Solar irradiance
 

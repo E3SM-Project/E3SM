@@ -3627,7 +3627,7 @@ Default: .true.
 
 <!-- Radiation -->
 <entry id="radiation_scheme" type="char*16" category="radiation"
-       group="phys_ctl_nl" valid_values="rrtmg,camrt" >
+       group="phys_ctl_nl" valid_values="rrtmg,rrtmgp" >
 Type of radiation scheme employed. 
 Default: set by build-namelist
 </entry>

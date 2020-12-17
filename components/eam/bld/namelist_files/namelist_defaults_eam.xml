@@ -145,42 +145,6 @@
 
 <!-- Bulk aerosol physical properties (includes optics) -->
 
-<!-- CAM3 Bulk aerosols.  Optics for CAM-RT -->
-<bam_cam3_sul   rad="camrt">atm/cam/physprops/sul_cam3_c080918.nc</bam_cam3_sul>
-<bam_cam3_dust1 rad="camrt">atm/cam/physprops/dustv1b1_cam3_c080918.nc</bam_cam3_dust1>
-<bam_cam3_dust2 rad="camrt">atm/cam/physprops/dustv1b2_cam3_c080918.nc</bam_cam3_dust2>
-<bam_cam3_dust3 rad="camrt">atm/cam/physprops/dustv1b3_cam3_c080918.nc</bam_cam3_dust3>
-<bam_cam3_dust4 rad="camrt">atm/cam/physprops/dustv1b4_cam3_c080918.nc</bam_cam3_dust4>
-<bam_cam3_bcpho rad="camrt">atm/cam/physprops/bcpho_cam3_c080918.nc</bam_cam3_bcpho>
-<bam_cam3_bcphi rad="camrt">atm/cam/physprops/bcphi_cam3_c080918.nc</bam_cam3_bcphi>
-<bam_cam3_ocpho rad="camrt">atm/cam/physprops/ocpho_cam3_c080918.nc</bam_cam3_ocpho>
-<bam_cam3_ocphi rad="camrt">atm/cam/physprops/ocphi_cam3_c080918.nc</bam_cam3_ocphi>
-<bam_cam3_ssam  rad="camrt">atm/cam/physprops/ssam_cam3_c080918.nc</bam_cam3_ssam>
-<bam_cam3_sscm  rad="camrt">atm/cam/physprops/sscm_cam3_c080918.nc</bam_cam3_sscm>
-
-<!-- CAM-Chem bulk aerosols (different aerosol names used in prescribed and prognostic modes) -->
-<!-- Optics for CAM-RT -->
-<bam_sulf  rad="camrt">atm/cam/physprops/sulfate_camrt_c080918.nc</bam_sulf>
-<bam_SO4   rad="camrt">atm/cam/physprops/sulfate_camrt_c080918.nc</bam_SO4>
-<bam_dust1 rad="camrt">atm/cam/physprops/dust1_camrt_c080918.nc</bam_dust1>
-<bam_DST01 rad="camrt">atm/cam/physprops/dust1_camrt_c080918.nc</bam_DST01>
-<bam_dust2 rad="camrt">atm/cam/physprops/dust2_camrt_c080918.nc</bam_dust2>
-<bam_DST02 rad="camrt">atm/cam/physprops/dust2_camrt_c080918.nc</bam_DST02>
-<bam_dust3 rad="camrt">atm/cam/physprops/dust3_camrt_c080918.nc</bam_dust3>
-<bam_DST03 rad="camrt">atm/cam/physprops/dust3_camrt_c080918.nc</bam_DST03>
-<bam_dust4 rad="camrt">atm/cam/physprops/dust4_camrt_c080918.nc</bam_dust4>
-<bam_DST04 rad="camrt">atm/cam/physprops/dust4_camrt_c080918.nc</bam_DST04>
-<bam_bcar1 rad="camrt">atm/cam/physprops/bcpho_camrt_c080918.nc</bam_bcar1>
-<bam_CB1   rad="camrt">atm/cam/physprops/bcpho_camrt_c080918.nc</bam_CB1>
-<bam_bcar2 rad="camrt">atm/cam/physprops/bcphi_camrt_c080918.nc</bam_bcar2>
-<bam_CB2   rad="camrt">atm/cam/physprops/bcphi_camrt_c080918.nc</bam_CB2>
-<bam_ocar1 rad="camrt">atm/cam/physprops/ocpho_camrt_c080918.nc</bam_ocar1>
-<bam_OC1   rad="camrt">atm/cam/physprops/ocpho_camrt_c080918.nc</bam_OC1>
-<bam_ocar2 rad="camrt">atm/cam/physprops/ocphi_camrt_c080918.nc</bam_ocar2>
-<bam_OC2   rad="camrt">atm/cam/physprops/ocphi_camrt_c080918.nc</bam_OC2>
-<bam_SSLTA rad="camrt">atm/cam/physprops/ssam_camrt_c080918.nc</bam_SSLTA>
-<bam_SSLTC rad="camrt">atm/cam/physprops/sscm_camrt_c080918.nc</bam_SSLTC>
-
 <!-- CAM-Chem bulk aerosols (different names used in prescribed and prognostic modes) -->
 <!-- Optics for RRTMG -->
 <bam_sulf   rad="rrtmg">atm/cam/physprops/sulfate_rrtmg_c080918.nc</bam_sulf>
@@ -279,7 +243,6 @@
 <mam_mom    rad="rrtmgp">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mom>
 
 <!-- Eruptive volcanic aerosols  -->
-<VOLC_MMR rad="camrt">atm/cam/physprops/sulfuricacid_cam3_c080918.nc</VOLC_MMR>
 <VOLC_MMR rad="rrtmg">atm/cam/physprops/rrtmg_Bi_sigma1.8_c100521.nc'</VOLC_MMR>
 <VOLC_MMR rad="rrtmgp">atm/cam/physprops/rrtmg_Bi_sigma1.8_c100521.nc'</VOLC_MMR>
 
@@ -390,7 +353,6 @@
 <!-- CAM-RT absorptivity/emissivity lookup table -->
 <absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
 
-<radiation_scheme rad="camrt">camrt</radiation_scheme>
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
 
