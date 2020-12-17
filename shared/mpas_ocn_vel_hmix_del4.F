@@ -148,7 +148,7 @@ contains
       nEdges = nEdgesHalo(2)
 
       !Compute Laplacian of velocity
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
       !$acc            dvEdge, dcEdge, del2u, div, relVort) &
@@ -159,7 +159,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, vertex1, vertex2, &
       !$omp            dcEdgeInv, dvEdgeInv)
-      #endif
+#endif
       do iEdge = 1, nEdges
          del2u(:, iEdge) = 0.0_RKIND
          cell1 = cellsOnEdge(1,iEdge)
@@ -178,15 +178,15 @@ contains
                                                            dvEdgeInv
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       nVertices = nVerticesHalo(1)
 
       ! Compute del2 of relative vorticity
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(edgesOnVertex, maxLevelVertexTop, dcEdge, &
       !$acc            areaTriangle, edgeSignOnVertex, del2u, &
@@ -195,7 +195,7 @@ contains
       #else
       !$omp parallel
       !$omp do schedule(runtime) private(i, k, iEdge, areaTriInv)
-      #endif
+#endif
       do iVertex = 1, nVertices
          del2relVort(:, iVertex) = 0.0_RKIND
          areaTriInv = 1.0_RKIND/areaTriangle(iVertex)
@@ -208,15 +208,15 @@ contains
             end do
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       nCells = nCellsHalo(1)
 
       ! Compute del2 of divergence
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(nEdgesOnCell, edgesOnCell, maxLevelCell, dvEdge,&
       !$acc            edgeSignOnCell, areaCell, del2u, del2div) &
@@ -224,7 +224,7 @@ contains
       #else
       !$omp parallel
       !$omp do schedule(runtime) private(i, k, iEdge, areaCellInv)
-      #endif
+#endif
       do iCell = 1, nCells
          del2div(:, iCell) = 0.0_RKIND
          areaCellInv = 1.0_RKIND / areaCell(iCell)
@@ -237,16 +237,16 @@ contains
             end do
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       ! Compute final tendency \kappa \nabla^4 u
       ! as  \nabla div(\nabla^2 u) + k \times 
       !     \nabla ( k \cross curl(\nabla^2 u) )
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
       !$acc            dcEdge, dvEdge, meshScalingDel4, edgeMask, &
@@ -258,7 +258,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(k, cell1, cell2, vertex1, vertex2, &
       !$omp         dcEdgeInv, dvEdgeInv, visc4, uDiff)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -279,10 +279,10 @@ contains
                             edgeMask(k,iEdge)*uDiff*visc4
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       !$acc exit data delete(del2u, del2div, del2relVort)
       deallocate(del2u, &

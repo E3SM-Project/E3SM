@@ -132,7 +132,7 @@ contains
       if (surfaceStressOff) return
       call mpas_timer_start('vel surface stress')
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
       !$acc            sfcFlxAttCoeff, sfcStress, layerThickEdge, &
@@ -146,7 +146,7 @@ contains
       !$omp    private(k, kmax, cell1, cell2, zBot, zTop, &
       !$omp            attCoeff, attDepth, remainingStress, &
       !$omp            transCoeffTop, transCoeffBot, absorb)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
         zTop     = 0.0_RKIND
         cell1 = cellsOnEdge(1,iEdge)
@@ -184,10 +184,10 @@ contains
                               layerThickEdge(kmax,iEdge)
         end if
       enddo
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       call mpas_timer_stop('vel surface stress')
 

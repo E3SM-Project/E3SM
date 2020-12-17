@@ -137,7 +137,7 @@ contains
       if (hmixLeithOff) return
       call mpas_timer_start("vel leith")
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, verticesOnEdge, maxLevelEdgeTop, &
       !$acc            dcEdge, dvEdge, meshScalingDel2, div, relVort, &
@@ -149,7 +149,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, vertex1, vertex2, dcEdgeInv, &
       !$omp            dvEdgeInv, uDiff, visc2, visc2tmp)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -186,10 +186,10 @@ contains
 
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       call mpas_timer_stop("vel leith")
 

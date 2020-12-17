@@ -127,7 +127,7 @@ contains
 
       call mpas_timer_start("vel del2")
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, verticesOnEdge, &
       !$acc            edgeMask, dcEdge, dvEdge, meshScalingDel2, &
@@ -139,7 +139,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$omp            dcEdgeInv, dvEdgeInv, visc2)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -168,10 +168,10 @@ contains
 
          end do
       end do
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       call mpas_timer_stop("vel del2")
 
