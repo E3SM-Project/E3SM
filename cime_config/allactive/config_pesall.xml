@@ -1395,7 +1395,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3">
-    <mach name="sandiatoss3">
+    <mach name="sandiatoss3|chrysalis">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
