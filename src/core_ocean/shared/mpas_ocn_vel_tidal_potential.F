@@ -152,15 +152,15 @@ contains
       err = 0
       if (tidalPotentialOff) return
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
       !$acc            tidalPotEta, ssh, tend) &
       !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
-      #else
+#else
       !$omp parallel do schedule(runtime) &
       !$omp    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
-      #endif
+#endif
       do iEdge=1,nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -177,9 +177,9 @@ contains
                             edgeMask(k,iEdge)*potentialGrad
          end do
       end do
-      #ifndef MPAS_OPENACC
-      !$omp end do
-      #endif
+#ifndef MPAS_OPENACC
+      !$omp end parallel do
+#endif
 
    end subroutine ocn_vel_tidal_potential_tend!}}}
 

@@ -127,7 +127,7 @@ contains
       ! momentum mixing, and is explicit if both |u| and u are chosen to be at
       ! time level n. 
 
-      #ifdef MPAS_OPENACC
+#ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
       !$acc            tend, normVelocity, layerThickEdge) &
@@ -135,7 +135,7 @@ contains
       #else
       !$omp parallel
       !$omp do schedule(runtime) private(k, cell1, cell2)
-      #endif
+#endif
       do iEdge = 1, nEdgesOwned
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
@@ -146,10 +146,10 @@ contains
                         normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
 
       enddo
-      #ifndef MPAS_OPENACC
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
-      #endif
+#endif
 
       call mpas_timer_stop('vel explicit bottom drag')
 
