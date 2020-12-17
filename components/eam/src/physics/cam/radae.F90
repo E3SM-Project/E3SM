@@ -42,12 +42,6 @@ module radae
   public radabs, radems, radtpl, radae_init, initialize_radbuffer, radoz2, trcpth
 
   integer, public, parameter :: nbands = 2          ! Number of spectral bands
-!
-! Following data needed for restarts and in radclwmx
-!
-  real(r8), public, allocatable, target :: abstot_3d(:,:,:,:) ! Non-adjacent layer absorptivites
-  real(r8), public, allocatable, target :: absnxt_3d(:,:,:,:) ! Nearest layer absorptivities
-  real(r8), public, allocatable, target :: emstot_3d(:,:,:)   ! Total emissivity
   integer,  public :: ntoplw    ! top level to solve for longwave cooling
 
 !-----------------------------------------------------------------------------
@@ -2971,14 +2965,6 @@ subroutine initialize_radbuffer
  
    call phys_getopts(radiation_scheme_out=radiation_scheme)
    
-  if(radiation_scheme.eq.'camrt') then
-     allocate (abstot_3d(pcols,ntoplw:pverp,ntoplw:pverp,begchunk:endchunk))
-     allocate (absnxt_3d(pcols,pver,4,begchunk:endchunk))
-     allocate (emstot_3d(pcols,pverp,begchunk:endchunk))
-     abstot_3d(:,:,:,:) = posinf
-     absnxt_3d(:,:,:,:) = posinf
-     emstot_3d(:,:,:) = posinf
-  end if
   return
 end subroutine initialize_radbuffer
 

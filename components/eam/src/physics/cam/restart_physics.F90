@@ -4,7 +4,7 @@ module restart_physics
   use spmd_utils,         only: masterproc
   use co2_cycle,          only: co2_transport
   use constituents,       only: pcnst
-  use radae,              only: abstot_3d, absnxt_3d, emstot_3d, initialize_radbuffer, ntoplw
+  use radae,              only: initialize_radbuffer, ntoplw
   use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, initialize_comsrf 
   use ioFileMod
   use cam_abortutils,     only: endrun
@@ -410,50 +410,6 @@ module restart_physics
          call pio_write_darray(File, shf_desc, iodesc, tmpfield, ierr)
 
       end if
-    !
-    !-----------------------------------------------------------------------
-    ! Write the abs/ems restart dataset if necessary    
-    !-----------------------------------------------------------------------
-    !
-
-    if ( radiation_do('aeres')  ) then
-         
-      do i = begchunk, endchunk
-        ncol = cam_out(i)%ncol
-        if(ncol < pcols) then
-          abstot_3d(ncol+1:pcols,:,:,i) = fillvalue
-          absnxt_3d(ncol+1:pcols,:,:,i) = fillvalue
-          emstot_3d(ncol+1:pcols,:,i) = fillvalue
-        end if
-      end do
-!      abstot_3d is written as a series of 3D variables
-      dims(1) = size(abstot_3d, 1) ! Should be pcols
-      dims(2) = size(abstot_3d, 2) ! Should be (pverp-ntoplw+1)
-      dims(3) = size(abstot_3d, 4) ! Should be endchunk - begchunk + 1
-      gdims(nhdims+1) = dims(2)
-      do i = ntoplw, pverp
-        call cam_grid_write_dist_array(File, physgrid, dims(1:3),             &
-             gdims(1:nhdims+1), abstot_3d(:,:,i,:), abstot_desc(i))
-      end do
-
-      dims(1) = size(emstot_3d, 1) ! Should be pcols
-      dims(2) = size(emstot_3d, 2) ! Should be pverp
-      dims(3) = size(emstot_3d, 3) ! Should be endchunk - begchunk + 1
-      gdims(nhdims+1) = dims(2)
-      call cam_grid_write_dist_array(File, physgrid, dims(1:3),               &
-           gdims(1:nhdims+1), emstot_3d, emstot_desc)
-
-      dims(1) = size(absnxt_3d, 1) ! Should be pcols
-      dims(2) = size(absnxt_3d, 2) ! Should be pver
-      dims(3) = size(absnxt_3d, 4) ! Should be endchunk - begchunk + 1
-      gdims(nhdims+1) = dims(2)
-      do i = 1, 4
-        call cam_grid_write_dist_array(File, physgrid, dims(1:3),             &
-             gdims(1:nhdims+1), absnxt_3d(:,:,i,:), absnxt_desc(i))
-      end do
-
-      deallocate(abstot_desc)
-    end if
 
       if (docosp) then
         ierr = pio_put_var(File, cospcnt_desc, (/cosp_cnt(begchunk)/))
@@ -755,50 +711,6 @@ module restart_physics
 
         deallocate(tmpfield2)
 
-     end if
-
-     !
-     !-----------------------------------------------------------------------
-     ! Read the abs/ems restart dataset if necessary    
-     !-----------------------------------------------------------------------
-     !
-     if ( radiation_do('aeres')  ) then
-        !!XXgoldyXX: This hack should be replaced with the PIO interface
-        !err_handling = File%iosystem%error_handling !! Hack
-        call pio_seterrorhandling( File, PIO_BCAST_ERROR, err_handling)
-        ierr = pio_inq_varid(File, 'Emissivity', vardesc)
-        call pio_seterrorhandling( File, err_handling)
-        if(ierr/=PIO_NOERR) then
-           if(masterproc) write(iulog,*) 'Warning: Emissivity variable not found on restart file.'
-           return
-        end if
-
-        dims(1) = pcols
-        dims(2) = pverp
-        dims(3) = csize
-        gdims(nhdims+1) = dims(2)
-        call cam_grid_read_dist_array(File, physgrid, dims(1:3),           &
-             gdims(1:nhdims+1), emstot_3d, vardesc)
-        
-        vsize = pverp-ntoplw+1
-        dims(2) = vsize
-        gdims(nhdims+1) = dims(2)
-        
-        do i=ntoplw,pverp
-           write(pname,'(a,i3.3)') 'NAL_absorp',i
-           ierr = pio_inq_varid(File, trim(pname), vardesc)
-           call cam_grid_read_dist_array(File, physgrid, dims(1:3),           &
-                gdims(1:nhdims+1), abstot_3d(:,:,i,:), vardesc)
-        end do
-
-        dims(2) = pver
-        gdims(nhdims+1) = dims(2)
-        do i=1,4
-           write(pname,'(a,i3.3)') 'NN_absorp',i
-           ierr = pio_inq_varid(File, trim(pname), vardesc)
-           call cam_grid_read_dist_array(File, physgrid, dims(1:3),           &
-                gdims(1:nhdims+1), absnxt_3d(:,:,i,:), vardesc)
-        end do
      end if
 
      if (docosp) then
