@@ -4,7 +4,6 @@ module restart_physics
   use spmd_utils,         only: masterproc
   use co2_cycle,          only: co2_transport
   use constituents,       only: pcnst
-  use radae,              only: initialize_radbuffer, ntoplw
   use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, initialize_comsrf 
   use ioFileMod
   use cam_abortutils,     only: endrun
@@ -159,34 +158,6 @@ module restart_physics
 
     end if
 
-
-    if( radiation_do('aeres')  ) then
-       vsize = (pverp-ntoplw+1)
-       if(vsize/=pverp) then
-          ierr = pio_def_dim(File, 'lwcols', vsize, dimids(hdimcnt+1))
-       else
-          dimids(hdimcnt+1) = pverp_id
-       end if
-!
-! split this into vsize variables to avoid excessive memory usage in IO
-!
-       allocate(abstot_desc(ntoplw:pverp))
-       do i=ntoplw,pverp
-          write(pname,'(a,i3.3)') 'NAL_absorp',i
-          ierr = pio_def_var(File, trim(pname), pio_double, dimids(1:hdimcnt+1), abstot_desc(i))
-       end do
-	
-       dimids(hdimcnt+1) = pverp_id
-       ierr = pio_def_var(File, 'Emissivity', pio_double, dimids(1:hdimcnt+1), emstot_desc)
-
-       dimids(hdimcnt+1) = pver_id
-       do i=1,4
-          write(pname,'(a,i3.3)') 'NN_absorp',i
-          ierr = pio_def_var(File, pname, pio_double, dimids(1:hdimcnt+1), absnxt_desc(i))
-       end do
-
-
-    end if
     if (docosp) then
       ierr = pio_def_var(File, 'cosp_cnt_init', pio_int, cospcnt_desc)
     end if
@@ -480,10 +451,9 @@ module restart_physics
      integer                  :: physgrid, astat
      !-----------------------------------------------------------------------
 
-     ! Allocate memory in physics buffer, buffer, comsrf, and radbuffer modules.
+     ! Allocate memory in physics buffer and comsrf modules.
      ! (This is done in subroutine initial_conds for an initial run.)
      call initialize_comsrf()
-     call initialize_radbuffer()
 
      ! Physics buffer
 

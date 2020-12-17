@@ -187,14 +187,13 @@ end subroutine radiation_readnl
 
 !================================================================================================
 
-subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
+subroutine radiation_defaultopts(iradsw_out, iradlw_out, irad_always_out, spectralflux_out, use_rad_dt_cosz_out) !BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    logical, intent(out), optional :: use_rad_dt_cosz_out
@@ -203,7 +202,6 @@ subroutine radiation_defaultopts(iradsw_out, iradlw_out, iradae_out, irad_always
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux
    if ( present(use_rad_dt_cosz_out) ) use_rad_dt_cosz_out = use_rad_dt_cosz
@@ -212,7 +210,7 @@ end subroutine radiation_defaultopts
 
 !================================================================================================
 
-subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
+subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, &
    irad_always_in, spectralflux_in, use_rad_dt_cosz_in)!BSINGH- Added use_rad_dt_cosz_out for slr insolation calc.
 !----------------------------------------------------------------------- 
 ! Purpose: Set runtime options
@@ -226,7 +224,6 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    integer, intent(in)           :: nhtfrq          ! output frequency of primary history file
    integer, intent(in), optional :: iradsw_in
    integer, intent(in), optional :: iradlw_in
-   integer, intent(in), optional :: iradae_in
    integer, intent(in), optional :: irad_always_in
    logical, intent(in), optional :: spectralflux_in
    logical, intent(in), optional :: use_rad_dt_cosz_in
@@ -234,12 +231,10 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    ! Local
    integer :: ntspdy   ! no. timesteps per day
    integer :: nhtfrq1  ! local copy of input arg nhtfrq
-   integer :: iradae   ! not used by RRTMG
 !-----------------------------------------------------------------------
 
    if ( present(iradsw_in) )      iradsw = iradsw_in
    if ( present(iradlw_in) )      iradlw = iradlw_in
-   if ( present(iradae_in) )      iradae = iradae_in
    if ( present(irad_always_in) ) irad_always = irad_always_in
    if ( present(spectralflux_in) ) spectralflux = spectralflux_in
    if ( present(use_rad_dt_cosz_in) ) use_rad_dt_cosz = use_rad_dt_cosz_in
@@ -249,30 +244,23 @@ subroutine radiation_setopts(dtime, nhtfrq, iradsw_in, iradlw_in, iradae_in, &
    if (iradlw      < 0) iradlw      = nint((-iradlw     *3600._r8)/dtime)
    if (irad_always < 0) irad_always = nint((-irad_always*3600._r8)/dtime)
 
-   ! Has user specified iradae?
-   if (iradae /= -999) then
-      call endrun('radiation_setopts: iradae not used by RRTMG.')
-   end if
-
 end subroutine radiation_setopts
 
 !===============================================================================
 
-subroutine radiation_get(iradsw_out, iradlw_out, iradae_out, irad_always_out, spectralflux_out)
+subroutine radiation_get(iradsw_out, iradlw_out, irad_always_out, spectralflux_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Provide access to private module data.  (This should be eliminated.)
 !-----------------------------------------------------------------------
 
    integer, intent(out), optional :: iradsw_out
    integer, intent(out), optional :: iradlw_out
-   integer, intent(out), optional :: iradae_out
    integer, intent(out), optional :: irad_always_out
    logical, intent(out), optional :: spectralflux_out
    !-----------------------------------------------------------------------
 
    if ( present(iradsw_out) )      iradsw_out = iradsw
    if ( present(iradlw_out) )      iradlw_out = iradlw
-   if ( present(iradae_out) )      iradae_out = -999
    if ( present(irad_always_out) ) irad_always_out = irad_always
    if ( present(spectralflux_out) ) spectralflux_out = spectralflux_out
 

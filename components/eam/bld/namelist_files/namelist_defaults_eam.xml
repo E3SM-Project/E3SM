@@ -349,10 +349,6 @@
 <rrtmgp_enable_temperature_warnings rad="rrtmgp"               >.true.</rrtmgp_enable_temperature_warnings>
 <rrtmgp_enable_temperature_warnings rad="rrtmgp" aquaplanet="1">.false.</rrtmgp_enable_temperature_warnings>
 
-
-<!-- CAM-RT absorptivity/emissivity lookup table -->
-<absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
-
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
 

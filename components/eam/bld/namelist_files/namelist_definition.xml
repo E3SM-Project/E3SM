@@ -3649,23 +3649,6 @@ Convective water used in radiation?
 Default: set by build-namelist
 </entry>
 
-<entry id="absems_data" type="char*256" input_pathname="abs" category="radiation"
-       group="cam_inparm" valid_values="" >
-Full pathname of absorption/emission dataset.
-It consists of terms used for determining the absorptivity and
-emissivity of water vapor in the longwave parameterization of radiation.
-Default: set by build-namelist.
-</entry>
-
-<entry id="iradae" type="integer"  category="radiation"
-       group="radiation_nl" valid_values="">
-Interval between absorptivity/emissivity calculations in time steps (if
-positive) or model hours (if negative).  To avoid having the abs/ems values
-saved on the restart output, make sure that the interval of the abs/ems
-calculation evenly divides the restart interval.
-Default: -12
-</entry>
-
 <entry id="iradlw" type="integer"  category="radiation"
        group="radiation_nl" valid_values="">
 Interval of long-wave radiation calculation in timesteps (if positive) or
