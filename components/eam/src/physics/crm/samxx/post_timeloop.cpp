@@ -147,12 +147,12 @@ void post_timeloop() {
   auto &dtn                     = :: dtn;
   auto &crm_output_subcycle_factor= :: crm_output_subcycle_factor;
   auto &ncrms                   = :: ncrms;
-  auto &crm_output_t_cvt_tend    = :: crm_output_t_cvt_tend;
-  auto &crm_output_q_cvt_tend    = :: crm_output_q_cvt_tend;
-  auto &crm_input_t_cvt          = :: crm_input_t_cvt;
-  auto &crm_input_q_cvt          = :: crm_input_q_cvt;
-  auto &t_cvt                    = :: t_cvt;
-  auto &q_cvt                    = :: q_cvt;
+  auto &crm_output_t_vt_tend    = :: crm_output_t_vt_tend;
+  auto &crm_output_q_vt_tend    = :: crm_output_q_vt_tend;
+  auto &crm_input_t_vt          = :: crm_input_t_vt;
+  auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &t_vt                    = :: t_vt;
+  auto &q_vt                    = :: q_vt;
   
 
   factor_xyt = factor_xy/((real) nstop);
@@ -243,9 +243,9 @@ void post_timeloop() {
     vln  (k,icrm) = vln  (k,icrm) * factor_xy;
   });
 
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
   // extra diagnostic step here for output tendencies
-  CVT_diagnose();
+  VT_diagnose();
 #endif
 
   // for (int k=0; k<plev; k++) {
@@ -259,14 +259,14 @@ void post_timeloop() {
     crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
     crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
 #endif
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
     if ( k > (plev-nzm-1) ) {
       int l = plev-(k+1);
-      crm_output_t_cvt_tend(k,icrm) = ( t_cvt(l,icrm) - crm_input_t_cvt(k,icrm) ) * icrm_run_time;
-      crm_output_q_cvt_tend(k,icrm) = ( q_cvt(l,icrm) - crm_input_q_cvt(k,icrm) ) * icrm_run_time;
+      crm_output_t_vt_tend(k,icrm) = ( t_vt(l,icrm) - crm_input_t_vt(k,icrm) ) * icrm_run_time;
+      crm_output_q_vt_tend(k,icrm) = ( q_vt(l,icrm) - crm_input_q_vt(k,icrm) ) * icrm_run_time;
     } else {
-      crm_output_t_cvt_tend(k,icrm) = 0.0;
-      crm_output_q_cvt_tend(k,icrm) = 0.0;
+      crm_output_t_vt_tend(k,icrm) = 0.0;
+      crm_output_q_vt_tend(k,icrm) = 0.0;
     }
 #endif
   });
@@ -293,9 +293,9 @@ void post_timeloop() {
     crm_output_ultend (k,icrm) = 0.0;
     crm_output_vltend (k,icrm) = 0.0;
 #endif
-#if defined(MMF_CVT)
-    crm_output_t_cvt_tend(k,icrm) = 0.;
-    crm_output_q_cvt_tend(k,icrm) = 0.;
+#if defined(MMF_VT)
+    crm_output_t_vt_tend(k,icrm) = 0.;
+    crm_output_q_vt_tend(k,icrm) = 0.;
 #endif
   });
 

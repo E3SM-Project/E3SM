@@ -88,8 +88,8 @@ module crm_output_module
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
       real(crm_rknd), allocatable :: qiltend (:,:)          ! CRM output tendency of cloud ice
 
-      real(crm_rknd), allocatable :: t_cvt_tend (:,:)       ! CRM output tendency for variance transport
-      real(crm_rknd), allocatable :: q_cvt_tend (:,:)       ! CRM output tendency for variance transport
+      real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for variance transport
+      real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for variance transport
 
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
@@ -264,8 +264,8 @@ contains
          if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
          if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
 
-         if (.not. allocated(output%t_cvt_tend))  allocate(output%t_cvt_tend(ncol,nlev))
-         if (.not. allocated(output%q_cvt_tend))  allocate(output%q_cvt_tend(ncol,nlev))
+         if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
+         if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
 
          if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
          if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
@@ -313,8 +313,8 @@ contains
          call prefetch(output%qcltend )
          call prefetch(output%qiltend )
 
-         call prefetch(output%t_cvt_tend )
-         call prefetch(output%q_cvt_tend )
+         call prefetch(output%t_vt_tend )
+         call prefetch(output%q_vt_tend )
 
          call prefetch(output%cld    )
          call prefetch(output%gicewp )
@@ -431,8 +431,8 @@ contains
       output%qcltend = 0
       output%qiltend = 0
 
-      output%t_cvt_tend = 0
-      output%q_cvt_tend = 0
+      output%t_vt_tend = 0
+      output%q_vt_tend = 0
 
       output%cld    = 0
       output%gicewp = 0
@@ -552,8 +552,8 @@ contains
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
 
-      if (allocated(output%t_cvt_tend)) deallocate(output%t_cvt_tend)
-      if (allocated(output%q_cvt_tend)) deallocate(output%q_cvt_tend)
+      if (allocated(output%t_vt_tend)) deallocate(output%t_vt_tend)
+      if (allocated(output%q_vt_tend)) deallocate(output%q_vt_tend)
 
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)

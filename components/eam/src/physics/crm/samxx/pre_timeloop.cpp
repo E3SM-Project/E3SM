@@ -139,12 +139,12 @@ void pre_timeloop() {
   auto &crm_output_jt_crm        = :: crm_output_jt_crm;
   auto &crm_output_mx_crm        = :: crm_output_mx_crm;
   auto &ncrms                    = :: ncrms;
-  auto &crm_input_t_cvt          = :: crm_input_t_cvt;
-  auto &crm_input_q_cvt          = :: crm_input_q_cvt;
-  auto &t_cvt_tend               = :: t_cvt_tend;
-  auto &q_cvt_tend               = :: q_cvt_tend;
-  auto &t_cvt                    = :: t_cvt;
-  auto &q_cvt                    = :: q_cvt;
+  auto &crm_input_t_vt          = :: crm_input_t_vt;
+  auto &crm_input_q_vt          = :: crm_input_q_vt;
+  auto &t_vt_tend               = :: t_vt_tend;
+  auto &q_vt_tend               = :: q_vt_tend;
+  auto &t_vt                    = :: t_vt;
+  auto &q_vt                    = :: q_vt;
   
 
   crm_accel_ceaseflag = false;
@@ -315,8 +315,8 @@ void pre_timeloop() {
     colprecs(icrm)=0.0;
   });
 
-#if defined(MMF_CVT)
-  CVT_diagnose();
+#if defined(MMF_VT)
+  VT_diagnose();
 #endif
 
   // for (int k=0; k<nzm; k++) {
@@ -392,10 +392,10 @@ void pre_timeloop() {
     vg0  (k,icrm) = vln(l,icrm);
     tg0  (k,icrm) = crm_input_tl(l,icrm)+gamaz(k,icrm)-fac_cond*crm_input_qccl(l,icrm)-fac_sub*crm_input_qiil(l,icrm);
     qg0  (k,icrm) = crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm);
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
     // variance transport input forcing
-    t_cvt_tend(k,icrm) = ( crm_input_t_cvt(l,icrm) - t_cvt(k,icrm) )*idt_gl ;
-    q_cvt_tend(k,icrm) = ( crm_input_q_cvt(l,icrm) - q_cvt(k,icrm) )*idt_gl ;
+    t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
+    q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
 #endif
   });
 

@@ -17,22 +17,22 @@ module variance_transport_mod
 
    implicit none
 
-   public allocate_CVT
-   public deallocate_CVT
-   public CVT_diagnose
-   public CVT_forcing
+   public allocate_VT
+   public deallocate_VT
+   public VT_diagnose
+   public VT_forcing
 
-   real(crm_rknd), allocatable :: t_cvt_tend(:,:)     ! forcing tendency of LSE amp per wavenumber
-   real(crm_rknd), allocatable :: q_cvt_tend(:,:)     ! forcing tendency of QT  amp per wavenumber
+   real(crm_rknd), allocatable :: t_vt_tend(:,:)     ! forcing tendency of LSE amp per wavenumber
+   real(crm_rknd), allocatable :: q_vt_tend(:,:)     ! forcing tendency of QT  amp per wavenumber
 
-   real(crm_rknd), allocatable :: t_cvt(:,:)          ! LSE variance tracer
-   real(crm_rknd), allocatable :: q_cvt(:,:)          ! QT  variance tracer
+   real(crm_rknd), allocatable :: t_vt(:,:)          ! LSE variance tracer
+   real(crm_rknd), allocatable :: q_vt(:,:)          ! QT  variance tracer
 
-   real(crm_rknd), allocatable :: t_cvt_pert(:,:,:,:) ! LSE perturbation from horizontal mean
-   real(crm_rknd), allocatable :: q_cvt_pert(:,:,:,:) ! QT  perturbation from horizontal mean
+   real(crm_rknd), allocatable :: t_vt_pert(:,:,:,:) ! LSE perturbation from horizontal mean
+   real(crm_rknd), allocatable :: q_vt_pert(:,:,:,:) ! QT  perturbation from horizontal mean
 
-#if defined(MMF_CVT_KMAX)
-   integer, parameter :: filter_wn_max = MMF_CVT_KMAX
+#if defined(MMF_VT_KMAX)
+   integer, parameter :: filter_wn_max = MMF_VT_KMAX
 #else
    integer, parameter :: filter_wn_max = 0
 #endif
@@ -41,50 +41,50 @@ contains
 
 !===============================================================================
 !===============================================================================
-subroutine allocate_CVT(ncrms)
+subroutine allocate_VT(ncrms)
    !----------------------------------------------------------------------------
-   ! Purpose: Allocate and initialize CVT variables
+   ! Purpose: Allocate and initialize VT variables
    !----------------------------------------------------------------------------
    implicit none
    integer, intent(in) :: ncrms
 
-   allocate( t_cvt_tend( ncrms, nzm ) )
-   allocate( q_cvt_tend( ncrms, nzm ) )
+   allocate( t_vt_tend( ncrms, nzm ) )
+   allocate( q_vt_tend( ncrms, nzm ) )
 
-   allocate( t_cvt( ncrms, nzm ) )
-   allocate( q_cvt( ncrms, nzm ) )   
+   allocate( t_vt( ncrms, nzm ) )
+   allocate( q_vt( ncrms, nzm ) )   
 
-   t_cvt_tend(:,:) = 0.0_crm_rknd
-   q_cvt_tend(:,:) = 0.0_crm_rknd
+   t_vt_tend(:,:) = 0.0_crm_rknd
+   q_vt_tend(:,:) = 0.0_crm_rknd
 
-   t_cvt(:,:)      = 0.0_crm_rknd
-   q_cvt(:,:)      = 0.0_crm_rknd
+   t_vt(:,:)      = 0.0_crm_rknd
+   q_vt(:,:)      = 0.0_crm_rknd
 
-   allocate( t_cvt_pert( ncrms, nx, ny, nzm ) )
-   allocate( q_cvt_pert( ncrms, nx, ny, nzm ) )
-   t_cvt_pert(:,:,:,:)  = 0.0_crm_rknd
-   q_cvt_pert(:,:,:,:)  = 0.0_crm_rknd
+   allocate( t_vt_pert( ncrms, nx, ny, nzm ) )
+   allocate( q_vt_pert( ncrms, nx, ny, nzm ) )
+   t_vt_pert(:,:,:,:)  = 0.0_crm_rknd
+   q_vt_pert(:,:,:,:)  = 0.0_crm_rknd
 
-end subroutine allocate_CVT
+end subroutine allocate_VT
 
 !===============================================================================
 !===============================================================================
-subroutine deallocate_CVT()
+subroutine deallocate_VT()
    !----------------------------------------------------------------------------
-   ! Purpose: Deallocate CVT variables
+   ! Purpose: Deallocate VT variables
    !----------------------------------------------------------------------------
-   deallocate( t_cvt_tend )
-   deallocate( q_cvt_tend )
-   deallocate( t_cvt )
-   deallocate( q_cvt )   
-   deallocate( t_cvt_pert )
-   deallocate( q_cvt_pert )
+   deallocate( t_vt_tend )
+   deallocate( q_vt_tend )
+   deallocate( t_vt )
+   deallocate( q_vt )   
+   deallocate( t_vt_pert )
+   deallocate( q_vt_pert )
 
-end subroutine deallocate_CVT
+end subroutine deallocate_VT
 
 !===============================================================================
 !===============================================================================
-subroutine CVT_filter(ncrms,f_in,f_out)
+subroutine VT_filter(ncrms,f_in,f_out)
    !----------------------------------------------------------------------------
    ! Purpose: use FFT to filter out high frequency modes
    !----------------------------------------------------------------------------
@@ -108,7 +108,7 @@ subroutine CVT_filter(ncrms,f_in,f_out)
    !----------------------------------------------------------------------------
    ! initialization for FFT
    call rfft1i(nx,wsave,lensav,ier)
-   if(ier /= 0) write(0,*) 'ERROR: rfftmi(): CVT_filter - FFT initialization error ',ier
+   if(ier /= 0) write(0,*) 'ERROR: rfftmi(): VT_filter - FFT initialization error ',ier
    
    !$acc parallel loop collapse(3) async(asyncid)
    do k = 1,nzm
@@ -122,14 +122,14 @@ subroutine CVT_filter(ncrms,f_in,f_out)
 
             ! do the forward transform
             call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-            if (ier/=0) write(0,*) 'ERROR: rfftmf(): CVT_filter - forward FFT error ',ier
+            if (ier/=0) write(0,*) 'ERROR: rfftmf(): VT_filter - forward FFT error ',ier
 
             ! filter out high frequencies
             fft_out(2*(filter_wn_max+1):) = 0
 
             ! transform back
             call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-            if(ier /= 0) write(0,*) 'ERROR: rfftmb(): CVT_filter - backward FFT error ',ier
+            if(ier /= 0) write(0,*) 'ERROR: rfftmb(): VT_filter - backward FFT error ',ier
 
             ! copy to output
             do i = 1,nx
@@ -140,11 +140,11 @@ subroutine CVT_filter(ncrms,f_in,f_out)
       end do
    end do
 
-end subroutine CVT_filter
+end subroutine VT_filter
 
 !===============================================================================
 !===============================================================================
-subroutine CVT_diagnose(ncrms)
+subroutine VT_diagnose(ncrms)
    !----------------------------------------------------------------------------
    ! Purpose: Diagnose amplitude for each wavenumber for variance transport
    !----------------------------------------------------------------------------
@@ -181,8 +181,8 @@ subroutine CVT_diagnose(ncrms)
       do icrm = 1,ncrms
          t_mean(icrm,k) = 0.
          q_mean(icrm,k) = 0.
-         t_cvt(icrm,k) = 0.
-         q_cvt(icrm,k) = 0.
+         t_vt(icrm,k) = 0.
+         q_vt(icrm,k) = 0.
       end do
    end do
 
@@ -228,8 +228,8 @@ subroutine CVT_diagnose(ncrms)
          end do
       end do
 
-      call CVT_filter( ncrms, tmp_t, t_cvt_pert )
-      call CVT_filter( ncrms, tmp_q, q_cvt_pert )
+      call VT_filter( ncrms, tmp_t, t_vt_pert )
+      call VT_filter( ncrms, tmp_q, q_vt_pert )
 
    else ! use total variance
 
@@ -238,9 +238,9 @@ subroutine CVT_diagnose(ncrms)
          do j = 1,ny
             do i = 1,nx
                do icrm = 1,ncrms
-                  t_cvt_pert(icrm,i,j,k) = t(icrm,i,j,k) - t_mean(icrm,k)
+                  t_vt_pert(icrm,i,j,k) = t(icrm,i,j,k) - t_mean(icrm,k)
                   tmp = qv(icrm,i,j,k) + qcl(icrm,i,j,k) + qci(icrm,i,j,k)
-                  q_cvt_pert(icrm,i,j,k) = tmp           - q_mean(icrm,k)
+                  q_vt_pert(icrm,i,j,k) = tmp           - q_mean(icrm,k)
                end do
             end do
          end do
@@ -256,8 +256,8 @@ subroutine CVT_diagnose(ncrms)
       do j = 1,ny
          do i = 1,nx
             do icrm = 1,ncrms
-               t_cvt(icrm,k) = t_cvt(icrm,k) + t_cvt_pert(icrm,i,j,k) * t_cvt_pert(icrm,i,j,k)
-               q_cvt(icrm,k) = q_cvt(icrm,k) + q_cvt_pert(icrm,i,j,k) * q_cvt_pert(icrm,i,j,k)
+               t_vt(icrm,k) = t_vt(icrm,k) + t_vt_pert(icrm,i,j,k) * t_vt_pert(icrm,i,j,k)
+               q_vt(icrm,k) = q_vt(icrm,k) + q_vt_pert(icrm,i,j,k) * q_vt_pert(icrm,i,j,k)
             end do
          end do
       end do
@@ -266,8 +266,8 @@ subroutine CVT_diagnose(ncrms)
    !$acc parallel loop collapse(2) async(asyncid)
    do k = 1,nzm
       do icrm = 1,ncrms
-         t_cvt(icrm,k) = t_cvt(icrm,k) * factor_xy
-         q_cvt(icrm,k) = q_cvt(icrm,k) * factor_xy
+         t_vt(icrm,k) = t_vt(icrm,k) * factor_xy
+         q_vt(icrm,k) = q_vt(icrm,k) * factor_xy
       end do
    end do
 
@@ -280,11 +280,11 @@ subroutine CVT_diagnose(ncrms)
    deallocate( tmp_t )
    deallocate( tmp_q )
 
-end subroutine CVT_diagnose
+end subroutine VT_diagnose
 
 !===============================================================================
 !===============================================================================
-subroutine CVT_forcing(ncrms)
+subroutine VT_forcing(ncrms)
    !----------------------------------------------------------------------------
    ! Purpose: Calculate forcing for variance injection and apply limiters
    !----------------------------------------------------------------------------
@@ -324,8 +324,8 @@ subroutine CVT_forcing(ncrms)
          tmp_t_scale = -1
          tmp_q_scale = -1
          ! set scaling factors as long as there are perturbations to scale
-         if (t_cvt(icrm,k)>0) tmp_t_scale = 1.0_crm_rknd + dtn * t_cvt_tend(icrm,k) / t_cvt(icrm,k)
-         if (q_cvt(icrm,k)>0) tmp_q_scale = 1.0_crm_rknd + dtn * q_cvt_tend(icrm,k) / q_cvt(icrm,k)
+         if (t_vt(icrm,k)>0) tmp_t_scale = 1.0_crm_rknd + dtn * t_vt_tend(icrm,k) / t_vt(icrm,k)
+         if (q_vt(icrm,k)>0) tmp_q_scale = 1.0_crm_rknd + dtn * q_vt_tend(icrm,k) / q_vt(icrm,k)
          if (tmp_t_scale>0) t_pert_scale(icrm,k) = sqrt( tmp_t_scale )
          if (tmp_q_scale>0) q_pert_scale(icrm,k) = sqrt( tmp_q_scale )
          ! enforce minimum scaling
@@ -345,8 +345,8 @@ subroutine CVT_forcing(ncrms)
       do j = 1,ny
          do i = 1,nx
             do icrm = 1,ncrms
-               ttend_loc = ( t_pert_scale(icrm,k) * t_cvt_pert(icrm,i,j,k) - t_cvt_pert(icrm,i,j,k) ) / dtn
-               qtend_loc = ( q_pert_scale(icrm,k) * q_cvt_pert(icrm,i,j,k) - q_cvt_pert(icrm,i,j,k) ) / dtn
+               ttend_loc = ( t_pert_scale(icrm,k) * t_vt_pert(icrm,i,j,k) - t_vt_pert(icrm,i,j,k) ) / dtn
+               qtend_loc = ( q_pert_scale(icrm,k) * q_vt_pert(icrm,i,j,k) - q_vt_pert(icrm,i,j,k) ) / dtn
 
                t(icrm,i,j,k)                  = t(icrm,i,j,k)                  + ttend_loc * dtn
                micro_field(icrm,i,j,k,idx_qt) = micro_field(icrm,i,j,k,idx_qt) + qtend_loc * dtn
@@ -361,7 +361,7 @@ subroutine CVT_forcing(ncrms)
    deallocate( t_pert_scale )
    deallocate( q_pert_scale )
 
-end subroutine CVT_forcing
+end subroutine VT_forcing
 
 !===============================================================================
 !===============================================================================

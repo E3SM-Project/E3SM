@@ -11,7 +11,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_input_ul_p, real *crm_input_vl_p, 
                     real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, 
                     real *crm_input_ql_p, real *crm_input_tau00_p, 
-                    real *crm_input_t_cvt_p, real *crm_input_q_cvt_p,
+                    real *crm_input_t_vt_p, real *crm_input_q_vt_p,
                     real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, 
                     real *crm_state_temperature_p, 
                     real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, 
@@ -36,7 +36,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_output_jt_crm_p, real *crm_output_mx_crm_p, real *crm_output_cltot_p, 
                     real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, 
                     real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, real *crm_output_qiltend_p, 
-                    real *crm_output_t_cvt_tend_p, real *crm_output_q_cvt_tend_p,
+                    real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                     real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
@@ -60,7 +60,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
   create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 
                          crm_input_tl_p, crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p, crm_input_tau00_p, 
-                         crm_input_t_cvt_p, crm_input_q_cvt_p,
+                         crm_input_t_vt_p, crm_input_q_vt_p,
                          crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
                          crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_qrad_p, crm_output_subcycle_factor_p, 
                          lat0_p, long0_p, gcolp_p, crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, 
@@ -84,7 +84,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
                crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
-               crm_output_t_cvt_tend_p, crm_output_q_cvt_tend_p,
+               crm_output_t_vt_tend_p, crm_output_q_vt_tend_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                crm_output_ultend_p, crm_output_vltend_p,
 #endif
@@ -122,7 +122,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                            crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                            crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
                            crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
-                           crm_output_t_cvt_tend_p, crm_output_q_cvt_tend_p, 
+                           crm_output_t_vt_tend_p, crm_output_q_vt_tend_p, 
 #ifdef MMF_MOMENTUM_FEEDBACK
                            crm_output_ultend_p, crm_output_vltend_p,
 #endif

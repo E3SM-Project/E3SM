@@ -3,6 +3,6 @@
 #include "samxx_const.h"
 #include "vars.h"
 
-void CVT_diagnose();
+void VT_diagnose();
 
-void CVT_forcing();
+void VT_forcing();

@@ -247,8 +247,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined(MMF_ESMT)
   call allocate_scalar_momentum(ncrms)
 #endif
-#if defined(MMF_CVT)
-  call allocate_CVT(ncrms)
+#if defined(MMF_VT)
+  call allocate_VT(ncrms)
 #endif
 
   crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
@@ -532,8 +532,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_CVT)
-  call CVT_diagnose(ncrms)
+#if defined(MMF_VT)
+  call VT_diagnose(ncrms)
 #endif
 
   !$acc parallel loop collapse(2) async(asyncid)
@@ -565,10 +565,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       vg0  (icrm,k) = vln(icrm,l)
       tg0  (icrm,k) = crm_input%tl(icrm,l)+gamaz(icrm,k)-fac_cond*crm_input%qccl(icrm,l)-fac_sub*crm_input%qiil(icrm,l)
       qg0  (icrm,k) = crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
       ! variance transport input forcing
-      t_cvt_tend(icrm,k) = ( crm_input%t_cvt(icrm,l) - t_cvt(icrm,k) )*idt_gl
-      q_cvt_tend(icrm,k) = ( crm_input%q_cvt(icrm,l) - q_cvt(icrm,k) )*idt_gl
+      t_vt_tend(icrm,k) = ( crm_input%t_vt(icrm,l) - t_vt(icrm,k) )*idt_gl
+      q_vt_tend(icrm,k) = ( crm_input%q_vt(icrm,l) - q_vt(icrm,k) )*idt_gl
 #endif
     end do ! k
   end do ! icrm
@@ -758,9 +758,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       !------------------------------------------------------------
       ! variance transport forcing
-#if defined(MMF_CVT)
-      call CVT_diagnose(ncrms)
-      call CVT_forcing(ncrms)
+#if defined(MMF_VT)
+      call VT_diagnose(ncrms)
+      call VT_forcing(ncrms)
 #endif
 
       !------------------------------------------------------------
@@ -1231,9 +1231,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
   ! extra diagnostic step here for output tendencies
-  call CVT_diagnose(ncrms)
+  call VT_diagnose(ncrms)
 #endif
 
   !$acc parallel loop collapse(2) async(asyncid)
@@ -1271,21 +1271,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_CVT)
+#if defined(MMF_VT)
   ! zero out tendencies in top 2 CRM levels and above CRM top
   do k = 1,plev
     do icrm = 1,ncrms
       if ( k>(ptop+1) ) then
         l = plev-k+1
-        crm_output%t_cvt_tend(icrm,k) = ( t_cvt(icrm,l) - crm_input%t_cvt(icrm,k) ) * icrm_run_time
-        crm_output%q_cvt_tend(icrm,k) = ( q_cvt(icrm,l) - crm_input%q_cvt(icrm,k) ) * icrm_run_time
+        crm_output%t_vt_tend(icrm,k) = ( t_vt(icrm,l) - crm_input%t_vt(icrm,k) ) * icrm_run_time
+        crm_output%q_vt_tend(icrm,k) = ( q_vt(icrm,l) - crm_input%q_vt(icrm,k) ) * icrm_run_time
       else
-        crm_output%t_cvt_tend(icrm,k) = 0.
-        crm_output%q_cvt_tend(icrm,k) = 0.
+        crm_output%t_vt_tend(icrm,k) = 0.
+        crm_output%q_vt_tend(icrm,k) = 0.
       end if
     end do
   end do
-#endif /* MMF_CVT */
+#endif /* MMF_VT */
 
   !-------------------------------------------------------------
   !
@@ -1745,8 +1745,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined( MMF_ESMT )
   call deallocate_scalar_momentum()
 #endif
-#if defined(MMF_CVT)
-  call deallocate_CVT()
+#if defined(MMF_VT)
+  call deallocate_VT()
 #endif
 
 end subroutine crm
