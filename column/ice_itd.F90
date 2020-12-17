@@ -28,7 +28,7 @@
 
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, p001, puny, p5, &
-          Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, Tocnfrz, rhoi
+          Lfresh, rhos, ice_ref_salinity, hs_min, cp_ice, rhoi
       use ice_warnings, only: &
           add_warning
 
@@ -89,7 +89,7 @@
       subroutine rebin (ntrcr,    trcr_depend,     &
                         trcr_base,                 &
                         n_trcr_strata,             &
-                        nt_strata,                 &
+                        nt_strata,   Tf,           &
                         aicen,    trcrn,           &
                         vicen,    vsnon,           &
                         ncat,     hin_max,         &
@@ -102,6 +102,9 @@
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
          n_trcr_strata  ! number of underlying tracer layers
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension (:,:), intent(in) :: &
          trcr_base      ! = 0 or 1 depending on tracer dependency
@@ -207,7 +210,7 @@
                             trcr_depend,          &
                             trcr_base,            &
                             n_trcr_strata,        &
-                            nt_strata,            &
+                            nt_strata,   Tf,      &
                             aicen,    trcrn,      &
                             vicen,    vsnon,      &
                             hicen,    donor,      &
@@ -255,7 +258,7 @@
                             trcr_depend,          &
                             trcr_base,            &
                             n_trcr_strata,        &
-                            nt_strata,            &
+                            nt_strata,   Tf,      &
                             aicen,    trcrn,      &
                             vicen,    vsnon,      &
                             hicen,    donor,      &
@@ -345,7 +348,7 @@
                             trcr_depend,           &
                             trcr_base,             &
                             n_trcr_strata,         &
-                            nt_strata,             &
+                            nt_strata,   Tf,       &
                             aicen,    trcrn,       &
                             vicen,    vsnon,       &
                             hicen,    donor,       &
@@ -361,6 +364,9 @@
       integer (kind=int_kind), dimension (:), intent(in) :: &
          trcr_depend, & ! = 0 for aicen tracers, 1 for vicen, 2 for vsnon
          n_trcr_strata  ! number of underlying tracer layers
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf        ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension (:,:), intent(in) :: &
          trcr_base      ! = 0 or 1 depending on tracer dependency
@@ -647,11 +653,12 @@
       ! Compute new tracers
       !-----------------------------------------------------------------
 
-         call colpkg_compute_tracers (ntrcr,       trcr_depend, &
-                                      atrcrn(:,n), aicen(n),    &
-                                      vicen(n),    vsnon(n),    &
+         call colpkg_compute_tracers (ntrcr,       trcr_depend,    &
+                                      atrcrn(:,n), aicen(n),       &
+                                      vicen(n),    vsnon(n),       &
                                       trcr_base,   n_trcr_strata,  &
-                                      nt_strata,   trcrn(:,n))
+                                      nt_strata,   trcrn(:,n),     &
+                                      Tf)
 
       enddo                     ! ncat
 
@@ -744,7 +751,8 @@
 !
 ! author: William H. Lipscomb, LANL
 
-      subroutine cleanup_itd (dt,          ntrcr,      &
+      subroutine cleanup_itd (dt,          Tf,         &
+                              ntrcr,                   &
                               nilyr,       nslyr,      &
                               ncat,        hin_max,    &
                               aicen,       trcrn,      &
@@ -774,7 +782,8 @@
          n_aero    ! number of aerosol tracers
  
       real (kind=dbl_kind), intent(in) :: & 
-         dt        ! time step 
+         dt    , & ! time step 
+         Tf        ! ocean freezing temperature           (Celsius)
  
       real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max   ! category boundaries (m)
@@ -916,7 +925,7 @@
          call rebin (ntrcr,      trcr_depend, &
                      trcr_base,               &
                      n_trcr_strata,           &
-                     nt_strata,               &
+                     nt_strata,  Tf,          &
                      aicen,      trcrn,       &
                      vicen,      vsnon,       &
                      ncat,       hin_max,     &
@@ -929,7 +938,8 @@
       !-----------------------------------------------------------------
 
       if (limit_aice) then
-         call zap_small_areas (dt,           ntrcr,         &
+         call zap_small_areas (dt,           Tf,            &
+                               ntrcr,                       &
                                ncat,         n_aero,        &
                                nblyr,                       &
                                nilyr,        nslyr,         &
@@ -1016,7 +1026,8 @@
 !
 ! author: William H. Lipscomb, LANL
 
-      subroutine zap_small_areas (dt,        ntrcr,        &
+      subroutine zap_small_areas (dt,        Tf,           &
+                                  ntrcr,                   &
                                   ncat,      n_aero,       &
                                   nblyr,                   &
                                   nilyr,     nslyr,        &
@@ -1049,7 +1060,8 @@
          nbtrcr       ! number of biology tracers
 
       real (kind=dbl_kind), intent(in) :: &
-         dt           ! time step
+         dt       , & ! time step
+         Tf           ! ocean freezing temperature           (Celsius)
 
       real (kind=dbl_kind), intent(inout) :: &
          aice     , & ! total ice concentration
@@ -1189,7 +1201,7 @@
             aice0 = aice0 + aicen(n)
             aicen(n) = c0
             vicen(n) = c0
-            trcrn(nt_Tsfc,n) = Tocnfrz
+            trcrn(nt_Tsfc,n) = Tf
 
       !-----------------------------------------------------------------
       ! Zap snow

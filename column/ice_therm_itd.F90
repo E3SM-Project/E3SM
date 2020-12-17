@@ -66,16 +66,16 @@
 ! authors: William H. Lipscomb, LANL
 !          Elizabeth C. Hunke, LANL
 
-      subroutine linear_itd (ncat,        hin_max,     &
-                             nilyr,       nslyr,       &
-                             ntrcr,       trcr_depend, & 
+      subroutine linear_itd (ncat,        hin_max,      &
+                             nilyr,       nslyr,        &
+                             ntrcr,       trcr_depend,  & 
                              trcr_base,   n_trcr_strata,&
-                             nt_strata,                &
-                             aicen_init,  vicen_init,  & 
-                             aicen,       trcrn,       & 
-                             vicen,       vsnon,       & 
-                             aice,        aice0,       & 
-                             fpond,       l_stop,      &
+                             nt_strata,   Tf,           &
+                             aicen_init,  vicen_init,   & 
+                             aicen,       trcrn,        & 
+                             vicen,       vsnon,        & 
+                             aice,        aice0,        & 
+                             fpond,       l_stop,       &
                              stop_label)
 
       use ice_itd, only: aggregate_area, shift_ice, & 
@@ -90,6 +90,9 @@
          nilyr   , & ! number of ice layers
          nslyr   , & ! number of snow layers
          ntrcr       ! number of tracers in use
+
+      real (kind=dbl_kind), intent(in) :: &
+         Tf          ! ocean freezing temperature (C)
 
       real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
@@ -555,7 +558,7 @@
                          trcr_depend,           &
                          trcr_base,             &
                          n_trcr_strata,         &
-                         nt_strata,             &
+                         nt_strata,   Tf,       &
                          aicen,    trcrn,       &
                          vicen,    vsnon,       &
                          hicen,    donor,       &
