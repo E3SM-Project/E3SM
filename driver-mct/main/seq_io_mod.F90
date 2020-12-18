@@ -805,9 +805,8 @@ contains
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
           endif
        enddo
-
-       deallocate(data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data)
 
     end if
   end subroutine seq_io_write_avs
