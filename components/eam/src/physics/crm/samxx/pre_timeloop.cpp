@@ -315,10 +315,6 @@ void pre_timeloop() {
     colprecs(icrm)=0.0;
   });
 
-#if defined(MMF_VT)
-  VT_diagnose();
-#endif
-
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
@@ -366,6 +362,10 @@ void pre_timeloop() {
     yakl::atomicAdd(qp0(k,icrm) , tmp);
     yakl::atomicAdd(tke0(k,icrm) , sgs_field(0,k,j+offy_s,i+offx_s,icrm));
   });
+
+#if defined(MMF_VT)
+  VT_diagnose();
+#endif
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
