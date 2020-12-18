@@ -10,9 +10,6 @@ using yakl::intrinsics::minval;
 using yakl::intrinsics::maxval;
 
 // Prototypes
-extern "C" void add_gas_name(char const *gas_name);
-extern "C" void convert_gas_names(string1d &gas_names);
-extern "C" void vect_to_string1d(std::vector<std::string> vect, string1d strarr);
 extern "C" int get_nband_sw();
 extern "C" int get_nband_lw();
 extern "C" int get_ngpt_sw();
@@ -24,7 +21,7 @@ extern "C" void get_gpoint_bands_lw(int *gpoint_bands);
 extern "C" void rrtmgpxx_finalize();
 extern "C" void rrtmgpxx_run_sw (
         int ngas, int ncol, int nlay,
-        double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
+        char *gas_names_p[], double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
         double *cld_tau_gpt_p, double *cld_ssa_gpt_p, double *cld_asm_gpt_p,
         double *aer_tau_bnd_p, double *aer_ssa_bnd_p, double *aer_asm_bnd_p,
@@ -36,7 +33,7 @@ extern "C" void rrtmgpxx_run_sw (
         );
 extern "C" void rrtmgpxx_run_lw (
         int ngas, int ncol, int nlay,
-        double *gas_vmr_p           , 
+        char *gas_names_p[], double *gas_vmr_p           , 
         double *pmid_p              , double *tmid_p              , double *pint_p               , double *tint_p,
         double *emis_sfc_p          ,
         double *cld_tau_gpt_p       , double *aer_tau_bnd_p       ,
@@ -46,15 +43,14 @@ extern "C" void rrtmgpxx_run_lw (
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p
         );
 
+// Objects live here in file scope because they need to be initialized just *once*
 GasOpticsRRTMGP k_dist_sw;
 GasOpticsRRTMGP k_dist_lw;
 
 // Vector of strings to hold active gas names. 
-// These need to be added at runtime, one by one,
-// via the add_gas_name function.
-std::vector<std::string> gas_names_vect;
+//string1d gas_names1d;
 
-extern "C" void rrtmgpxx_initialize_cpp(char const *coefficients_file_sw, char const *coefficients_file_lw) {
+extern "C" void rrtmgpxx_initialize_cpp(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
     // First, make sure yakl has been initialized
     if (!yakl::isInitialized()) {
         yakl::init();
@@ -62,22 +58,19 @@ extern "C" void rrtmgpxx_initialize_cpp(char const *coefficients_file_sw, char c
 
     // Read gas optics coefficients from file
     // Need to initialize available_gases here! The only field of the
-    // available_gases type that is used int he kdist initialize is
+    // available_gases type that is used in the kdist initialize is
     // available_gases%gas_name, which gives the name of each gas that would be
     // present in the ty_gas_concs object. So, we can just set this here, rather
     // than trying to fully populate the ty_gas_concs object here, which would be
     // impossible from this initialization routine because I do not thing the
     // rad_cnst objects are setup yet.
     // the other tasks!
-    // TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
-    //gas_names = string1d("gas_names", 8);
-    //
-    // Let us cheat for a moment and hard-code the gases.
-    // TODO: fix this!
-    string1d gas_names("gas_names", gas_names_vect.size());
-    convert_gas_names(gas_names);
+    string1d gas_names1d("gas_names1d", ngas);
+    for (int igas=0; igas<ngas; igas++) {
+        gas_names1d(igas+1) = gas_names[igas];
+    }
     GasConcs available_gases;
-    available_gases.init(gas_names, 1, 1);
+    available_gases.init(gas_names1d, 1, 1);
     load_and_init(k_dist_sw, coefficients_file_sw, available_gases);
     load_and_init(k_dist_lw, coefficients_file_lw, available_gases);
 }
@@ -86,27 +79,6 @@ extern "C" void rrtmgpxx_finalize() {
     k_dist_sw.finalize();
     k_dist_lw.finalize();
     yakl::finalize();
-}
-
-extern "C" void add_gas_name(char const *gas_name) {
-    gas_names_vect.push_back(std::string(gas_name));
-}
-
-extern "C" void convert_gas_names(string1d &gas_names) {
-    int ngas = gas_names_vect.size();
-    if (ngas == 0) {
-        throw "No active gases; are you sure you initialized gas_names_vect?";
-    }
-    for (int i = 1; i <= ngas; i++) {
-        gas_names(i) = gas_names_vect[i-1];
-    }
-}
-
-extern "C" void vect_to_string1d(std::vector<std::string> vect, string1d strarr) {
-    int n = vect.size();
-    for (int i = 0; i < n; i++) {
-        strarr(i+1) = vect[i];
-    }
 }
 
 extern "C" int get_nband_sw() {
@@ -147,7 +119,7 @@ extern "C" void get_gpoint_bands_lw(int *gpoint_bands_p) {
 
 extern "C" void rrtmgpxx_run_sw (
         int ngas, int ncol, int nlay,
-        double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
+        char *gas_names_p[], double *gas_vmr_p, double *pmid_p      , double *tmid_p      , double *pint_p,
         double *coszrs_p , double *albedo_dir_p, double *albedo_dif_p,
         double *cld_tau_gpt_p, double *cld_ssa_gpt_p, double *cld_asm_gpt_p,
         double *aer_tau_bnd_p, double *aer_ssa_bnd_p, double *aer_asm_bnd_p,
@@ -187,8 +159,10 @@ extern "C" void rrtmgpxx_run_sw (
     // also maybe update the gas concs directly from gas_vmr via a parallel_for
     // rather than going through the set_vmr method, since we are not passing
     // the gas names through this interface anyways.
-    string1d gas_names("gas_names", gas_names_vect.size());
-    convert_gas_names(gas_names);
+    string1d gas_names("gas_names", ngas);
+    for (int igas = 1; igas<=ngas; igas++) {
+        gas_names(igas) = gas_names_p[igas-1];
+    }
     GasConcs gas_concs;
     gas_concs.init(gas_names, ncol, nlay);
     real2d tmp2d;
@@ -269,7 +243,7 @@ extern "C" void rrtmgpxx_run_sw (
 
 extern "C" void rrtmgpxx_run_lw (
         int ngas, int ncol, int nlay,
-        double *gas_vmr_p           , 
+        char *gas_names_p[]         , double *gas_vmr_p           , 
         double *pmid_p              , double *tmid_p              , double *pint_p               , double *tint_p,
         double *emis_sfc_p          ,
         double *cld_tau_gpt_p       , double *aer_tau_bnd_p       ,
@@ -297,8 +271,10 @@ extern "C" void rrtmgpxx_run_lw (
     auto clrsky_flux_net = real2d("clrsky_flux_net", clrsky_flux_net_p, ncol, nlay+1);
 
     // Populate gas concentrations
-    string1d gas_names("gas_names", gas_names_vect.size());
-    convert_gas_names(gas_names);
+    string1d gas_names("gas_names", ngas);
+    for (int igas = 1; igas<=ngas; igas++) {
+        gas_names(igas) = gas_names_p[igas-1];
+    }
     GasConcs gas_concs;
     gas_concs.init(gas_names, ncol, nlay);
     real2d tmp2d;

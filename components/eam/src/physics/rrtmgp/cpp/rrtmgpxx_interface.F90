@@ -22,7 +22,8 @@ module rrtmgpxx_interface
       get_nband_sw, get_nband_lw, &
       get_ngpt_sw, get_ngpt_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      get_min_temperature, get_max_temperature
+      get_min_temperature, get_max_temperature, &
+      c_strarr
    
    interface 
 
@@ -74,9 +75,11 @@ module rrtmgpxx_interface
          integer(c_int), dimension(*) :: gpoint_bands
       end subroutine
 
-      subroutine rrtmgpxx_initialize_cpp(coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
-         use iso_c_binding, only: C_CHAR, C_NULL_CHAR
+      subroutine rrtmgpxx_initialize(ngas, gas_names, coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
+         use iso_c_binding
          implicit none
+         integer(kind=c_int), value :: ngas
+         type(c_ptr), dimension(*) :: gas_names
          character(kind=c_char) :: coefficients_file_sw(*)
          character(kind=c_char) :: coefficients_file_lw(*)
       end subroutine rrtmgpxx_initialize_cpp
@@ -86,7 +89,7 @@ module rrtmgpxx_interface
 
       subroutine rrtmgpxx_run_sw( &
          ngas, ncol, nlev, &
-         gas_vmr, &
+         gas_names, gas_vmr, &
          pmid, tmid, pint, coszrs, &
          albedo_dir, albedo_dif, &
          cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
@@ -100,6 +103,7 @@ module rrtmgpxx_interface
          use iso_c_binding
          implicit none
          integer(kind=c_int), value :: ngas, ncol, nlev
+         type(c_ptr), dimension(*) :: gas_names
          real(kind=c_double), dimension(*) :: &
             gas_vmr, pmid, tmid, pint, coszrs, albedo_dir, albedo_dif, &
             cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
@@ -113,7 +117,7 @@ module rrtmgpxx_interface
 
       subroutine rrtmgpxx_run_lw ( &
          ngas, ncol, nlev, &
-         gas_vmr, &
+         gas_names, gas_vmr, &
          pmid, tmid, pint, tint, &
          surface_emissivity, &
          cld_tau, aer_tau, &
@@ -125,6 +129,7 @@ module rrtmgpxx_interface
          use iso_c_binding
          implicit none
          integer(kind=c_int), value :: ngas, ncol, nlev
+         type(c_ptr), dimension(*) :: gas_names
          real(kind=c_double), dimension(*) :: &
             gas_vmr, &
             pmid, tmid, pint, tint, surface_emissivity, &
@@ -135,11 +140,6 @@ module rrtmgpxx_interface
             clrsky_bnd_flux_up_cxx, clrsky_bnd_flux_dn_cxx, clrsky_bnd_flux_net_cxx
       end subroutine rrtmgpxx_run_lw
 
-      subroutine add_gas_name(gas_name) bind(C, name="add_gas_name")
-         use iso_c_binding, only: C_CHAR
-         character(kind=c_char) :: gas_name
-      end subroutine add_gas_name
-
    end interface
 
 contains
@@ -148,10 +148,13 @@ contains
       use iso_c_binding, only: C_CHAR, C_NULL_CHAR
       character(len=*), intent(in) :: active_gases(:)
       character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
-      ! Add active gases
-      call add_gases(active_gases)
+      character(len=len(active_gases)+1), dimension(size(active_gases)), target :: active_gases_c
+      integer :: igas
+
       ! Initialize RRTMGP
       call rrtmgpxx_initialize_cpp( &
+         size(active_gases), &
+         c_strarr(active_gases, active_gases_c), &
          C_CHAR_""//trim(coefficients_file_sw)//C_NULL_CHAR, &
          C_CHAR_""//trim(coefficients_file_lw)//C_NULL_CHAR &
       )
@@ -163,30 +166,27 @@ contains
       nlwgpts = get_ngpt_lw()
    end subroutine rrtmgpxx_initialize
 
-   ! --------------------------------------------------------------------------
-   ! Private routines
-   ! --------------------------------------------------------------------------
-
-   subroutine add_gases(gases)
-      use mo_rrtmgp_util_string, only: lower_case
-      use iso_c_binding, only: C_CHAR, C_NULL_CHAR
-      character(len=*), intent(in) :: gases(:)
-      integer :: igas
-      do igas = 1,size(gases)
-         call add_gas_name(trim(lower_case(gases(igas)))//C_NULL_CHAR)
+   ! Utility function to convert F90 string arrays to C-compatible string
+   ! pointers; NOTE: str_c seems to need to be intent(out), or else the first
+   ! element in the pointer array is messed up for some reason.
+   function c_strarr(str, str_c) result(str_p)
+      use iso_c_binding
+      implicit none
+      character(len=*), dimension(:), intent(in) :: str
+      character(len=*), dimension(:), target, intent(out) :: str_c
+      type(c_ptr), dimension(size(str)) :: str_p
+      integer :: istr
+      do istr = 1,size(str)
+         str_c(istr) = trim(str(istr))//C_NULL_CHAR
+         str_p(istr) = c_loc(str_c(istr))
       end do
-   end subroutine add_gases
+   end function c_strarr
 
-   !----------------------------------------------------------------------------
-
-   ! Stop run ungracefully since we don't want dependencies on E3SM abortutils
-   ! here
-   subroutine handle_error(msg)
-      character(len=*), intent(in) :: msg
-      if (trim(msg) .ne. '') then
-         print *, trim(msg)
-         stop
-      end if
-   end subroutine handle_error
-
+!  function c_string(str) result(str_c)
+!     implicit none
+!     use iso_c_binding
+!     character(len=*), intent(in) :: str
+!     character(kind=c_char) :: str_c
+!     str_c = trim(str)//C_NULL_CHAR
+!  end function c_string
 end module rrtmgpxx_interface

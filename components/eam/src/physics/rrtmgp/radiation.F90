@@ -11,6 +11,7 @@ module radiation
    ! E3SM-specific modules that are used throughout this module. An effort was made
    ! to keep imports as local as possible, so we only load a few of these at the
    ! module (rather than the subroutine) level.
+   use iso_c_binding
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
@@ -31,17 +32,18 @@ module radiation
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
-      get_gpoint_bands_sw, get_gpoint_bands_lw
+      get_gpoint_bands_sw, get_gpoint_bands_lw, &
+      nswgpts, nlwgpts
    use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize, rrtmgpxx_finalize, &
+      rrtmgpxx_initialize_cpp, rrtmgpxx_finalize, &
       rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
       rrtmgpxx_get_min_temperature => get_min_temperature, &
       rrtmgpxx_get_max_temperature => get_max_temperature, &
       rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
       rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
+      c_strarr, &
       get_nband_sw, get_nband_lw, &
-      get_ngpt_sw, get_ngpt_lw, &
-      nswgpts, nlwgpts
+      get_ngpt_sw, get_ngpt_lw
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -175,6 +177,9 @@ module radiation
       'H2O', 'CO2', 'O3 ', 'N2O', &
       'CO ', 'CH4', 'O2 ', 'N2 ' &
    /)
+   ! Null-terminated C-compatible version of active gases for use with C++
+   ! routines.
+   character(len=len(active_gases)+1), dimension(size(active_gases)), target :: active_gases_c
 
    ! Stuff to generate random numbers for perturbation growth tests. This needs to
    ! be public module data because restart_physics needs to read it to write it to
@@ -491,11 +496,15 @@ contains
 
       ! Setup the RRTMGP interface
       call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
-      call rrtmgpxx_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
+      call rrtmgpxx_initialize_cpp( &
+         size(active_gases), c_strarr(active_gases, active_gases_c), &
+         trim(rrtmgp_coefficients_file_sw)//C_NULL_CHAR, &
+         trim(rrtmgp_coefficients_file_lw)//C_NULL_CHAR &
+      )
 
       ! Make sure number of bands in absorption coefficient files matches what we expect
-      call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
-      call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
+      !call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
+      !call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
       call assert(nswbands == get_nband_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
       call assert(nlwbands == get_nband_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
 
@@ -1645,17 +1654,17 @@ contains
       cld_tau_gpt_rad = 0
       cld_ssa_gpt_rad = 0
       cld_asm_gpt_rad = 0
-      cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt_day(:,:,:)
-      cld_ssa_gpt_rad(:,ktop:kbot,:) = cld_ssa_gpt_day(:,:,:)
-      cld_asm_gpt_rad(:,ktop:kbot,:) = cld_asm_gpt_day(:,:,:)
+      cld_tau_gpt_rad(1:nday,ktop:kbot,:) = cld_tau_gpt_day(1:nday,1:pver,:)
+      cld_ssa_gpt_rad(1:nday,ktop:kbot,:) = cld_ssa_gpt_day(1:nday,1:pver,:)
+      cld_asm_gpt_rad(1:nday,ktop:kbot,:) = cld_asm_gpt_day(1:nday,1:pver,:)
       aer_tau_bnd_rad = 0
       aer_ssa_bnd_rad = 0
       aer_asm_bnd_rad = 0
-      aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd_day(:,:,:)
-      aer_ssa_bnd_rad(:,ktop:kbot,:) = aer_ssa_bnd_day(:,:,:)
-      aer_asm_bnd_rad(:,ktop:kbot,:) = aer_asm_bnd_day(:,:,:)
-      gas_vmr_rad(:,:nday,1) = gas_vmr_day(:,:nday,1)
-      gas_vmr_rad(:,:nday,ktop:kbot) = gas_vmr_day(:,:nday,1:pver)
+      aer_tau_bnd_rad(1:nday,ktop:kbot,:) = aer_tau_bnd_day(1:nday,:,:)
+      aer_ssa_bnd_rad(1:nday,ktop:kbot,:) = aer_ssa_bnd_day(1:nday,:,:)
+      aer_asm_bnd_rad(1:nday,ktop:kbot,:) = aer_asm_bnd_day(1:nday,:,:)
+      gas_vmr_rad(:,1:nday,1) = gas_vmr_day(:,1:nday,1)
+      gas_vmr_rad(:,1:nday,ktop:kbot) = gas_vmr_day(:,1:nday,1:pver)
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_rrtmgp_run_sw')
@@ -1682,7 +1691,7 @@ contains
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_cxx, do_direct=.true.)
       call rrtmgpxx_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -1737,6 +1746,7 @@ contains
       call t_stopf('rad_heating_rate_sw')
 
    end subroutine radiation_driver_sw
+
 
    !----------------------------------------------------------------------------
 
@@ -1895,7 +1905,7 @@ contains
       gas_vmr_rad(:,1:ncol,2:nlev_rad) = gas_vmr(:,1:ncol,:)
       call rrtmgpxx_run_lw( &
          size(active_gases), ncol, nlev_rad, &
-         gas_vmr_rad(:,1:ncol,:), &
+         c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:ncol,:), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
          cld_tau_gpt_rad(1:ncol,:,:)  , aer_tau_bnd_rad(1:ncol,:,:)  , &
