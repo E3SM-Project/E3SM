@@ -1085,13 +1085,12 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+         call MPAS_pool_get_array(velocitySolverPool, "uVelocityCell", uVelocityCell)
+         call MPAS_pool_get_array(velocitySolverPool, "vVelocityCell", vVelocityCell)
          call MPAS_pool_get_array(velocitySolverPool, "dynamicallyLockedCellsMask", dynamicallyLockedCellsMask)
 
          call MPAS_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
          call MPAS_pool_get_array(regionsPool, 'regionVertexMasks', regionVertexMasks)
-
-         call MPAS_pool_get_array(regionalStatisticsAMPool, 'uVelocityCell', uVelocityCell)
-         call MPAS_pool_get_array(regionalStatisticsAMPool, 'vVelocityCell', vVelocityCell)
 
          ! cell centre velocity for velocity statistics
          call seaice_interpolate_vertex_to_cell(meshPool, boundaryPool, uVelocityCell, uVelocity)
