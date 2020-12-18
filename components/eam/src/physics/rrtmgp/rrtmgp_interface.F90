@@ -380,17 +380,11 @@ contains
       real(wp), intent(in), dimension(:,:,:) :: gas_vmr
       type(ty_gas_concs), intent(out) :: gas_concentrations
 
-      ! Local variables
-      real(wp), dimension(ncol,nlev_rad) :: vol_mix_ratio_out
-
       ! Loop indices
       integer :: igas
 
       ! Character array to hold lowercase gas names
       character(len=32), allocatable :: gas_names_lower(:)
-
-      ! Name of subroutine for error messages
-      character(len=32) :: subname = 'set_gas_concentrations'
 
       ! Initialize gas concentrations with lower case names
       allocate(gas_names_lower(size(gas_names)))
@@ -399,18 +393,10 @@ contains
       end do
       call handle_error(gas_concentrations%init(gas_names_lower))
 
-      ! For each gas, add level above model top and set values in RRTMGP object
+      ! Set gas concentrations
       do igas = 1,size(gas_names)
-         vol_mix_ratio_out = 0
-         ! Map to radiation grid
-         vol_mix_ratio_out(1:ncol,ktop:kbot) = gas_vmr(igas,1:ncol,1:pver)
-         ! Copy top-most model level to top-most rad level (which could be above
-         ! the top of the model)
-         vol_mix_ratio_out(1:ncol,1) = gas_vmr(igas,1:ncol,1)
-         ! Set volumn mixing ratio in gas concentration object for just columns
-         ! in this chunk
          call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_names(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) &
+            trim(lower_case(gas_names(igas))), gas_vmr(igas,1:ncol,:)) &
          )
       end do
 

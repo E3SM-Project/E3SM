@@ -1640,9 +1640,6 @@ contains
       end do
 
       ! Allocate shortwave fluxes (allsky and clearsky)
-      ! TODO: why do I need to provide my own routines to do this? Why is 
-      ! this not part of the fluxes_t object?
-      !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
       ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
       ! have vertical dimension nlev_rad (defined at midpoints).
@@ -1650,7 +1647,7 @@ contains
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
       ! Add an empty level above model top
-      ! TODO: handle gases here too
+      ! TODO: combine with day compression above
       cld_tau_gpt_rad = 0
       cld_ssa_gpt_rad = 0
       cld_asm_gpt_rad = 0
@@ -1670,7 +1667,7 @@ contains
       call t_startf('rad_rrtmgp_run_sw')
       call rrtmgp_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         gas_names, gas_vmr_day, &
+         gas_names, gas_vmr_rad(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -1877,17 +1874,18 @@ contains
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
       ! Add an empty level above model top
-      ! TODO: handle gases here too
       cld_tau_gpt_rad = 0
       cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt(:,:,:)
       aer_tau_bnd_rad = 0
       aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd(:,:,:)
+      gas_vmr_rad(:,1:ncol,1) = gas_vmr(:,1:ncol,1)
+      gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Do longwave radiative transfer calculations
       call t_startf('rrtmgp_run_lw')
       call rrtmgp_run_lw( &
             size(active_gases), ncol, nlev_rad, &
-            gas_names, gas_vmr(:,1:ncol,:), &
+            gas_names, gas_vmr_rad(:,1:ncol,1:nlev_rad), &
             surface_emissivity(1:nlwbands,1:ncol), &
             pmid(1:ncol,:), tmid(1:ncol,:), pint(1:ncol,:), tint(1:ncol,:), &
             cld_tau_gpt_rad(1:ncol,:,:), aer_tau_bnd_rad(1:ncol,:,:), &
@@ -1901,8 +1899,6 @@ contains
       ! Try calling C++ version
       call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky_cxx)
       call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky_cxx)
-      gas_vmr_rad(:,1:ncol,1) = gas_vmr(:,1:ncol,1)
-      gas_vmr_rad(:,1:ncol,2:nlev_rad) = gas_vmr(:,1:ncol,:)
       call rrtmgpxx_run_lw( &
          size(active_gases), ncol, nlev_rad, &
          c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:ncol,:), &
