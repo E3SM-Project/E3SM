@@ -47,7 +47,7 @@ _TESTS = {
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.eam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM5A97",
+            "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
             )
@@ -160,8 +160,8 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-genmmf",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP.eam-genmmf",
             )
         },
 
