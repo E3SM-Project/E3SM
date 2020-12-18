@@ -75,14 +75,14 @@ module rrtmgpxx_interface
          integer(c_int), dimension(*) :: gpoint_bands
       end subroutine
 
-      subroutine rrtmgpxx_initialize(ngas, gas_names, coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize_cpp")
+      subroutine rrtmgpxx_initialize(ngas, gas_names, coefficients_file_sw, coefficients_file_lw) bind(C, name="rrtmgpxx_initialize")
          use iso_c_binding
          implicit none
          integer(kind=c_int), value :: ngas
          type(c_ptr), dimension(*) :: gas_names
          character(kind=c_char) :: coefficients_file_sw(*)
          character(kind=c_char) :: coefficients_file_lw(*)
-      end subroutine rrtmgpxx_initialize_cpp
+      end subroutine rrtmgpxx_initialize
 
       subroutine rrtmgpxx_finalize() bind(C, name="rrtmgpxx_finalize")
       end subroutine rrtmgpxx_finalize
@@ -143,28 +143,6 @@ module rrtmgpxx_interface
    end interface
 
 contains
-
-   subroutine rrtmgpxx_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
-      use iso_c_binding, only: C_CHAR, C_NULL_CHAR
-      character(len=*), intent(in) :: active_gases(:)
-      character(len=*), intent(in) :: coefficients_file_sw, coefficients_file_lw
-      character(len=len(active_gases)+1), dimension(size(active_gases)), target :: active_gases_c
-      integer :: igas
-
-      ! Initialize RRTMGP
-      call rrtmgpxx_initialize_cpp( &
-         size(active_gases), &
-         c_strarr(active_gases, active_gases_c), &
-         C_CHAR_""//trim(coefficients_file_sw)//C_NULL_CHAR, &
-         C_CHAR_""//trim(coefficients_file_lw)//C_NULL_CHAR &
-      )
-      ! Set number of bands based on what we read in from input data
-      nswbands = get_nband_sw()
-      nlwbands = get_nband_lw()
-      ! Number of gpoints depend on inputdata, so initialize here
-      nswgpts = get_ngpt_sw()
-      nlwgpts = get_ngpt_lw()
-   end subroutine rrtmgpxx_initialize
 
    ! Utility function to convert F90 string arrays to C-compatible string
    ! pointers; NOTE: str_c seems to need to be intent(out), or else the first

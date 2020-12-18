@@ -50,7 +50,7 @@ GasOpticsRRTMGP k_dist_lw;
 // Vector of strings to hold active gas names. 
 //string1d gas_names1d;
 
-extern "C" void rrtmgpxx_initialize_cpp(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
+extern "C" void rrtmgpxx_initialize(int ngas, char *gas_names[], char const *coefficients_file_sw, char const *coefficients_file_lw) {
     // First, make sure yakl has been initialized
     if (!yakl::isInitialized()) {
         yakl::init();

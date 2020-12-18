@@ -35,7 +35,7 @@ module radiation
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
    use rrtmgpxx_interface, only: &
-      rrtmgpxx_initialize_cpp, rrtmgpxx_finalize, &
+      rrtmgpxx_initialize, rrtmgpxx_finalize, &
       rrtmgpxx_run_sw, rrtmgpxx_run_lw, &
       rrtmgpxx_get_min_temperature => get_min_temperature, &
       rrtmgpxx_get_max_temperature => get_max_temperature, &
@@ -496,7 +496,7 @@ contains
 
       ! Setup the RRTMGP interface
       call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
-      call rrtmgpxx_initialize_cpp( &
+      call rrtmgpxx_initialize( &
          size(active_gases), c_strarr(active_gases, active_gases_c), &
          trim(rrtmgp_coefficients_file_sw)//C_NULL_CHAR, &
          trim(rrtmgp_coefficients_file_lw)//C_NULL_CHAR &
