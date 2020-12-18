@@ -90,7 +90,7 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
 
 
 def qflxconvert_units(var):
-    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
+    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1' or var.units == 'mm/s':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -865,6 +865,7 @@ derived_variables = {
         (('mrros',), rename)
     ]),
     'QRUNOFF': OrderedDict([
+        (('QRUNOFF',), lambda qrunoff: qflxconvert_units(qrunoff)),
         (('mrro',), rename)
     ]),
     'QINTR': OrderedDict([

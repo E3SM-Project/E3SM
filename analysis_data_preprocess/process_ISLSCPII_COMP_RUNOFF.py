@@ -53,7 +53,7 @@ for year in range(1986,1996):
         data_mon = numpy.loadtxt(fname, skiprows=6)
         print(data_mon.shape)
         data_mon = data_mon[::-1,:]
-        data[count,:,:] = data_mon / days_per_month * 24. * 3600.  #converted from mm/month to kg/m2/s
+        data[count,:,:] = data_mon / days_per_month /24.0/3600.0   #converted from mm/day to kg/m2/s
         count = count+1
 
 print(count)
