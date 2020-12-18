@@ -870,7 +870,7 @@ subroutine set_initial_sz_and_volumes(list_idx, top_lev, pver, ncol, imode, & !i
   real(r8) :: dgnum, sigmag, voltonumb
 
   call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, sigmag=sigmag)
-  voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+  voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
   do klev = top_lev, pver
      do icol = 1, ncol
@@ -1041,7 +1041,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
   !Compute a common factor for size computations
   call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag, dgnumhi=dgnumhi, dgnumlo=dgnumlo)
-  cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
+  cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 
   do  klev = top_lev, pver
      do  icol = 1, ncol
@@ -1150,14 +1150,14 @@ real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
 
 call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
-cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
+cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 !v2nxx = voltonumbhi is proportional to dgnumhi**(-3),
 !        and produces the minimum allowed number for a given volume
-v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*log(sigmag)**2) )
+v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
 !v2nyy = voltonumblo is proportional to dgnumlo**(-3),
 !        and produces the maximum allowed number for a given volume
-v2nyy   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
+v2nyy   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
 !v2nxxrl and v2nyyrl are their "relaxed" equivalents.
 v2nxxrl = v2nxx/relax_factor
@@ -1510,10 +1510,10 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   ! between the aitken and accum modes
 
   call rad_cnst_get_mode_props(list_idx, iait, dgnum=dgnum, sigmag=sigmag)
-  voltonumb_ait   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+  voltonumb_ait   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
   call rad_cnst_get_mode_props(list_idx, iacc, dgnum=dgnum, sigmag=sigmag)
-  voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3)*exp(4.5_r8*log(sigmag)**2) )
+  voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3._r8)*exp(4.5_r8*log(sigmag)**2._r8) )
 
   v2n_geomean = sqrt(voltonumb_ait*voltonumb_acc)
 
@@ -1796,7 +1796,7 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
 
         !Compute voltonumlo
         call rad_cnst_get_mode_props(list_idx, iacc, dgnumlo=dgnumlo, sigmag=sigmag)
-        voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*log(sigmag)**2) )
+        voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
         num_t_noxf = drv_t_noxf*voltonumblo !total number which can't be moved to the aitken mode
         num_t0 = num_t
@@ -1857,11 +1857,11 @@ real(r8) :: cmn_factor, sigmag, dgnum, dgnumlo, dgnumhi, voltonumb, voltonumbhi,
 
 !Compute a common factor for size computations
 call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
-cmn_factor = exp(4.5_r8*log(sigmag)**2)*pi/6.0_r8
+cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 
-voltonumbhi = 1._r8 / (cmn_factor*dgnumhi**3)
-voltonumblo = 1._r8 / (cmn_factor*dgnumlo**3)
-voltonumb   = 1._r8 / (cmn_factor*dgnum**3)
+voltonumbhi = 1._r8 / (cmn_factor*dgnumhi**3.0_r8)
+voltonumblo = 1._r8 / (cmn_factor*dgnumlo**3.0_r8)
+voltonumb   = 1._r8 / (cmn_factor*dgnum**3.0_r8)
 
 if (drv > 0.0_r8) then
    if (num <= drv*voltonumbhi) then
