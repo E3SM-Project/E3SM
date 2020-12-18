@@ -792,7 +792,7 @@ contains
           call mct_aVect_getRList(mstring,k,AVS(1))
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
+          !------- this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
@@ -803,8 +803,6 @@ contains
                 n = n + ns
              enddo
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-             call pio_setdebuglevel(0)
-             !-------tcraig
           endif
        enddo
 
@@ -1038,25 +1036,27 @@ contains
                 if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
                 if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))
                 if (present(mask)) then
-                   where(mask /= 0)
-                      data = avcomp%rattr(k,:)
-                   elsewhere
-                      data = lfillvalue
-                   endwhere
+                   do k2=1,ns
+                      n = n + 1
+                      if(mask(k2) /= 0) then
+                         data(n) = avcomp%rattr(k,k2)
+                      else
+                         data(n) = lfillvalue
+                      end if
+                   end do
                 else
-                   do k2 = 1,ns
+                  do k2 = 1,ns
                       n = n + 1
                       data(n) = avcomp%rAttr(k,k2)
                    enddo
                 endif
              enddo
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-             !-------tcraig
           endif
        enddo
 
-       deallocate(data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data)
 
     end if
   end subroutine seq_io_write_avscomp

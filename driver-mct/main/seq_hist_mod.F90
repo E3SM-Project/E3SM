@@ -167,6 +167,7 @@ contains
     character(CL) :: hist_file    ! Local path to history filename
     real(r8)      :: tbnds(2)     ! CF1.0 time bounds
     logical       :: whead,wdata  ! for writing restart/history cdf files
+    integer       :: nmask        ! location of mask in dom structure
     character(len=18) :: date_str
     type(mct_gsMap), pointer :: gsmap
     type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
@@ -347,14 +348,15 @@ contains
           if (ice_present) then
              gsmap => component_get_gsmap_cx(ice(1))
              dom   => component_get_dom_cx(ice(1))
+             nmask = mct_aVect_indexRA(dom%data,'mask')
              call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
                   nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
              call seq_io_write(hist_file, gsmap, fractions_ix, 'fractions_ix',  &
                   nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='fraci')
              call seq_io_write(hist_file, ice, 'c2x', 'i2x_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x', mask=dom%data%rattr(1,:))
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='i2x', mask=dom%data%rattr(nmask,:))
              call seq_io_write(hist_file, ice, 'x2c', 'x2i_ix', &
-                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i', mask=dom%data%rattr(1,:))
+                  nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='x2i', mask=dom%data%rattr(nmask,:))
           endif
 
           if (glc_present) then
