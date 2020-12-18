@@ -179,7 +179,8 @@ CONTAINS
     integer(IN)                      :: shrlogunit     ! original log unit
     integer(IN)                      :: shrloglev      ! original log level
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
-    real(kind=c_double)              :: dt_scream
+    integer                          :: dt_scream
+    real(kind=c_double)              :: dt_scream_r
     !-------------------------------------------------------------------------------
 
     ! Reset shr logging to my log file
@@ -196,7 +197,8 @@ CONTAINS
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
 
     ! Run scream
-    call scream_run( dt_scream )
+    dt_scream_r = dt_scream
+    call scream_run( dt_scream_r )
 
     ! Set time of next radiadtion computation
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday)
