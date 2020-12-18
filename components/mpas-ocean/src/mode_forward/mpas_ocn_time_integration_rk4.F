@@ -43,6 +43,8 @@ module ocn_time_integration_rk4
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
+   use ppr_1d
+
    implicit none
    private
    save
@@ -630,6 +632,22 @@ module ocn_time_integration_rk4
       end do
 
       call mpas_timer_stop("RK4-implicit vert mix halos")
+
+
+
+      !! Hack in remapping here?
+      !! just do this for "impermeable-interfaces" for now...
+
+      if (config_vert_coord_movement.eq.'impermeable_interfaces') then
+         block => domain % blocklist
+         do while(associated(block))
+            call ocn_remap_vert_state(block, err)
+
+            block => block % next
+         end do
+      end if
+
+
 
       call mpas_timer_stop("RK4-implicit vert mix")
 
@@ -1646,6 +1664,233 @@ module ocn_time_integration_rk4
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
    end subroutine ocn_time_integrator_rk4_cleanup!}}}
+
+
+
+   subroutine ocn_remap_vert_state(block, err)
+
+      type (block_type), intent(in) :: block
+      integer, intent(out) :: err
+
+      integer, pointer :: nCells, nEdges, nVertLevels
+      integer :: nLevels, nVars, nDoFs, nTracers
+      integer :: iCell, jCell, iEdge, iTrac, k
+      real (kind=RKIND) :: scale
+
+      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_iterator_type) :: groupItr
+
+      type(rmap_work) :: work
+      type(rmap_opts) :: opts
+      type(rcon_ends), dimension(:), allocatable :: bcUpper, bcLower
+
+      real (kind=RKIND), dimension(:, :, :), allocatable :: dataNow, dataNew
+      real (kind=RKIND), dimension(:, :), allocatable :: heightCellNow, heightEdgeNow
+      real (kind=RKIND), dimension(:, :), allocatable :: heightCellNew, heightEdgeNew
+      
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot
+      integer, dimension(:, :), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:), pointer :: bottomDepth
+      real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
+      real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroup
+
+      call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+      
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
+
+
+   !----------------------------------------------------------------------------
+   !- SETUP VERTICAL GRIDS:
+   !- heightCellNow, heightEdgeNow: depth at layer interfaces (lagrangian grid)
+   !- heightCellNew, heighyEdgeNew: depth at layer interfaces (new target grid)      
+
+   !- this should all go into a separate "regrid" routine
+   !- (eventually) this would handle regridding to "other" coordinates, rather
+   !- than just the z* approach here.
+
+      allocate(heightCellNow(nVertLevels + 1, nCells))
+      allocate(heightCellNew(nVertLevels + 1, nCells))
+      allocate(heightEdgeNow(nVertLevels + 1, nEdges))
+      allocate(heightEdgeNew(nVertLevels + 1, nEdges))
+      
+      do iCell = 1, nCells
+         heightCellNow(:, iCell) = -bottomDepth(iCell)
+         heightCellNew(:, iCell) = -bottomDepth(iCell)
+         
+      !- reconstruct "now" heights
+
+         do k = maxLevelCell(iCell), 1, -1
+            heightCellNow(k, iCell) = &
+               heightCellNow(k + 1, iCell) + layerThickness(k, iCell)
+         end do
+
+      !- calc. z*-style expansions
+
+         scale = &
+            (heightCellNow(1, iCell) + bottomDepth(iCell)) / bottomDepth(iCell)
+
+      !- reconstruct "new" heights
+
+         heightCellNew(1, iCell) = heightCellNow(1, iCell)
+         do k = maxLevelCell(iCell), 2, -1
+            heightCellNew(k, iCell) = &
+               heightCellNew(k + 1, iCell) + restingThickness(k, iCell) * scale
+         end do
+      end do
+
+   !- There's currently a silly issue in PPR: it assumes the "coordinates" for
+   !- the data being remapped increases with index. Here, we have the opposite 
+   !- (z becomes more -ve with k)... 
+   !- I'll make some updates to PPR to handle this, but for now, just flip the
+   !- signs to make PPR happy. This shouldn't have any actual impact.
+ 
+      heightCellNow = -1.0_RKIND * heightCellNow
+      heightCellNew = -1.0_RKIND * heightCellNew
+
+
+      do iEdge = 1, nEdges
+         iCell = cellsOnEdge(1, iEdge)
+         jCell = cellsOnEdge(2, iEdge)
+
+         heightEdgeNow(:, iEdge) = -bottomDepth(iCell)
+         heightEdgeNew(:, iEdge) = -bottomDepth(iCell)
+
+      !- this is just a quick hack for the edge heights
+      !- really should use layerThicknessEdge here, but it's unclear if this has
+      !- been properly initiallised at this point...
+      !- layerThicknessEdge could involve upwinding, so need to be careful!
+
+         do k = maxLevelEdgeTop(iEdge) + 1, 1, -1
+            heightEdgeNow(k, iEdge) = &
+               0.5_RKIND * (heightCellNow(k, iCell) + heightCellNow(k, jCell))
+            heightEdgeNew(k, iEdge) = &
+               0.5_RKIND * (heightCellNew(k, iCell) + heightCellNew(k, jCell))
+         end do
+      end do
+
+
+   !----------------------------------------------------------------------------
+   !- ACTUAL REMAPPING FROM HERE
+
+   !- just simple hard-coded options for PPR at this stage...
+
+      nVars = 1 ! how many tracers to be remapped concurrently per column
+      nDoFs = 1 ! always 1 for MPAS, it'd be >1 for DG methods (with more DoF per layer)
+
+      allocate(dataNow(nDoFs, nVars, nVertLevels))
+      allocate(dataNew(nDoFs, nVars, nVertLevels))
+      allocate(bcUpper(nVars))
+      allocate(bcLower(nVars))
+      
+      dataNow = 0.0_RKIND
+      dataNew = 0.0_RKIND
+
+      opts%edge_meth = p3e_method ! 3rd-order edge interp.
+      opts%cell_meth = ppm_method ! PPM method
+      opts%cell_lims = mono_limit ! monotone slope limits
+
+      bcUpper%bcopt = bcon_loose ! "loose" => extrapolate
+      bcLower%bcopt = bcon_loose
+
+      call work%init(nVertLevels + 1, nVars, opts) ! this is internal workspace for PPR
+
+   !- Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
+
+      do iEdge = 1, nEdges
+         nLevels = maxLevelEdgeTop(iEdge) + 1
+
+         if (nLevels .lt. 2) cycle
+
+         dataNow(1, 1, :) = normalVelocity(:, iEdge)
+        !also do normalTransportVelocity, etc...?
+
+         call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
+            heightEdgeNow(:, iEdge), &
+            heightEdgeNew(:, iEdge), &
+            dataNow, dataNew, bcUpper, bcLower, work, opts)
+
+         normalVelocity(:, iEdge) = dataNew(1, 1, :)
+      end do
+
+   !- Remap all cell-centred variables from heightCellNow to heightCellNew
+
+      call mpas_pool_begin_iteration(tracersPool)
+      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+         if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+            call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 2)
+            if ( associated(tracersGroup) ) then
+               
+            !- we can remap all of the tracers in one go via PPR, but for now
+            !- just a simple loop over each one at a time for clarity...
+
+               nTracers = size(tracersGroup, dim=1)
+               do iCell = 1, nCells
+                  do iTrac = 1, nTracers
+                     nLevels = maxLevelCell(iCell) + 1
+
+                     if (nLevels .lt. 2) cycle
+
+                     dataNow(1, 1, :) = tracersGroup(iTrac, :, iCell)
+
+                     call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
+                        heightCellNow(:, iCell), &
+                        heightCellNew(:, iCell), &
+                        dataNow, dataNew, bcUpper, bcLower, work, opts)
+
+                     tracersGroup(iTrac, :, iCell) = dataNew(1, 1, :)
+                  end do
+               end do
+               
+            end if
+         end if
+      end do
+
+   !- Assign new layerThicknesses
+
+      do iCell = 1, nCells
+         do k = maxLevelCell(iCell), 1, -1
+            layerThickness(k, iCell) = &
+                heightCellNew(k + 1, iCell) - heightCellNew(k, iCell)
+         end do
+      end do
+
+   !- dealloc any local data, etc      
+
+      call work%free()
+
+      deallocate(heightCellNow)
+      deallocate(heightEdgeNow)
+      deallocate(heightCellNew)
+      deallocate(heightEdgeNew)
+
+      deallocate(dataNow)
+      deallocate(dataNew)
+      deallocate(bcUpper)
+      deallocate(bcLower)
+
+   end subroutine ocn_remap_vert_state
+
+
 
 end module ocn_time_integration_rk4
 
