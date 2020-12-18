@@ -153,6 +153,10 @@ void post_timeloop() {
   auto &crm_input_q_vt          = :: crm_input_q_vt;
   auto &t_vt                    = :: t_vt;
   auto &q_vt                    = :: q_vt;
+  auto &crm_output_t_vt_ls      = :: crm_output_t_vt_ls;
+  auto &crm_output_q_vt_ls      = :: crm_output_q_vt_ls;
+  auto &t_vt_tend               = :: t_vt_tend;
+  auto &q_vt_tend               = :: q_vt_tend;
   
 
   factor_xyt = factor_xy/((real) nstop);
@@ -511,6 +515,10 @@ void post_timeloop() {
 
     crm_output_qt_ls     (l,icrm) = qtend(k,icrm);
     crm_output_t_ls      (l,icrm) = ttend(k,icrm);
+#if defined(MMF_VT)
+    crm_output_t_vt_ls   (l,icrm) = t_vt_tend(k,icrm);
+    crm_output_q_vt_ls   (l,icrm) = q_vt_tend(k,icrm);
+#endif
   });
 
   parallel_for( ncrms , YAKL_LAMBDA(int icrm) {

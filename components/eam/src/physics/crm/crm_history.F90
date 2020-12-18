@@ -289,6 +289,8 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_VT_Q'     ,(/'lev'/), 'A',' ','CRM Q Variance')
    call addfld('MMF_VT_TEND_T',(/'lev'/), 'A',' ','CRM T Variance Tendency')
    call addfld('MMF_VT_TEND_Q',(/'lev'/), 'A',' ','CRM Q Variance Tendency')
+   call addfld('MMF_VT_TLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for LSE' )
+   call addfld('MMF_VT_QLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
 
    !----------------------------------------------------------------------------
    ! add dropmixnuc tendencies for all modal aerosol species
@@ -646,6 +648,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('MMF_VT_Q',      state%q(:,:,idx_vt_q), pcols, lchnk )
    call outfld('MMF_VT_TEND_T', ptend%q(:,:,idx_vt_t), pcols, lchnk )
    call outfld('MMF_VT_TEND_Q', ptend%q(:,:,idx_vt_q), pcols, lchnk )
+   call outfld('MMF_VT_TLS',    crm_output%t_vt_ls,    pcols, lchnk )
+   call outfld('MMF_VT_QLS',    crm_output%q_vt_ls,    pcols, lchnk )
 #endif
 
 end subroutine crm_history_out

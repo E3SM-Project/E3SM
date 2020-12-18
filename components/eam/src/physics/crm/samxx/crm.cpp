@@ -36,7 +36,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_output_jt_crm_p, real *crm_output_mx_crm_p, real *crm_output_cltot_p, 
                     real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, 
                     real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, real *crm_output_qiltend_p, 
-                    real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p,
+                    real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p, real *crm_output_t_vt_ls_p, real *crm_output_q_vt_ls_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                     real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
@@ -84,7 +84,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
                crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
-               crm_output_t_vt_tend_p, crm_output_q_vt_tend_p,
+               crm_output_t_vt_tend_p, crm_output_q_vt_tend_p, crm_output_t_vt_ls_p, crm_output_q_vt_ls_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                crm_output_ultend_p, crm_output_vltend_p,
 #endif
@@ -122,7 +122,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                            crm_output_t_ls_p, crm_output_jt_crm_p, crm_output_mx_crm_p, 
                            crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, crm_output_cllow_p, 
                            crm_output_sltend_p, crm_output_qltend_p, crm_output_qcltend_p, crm_output_qiltend_p, 
-                           crm_output_t_vt_tend_p, crm_output_q_vt_tend_p, 
+                           crm_output_t_vt_tend_p, crm_output_q_vt_tend_p, crm_output_t_vt_ls_p, crm_output_q_vt_ls_p, 
 #ifdef MMF_MOMENTUM_FEEDBACK
                            crm_output_ultend_p, crm_output_vltend_p,
 #endif

@@ -1629,6 +1629,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       crm_output%qt_ls     (icrm,l) = qtend(icrm,k)
       crm_output%t_ls      (icrm,l) = ttend(icrm,k)
+#if defined(MMF_VT)
+      crm_output%t_vt_ls   (icrm,l) = t_vt_tend(icrm,k)
+      crm_output%q_vt_ls   (icrm,l) = q_vt_tend(icrm,k)
+#endif
     enddo
   enddo
 
