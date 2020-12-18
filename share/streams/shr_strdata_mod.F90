@@ -113,7 +113,9 @@ module shr_strdata_mod
      ! --- stream info, internal ---
      type(shr_stream_streamType)    :: stream(nStrMax)
      type(iosystem_desc_t), pointer :: pio_subsystem => null()
-     type(io_desc_t)                :: pio_iodesc(nStrMax)
+     type(io_desc_t)                :: pio_iodesc_r8(nStrMax)
+     type(io_desc_t)                :: pio_iodesc_r4(nStrMax)
+     type(io_desc_t)                :: pio_iodesc_int(nStrMax)
      integer(IN)                    :: nstreams          ! number of streams
      integer(IN)                    :: strnxg(nStrMax)
      integer(IN)                    :: strnyg(nStrMax)
@@ -495,10 +497,18 @@ contains
        call mct_gsmap_OrderedPoints(SDAT%gsmapR(n), my_task, dof)
        if (SDAT%strnzg(n) <= 0) then
           call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
-               (/SDAT%strnxg(n),SDAT%strnyg(n)/), dof, SDAT%pio_iodesc(n))
+               (/SDAT%strnxg(n),SDAT%strnyg(n)/), dof, SDAT%pio_iodesc_r8(n))
+          call pio_initdecomp(SDAT%pio_subsystem, pio_real, &
+               (/SDAT%strnxg(n),SDAT%strnyg(n)/), dof, SDAT%pio_iodesc_r4(n))
+          call pio_initdecomp(SDAT%pio_subsystem, pio_int, &
+               (/SDAT%strnxg(n),SDAT%strnyg(n)/), dof, SDAT%pio_iodesc_int(n))
        else
           call pio_initdecomp(SDAT%pio_subsystem, pio_double, &
-               (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), dof, SDAT%pio_iodesc(n))
+               (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), dof, SDAT%pio_iodesc_r8(n))
+          call pio_initdecomp(SDAT%pio_subsystem, pio_real, &
+               (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), dof, SDAT%pio_iodesc_r4(n))
+          call pio_initdecomp(SDAT%pio_subsystem, pio_int, &
+               (/SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n)/), dof, SDAT%pio_iodesc_int(n))
        endif
        deallocate(dof)
 
@@ -872,7 +882,8 @@ contains
           call t_barrierf(trim(lstr)//trim(timname)//'_readLBUB_BARRIER',mpicom)
           call t_startf(trim(lstr)//trim(timname)//'_readLBUB')
 
-          call shr_dmodel_readLBUB(SDAT%stream(n),SDAT%pio_subsystem,SDAT%io_type,SDAT%pio_iodesc(n), &
+          call shr_dmodel_readLBUB(SDAT%stream(n),SDAT%pio_subsystem,SDAT%io_type, &
+               SDAT%pio_iodesc_r8(n), SDAT%pio_iodesc_r4(n), SDAT%pio_iodesc_int(n), &
                ymdmod(n),todmod,mpicom,SDAT%gsmapR(n),&
                SDAT%avRLB(n),SDAT%ymdLB(n),SDAT%todLB(n), &
                SDAT%avRUB(n),SDAT%ymdUB(n),SDAT%todUB(n), &
@@ -1129,7 +1140,9 @@ contains
     call mct_gsmap_clean(SDAT%gsmap)
 
     do n = 1, SDAT%nstreams
-       call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc(n))
+       call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_r8(n))
+       call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_r4(n))
+       call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_int(n))
        call mct_avect_clean(SDAT%avs(n))
        call mct_avect_clean(SDAT%avRLB(n))
        call mct_avect_clean(SDAT%avRUB(n))
