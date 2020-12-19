@@ -728,10 +728,13 @@ contains
 
             else if (croplive(p) .and. percrop(ivt(p)) == 1.0_r8) then
                arepr(p) = 0._r8
-               aleaf(p) = 1.e-5_r8
                aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
                     (arooti(ivt(p)) - arootf(ivt(p))) *  &
                     min(1._r8, hui(p)/gddmaturity(p))))
+               fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+                    exp(-bfact(ivt(p))*hui(p)/gddmaturity(p))) / &      ! replacing huigrain with gddmaturity since huigrain does not exist for perennial crops
+                    (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+               aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
                astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
 
                f1 = aroot(p) / aleaf(p)

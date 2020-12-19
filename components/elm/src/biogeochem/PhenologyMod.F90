@@ -1397,7 +1397,6 @@ contains
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use elm_varcon       , only : spval, secspday
-    use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
     use CropType         , only : tcvp, tcvt, cst
     !
     ! !ARGUMENTS:
@@ -1702,9 +1701,7 @@ contains
                      ! go a specified amount of time before/after
                      ! climatological date
                      if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
-                     if (ivt(p)==ncorn .or. ivt(p)==ncornirrig .or. &
-                         ivt(p)==nmiscanthus .or. ivt(p)==nmiscanthusirrig .or. &
-                         ivt(p)==nswitchgrass .or. ivt(p)==nswitchgrassirrig) then
+                     if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) then
                         gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
                         gddmaturity(p)=max(950._r8, min(gddmaturity(p)+150._r8,1850._r8))
                      end if
@@ -1729,9 +1726,7 @@ contains
                   harvdate(p)  = NOT_Harvested
 
                   if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
-                  if (ivt(p)==ncorn .or. ivt(p)==ncornirrig .or. &
-                      ivt(p)==nmiscanthus .or. ivt(p)==nmiscanthusirrig .or. &
-                      ivt(p)==nswitchgrass .or. ivt(p)==nswitchgrassirrig) then
+                  if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) then
                           gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
                   end if
                   if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
@@ -1769,9 +1764,7 @@ contains
             ! calculate linear relationship between huigrain fraction and relative
             ! maturity rating for maize
 
-            if (ivt(p) == ncorn .or. ivt(p)==ncornirrig .or. &
-                ivt(p)==nmiscanthus .or. ivt(p)==nmiscanthusirrig .or. &
-                ivt(p)==nswitchgrass .or. ivt(p)==nswitchgrassirrig) then
+            if (ivt(p) == ncorn .or. ivt(p)==ncornirrig) then
                ! the following estimation of crmcorn from gddmaturity is based on a linear
                ! regression using data from Pioneer-brand corn hybrids (Kucharik, 2003,
                ! Earth Interactions 7:1-33: fig. 2)
@@ -1942,9 +1935,8 @@ contains
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use clm_time_manager , only : get_curr_calday, get_days_per_year
-    use pftvarcon        , only : gddmin
+    use pftvarcon        , only : gddmin, hybgdd
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes, crit_days_senes
-    use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
     use clm_varcon       , only : spval, secspday
     use clm_varctl       , only : iulog
     !
@@ -1996,6 +1988,7 @@ contains
          onset_gdd          =>    cnstate_vars%onset_gdd_patch        , & ! Output: [real(r8) (:) ]  onset growing degree days
          offset_flag        =>    cnstate_vars%offset_flag_patch      , & ! Output: [real(r8) (:) ]  offset flag
          offset_counter     =>    cnstate_vars%offset_counter_patch   , & ! Output: [real(r8) (:) ]  offset counter
+         gddmaturity        =>    cnstate_vars%gddmaturity_patch      , & ! Output: [real(r8) (:) ]  gdd needed to harvest
 
          leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
@@ -2044,6 +2037,7 @@ contains
                  t10(p)     > planttemp(ivt(p))             .and. &
                  a10tmin(p) > minplanttemp(ivt(p)) ) then
                croplive(p)  = .true.
+               gddmaturity(p) = hybgdd(ivt(p))
                offset_flag(p) = 1._r8
                offset_counter(p) = dt
                harvdate(p) = NOT_Harvested
@@ -2078,7 +2072,7 @@ contains
                end if
 
                ! if end of the onset period, reset phenology flags and indices
-               if (onset_counter(p) <= 0.0_r8 .or. &
+               if (onset_counter(p) <= 0.0_r8 .and. &
                    (t10(p) /= spval  .and. t10(p) < senestemp(ivt(p)))) then
 
                   write(iulog,*) 'leaves senescence has occurred'
@@ -2088,6 +2082,7 @@ contains
                   offset_counter(p) = dt
                   if (harvdate(p) >= NOT_Harvested) harvdate(p) = jday
                   if (harvday(p) >= NOT_Harvested) harvday(p) = jday
+                  croplive(p) = .false.
                   bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
                   bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
 
