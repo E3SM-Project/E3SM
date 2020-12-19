@@ -216,7 +216,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), pointer :: cldn(:,:)      ! layer cloud fraction (0-1)
    real(r8), pointer :: dgncur_a(:,:,:)
    real(r8), pointer :: dgncur_awet(:,:,:)
-   real(r8), pointer :: wetdens(:,:,:) => null()
+   real(r8), pointer :: wetdens(:,:,:)
    real(r8), pointer :: qaerwat(:,:,:)
 
    real(r8) :: dryvolmr(pcols,pver)          ! volume MR for aerosol mode (m3/kg)
