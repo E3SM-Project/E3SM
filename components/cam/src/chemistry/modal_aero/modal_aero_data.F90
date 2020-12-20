@@ -23,13 +23,12 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-#if ( ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) ) && ( defined RAIN_EVAP_TO_COARSE_AERO )
+#if ( ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_SOA_MOM ) ) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
 #endif
 
-#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_SOA_MOM ))
     ! carbonaceous species counters - will eventually be set by configuration options
     integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
     integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
@@ -38,7 +37,6 @@
     integer, parameter :: nsoag = 7  ! number of differently tagged secondary-organic gas     species
 #else
     integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
-#endif
 #endif
 
     !
@@ -50,7 +48,7 @@
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
@@ -74,7 +72,7 @@
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
 
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
 #if ( defined MAM_SOA_VBS )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,  250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
@@ -149,6 +147,12 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 6, 2 /)
 #else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
+#endif
+#elif ( defined MODAL_AERO_4MODE_SOA_MOM )
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 2 /)
+#else
+    integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3, 2 /)
 #endif
 #elif ( defined MODAL_AERO_3MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)

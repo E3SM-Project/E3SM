@@ -79,8 +79,8 @@
 
   integer, parameter :: soa_mech_type_default = 1
   integer, parameter :: soa_mech_type_vbs     = 100
-  integer, public    :: soa_mech_type = soa_mech_type_default
-  integer, public    :: soa_mech_optaa = 1
+  integer, parameter :: soa_mech_type = soa_mech_type_default
+  integer, parameter :: soa_mech_optaa = 1
 ! controls soa treatment
 
   integer, public :: update_qaerwat = 0
@@ -3463,18 +3463,18 @@ do_newnuc_if_block50: &
       niter_max = 1000
       niter = 0
       dtfull = dtsubstep
-      tcur = 0.0
-      dtcur = 0.0
-      phi(:,:) = 0.0
-      g_star(:,:) = 0.0
-      g_soa(:) = 0.0
-      g_soa_prv(:) = 0.0
-      a_opoa(:) = 0.0
-      a_soa(:,:) = 0.0
-      a_soa_prv(:,:) = 0.0
+      tcur = 0.0_r8
+      dtcur = 0.0_r8
+      phi(:,:) = 0.0_r8
+      g_star(:,:) = 0.0_r8
+      g_soa(:) = 0.0_r8
+      g_soa_prv(:) = 0.0_r8
+      a_opoa(:) = 0.0_r8
+      a_soa(:,:) = 0.0_r8
+      a_soa_prv(:,:) = 0.0_r8
       g_soa_avg(:) = 0.0_r8
       dtsum_g_soa_avg = 0.0_r8
-      uptkaer_soag(:,:) = 0.0
+      uptkaer_soag(:,:) = 0.0_r8
 
 ! initialize g_soa_prv, a_soa_prv, uptkaer_soag
       do ll = 1, ntot_soaspec
@@ -3557,13 +3557,13 @@ time_loop: &
 
 
 ! determine time step
-      tmpa = 0.0  ! time integration parameter for all soa species
+      tmpa = 0.0_r8  ! time integration parameter for all soa species
       do n = 1, ntot_soamode
          if ( skip_soamode(n) ) cycle
          a_ooa_sum_tmp(n) = a_opoa(n) + sum( a_soa(1:ntot_soaspec,n) )
       end do
       do ll = 1, ntot_soaspec
-         tmpb = 0.0  ! time integration parameter for a single soa species
+         tmpb = 0.0_r8  ! time integration parameter for a single soa species
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             sat(ll,n) = g0_soa(ll)/max( a_ooa_sum_tmp(n), a_min1 )
@@ -3619,8 +3619,8 @@ time_loop: &
 ! step 2 - implicit in g_soa and semi-implicit in a_soa,
 !    with g_star(ll,n) calculated semi-implicitly
       do ll = 1, ntot_soaspec
-         tmpa = 0.0
-         tmpb = 0.0
+         tmpa = 0.0_r8
+         tmpb = 0.0_r8
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             tmpa = tmpa + a_soa(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
@@ -3861,18 +3861,18 @@ time_loop: &
       niter_max = 1000
       niter = 0
       dtfull = dtsubstep
-      tcur = 0.0
-      dtcur = 0.0
-      phi(:,:) = 0.0
-      g_star(:,:) = 0.0
-      g_soa(:) = 0.0
-      g_soa_prv(:) = 0.0
-      a_opoa(:) = 0.0
-      a_soa(:,:) = 0.0
-      a_soa_prv(:,:) = 0.0
+      tcur = 0.0_r8
+      dtcur = 0.0_r8
+      phi(:,:) = 0.0_r8
+      g_star(:,:) = 0.0_r8
+      g_soa(:) = 0.0_r8
+      g_soa_prv(:) = 0.0_r8
+      a_opoa(:) = 0.0_r8
+      a_soa(:,:) = 0.0_r8
+      a_soa_prv(:,:) = 0.0_r8
       g_soa_avg(:) = 0.0_r8
       dtsum_g_soa_avg = 0.0_r8
-      uptkaer_soag(:,:) = 0.0
+      uptkaer_soag(:,:) = 0.0_r8
 
 ! initialize g_soa_prv, a_soa_prv, uptkaer_soag
 ! the a_soa, which involves only the svsoa species, and is initially zero
@@ -3956,13 +3956,13 @@ time_loop: &
 
 
 ! determine time step
-      tmpa = 0.0  ! time integration parameter for all soa species
+      tmpa = 0.0_r8  ! time integration parameter for all soa species
       do n = 1, ntot_soamode
          if ( skip_soamode(n) ) cycle
          a_ooa_sum_tmp(n) = a_opoa(n) + sum( a_soa(1:ntot_soaspec,n) )
       end do
       do ll = 1, ntot_soaspec
-         tmpb = 0.0  ! time integration parameter for a single soa species
+         tmpb = 0.0_r8  ! time integration parameter for a single soa species
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             sat(ll,n) = g0_soa(ll)/max( a_ooa_sum_tmp(n), a_min1 )
@@ -4018,8 +4018,8 @@ time_loop: &
 ! step 2 - implicit in g_soa and semi-implicit in a_soa,
 !    with g_star(ll,n) calculated semi-implicitly
       do ll = 1, ntot_soaspec
-         tmpa = 0.0
-         tmpb = 0.0
+         tmpa = 0.0_r8
+         tmpb = 0.0_r8
          do n = 1, ntot_soamode
             if ( skip_soamode(n) ) cycle
             tmpa = tmpa + a_soa(ll,n)/(1.0_r8 + beta(ll,n)*sat(ll,n))
@@ -5359,7 +5359,7 @@ agepair_loop1: &
       end if
       tmp4 = 1.0_r8 - tmp3
 
-      vol_core = 0.0
+      vol_core = 0.0_r8
       do iaer = 1, naer
          ! for core volume, only include the mapped species 
          !    which are primary and low hygroscopicity
@@ -5552,7 +5552,7 @@ agepair_loop1: &
          const  = tworootpi * exp( beta*lndpgn + 0.5_r8*(beta*lnsg(n))**2 )
          
 !   sum over gauss-hermite quadrature points
-         sumghq = 0.0
+         sumghq = 0.0_r8
          do iq = 1, nghq
             lndp = lndpgn + beta*lnsg(n)**2 + root2*lnsg(n)*xghq(iq)
             dp = exp(lndp)
@@ -5697,6 +5697,9 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       soa_mech_type = soa_mech_type_vbs
       soa_mech_optaa = 1
       if      (nsoa == 1 .and. nsoag == 7) then
+! The gas-phase organic species are named as SOAG + two digits. The first digit is the generation of SOAG products, 
+! i.e., 1 is first generation, 2 is second generation, and 3 is third generation. The second digit is volatility 
+! bin, with 1 being the least volatile bin and 5 being the most volatile bin.
          ngas = ngas+1 ; name_gas(ngas) = 'SOAG15' ; naer = naer+1 ; name_aerpfx(naer) = 'soa'  
          igas_soag   = ngas ; iaer_soa   = naer
          ngas = ngas+1 ; name_gas(ngas) = 'SOAG24'
