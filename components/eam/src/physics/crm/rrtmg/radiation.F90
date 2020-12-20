@@ -763,8 +763,8 @@ end function radiation_nextsw_cday
        call addfld ('CRM_QRL ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
        call addfld ('CRM_QRLC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Longwave radiative heating rate' )
        call addfld ('CRM_CLD_RAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'fraction', 'CRM cloud fraction' )
-       call addfld ('CRM_TAU  ', (/'crm_nx_rad','crm_ny_rad','crm_nz'/), 'A', '1', 'CRM cloud optical depth'  )
-       call addfld ('CRM_EMS  ', (/'crm_nx_rad','crm_ny_rad','crm_nz'/), 'A', '1', 'CRM cloud longwave emissivity'  )
+       call addfld ('CRM_TAU  ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', '1', 'CRM cloud optical depth'  )
+       call addfld ('CRM_EMS  ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', '1', 'CRM cloud longwave emissivity'  )
     end if
 
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')

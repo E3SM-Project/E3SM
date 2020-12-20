@@ -47,9 +47,7 @@ module physpkg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_dr, &
                                     modal_aero_wateruptake_reg
-#ifdef MAML
   use seq_comm_mct,       only : num_inst_atm
-#endif
 
   implicit none
   private
@@ -1006,7 +1004,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
     !! Jungmin
-    integer(i8) :: ii,jj,rcol
+    integer :: ii,jj,rcol
     real(r8) :: rlat, rlon
     !! Jungmin
     call t_startf ('physpkg_st1')
@@ -1092,12 +1090,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
             if(rcol.eq.223) then
             !if(cam_in(c)%landfrac(ii).eq.1) then
                !if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
-               write(iulog,'("B4 tphysbc CALL: chunk ind=",I5," icol=",I5," inst_index=",I3,&
+               write(iulog,'("B4 tphysbc CALL: nstep=",I5," chunk ind=",I5," icol=",I5," inst_index=",I3,&
                              " lat=",F8.3," lon=",F8.3, " rcol=",I5, &
                              " landfrac=",F7.3," icefrac=",F7.3, &
                              " cam_in%aldir=",F7.3," cam_in%aldif=",F7.3, &
                              " cam_in%asdir=",F7.3," cam_in%asdif=",F7.3)') &
-                             c,ii,inst_index,& 
+                             nstep,c,ii,inst_index,& 
                              rlat, rlon, rcol,  &
                              cam_in(c)%landfrac(ii), cam_in(c)%icefrac(ii),&
                              cam_in(c)%aldir(ii),cam_in(c)%aldif(ii),cam_in(c)%asdir(ii),cam_in(c)%asdif(ii)
@@ -1984,7 +1982,7 @@ subroutine tphysbc (ztodt,               &
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(cam_out_t),     intent(inout) :: cam_out
-    type(cam_in_t),      intent(in)    :: cam_in
+    type(cam_in_t),      intent(inout)    :: cam_in
 
 
     !
@@ -2274,9 +2272,15 @@ subroutine tphysbc (ztodt,               &
                cam_in%lhf_mi(:,ii) , cam_in%cflx1_mi(:,ii) )
        end do! ii
        ! cam_in%[X]_mi is adjusted, therefore cam_in%[X] are recomputed
-       call cam_in_avg_mi(cam_in%lhf, cam_in%lhf_mi, cam_in%ncol)
-       call cam_in_avg_mi(cam_in%shf, cam_in%shf_mi, cam_in%ncol)
-       call cam_in_avg_mi(cam_in%cflx(:,1), cam_in%cflx1_mi, cam_in%ncol)
+       !call cam_in_avg_mi(cam_in%lhf, cam_in%lhf_mi, cam_in%ncol)
+       !call cam_in_avg_mi(cam_in%shf, cam_in%shf_mi, cam_in%ncol)
+       !call cam_in_avg_mi(cam_in%cflx(:,1), cam_in%cflx1_mi, cam_in%ncol)
+       !! Jungmin
+       write(iulog,*) "qneg4 inside MMF_FLUX_BYPASS and MAML"
+       !! Jungmin
+       cam_in%lhf(1:ncol)    = SUM(cam_in%lhf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%shf(1:ncol)    = SUM(cam_in%shf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
+       cam_in%cflx(1:ncol,1) = SUM(cam_in%cflx1_mi(1:ncol,:),2)/real(num_inst_atm,r8)
 #else
        call qneg4('TPHYSBC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &

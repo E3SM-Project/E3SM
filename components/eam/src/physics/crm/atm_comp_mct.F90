@@ -195,11 +195,13 @@ CONTAINS
 
 #ifdef MAML
     call seq_infodata_getData(infodata,atm_phase=atm_phase)
+    ! for MAML, component_layout = sequential and num_inst_atm > 1, atm_phase
+    ! loops over twice, atm_phase = 0, 1
     call cam_instance_init(ATMID)
     !--- auto detect sequence_instances based on calling this more than once in phase 1 ---
     if (atm_phase == 1 .and. .not.first_call .and. .not.sequence_instances) then
        sequence_instances = .true.
-       write(6,*) "Setting sequence_instances to true"
+       write(6,*) "ATM_INIT_MCT:Setting sequence_instances to true,nstep=",get_nstep()
     endif
     first_call = .false.
     if (sequence_instances .and. inst_index > 1) then
@@ -212,12 +214,21 @@ CONTAINS
           call mct_aVect_init(x2a_a, rList=seq_flds_x2a_fields, lsize=lsize)
           call mct_aVect_zero(x2a_a)
           call atm_export( cam_out, a2x_a%rattr )
+          !! Jungmin
+          !write(6,*) "ATM_INIT_MCT: atm_export1-1, inst_index=",inst_index,"nstep=", get_nstep()
+          !! Jungmin
        else
           call seq_timemgr_EClockGetData(EClock,StepNo=StepNo)
           if (StepNo == 0) then
              call atm_export( cam_out, a2x_a%rattr )
+          !! Jungmin
+          !write(6,*) "ATM_INIT_MCT: atm_export1-2, inst_index=",inst_index,"nstep=", get_nstep()
+          !! Jungmin
           else
              call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
+          !! Jungmin
+          !write(6,*) "ATM_INIT_MCT: atm_read_srfrest_mct 1, inst_index=",inst_index,"nstep=", get_nstep()
+          !! Jungmin
           endif
        endif
        return
@@ -365,6 +376,9 @@ CONTAINS
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
        !
+       !! Jungmin
+       !write(6,*) 'ATM_INIT_MCT: cam_init, inst_index=',inst_index,'nstep=',get_nstep()
+       !! Jungmin
        call cam_init( cam_out, cam_in, mpicom_atm, &
             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
             perpetual_run, perpetual_ymd, calendar)
@@ -399,6 +413,9 @@ CONTAINS
        !
        ! Create initial atm export state
        !
+       !! Jungmin
+       !write(6,*) 'ATM_INIT_MCT: atm_export 2, inst_index=',inst_index
+       !! Jungmin
        call atm_export( cam_out, a2x_a%rattr )
        !
        ! Set flag to specify that an extra albedo calculation is to be done (i.e. specify active)
@@ -428,7 +445,7 @@ CONTAINS
 
        first_time = .false.
 
-    else
+    else ! if(first_time)
        
        ! For initial run, run cam radiation/clouds and return
        ! For restart run, read restart x2a_a
@@ -445,14 +462,22 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
+          !! Jungmin
+          !write(6,*) 'ATM_INIT_MCT: atm_import 1-1  ', inst_index
           call atm_import( x2a_a%rattr, cam_in )
+          !write(6,*) 'ATM_INIT_MCT: cam_run1 1-1  ', inst_index,get_nstep()
           call cam_run1 ( cam_in, cam_out ) 
+          !write(6,*) 'ATM_INIT_MCT: atm_export 3  ', inst_index, get_nstep()
           call atm_export( cam_out, a2x_a%rattr )
        else
+          !! Jungmin
+          !write(6,*) 'ATM_INIT_MCT: atm_read_srfrest_mct 2  ', inst_index,get_nstep()
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
 	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
+          !write(6,*) 'ATM_INIT_MCT: atm_import 1-2  ', inst_index,get_nstep()
           call atm_import( x2a_a%rattr, cam_in, .true. )
+          !write(6,*) 'ATM_INIT_MCT: cam_run1 1-2  ', inst_index,get_nstep()
           call cam_run1 ( cam_in, cam_out ) 
        end if
 
@@ -596,6 +621,8 @@ CONTAINS
        if (atm_phase == 0) then
           ! Map input from mct to cam data structure and return
           call t_startf ('CAM_import')
+          !! Jungmin
+          !write(6,*) 'ATM_RUN_MCT: atm_import 1, atm_phase,inst_inext,nstep:', atm_phase,inst_index,get_nstep()
           call atm_import( x2a_a%rattr, cam_in )
           call t_stopf  ('CAM_import')
           return
@@ -603,6 +630,8 @@ CONTAINS
           if (inst_index > 1) then
              ! Map output from cam to mct data structures and return
              call t_startf ('CAM_export')
+          !! Jungmin
+          !write(6,*) 'ATM_RUN_MCT: atm_export 1, atm_phase,inst_inext,nstep:', atm_phase,inst_index,get_nstep()
              call atm_export( cam_out, a2x_a%rattr )
              call t_stopf ('CAM_export')
              call shr_sys_flush(iulog)
@@ -618,6 +647,8 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
+          !! Jungmin
+          !write(6,*) 'ATM_RUN_MCT: atm_import 2, atm_phase,inst_inext,nstep:', atm_phase,inst_index,get_nstep()
     call atm_import( x2a_a%rattr, cam_in )
     call t_stopf  ('CAM_import')
     
@@ -672,12 +703,16 @@ CONTAINS
        ! Run cam radiation/clouds (run1)
           
        call t_startf ('CAM_run1')
+          !! Jungmin
+          !write(6,*) 'ATM_RUN_MCT: atm_import 3, atm_phase,inst_inext,nstep:', atm_phase,inst_index,get_nstep()
        call cam_run1 ( cam_in, cam_out ) 
        call t_stopf  ('CAM_run1')
        
        ! Map output from cam to mct data structures
        
        call t_startf ('CAM_export')
+          !! Jungmin
+          !write(6,*) 'ATM_RUN_MCT: atm_export 2, atm_phase,inst_inext,nstep:', atm_phase,inst_index,get_nstep()
        call atm_export( cam_out, a2x_a%rattr )
        call t_stopf ('CAM_export')
        
@@ -759,6 +794,8 @@ CONTAINS
 
 
     call t_startf("cam_final")
+    !! Jungmin
+    !write(*,*) 'ATM_FINAL_MCT: inst_index,nstep=',inst_index,get_nstep()
     call cam_final( cam_out, cam_in )
     call t_stopf("cam_final")
 

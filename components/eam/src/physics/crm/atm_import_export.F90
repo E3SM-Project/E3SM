@@ -24,7 +24,7 @@ contains
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
-    use time_manager  , only: is_first_step
+    use time_manager  , only: is_first_step, get_nstep
     use maml_module   , only: cam_in_avg_mi_all
     !
     ! Arguments
@@ -44,7 +44,7 @@ contains
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
     !! Jungmin
-    integer :: ii, jj
+    integer :: ii, jj, nstep
     real(r8) :: rlat, rlon
     integer :: rcol
     !! Jungmin
@@ -66,19 +66,6 @@ contains
        ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
        cam_in(c)%cflx(:,2:) = 0._r8 
        do i =1,ncols                                                               
-          if (overwrite_flds) then
-             ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
-             ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of 
-             ! this if-condition so that they are still updated everytime irrespective of the value of overwrite_flds.
-
-             ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction 
-             ! occurs at the restart time step
-             ! Modified by Wuyin Lin
-             cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
-             cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)    
-             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)   
-          end if
-
           if(num_inst_atm .eq. 1) then ! for non-MAML case          
              cam_in(c)%wsx      (i) = -x2a(index_x2a_Faxx_taux,ig)
              cam_in(c)%wsy      (i) = -x2a(index_x2a_Faxx_tauy,ig)
@@ -94,6 +81,16 @@ contains
              ![TODO]call cam_in_copy_mi (cam_in(c),c, overwrite_flds)
              ! for non-MAML, num_inst_atm =  1 
              if(overwrite_flds) then
+                ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
+                ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of 
+                ! this if-condition so that they are still updated everytime irrespective of the value of overwrite_flds.
+
+                ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction 
+                ! occurs at the restart time step
+                ! Modified by Wuyin Lin
+                cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
+                cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)    
+                cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)   
                 ! first timestep of the restart run, lhf, shf and cflx(:,1) are not overwritten 
                 cam_in(c)%lhf_mi(i,1) = cam_in(c)%lhf(i)
                 cam_in(c)%shf_mi(i,1) = cam_in(c)%shf(i)
@@ -106,7 +103,7 @@ contains
              cam_in(c)%aldir_mi(i,1) = cam_in(c)%aldir(i)
              cam_in(c)%asdif_mi(i,1) = cam_in(c)%asdif(i)
              cam_in(c)%aldif_mi(i,1) = cam_in(c)%aldif(i)
-         else  
+          else  
              ! For MMF-MAML
              ! Modified for MAML
              if(overwrite_flds) then
@@ -136,25 +133,25 @@ contains
 	       cam_in(c)%landfrac (i) =  x2a(index_x2a_Sf_lfrac, ig)
           
           !! Jungmin
-          rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
-          rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
           rcol = get_gcol_p(c,i) 
-          !if(cam_in(c)%landfrac(i).eq.1) then
-          !  if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
-          if(rcol.eq.223) then 
-            write(iulog,'("ATM_IMPORT: chunk ind=",I5," icol=",I5," ig=",I3," inst_index=",I3,&
-                          " lat=",F8.3," lon=",F8.3," rcol=",I5,&
-                          " landfrac=",F7.3," icefrac=",F7.3, &
-                          " cam_in%aldir=",F7.3," cam_in%aldif=",F7.3, &
-                          " cam_in%asdir=",F7.3," cam_in%asdif=",F7.3)') &
-                          c,i,ig,inst_index,&
-                          rlat, rlon, rcol, &
-                          cam_in(c)%landfrac(i), cam_in(c)%icefrac(i),&
-                          cam_in(c)%aldir(i),cam_in(c)%aldif(i),cam_in(c)%asdir(i),cam_in(c)%asdif(i)
-               do jj = 1, num_inst_atm
-                  write(iulog,'("      jj=",I3," aldir_mi=",F7.3," aldif_mi=",F7.3," asdir_mi=",F7.3," asdif_mi=",F7.3)') &
-                        jj,cam_in(c)%aldir_mi(i,jj),cam_in(c)%aldif_mi(i,jj),cam_in(c)%asdir_mi(i,jj),cam_in(c)%asdif_mi(i,jj)
-               end do! jj
+          if(rcol.eq.223 .or. rcol.eq.237) then 
+            rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
+            rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
+            nstep = get_nstep()
+            write(iulog,'("ATM_IMPORT: nstep=",I5," chunk ind=",I5," icol=",I5, " rcol=",I5," inst_index=",I3," ig=",I5,&
+                          " lat=",F8.3," lon=",F8.3," overwrite=",L4,&
+                          " landfrac=",F5.3," icefrac=",F5.3," ocnfrac=",F5.3, &
+                          " cam_in%shf_mi=",F7.3," cam_in%lhf_mi=",F7.3, " cam_in%cflx1_mi=",F20.10,&
+                          " cam_in%aldir_mi=",F5.3," cam_in%aldif_mi=",F5.3, &
+                          " cam_in%asdir_mi=",F5.3," cam_in%asdif_mi=",F5.3, &
+                          " cam_in%lwup_mi=",F6.2," cam_in%ts_mi=",F6.2, &
+                          " cam_in%snowhland_mi=",F6.2)') &
+                          nstep,c,i,rcol,inst_index,ig,&
+                          rlat, rlon,overwrite_flds, &
+                          cam_in(c)%landfrac(i), cam_in(c)%icefrac(i),cam_in(c)%ocnfrac(i),&
+                          cam_in(c)%shf_mi(i,inst_index),cam_in(c)%lhf_mi(i,inst_index),cam_in(c)%cflx1_mi(i,inst_index),&
+                          cam_in(c)%aldir_mi(i,inst_index),cam_in(c)%aldif_mi(i,inst_index),cam_in(c)%asdir_mi(i,inst_index),cam_in(c)%asdif_mi(i,inst_index),&
+                          cam_in(c)%lwup_mi(i,inst_index),cam_in(c)%ts_mi(i,inst_index),cam_in(c)%snowhland_mi(i,inst_index),cam_in(c)%cflx1_mi(i,inst_index)
           end if
           !! Jungmin
           
@@ -298,6 +295,9 @@ contains
     use phys_grid , only: get_ncols_p, get_rlat_p, get_rlon_p, get_gcol_p
     use ppgrid    , only: begchunk, endchunk       
     use cam_cpl_indices
+    !! Jungmin
+    use time_manager  , only: is_first_step, get_nstep
+    !! Jungmin
     !
     ! Arguments
     !
@@ -310,7 +310,7 @@ contains
     integer :: i,m,c,n,ig       ! indices
     integer :: ncols            ! Number of columns
     !! Jungmin
-    integer :: ii, jj
+    integer :: ii, jj, nstep
     real(r8) :: rlat, rlon
     integer :: rcol
     !! Jungmin
@@ -348,23 +348,25 @@ contains
           rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
           rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
           rcol = get_gcol_p(c,i) 
+          nstep = get_nstep()
           !if(cam_in(c)%landfrac(i).eq.1) then
           !  if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
-          if(rcol.eq.223) then 
-            write(iulog,'("ATM_EXPORT: chunk ind=",I5," icol=",I5," ig=",I3," inst_index=",I3,&
-                          " lat=",F8.3," lon=",F8.3," rcol=",I5,&
-                          " cam_out%soll_mi=",F7.3," a2x=",F7.3, &
-                          " cam_out%sols_mi=",F7.3," a2x=",F7.3,  &
-                          " cam_out%solld_mi=",F7.3," a2x=",F7.3, &
-                          " cam_out%solsd_mi=",F7.3," a2x=",F7.3, &
-                          "cam_out%flwds_mi=",F7.3," a2x=",F7.3)') &
-                          c,i,ig,inst_index,&
-                          rlat, rlon, rcol, &
-                          cam_out(c)%soll_mi(i,inst_index), a2x(index_a2x_Faxa_swndr,ig), &
-                          cam_out(c)%sols_mi(i,inst_index),a2x(index_a2x_Faxa_swvdr,ig), &
-                          cam_out(c)%solld_mi(i,inst_index),a2x(index_a2x_Faxa_swndf,ig), &
-                          cam_out(c)%solsd_mi(i,inst_index), a2x(index_a2x_Faxa_swvdf,ig),&
-                          cam_out(c)%flwds_mi(i,inst_index), a2x(index_a2x_Faxa_lwdn ,ig)
+          if(rcol.eq.223 .or. rcol.eq.237) then 
+            write(iulog,'("ATM_EXPORT: nstep=",I5," chunk ind=",I5," icol=",I5," rcol=",I5," inst_index=",I3," ig=",I5,&
+                          " lat=",F8.3," lon=",F8.3,&
+                          " cam_out%soll_mi=",F7.3," cam_out%sols_mi=",F7.3," cam_out%solld_mi=",F7.3," cam_out%solsd_mi=",F7.3, &
+                          " cam_out%flwds_mi=",F7.3, &
+                          " cam_out%tbot_mi=",F7.3," cam_out%thbot_mi=",F7.3," cam_out%qbot_mi=",F7.3," cam_out%rho_mi=",F7.3, &
+                          " cam_out%ubot_mi=",F7.3," cam_out%vbot_mi=",F7.3)') &
+                          nstep,c,i,rcol,inst_index,ig,&
+                          rlat, rlon, &
+                          cam_out(c)%soll_mi(i,inst_index), &
+                          cam_out(c)%sols_mi(i,inst_index), &
+                          cam_out(c)%solld_mi(i,inst_index), &
+                          cam_out(c)%solsd_mi(i,inst_index),&
+                          cam_out(c)%flwds_mi(i,inst_index),&
+                          cam_out(c)%tbot_mi(i,inst_index),cam_out(c)%thbot_mi(i,inst_index),cam_out(c)%qbot_mi(i,1,inst_index),cam_out(c)%rho_mi(i,inst_index),&
+                          cam_out(c)%ubot_mi(i,inst_index),cam_out(c)%vbot_mi(i,inst_index)
           end if
           !! Jungmin
 

@@ -232,7 +232,8 @@ contains
       real(r8), intent(in), optional :: tolerance
       real(r8) :: tolerance_local
       character(max_char_len) :: error_message
-
+      ! Jungmin
+      integer :: ii,jj
       error_message = ''
       tolerance_local = 0._r8
       if (present(tolerance)) then
@@ -261,6 +262,15 @@ contains
                      count(x > (max_x + tolerance_local)), ' values above threshold ', &
                      '; max = ', maxval(x)
          end if
+         !! Jungmin
+         do jj = 1, size(x,2)
+            do ii = 1, size(x,1)
+               if(x(ii,jj).gt.max_x) then
+                  write(*,'("clip: ii=",I3,"jj=",I3," x=",F10.3,"max_x=",F10.3)') ii,jj,x(ii,jj),max_x
+               end if
+            end do !ii
+         end do !jj   
+         !! Jungmin
          ! Clip values
          where (x > max_x)
             x = max_x

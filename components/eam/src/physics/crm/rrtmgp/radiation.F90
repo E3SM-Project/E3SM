@@ -1175,6 +1175,7 @@ contains
 #endif
       !! Jungmin
       use cam_logfile,     only: iulog
+
       !! Jungmin
 
       ! ---------------------------------------------------------------------------
@@ -1643,6 +1644,23 @@ contains
                         call get_gas_vmr(icall, state, pbuf, trim(active_gases(igas)), vmr_col(igas,1:ncol,ktop:kbot))
                         ! Copy top model level to level above model top
                         vmr_col(igas,1:ncol,1) = vmr_col(igas,1:ncol,ktop)
+
+                        !! Jungmin
+                        do icol = 1,ncol
+                           rcol = get_gcol_p(cam_in%lchnk,icol)
+                           clat = get_rlat_p(cam_in%lchnk,icol)*180_r8/SHR_CONST_PI 
+                           clon = get_rlon_p(cam_in%lchnk,icol)*180_r8/SHR_CONST_PI 
+                           do ilay = 1,kbot
+                              if(vmr_col(igas,icol,ilay).lt.0. .or. vmr_col(igas,icol,ilay).gt.1.) then
+                                 write(iulog,'("VMR_COL: inst_inde=",I5," chunk_index=",I3,"icol=",I3," gcol=",I3," lat=",F8.3," lon=",F8.3,&
+                                               " landfrac=",F7.3," ocnfrac=",F7.3," icefrac=",F7.3,&
+                                               " igas=",I3," GAS=",A7," ilay=",I5,"vmr=",F7.3)') &
+                                              inst_index, cam_in%lchnk,icol,rcol,clat,clon,&
+                                              cam_in%landfrac(icol),cam_in%ocnfrac(icol),cam_in%icefrac(icol),&
+                                              igas,trim(active_gases(igas)),ilay,vmr_col(igas,icol,ilay)
+                              end if
+                            end do
+                         end do
                      end do
                      call t_stopf('rad_gas_concentrations')
 
@@ -1837,19 +1855,19 @@ contains
                         clat = get_rlat_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
                         clon = get_rlon_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
                         do iband=1,1!nswbands
-                           write(iulog,'(" SW all fluxes: rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
+                           write(iulog,'(" SW all fluxes: inst_index=",I3," rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
                                           "lat=",F8.3," lon=",F8.3, &
                                           "flux_up=",F8.3, "flux_dn=",F8.3,&
                                           "flux_net=",F8.3)') &
-                                          rcol, icol,j,iband,&
+                                          inst_index, rcol, icol,j,iband,&
                                           clat, clon,&
                                           fluxes_allsky_all%flux_up(j,kbot+1), fluxes_allsky_all%flux_dn(j,kbot+1),&
                                           fluxes_allsky_all%flux_net(j,kbot+1)
-                           write(iulog,'(" SW clear fluxes: rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
+                           write(iulog,'(" SW clear fluxes: inst_index=",I3," rcol=",I5," icol=",I3," j=",I5," iband=",I3,&
                                           "lat=",F8.3," lon=",F8.3, &
                                           "flux_up=",F8.3, "flux_dn=",F8.3,&
                                           "flux_net=",F8.3)') &
-                                          rcol, icol,j,iband,&
+                                          inst_index, rcol, icol,j,iband,&
                                           clat, clon,&
                                           fluxes_clrsky_all%flux_up(j,kbot+1), fluxes_clrsky_all%flux_dn(j,kbot+1),&
                                           fluxes_clrsky_all%flux_net(j,kbot+1)
@@ -1988,19 +2006,19 @@ contains
                      if(rcol.eq.223) then
                         clat = get_rlat_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
                         clon = get_rlon_p(cam_in%lchnk,icol)*180._r8/SHR_CONST_PI
-                        write(iulog,'(" LW all fluxes: rcol=",I5," icol=",I3," j=",I5,&
+                        write(iulog,'(" LW all fluxes: inst_index=",I3," rcol=",I5," icol=",I3," j=",I5,&
                                        "lat=",F8.3," lon=",F8.3, &
                                        "flux_up=",F8.3, "flux_dn=",F8.3,&
                                        "flux_net=",F8.3)') &
-                                       rcol, icol,j,&
+                                       inst_index,rcol, icol,j,&
                                        clat, clon,&
                                        fluxes_allsky_all%flux_up(j,kbot+1), fluxes_allsky_all%flux_dn(j,kbot+1),&
                                        fluxes_allsky_all%flux_net(j,kbot+1)
-                        write(iulog,'(" LW clear fluxes: rcol=",I5," icol=",I3," j=",I5,&
+                        write(iulog,'(" LW clear fluxes: inst_index=",I3," rcol=",I5," icol=",I3," j=",I5,&
                                        "lat=",F8.3," lon=",F8.3, &
                                        "flux_up=",F8.3, "flux_dn=",F8.3,&
                                        "flux_net=",F8.3)') &
-                                       rcol, icol,j,&
+                                       inst_index, rcol, icol,j,&
                                        clat, clon,&
                                        fluxes_clrsky_all%flux_up(j,kbot+1), fluxes_clrsky_all%flux_dn(j,kbot+1),&
                                        fluxes_clrsky_all%flux_net(j,kbot+1)
@@ -2527,36 +2545,36 @@ contains
                   rlon = get_rlon_p(cam_out%lchnk,icol)*180._r8/SHR_CONST_PI
                   if(ix.eq.1 .and. iy.eq.1) then
                      if(trim(band) == "shortwave") then
-                        write(iulog,'("EXPORT SW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                        write(iulog,'("EXPORT SW FLUXES: inst_index=",I3," rcol=",I5," chunk_index=",I5," icol=",I3,&
                                        " lat=",F8.3," lon=",F8.3, &
                                        " soll=",F8.3," sols=",F8.3," solld=",F8.3," solsd=",F8.3)') &
-                                       rcol, cam_out%lchnk,icol,&
+                                       inst_index, rcol, cam_out%lchnk,icol,&
                                        rlat, rlon, &
                                        cam_out%soll(icol),cam_out%sols(icol),cam_out%solld(icol),cam_out%solsd(icol)
                      else if(trim(band) == "longwave") then                  
-                        write(iulog,'("EXPORT LW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                        write(iulog,'("EXPORT LW FLUXES: inst_index=",I3," rcol=",I5," chunk_index=",I5," icol=",I3,&
                                        " lat=",F8.3," lon=",F8.3, &
                                        " flwds=",F8.3)') &
-                                       rcol, cam_out%lchnk,icol,&
+                                       inst_index,rcol, cam_out%lchnk,icol,&
                                        rlat, rlon, &
                                        cam_out%flwds(icol)
                      end if
                   end if
                   if(trim(band) == "shortwave") then
-                     write(iulog,'("EXPORT SW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                     write(iulog,'("EXPORT SW FLUXES: inst_index=",I3," rcol=",I5," chunk_index=",I5," icol=",I3,&
                                     " ix=",I3," iy=",I3,&
                                     " lat=",F8.3," lon=",F8.3, &
                                     " soll=",F8.3," sols=",F8.3," solld=",F8.3," solsd=",F8.3)') &
-                                    rcol, cam_out%lchnk,icol,&
+                                    inst_index,rcol, cam_out%lchnk,icol,&
                                     ix,iy,&
                                     rlat, rlon, &
                                     cam_out%soll_mi(icol,ix),cam_out%sols_mi(icol,ix),cam_out%solld_mi(icol,ix),cam_out%solsd_mi(icol,ix)
                   else if(trim(band) == "longwave") then                  
-                     write(iulog,'("EXPORT LW FLUXES: rcol=",I5," chunk_index=",I5," icol=",I3,&
+                     write(iulog,'("EXPORT LW FLUXES: inst_index=",I3," rcol=",I5," chunk_index=",I5," icol=",I3,&
                                     " ix=",I3," iy=",I3,&
                                     " lat=",F8.3," lon=",F8.3, &
                                     " flwds=",F8.3)') &
-                                    rcol, cam_out%lchnk,icol,&
+                                    inst_index,rcol, cam_out%lchnk,icol,&
                                     ix,iy,&
                                     rlat, rlon, &
                                     cam_out%flwds_mi(icol,ix)
@@ -3097,7 +3115,6 @@ contains
       call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%optical_depth')
       !! Jungmin
-      write(*,'("SSA:",F7.3)') ssa
       call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
                         trim(subname) // ': optics%single_scattering_albedo')
       call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &

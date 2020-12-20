@@ -30,6 +30,11 @@ contains
       use physics_types, only: physics_state
       use camsrfexch, only: cam_in_t
       use physconst, only: stebol
+      !! Jungmin
+      use cam_instance     , only: inst_index
+      use phys_grid,       only: get_rlat_p,get_rlon_p,get_gcol_p,get_rlat_all_p, get_rlon_all_p
+      use shr_const_mod ,only: SHR_CONST_PI
+      !! Jungmin
 
       type(physics_state), intent(in) :: state
       type(cam_in_t), intent(in) :: cam_in
@@ -38,7 +43,10 @@ contains
       real(r8), intent(out) :: pmid(:,:)
       real(r8), intent(out) :: pint(:,:)
       integer :: ncol
-
+      !! Jungmin
+      integer :: i,j,rcol
+      real(r8) :: rlat,rlon
+      !! Jungmin
       ncol = state%ncol
 
       ! Map CAM to rad fields
@@ -57,7 +65,23 @@ contains
          pmid(:,1) = 0.5_r8 * pint(:,ktop) !state%pint(:ncol,1)
          pint(:,1) = 1.01_r8
       end if
-
+      !! Jungmin
+      do i = 1,ncol
+         rcol = get_gcol_p(cam_in%lchnk,i)
+         if(rcol.eq.237) then
+            rlat = get_rlat_p(cam_in%lchnk,i)*180._r8/SHR_CONST_PI
+            rlon = get_rlon_p(cam_in%lchnk,i)*180._r8/SHR_CONST_PI
+            do j = 1, pver+1
+               write(*,'("SET_RAD_STATE: inst_index=",I3," chunk_index=",I5," icol=",I3,"gcol=",I5, &
+                           " lat = ",F8.3," lon=",F8.3,&
+                           " j=",I3," pint=",F8.2," tint=",F8.2)') &
+                           inst_index,cam_in%lchnk,i,rcol,&
+                           rlat,rlon,&
+                           j,pint(i,j)*0.01,tint(i,j)
+            end do
+         end if
+      end do
+      !! Jungmin
    end subroutine set_rad_state
 
    !----------------------------------------------------------------------------

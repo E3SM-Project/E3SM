@@ -18,6 +18,7 @@ module camsrfexch
   use seq_comm_mct, only : num_inst_atm
   !! Jungmin
   use spmd_utils,         only: masterproc
+  use time_manager,        only: get_nstep
   !! Jungmin
   implicit none
 
@@ -902,7 +903,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
 
    !! Jungmin
    real(r8) :: clat,clon
-   integer :: rcol
+   integer :: rcol, nstep
    !-----------------------------------------------------------------------
    iter_max = 10
 
@@ -977,20 +978,20 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
          ! end jrm
       end do
       ! Even if use_MAML=false, cam_out%[X]_mi are still used as a interface between CRM atmosphere and land surface. 
-      ! therefore, copy all manually
+      ! therefore, copy all manually across the num_inst_atm (, which is one for non-MAML case)
       do i = 1, ncol
-         cam_out%tbot_mi(i,:) = cam_out%tbot(i)
+         cam_out%tbot_mi(i,:)  = cam_out%tbot(i)
          cam_out%thbot_mi(i,:) = cam_out%thbot(i)
-         cam_out%ubot_mi(i,:) = cam_out%ubot(i)
-         cam_out%vbot_mi(i,:) = cam_out%vbot(i)
+         cam_out%ubot_mi(i,:)  = cam_out%ubot(i)
+         cam_out%vbot_mi(i,:)  = cam_out%vbot(i)
          do m = 1,pcnst
             cam_out%qbot_mi(i,m,:) = cam_out%qbot(i,m)
          end do
-         cam_out%rho_mi(i,:) = cam_out%rho(i)
+         cam_out%rho_mi(i,:)    = cam_out%rho(i)
          cam_out%precsc_mi(i,:) = cam_out%precsc(i)
          cam_out%precsl_mi(i,:) = cam_out%precsl(i)
-         cam_out%precc_mi(i,:) = cam_out%precc(i)
-         cam_out%precl_mi(i,:) = cam_out%precl(i)
+         cam_out%precc_mi(i,:)  = cam_out%precc(i)
+         cam_out%precl_mi(i,:)  = cam_out%precl(i)
          
          !! Jungmin
          !if(masterproc) then
@@ -1008,7 +1009,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
          !! Jungmin
       end do! i = 1, ncol   
    else   
-      ! for MMF-MAML, surfaces are coupled to CRM atmosphere 
+      ! for MMF-MAML, land/ice surfaces are coupled to CRM atmosphere 
       crm_t_idx     = pbuf_get_index('CRM_T')
       crm_qv_idx    = pbuf_get_index('CRM_QV')
       crm_u_idx     = pbuf_get_index('CRM_U')
@@ -1074,19 +1075,27 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
       !! Jungmin
       do i = 1,ncol
          rcol = get_gcol_p(lchnk,i)         
-         if(rcol.eq.223) then
+         if(rcol.eq.223 .or. rcol.eq.237) then
             clat = get_rlat_p(lchnk,i)*180_r8/SHR_CONST_PI
             clon = get_rlon_p(lchnk,i)*180_r8/SHR_CONST_PI
 
-            write(iulog,'("ATM_EXPORT: chunk_index=",I3," icol=",I3," rcol=",I5," inst_index=",I5, &
+            write(iulog,'("CAM_EXPORT: nstep=",I5," chunk_index=",I3," icol=",I3," rcol=",I5," inst_index=",I5, &
                           "lat=",F8.3," lon=",F8.3, &
-                          " tbot=",F7.3)') &
-                          lchnk,i,rcol,inst_index,&
+                          " landfrac=",F5.3," icefrac=",F5.3," ocnfrac=",F5.3,&
+                          " tbot=",F7.3," thot=",F7.3," qbot=",F7.3," ubot=",F7.3," vbot=",F7.3," rho=",F7.3," precc=",F7.3," precl=",F7.3)') &
+                          nstep,lchnk,i,rcol,inst_index,&
                           clat,clon,&
-                          cam_out%tbot(i)
+                          cam_in%landfrac(i),cam_in%icefrac(i),cam_in%ocnfrac(i),&
+                          cam_out%tbot(i), cam_out%thbot(i), cam_out%qbot(i,1),&
+                          cam_out%ubot(i), cam_out%vbot(i), cam_out%rho(i), &
+                          cam_out%precc(i), cam_out%precl(i)
             do j = 1, num_inst_atm
-               write(iulog,'("      j=",I3," tbot_mi=",F7.3)')j,cam_out%tbot_mi(i,j)
-            end do
+               write(iulog,'("      j=",I3," tbot=",F7.3," thot=",F7.3," qbot=",F7.3," ubot=",F7.3," vbot=",F7.3," rho=",F7.3," precc=",F7.3," precl=",F7.3)')&
+                           j,cam_out%tbot_mi(i,j), cam_out%thbot_mi(i,j),cam_out%qbot_mi(i,1,j),&
+                           cam_out%ubot_mi(i,j), cam_out%vbot_mi(i,j), cam_out%rho_mi(i,j), &
+                           cam_out%precc_mi(i,j), cam_out%precl_mi(i,j)
+
+            end do ! j
          end if   
       end do
       !! Jungmin

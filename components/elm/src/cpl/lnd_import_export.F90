@@ -1084,17 +1084,24 @@ contains
          
        !! Jungmin
        gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
-       if(gcol.eq.223) then
-         write(iulog,'("LND_IMPORT: inst_index=",I3," g=",I3," i=",I3, "igarr=",I3, &
+       if(gcol.eq.223 .or. gcol.eq.237) then
+         nstep = get_nstep() 
+         write(iulog,'("LND_IMPORT: nstep=",I5," inst_index=",I3," g=",I5," i=",I3, "rcol=",I5, &
                         " lat=",F8.3," lon=",F8.3,&
-                        " sollxy=",F7.3," solsxy=",F7.3," solldxy=",F7.3," solsdxy=",F7.3," flwdsxy=",F7.3)') &
-                        inst_index,g,i,gcol,&
+                        " sollxy=",F8.3," solsxy=",F8.3," solldxy=",F8.3," solsdxy=",F8.3," flwdsxy=",F8.3, &
+                        " tbot=",F7.3," thbot=",F7.3," qbot=",F7.5,"ubot=",F7.3," vbot=",F7.3," ref_hgt=",F8.3)') &
+                        nstep,inst_index,g,i,gcol,&
                         grc_pp%latdeg(g),grc_pp%londeg(g),&
                         x2l(index_x2l_Faxa_swndr,i), &
                         x2l(index_x2l_Faxa_swvdr,i), &
                         x2l(index_x2l_Faxa_swndf,i), &
                         x2l(index_x2l_Faxa_swvdf,i), &
-                        x2l(index_x2l_Faxa_lwdn,i)
+                        x2l(index_x2l_Faxa_lwdn,i), &
+                        x2l(index_x2l_Sa_tbot,i), &
+                        x2l(index_x2l_Sa_ptem,i), &
+                        x2l(index_x2l_Sa_shum,i), &
+                        x2l(index_x2l_Sa_u,i), &
+                        x2l(index_x2l_Sa_v,i),x2l(index_x2l_Sa_z,i)
        end if           
        !! Jungmin        
 
@@ -1374,19 +1381,6 @@ contains
        l2x(index_l2x_Sl_anidr,i)    =  lnd2atm_vars%albd_grc(g,2)
        l2x(index_l2x_Sl_avsdf,i)    =  lnd2atm_vars%albi_grc(g,1)
        l2x(index_l2x_Sl_anidf,i)    =  lnd2atm_vars%albi_grc(g,2)
-       !! Jungmin
-       !if(grc_pp%latdeg(g).gt.-15 .and. grc_pp%latdeg(g).lt.15.) then
-       gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
-       if(gcol.eq.223) then
-         write(iulog,'("LND_EXPORT: inst_index=",I3," g=",I3," i=",I3, "igarr=",I3, &
-                        " lat=",F8.3," lon=",F8.3,&
-                        " asdir=",F7.3," aldir=",F7.3," asdif=",F7.3," aldif=",F7.3)') &
-                        inst_index,g,i,gcol,&
-                        grc_pp%latdeg(g),grc_pp%londeg(g),&
-                        lnd2atm_vars%albd_grc(g,1),lnd2atm_vars%albd_grc(g,2),&
-                        lnd2atm_vars%albi_grc(g,1),lnd2atm_vars%albi_grc(g,2)
-       end if           
-       !! Jungmin        
        l2x(index_l2x_Sl_tref,i)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x(index_l2x_Sl_qref,i)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x(index_l2x_Sl_u10,i)      =  lnd2atm_vars%u_ref10m_grc(g)
@@ -1397,6 +1391,23 @@ contains
        l2x(index_l2x_Fall_lwup,i)   = -lnd2atm_vars%eflx_lwrad_out_grc(g)
        l2x(index_l2x_Fall_evap,i)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
        l2x(index_l2x_Fall_swnet,i)  =  lnd2atm_vars%fsa_grc(g)
+       !! Jungmin
+       !if(grc_pp%latdeg(g).gt.-15 .and. grc_pp%latdeg(g).lt.15.) then
+       gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
+       if(gcol.eq.223 .or. gcol.eq.237) then
+         nstep = get_nstep()
+         write(iulog,'("LND_EXPORT: nstep=",I5," bounds=",I5," ig=",I3," inst_index=",I3," rcol=",I5, &
+                        " lat=",F8.3," lon=",F8.3,&
+                        " asdir=",F7.3," aldir=",F7.3," asdif=",F7.3," aldif=",F7.3, &
+                        " lhf=",F10.3," shf=",F10.3," cflx1=",F20.10," lwup=",F9.3," ts=",F7.3)') &
+                        nstep, g,i,inst_index,gcol,&
+                        grc_pp%latdeg(g),grc_pp%londeg(g),&
+                        lnd2atm_vars%albd_grc(g,1),lnd2atm_vars%albd_grc(g,2),&
+                        lnd2atm_vars%albi_grc(g,1),lnd2atm_vars%albi_grc(g,2),&
+                        -lnd2atm_vars%eflx_lh_tot_grc(g),-lnd2atm_vars%eflx_sh_tot_grc(g),-lnd2atm_vars%qflx_evap_tot_grc(g),&
+                        -lnd2atm_vars%eflx_lwrad_out_grc(g),lnd2atm_vars%t_rad_grc(g)
+       end if           
+       !! Jungmin        
        if (index_l2x_Fall_fco2_lnd /= 0) then
           l2x(index_l2x_Fall_fco2_lnd,i) = -lnd2atm_vars%nee_grc(g)  
        end if
