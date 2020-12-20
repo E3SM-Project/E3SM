@@ -2,6 +2,7 @@
 set(O1MODELSRC
   eam/src/chemistry/aerosol/dust_sediment_mod.F90
   eam/src/chemistry/modal_aero/modal_aero_convproc.F90
+  eam/src/chemistry/utils/modal_aero_calcsize.F90
   eam/src/physics/cam/zm_conv.F90)
 
 if (NOT DEBUG)
