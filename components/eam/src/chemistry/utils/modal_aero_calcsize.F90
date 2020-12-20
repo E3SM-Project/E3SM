@@ -696,12 +696,12 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !Initialize all parameters to the default values for the mode
       !----------------------------------------------------------------------
       !interstitial
-      call set_initial_sz_and_volumes(list_idx_local, top_lev, pver, ncol, imode, & !input
-           dgncur_a, v2ncur_a, dryvol_a)                                            !output
+      call set_initial_sz_and_volumes(list_idx_local, top_lev, ncol, imode, & !input
+           dgncur_a, v2ncur_a, dryvol_a)                                      !output
 
       !cloud borne
-      call set_initial_sz_and_volumes(list_idx_local, top_lev, pver, ncol, imode, & !input
-           dgncur_c, v2ncur_c, dryvol_c)                                            !output
+      call set_initial_sz_and_volumes(list_idx_local, top_lev, ncol, imode, & !input
+           dgncur_c, v2ncur_c, dryvol_c)                                      !output
 
       !----------------------------------------------------------------------
       !Find # of species in this mode
@@ -718,11 +718,11 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !
       !Volume = sum_over_components{ component_mass mixrat / density }
       !----------------------------------------------------------------------
-      call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
+      call compute_dry_volume(top_lev, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
 
 
-      ! do size adjustment based on computed dry diameter values
-      call size_adjustment(list_idx_local, top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, & !input
+      ! do size adjustment based on computed dry diameter values and update the diameters
+      call size_adjustment(list_idx_local, top_lev, ncol, lchnk, imode, dryvol_a, state_q, & !input
            dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
            dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
            drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
@@ -765,7 +765,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       ptend%q  = dqdt
 
       !update cld brn aerosols
-      call update_cld_brn_mmr(list_idx_local, top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
+      call update_cld_brn_mmr(list_idx_local, top_lev, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
       !----------------------------------------------------------------------
       ! do outfld calls
@@ -842,7 +842,7 @@ end subroutine modal_aero_calcsize_sub
 
 !---------------------------------------------------------------------------------------------
 #ifdef MODAL_AERO
-subroutine set_initial_sz_and_volumes(list_idx, top_lev, pver, ncol, imode, & !input
+subroutine set_initial_sz_and_volumes(list_idx, top_lev, ncol, imode, & !input
      dgncur, v2ncur, dryvol )                                                 !output
 
   !-----------------------------------------------------------------------------
@@ -856,7 +856,7 @@ subroutine set_initial_sz_and_volumes(list_idx, top_lev, pver, ncol, imode, & !i
   implicit none
 
   !inputs
-  integer, intent(in) :: list_idx, top_lev, pver !for model level loop
+  integer, intent(in) :: list_idx, top_lev !for model level loop
   integer, intent(in) :: ncol          !# of columns
   integer, intent(in) :: imode         !mode index
 
@@ -886,7 +886,7 @@ end subroutine set_initial_sz_and_volumes
 
 !---------------------------------------------------------------------------------------------
 
-subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
+subroutine compute_dry_volume(top_lev, ncol, imode, nspec, state, pbuf, &
      dryvol_a, dryvol_c, list_idx_in)
 
   !-----------------------------------------------------------------------------
@@ -902,7 +902,7 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   implicit none
 
   !inputs
-  integer,  intent(in) :: top_lev, pver !for model level loop
+  integer,  intent(in) :: top_lev !for model level loop
   integer,  intent(in) :: ncol          !# of columns
   integer,  intent(in) :: imode         !mode index
   integer,  intent(in) :: nspec         !# of species in mode "imode"
@@ -952,7 +952,7 @@ end subroutine compute_dry_volume
 
 !---------------------------------------------------------------------------------------------
 
-subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, & !input
+subroutine size_adjustment(list_idx, top_lev, ncol, lchnk, imode, dryvol_a, state_q, & !input
      dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
      dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &
      drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, &
@@ -972,7 +972,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
   !inputs
   integer,  intent(in) :: list_idx
-  integer,  intent(in) :: top_lev, pver !for model level loop
+  integer,  intent(in) :: top_lev!for model level loop
   integer,  intent(in) :: ncol          !# of columns
   integer,  intent(in) :: lchnk
   integer,  intent(in) :: imode         !mode index
@@ -1003,8 +1003,8 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
   !local
   integer :: klev, icol
   integer :: num_mode_idx, num_cldbrn_mode_idx, mam_ait, mam_acc, nait, nacc
-  real(r8) :: v2nyy, v2nxx                  ! voltonumblo/hi of current mode
-  real(r8) :: v2nyyrl, v2nxxrl              ! relaxed voltonumblo/hi
+  real(r8) :: v2nmax, v2nmin                  ! voltonumblo/hi of current mode
+  real(r8) :: v2nmaxrl, v2nminrl              ! relaxed voltonumblo/hi
   real(r8) :: dgnyy, dgnxx                  ! dgnumlo/hi of current mode
   real(r8) :: drv_a, drv_c                  ! dry volume (cm3/mol_air)
   real(r8) :: num_a0, num_c0                ! initial number (#/mol_air)
@@ -1027,7 +1027,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
 
   !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
   call compute_dgn_vol_limits(list_idx, imode, nait, nacc, do_aitacc_transfer, & !input
-       v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
+       v2nmin, v2nmax, v2nminrl, v2nmaxrl, dgnxx, dgnyy) !output
 
   !set tendency logicals to true if we need to update mmr
   if (update_mmr) then
@@ -1069,7 +1069,7 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
            !applied over time-scale tadj
            !-----------------------------------------------------------------
            call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
-                   drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
+                   drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
                    num_a, num_c, dqdt, dqqcwdt)                                                        !output
 
         endif !do_adjust
@@ -1078,12 +1078,12 @@ subroutine size_adjustment(list_idx, top_lev, pver, ncol, lchnk, imode, dryvol_a
         ! now compute current dgn and v2n
         !
         call update_dgn_voltonum(icol, klev, imode, update_mmr, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
-             v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
+             v2nmin, v2nmax, dgnxx, dgnyy, pdel, &
              dgncur_a, v2ncur_a, qsrflx, dqdt)
 
         !for cloud borne aerosols
         call update_dgn_voltonum(icol, klev, imode, update_mmr, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
-             v2nxx, v2nyy, dgnumhi, dgnumlo, pdel, &
+             v2nmin, v2nmax, dgnumhi, dgnumlo, pdel, &
              dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
 
         ! save number and dryvol for aitken <--> accum transfer
@@ -1115,7 +1115,7 @@ end subroutine size_adjustment
 !---------------------------------------------------------------------------------------------
 
 subroutine compute_dgn_vol_limits(list_idx, imode, nait, nacc, do_aitacc_transfer, & !input
-           v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
+           v2nmin, v2nmax, v2nminrl, v2nmaxrl, dgnxx, dgnyy) !output
 
   !-----------------------------------------------------------------------------
   !Purpose: Compute hi and lo limits for diameter and volume based on the
@@ -1135,10 +1135,10 @@ integer,  intent(in) :: nait, nacc
 logical,  intent(in) :: do_aitacc_transfer
 
 !outputs
-real(r8), intent(out) :: v2nxx
-real(r8), intent(out) :: v2nyy
-real(r8), intent(out) :: v2nxxrl
-real(r8), intent(out) :: v2nyyrl
+real(r8), intent(out) :: v2nmin
+real(r8), intent(out) :: v2nmax
+real(r8), intent(out) :: v2nminrl
+real(r8), intent(out) :: v2nmaxrl
 real(r8), intent(out) :: dgnxx
 real(r8), intent(out) :: dgnyy
 
@@ -1151,33 +1151,37 @@ real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
 call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
-!v2nxx = voltonumbhi is proportional to dgnumhi**(-3),
+!v2nmin = voltonumbhi is proportional to dgnumhi**(-3),
 !        and produces the minimum allowed number for a given volume
-v2nxx   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
+v2nmin   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
-!v2nyy = voltonumblo is proportional to dgnumlo**(-3),
+!v2nmax = voltonumblo is proportional to dgnumlo**(-3),
 !        and produces the maximum allowed number for a given volume
-v2nyy   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
+v2nmax   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
-!v2nxxrl and v2nyyrl are their "relaxed" equivalents.
-v2nxxrl = v2nxx/relax_factor
-v2nyyrl = v2nyy*relax_factor
+!v2nminrl and v2nmaxrl are their "relaxed" equivalents.
+v2nminrl = v2nmin/relax_factor
+v2nmaxrl = v2nmax*relax_factor
 dgnxx   = dgnumhi
 dgnyy   = dgnumlo
 
+
+!if do_aitacc_transfer is turned on, we will do the ait<->acc tranfer separately in
+!aitken_accum_exchange subroutine, so we are turning the size adjustment for these
+!two modes here.
 if ( do_aitacc_transfer ) then
-   !for n=nait, divide v2nxx by 1.0e6 to effectively turn off the
+   !for n=nait, divide v2nmin by 1.0e6 to effectively turn off the
    !         adjustment when number is too small (size is too big)
-   if (imode == nait) v2nxx = v2nxx/szadj_block_fac
+   if (imode == nait) v2nmin = v2nmin/szadj_block_fac
 
-   !for n=nacc, multiply v2nyy by 1.0e6 to effectively turn off the
+   !for n=nacc, multiply v2nmax by 1.0e6 to effectively turn off the
    !         adjustment when number is too big (size is too small)
-   if (imode == nacc) v2nyy = v2nyy*szadj_block_fac
+   if (imode == nacc) v2nmax = v2nmax*szadj_block_fac
 
-   !Also change the v2nyyrl/v2nxxrl so that
+   !Also change the v2nmaxrl/v2nminrl so that
    !the interstitial<-->activated adjustment is turned off
-   v2nxxrl = v2nxx/relax_factor
-   v2nyyrl = v2nyy*relax_factor
+   v2nminrl = v2nmin/relax_factor
+   v2nmaxrl = v2nmax*relax_factor
 end if
 
 return
@@ -1186,7 +1190,7 @@ end subroutine compute_dgn_vol_limits
 !---------------------------------------------------------------------------------------------
 
 subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &
-     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, &
+     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, &
      num_a, num_c, dqdt, dqqcwdt)
 
   !-----------------------------------------------------------------------------
@@ -1204,7 +1208,7 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
   integer,  intent(in) :: icol, klev
   logical,  intent(in) :: update_mmr
   real(r8), intent(in) :: drv_a, num_a0, drv_c, num_c0
-  real(r8), intent(in) :: deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj
+  real(r8), intent(in) :: deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj
   integer,  intent(in) :: num_mode_idx, num_cldbrn_mode_idx
 
   !outputs
@@ -1233,7 +1237,7 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
      num_c = 0.0_r8
 
      num_a1 = num_a
-     numbnd = max( drv_a*v2nxx, min( drv_a*v2nyy, num_a1 ) )
+     numbnd = max( drv_a*v2nmin, min( drv_a*v2nmax, num_a1 ) )
      num_a  = num_a1 + (numbnd - num_a1)*fracadj
      if(update_mmr) then
         dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
@@ -1243,7 +1247,7 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
      ! interstitial volume is zero, treat similar to above
      num_a = 0.0_r8
      num_c1 = num_c
-     numbnd = max( drv_c*v2nxx, min( drv_c*v2nyy, num_c1 ) )
+     numbnd = max( drv_c*v2nmin, min( drv_c*v2nmax, num_c1 ) )
      num_c  = num_c1 + (numbnd - num_c1)*fracadj
      if(update_mmr) then
         dqdt(icol,klev,num_mode_idx)           = -num_a0*deltatinv
@@ -1259,17 +1263,17 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
      !    and activated number (individually)
      !    if only a or c changes, adjust the other in the opposite direction
      !    as much as possible to conserve a+c
-     numbnd = max( drv_a*v2nxxrl, min( drv_a*v2nyyrl, num_a1 ) )
+     numbnd = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl, num_a1 ) )
      delnum_a2 = (numbnd - num_a1)*fracadj
      num_a2 = num_a1 + delnum_a2
-     numbnd = max( drv_c*v2nxxrl, min( drv_c*v2nyyrl, num_c1 ) )
+     numbnd = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl, num_c1 ) )
      delnum_c2 = (numbnd - num_c1)*fracadj
      num_c2 = num_c1 + delnum_c2
      if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
-        num_a2 = max( drv_a*v2nxxrl, min( drv_a*v2nyyrl,   &
+        num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
              num_a1-delnum_c2 ) )
      else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
-        num_c2 = max( drv_c*v2nxxrl, min( drv_c*v2nyyrl,   &
+        num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
              num_c1-delnum_a2 ) )
      end if
      ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
@@ -1278,28 +1282,28 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
      num_t2 = num_a2 + num_c2
      delnum_a3 = 0.0_r8
      delnum_c3 = 0.0_r8
-     if (num_t2 < drv_t*v2nxx) then
-        delnum_t3 = (drv_t*v2nxx - num_t2)*fracadj
-        ! if you are here then (num_a2 < drv_a*v2nxx) and/or
-        !                      (num_c2 < drv_c*v2nxx) must be true
-        if ((num_a2 < drv_a*v2nxx) .and. (num_c2 < drv_c*v2nxx)) then
+     if (num_t2 < drv_t*v2nmin) then
+        delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
+        ! if you are here then (num_a2 < drv_a*v2nmin) and/or
+        !                      (num_c2 < drv_c*v2nmin) must be true
+        if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
            delnum_a3 = delnum_t3*(num_a2/num_t2)
            delnum_c3 = delnum_t3*(num_c2/num_t2)
-        else if (num_c2 < drv_c*v2nxx) then
+        else if (num_c2 < drv_c*v2nmin) then
            delnum_c3 = delnum_t3
-        else if (num_a2 < drv_a*v2nxx) then
+        else if (num_a2 < drv_a*v2nmin) then
            delnum_a3 = delnum_t3
         end if
-     else if (num_t2 > drv_t*v2nyy) then
-        delnum_t3 = (drv_t*v2nyy - num_t2)*fracadj
-        ! if you are here then (num_a2 > drv_a*v2nyy) and/or
-        !                      (num_c2 > drv_c*v2nyy) must be true
-        if ((num_a2 > drv_a*v2nyy) .and. (num_c2 > drv_c*v2nyy)) then
+     else if (num_t2 > drv_t*v2nmax) then
+        delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
+        ! if you are here then (num_a2 > drv_a*v2nmax) and/or
+        !                      (num_c2 > drv_c*v2nmax) must be true
+        if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
            delnum_a3 = delnum_t3*(num_a2/num_t2)
            delnum_c3 = delnum_t3*(num_c2/num_t2)
-        else if (num_c2 > drv_c*v2nyy) then
+        else if (num_c2 > drv_c*v2nmax) then
            delnum_c3 = delnum_t3
-        else if (num_a2 > drv_a*v2nyy) then
+        else if (num_a2 > drv_a*v2nmax) then
            delnum_a3 = delnum_t3
         end if
      end if
@@ -1318,7 +1322,7 @@ end subroutine adjust_num_sizes
 !---------------------------------------------------------------------------------------------
 
 subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type, gravit, cmn_factor, drv, num, &
-     v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
+     v2nmin, v2nmax, dgnxx, dgnyy, pdel, &
      dgncur, v2ncur, qsrflx, dqdt)
 
   !-----------------------------------------------------------------------------
@@ -1337,7 +1341,7 @@ subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type,
   logical,  intent(in) :: update_mmr
   real(r8), intent(in) :: gravit, cmn_factor
   real(r8), intent(in) :: drv, num
-  real(r8), intent(in) :: v2nxx, v2nyy, dgnxx, dgnyy
+  real(r8), intent(in) :: v2nmin, v2nmax, dgnxx, dgnyy
   real(r8), intent(in) :: pdel(:,:)
   real(r8), intent(in) :: dqdt(:,:,:)
   !output
@@ -1348,12 +1352,12 @@ subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type,
   real(r8) :: pdel_fac
 
   if (drv > 0.0_r8) then
-     if (num <= drv*v2nxx) then
+     if (num <= drv*v2nmin) then
         dgncur(icol,klev,imode) = dgnxx
-        v2ncur(icol,klev,imode) = v2nxx
-     else if (num >= drv*v2nyy) then
+        v2ncur(icol,klev,imode) = v2nmin
+     else if (num >= drv*v2nmax) then
         dgncur(icol,klev,imode) = dgnyy
-        v2ncur(icol,klev,imode) = v2nyy
+        v2ncur(icol,klev,imode) = v2nmax
      else
         dgncur(icol,klev,imode) = (drv/(cmn_factor*num))**third
         v2ncur(icol,klev,imode) = num/drv
@@ -1991,7 +1995,7 @@ end subroutine update_num_tends
 
 !---------------------------------------------------------------------------------------------
 
-subroutine update_cld_brn_mmr(list_idx, top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
+subroutine update_cld_brn_mmr(list_idx, top_lev, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
   !-----------------------------------------------------------------------------
   !Purpose: updates mmr of cloud borne aerosols
@@ -2005,7 +2009,7 @@ subroutine update_cld_brn_mmr(list_idx, top_lev, pver, ncol, lchnk, pcnst, delta
   implicit none
 
   !input
-  integer,  intent(in) :: list_idx, top_lev, pver !for model level loop
+  integer,  intent(in) :: list_idx, top_lev !for model level loop
   integer,  intent(in) :: ncol          !# of columns
   integer,  intent(in) :: lchnk
   integer,  intent(in) :: pcnst         !# of constituents
@@ -2121,7 +2125,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
    real(r8) :: num_a0                 ! initial number (#/mol_air)
    real(r8) :: num_a                  ! final number (#/mol_air)
    real(r8) :: voltonumbhi, voltonumblo
-   real(r8) :: v2nyy, v2nxx           ! voltonumblo/hi of current mode
+   real(r8) :: v2nmax, v2nmin           ! voltonumblo/hi of current mode
    real(r8) :: sigmag, alnsg
    !-----------------------------------------------------------------------
 
@@ -2185,8 +2189,8 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
       dumfac = exp(4.5_r8*alnsg**2)*pi/6.0_r8
       voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3)*exp(4.5_r8*alnsg**2) )
       voltonumbhi = 1._r8 / ( (pi/6._r8)*(dgnumhi**3)*exp(4.5_r8*alnsg**2) )
-      v2nxx = voltonumbhi
-      v2nyy = voltonumblo
+      v2nmin = voltonumbhi
+      v2nmax = voltonumblo
       dgnxx = dgnumhi
       dgnyy = dgnumlo
 
@@ -2198,9 +2202,9 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
             num_a = max( 0.0_r8, num_a0 )
 
             if (drv_a > 0.0_r8) then
-               if (num_a <= drv_a*v2nxx) then
+               if (num_a <= drv_a*v2nmin) then
                   dgncur_a(i,k) = dgnxx
-               else if (num_a >= drv_a*v2nyy) then
+               else if (num_a >= drv_a*v2nmax) then
                   dgncur_a(i,k) = dgnyy
                else
                   dgncur_a(i,k) = (drv_a/(dumfac*num_a))**third
