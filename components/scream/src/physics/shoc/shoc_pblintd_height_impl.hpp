@@ -33,7 +33,10 @@ void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, con
   Int index = 0;
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k, Int& local_max) {
-
+     //
+    // To calculate the first highest level index that exceeds the "critical" value for the following
+    // Richardson interpolation.
+    //
     const Int i = team.league_rank();
 
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
@@ -74,7 +77,10 @@ void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, con
 
   team.team_barrier();
 
-  // calculate the pblh
+  //
+  // using interpolation to calculate rino (richardson number), and latest updated rino is then used
+  // to calculate pblh.
+  //
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
      auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
      auto range_pack2 = range_pack1;
@@ -104,6 +110,10 @@ void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, con
   const auto srino = scalarize(rino);
   const auto sz = scalarize(z);
 
+  //
+  //  calculate pblh depending on latest updated richarson number. this calculation is separate from
+  //  the richarson number calculation because rino is required to be updated in parallel first.
+  //
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
      auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
      auto range_pack2 = range_pack1;
