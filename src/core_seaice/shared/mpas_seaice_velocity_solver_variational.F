@@ -751,7 +751,8 @@ contains
          nVerticesSolve, &
          cellsOnVertex, &
          nEdgesOnCell, &
-         areaTriangle
+         areaTriangle, &
+         vertexDegree
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -809,7 +810,7 @@ contains
           stressDivergenceVVertex = 0.0_RKIND
 
           ! loop over surrounding cells
-          do iSurroundingCell = 1, 3 !vertexDegree
+          do iSurroundingCell = 1, vertexDegree
 
              ! get the cell number of this cell
              iCell = cellsOnVertex(iSurroundingCell, iVertex)
