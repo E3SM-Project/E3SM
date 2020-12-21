@@ -1238,7 +1238,7 @@ contains
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in registering coupler land '
            call shr_sys_abort(subname//' ERROR in registering coupler land')
-         endif
+        endif
         ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in receiving coupler land mesh'
@@ -1260,17 +1260,6 @@ contains
           call shr_sys_abort(subname//' ERROR in defining tags on land coupler')
         endif
 #ifdef MOABDEBUG
-        !there are no shared entities, but we will set a special partition tag, in order to see the
-        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-        tagname='partition'//CHAR(0)
-        tagtype = 0  ! dense, integer
-        numco = 1 !  one value per cell
-        ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-        ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
-        allocate(vgids(nverts(1)))
-        vgids = rank
-        ent_type = 0 ! vertex type
-        ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
         ! debug test
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
