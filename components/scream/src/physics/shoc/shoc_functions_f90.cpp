@@ -2794,7 +2794,65 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
 
 void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check)
 {
-  // TODO
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::Pack<Real, 1>;
+  using BPack1     = typename ekat::Pack<bool, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+  using bview_1d   = typename SHOC::view_1d<BPack1>;
+  using view_2d    = typename SHOC::view_2d<Spack>;
+  using ExeSpace   = typename SHOC::KT::ExeSpace;
+  using MemberType = typename SHOC::MemberType;
+
+  std::vector<view_2d> views_2d(5);
+  ekat::host_to_device({z, u, v, thv, rino}, shcol, nlev, views_2d, true);
+
+  view_2d z_2d   (views_2d[0]),
+          u_2d   (views_2d[1]),
+          v_2d   (views_2d[2]),
+          thv_2d (views_2d[3]),
+          rino_2d(views_2d[4]);
+
+  std::vector<view_1d> views_1d(3);
+  ekat::host_to_device({ustar, thv_ref, pblh}, shcol, views_1d);
+  view_1d ustar_1d   (views_1d[0]),
+          thv_ref_1d (views_1d[1]),
+          pblh_1d    (views_1d[2]);
+
+  std::vector<bview_1d> views_bool_1d(1);
+  ekat::host_to_device({check}, shcol, views_bool_1d);
+  bview_1d check_1d (views_bool_1d[0]);
+
+  Int npbl = nlev;
+
+  const Int nlev_pack = ekat::npack<Spack>(nlev);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto z_1d    = ekat::subview(z_2d, i);
+    const auto u_1d    = ekat::subview(u_2d, i);
+    const auto v_1d    = ekat::subview(v_2d, i);
+    const auto thv_1d  = ekat::subview(thv_2d, i);
+    const auto rino_1d = ekat::subview(rino_2d, i);
+
+    Scalar& ustar_s   = ustar_1d(i)[0];
+    Scalar& thv_ref_s = thv_ref_1d(i)[0];
+    Scalar& pblh_s    = pblh_1d(i)[0];
+    bool& check_s     = check_1d(i)[0];
+
+    SHOC::pblintd_height(team, nlev, npbl, z_1d, u_1d, v_1d, ustar_s, thv_1d, thv_ref_s, pblh_s, rino_1d, check_s);
+ });
+
+  std::vector<view_1d> out_1d_views = {pblh_1d};
+  ekat::device_to_host({pblh}, shcol, out_1d_views);
+
+  std::vector<view_2d> out_2d_views = {rino_2d};
+  ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
+
+  std::vector<bview_1d> out_bool_1d_views = {check_1d};
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh)
@@ -3091,7 +3149,6 @@ void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, R
   std::vector<view_bool_1d> out_bool_1d_views = {check_1d};
   ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
-
 
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh)
 {
