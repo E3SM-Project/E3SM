@@ -271,13 +271,13 @@ if ($ENV{SCREAM_FORCE_RUN_DIFF})
   add_definitions(-DSCREAM_FORCE_RUN_DIFF)
 endif()
 
-set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
-
-if (SCREAM_CIME_BUILD)
-  if (SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
-    set (SCREAM_DYNAMICS_DYCORE "Homme")
-  endif()
+set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
+if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
+  set (DEFAULT_SCREAM_DYNAMICS_DYCORE "Homme")
 endif()
+
+set(SCREAM_DYNAMICS_DYCORE ${DEFAULT_SCREAM_DYNAMICS_DYCORE} CACHE STRING
+  "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 
 string(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
 if (NOT ${SCREAM_DOUBLE_PRECISION})
