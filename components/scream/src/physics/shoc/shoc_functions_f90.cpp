@@ -3093,7 +3093,61 @@ void eddy_diffusivities_f(Int nlev, Int shcol, Real* obklen, Real* pblh, Real* z
 
 void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino)
 {
-  // TODO
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::Pack<Real, 1>;
+  using BPack1       = typename ekat::Pack<bool, 1>;
+  using view_1d      = typename SHOC::view_1d<Pack1>;
+  using view_bool_1d = typename SHOC::view_1d<BPack1>;
+  using view_2d      = typename SHOC::view_2d<Spack>;
+
+  std::vector<view_2d> views_2d(3);
+  ekat::host_to_device({z, thv, rino}, shcol, nlev, views_2d, true);
+  view_2d z_2d   (views_2d[0]),
+          thv_2d (views_2d[1]),
+          rino_2d(views_2d[2]);
+
+  std::vector<view_1d> views_1d(5);
+  ekat::host_to_device({ustar, obklen, kbfs, pblh, tlv}, shcol, views_1d);
+  view_1d ustar_1d (views_1d[0]),
+          obklen_1d(views_1d[1]),
+          kbfs_1d  (views_1d[2]),
+          pblh_1d  (views_1d[3]),
+          tlv_1d   (views_1d[4]);
+
+  std::vector<view_bool_1d> bviews_1d(1);
+  ekat::host_to_device({check}, shcol, bviews_1d);
+  view_bool_1d check_1d (bviews_1d[0]);
+
+  Int npbl = nlev;
+
+  Kokkos::parallel_for("pblintd_surf_temp", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    const auto z_1d    = ekat::subview(z_2d, i);
+    const auto thv_1d  = ekat::subview(thv_2d, i);
+    const auto rino_1d = ekat::subview(rino_2d, i);
+
+    const Scalar& ustar_s  = ustar_1d(i)[0];
+    const Scalar& obklen_s = obklen_1d(i)[0];
+    const Scalar& kbfs_s   = kbfs_1d(i)[0];
+    Scalar& pblh_s         = pblh_1d(i)[0];
+
+    Scalar& tlv_s = tlv_1d(i)[0];
+    bool& check_s = check_1d(i)[0];
+
+    SHOC::pblintd_surf_temp(nlev, nlevi, npbl, z_1d, ustar_s, obklen_s, kbfs_s,
+               thv_1d, tlv_s, pblh_s, check_s, rino_1d);
+  });
+
+  std::vector<view_1d> out_1d_views = {pblh_1d, tlv_1d};
+  ekat::device_to_host({pblh, tlv}, shcol, out_1d_views);
+
+  std::vector<view_2d> out_2d_views = {rino_2d};
+  ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
+
+  std::vector<view_bool_1d> out_bool_1d_views = {check_1d};
+  ekat::device_to_host({check}, shcol, out_bool_1d_views);
 }
 
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh)

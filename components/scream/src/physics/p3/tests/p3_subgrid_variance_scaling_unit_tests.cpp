@@ -83,7 +83,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     int& errors){
     //If expon=1, subgrid_variance_scaling should be 1
 
-    Scalar tol = C::Tol * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
+    Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
 
     //Get value from C++ code
     const Spack relvars(relvar);
@@ -99,7 +99,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors){
     //If relvar=1, subgrid_variance_scaling should be factorial(expon)
 
-    Scalar tol = C::Tol * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
+    Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
 
     //Get value from C++ code
     const Spack ones(1);
@@ -118,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors){
   //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
 
-  Scalar tol = C::Tol * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
+  Scalar tol = C::macheps * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
 
   Real relvar_info[max_pack_size] = {0.1,0.5,1.0,2.0,
                                      3.0,4.0,5.0,6.0,

@@ -75,6 +75,9 @@ struct Functions
   // --------- Functions ---------
   //
 
+  // For all functions, range_mask represents a mask on the Spack variables which
+  // determines which elements are active (not masked).
+
   //  compute saturation vapor pressure
   //  polysvp1 returned in units of pa.
   //  t is input in units of k.
@@ -98,6 +101,37 @@ struct Functions
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
   static void check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask);
+
+  // Computes exner function
+  // The result is exners formula, and is dimensionless
+  // The input is mid-level pressure, and has units of Pa
+  KOKKOS_FUNCTION
+  static Spack get_exner(const Spack& pmid, const Smask& range_mask);
+
+  // Converts temperature into potential temperature
+  // The result is the potential temperature, units in K
+  // The inputs are
+  //   Temperature, units in K
+  //   Exners function, unitless.  Exners function can be derived using `get_exner` defined above.
+  KOKKOS_FUNCTION
+  static Spack T_to_th(const Spack& T_atm, const Spack& exner, const Smask& range_mask);
+
+  // Converts potential temperature into temperature
+  // The result is the temperature, units in K
+  // The inputs are
+  //   Potential Temperature, units in K
+  //   Exners function, unitless.  Exners function can be derived using `get_exner` defined above.
+  KOKKOS_FUNCTION
+  static Spack th_to_T(const Spack& th_atm, const Spack& exner, const Smask& range_mask);
+
+  // Determine the physical thickness of a vertical layer
+  // The result is dz, units in m
+  // The inputs are
+  //   zi_top is the distance above the surface of the top of the layer.  Units in m
+  //   zi_bot is the distance above the surface of the bottom of the layer.  Units in m
+  KOKKOS_FUNCTION
+  static Spack get_dz(const Spack& zi_top, const Spack& zi_bot, const Smask& range_mask);
+
 };
 
 } // namespace physics
@@ -107,6 +141,7 @@ struct Functions
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
 # include "physics_saturation_impl.hpp"
+# include "physics_universal_impl.hpp"
 #endif
 
 #endif // PHYSICS_FUNCTIONS_HPP
