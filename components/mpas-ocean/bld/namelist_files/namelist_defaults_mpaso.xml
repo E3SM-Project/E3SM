@@ -880,7 +880,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
