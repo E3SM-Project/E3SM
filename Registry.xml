@@ -3661,6 +3661,8 @@
 		<var name="elasticTimeStep"			type="real"	dimensions=""				name_in_code="elasticTimeStep"/>
 		<var name="uVelocity"				type="real"	dimensions="nVertices Time"		name_in_code="uVelocity"/>
 		<var name="vVelocity"				type="real"	dimensions="nVertices Time"		name_in_code="vVelocity"/>
+		<var name="uVelocityCell"			type="real"	dimensions="nCells Time"		name_in_code="uVelocityCell"/>
+		<var name="vVelocityCell"			type="real"	dimensions="nCells Time"		name_in_code="vVelocityCell"/>
 		<var name="uVelocityInitial"			type="real"	dimensions="nVertices Time"		name_in_code="uVelocityInitial"/>
 		<var name="vVelocityInitial"			type="real"	dimensions="nVertices Time"		name_in_code="vVelocityInitial"/>
 		<var name="edgeVelocity"			type="real"	dimensions="nEdges Time"		name_in_code="edgeVelocity"/>
