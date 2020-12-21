@@ -37,7 +37,7 @@ macro (CreateCsmShareTarget)
 
     # Create the piof imported target, and link it to csm_share, so that cmake will correctly
     # attach it to any downstream target linking against csm_share
-    include(${SCREAM_TPLS_MODULE_DIR}/Scorpio)
+    include(${SCREAM_TPLS_MODULE_DIR}/Scorpio.cmake)
     CreateScorpioTarget(TRUE)
     target_link_libraries(csm_share INTERFACE piof)
   endif ()

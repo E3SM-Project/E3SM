@@ -118,8 +118,10 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
-add_custom_target(genf90
-  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+if (NOT TARGET genf90)
+  add_custom_target(genf90
+    DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+endif()
 
 # Build E3SM components
 set(IDX 0)
