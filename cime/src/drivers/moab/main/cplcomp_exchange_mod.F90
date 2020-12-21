@@ -1228,7 +1228,18 @@ contains
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in sending land mesh '
            call shr_sys_abort(subname//' ERROR in sending land mesh ')
-         endif
+        endif
+        ! create the receiver on land mesh too:
+        tagnameProj = 'a2lTbot_proj'//CHAR(0)  ! temperature
+        tagtype = 1  ! dense, double
+        numco = 1 !  one value per vertex / entity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+
+        ! define more tags
+        tagnameProj = 'a2lUbot_proj'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'a2lVbot_proj'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
 
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
