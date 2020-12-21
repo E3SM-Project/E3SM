@@ -68,11 +68,11 @@ character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 '
 
 !Declare the following threadprivate variables to be used for calcsize and water uptake
 !These are defined as module level variables to aviod allocation-deallocation in a loop
-real(r8), pointer :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
-real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
-real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
-real(r8), pointer :: wetdens_m(:,:,:)  ! aerosol water (g/g) for all modes
-!$OMP THREADPRIVATE(dgnumdry_m, dgnumwet_m, qaerwat_m)
+real(r8), allocatable :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
+real(r8), allocatable, target :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
+real(r8), allocatable, target :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
+real(r8), allocatable, target :: wetdens_m(:,:,:)  ! aerosol water (g/g) for all modes
+!$OMP THREADPRIVATE(dgnumdry_m, dgnumwet_m, qaerwat_m, wetdens_m)
 
 logical :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
 logical :: prog_modal_aero ! Prognostic modal aerosols present

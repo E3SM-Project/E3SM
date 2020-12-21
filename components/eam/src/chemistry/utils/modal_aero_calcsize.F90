@@ -21,6 +21,8 @@ use constituents,     only: pcnst, cnst_name
 
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 
+use shr_log_mod ,     only: errMsg => shr_log_errMsg
+
 #ifdef MODAL_AERO
 
 ! these are the variables needed for the diagnostic calculation of dry radius
@@ -473,7 +475,6 @@ end subroutine modal_aero_calcsize_init
 subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    do_aitacc_transfer_in, list_idx_in, dgnumdry_m)
 
-  use shr_log_mod ,  only: errMsg => shr_log_errMsg
 
    !-----------------------------------------------------------------------
    !
@@ -499,7 +500,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    logical,  optional :: do_adjust_in
    logical,  optional :: do_aitacc_transfer_in
    integer,  optional :: list_idx_in
-   real(r8), optional, pointer :: dgnumdry_m(:,:,:) ! interstital aerosol dry number mode radius (m)
+   real(r8), optional, intent(inout), allocatable, target :: dgnumdry_m(:,:,:) ! interstital aerosol dry number mode radius (m)
 
 #ifdef MODAL_AERO
 
@@ -609,8 +610,10 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    end if
 
    if(present(list_idx_in)) then
-      if(.not. present(dgnumdry_m)) call endrun('list_idx_in is present but dgnumdry_m' // &
-      ' pointer is missing'//errmsg(__FILE__,__LINE__))
+      if(.not. present(dgnumdry_m)) call endrun('list_idx_in is present but dgnumdry_m is missing '//errmsg(__FILE__,__LINE__))
+
+      if(.not. allocated(dgnumdry_m)) &
+           call endrun('list_idx_in is present but dgnumdry_m is not allocated '//errmsg(__FILE__,__LINE__))
    endif
 
    lchnk = state%lchnk
@@ -1440,7 +1443,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
    type(physics_buffer_desc), pointer :: pbuf(:)      ! physics buffer
 
    integer,  optional, intent(in)   :: list_idx_in    ! diagnostic list index
-   real(r8), optional, pointer      :: dgnum_m(:,:,:) ! interstital aerosol dry number mode radius (m)
+   real(r8), optional, target, allocatable, intent(inout)  :: dgnum_m(:,:,:) ! interstital aerosol dry number mode radius (m)
 
    ! local
    integer  :: i, k, l1, n
@@ -1481,13 +1484,13 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    if (present(list_idx_in)) then
       if (.not. present(dgnum_m)) then
-         call endrun('modal_aero_calcsize_diag called for'// &
-                     'diagnostic list but dgnum_m pointer not present')
+         call endrun('modal_aero_calcsize_diag called with '// &
+              'list_idx_in but dgnum_m is not present '//errmsg(__FILE__,__LINE__))
       end if
-      allocate(dgnum_m(pcols,pver,nmodes), stat=stat)
-      if (stat > 0) then
-         call endrun('modal_aero_calcsize_diag: allocation FAILURE: dgnum_m')
-      end if
+      if (.not. allocated(dgnum_m)) then
+         call endrun('modal_aero_calcsize_diag called with '// &
+              'list_idx_in but dgnum_m is not allocated '//errmsg(__FILE__,__LINE__))
+      endif
    end if
 
    do n = 1, nmodes
