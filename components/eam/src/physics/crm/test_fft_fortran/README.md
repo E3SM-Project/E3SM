@@ -7,6 +7,8 @@ The following commands can be used to test the Fortran FFTs:
 ################################################################
 ################################################################
 
+# no need to set up environment as long as you have gfortran
+
 # clean previous build
 rm -f test_fft.exe fftpack51d.mod
 

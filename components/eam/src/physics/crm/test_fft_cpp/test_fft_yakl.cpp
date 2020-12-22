@@ -154,7 +154,5 @@ int main() {
   // print coeffecients again
   if (not RUN3D) { VT_filter(data2,data2); }
 
-  // yakl::fence();
-
   return 0;
 }

@@ -7,9 +7,8 @@ The following commands can be used to test the YAKL C++ FFTs:
 ################################################################
 ################################################################
 
-# set up environment
-module purge
-module load cmake xl/16.1.1-5 spectrum-mpi/10.3.1.2-20200121 hsi/5.0.2.p5 xalt/1.2.1 lsf-tools/2.0 darshan-runtime/3.1.7 DefApps
+# set up environment - Summit
+module purge; module load xl/16.1.1-5 spectrum-mpi/10.3.1.2-20200121 hsi/5.0.2.p5 xalt/1.2.1 lsf-tools/2.0 darshan-runtime/3.1.7 DefApps cmake
 
 export YAKL_HOME="`pwd`/../../../../../../externals/YAKL"
 
