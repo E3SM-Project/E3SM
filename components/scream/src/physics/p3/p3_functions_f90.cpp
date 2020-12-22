@@ -1421,14 +1421,21 @@ void calc_first_order_upwind_step_f_impl(
   ekat::host_to_device(ptr_to_arr((const Real**)vs, N)    , nk, vs_d);
   ekat::host_to_device(ptr_to_arr((const Real**)qnx, N)   , nk, qnx_d);
 
+  Kokkos::Array<view_1d, N> fluxes_a, vs_a, qnx_a;
+  for (Int i = 0; i < N; ++i) {
+    fluxes_a[i] = fluxes_d[i];
+    vs_a[i]     = vs_d[i];
+    qnx_a[i]    = qnx_d[i];
+  }
+
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
-      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
-      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
-      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_a[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_a[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_a[i]);
     }
     uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dz_d(inv_dz_d);
     P3F::calc_first_order_upwind_step<N>(urho_d, uinv_rho_d, uinv_dz_d, team, nk, kbot, k_qxtop, kdir, dt_sub, fluxes_ptr, vs_ptr, qnx_ptr);
@@ -1487,14 +1494,21 @@ void generalized_sedimentation_f_impl(
   host_to_device(ptr_to_arr((const Real**)vs, N)    , nk, vs_d);
   host_to_device(ptr_to_arr((const Real**)qnx, N)   , nk, qnx_d);
 
+  Kokkos::Array<view_1d, N> fluxes_a, vs_a, qnx_a;
+  for (Int i = 0; i < N; ++i) {
+    fluxes_a[i] = fluxes_d[i];
+    vs_a[i]     = vs_d[i];
+    qnx_a[i]    = qnx_d[i];
+  }
+
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
     for (int i = 0; i < N; ++i) {
-      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
-      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
-      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_a[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_a[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_a[i]);
     }
     uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dz_d(inv_dz_d);
 
