@@ -760,6 +760,8 @@
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
+			<var name="sigmamin"/>
+			<var name="sigmamax"/>
 		</stream>
                 <!-- input stream for regions masks files (currently only used by regional stats AM, and 
                      the only field used is the regionCellMasks field -->
@@ -1405,23 +1407,23 @@ is the value of that variable from the *previous* time level!
 	       />
       <var name="sigmaxy" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xy"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="sigmayx" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yx"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="sigmaxx" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xx"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="sigmayy" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress yy"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="sigmamin" type="real" dimensions="nCells" units="Pa"
 	       description="minimum principal deviatoric stress"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
 	  <var name="alpha" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"

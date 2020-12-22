@@ -1757,33 +1757,34 @@ module li_calving
 
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
 
-         call mpas_pool_get_field(scratchPool, 'meanFlowParamAVar',  meanFlowParamAVar)
+         call mpas_pool_get_field(scratchPool, 'meanFlowParamA',  meanFlowParamAVar)
          call mpas_allocate_scratch_field(meanFlowParamAVar, .true.)
          meanFlowParamA => meanFlowParamAVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaxyVar', sigmaxyVar )
+         call mpas_pool_get_field(scratchPool, 'sigmaxy', sigmaxyVar )
          call mpas_allocate_scratch_field(sigmaxyVar, .true.)
          sigmaxy => sigmaxyVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmayxVar', sigmayxVar )
+         call mpas_pool_get_field(scratchPool, 'sigmayx', sigmayxVar )
          call mpas_allocate_scratch_field(sigmayxVar, .true.)
          sigmayx => sigmayxVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaxxVar', sigmaxxVar )
+         call mpas_pool_get_field(scratchPool, 'sigmaxx', sigmaxxVar )
          call mpas_allocate_scratch_field(sigmaxxVar, .true.)
          sigmaxx => sigmaxxVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmayyVar', sigmayyVar )
+         call mpas_pool_get_field(scratchPool, 'sigmayy', sigmayyVar )
          call mpas_allocate_scratch_field(sigmayyVar, .true.)
          sigmayy => sigmayyVar % array
 
-         call mpas_pool_get_field(scratchPool, 'sigmaminVar', sigmaminVar )
+         call mpas_pool_get_field(scratchPool, 'sigmamin', sigmaminVar )
          call mpas_allocate_scratch_field(sigmaminVar, .true.)
          sigmamin => sigmaminVar % array
 
-         call mpas_pool_get_field(scratchPool, 'alphaVar', alphaVar )
+         call mpas_pool_get_field(scratchPool, 'alpha', alphaVar )
          call mpas_allocate_scratch_field(alphaVar, .true.)
          alpha => alphaVar % array
+
 
          call mpas_pool_get_array(velocityPool, 'exx', exx)
          call mpas_pool_get_array(velocityPool, 'eyy', eyy)
@@ -1793,7 +1794,7 @@ module li_calving
          call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
          err = ior(err, err_tmp)
 
-         meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)
+         !meanFlowParamA(:) = sum(flowParamA(:,:), dim=1)/REAL(nVertLevels)
          ! calculate the depth-averaged flow parameter A
 
          where (thickness == 0.0_RKIND)
@@ -1961,7 +1962,7 @@ module li_calving
         endif
         ! always set the damage at the first floating cells to the Nye value
 
-        if (.true.) then
+        if (.false.) then
 
              call mpas_log_write("damageSource value range: Min=$r, Max=$r", &
                         realArgs=(/minval(damageSource), maxval(damageSource)/))
