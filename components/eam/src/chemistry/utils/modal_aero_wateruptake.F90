@@ -15,7 +15,8 @@ use cam_history,      only: addfld, add_default, outfld
 use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
-use cam_abortutils,       only: endrun
+use cam_abortutils,   only: endrun
+use shr_log_mod,      only: errMsg => shr_log_errMsg
 
 implicit none
 private
@@ -144,12 +145,12 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    type(physics_buffer_desc),   pointer       :: pbuf(:)        ! physics buffer
    ! Optional inputs for diagnostic mode
    integer,  optional,          intent(in)    :: list_idx_in
-   real(r8), optional,          pointer       :: dgnumdry_m(:,:,:)
-   real(r8), optional,          pointer       :: dgnumwet_m(:,:,:)
-   real(r8), optional,          pointer       :: qaerwat_m(:,:,:)
-   real(r8), optional,          pointer       :: wetdens_m(:,:,:)
+   real(r8), optional, allocatable, target, intent(in)    :: dgnumdry_m(:,:,:)
+   real(r8), optional, allocatable, target, intent(inout) :: dgnumwet_m(:,:,:)
+   real(r8), optional, allocatable, target, intent(inout) :: qaerwat_m(:,:,:)
+   real(r8), optional, allocatable, target, intent(inout) :: wetdens_m(:,:,:)
    ! optional input relative humidty (overrides clearsky RH estimate below)
-   real(r8), optional,          intent(in)    :: clear_rh_in(pcols,pver) 
+   real(r8), optional,          intent(in)    :: clear_rh_in(pcols,pver)
 
    !----------------------------------------------------------------------------
    ! local variables
@@ -224,15 +225,15 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       ! check that all optional args for diagnostic mode are present
       if (.not. present(dgnumdry_m) .or. .not. present(dgnumwet_m) .or. &
           .not. present(qaerwat_m)  .or. .not. present(wetdens_m)) then
-         call endrun('modal_aero_wateruptake_dr called for'// &
-                     'diagnostic list but required args not present')
+         call endrun('modal_aero_wateruptake_dr called '// &
+              'with list_idx_in but required args not present '//errmsg(__FILE__,__LINE__))
       end if
 
-      ! arrays for diagnostic calculations must be associated
-      if (.not. associated(dgnumdry_m) .or. .not. associated(dgnumwet_m) .or. &
-          .not. associated(qaerwat_m)  .or. .not. associated(wetdens_m)) then
-         call endrun('modal_aero_wateruptake_dr called for'// &
-                     'diagnostic list but required args not associated')
+      ! arrays for diagnostic calculations must be allocated
+      if (.not. allocated(dgnumdry_m) .or. .not. allocated(dgnumwet_m) .or. &
+          .not. allocated(qaerwat_m)  .or. .not. allocated(wetdens_m)) then
+         call endrun('modal_aero_wateruptake_dr called '// &
+              'with list_idx_in but required args not allocated '//errmsg(__FILE__,__LINE__))
       end if
    end if ! if present(list_idx_in)
 
