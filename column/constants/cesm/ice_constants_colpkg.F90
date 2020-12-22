@@ -25,8 +25,13 @@
          rhoi      = SHR_CONST_RHOICE ,&! density of ice (kg/m^3)
          rhow      = SHR_CONST_RHOSW  ,&! density of seawater (kg/m^3)
          cp_air    = SHR_CONST_CPDAIR ,&! specific heat of air (J/kg/K)
+
          ! (Briegleb JGR 97 11475-11485  July 1992)
-         emissivity= 0.95_dbl_kind    ,&! emissivity of snow and ice
+         !emissivity= 0.95_dbl_kind    ,&! emissivity of snow and ice
+         ! Emissivity has been changed to unity here so that coupling is
+         ! physically correct - instantaneous radiative coupling in CIME
+         emissivity= 1.0_dbl_kind    ,&! emissivity of snow and ice
+
          cp_ice    = SHR_CONST_CPICE  ,&! specific heat of fresh ice (J/kg/K)
          cp_ocn    = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
                                         ! freshwater value needed for enthalpy
