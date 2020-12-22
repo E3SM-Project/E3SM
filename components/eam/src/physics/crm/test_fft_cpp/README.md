@@ -1,8 +1,8 @@
-# FFT Testing workflow
+# C++ FFT Testing workflow
 
 The FFT tests are not really "tests", but rather a collection of simple scripts to serve as sanity checks on how the various FFT routines in the CRM code(s) behave. This include simple forward and backwards transforms and print statements to verify the order of FFT weights.
 
-The following commands can be used to test the YAKL FFTs:
+The following commands can be used to test the YAKL C++ FFTs:
 ```bash
 ################################################################
 ################################################################
@@ -20,18 +20,7 @@ export YAKL_HOME="`pwd`/../../../../../../externals/YAKL"
 ./cmakescript.sh
 
 # execute
-./test_fft_yakl
-
-
-```
-
-The next set of commands can be used for testing the fortran FFTs:
-```bash
-################################################################
-################################################################
-
-# set up environment
-???
+./test_fft_cpp.exe
 
 
 ```

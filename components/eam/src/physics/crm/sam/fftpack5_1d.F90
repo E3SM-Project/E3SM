@@ -11,9 +11,11 @@ module fftpack51D
 !
 !---------------------------------------------------------------------------
   
-  use params, only: crm_rknd
+  ! use params, only: crm_rknd
 
   implicit none
+
+  integer, parameter :: crm_rknd = selected_real_kind(13)
 
   public rfft1i
   public rfft1f

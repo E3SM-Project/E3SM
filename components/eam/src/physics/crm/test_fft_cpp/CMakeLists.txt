@@ -14,9 +14,9 @@ include_directories(${YAKL_HOME})
 
 file(GLOB CPP_SRC     *.cpp)
 
-add_executable(test_fft_yakl.exe ${CPP_SRC})
+add_executable(test_fft_cpp.exe ${CPP_SRC})
 
-target_link_libraries(test_fft_yakl.exe yakl )
+target_link_libraries(test_fft_cpp.exe yakl )
 
-set_property(TARGET test_fft_yakl.exe APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
+set_property(TARGET test_fft_cpp.exe APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
 
