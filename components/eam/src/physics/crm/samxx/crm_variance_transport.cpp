@@ -3,50 +3,96 @@
 //==============================================================================
 //==============================================================================
 
-// void VT_filter(real4D &f_in, real4D &f_out) {
-//   // // local variables
-//   // integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
-//   // real(crm_rknd), dimension(nx)    :: fft_out   ! for FFT input and output
-//   // real(crm_rknd), dimension(nx)    :: work      ! work array
-//   // real(crm_rknd), dimension(lensav):: wsave     ! prime factors of N and certain trig values used in rfft1f
-//   // integer :: i, j, k, icrm   ! loop iterators
-//   // integer :: ier             ! FFT error return code
-//   //----------------------------------------------------------------------------
-//   // initialization for FFT
-//   // call rfft1i(nx,wsave,lensav,ier)
-//   // if(ier /= 0) write(0,*) 'ERROR: rfftmi(): VT_filter - FFT initialization error ',ier
+void VT_filter(real4d &f_in, real4d &f_out) {
+  // local variables
+  int nx2 = nx+2;
+  int ny2 = ny+2*YES3D;
+  real4d fft_out ("fft_out" , nzm, ny2, nx2, ncrms);
 
-//   // do k = 1,nzm
-//   //   do j = 1,ny
-//   //     do icrm = 1,ncrms
-//   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-          
-//           real dummy = 1; 
+  int constexpr fftySize = ny > 4 ? ny : 4;
 
-//           // // initialize FFT input
-//           // parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
-//           //    fft_out(i) = f_in(k,j,i,icrm);
-//           // });
+  int filter_wn_max = MMF_VT_KMAX;
 
-//           // // // do the forward transform
-//           // // call rfft1f( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-//           // // if (ier/=0) write(0,*) 'ERROR: rfftmf(): VT_filter - forward FFT error ',ier
+  int nwx = nx2-(filter_wn_max+1)*2;
+  int nwy = ny2-(filter_wn_max+1)*2;
+  
+  yakl::FFT<nx> fftx;
+  yakl::FFT<fftySize> ffty;
 
-//           // // // filter out high frequencies
-//           // // fft_out(2*(filter_wn_max+1):) = 0
+  //----------------------------------------------------------------------------
+  // Forward Fourier transform
+  
+  // for (int k=0; k<nzm; k++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+    real ftmp[nx+2]; real tmp [nx];
+    for (int i=0; i<nx ; i++) { ftmp[i] = f_in(k,j,i,icrm); }
+    fftx.forward(ftmp, tmp);
+    for (int i=0; i<nx2; i++) { fft_out(k,j,i,icrm) = ftmp[i]; }
+  });
 
-//           // // // transform back
-//           // // call rfft1b( nx, 1, fft_out(:), nx, wsave, lensav, work(:), nx, ier )
-//           // // if(ier /= 0) write(0,*) 'ERROR: rfftmb(): VT_filter - backward FFT error ',ier
+  if (RUN3D) {
+    // for (int k=0; k<nzm; k++) {
+    //   for (int i=0; j<nx+1; i++) {
+    //     for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      real ftmp[ny+2]; real tmp [ny];
+      for (int j=0; j<ny ; j++) { ftmp[j] = fft_out(k,j,i,icrm); }
+      ffty.forward(ftmp, tmp);
+      for (int j=0; j<ny2; j++) { fft_out(k,j,i,icrm) = ftmp[j]; }
+    });
+  }
 
-//           // // copy to output
-//           // parallel_for( SimpleBounds<1>(nx) , YAKL_LAMBDA (int k, int j, int icrm) {
-//           //    f_out(k,j,i,icrm) = fft_out(i);
-//           // });
+  //----------------------------------------------------------------------------
+  // Zero out the higher modes
 
-//   });
+  if (RUN3D) {
+    // for (int k=0; k<nzm; k++) {
+    //   for (int j=0; j<nwy; j++) {
+    //     for (int i=0; i<nwx+1; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( SimpleBounds<4>(nzm,nwy,nwx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      int ii = i + 2*(filter_wn_max+1) ;
+      int jj = j + 2*(filter_wn_max+1) ;
+      fft_out(k,jj,ii,icrm) = 0.0;
+    });
+  } else {
+    // for (int k=0; k<nzm; k++) {
+    //   for (int i=0; i<nwx+1; i++) {
+    //     for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( SimpleBounds<3>(nzm,nwx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      int ii = i + 2*(filter_wn_max+1) ;
+      fft_out(k,0,ii,icrm) = 0.0;
+    });
+  }
 
-// }
+  //----------------------------------------------------------------------------
+  // Backward Fourier transform
+
+  if (RUN3D) {
+    // for (int k=0; k<nzm; k++) {
+    //   for (int i=0; i<nx+1; i++) {
+    //     for (int icrm=0; icrm<ncrms; icrm++) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      real ftmp[ny+2]; real tmp [ny];
+      for(int j=0; j<ny+2; j++) { ftmp[j] = fft_out(k,j,i,icrm); }
+      ffty.inverse(ftmp,tmp);
+      for(int j=0; j<ny  ; j++) { fft_out(k,j,i,icrm) = ftmp[j]; } 
+    });
+  }
+
+  // for (int k=0; k<nzm; k++) {
+  //   for (int j=0; i<ny; i++) {
+  //     for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+    real ftmp[nx+2]; real tmp [nx];
+    for(int i=0; i<nx+2; i++) { ftmp[i] = fft_out(k,j,i,icrm); }
+    fftx.inverse(ftmp,tmp);
+    for(int i=0; i<nx  ; i++) { f_out(k,j,i,icrm) = ftmp[i]; }
+  });
+
+}
 
 //==============================================================================
 //==============================================================================
@@ -66,8 +112,10 @@ void VT_diagnose() {
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
   real2d q_mean("q_mean", nzm, ncrms);
-  // real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
-  // real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
+  real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
+  real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
+
+  int filter_wn_max = MMF_VT_KMAX;
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
@@ -102,25 +150,25 @@ void VT_diagnose() {
   //----------------------------------------------------------------------------
   // calculate anomalies
   //----------------------------------------------------------------------------
-  // if (filter_wn_max>0) {
-  // // use filtered state for anomalies
+  if (filter_wn_max>0) {
+  // use filtered state for anomalies
 
-  //   // do k = 1,nzm
-  //   //   do j = 1,ny
-  //   //     do i = 1,nx
-  //   //       do icrm = 1,ncrms
-  //   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-  //     tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)
-  //     tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm)
-  //     tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm)
-  //     tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm)
-  //   });
+    // do k = 1,nzm
+    //   do j = 1,ny
+    //     do i = 1,nx
+    //       do icrm = 1,ncrms
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm);
+      tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
+      tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm);
+      tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
+    });
 
-  //   VT_filter( tmp_t, t_vt_pert )
-  //   VT_filter( tmp_q, q_vt_pert )
+    VT_filter( tmp_t, t_vt_pert );
+    VT_filter( tmp_q, q_vt_pert );
 
-  // else { 
-  // // use total variance
+  } else { 
+  // use total variance
 
     // do k = 1,nzm
     //   do j = 1,ny
@@ -131,7 +179,7 @@ void VT_diagnose() {
       q_vt_pert(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) - q_mean(k,icrm);
     });
     
-  // }
+  }
 
   //----------------------------------------------------------------------------
   // calculate variance
