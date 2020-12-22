@@ -1368,10 +1368,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="rm">craype-mic-knl</command>
-        <command name="rm">PrgEnv-intel</command>
         <command name="rm">PrgEnv-cray</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">intel</command>
         <command name="rm">cce</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">cray-parallel-netcdf</command>
@@ -1387,8 +1384,9 @@
         <command name="load">cmake/3.14.5</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.1.0.166</command>
+        <command name="rm">PrgEnv-gnu</command>
         <command name="load">PrgEnv-intel/6.0.7</command>
+        <command name="swap">intel/19.1.0.166</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/9.3.0</command>
