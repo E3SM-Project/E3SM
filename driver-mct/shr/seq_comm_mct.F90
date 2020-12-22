@@ -217,7 +217,6 @@ module seq_comm_mct
   integer, public :: mhid, mhfid, mpoid, mlnid ! homme, homme fine, ocean, land moab ids
   integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
-  logical, public :: diff_atm_land = .false.  ! whether atm and land use different mesh
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
