@@ -1168,11 +1168,11 @@
       </modules>
       <modules compiler="intel" mpilib="openmpi">
         <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
-        <command name="load">hdf5/1.10.7-ticiopc</command>
-        <command name="load">netcdf-c/4.7.4-h26ravg</command>
-        <command name="load">netcdf-cxx/4.2-wmjjndn</command>
-        <command name="load">netcdf-fortran/4.5.3-3i4qf2w</command>
-        <command name="load">parallel-netcdf/1.12.1-sr56aqs</command>
+        <command name="load">hdf5/1.8.16-m3bsibs</command>
+        <command name="load">netcdf-c/4.4.1-7ejgpdm</command>
+        <command name="load">netcdf-cxx/4.2-sag6n3x</command>
+        <command name="load">netcdf-fortran/4.4.4-sjzkwoc</command>
+        <command name="load">parallel-netcdf/1.11.0-l362p2g</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/9.2.0-ugetvbp</command>
