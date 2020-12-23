@@ -674,59 +674,58 @@ contains
 
         if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
 
+        biochem_pmin_vr(c,:) = 0.0_r8
+        biochem_pmin_to_ecosysp_vr_col_pot(c,:) = 0._r8
         biochem_pmin_to_plant(c) = 0._r8
 
-        do j = 1,nlevdecomp
-            
-            biochem_pmin_vr(c,j) = 0.0_r8
-            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = 0._r8
-
-            if(use_fates) then
-               
-                j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
-
-                    lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
-                          max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
+        if(use_fates) then
+           do j = 1,nlevdecomp
+              j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+              do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
+                 
+                 lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
+                      max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
+                 lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
+                 
+                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / & 
+                      sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
+                 
+                 pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
+                 ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
+                      fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                      ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
+                      max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8)) 
+                 
+                 biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
+                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
+                 biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
+                    
+              end do
+           end  do
+        else
+           do j = 1,nlevdecomp
+              do p = col_pp%pfti(c), col_pp%pftf(c)
+                 if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+                    !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
+                    lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                    
-                    fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / & 
-                          sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
-                    
-                    pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
-                    ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
-                          fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                          ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
-                          max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8)) 
-
-                    biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
-                    biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
-                    biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
-                    
-                end do
-            else
-                do p = col_pp%pfti(c), col_pp%pftf(c)
-                    if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-                        !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
-                        lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
-                        lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                        ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                              (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
-                        if (NFIX_PTASE_plant) then
-                            biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
-                            biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
-                                  (1._r8 - alpha_ptase(veg_pp%itype(p)))
-                            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
-                        else
-                            biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
-                            biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
-                            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
-                                  ptase_tmp  * veg_pp%wtcol(p)
-                        endif
-                    end if
-                enddo
-            end if
-        enddo
+                    ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                         (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+                    if (NFIX_PTASE_plant) then
+                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
+                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
+                            (1._r8 - alpha_ptase(veg_pp%itype(p)))
+                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
+                    else
+                       biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
+                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
+                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
+                            ptase_tmp  * veg_pp%wtcol(p)
+                    endif
+                 end if
+              enddo
+           enddo
+        end if
     
         do j = 1,nlevdecomp
             ! sum total
