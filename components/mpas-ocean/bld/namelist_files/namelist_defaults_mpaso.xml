@@ -130,7 +130,8 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- mesoscale_eddy_parameterizations -->
-<config_eddying_resolution_taper>'none'</config_eddying_resolution_taper>
+<config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
+<config_eddying_resolution_taper ocn_grid="EC30to60E2r2">'none'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
 
@@ -162,7 +163,8 @@
 <config_use_GM ocn_grid="oRRS18to6">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS18to6v3">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS15to5">.false.</config_use_GM>
-<config_GM_closure>'constant'</config_GM_closure>
+<config_GM_closure>'EdenGreatbatch'</config_GM_closure>
+<config_GM_closure ocn_grid="EC30to60E2r2">'constant'</config_GM_closure>
 <config_GM_constant_kappa>1800.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
