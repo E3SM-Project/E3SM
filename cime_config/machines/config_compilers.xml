@@ -832,6 +832,9 @@ flags should be captured within MPAS CMake files.
   <LDFLAGS>
     <append>-static-intel </append>
   </LDFLAGS>
+  <MPICC  MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
 </compiler>
 
 <compiler MACH="chrysalis" COMPILER="gnu">

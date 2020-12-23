@@ -1124,7 +1124,7 @@
     <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
+    <MPILIBS>impi,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -1141,7 +1141,13 @@
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
+    <mpirun mpilib="impi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
@@ -1168,11 +1174,19 @@
       </modules>
       <modules compiler="intel" mpilib="openmpi">
         <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
-        <command name="load">hdf5/1.10.7-ticiopc</command>
-        <command name="load">netcdf-c/4.7.4-h26ravg</command>
-        <command name="load">netcdf-cxx/4.2-wmjjndn</command>
-        <command name="load">netcdf-fortran/4.5.3-3i4qf2w</command>
-        <command name="load">parallel-netcdf/1.12.1-sr56aqs</command>
+        <command name="load">hdf5/1.8.16-m3bsibs</command>
+        <command name="load">netcdf-c/4.4.1-7ejgpdm</command>
+        <command name="load">netcdf-cxx/4.2-sag6n3x</command>
+        <command name="load">netcdf-fortran/4.4.4-sjzkwoc</command>
+        <command name="load">parallel-netcdf/1.11.0-l362p2g</command>
+      </modules>
+      <modules compiler="intel" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
+        <command name="load">hdf5/1.8.16-se4xyo7</command>
+        <command name="load">netcdf-c/4.4.1-qvxyzq2</command>
+        <command name="load">netcdf-cxx/4.2-binixgj</command>
+        <command name="load">netcdf-fortran/4.4.4-rdxohvp</command>
+        <command name="load">parallel-netcdf/1.12.1-kstkfoc</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/9.2.0-ugetvbp</command>
@@ -1206,6 +1220,12 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
+    </environment_variables>
+    <environment_variables mpilib="impi" DEBUG="TRUE">
+      <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
   </machine>
 
