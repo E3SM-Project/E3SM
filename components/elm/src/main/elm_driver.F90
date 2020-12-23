@@ -292,14 +292,16 @@ contains
        !  active) - so that's what is done now. Currently, it seems to be okay to do this,
        !  because the variables computed here seem to only depend on quantities that are
        !  valid over inactive as well as active points.
-       
-       call decomp_vertprofiles(bounds_clump, &
-            filter_inactive_and_active(nc)%num_soilc, &
-            filter_inactive_and_active(nc)%soilc, &
-            filter_inactive_and_active(nc)%num_soilp, &
-            filter_inactive_and_active(nc)%soilp, &
-            soilstate_vars, canopystate_vars, cnstate_vars)
 
+       if(use_fates .or. use_cn) then
+       
+          call decomp_vertprofiles(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, &
+               filter_inactive_and_active(nc)%soilc, &
+               filter_inactive_and_active(nc)%num_soilp, &
+               filter_inactive_and_active(nc)%soilp, &
+               soilstate_vars, canopystate_vars, cnstate_vars)
+       end if
        call t_stopf("decomp_vert")
     end do
     !$OMP END PARALLEL DO
