@@ -599,6 +599,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         !fluxbv(icrm,i,j) = crm_input%fluxv00(icrm,i,j)/rhow(1)
         fluxbt  (icrm,i,j) = crm_input%fluxt00(icrm,i,j)/rhow(icrm,1)
         fluxbq  (icrm,i,j) = crm_input%fluxq00(icrm,i,j)/rhow(icrm,1)
+        sstxy   (icrm,i,j) = crm_input%ts     (icrm,i,j)
       end do ! icrm = 1, ncrms
     end do ! i = 1,nx
   end do ! j = 1, ny  
@@ -815,7 +816,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       !-----------------------------------------------
       !     surface fluxes:
-      if (dosurface) call crm_surface(ncrms,bflx,z0_loc)
+      !if (dosurface) call crm_surface(ncrms,bflx,z0_loc)
 
       !-----------------------------------------------------------
       !  SGS physics:
