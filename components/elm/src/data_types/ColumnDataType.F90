@@ -220,7 +220,7 @@ module ColumnDataType
     procedure, public :: Restart => col_cs_restart
     procedure, public :: Summary => col_cs_summary
     procedure, public :: Clean   => col_cs_clean
-    procedure, public :: ZeroUpscaled => col_cs_zero_upscaled_veg
+    procedure, public :: ZeroForFates => col_cs_zero_forfates_veg
   end type column_carbon_state
   
   !-----------------------------------------------------------------------
@@ -289,7 +289,7 @@ module ColumnDataType
     procedure, public :: SetValues  => col_ns_setvalues
     procedure, public :: Summary    => col_ns_summary
     procedure, public :: Clean      => col_ns_clean
-    procedure, public :: ZeroUpscaled => col_ns_zero_upscaled_veg
+    procedure, public :: ZeroForFates => col_ns_zero_forfates_veg
   end type column_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -362,7 +362,7 @@ module ColumnDataType
     procedure, public :: SetValues => col_ps_setvalues
     procedure, public :: Summary   => col_ps_summary
     procedure, public :: Clean     => col_ps_clean
-    procedure, public :: ZeroUpscaled => col_ps_zero_upscaled_veg
+    procedure, public :: ZeroForFates => col_ps_zero_forfates_veg
   end type column_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -627,8 +627,8 @@ module ColumnDataType
     procedure, public :: SetValues  => col_cf_setvalues
     procedure, public :: ZeroDWT    => col_cf_zerodwt
     procedure, public :: Clean      => col_cf_clean
-    procedure, public :: ZeroUpscaled => col_cf_zero_upscaled_veg
-    procedure, public :: ZeroUpscaledRR => col_cf_zero_upscaled_veg_rr
+    procedure, public :: ZeroForFates => col_cf_zero_forfates_veg
+    procedure, public :: ZeroForFatesRR => col_cf_zero_forfates_veg_rr
     procedure, private ::              col_cf_summary_pf ! summary calculations for PFLOTRAN interface
   end type column_carbon_flux
   
@@ -818,7 +818,7 @@ module ColumnDataType
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
     procedure, public :: SetValues  => col_nf_setvalues
-    procedure, public :: ZeroUpscaled => col_nf_zero_upscaled_veg
+    procedure, public :: ZeroForFates => col_nf_zero_forfates_veg
     procedure, public :: ZeroDWT    => col_nf_zerodwt
     procedure, public :: Summary    => col_nf_summary
     procedure, public :: SummaryInt => col_nf_summaryint
@@ -954,7 +954,7 @@ module ColumnDataType
     procedure, public :: Init       => col_pf_init
     procedure, public :: Restart    => col_pf_restart
     procedure, public :: SetValues  => col_pf_setvalues
-    procedure, public :: ZeroUpscaled => col_pf_zero_upscaled_veg
+    procedure, public :: ZeroForFates => col_pf_zero_forfates_veg
     procedure, public :: ZeroDWT    => col_pf_zerodwt
     procedure, public :: Summary    => col_pf_summary
     procedure, public :: SummaryInt => col_pf_summaryint
@@ -2994,7 +2994,7 @@ contains
 
   ! -----------------------------------------------------------------------
 
-  subroutine col_cs_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_cs_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
     !
     ! !DESCRIPTION:
     ! As an alternative to summarizing vegetation states in CTC and then
@@ -3010,6 +3010,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+    
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%totpftc(c) = 0._r8
@@ -3019,7 +3021,7 @@ contains
     end do
 
     return
-  end subroutine col_cs_zero_upscaled_veg
+  end subroutine col_cs_zero_forfates_veg
 
   !------------------------------------------------------------------------
   subroutine col_cs_clean(this)
@@ -3976,7 +3978,7 @@ contains
 
   ! -------------------------------------------------------------------------------------
 
-  subroutine col_ns_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_ns_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
     !
     ! !DESCRIPTION:
     ! As an alternative to summarizing vegetation states in CTC and then
@@ -3992,6 +3994,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%plant_n_buffer(c) = 0._r8
@@ -4001,7 +4005,7 @@ contains
     end do
     
     return
-  end subroutine col_ns_zero_upscaled_veg
+  end subroutine col_ns_zero_forfates_veg
 
   !------------------------------------------------------------------------
   subroutine col_ns_clean(this)
@@ -4988,7 +4992,7 @@ contains
 
   end subroutine col_ps_summary
   
-  subroutine col_ps_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_ps_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
     !
     ! !DESCRIPTION:
     ! As an alternative to summarizing vegetation states in CTC and then
@@ -5004,6 +5008,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%totpftp(c) = 0._r8
@@ -5012,7 +5018,7 @@ contains
     end do
 
     return
-  end subroutine col_ps_zero_upscaled_veg
+  end subroutine col_ps_zero_forfates_veg
 
 
   !------------------------------------------------------------------------
@@ -7329,7 +7335,7 @@ contains
     
   end subroutine col_cf_setvalues
   
-  subroutine col_cf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_cf_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
     
     !
     ! !DESCRIPTION:
@@ -7345,6 +7351,8 @@ contains
     ! locals
     integer :: fc
     integer :: c
+
+    if(.not.use_fates) return
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -7360,9 +7368,9 @@ contains
     end do
 
 
-  end subroutine col_cf_zero_upscaled_veg
+  end subroutine col_cf_zero_forfates_veg
 
-  subroutine col_cf_zero_upscaled_veg_rr(this, bounds, num_soilc, filter_soilc)
+  subroutine col_cf_zero_forfates_veg_rr(this, bounds, num_soilc, filter_soilc)
     
     !
     ! !DESCRIPTION:
@@ -7379,6 +7387,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+    
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%rr(c) = 0._r8   ! This counterpart is
@@ -7386,7 +7396,7 @@ contains
     end do
 
 
-  end subroutine col_cf_zero_upscaled_veg_rr
+  end subroutine col_cf_zero_forfates_veg_rr
 
 
   
@@ -9031,7 +9041,7 @@ contains
   end subroutine col_nf_zerodwt
   
 
-  subroutine col_nf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_nf_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
 
     !
     ! !DESCRIPTION:
@@ -9048,6 +9058,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+    
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%fire_nloss_p2c(c) = 0._r8
@@ -9055,7 +9067,7 @@ contains
     end do
 
 
-  end subroutine col_nf_zero_upscaled_veg
+  end subroutine col_nf_zero_forfates_veg
     
   !-----------------------------------------------------------------------
   subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc)
@@ -10613,7 +10625,7 @@ contains
   
   end subroutine col_pf_zerodwt
 
-  subroutine col_pf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+  subroutine col_pf_zero_forfates_veg(this, bounds, num_soilc, filter_soilc)
 
     !
     ! !DESCRIPTION:
@@ -10630,6 +10642,8 @@ contains
     integer :: fc
     integer :: c
 
+    if(.not.use_fates) return
+    
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%fire_ploss_p2c(c) = 0._r8
@@ -10637,7 +10651,7 @@ contains
     end do
 
 
-  end subroutine col_pf_zero_upscaled_veg
+  end subroutine col_pf_zero_forfates_veg
   
   !-----------------------------------------------------------------------
   subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)

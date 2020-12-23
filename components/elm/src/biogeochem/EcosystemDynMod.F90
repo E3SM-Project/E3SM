@@ -255,12 +255,12 @@ contains
        ! In this scenario, we simply zero all of the 
        ! column level variables that would had been upscaled
        ! in the veg summary with p2c
-       call col_cs%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       call col_ns%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       call col_ps%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       call col_cf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       call col_nf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       call col_pf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_cs%ZeroForFates(bounds,num_soilc, filter_soilc)
+       call col_ns%ZeroForFates(bounds,num_soilc, filter_soilc)
+       call col_ps%ZeroForFates(bounds,num_soilc, filter_soilc)
+       call col_cf%ZeroForFates(bounds,num_soilc, filter_soilc)
+       call col_nf%ZeroForFates(bounds,num_soilc, filter_soilc)
+       call col_pf%ZeroForFates(bounds,num_soilc, filter_soilc)
     end if
     
     call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
@@ -743,7 +743,7 @@ contains
        ! In this scenario, we simply zero all of the 
        ! column level variables that would had been upscaled
        ! in the veg summary with p2c
-       call col_cf%ZeroUpscaledRR(bounds,num_soilc, filter_soilc)
+       call col_cf%ZeroForFatesRR(bounds,num_soilc, filter_soilc)
 
        ! Transfer fates litter fluxes into ELM source arrays
        call elm_fates%UpdateLitterFluxes(bounds)
