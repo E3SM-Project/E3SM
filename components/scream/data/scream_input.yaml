@@ -10,7 +10,6 @@ Atmosphere Driver:
     Process 1:
       Process Name: P3
       Grid:         Physics GLL
-      Can Initialize All Inputs: true
     Process 2:
       Process Name: SHOC
       Grid:         Physics GLL

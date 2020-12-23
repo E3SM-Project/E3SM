@@ -147,11 +147,6 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
   // Initialize atm inputs
   init_atm_inputs ();
 
-  // Now we can inspect the dag, including also checking that
-  // all fields are correctly inited. Any unmet dependency in
-  // the dag at this point has to be treated as an error.
-  inspect_atm_dag ();
-
   // Set time steamp t0 to all fields
   for (auto& field_map_it : *m_field_repo) {
     for (auto& f_it : field_map_it.second) {
