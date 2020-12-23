@@ -636,6 +636,7 @@
 			<var name="temperature"/>
 			<var name="waterFrac" packages="thermal"/>
                         <var name="surfaceAirTemperature" packages="thermal"/>
+                        <var name="basalTemperature" packages="thermal"/>
                         <var name="basalHeatFlux" packages="thermal;hydro"/>
                         <var name="basalFrictionFlux" packages="thermal;hydro"/>
                         <var name="heatDissipation" packages="thermal"/>
