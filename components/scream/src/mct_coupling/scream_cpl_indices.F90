@@ -52,27 +52,27 @@ contains
     ! Determine attribute vector indices
 
     ! List of cpl names of inputs that scream cares about
-    cpl_names_x2a(1)  = 'Faxx_evap'
-    cpl_names_x2a(2)  = 'Faxx_sen'
-    cpl_names_x2a(3)  = 'Faxx_lat'
-    cpl_names_x2a(4)  = 'Faxx_taux'
-    cpl_names_x2a(5)  = 'Faxx_tauy'
-    cpl_names_x2a(6)  = 'Faxx_lwup'
-    cpl_names_x2a(7)  = 'Sx_avsdr'
-    cpl_names_x2a(8)  = 'Sx_anidr'
-    cpl_names_x2a(9)  = 'Sx_avsdf'
-    cpl_names_x2a(10) = 'Sx_anidf'
-    cpl_names_x2a(11) = 'Sx_t'
-    cpl_names_x2a(12) = 'Sl_snowh'
-    cpl_names_x2a(13) = 'Si_snowh'
-    cpl_names_x2a(14) = 'Sx_tref'
-    cpl_names_x2a(15) = 'Sx_qref'
-    cpl_names_x2a(16) = 'Sx_u10'
-    cpl_names_x2a(17) = 'Sf_ifrac'
-    cpl_names_x2a(18) = 'Sf_ofrac'
-    cpl_names_x2a(19) = 'Sf_lfrac'
-    cpl_names_x2a(20) = 'So_ustar'
-    cpl_names_x2a(21) = 'So_re'
+    cpl_names_x2a(1)  = 'Faxx_evap' ! SHOC input
+    cpl_names_x2a(2)  = 'Faxx_sen'  ! SHOC input
+    cpl_names_x2a(3)  = 'Faxx_lat'  ! Needed for energy fixer (?)
+    cpl_names_x2a(4)  = 'Faxx_taux' ! SHOC input
+    cpl_names_x2a(5)  = 'Faxx_tauy' ! SHOC input
+    cpl_names_x2a(6)  = 'Faxx_lwup' ! RRTMGP input
+    cpl_names_x2a(7)  = 'Sx_avsdr'  ! RRTMGP input
+    cpl_names_x2a(8)  = 'Sx_anidr'  ! RRTMGP input
+    cpl_names_x2a(9)  = 'Sx_avsdf'  ! RRTMGP input
+    cpl_names_x2a(10) = 'Sx_anidf'  ! RRTMGP input
+    cpl_names_x2a(11) = 'Sx_t'      ! SHOC input (?)
+    cpl_names_x2a(12) = 'Sl_snowh'  ! SHOC input (?)
+    cpl_names_x2a(13) = 'Si_snowh'  ! UNUSED
+    cpl_names_x2a(14) = 'Sx_tref'   ! UNUSED
+    cpl_names_x2a(15) = 'Sx_qref'   ! UNUSED
+    cpl_names_x2a(16) = 'Sx_u10'    ! UNUSED
+    cpl_names_x2a(17) = 'Sf_ifrac'  ! RRTMGP input
+    cpl_names_x2a(18) = 'Sf_ofrac'  ! SHOCK input (?)
+    cpl_names_x2a(19) = 'Sf_lfrac'  ! RRTMGP input
+    cpl_names_x2a(20) = 'So_ustar'  ! SHOC (?): doesn't seem to be cam_in%ustar though
+    cpl_names_x2a(21) = 'So_re'     ! UNUSED
 
     ! Names used by scream for the input fields above
     scr_names_x2a(1)  = 'surface_water_evaporation_flux'
@@ -98,19 +98,19 @@ contains
     scr_names_x2a(21) = 'So_re'
 
     ! List of cpl names of outputs that scream needs to pass back to cpl
-    cpl_names_a2x(1)  = 'Sa_tbot'
-    cpl_names_a2x(2)  = 'Sa_ptem'
-    cpl_names_a2x(3)  = 'Sa_z'
-    cpl_names_a2x(4)  = 'Sa_u'
-    cpl_names_a2x(5)  = 'Sa_v'
-    cpl_names_a2x(6)  = 'Sa_pbot'
-    cpl_names_a2x(7)  = 'Sa_dens'
-    cpl_names_a2x(8)  = 'Sa_shum'
-    cpl_names_a2x(9)  = 'Faxa_rainc'
-    cpl_names_a2x(10) = 'Faxa_rainl'
-    cpl_names_a2x(11) = 'Faxa_snowc'
-    cpl_names_a2x(12) = 'Faxa_snowl'
-    cpl_names_a2x(13)  = 'Sa_co2prog'
+    cpl_names_a2x(1)  = 'Sa_tbot'     ! Temperature (HOMME)
+    cpl_names_a2x(2)  = 'Sa_ptem'     ! Potential temperature (HOMME)
+    cpl_names_a2x(3)  = 'Sa_z'        ! Z coord of bottom layers (in m? Pa?)
+    cpl_names_a2x(4)  = 'Sa_u'        ! Horiz velocity u-comp (HOMME)
+    cpl_names_a2x(5)  = 'Sa_v'        ! Horiz velocity v-comp (HOMME)
+    cpl_names_a2x(6)  = 'Sa_pbot'     ! Pressure (HOMME)
+    cpl_names_a2x(7)  = 'Sa_dens'     ! Density (derived from P, T)
+    cpl_names_a2x(8)  = 'Sa_shum'     ! Specific humidity (Computed by ...?)
+    cpl_names_a2x(9)  = 'Faxa_rainc'  ! Liquid convective precip. P3 (?)
+    cpl_names_a2x(10) = 'Faxa_rainl'  ! Liquire large-scale precip. P3 (?)
+    cpl_names_a2x(11) = 'Faxa_snowc'  ! Frozen convective precip. P3 (?)
+    cpl_names_a2x(12) = 'Faxa_snowl'  ! Frozen large scale precip. P3 (?)
+    cpl_names_a2x(13)  = 'Sa_co2prog' ! NOT COMPUTED by SCREAM (?)
 
     ! Names used by scream for the output fields above
     scr_names_a2x(1)  = 'surface_temperature'
