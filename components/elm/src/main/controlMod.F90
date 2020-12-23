@@ -340,7 +340,6 @@ contains
           end if
        end if
        
-       !write(iulog,*) "SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
