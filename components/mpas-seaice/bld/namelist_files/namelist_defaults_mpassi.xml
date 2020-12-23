@@ -376,7 +376,11 @@
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
 <config_use_high_frequency_coupling>true</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="WC14to60E2r3">false</config_use_high_frequency_coupling>
+<config_use_high_frequency_coupling ice_grid="EC30to60E2r2">false</config_use_high_frequency_coupling>
 <config_boundary_layer_iteration_number>10</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="WC14to60E2r3">5</config_boundary_layer_iteration_number>
+<config_boundary_layer_iteration_number ice_grid="EC30to60E2r2">5</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
 <config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
