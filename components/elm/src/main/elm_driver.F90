@@ -373,9 +373,9 @@ contains
           ! In this scenario, we simply zero all of the 
           ! column level variables that would had been upscaled
           ! in the veg summary with p2c
-          call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
        end if
        call t_stopf('cnpvegsumm')
        
@@ -452,9 +452,9 @@ contains
                 ! In this scenario, we simply zero all of the 
                 ! column level variables that would had been upscaled
                 ! in the veg summary with p2c
-                call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
              end if
              
              call col_cs%Summary(bounds_clump, &
@@ -530,9 +530,9 @@ contains
           ! In this scenario, we simply zero all of the 
           ! column level variables that would had been upscaled
           ! in the veg summary with p2c
-          call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
        end if
        call t_stopf('begcnpbal')
 
