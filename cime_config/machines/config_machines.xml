@@ -673,7 +673,7 @@
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/9.2.0</command>
+        <command name="load">sems-gcc/7.3.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">sems-intel/19.0.5</command>
@@ -683,8 +683,8 @@
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/4.0.2</command>
-        <command name="load">sems-netcdf/4.7.3/parallel</command>
+        <command name="load">acme-openmpi/2.1.5</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
