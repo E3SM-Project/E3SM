@@ -46,6 +46,7 @@ const double unit_length = 1000;
 const double T0 = 273.15;
 const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
 double minThickness = 1e-3; //[km]
+double thermal_thickness_limit; //[km]
 const double minBeta = 1e-5;
 double rho_ice;
 double rho_ocean;
@@ -113,11 +114,13 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                          double const* sea_level_F, double const* flowParamA_F,
                          double const* flowLawExponent_F, double const* dynamic_thickness_F,
                          double const* clausius_clapeyron_coeff,
+                         double const* thermal_thickness_limit_F,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
                          bool const* use_GLP_F) {
   // This function sets parameter values used by MPAS on the C/C++ side
   rho_ice = *ice_density_F;
   rho_ocean = *ocean_density_F;
+  thermal_thickness_limit = *thermal_thickness_limit_F;
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
@@ -1157,7 +1160,9 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
       int v = verticesOnTria[iVertex + 3 * index];
       int iCell = vertexToFCell[v];
       //compute temperature by averaging temperature values of triangles vertices where ice is present
-      if (cellsMask_F[iCell] & ice_present_bit_value) {
+      // Note that thermal_thickness_limit was imported in Albany units (km) but thickness_F is still in 
+      // MPAS units (m), so thermal_thickness_limit is being scaled back to MPAS units for this comparison.
+      if (thickness_F[iCell] > thermal_thickness_limit * unit_length) {
         temperature += temperature_F[iCell * nLayers + ilReversed];
         nPoints++;
          }
