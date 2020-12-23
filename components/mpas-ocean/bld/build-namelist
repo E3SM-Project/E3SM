@@ -882,7 +882,7 @@ if ($OCN_FORCING eq 'datm_forced_restoring') {
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
 	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
-	add_default($nl, 'config_activeTracer_vert_limiter', 'val'=>"'standard_FCT'");
+	add_default($nl, 'config_activeTracer_vert_limiter', 'val'=>"'fixed_global_limit'");
 	add_default($nl, 'config_vert_limiter_temperature_min', 'val'=>"-1.8");
 	add_default($nl, 'config_vert_limiter_temperature_max', 'val'=>"34");
 	add_default($nl, 'config_vert_limiter_salinity_min', 'val'=>"0");
