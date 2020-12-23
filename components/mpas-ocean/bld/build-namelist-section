@@ -268,6 +268,7 @@ add_default($nl, 'config_vert_tracer_adv_order');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_monotonic');
+add_default($nl, 'config_adv_first_direction');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -416,6 +417,11 @@ add_default($nl, 'config_surface_salinity_monthly_restoring_compute_interval');
 add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
 add_default($nl, 'config_salinity_restoring_max_difference');
 add_default($nl, 'config_salinity_restoring_under_sea_ice');
+add_default($nl, 'config_activeTracer_vert_limiter');
+add_default($nl, 'config_vert_limiter_temperature_min');
+add_default($nl, 'config_vert_limiter_temperature_max');
+add_default($nl, 'config_vert_limiter_salinity_min');
+add_default($nl, 'config_vert_limiter_salinity_max');
 
 ###############################################
 # Namelist group: tracer_forcing_debugTracers #

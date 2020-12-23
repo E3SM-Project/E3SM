@@ -737,6 +737,7 @@ add_default($nl, 'config_vert_tracer_adv_order');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_monotonic');
+add_default($nl, 'config_adv_first_direction');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -881,12 +882,22 @@ if ($OCN_FORCING eq 'datm_forced_restoring') {
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity', 'val'=>"1.585e-6");
 	add_default($nl, 'config_salinity_restoring_max_difference', 'val'=>"100.");
 	add_default($nl, 'config_salinity_restoring_under_sea_ice', 'val'=>".false.");
+	add_default($nl, 'config_activeTracer_vert_limiter', 'val'=>"'standard_FCT'");
+	add_default($nl, 'config_vert_limiter_temperature_min', 'val'=>"-1.8");
+	add_default($nl, 'config_vert_limiter_temperature_max', 'val'=>"34");
+	add_default($nl, 'config_vert_limiter_salinity_min', 'val'=>"0");
+	add_default($nl, 'config_vert_limiter_salinity_max', 'val'=>"45");
 } else {
 	add_default($nl, 'config_use_activeTracers_surface_restoring');
 	add_default($nl, 'config_use_surface_salinity_monthly_restoring');
 	add_default($nl, 'config_salinity_restoring_constant_piston_velocity');
 	add_default($nl, 'config_salinity_restoring_max_difference');
 	add_default($nl, 'config_salinity_restoring_under_sea_ice');
+	add_default($nl, 'config_activeTracer_vert_limiter');
+	add_default($nl, 'config_vert_limiter_temperature_min');
+	add_default($nl, 'config_vert_limiter_temperature_max');
+	add_default($nl, 'config_vert_limiter_salinity_min');
+	add_default($nl, 'config_vert_limiter_salinity_max');
 }
 add_default($nl, 'config_surface_salinity_monthly_restoring_compute_interval');
 add_default($nl, 'config_use_activeTracers_interior_restoring');

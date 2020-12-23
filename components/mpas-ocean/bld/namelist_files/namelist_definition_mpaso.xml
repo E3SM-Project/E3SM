@@ -1392,6 +1392,14 @@ Valid values: .true. and .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_adv_first_direction" type="character"
+	category="advection" group="advection">
+If 'horizontal', advection is done with horizontal first, then vertical. If 'vertical', then the opposite.
+
+Valid values: 'horizontal' and 'vertical'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- bottom_drag -->
 
@@ -2166,6 +2174,46 @@ Default: Defined in namelist_defaults.xml
 Flag to enable salinity restoring under sea ice.  The default setting is false, where salinity restoring tapers from full restoring in the open ocean (iceFraction=0.0) to zero restoring below full sea ice coverage (iceFraction=1.0); below partial sea ice coverage, restoring is in proportion to iceFraction.  If true, full salinity restoring is used everywhere, regardless of iceFraction value
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_activeTracer_vert_limiter" type="character"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+See options.
+
+Valid values: 'standard_FCT', 'fixed_global_limit', 'always_high_order', 'always_low_order'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_limiter_temperature_min" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+Min value for vertical advection tracer limiter, when config_activeTracer_vert_limiter='fixed_global_limit'
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_limiter_temperature_max" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+Max value for vertical advection tracer limiter, when config_activeTracer_vert_limiter='fixed_global_limit'
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_limiter_salinity_min" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+Min value for vertical advection tracer limiter, when config_activeTracer_vert_limiter='fixed_global_limit'
+
+Valid values: any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_limiter_salinity_max" type="real"
+	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
+Max value for vertical advection tracer limiter, when config_activeTracer_vert_limiter='fixed_global_limit'
+
+Valid values: any real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
