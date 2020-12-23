@@ -5018,6 +5018,8 @@ struct InputParser {
 # endif
 #endif
 
+typedef Kokkos::DefaultHostExecutionSpace ComposeDefaultExecutionSpace;
+
 namespace homme {
 namespace compose {
 
@@ -5834,7 +5836,7 @@ private:
 
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
-  typedef compose::QLT<Kokkos::DefaultExecutionSpace> QLTT;
+  typedef compose::QLT<ComposeDefaultExecutionSpace> QLTT;
   typedef compose::CAAS CAAST;
 
   struct Alg {
