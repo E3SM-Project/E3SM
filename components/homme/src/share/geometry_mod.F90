@@ -49,29 +49,29 @@ subroutine set_area_correction_map0(elem, nelemd, par, gp)
   real(kind=real_kind) :: area(1)
   integer :: ie, i, j
 
-     area = 0.0d0
-     do ie=1,nelemd
-        aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
-     enddo
+  area = 0.0d0
+  do ie=1,nelemd
+     aratio(ie,1) = sum(elem(ie)%mp(:,:)*elem(ie)%metdet(:,:))
+  enddo
 
-     call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
+  call repro_sum(aratio, area, nelemd, nelemd, 1, commid=par%comm)
 
-     area(1) = domain_size/area(1)  ! ratio correction
+  area(1) = domain_size/area(1)  ! ratio correction
 
 
-     if (par%masterproc) &
-        write(iulog,'(a,f20.17)') " re-initializing elements: alpha area correction=",&
-        area(1)
+  if (par%masterproc) &
+     write(iulog,'(a,f20.17)') " re-initializing elements: alpha area correction=",&
+     area(1)
 
-if ( geometry == "sphere" ) then
+  if ( geometry == "sphere" ) then
      do ie=1,nelemd
         call cube_init_atomic(elem(ie),gp%points,area(1))
      enddo
-else if ( geometry == "plane" ) then
+  else if ( geometry == "plane" ) then
     do ie=1,nelemd
        call plane_init_atomic(elem(ie),gp%points,area(1))
     enddo
-end if
+  end if
 
 end subroutine set_area_correction_map0
 

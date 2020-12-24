@@ -66,8 +66,6 @@ contains
     call allocate_element_arrays(nelemd)
 
     call mass_matrix(par,elem)
-    call set_area_correction_map0(elem, nelemd, par, gp)
-    call mass_matrix(par,elem)
 
     ! Copy refFE matrices back to C
     mp = elem(1)%mp
