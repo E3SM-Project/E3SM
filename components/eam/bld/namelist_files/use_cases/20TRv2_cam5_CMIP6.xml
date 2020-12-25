@@ -114,6 +114,7 @@
 <zmconv_tp_fac           > 2.0D0      </zmconv_tp_fac>
 <zmconv_mx_bot_lyr_adj   > 1          </zmconv_mx_bot_lyr_adj>
 <prc_exp1                > -1.40D0    </prc_exp1>
+<micro_mg_accre_enhan_fac> 1.75D0     </micro_mg_accre_enhan_fac>
 <microp_aero_wsubmin     > 0.001D0    </microp_aero_wsubmin>
 <so4_sz_thresh_icenuc    > 0.080e-6   </so4_sz_thresh_icenuc>
 <micro_mg_berg_eff_factor> 0.7D0      </micro_mg_berg_eff_factor>
