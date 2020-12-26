@@ -544,8 +544,8 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    real(r8), parameter :: close_to_one = 1.0_r8 + 1.0e-15_r8
    real(r8), parameter :: seconds_in_a_day = 86400.0_r8
 
-   real(r8) :: state_q(pcols,pver,pcnst), dqdt(pcols,pver,pcnst)
-   real(r8) :: pdel(pcols,pver)   ! pressure thickness of levels
+   real(r8), pointer :: state_q(:,:,:), dqdt(:,:,:)
+   real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
@@ -554,7 +554,8 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
 
-   logical  :: dotend(pcnst), dotendqqcw(pcnst)
+   logical, pointer  :: dotend(:)
+   logical :: dotendqqcw(pcnst)
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
@@ -592,6 +593,8 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    !-----------------------------------------------------------------------
    integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
+   logical,target :: aa(1)
+   real(r8),target :: bb(1,1,1)
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -656,22 +659,24 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
               ' is true by default); '//errmsg(__FILE__,__LINE__)
          call endrun(trim(err_msg))
       endif
-      dotend = ptend%lq
-      dqdt   = ptend%q
+      dotend => ptend%lq
+      dqdt   => ptend%q
       dotendqqcw(:)   = .false.
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
-      dotend = .false.
-      dqdt   = huge(dqdt)
+      aa(1) = .false.
+      dotend => aa
+      bb(1,1,1) = huge(bb)
+      dqdt   => bb!huge(dqdt)
       dqqcwdt(:,:,:)  = huge(dqqcwdt)
       qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
    !if(present(caller) .and. masterproc) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
 
-   pdel     = state%pdel !Only required if update_mmr = .true.
-   state_q  = state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
+   pdel     => state%pdel !Only required if update_mmr = .true.
+   state_q  => state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
@@ -731,7 +736,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    end do  ! do imode = 1, ntot_amode
 
-
    !------------------------------------------------------------------------------
    ! when the aitken mode mean size is too big, the largest
    !    aitken particles are transferred into the accum mode
@@ -759,10 +763,10 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    ! Only if "update_mmr" is TRUE and only for list_idx_local=0
    !----------------------------------------------------------------------
    if(update_mmr .and. list_idx_local == 0) then
-
       !first update ptend with the tendencies
-      ptend%lq = dotend
-      ptend%q  = dqdt
+      !ptend%lq = dotend
+      !ptend%q  = dqdt
+
 
       !update cld brn aerosols
       call update_cld_brn_mmr(list_idx_local, top_lev, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
