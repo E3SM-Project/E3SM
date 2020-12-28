@@ -30,7 +30,7 @@ module seq_drydep_mod
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
-  logical, private :: drydep_initialized = .false. 
+  logical, private :: drydep_initialized = .false.
 
   ! public data members:
   ! method specification
@@ -263,7 +263,7 @@ module seq_drydep_mod
              ,1.e-36_r8 & ! ISOP
              ,1._r8     & ! MVK
              ,1._r8     & ! MACR
-             ,1._r8     & ! C2H5OH 
+             ,1._r8     & ! C2H5OH
              ,1._r8     & ! ONITR
              ,.1_r8     & ! ONIT
              ,.1_r8     & ! ISOPNO3
@@ -287,7 +287,7 @@ module seq_drydep_mod
              ,0.1_r8    & ! SOAG3
              ,0.1_r8    & ! SOAG4
              ,0.1_r8    & ! IVOC
-             ,0.1_r8    & ! SVOC 
+             ,0.1_r8    & ! SVOC
              ,0.1_r8    & ! IVOCbb
              ,0.1_r8    & ! IVOCff
              ,0.1_r8    & ! SVOCbb
@@ -348,7 +348,7 @@ module seq_drydep_mod
              ,1.e-36_r8 & ! DMS
              ,1.e-36_r8 & ! H2SO4
              ,1._r8     & ! HONITR
-             ,1._r8     & ! MACRN   
+             ,1._r8     & ! MACRN
              ,1._r8     & ! MVKN
              ,1._r8     & ! ISOPN2B
              ,1._r8     & ! ISOPN3B
@@ -369,7 +369,7 @@ module seq_drydep_mod
              ,1._r8     & ! HMHP
              ,1._r8     & ! HPALD1
              ,1._r8     & ! INHED
-             ,1._r8     & ! HPALD4  
+             ,1._r8     & ! HPALD4
              ,1._r8     & ! ISOPHFP
              ,1._r8     & ! HPALDB1C
              ,1._r8     & ! HPALDB4C
@@ -386,13 +386,13 @@ module seq_drydep_mod
              ,1._r8     & ! TERPNPS1
              ,1._r8     & ! TERPFDN
              ,1._r8     & ! SQTN
-             ,1._r8     & ! TERPHFN 
+             ,1._r8     & ! TERPHFN
              ,1._r8     & ! TERP1OOH
              ,1._r8     & ! TERPDHDP
              ,1._r8     & ! TERPF2
              ,1._r8     & ! TERPF1
              ,1._r8     & ! TERPA
-             ,1._r8     & ! TERPA2 
+             ,1._r8     & ! TERPA2
              ,1._r8     & ! TERPK
              ,1._r8     & ! TERPAPAN
              ,1._r8     & ! TERPACID
@@ -678,7 +678,7 @@ module seq_drydep_mod
              ,1.36e+00_r8, 3100._r8,1.30e-02_r8,1960._r8,6.6e-08_r8, 1500._r8  & ! SO2
              ,1.3e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff0
              ,3.2e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff1
-             ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff2 
+             ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff2
              ,1.3e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff3
              ,1.6e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGff4
              ,7.9e+11_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! SOAGbg0
@@ -732,8 +732,8 @@ module seq_drydep_mod
              ,3.e+07_r8,   6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BEPOMUC
              ,1.5e+06_r8,  5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! PHENOOH
              ,3.36e+02_r8, 5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! C6H5OOH
-             ,2.3e+03_r8,  5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BENZOOH 
-             ,1.e+05_r8,   5890._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BIGALD1 
+             ,2.3e+03_r8,  5995._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BENZOOH
+             ,1.e+05_r8,   5890._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BIGALD1
              ,2.9e+04_r8,  5890._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BIGALD2
              ,2.2e+04_r8,  5890._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BIGALD3
              ,2.2e+04_r8,  5890._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! BIGALD4
@@ -772,10 +772,10 @@ module seq_drydep_mod
              ,2.97e+11_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! ISOPFNP
              ,1.05e+05_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! INHEB
              ,1.70e+06_r8, 9870._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HMHP
-             ,2.30e+05_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HPALD1  
+             ,2.30e+05_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HPALD1
              ,1.51e+05_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! INHED
              ,2.30e+05_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HPALD4
-             ,7.60e+09_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! ISOPHFP 
+             ,7.60e+09_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! ISOPHFP
              ,5.43e+04_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HPALDB1C
              ,5.43e+04_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! HPALDB4C
              ,2.09e+06_r8, 6014._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  & ! ICHE
@@ -900,10 +900,10 @@ CONTAINS
     end if
 
     call ESMF_VMGetCurrent(vm, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     call ESMF_VMGet(vm, localPet=localPet, mpiCommunicator=mpicom, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
 
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
@@ -980,7 +980,7 @@ CONTAINS
     !-----------------------------------------------------------------------------
     ! Return if this routine has already been called (e.g. cam and clm both call this)
     !-----------------------------------------------------------------------------
-
+    if(allocated(foxd)) return
     !-----------------------------------------------------------------------------
     ! Allocate and fill foxd, drat and mapping as well as species indices
     !-----------------------------------------------------------------------------
