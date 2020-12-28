@@ -5,11 +5,11 @@ module shr_pio_mod
   use shr_log_mod,  only : shr_log_unit
   use shr_mpi_mod,  only : shr_mpi_bcast, shr_mpi_chkerr
   use shr_sys_mod,  only : shr_sys_abort
-#ifndef NO_MPIMOD
-  use mpi, only : mpi_comm_null, mpi_comm_world
+#ifndef NO_MPI2
+  use mpi, only : mpi_comm_null, mpi_comm_world, mpi_finalize
 #endif
   implicit none
-#ifdef NO_MPIMOD
+#ifdef NO_MPI2
 #include <mpif.h>
 #endif
   private
@@ -86,7 +86,6 @@ contains
 !!
 !<
   subroutine shr_pio_init1(ncomps, nlfilename, Global_Comm)
-    use mpi, only : mpi_finalize
     integer, intent(in) :: ncomps
     character(len=*) :: nlfilename
     integer, intent(inout) :: Global_Comm
