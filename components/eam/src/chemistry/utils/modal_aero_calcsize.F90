@@ -595,6 +595,26 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
    logical,target :: aa(1)
    real(r8),target :: bb(1,1,1)
+   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
+   real(r8), pointer :: specmmr_cld(:,:)  !specie mmr (cloud borne)
+   real(r8) :: specdens, dummwdens
+   integer:: ispec
+      integer :: mam_ait, mam_acc, nacc, nait
+      real(r8) ::v2nmin, v2nmax, v2nminrl, v2nmaxrl, dgnxx, dgnyy
+      real(r8) ::sigmag, dgnumhi, dgnumlo, cmn_factor, drv_a, drv_c
+      real(r8) :: num_a0, num_a, num_c0, num_c, pdel_fac
+
+      real(r8), pointer :: fldcw(:,:)           !specie mmr (cloud borne)
+      real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,                                                                                                    
+      !i.e. dgnumlo_relaxed = dgnumlo/3 and dgnumhi_relaxed = dgnumhi*3                                                         
+      real(r8), parameter :: szadj_block_fac = 1.0e6_r8
+      real(r8) :: num_a1, num_c1, numbnd
+  real(r8) :: num_a2, num_c2, delnum_a2, delnum_c2
+  real(r8) :: delnum_a3, delnum_c3
+  real(r8) :: num_t2, drv_t, delnum_t3
+  integer::itmp,ktmp,qtmp
+
+
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -723,19 +743,330 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !
       !Volume = sum_over_components{ component_mass mixrat / density }
       !----------------------------------------------------------------------
-      call compute_dry_volume(top_lev, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
+      !call compute_dry_volume(top_lev, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
 
+      do ispec = 1, nspec
+         ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
+         
+         !Get mmr for the interstitial specie
+         call rad_cnst_get_aer_mmr(list_idx_local, imode, ispec, 'a', state, pbuf, specmmr)
+         !Get mmr for the cloud borne species
+         call rad_cnst_get_aer_mmr(list_idx_local, imode, ispec, 'c', state, pbuf, specmmr_cld)
+         
+         !get density of the aerosol specie
+         call rad_cnst_get_aer_props(list_idx_local, imode, ispec, density_aer=specdens)
+         dummwdens = 1.0_r8 / specdens !inverse of density
+         
+         !compute dry volume as a function of space (i,k)
+         do klev = top_lev, pver
+            do icol = 1, ncol
+               dryvol_a(icol,klev) = dryvol_a(icol,klev) + max(0.0_r8,specmmr(icol,klev))*dummwdens
+               dryvol_c(icol,klev) = dryvol_c(icol,klev) + max(0.0_r8,specmmr_cld(icol,klev))*dummwdens
+            end do
+         end do
+         
+      end do ! nspec loop
 
+!#ifdef BALLI
       ! do size adjustment based on computed dry diameter values and update the diameters
-      call size_adjustment(list_idx_local, top_lev, ncol, lchnk, imode, dryvol_a, state_q, & !input
-           dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
-           dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
-           drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
-           num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
-           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)                                              !output
+      !call size_adjustment(list_idx_local, top_lev, ncol, lchnk, imode, dryvol_a, state_q, & !input
+      !     dryvol_c, pdel, do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,  & !input
+      !     dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
+      !     drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
+      !     num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
+      !     dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx)                                              !output
 
+
+
+      !find state q array number mode indices for interstitial and cloud borne aerosols
+      !Both num_mode_idx and num_cldbrn_mode_idx should be exactly same and should be same
+      !for both prognostic and diagnostic radiation lists
+
+      num_mode_idx        = numptr_amode(imode)
+      num_cldbrn_mode_idx = numptrcw_amode(imode)
+      
+      mam_ait = modeptr_aitken !aitken mode number in this mam package
+      mam_acc = modeptr_accum  !accumulation mode number in this mam package
+      
+      !find out accumulation and aitken modes in the radiation list
+      nacc = rad_cnst_get_mode_idx(list_idx_local, modename_amode(mam_acc))
+      nait = rad_cnst_get_mode_idx(list_idx_local, modename_amode(mam_ait))
+      
+      !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
+      !call compute_dgn_vol_limits(list_idx_local, imode, nait, nacc, do_aitacc_transfer, & !input
+      !     v2nmin, v2nmax, v2nminrl, v2nmaxrl, dgnxx, dgnyy) !output
+
+      call rad_cnst_get_mode_props(list_idx_local, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
+      cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
+      !v2nmin = voltonumbhi is proportional to dgnumhi**(-3),
+      !        and produces the minimum allowed number for a given volume
+      v2nmin   = 1._r8 / ( (pi/6._r8)*(dgnumhi**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
+      
+      !v2nmax = voltonumblo is proportional to dgnumlo**(-3),
+      !        and produces the maximum allowed number for a given volume
+      v2nmax   = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
+      
+      !v2nminrl and v2nmaxrl are their "relaxed" equivalents.
+      v2nminrl = v2nmin/relax_factor
+      v2nmaxrl = v2nmax*relax_factor
+      dgnxx   = dgnumhi
+      dgnyy   = dgnumlo
+      
+      
+      !if do_aitacc_transfer is turned on, we will do the ait<->acc tranfer separately in
+      !aitken_accum_exchange subroutine, so we are turning the size adjustment for these
+      !two modes here.
+      if ( do_aitacc_transfer ) then
+         !for n=nait, divide v2nmin by 1.0e6 to effectively turn off the
+         !         adjustment when number is too small (size is too big)
+         if (imode == nait) v2nmin = v2nmin/szadj_block_fac
+         
+         !for n=nacc, multiply v2nmax by 1.0e6 to effectively turn off the
+         !         adjustment when number is too big (size is too small)
+         if (imode == nacc) v2nmax = v2nmax*szadj_block_fac
+         
+         !Also change the v2nmaxrl/v2nminrl so that
+         !the interstitial<-->activated adjustment is turned off
+         v2nminrl = v2nmin/relax_factor
+         v2nmaxrl = v2nmax*relax_factor
+      end if
+      
+
+      !set tendency logicals to true if we need to update mmr
+      if (update_mmr) then
+         dotend(num_mode_idx)            = .true.
+         dotendqqcw(num_cldbrn_mode_idx) = .true.
+      end if
+      
+      !pointer to cloud borne number mmr for mode imode
+      !(it is okay to use qqcw_get_field to get number mixing ratios for diagnostic calls)
+      fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
+      
+      !Compute a common factor for size computations
+      call rad_cnst_get_mode_props(list_idx_local, imode, sigmag=sigmag, dgnumhi=dgnumhi, dgnumlo=dgnumlo)
+      cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
+      
+      do  klev = top_lev, pver
+         do  icol = 1, ncol
+            
+            drv_a  = dryvol_a(icol,klev)
+            
+            !NOTE: number mixing ratios are always present for diagnostic
+            !calls, so it is okay to use "state_q" instead of rad_cnst calls
+            num_a0 = state_q(icol,klev,num_mode_idx)
+            num_a  = max( 0.0_r8, num_a0 )
+            drv_c  = dryvol_c(icol,klev)
+            num_c0 = fldcw(icol,klev)
+            num_c = max( 0.0_r8, num_c0 )
+            
+            if (do_adjust) then
+               
+               !-----------------------------------------------------------------
+               ! Do number adjustment for interstitial and activated particles
+               !-----------------------------------------------------------------
+               !Adjustments that:
+               !(1) make numbers non-negative or
+               !(2) make numbers zero when volume is zero
+               !are applied over time-scale deltat
+               !Adjustments that bring numbers to within specified bounds are
+               !applied over time-scale tadj
+               !-----------------------------------------------------------------
+               
+               itmp = 1
+               ktmp = 1
+               qtmp = 1
+               if(update_mmr) then
+                  itmp = icol
+                  ktmp = klev
+                  qtmp = num_mode_idx
+               endif
+                  
+               call adjust_num_sizes_1cell(update_mmr, &                   !input
+                    drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
+                    num_a, num_c, dqdt(itmp,ktmp,qtmp), dqqcwdt(itmp,ktmp,qtmp))                                                        !output
+#ifdef BALLI
+               if ((drv_a <= 0.0_r8) .and. (drv_c <= 0.0_r8)) then
+                  ! both interstitial and activated volumes are zero
+                  ! adjust both numbers to zero
+                  num_a = 0.0_r8
+                  num_c = 0.0_r8
+                  if(update_mmr) then
+                     dqdt(icol,klev,num_mode_idx)           = -num_a0*deltatinv
+                     dqqcwdt(icol,klev,num_cldbrn_mode_idx) = -num_c0*deltatinv
+                  endif
+               else if (drv_c <= 0.0_r8) then
+                  ! activated volume is zero, so interstitial number/volume == total/combined
+                  ! apply step 1 and 3, but skip the relaxed adjustment (step 2, see below)
+                  num_c = 0.0_r8
+                  
+                  num_a1 = num_a
+                  numbnd = max( drv_a*v2nmin, min( drv_a*v2nmax, num_a1 ) )
+                  num_a  = num_a1 + (numbnd - num_a1)*fracadj
+                  if(update_mmr) then
+                     dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
+                     dqqcwdt(icol,klev,num_cldbrn_mode_idx) = -num_c0*deltatinv
+                  endif
+               else if (drv_a <= 0.0_r8) then
+                  ! interstitial volume is zero, treat similar to above
+                  num_a = 0.0_r8
+                  num_c1 = num_c
+                  numbnd = max( drv_c*v2nmin, min( drv_c*v2nmax, num_c1 ) )
+                  num_c  = num_c1 + (numbnd - num_c1)*fracadj
+                  if(update_mmr) then
+                     dqdt(icol,klev,num_mode_idx)           = -num_a0*deltatinv
+                     dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (num_c - num_c0)*deltatinv
+                  endif
+               else
+                  ! both volumes are positive
+                  ! apply 3 adjustment steps
+                  ! step1:  num_a,c0 --> num_a,c1 forces non-negative values
+                  num_a1 = num_a
+                  num_c1 = num_c
+                  ! step2:  num_a,c1 --> num_a,c2 applies relaxed bounds to the interstitial
+                  !    and activated number (individually)
+                  !    if only a or c changes, adjust the other in the opposite direction
+                  !    as much as possible to conserve a+c
+                  numbnd = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl, num_a1 ) )
+                  delnum_a2 = (numbnd - num_a1)*fracadj
+                  num_a2 = num_a1 + delnum_a2
+                  numbnd = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl, num_c1 ) )
+                  delnum_c2 = (numbnd - num_c1)*fracadj
+                  num_c2 = num_c1 + delnum_c2
+                  if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
+                     num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
+                          num_a1-delnum_c2 ) )
+                  else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
+                     num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
+                          num_c1-delnum_a2 ) )
+                  end if
+                  ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
+                  !    combined/total number
+                  drv_t = drv_a + drv_c
+                  num_t2 = num_a2 + num_c2
+                  delnum_a3 = 0.0_r8
+                  delnum_c3 = 0.0_r8
+                  if (num_t2 < drv_t*v2nmin) then
+                     delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
+                     ! if you are here then (num_a2 < drv_a*v2nmin) and/or
+                     !                      (num_c2 < drv_c*v2nmin) must be true
+                     if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
+                        delnum_a3 = delnum_t3*(num_a2/num_t2)
+                        delnum_c3 = delnum_t3*(num_c2/num_t2)
+                     else if (num_c2 < drv_c*v2nmin) then
+                        delnum_c3 = delnum_t3
+                     else if (num_a2 < drv_a*v2nmin) then
+                        delnum_a3 = delnum_t3
+                     end if
+                  else if (num_t2 > drv_t*v2nmax) then
+                     delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
+                     ! if you are here then (num_a2 > drv_a*v2nmax) and/or
+                     !                      (num_c2 > drv_c*v2nmax) must be true
+                     if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
+                        delnum_a3 = delnum_t3*(num_a2/num_t2)
+                        delnum_c3 = delnum_t3*(num_c2/num_t2)
+                     else if (num_c2 > drv_c*v2nmax) then
+                        delnum_c3 = delnum_t3
+                     else if (num_a2 > drv_a*v2nmax) then
+                        delnum_a3 = delnum_t3
+                     end if
+                  end if
+                  num_a = num_a2 + delnum_a3
+                  
+                  num_c = num_c2 + delnum_c3
+                  if(update_mmr) then
+                     dqdt(icol,klev,num_mode_idx)           = (num_a - num_a0)*deltatinv
+                     dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (num_c - num_c0)*deltatinv
+                  endif
+               end if
+#endif
+               
+            endif !do_adjust
+            
+            !
+            ! now compute current dgn and v2n
+            !
+            !call update_dgn_voltonum(icol, klev, imode, update_mmr, num_mode_idx, inter_aero, gravit, cmn_factor, drv_a, num_a, &
+            !     v2nmin, v2nmax, dgnxx, dgnyy, pdel, &
+            !     dgncur_a, v2ncur_a, qsrflx, dqdt)
+
+            if (drv_a > 0.0_r8) then
+               if (num_a <= drv_a*v2nmin) then
+                  dgncur_a(icol,klev,imode) = dgnxx
+                  v2ncur_a(icol,klev,imode) = v2nmin
+               else if (num_a >= drv_a*v2nmax) then
+                  dgncur_a(icol,klev,imode) = dgnyy
+                  v2ncur_a(icol,klev,imode) = v2nmax
+               else
+                  dgncur_a(icol,klev,imode) = (drv_a/(cmn_factor*num_a))**third
+                  v2ncur_a(icol,klev,imode) = num_a/drv_a
+               end if
+            end if
+            if (update_mmr) then
+               pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz                                                                                                                     
+               qsrflx(icol,num_mode_idx,1,inter_aero) = qsrflx(icol,num_mode_idx,1,inter_aero) + max(0.0_r8,dqdt(icol,klev,num_mode_idx))*pdel_fac
+               qsrflx(icol,num_mode_idx,2,inter_aero) = qsrflx(icol,num_mode_idx,2,inter_aero) + min(0.0_r8,dqdt(icol,klev,num_mode_idx))*pdel_fac
+            endif
+
+
+            
+            !for cloud borne aerosols
+            !call update_dgn_voltonum(icol, klev, imode, update_mmr, num_cldbrn_mode_idx, cld_brn_aero, gravit, cmn_factor, drv_c, num_c, &
+            !     v2nmin, v2nmax, dgnumhi, dgnumlo, pdel, &
+            !     dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
+
+            !call update_dgn_voltonum_1cell(update_mmr, gravit, cmn_factor, drv_c, num_c, &
+            !     v2nmin, v2nmax, dgnumhi, dgnumlo, pdel(icol,klev), &
+            !     dgncur_c(icol,klev,imode), v2ncur_c(icol,klev,imode), qsrflx(icol,num_cldbrn_mode_idx,:,cld_brn_aero), dqqcwdt(itmp,ktmp,qtmp))
+
+            !call update_dgn_voltonum_1cell(update_mmr, gravit, cmn_factor, drv_c, num_c, &
+            !     v2nmin, v2nmax, dgnumhi, dgnumlo, pdel(icol,klev), &
+            !     dgncur_c(icol,klev,imode), v2ncur_c(icol,klev,imode), dqqcwdt(itmp,ktmp,qtmp))
+
+            if (drv_c > 0.0_r8) then
+               if (num_c <= drv_c*v2nmin) then
+                  dgncur_c(icol,klev,imode) = dgnxx
+                  v2ncur_c(icol,klev,imode) = v2nmin
+               else if (num_c >= drv_c*v2nmax) then
+                  dgncur_c(icol,klev,imode) = dgnyy
+                  v2ncur_c(icol,klev,imode) = v2nmax
+               else
+                  dgncur_c(icol,klev,imode) = (drv_c/(cmn_factor*num_c))**third
+                  v2ncur_c(icol,klev,imode) = num_c/drv_c
+               end if
+            end if
+            if (update_mmr) then
+               pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz                                                                                                                     
+               qsrflx(icol,num_cldbrn_mode_idx,1,cld_brn_aero) = qsrflx(icol,num_cldbrn_mode_idx,1,cld_brn_aero) + max(0.0_r8,dqqcwdt(icol,klev,num_cldbrn_mode_idx))*pdel_fac
+               qsrflx(icol,num_cldbrn_mode_idx,2,cld_brn_aero) = qsrflx(icol,num_cldbrn_mode_idx,2,cld_brn_aero) + min(0.0_r8,dqqcwdt(icol,klev,num_cldbrn_mode_idx))*pdel_fac
+            endif
+
+            ! save number and dryvol for aitken <--> accum transfer
+            if ( do_aitacc_transfer ) then
+               if (imode == nait) then
+                  drv_a_aitsv(icol,klev) = drv_a
+                  num_a_aitsv(icol,klev) = num_a
+                  drv_c_aitsv(icol,klev) = drv_c
+                  num_c_aitsv(icol,klev) = num_c
+               else if (imode == nacc) then
+                  drv_a_accsv(icol,klev) = drv_a
+                  num_a_accsv(icol,klev) = num_a
+                  drv_c_accsv(icol,klev) = drv_c
+                  num_c_accsv(icol,klev) = num_c
+               end if
+            end if
+            drv_a_sv(icol,klev,imode) = drv_a
+            num_a_sv(icol,klev,imode) = num_a
+            drv_c_sv(icol,klev,imode) = drv_c
+            num_c_sv(icol,klev,imode) = num_c
+            
+         end do
+      end do
+      
+
+
+
+!#endif
    end do  ! do imode = 1, ntot_amode
-
    !------------------------------------------------------------------------------
    ! when the aitken mode mean size is too big, the largest
    !    aitken particles are transferred into the accum mode
@@ -744,7 +1075,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    !    accum particles are transferred into the aitken mode
    !    to increase the accum mode mean size
    !------------------------------------------------------------------------------
-
+!#ifdef BALLI
    if ( do_aitacc_transfer ) then
       call aitken_accum_exchange(ncol, lchnk, list_idx_local, update_mmr, tadjinv, &
            deltat, pdel, state_q, state, &
@@ -755,6 +1086,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
            dqdt, dqqcwdt, qsrflx)
    end if
 
+#ifdef BALLI
    lsfrm = -huge(lsfrm) !initialize
 
 
@@ -839,6 +1171,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       end do   ! iq = ...
 
    endif!if(update_mmr)
+#endif
 #endif
 
 return
@@ -1323,6 +1656,138 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
   return
 end subroutine adjust_num_sizes
 
+
+subroutine adjust_num_sizes_1cell(update_mmr, &
+     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, &
+     num_a, num_c, dqdt, dqqcwdt)
+
+  !-----------------------------------------------------------------------------
+  !Purpose: Adjust num sizes if needed
+  !
+  !Called by: size_adjustment
+  !Calls    : None
+  !
+  !Author: Richard Easter (Refactored by Balwinder Singh)
+  !-----------------------------------------------------------------------------
+
+  implicit none
+
+  !inputs
+  logical,  intent(in) :: update_mmr
+  real(r8), intent(in) :: drv_a, num_a0, drv_c, num_c0
+  real(r8), intent(in) :: deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj
+  !integer,  intent(in) :: num_mode_idx, num_cldbrn_mode_idx
+
+  !outputs
+  real(r8), intent(inout) :: num_a, num_c
+  real(r8), intent(inout) :: dqdt, dqqcwdt
+
+  !local
+  real(r8) :: num_a1, num_c1, numbnd
+  real(r8) :: num_a2, num_c2, delnum_a2, delnum_c2
+  real(r8) :: delnum_a3, delnum_c3
+  real(r8) :: num_t2, drv_t, delnum_t3
+
+
+  if ((drv_a <= 0.0_r8) .and. (drv_c <= 0.0_r8)) then
+     ! both interstitial and activated volumes are zero
+     ! adjust both numbers to zero
+     num_a = 0.0_r8
+     num_c = 0.0_r8
+     if(update_mmr) then
+        dqdt    = -num_a0*deltatinv
+        dqqcwdt = -num_c0*deltatinv
+     endif
+  else if (drv_c <= 0.0_r8) then
+     ! activated volume is zero, so interstitial number/volume == total/combined
+     ! apply step 1 and 3, but skip the relaxed adjustment (step 2, see below)
+     num_c = 0.0_r8
+
+     num_a1 = num_a
+     numbnd = max( drv_a*v2nmin, min( drv_a*v2nmax, num_a1 ) )
+     num_a  = num_a1 + (numbnd - num_a1)*fracadj
+     if(update_mmr) then
+        dqdt    = (num_a - num_a0)*deltatinv
+        dqqcwdt = -num_c0*deltatinv
+     endif
+  else if (drv_a <= 0.0_r8) then
+     ! interstitial volume is zero, treat similar to above
+     num_a = 0.0_r8
+     num_c1 = num_c
+     numbnd = max( drv_c*v2nmin, min( drv_c*v2nmax, num_c1 ) )
+     num_c  = num_c1 + (numbnd - num_c1)*fracadj
+     if(update_mmr) then
+        dqdt    = -num_a0*deltatinv
+        dqqcwdt = (num_c - num_c0)*deltatinv
+     endif
+  else
+     ! both volumes are positive
+     ! apply 3 adjustment steps
+     ! step1:  num_a,c0 --> num_a,c1 forces non-negative values
+     num_a1 = num_a
+     num_c1 = num_c
+     ! step2:  num_a,c1 --> num_a,c2 applies relaxed bounds to the interstitial
+     !    and activated number (individually)
+     !    if only a or c changes, adjust the other in the opposite direction
+     !    as much as possible to conserve a+c
+     numbnd = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl, num_a1 ) )
+     delnum_a2 = (numbnd - num_a1)*fracadj
+     num_a2 = num_a1 + delnum_a2
+     numbnd = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl, num_c1 ) )
+     delnum_c2 = (numbnd - num_c1)*fracadj
+     num_c2 = num_c1 + delnum_c2
+     if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
+        num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
+             num_a1-delnum_c2 ) )
+     else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
+        num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
+             num_c1-delnum_a2 ) )
+     end if
+     ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
+     !    combined/total number
+     drv_t = drv_a + drv_c
+     num_t2 = num_a2 + num_c2
+     delnum_a3 = 0.0_r8
+     delnum_c3 = 0.0_r8
+     if (num_t2 < drv_t*v2nmin) then
+        delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
+        ! if you are here then (num_a2 < drv_a*v2nmin) and/or
+        !                      (num_c2 < drv_c*v2nmin) must be true
+        if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 < drv_c*v2nmin) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 < drv_a*v2nmin) then
+           delnum_a3 = delnum_t3
+        end if
+     else if (num_t2 > drv_t*v2nmax) then
+        delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
+        ! if you are here then (num_a2 > drv_a*v2nmax) and/or
+        !                      (num_c2 > drv_c*v2nmax) must be true
+        if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 > drv_c*v2nmax) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 > drv_a*v2nmax) then
+           delnum_a3 = delnum_t3
+        end if
+     end if
+     num_a = num_a2 + delnum_a3
+
+     num_c = num_c2 + delnum_c3
+     if(update_mmr) then
+        dqdt    = (num_a - num_a0)*deltatinv
+        dqqcwdt = (num_c - num_c0)*deltatinv
+     endif
+  end if
+
+  return
+end subroutine adjust_num_sizes_1cell
+
+
+
 !---------------------------------------------------------------------------------------------
 
 subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type, gravit, cmn_factor, drv, num, &
@@ -1375,6 +1840,59 @@ subroutine update_dgn_voltonum(icol, klev, imode, update_mmr, num_idx, aer_type,
 
   return
 end subroutine update_dgn_voltonum
+
+
+
+subroutine update_dgn_voltonum_1cell(update_mmr, gravit, cmn_factor, drv, num, &
+     v2nmin, v2nmax, dgnxx, dgnyy, pdel, &
+     dgncur, v2ncur, dqdt)
+
+  !-----------------------------------------------------------------------------
+  !Purpose: updates diameter and volume to num based on limits
+  !
+  !Called by: size_adjustment
+  !Calls    : None
+  !
+  !Author: Richard Easter (Refactored by Balwinder Singh)
+  !-----------------------------------------------------------------------------
+
+  implicit none
+
+  !inputs
+  !integer,  intent(in) :: icol, klev, imode, num_idx, aer_type
+  logical,  intent(in) :: update_mmr
+  real(r8), intent(in) :: gravit, cmn_factor
+  real(r8), intent(in) :: drv, num
+  real(r8), intent(in) :: v2nmin, v2nmax, dgnxx, dgnyy
+  real(r8), intent(in) :: pdel
+  real(r8), intent(in) :: dqdt
+  !output
+  real(r8), intent(inout) :: dgncur, v2ncur
+  !real(r8), intent(inout) :: qsrflx(:)
+
+  !local
+  real(r8) :: pdel_fac
+  return
+  !if (drv > 0.0_r8) then
+  !   if (num <= drv*v2nmin) then
+        !dgncur = dgnxx
+        !v2ncur = v2nmin
+  !   else if (num >= drv*v2nmax) then
+        !dgncur = dgnyy
+        !v2ncur = v2nmax
+  !   else
+        !dgncur = (drv/(cmn_factor*num))**third
+        !v2ncur = num/drv
+  !   end if
+  !end if
+  !if (update_mmr) then
+     !pdel_fac = pdel/gravit   ! = rho*dz
+     !qsrflx(1) = qsrflx(1) + max(0.0_r8,dqdt)*pdel_fac
+     !qsrflx(2) = qsrflx(2) + min(0.0_r8,dqdt)*pdel_fac
+  !endif
+
+  return
+end subroutine update_dgn_voltonum_1cell
 
 !---------------------------------------------------------------------------------------------
 
@@ -1439,8 +1957,19 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   real(r8) :: xfertend, xfertend_num(2,2)
   logical  :: noxf_acc2ait(ntot_aspectype), accum_exists, aitken_exists
 
+real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
   character(len=32)  :: spec_name
   character(len=800) :: err_msg
+
+  
+  
+  
+  real(r8) ::  specdens, dgnumlo, voltonumblo
+  real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
+  real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
+  real(r8), parameter :: zero_div_fac = 1.0e-37_r8
+
+
 
   if (npair_csizxf .le. 0)call endrun('npair_csizxf <= 0'//errmsg(__FILE__,__LINE__))
 
@@ -1532,10 +2061,51 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
         pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz
 
         !Compute aitken->accumulation transfer
-        call compute_coef_ait_acc_transfer(iacc, v2n_geomean, tadjinv, drv_a_aitsv(icol,klev),       & !input
-             drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), voltonumb_acc, & !input
-             ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)                  !output
+        !call compute_coef_ait_acc_transfer(iacc, v2n_geomean, tadjinv, drv_a_aitsv(icol,klev),       & !input
+        !     drv_c_aitsv (icol,klev), num_a_aitsv(icol,klev), num_c_aitsv(icol,klev), voltonumb_acc, & !input
+        !     ixfer_ait2acc, xfercoef_num_ait2acc, xfercoef_vol_ait2acc, xfertend_num)                  !output
 
+        !initialize
+        ixfer_ait2acc        = 0
+        xfercoef_num_ait2acc = 0.0_r8
+        xfercoef_vol_ait2acc = 0.0_r8
+        xfertend_num(:,:)    = 0.0_r8
+        
+        ! compute aitken --> accum transfer rates
+        
+        drv_t = drv_a_aitsv(icol,klev) + drv_c_aitsv(icol,klev)
+        num_t = num_a_aitsv(icol,klev) + num_c_aitsv(icol,klev)
+        if (drv_t > 0.0_r8) then
+           !if num is less than the mean value, we have large particles (keeping volume constant drv_t)
+           !which needs to be moved to accumulation mode
+           if (num_t < drv_t*v2n_geomean) then
+              ixfer_ait2acc = 1
+              if (num_t < drv_t*voltonumb_acc) then ! move all particles if number is smaller than the acc mean
+                 xferfrac_num_ait2acc = 1.0_r8
+                 xferfrac_vol_ait2acc = 1.0_r8
+              else !otherwise scale the transfer
+                 xferfrac_vol_ait2acc = ((num_t/drv_t) - v2n_geomean)/   &
+                      (voltonumb_acc - v2n_geomean)
+                 xferfrac_num_ait2acc = xferfrac_vol_ait2acc*   &
+                      (drv_t*voltonumb_acc/num_t)
+                 !bound the transfer coefficients between 0 and 1
+                 if ((xferfrac_num_ait2acc <= 0.0_r8) .or.   &
+                      (xferfrac_vol_ait2acc <= 0.0_r8)) then
+                    xferfrac_num_ait2acc = 0.0_r8
+                    xferfrac_vol_ait2acc = 0.0_r8
+                 else if ((xferfrac_num_ait2acc >= 1.0_r8) .or.   &
+                      (xferfrac_vol_ait2acc >= 1.0_r8)) then
+                    xferfrac_num_ait2acc = 1.0_r8
+                    xferfrac_vol_ait2acc = 1.0_r8
+                 end if
+              end if
+              xfercoef_num_ait2acc = xferfrac_num_ait2acc*tadjinv
+              xfercoef_vol_ait2acc = xferfrac_vol_ait2acc*tadjinv
+              xfertend_num(1,1) = num_a_aitsv(icol,klev)*xfercoef_num_ait2acc
+              xfertend_num(1,2) = num_c_aitsv(icol,klev)*xfercoef_num_ait2acc
+           end if
+        end if
+!#ifdef BALLI
 
         !----------------------------------------------------------------------------------------
         ! compute accum --> aitken transfer rates
@@ -1546,12 +2116,89 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
         !    and transferred species, and use the transferred-species
         !    portion in what follows
         !----------------------------------------------------------------------------------------
-        call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2n_geomean, & !input
-             tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),       & !input
-             num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait, voltonumb_ait,  & !input
-             drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,                  & !output
-             xfercoef_vol_acc2ait, xfertend_num)                                             !output
+        !call compute_coef_acc_ait_transfer(iait, iacc, icol, klev, list_idx, lchnk, v2n_geomean, & !input
+        !     tadjinv, state, pbuf, drv_a_accsv(icol,klev), drv_c_accsv (icol, klev),       & !input
+        !     num_a_accsv(icol,klev), num_c_accsv(icol,klev), noxf_acc2ait, voltonumb_ait,  & !input
+        !     drv_a_noxf, drv_c_noxf, ixfer_acc2ait, xfercoef_num_acc2ait,                  & !output
+        !     xfercoef_vol_acc2ait, xfertend_num)                                             !output
 
+        ixfer_acc2ait = 0
+        xfercoef_num_acc2ait = 0.0_r8
+        xfercoef_vol_acc2ait = 0.0_r8
+        
+        drv_t = drv_a_accsv(icol,klev) + drv_c_accsv(icol,klev)
+        num_t = num_a_accsv(icol,klev) + num_c_accsv(icol,klev)
+#ifdef BALLI
+        drv_a_noxf = 0.0_r8
+        drv_c_noxf = 0.0_r8
+        if (drv_t > 0.0_r8) then
+           !if number is larger than the mean, it means we have small particles (keeping volume constant drv_t),
+           !we need to move particles to aitken mode
+           if (num_t > drv_t*v2n_geomean) then
+              !As there may be more species in the accumulation mode which are not present in the aitken mode,
+              !we need to compute the num and volume only for the species which can be transferred
+              call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc)
+              do ispec_acc = 1, nspec_acc
+
+                 if ( noxf_acc2ait(ispec_acc) ) then !species which can't be transferred
+                    call rad_cnst_get_aer_props(list_idx, iacc, ispec_acc, density_aer=specdens)    !get density
+                    ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
+                    dummwdens = 1.0_r8 / specdens
+                    call rad_cnst_get_aer_mmr(list_idx, iacc, ispec_acc, 'a', state, pbuf, specmmr) !get mmr
+                    drv_a_noxf = drv_a_noxf + max(0.0_r8,specmmr(icol,klev))*dummwdens
+                    
+                    call rad_cnst_get_aer_mmr(list_idx, iacc, ispec_acc, 'c', state, pbuf, specmmr) !get mmr
+                    drv_c_noxf = drv_c_noxf + max(0.0_r8,specmmr(icol,klev))*dummwdens
+                 end if
+              end do
+              drv_t_noxf = drv_a_noxf + drv_c_noxf !total volume which can't be moved to the aitken mode
+              
+              !Compute voltonumlo
+              call rad_cnst_get_mode_props(list_idx, iacc, dgnumlo=dgnumlo, sigmag=sigmag)
+              voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
+              
+              num_t_noxf = drv_t_noxf*voltonumblo !total number which can't be moved to the aitken mode
+              num_t0 = num_t
+              num_t = max( 0.0_r8, num_t - num_t_noxf )
+              drv_t = max( 0.0_r8, drv_t - drv_t_noxf )
+           end if
+        end if
+
+#endif        
+        num_t0 = num_t !BALLI
+        if (drv_t > 0.0_r8) then
+           !Find out if we need to transfer based on the new num_t
+           if (num_t > drv_t*v2n_geomean) then
+              ixfer_acc2ait = 1
+              if (num_t > drv_t*voltonumb_ait) then! if number of larger than the aitken mean, move all particles
+                 xferfrac_num_acc2ait = 1.0_r8
+                 xferfrac_vol_acc2ait = 1.0_r8
+              else ! scale the transfer
+                 xferfrac_vol_acc2ait = ((num_t/drv_t) - v2n_geomean)/   &
+                      (voltonumb_ait - v2n_geomean)
+                 xferfrac_num_acc2ait = xferfrac_vol_acc2ait*   &
+                      (drv_t*voltonumb_ait/num_t)
+                 !bound the transfer coefficients between 0 and 1
+                 if ((xferfrac_num_acc2ait <= 0.0_r8) .or.   &
+                      (xferfrac_vol_acc2ait <= 0.0_r8)) then
+                    xferfrac_num_acc2ait = 0.0_r8
+                    xferfrac_vol_acc2ait = 0.0_r8
+                 else if ((xferfrac_num_acc2ait >= 1.0_r8) .or.   &
+                      (xferfrac_vol_acc2ait >= 1.0_r8)) then
+                    xferfrac_num_acc2ait = 1.0_r8
+                    xferfrac_vol_acc2ait = 1.0_r8
+                 end if
+              end if
+              xferfrac_num_acc2ait = xferfrac_num_acc2ait*   &
+                   num_t/max( zero_div_fac, num_t0 )
+              xfercoef_num_acc2ait = xferfrac_num_acc2ait*tadjinv
+              xfercoef_vol_acc2ait = xferfrac_vol_acc2ait*tadjinv
+              xfertend_num(2,1) = num_a_accsv(icol,klev)*xfercoef_num_acc2ait
+              xfertend_num(2,2) = num_c_accsv(icol,klev)*xfercoef_num_acc2ait
+           end if
+        end if
+!#endif        
+#ifdef BALLI
 
         ! jump to end-of-loop if no transfer is needed at current icol,klev
         if (ixfer_ait2acc+ixfer_acc2ait > 0) then
@@ -1640,6 +2287,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
            !ASSUMPTION: "update_mmr" will only be true for the prognostic radiation list(i.e. list_idx=0, "radiation_climate")
            !If list_idx=0, it is okay to get specie mmr from state_q array. Therefore, state_q is used in update_tends_flx calls
            !below
+#ifdef BALLI
            if(update_mmr) then
               ! jmode=1 does aitken-->accum
               if(ixfer_ait2acc > 0) then
@@ -1659,8 +2307,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
                       pdel_fac, dqdt, dqqcwdt, qsrflx)
               endif
            endif !update_mmr
-
+#endif
         end if !ixfer_ait2acc+ixfer_acc2ait > 0
+#endif
      end do !ncol
   end do !pver
 
