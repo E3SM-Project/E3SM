@@ -11,8 +11,12 @@ void VT_filter(real4d &f_in, real4d &f_out) {
 
   int constexpr fftySize = ny > 4 ? ny : 4;
 
+#if defined(MMF_VT_KMAX)
   int filter_wn_max = MMF_VT_KMAX;
-
+#else
+  int filter_wn_max = 1;
+#endif
+  
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
   
@@ -115,7 +119,11 @@ void VT_diagnose() {
   real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
   real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
 
+#if defined(MMF_VT_KMAX)
   int filter_wn_max = MMF_VT_KMAX;
+#else
+  int filter_wn_max = 1;
+#endif
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
