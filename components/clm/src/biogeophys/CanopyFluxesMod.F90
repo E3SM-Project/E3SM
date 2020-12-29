@@ -54,14 +54,14 @@ module CanopyFluxesMod
   !SoilMoistStressMod
   ! !PUBLIC DATA MEMBERS:
   ! true => btran is based only on unfrozen soil levels
-  logical,  public :: perchroot_canopyflux     = .false.
+  logical,  public :: perchroot    = .false.
 
   ! true  => btran is based on active layer (defined over two years);
   ! false => btran is based on currently unfrozen levels
-  logical,  public :: perchroot_alt_canopyflux = .false.
+  logical,  public :: perchroot_alt = .false.
   !------------------------------------------------------------------------------
-  !$acc declare create(perchroot_canopyflux    )
-  !$acc declare create(perchroot_alt_canopyflux)
+  !$acc declare create( perchroot )
+  !$acc declare create( perchroot_alt )
 
 contains
 
@@ -545,7 +545,7 @@ contains
            vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
 
       !set up perchroot options
-      call set_perchroot_opt(perchroot_canopyflux, perchroot_alt_canopyflux)
+      call set_perchroot_opt(perchroot, perchroot_alt )
       ! --------------------------------------------------------------------------
       ! if this is a FATES simulation
       ! ask fates to calculate btran functions and distribution of uptake

@@ -273,7 +273,6 @@ contains
     call CNStressDecidPhenology(num_soilp, filter_soilp,   &
          soilstate_vars, atm2lnd_vars, cnstate_vars &
          )
-    print *, "num_pcropp",num_pcropp
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
             cnstate_vars, crop_vars)

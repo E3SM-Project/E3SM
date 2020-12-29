@@ -113,7 +113,6 @@ contains
          do fc = 1, num_soilc
             c = filter_soilc(fc)
             
-            print *, "fc, c:", fc, c
             ! initialization
             labilep_erode(c)        = 0._r8
             labilep_deposit(c)      = 0._r8

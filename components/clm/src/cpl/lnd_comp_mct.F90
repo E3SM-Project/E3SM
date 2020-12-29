@@ -726,6 +726,11 @@ contains
                 call acc_init(acc_device_nvidia)
 
                 ngpus = acc_get_num_devices(acc_device_nvidia)
+                if(ngpus == 0) then
+                        print *, "Error no GPUs detected despite being Compiled with ACC Flags"
+                        stop 
+                end if 
+
                 call acc_set_device_num(mod(iam,ngpus),acc_device_nvidia)
 
                 mygpu = acc_get_device_num(acc_device_nvidia)

@@ -376,8 +376,7 @@ contains
         !#py call t_startf('CNAllocation - phase-1')
        call Allocation1_PlantNPDemand (bounds                             , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp            , &
-                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
-                dt, year)
+                photosyns_vars, crop_vars, canopystate_vars, cnstate_vars,dt,year )
 
 
     end if !end of if not use_fates block
@@ -611,7 +610,8 @@ contains
         !#py call t_stopf('CNUpdate1')
 
         !#py call t_startf('SoilLittVertTransp')
-        call SoilLittVertTransp(bounds, &
+            
+         call SoilLittVertTransp(bounds, &
              num_soilc, filter_soilc, &
              canopystate_vars, cnstate_vars, &
              dt, year, mon, day, sec )

@@ -142,7 +142,7 @@ contains
 
 
     call this%InitAllocate ( bounds )
-    !call this%InitHistory ( bounds )
+    call this%InitHistory ( bounds )
     call this%InitCold ( bounds, t_grnd_col )
 
   end subroutine Init

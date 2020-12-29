@@ -314,7 +314,6 @@ contains
              this_filter(nc)%lakec(fl) = c
           else
              fnl = fnl + 1
-            ! print *, "nc, c", nc, c
              this_filter(nc)%nolakec(fnl) = c
           end if
        end if
@@ -423,7 +422,6 @@ contains
 
     this_filter(nc)%num_pcropp   = fl
     this_filter(nc)%num_soilnopcropp = fnl   ! This wasn't being set before...
-    print *, "num_pcropp, filters, npcropmin:", fl, npcropmin
     ! Create landunit-level urban and non-urban filters
 
     f = 0

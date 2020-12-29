@@ -43,8 +43,8 @@ contains
     ! Update surface fluxes based on the new ground temperature
     !
     ! !USES:
-    !#py use clm_time_manager , only : get_step_size
       !$acc routine seq
+    use clm_time_manager , only : get_step_size, get_nstep
     use clm_varcon       , only : hvap, cpair, grav, vkc, tfrz, sb
     use landunit_varcon  , only : istsoil, istcrop
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
@@ -177,9 +177,17 @@ contains
          else
             t_grnd0(c) = (1 - frac_h2osfc(c)) * tssbef(c,1) + frac_h2osfc(c) * t_h2osfc_bef(c)
          endif
-
+         
+         !if(get_nstep() == 60) then 
+         !   open(unit=1,file="tgrnd_branch.r8",form='unformatted',access='direct',recl=8)
+         !   write (1,rec=1) t_grnd(c)
+         !   close(1)
+         !   
+         !   open(unit=11,file="tgrnd0_branch.r8",form='unformatted',access='direct',recl=8)
+         !   write (11,rec=1) t_grnd0(c)
+         !   close(11)
+         ! end if 
          tinc(c) = t_grnd(c) - t_grnd0(c)
-
          ! Determine ratio of topsoil_evap_tot
 
          egsmax(c) = (h2osoi_ice(c,j)+h2osoi_liq(c,j)) / dtime
@@ -392,12 +400,8 @@ contains
                 if (j >= 1) then 
                        temp = t_soisno(c,j)-tssbef(c,j)
                        temp = temp/fact(c,j)
-                       ! print *, "j>=1,diff/fact, fact, snow, BEFORE:"
-                        !print *,temp,fact(c,j),errsoi_patch(p) 
                        errsoi_patch(p) = errsoi_patch(p) - temp
                  
-                !print *,"snow AFTER"
-                !print *, p, errsoi_patch(p)
                 end if 
 
             end if

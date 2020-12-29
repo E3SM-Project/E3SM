@@ -4538,7 +4538,7 @@ contains
 
 103 format( 5A )
 104 format( A, i10.8, i8)
-
+    
     if (iamin_CPLID) then
        if ( (restart_alarm .or. drv_pause)) then
           call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_BARRIER')

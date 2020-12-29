@@ -13,6 +13,7 @@ module clm_varorb
   real(r8) :: obliqr  ! Earth's obliquity in radians
   real(r8) :: lambm0  ! Mean longitude of perihelion at the vernal equinox (radians)
   real(r8) :: mvelpp  ! Earth's moving vernal equinox longitude of perihelion plus pi (radians)
-  real(r8) :: eccf 
+  real(r8) :: eccf
+  !real(r8) :: declin, declinp1 
   !$acc declare create(eccen, obliqr, lambm0, mvelpp,eccf)
 end module clm_varorb

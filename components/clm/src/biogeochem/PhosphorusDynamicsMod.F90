@@ -452,7 +452,6 @@ contains
                   ! calculate the P leaching flux as a function of the dissolved
                   ! concentration and the sub-surface drainage flux
                   sminp_leached_vr(c,j) = disp_conc * drain_tot(c) *h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
-
                end if
                ! limit the flux based on current sminp state
                ! only let at most the assumed soluble fraction

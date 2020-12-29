@@ -687,13 +687,14 @@ contains
          qflx_irrig(p)         = 0._r8
          qflx_irrig_col(c)     = 0._r8
 
+
          ! Insure water balance using qflx_qrgw
          qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
               (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
          qflx_top_soil(c)  = qflx_prec_grnd_rain(p) + qflx_snomelt(c)
-      enddo
+        enddo
 
       ! top-layer diagnostics
       do fc = 1, num_shlakesnowc

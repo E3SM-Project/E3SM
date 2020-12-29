@@ -307,7 +307,7 @@ contains
     if (spinup_state == 1 .and. yr .le. nyears_ad_carbon_only) then
       Carbon_only = .true.
      end if
-     !$accc update devic(carbon_only, carbonnitrogen_only,&
+     !$accc update device(carbon_only, carbonnitrogen_only,&
      !$acc carbonphosphorus_only)
     !!call cnallocate_carbon_only_set(carbon_only)
     !!call cnallocate_carbonnitrogen_only_set(carbonnitrogen_only)

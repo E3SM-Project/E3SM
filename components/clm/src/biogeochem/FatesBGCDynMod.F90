@@ -263,9 +263,12 @@ contains
 
     call t_startf('SoilBiogeochemLittVertTransp')
 
-    call SoilLittVertTransp(bounds, &
-          num_soilc, filter_soilc, &
-          canopystate_vars, cnstate_vars, dt, year, mon, day, sec )
+   !! call SoilLittVertTransp(bounds, &
+   !!       num_soilc, filter_soilc, &
+   !!       canopystate_vars, cnstate_vars)
+    !call SoilLittVertTransp(bounds, &
+    !      num_soilc, filter_soilc, &
+    !      canopystate_vars, cnstate_vars, dt, year, mon, day, sec )
 
     call t_stopf('SoilBiogeochemLittVertTransp')
 

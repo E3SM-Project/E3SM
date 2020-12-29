@@ -34,7 +34,7 @@ module controlMod
   use VerticalProfileMod    , only: exponential_rooting_profile, rootprof_exp
   use VerticalProfileMod    , only: surfprof_exp, pftspecific_rootingprofile
   use SharedParamsMod       , only: anoxia_wtsat
-  use CanopyfluxesMod    , only: perchroot_canopyflux,  perchroot_alt_canopyflux
+  use CanopyfluxesMod    , only: perchroot,  perchroot_alt
   use CanopyHydrologyMod , only: CanopyHydrology_readnl
   use SurfaceAlbedoMod   , only: albice, lake_melt_icealb
   use UrbanParamsType    , only: urban_hac, urban_traffic
@@ -203,7 +203,7 @@ contains
          co2_type
 
     namelist /clm_inparm / &
-         perchroot_canopyflux, perchroot_alt_canopyflux
+         perchroot, perchroot_alt
 
     namelist /clm_inparm / &
          anoxia, anoxia_wtsat
@@ -702,8 +702,8 @@ contains
        call mpi_bcast (atm_c14_filename,  len(atm_c14_filename), MPI_CHARACTER, 0, mpicom, ier)
     end if
 
-    call mpi_bcast (perchroot_canopyflux, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (perchroot_alt_canopyflux, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (perchroot, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (perchroot_alt, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_lch4) then
        call mpi_bcast (anoxia, 1, MPI_LOGICAL, 0, mpicom, ier)
        call mpi_bcast (anoxia_wtsat, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1013,8 +1013,8 @@ contains
     write(iulog,*) '   maxpatch_pft         = ',maxpatch_pft
     write(iulog,*) '   nsegspc              = ',nsegspc
     ! New fields
-    write(iulog,*) ' perchroot (plant water stress based on unfrozen layers only) = ',perchroot_canopyflux
-    write(iulog,*) ' perchroot (plant water stress based on time-integrated active layer only) = ',perchroot_canopyflux
+    write(iulog,*) ' perchroot (plant water stress based on unfrozen layers only) = ',perchroot
+    write(iulog,*) ' perchroot (plant water stress based on time-integrated active layer only) = ',perchroot
     if (use_lch4) then
        write(iulog,*) ' anoxia (applied to soil decomposition)             = ',anoxia
        write(iulog,*) ' anoxia_wtsat (weight anoxia by inundated fraction) = ',anoxia_wtsat

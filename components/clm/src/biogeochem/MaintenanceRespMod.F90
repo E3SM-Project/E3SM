@@ -176,7 +176,7 @@ contains
          if (frac_veg_nosno(p) == 1) then
             leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
                          lmrsha(p) * laisha(p) * 12.011e-6_r8
-
+            
          else !nosno
              leaf_mr(p) = 0._r8
 

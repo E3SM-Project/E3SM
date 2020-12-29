@@ -346,7 +346,6 @@ contains
                qg(c) = forc_q(t)
                dqgdT(c) = 0._r8
             end if
-
             qg_snow(c) = qg(c)
             qg_soil(c) = qg(c)
             qg_h2osfc(c) = qg(c)

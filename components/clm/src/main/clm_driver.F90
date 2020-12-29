@@ -130,7 +130,8 @@ module clm_driver
   use clm_instMod            , only : PlantMicKinetics_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
-  use UrbanParamsType        , only : urbanparams_vars, urban_hac_int, urban_traffic
+  use UrbanParamsType        , only : urbanparams_vars
+
   use GridcellType             , only : grc_pp
   use GridcellDataType         , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
@@ -242,7 +243,7 @@ contains
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_time_manager
     use timeinfoMod
-    use histfileMod   , only : clmptr_rs, tape, clmptr_ra, ntapes
+    use histfileMod   , only : clmptr_rs, tape, clmptr_ra
     use accumulGPUMod
     use decompMod     , only : init_proc_clump_info, gpu_clumps, gpu_procinfo
     use clm_varorb
@@ -251,12 +252,12 @@ contains
     ! !ARGUMENTS:
     implicit none
     integer, intent(inout)  :: step_count
-    logical           :: rstwr       ! true => write restart file this step
+    logical, intent(in)     :: rstwr       ! true => write restart file this step
     logical,         intent(in) :: nlend       ! true => end of run on this step
     character(len=*),intent(in) :: rdate       ! restart file time stamp for name
     !
     ! !LOCAL VARIABLES:
-    integer              :: nc, c, p, l, g, fc, j,t   ! indices
+    integer              :: nc, c, p, l, g, fc, j   ! indices
     integer              :: nclumps                 ! number of clumps on this processor
     character(len=256)   :: filer                   ! restart file name
     integer              :: ier                     ! error code
@@ -264,10 +265,10 @@ contains
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
     integer   ::  mygpu, ngpus, cid, fp, idle
-    logical :: found_thawlayer, transfer_hist
+    logical :: found_thawlayer
     integer :: k_frz
-    real*8    :: sto
-    integer , parameter :: gpu = 1, numdays = 30
+    real*8    :: sto, declin, declinp1
+    integer , parameter :: gpu = 1, numdays = 1
     #if _CUDA
     integer(kind=cuda_count_kind) :: heapsize,free1,free2,total
     integer  :: istat, val
@@ -285,30 +286,29 @@ contains
         idle = idle + 0
         call sleep(1)
     end do
+    #if _CUDA
+    istat = cudaDeviceGetLimit(heapsize, cudaLimitMallocHeapSize)
+    print *, "SETTING Heap Limit from", heapsize
+    heapsize = 189_8*1024_8*1024_8
+    print *, "TO:",heapsize
+    istat = cudaDeviceSetLimit(cudaLimitMallocHeapSize,heapsize)
+    istat = cudaMemGetInfo(free1, total)
+    print *, "Free1:",free1
+    #endif
     ! Determine processor bounds and clumps for this processor
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
     print *, "step:", step_count
     if(step_count == 0 ) then
-#if _CUDA
-        istat = cudaDeviceGetLimit(heapsize, cudaLimitMallocHeapSize)
-        print *, "SETTING Heap Limit from", heapsize
-        heapsize = 189_8*1024_8*1024_8
-        print *, "TO:",heapsize
-        istat = cudaDeviceSetLimit(cudaLimitMallocHeapSize,heapsize)
-        istat = cudaMemGetInfo(free1, total)
-        print *, "Free1:",free1
-#endif
       print *, "transferring data to GPU"
        call init_proc_clump_info()
-       print *, "NCLUMPS:", NCLUMPS   
        !$acc update device( &
-       !$acc        spinup_state             &
+       !$acc        spinup_state            &
        !$acc       , nyears_ad_carbon_only   &
        !$acc       , spinup_mortality_factor &
-       !$acc       , carbon_only             &
-       !$acc       , carbonphosphorus_only   &
-       !$acc       , carbonnitrogen_only     &
+       !$acc       , carbon_only &
+       !$acc       , carbonphosphorus_only &
+       !$acc       , carbonnitrogen_only &
        !$acc       ,use_crop            &
        !$acc       ,use_snicar_frc      &
        !$acc       ,use_snicar_ad       &
@@ -316,17 +316,15 @@ contains
        !$acc       ,use_mexicocity      &
        !$acc       ,use_noio            &
        !$acc       ,use_var_soil_thick  &
-       !$acc       ,NFIX_PTASE_plant    &
-       !$acc       ,tw_irr              &
-       !$acc       ,use_erosion         &
-       !$acc       ,ero_ccycle          & 
-       !$acc       ,anoxia              &
-       !$acc       , glc_do_dynglacier  &
-       !$acc       , all_active         &
-       !$acc       , co2_ppmv           &
+       !$acc       ,NFIX_PTASE_plant &
+       !$acc       ,tw_irr &
+       !$acc       ,use_erosion &
+       !$acc       ,ero_ccycle  &
+       !$acc       ,anoxia &
+       !$acc       , glc_do_dynglacier &
+       !$acc       , all_active &
+       !$acc       , co2_ppmv &
        !$acc       , const_climate_hist &
-       !$acc       , urban_hac_int      &
-       !$acc       , urban_traffic      &
        !$acc     )
        !$acc update device(first_step, nlevgrnd, eccen, obliqr, lambm0, mvelpp )
        call update_acc_variables()
@@ -429,7 +427,7 @@ contains
         !$acc   )
         !$acc enter data copyin(tape_gpu,clmptr_ra,clmptr_rs)
         !$acc enter data copyin( doalb, declinp1, declin )
-        
+
         #if _CUDA
               istat = cudaMemGetInfo(free2, total)
               print *, "Transferred:", free1-free2
@@ -437,7 +435,7 @@ contains
               print *, "Free:", free2
         #endif
       end if
-     
+
     if (do_budgets) call WaterBudget_Reset()
 
     ! ============================================================================
@@ -469,13 +467,13 @@ contains
           end if
        end if
     end if
-    
+
     !$acc serial default(present)
     call increment_time_vars()
     call shr_orb_decl(thiscalday_mod , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
     call shr_orb_decl(nextsw_cday_mod, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
     !$acc end serial
-    
+
    print *, "first loop!"
   !$acc parallel default(present)
    !$acc loop independent gang private(nc, bounds_clump)
@@ -547,7 +545,7 @@ contains
 
    end do
   !$acc end parallel
-     
+
   !$acc parallel default(present)
 
       !$acc loop independent gang private(nc, bounds_clump)
@@ -623,7 +621,7 @@ contains
 
     end do
     !$acc end parallel
-    
+
     !call dynSubgrid_driver(bounds_proc,                                      &
   !   urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
   !   energyflux_vars,  canopystate_vars, photosyns_vars, cnstate_vars,     &
@@ -633,8 +631,7 @@ contains
 
     if (.not. use_fates)then
        if (use_cn) then
-          if (nstep_mod < 2 )then
-          else
+          if (nstep_mod > 2 )then
             !$acc parallel default(present)
 
               !$acc loop independent gang private(nc, bounds_clump)
@@ -782,12 +779,7 @@ contains
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
 
-    #if _CUDA
-        if(step_count == 16) then
-                call cudaProfilerStart()
 
-         end if 
-      #endif
     print *, "main loop"
   !$acc parallel  default(present)
 
@@ -795,7 +787,7 @@ contains
     do nc = 1,nclumps
 
        call get_clump_bounds_gpu(nc, bounds_clump)
-       
+
        call UpdateDaylength(bounds_clump, declin)
        ! Initialze variables needed for new driver time step
        call clm_drv_init(bounds_clump, &
@@ -852,8 +844,12 @@ contains
                  filter(nc)%num_urbanp, filter(nc)%urbanp,                          &
                  atm2lnd_vars, urbanparams_vars, &
                  solarabs_vars, surfalb_vars, energyflux_vars)
-
-
+    end do
+     
+    
+    !$acc loop independent gang private(nc, bounds_clump)
+     do nc=1,nclumps
+       call get_clump_bounds_gpu(nc,bounds_clump)
        ! ============================================================================
        ! Determine leaf temperature and surface fluxes based on ground
        ! temperature from previous time step.
@@ -864,6 +860,11 @@ contains
                    atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
                    energyflux_vars)
        ! Determine fluxes
+     end do
+
+       !$acc loop independent gang private(nc, bounds_clump)
+       do nc=1,nclumps
+         call get_clump_bounds_gpu(nc,bounds_clump)
        ! =======================================================================
        call col_wf_reset(col_wf,filter(nc)%num_nolakec, filter(nc)%nolakec)
        !========================================================================
@@ -910,6 +911,12 @@ contains
        ! Dust dry deposition (C. Zender's modified codes)
        call DustDryDep(bounds_clump,atm2lnd_vars, frictionvel_vars, dust_vars)
 
+end do
+
+
+  !$acc loop independent gang private(nc, bounds_clump)
+  do nc=1,nclumps
+    call get_clump_bounds_gpu(nc,bounds_clump)
        ! ============================================================================
        ! Determine temperatures
        ! ============================================================================
@@ -928,6 +935,11 @@ contains
                    atm2lnd_vars, urbanparams_vars, canopystate_vars, &
                    solarabs_vars, soilstate_vars, energyflux_vars, dtime_mod)
 
+      end do
+
+        !$acc loop independent gang private(nc, bounds_clump)
+        do nc=1,nclumps
+          call get_clump_bounds_gpu(nc,bounds_clump)
        ! ============================================================================
        ! update surface fluxes for new ground temperature.
        ! ============================================================================
@@ -1020,10 +1032,15 @@ contains
           call SoilErosion(bounds_clump, filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
                atm2lnd_vars, canopystate_vars, soilstate_vars, sedflux_vars, dtime_mod)
        end if
+     end do
+
        ! ============================================================================
        ! Ecosystem dynamics: Uses CN, or static parameterizations
        ! ============================================================================
 
+      !$acc loop independent gang private(nc, bounds_clump)
+    do nc=1,nclumps
+      call get_clump_bounds_gpu(nc,bounds_clump)
        if ((mon_curr == 1 .and. day_curr == 1 .and. secs_curr == 0) .and. nstep_mod > 1) then
           call crop_vars_CropIncrementYear(filter(nc)%num_pcropp,filter(nc)%pcropp,crop_vars)
        end if
@@ -1088,8 +1105,12 @@ contains
          call depvel_compute(bounds_clump, &
               atm2lnd_vars, canopystate_vars, frictionvel_vars, &
               photosyns_vars, drydepvel_vars)
+        end do
 
 
+          !$acc loop independent gang private(nc, bounds_clump)
+          do nc=1,nclumps
+            call get_clump_bounds_gpu(nc,bounds_clump)
          if (use_lch4 .and. .not. is_active_betr_bgc) then
            !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
            call CH4 (bounds_clump,                                                                  &
@@ -1155,8 +1176,7 @@ contains
 
        if (.not. use_fates)then
           if (use_cn) then
-             if (nstep_mod < 2 )then
-             else
+             if (nstep_mod > 2 )then
 
                 call ColCBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -1173,10 +1193,14 @@ contains
              end if
           end if
        end if
-
+     end do
        ! ============================================================================
        ! Determine albedos for next time step
        ! ============================================================================
+
+         !$acc loop independent gang private(nc, bounds_clump)
+       do nc=1,nclumps
+         call get_clump_bounds_gpu(nc,bounds_clump)
 
        if (doalb) then
           ! Albedos for non-urban columns
@@ -1192,6 +1216,7 @@ contains
                nextsw_cday_mod, declinp1,                           &
                aerosol_vars, canopystate_vars, &
                lakestate_vars,  surfalb_vars )
+
           ! Albedos for urban columns
           if (filter_inactive_and_active(nc)%num_urbanl > 0) then
              call UrbanAlbedo(bounds_clump,                  &
@@ -1246,38 +1271,31 @@ contains
         end if
 
     end do
-
+   
     !$acc end parallel
     ! ============================================================================
     ! Write global average diagnostics to standard output
     ! ============================================================================
-    
-    #if _CUDA
-    if(step_count == 16) then
-            call cudaProfilerStop()
-            stop
-    end if 
-    #endif
 
     !!if (wrtdia) call mpi_barrier( mpicom,ier)
     !!call t_startf('wrtdiag')
     !!call write_diagnostic(bounds_proc, wrtdia, nstep_mod, lnd2atm_vars)
     !!call t_stopf('wrtdiag')
 
+        #if _CUDA
+              istat = cudaMemGetInfo(free2, total)
+              print *, "Total:",total/10.E+9
+              print *, "Free:", free2/10.E+9
+        #endif
     ! ============================================================================
     ! Update history buffer
     ! ============================================================================
-    !! Currently circular dependency prevents testing to transfer tape_gpu back
-    !! to cpu
-    transfer_hist = .false.
-    
-    do t = 1,ntapes
-        if(step_count == 0 ) cycle
-        if (mod(step_count,tape(t)%nhtfrq) == 0) transfer_hist = .true.
-    end do 
-
-    call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
-    
+        #if _CUDA
+        if(step_count == 24) then
+                call cudaProfilerStop()
+                stop
+        end if
+        #endif
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
@@ -1294,13 +1312,12 @@ contains
     ! ============================================================================
     !! MOVE outside of clm_driver ?
     if (.not. use_noio) then
-        
+
        call t_startf('clm_drv_io')
        ! Create history and write history tapes if appropriate
        call t_startf('clm_drv_io_htapes')
 
-       if(step_count == 2400)  rstwr = .true. 
-         
+
        call hist_htapes_wrapup( rstwr, nlend, bounds_proc,                    &
             soilstate_vars%watsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
@@ -1308,7 +1325,6 @@ contains
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
         call set_gpu_tape()
         call t_stopf('clm_drv_io_htapes')
-        
        ! Write restart/initial files if appropriate
        if (0) then
           call t_startf('clm_drv_io_wrest')
@@ -1321,9 +1337,9 @@ contains
          !$acc exit data copyout(lun_ws, col_ws, veg_ws, aerosol_vars,surfalb_vars,&
          !$acc cnstate_vars, col_cs, veg_cs, c13_col_cs, c13_veg_cs,c14_col_cs,&
          !$acc c14_veg_cs, c14_veg_cs, col_cf, veg_cf, col_ns, veg_ns, &
-         !$acc col_nf,veg_nf,col_ps,veg_ps, col_pf,veg_pf, crop_vars ) 
-         
-          print *, "calling restFile_write:" 
+         !$acc col_nf,veg_nf,col_ps,veg_ps, col_pf,veg_pf, crop_vars )
+
+          print *, "calling restFile_write:"
          call restFile_write( bounds_proc, filer,                                            &
                atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
@@ -1352,6 +1368,7 @@ contains
        call clm_pf_finalize()
     end if
     step_count = step_count + 1
+
   end subroutine clm_drv
 
   !-----------------------------------------------------------------------

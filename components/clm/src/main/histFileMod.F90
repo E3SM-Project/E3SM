@@ -634,7 +634,7 @@ contains
     fincl(:,4) = hist_fincl4(:)
     fincl(:,5) = hist_fincl5(:)
     fincl(:,6) = hist_fincl6(:)
-
+    
     fexcl(:,1) = hist_fexcl1(:)
     fexcl(:,2) = hist_fexcl2(:)
     fexcl(:,3) = hist_fexcl3(:)
@@ -675,7 +675,6 @@ contains
           f = f + 1
        end do
     end do
-
     tape(:)%nflds = 0
     do t = 1,max_tapes
 
@@ -1076,8 +1075,6 @@ contains
 
 
 
-    print *, tape(t)%hlist(f)%field%name
-    print *, "hpindex:",hpindex,field(1)
     ! set variables to check weights when allocate all pfts
 
     map2gcell = .false.
