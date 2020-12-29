@@ -556,7 +556,9 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: stat
 
-   logical  :: dotend(pcnst), dotendqqcw(pcnst)
+   logical, pointer  :: dotend(:)
+   logical, target   :: fake_dotend(1)
+   logical  :: dotendqqcw(pcnst)
 
    character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
@@ -658,13 +660,13 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
               ' is true by default); '//errmsg(__FILE__,__LINE__)
          call endrun(trim(err_msg))
       endif
-      dotend = ptend%lq
+      dotend => ptend%lq
       dqdt   => ptend%q
       dotendqqcw(:)   = .false.
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
-      dotend = .false.
+      dotend => fake_dotend
       dqdt   => fake_dqdt
       !dqqcwdt(:,:,:)  = huge(dqqcwdt)
       !qsrflx(:,:,:,:) = huge(qsrflx)
@@ -763,7 +765,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    if(update_mmr .and. list_idx_local == 0) then
 
       !first update ptend with the tendencies
-      ptend%lq = dotend
+      !ptend%lq = dotend
       !ptend%q  = dqdt
 
       !update cld brn aerosols
@@ -874,13 +876,13 @@ subroutine set_initial_sz_and_volumes(list_idx, top_lev, ncol, imode, & !input
   call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, sigmag=sigmag)
   voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
-  do klev = top_lev, pver
-     do icol = 1, ncol
-        dgncur(icol,klev,imode) = dgnum     !diameter
-        v2ncur(icol,klev,imode) = voltonumb !volume to number
-        dryvol(icol,klev)       = 0.0_r8    !initialize dry vol
-     end do
-  end do
+  !do klev = top_lev, pver
+  !   do icol = 1, ncol
+  dgncur(1:ncol,top_lev:pver,imode) = dgnum     !diameter
+  v2ncur(1:ncol,top_lev:pver,imode) = voltonumb !volume to number
+  dryvol(1:ncol,top_lev:pver)       = 0.0_r8    !initialize dry vol
+  !   end do
+  !end do
 
   return
 
@@ -940,12 +942,8 @@ subroutine compute_dry_volume(top_lev, ncol, imode, nspec, state, pbuf, &
      dummwdens = 1.0_r8 / specdens !inverse of density
 
      !compute dry volume as a function of space (i,k)
-     do klev = top_lev, pver
-        do icol = 1, ncol
-           dryvol_a(icol,klev) = dryvol_a(icol,klev) + max(0.0_r8,specmmr(icol,klev))*dummwdens
-           dryvol_c(icol,klev) = dryvol_c(icol,klev) + max(0.0_r8,specmmr_cld(icol,klev))*dummwdens
-        end do
-     end do
+     dryvol_a(1:ncol,1:top_lev) = dryvol_a(1:ncol,1:top_lev) + max(0.0_r8,specmmr(1:ncol,1:top_lev))*dummwdens
+     dryvol_c(1:ncol,1:top_lev) = dryvol_c(1:ncol,1:top_lev) + max(0.0_r8,specmmr_cld(1:ncol,1:top_lev))*dummwdens
 
   end do ! nspec loop
 
@@ -1003,7 +1001,7 @@ subroutine size_adjustment(list_idx, top_lev, ncol, lchnk, imode, dryvol_a, stat
   real(r8), intent(inout), optional :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
 
   !local
-  integer :: klev, icol
+  integer :: klev, icol, itmp,ktmp,qtmp
   integer :: num_mode_idx, num_cldbrn_mode_idx, mam_ait, mam_acc, nait, nacc
   real(r8) :: v2nmax, v2nmin                  ! voltonumblo/hi of current mode
   real(r8) :: v2nmaxrl, v2nminrl              ! relaxed voltonumblo/hi
@@ -1045,6 +1043,10 @@ subroutine size_adjustment(list_idx, top_lev, ncol, lchnk, imode, dryvol_a, stat
   call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag, dgnumhi=dgnumhi, dgnumlo=dgnumlo)
   cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 
+  itmp = 1
+  ktmp = 1
+  qtmp = 1
+
   do  klev = top_lev, pver
      do  icol = 1, ncol
 
@@ -1070,9 +1072,18 @@ subroutine size_adjustment(list_idx, top_lev, ncol, lchnk, imode, dryvol_a, stat
            !Adjustments that bring numbers to within specified bounds are
            !applied over time-scale tadj
            !-----------------------------------------------------------------
-           call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+           if(update_mmr) then
+              itmp = icol
+              ktmp = klev
+              qtmp = num_mode_idx
+           endif
+           !call adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+           !        drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
+           !        num_a, num_c, dqdt, dqqcwdt)                                                        !output
+
+           call adjust_num_sizes_1cell(update_mmr, &                   !input
                    drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, & !input
-                   num_a, num_c, dqdt, dqqcwdt)                                                        !output
+                   num_a, num_c, dqdt(itmp,ktmp,qtmp), dqqcwdt(itmp,ktmp,qtmp))                                                        !output
 
         endif !do_adjust
 
@@ -1320,6 +1331,135 @@ subroutine adjust_num_sizes(icol, klev, update_mmr, num_mode_idx, num_cldbrn_mod
 
   return
 end subroutine adjust_num_sizes
+
+
+subroutine adjust_num_sizes_1cell(update_mmr, &
+     drv_a, num_a0, drv_c, num_c0, deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj, &
+     num_a, num_c, dqdt, dqqcwdt)
+
+  !-----------------------------------------------------------------------------
+  !Purpose: Adjust num sizes if needed
+  !
+  !Called by: size_adjustment
+  !Calls    : None
+  !
+  !Author: Richard Easter (Refactored by Balwinder Singh)
+  !-----------------------------------------------------------------------------
+
+  implicit none
+
+  !inputs
+  logical,  intent(in) :: update_mmr
+  real(r8), intent(in) :: drv_a, num_a0, drv_c, num_c0
+  real(r8), intent(in) :: deltatinv, v2nmin, v2nminrl, v2nmax, v2nmaxrl, fracadj
+
+  !outputs
+  real(r8), intent(inout) :: num_a, num_c
+  real(r8), intent(inout) :: dqdt, dqqcwdt
+
+  !local
+  real(r8) :: num_a1, num_c1, numbnd
+  real(r8) :: num_a2, num_c2, delnum_a2, delnum_c2
+  real(r8) :: delnum_a3, delnum_c3
+  real(r8) :: num_t2, drv_t, delnum_t3
+
+
+  if ((drv_a <= 0.0_r8) .and. (drv_c <= 0.0_r8)) then
+     ! both interstitial and activated volumes are zero
+     ! adjust both numbers to zero
+     num_a = 0.0_r8
+     num_c = 0.0_r8
+     if(update_mmr) then
+        dqdt           = -num_a0*deltatinv
+        dqqcwdt = -num_c0*deltatinv
+     endif
+  else if (drv_c <= 0.0_r8) then
+     ! activated volume is zero, so interstitial number/volume == total/combined
+     ! apply step 1 and 3, but skip the relaxed adjustment (step 2, see below)
+     num_c = 0.0_r8
+
+     num_a1 = num_a
+     numbnd = max( drv_a*v2nmin, min( drv_a*v2nmax, num_a1 ) )
+     num_a  = num_a1 + (numbnd - num_a1)*fracadj
+     if(update_mmr) then
+        dqdt           = (num_a - num_a0)*deltatinv
+        dqqcwdt = -num_c0*deltatinv
+     endif
+  else if (drv_a <= 0.0_r8) then
+     ! interstitial volume is zero, treat similar to above
+     num_a = 0.0_r8
+     num_c1 = num_c
+     numbnd = max( drv_c*v2nmin, min( drv_c*v2nmax, num_c1 ) )
+     num_c  = num_c1 + (numbnd - num_c1)*fracadj
+     if(update_mmr) then
+        dqdt           = -num_a0*deltatinv
+        dqqcwdt = (num_c - num_c0)*deltatinv
+     endif
+  else
+     ! both volumes are positive
+     ! apply 3 adjustment steps
+     ! step1:  num_a,c0 --> num_a,c1 forces non-negative values
+     num_a1 = num_a
+     num_c1 = num_c
+     ! step2:  num_a,c1 --> num_a,c2 applies relaxed bounds to the interstitial
+     !    and activated number (individually)
+     !    if only a or c changes, adjust the other in the opposite direction
+     !    as much as possible to conserve a+c
+     numbnd = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl, num_a1 ) )
+     delnum_a2 = (numbnd - num_a1)*fracadj
+     num_a2 = num_a1 + delnum_a2
+     numbnd = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl, num_c1 ) )
+     delnum_c2 = (numbnd - num_c1)*fracadj
+     num_c2 = num_c1 + delnum_c2
+     if ((delnum_a2 == 0.0_r8) .and. (delnum_c2 /= 0.0_r8)) then
+        num_a2 = max( drv_a*v2nminrl, min( drv_a*v2nmaxrl,   &
+             num_a1-delnum_c2 ) )
+     else if ((delnum_a2 /= 0.0_r8) .and. (delnum_c2 == 0.0_r8)) then
+        num_c2 = max( drv_c*v2nminrl, min( drv_c*v2nmaxrl,   &
+             num_c1-delnum_a2 ) )
+     end if
+     ! step3:  num_a,c2 --> num_a,c3 applies stricter bounds to the
+     !    combined/total number
+     drv_t = drv_a + drv_c
+     num_t2 = num_a2 + num_c2
+     delnum_a3 = 0.0_r8
+     delnum_c3 = 0.0_r8
+     if (num_t2 < drv_t*v2nmin) then
+        delnum_t3 = (drv_t*v2nmin - num_t2)*fracadj
+        ! if you are here then (num_a2 < drv_a*v2nmin) and/or
+        !                      (num_c2 < drv_c*v2nmin) must be true
+        if ((num_a2 < drv_a*v2nmin) .and. (num_c2 < drv_c*v2nmin)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 < drv_c*v2nmin) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 < drv_a*v2nmin) then
+           delnum_a3 = delnum_t3
+        end if
+     else if (num_t2 > drv_t*v2nmax) then
+        delnum_t3 = (drv_t*v2nmax - num_t2)*fracadj
+        ! if you are here then (num_a2 > drv_a*v2nmax) and/or
+        !                      (num_c2 > drv_c*v2nmax) must be true
+        if ((num_a2 > drv_a*v2nmax) .and. (num_c2 > drv_c*v2nmax)) then
+           delnum_a3 = delnum_t3*(num_a2/num_t2)
+           delnum_c3 = delnum_t3*(num_c2/num_t2)
+        else if (num_c2 > drv_c*v2nmax) then
+           delnum_c3 = delnum_t3
+        else if (num_a2 > drv_a*v2nmax) then
+           delnum_a3 = delnum_t3
+        end if
+     end if
+     num_a = num_a2 + delnum_a3
+
+     num_c = num_c2 + delnum_c3
+     if(update_mmr) then
+        dqdt           = (num_a - num_a0)*deltatinv
+        dqqcwdt = (num_c - num_c0)*deltatinv
+     endif
+  end if
+
+  return
+end subroutine adjust_num_sizes_1cell
 
 !---------------------------------------------------------------------------------------------
 
