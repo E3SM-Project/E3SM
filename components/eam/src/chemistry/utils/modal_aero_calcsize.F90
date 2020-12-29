@@ -544,10 +544,12 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
    real(r8), parameter :: close_to_one = 1.0_r8 + 1.0e-15_r8
    real(r8), parameter :: seconds_in_a_day = 86400.0_r8
 
-   real(r8) :: state_q(pcols,pver,pcnst), dqdt(pcols,pver,pcnst)
-   real(r8) :: pdel(pcols,pver)   ! pressure thickness of levels
+   real(r8), pointer :: state_q(:,:,:), dqdt(:,:,:)
+   real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
 
    real(r8), pointer :: dgncur_a(:,:,:)
+
+   real(r8), target :: fake_dqdt(1,1,1)
 
    integer  :: nspec, imode, klev, icol, idx, iq
    integer  :: nmodes, num_idx
@@ -657,21 +659,21 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
          call endrun(trim(err_msg))
       endif
       dotend = ptend%lq
-      dqdt   = ptend%q
+      dqdt   => ptend%q
       dotendqqcw(:)   = .false.
       dqqcwdt(:,:,:)  = 0.0_r8
       qsrflx(:,:,:,:) = 0.0_r8
    else
       dotend = .false.
-      dqdt   = huge(dqdt)
-      dqqcwdt(:,:,:)  = huge(dqqcwdt)
-      qsrflx(:,:,:,:) = huge(qsrflx)
+      dqdt   => fake_dqdt
+      !dqqcwdt(:,:,:)  = huge(dqqcwdt)
+      !qsrflx(:,:,:,:) = huge(qsrflx)
    endif
 
    !if(present(caller) .and. masterproc) write(iulog,*)'modal_aero_calcsize_sub has been called by ', trim(caller)
 
-   pdel     = state%pdel !Only required if update_mmr = .true.
-   state_q  = state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
+   pdel     => state%pdel !Only required if update_mmr = .true.
+   state_q  => state%q    !BSINGH - it is okay to use state_q for num mmr but not for specie mmr (as diagnostic call may miss some species)
 
    !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
@@ -762,7 +764,7 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
       !first update ptend with the tendencies
       ptend%lq = dotend
-      ptend%q  = dqdt
+      !ptend%q  = dqdt
 
       !update cld brn aerosols
       call update_cld_brn_mmr(list_idx_local, top_lev, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
