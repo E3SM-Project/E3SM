@@ -377,7 +377,7 @@ module namelist_mod
     mesh_file='none'
     ne              = 0
     transport_alg = 0
-    semi_lagrange_cdr_alg = 21
+    semi_lagrange_cdr_alg = 3
     semi_lagrange_cdr_check = .false.
     semi_lagrange_hv_q = 1
     semi_lagrange_nearest_point_lev = 256

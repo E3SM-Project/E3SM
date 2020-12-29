@@ -450,7 +450,7 @@ class SystemTestsCommon(object):
                     blmem = self._get_mem_usage(baselog)
                     blmem = 0 if blmem == [] else blmem[-1][1]
                     curmem = memlist[-1][1]
-                    diff = (curmem-blmem)/blmem
+                    diff = 0.0 if blmem == 0 else (curmem-blmem)/blmem
                     if diff < 0.1 and self._test_status.get_status(MEMCOMP_PHASE) is None:
                         self._test_status.set_status(MEMCOMP_PHASE, TEST_PASS_STATUS)
                     elif self._test_status.get_status(MEMCOMP_PHASE) != TEST_FAIL_STATUS:

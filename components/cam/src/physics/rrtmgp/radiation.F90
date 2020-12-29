@@ -94,6 +94,15 @@ module radiation
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
 
+   ! Flag to indicate whether to do aerosol optical calculations. This 
+   ! zeroes out the aerosol optical properties if False
+   logical :: do_aerosol_rad = .true. 
+
+   ! Value for prescribing an invariant solar constant (i.e. total solar 
+   ! irradiance at TOA). Used for idealized experiments such as RCE.
+   ! Disabled when value is less than 0.
+   real(r8) :: fixed_total_solar_irradiance = -1
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -187,7 +196,8 @@ contains
       use units,           only: getunit, freeunit
       use spmd_utils,      only: mpicom, mstrid=>masterprocid, &
                                  mpi_integer, mpi_logical, &
-                                 mpi_character, masterproc
+                                 mpi_character, masterproc, &
+                                 mpi_real8
       use time_manager,    only: get_step_size
       use cam_logfile,     only: iulog
 
@@ -202,10 +212,11 @@ contains
       character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
-      namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
-                              rrtmgp_coefficients_file_sw, &
-                              iradsw, iradlw, irad_always, &
-                              use_rad_dt_cosz, spectralflux
+      namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
+                              rrtmgp_coefficients_file_sw,     &
+                              iradsw, iradlw, irad_always,     &
+                              use_rad_dt_cosz, spectralflux,   &
+                              do_aerosol_rad, fixed_total_solar_irradiance
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -232,6 +243,8 @@ contains
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -253,7 +266,8 @@ contains
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
-                         use_rad_dt_cosz, spectralflux
+                         use_rad_dt_cosz, spectralflux, &
+                         do_aerosol_rad, fixed_total_solar_irradiance
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -261,7 +275,9 @@ contains
              '  Frequency (timesteps) of Longwave Radiation calc:   ',i5/, &
              '  SW/LW calc done every timestep for first N steps. N=',i5/, &
              '  Use average zenith angle:                           ',l5/, &
-             '  Output spectrally resolved fluxes:                  ',l5/)
+             '  Output spectrally resolved fluxes:                  ',l5/, &
+             '  Do aerosol radiative calculations:                  ',l5/, &
+             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
 
    end subroutine radiation_readnl
 
@@ -475,7 +491,7 @@ contains
       ! impossible from this initialization routine because I do not thing the
       ! rad_cnst objects are setup yet.
       ! the other tasks!
-      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast to
+      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
       call set_available_gases(active_gases, available_gases)
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
@@ -986,18 +1002,20 @@ contains
    subroutine set_available_gases(gases, gas_concentrations)
 
       use mo_gas_concentrations, only: ty_gas_concs
-      use mo_util_string, only: lower_case
-      use mo_rte_kind, only: wp
+      use mo_rrtmgp_util_string, only: lower_case
 
       type(ty_gas_concs), intent(inout) :: gas_concentrations
       character(len=*), intent(in) :: gases(:)
+      character(len=32), dimension(size(gases)) :: gases_lowercase
       integer :: igas
 
-      ! Use set_vmr method to set gas names. This just sets the vmr to zero, since
-      ! this routine is just used to build a list of available gas names.
+      ! Initialize with lowercase gas names; we should work in lowercase
+      ! whenever possible because we cannot trust string comparisons in RRTMGP
+      ! to be case insensitive
       do igas = 1,size(gases)
-         call handle_error(gas_concentrations%set_vmr(trim(lower_case(gases(igas))), 0._wp))
+         gases_lowercase(igas) = trim(lower_case(gases(igas)))
       end do
+      call handle_error(gas_concentrations%init(gases_lowercase))
 
    end subroutine set_available_gases
 
@@ -1258,8 +1276,9 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1335,8 +1354,15 @@ contains
       ! Send values for this chunk to history buffer
       call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
 
-      ! Get orbital eccentricity factor to scale total sky irradiance
-      tsi_scaling = get_eccentricity_factor()
+      if (fixed_total_solar_irradiance<0) then
+         ! Get orbital eccentricity factor to scale total sky irradiance
+         tsi_scaling = get_eccentricity_factor()
+      else
+         ! For fixed TSI we divide by the default solar constant of 1360.9
+         ! At some point we will want to replace this with a method that 
+         ! retrieves the solar constant
+         tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
+      end if
 
       ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
       ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
@@ -1398,6 +1424,12 @@ contains
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
+      end if
+
       ! Do shortwave cloud optics calculations
       ! TODO: refactor the set_cloud_optics codes to allow passing arrays
       ! rather than state/pbuf so that we can use this for superparameterized
@@ -1430,14 +1462,20 @@ contains
       do icall = N_DIAG,0,-1
          if (active_calls(icall)) then
 
-            ! Get shortwave aerosol optics
-            call t_startf('rad_aerosol_optics_sw')
-            call set_aerosol_optics_sw(icall, state, pbuf, &
-                                       day_indices(1:nday), &
-                                       night_indices(1:nnight), &
-                                       is_cmip6_volc, &
-                                       aerosol_optics_sw)
-            call t_stopf('rad_aerosol_optics_sw')
+            if (do_aerosol_rad) then
+               ! Get shortwave aerosol optics
+               call t_startf('rad_aerosol_optics_sw')
+               call set_aerosol_optics_sw(icall, state, pbuf, &
+                                          day_indices(1:nday), &
+                                          night_indices(1:nnight), &
+                                          is_cmip6_volc, &
+                                          aerosol_optics_sw)
+               call t_stopf('rad_aerosol_optics_sw')
+            else
+               aerosol_optics_sw%tau(:,:,:) = 0
+               aerosol_optics_sw%ssa(:,:,:) = 0
+               aerosol_optics_sw%g  (:,:,:) = 0
+            end if
 
             ! Set gas concentrations (I believe the gases may change for
             ! different values of icall, which is why we do this within the
@@ -1515,8 +1553,9 @@ contains
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1570,6 +1609,12 @@ contains
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
+      end if
+
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
       call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
@@ -1598,10 +1643,14 @@ contains
             call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
             call t_stopf('rad_gas_concentrations_lw')
 
-            ! Get longwave aerosol optics
-            call t_startf('rad_aerosol_optics_lw')
-            call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
-            call t_stopf('rad_aerosol_optics_lw')
+            if (do_aerosol_rad) then
+               ! Get longwave aerosol optics
+               call t_startf('rad_aerosol_optics_lw')
+               call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
+               call t_stopf('rad_aerosol_optics_lw')
+            else
+               aerosol_optics_lw%tau(:,:,:) = 0
+            end if
 
             ! Do longwave radiative transfer calculations
             call t_startf('rad_calculations_lw')
@@ -1617,10 +1666,6 @@ contains
                n_gauss_angles=1 & ! Set to 3 for consistency with RRTMG
             ))
             call t_stopf('rad_calculations_lw')
-
-            ! Check stuff
-            call assert_valid(fluxes_allsky%flux_up, 'flux_up invalid')
-            call assert_valid(fluxes_allsky%flux_dn, 'flux_dn invalid')
 
             ! Calculate heating rates
             call calculate_heating_rate(fluxes_allsky, pint(1:ncol,1:nlev_rad+1), &
@@ -2204,177 +2249,182 @@ contains
       call optics%finalize()
    end subroutine free_optics_lw
 
-subroutine set_gas_concentrations(icall, state, pbuf, &
-                                  gas_concentrations, &
-                                  day_indices)
+   subroutine set_gas_concentrations(icall, state, pbuf, &
+                                     gas_concentrations, &
+                                     day_indices)
 
-   use physics_types, only: physics_state
-   use physics_buffer, only: physics_buffer_desc
-   use rad_constituents, only: rad_cnst_get_gas
-   use mo_gas_concentrations, only: ty_gas_concs
-   use mo_util_string, only: lower_case
+      use physics_types, only: physics_state
+      use physics_buffer, only: physics_buffer_desc
+      use rad_constituents, only: rad_cnst_get_gas
+      use mo_gas_concentrations, only: ty_gas_concs
+      use mo_rrtmgp_util_string, only: lower_case
 
-   integer, intent(in) :: icall
-   type(physics_state), intent(in) :: state
-   type(physics_buffer_desc), pointer :: pbuf(:)
-   type(ty_gas_concs), intent(out) :: gas_concentrations
-   integer, intent(in), optional :: day_indices(:)
+      integer, intent(in) :: icall
+      type(physics_state), intent(in) :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(ty_gas_concs), intent(out) :: gas_concentrations
+      integer, intent(in), optional :: day_indices(:)
 
-   ! Local variables
-   real(r8), dimension(pcols,pver) :: vol_mix_ratio
-   real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_day, &
-                                          vol_mix_ratio_out
-   real(r8), pointer :: mass_mix_ratio(:,:)
+      ! Local variables
+      real(r8), dimension(pcols,pver) :: vol_mix_ratio
+      real(r8), dimension(pcols,nlev_rad) :: vol_mix_ratio_day, &
+                                             vol_mix_ratio_out
+      real(r8), pointer :: mass_mix_ratio(:,:)
 
-   ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
-   ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
-   ! CO and N2, which RRTMG did not have.
-   character(len=3), dimension(8) :: gas_species = (/ &
-      'H2O', 'CO2', 'O3 ', 'N2O', &
-      'CO ', 'CH4', 'O2 ', 'N2 ' &
-   /)
-   real(r8), dimension(8) :: mol_weight_gas = (/ &
-      18.01528, 44.0095, 47.9982, 44.0128, &
-      28.0101, 16.04246, 31.998, 28.0134 &
-   /)  ! g/mol
+      ! Gases and molecular weights. Note that we do NOT have CFCs yet (I think
+      ! this is coming soon in RRTMGP). RRTMGP also allows for absorption due to
+      ! CO and N2, which RRTMG did not have.
+      character(len=3), dimension(8) :: gas_species = (/ &
+         'H2O', 'CO2', 'O3 ', 'N2O', &
+         'CO ', 'CH4', 'O2 ', 'N2 ' &
+      /)
+      real(r8), dimension(8) :: mol_weight_gas = (/ &
+         18.01528, 44.0095, 47.9982, 44.0128, &
+         28.0101, 16.04246, 31.998, 28.0134 &
+      /)  ! g/mol
 
-   ! Molar weight of air
-   real(r8), parameter :: mol_weight_air = 28.97  ! g/mol
-                                    
-   ! Defaults for gases that are not available (TODO: is this still accurate?)
-   real(r8), parameter :: co_vol_mix_ratio = 1.0e-7_r8
-   real(r8), parameter :: n2_vol_mix_ratio = 0.7906_r8
+      ! Molar weight of air
+      real(r8), parameter :: mol_weight_air = 28.97  ! g/mol
 
-   ! Loop indices
-   integer :: igas, iday, icol
+      ! Defaults for gases that are not available (TODO: is this still accurate?)
+      real(r8), parameter :: co_vol_mix_ratio = 1.0e-7_r8
+      real(r8), parameter :: n2_vol_mix_ratio = 0.7906_r8
 
-   ! Number of columns and daytime columns
-   integer :: ncol, nday
+      ! Loop indices
+      integer :: igas
 
-   character(len=32) :: subname = 'set_gas_concentrations'
+      ! Number of columns and daytime columns
+      integer :: ncol, nday
 
-   ! Indices to model top on the RADIATION VERTICAL GRID
-   integer :: k, k_cam
-   
-   ! Number of columns in chunk
-   ncol = state%ncol
+      ! Character array to hold lowercase gas names
+      character(len=32), allocatable :: gas_names(:)
 
-   ! Reset gas concentrations
-   call gas_concentrations%reset()
+      ! Name of subroutine for error messages
+      character(len=32) :: subname = 'set_gas_concentrations'
 
-   ! For each gas species needed for RRTMGP, read the mass mixing ratio from the
-   ! CAM rad_constituents interface, convert to volume mixing ratios, and
-   ! subset for daytime-only indices if needed.
-   do igas = 1,size(gas_species)
+      ! Number of columns in chunk
+      ncol = state%ncol
 
-      ! If this gas is not in list of active gases, then skip
-      if (.not.string_in_list(gas_species(igas), active_gases)) cycle
+      ! Initialize gas concentrations with lower case names
+      allocate(gas_names(size(active_gases)))
+      do igas = 1,size(active_gases)
+         gas_names(igas) = trim(lower_case(active_gases(igas)))
+      end do
+      call handle_error(gas_concentrations%init(gas_names))
 
-      ! initialize
-      vol_mix_ratio(:,:) = 0._r8
+      ! For each gas species needed for RRTMGP, read the mass mixing ratio from the
+      ! CAM rad_constituents interface, convert to volume mixing ratios, and
+      ! subset for daytime-only indices if needed.
+      do igas = 1,size(gas_species)
 
-      select case(trim(gas_species(igas)))
+         ! If this gas is not in list of active gases, then skip
+         if (.not.string_in_list(gas_species(igas), active_gases)) cycle
 
-         case('CO')
+         ! initialize
+         vol_mix_ratio(:,:) = 0._r8
 
-            ! CO not available, use default
-            vol_mix_ratio(1:ncol,1:pver) = co_vol_mix_ratio
+         select case(trim(gas_species(igas)))
 
-         case('N2')
+            case('CO')
 
-            ! N2 not available, use default
-            vol_mix_ratio(1:ncol,1:pver) = n2_vol_mix_ratio
+               ! CO not available, use default
+               vol_mix_ratio(1:ncol,1:pver) = co_vol_mix_ratio
 
-         case('H2O')
+            case('N2')
 
-            ! Water vapor is represented as specific humidity in CAM, so we
-            ! need to handle water a little differently
-            call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, &
-                                  mass_mix_ratio)
-            
-            ! Convert to volume mixing ratio by multiplying by the ratio of
-            ! molecular weight of dry air to molecular weight of gas. Note that
-            ! first specific humidity (held in the mass_mix_ratio array read
-            ! from rad_constituents) is converted to an actual mass mixing
-            ! ratio.
-            vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) / ( &
-               1._r8 - mass_mix_ratio(1:ncol,1:pver) &
-            )  * mol_weight_air / mol_weight_gas(igas)
+               ! N2 not available, use default
+               vol_mix_ratio(1:ncol,1:pver) = n2_vol_mix_ratio
 
-         case DEFAULT
+            case('H2O')
 
-            ! Get mass mixing ratio from the rad_constituents interface
-            call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, &
-                                  mass_mix_ratio)
+               ! Water vapor is represented as specific humidity in CAM, so we
+               ! need to handle water a little differently
+               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, &
+                                     mass_mix_ratio)
 
-            ! Convert to volume mixing ratio by multiplying by the ratio of
-            ! molecular weight of dry air to molecular weight of gas
-            vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) &
-                                         * mol_weight_air / mol_weight_gas(igas)
+               ! Convert to volume mixing ratio by multiplying by the ratio of
+               ! molecular weight of dry air to molecular weight of gas. Note that
+               ! first specific humidity (held in the mass_mix_ratio array read
+               ! from rad_constituents) is converted to an actual mass mixing
+               ! ratio.
+               vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) / ( &
+                  1._r8 - mass_mix_ratio(1:ncol,1:pver) &
+               )  * mol_weight_air / mol_weight_gas(igas)
 
-      end select
+            case DEFAULT
 
-      ! Make sure we do not have any negative volume mixing ratios
-      call assert(all(vol_mix_ratio(1:ncol,1:pver) >= 0), &
-                  trim(subname) // ': invalid gas concentration for ' // &
-                  trim(gas_species(igas)))
+               ! Get mass mixing ratio from the rad_constituents interface
+               call rad_cnst_get_gas(icall, trim(gas_species(igas)), state, pbuf, &
+                                     mass_mix_ratio)
 
-      ! Map to radiation grid
-      vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
+               ! Convert to volume mixing ratio by multiplying by the ratio of
+               ! molecular weight of dry air to molecular weight of gas
+               vol_mix_ratio(1:ncol,1:pver) = mass_mix_ratio(1:ncol,1:pver) &
+                                            * mol_weight_air / mol_weight_gas(igas)
 
-      ! Copy top-most model level to top-most rad level (which could be above
-      ! the top of the model)
-      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,1)
+         end select
 
-      ! Populate the RRTMGP gas concentration object with values for this gas.
-      ! NOTE: RRTMGP makes some assumptions about gas names internally, so we
-      ! need to pass the gas names as LOWER case here!
-      if (present(day_indices)) then
+         ! Make sure we do not have any negative volume mixing ratios
+         call assert(all(vol_mix_ratio(1:ncol,1:pver) >= 0), &
+                     trim(subname) // ': invalid gas concentration for ' // &
+                     trim(gas_species(igas)))
 
-         ! Number of daytime columns in this chunk is number of indices in
-         ! day_indices array that are greater than zero
-         nday = count(day_indices > 0)
+         ! Map to radiation grid
+         vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
 
-         ! Populate compressed array with just daytime values
-         call compress_day_columns(vol_mix_ratio_out(1:ncol,1:nlev_rad), &
-                                   vol_mix_ratio_day(1:nday,1:nlev_rad), &
-                                   day_indices(1:nday))
-         
-         ! Set volumn mixing ratio in gas concentration object for just daytime
-         ! columns in this chunk
-         call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_species(igas))), vol_mix_ratio_day(1:nday,1:nlev_rad)) & 
-         )
-      else
-         ! Set volumn mixing ratio in gas concentration object for just columns
-         ! in this chunk
-         call handle_error(gas_concentrations%set_vmr( &
-            trim(lower_case(gas_species(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) & 
-         )
-      end if
+         ! Copy top-most model level to top-most rad level (which could be above
+         ! the top of the model)
+         vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,1)
 
-   end do
+         ! Populate the RRTMGP gas concentration object with values for this gas.
+         ! NOTE: RRTMGP makes some assumptions about gas names internally, so we
+         ! need to pass the gas names as LOWER case here!
+         if (present(day_indices)) then
 
-end subroutine set_gas_concentrations
+            ! Number of daytime columns in this chunk is number of indices in
+            ! day_indices array that are greater than zero
+            nday = count(day_indices > 0)
+
+            ! Populate compressed array with just daytime values
+            call compress_day_columns(vol_mix_ratio_out(1:ncol,1:nlev_rad), &
+                                      vol_mix_ratio_day(1:nday,1:nlev_rad), &
+                                      day_indices(1:nday))
+
+            ! Set volumn mixing ratio in gas concentration object for just daytime
+            ! columns in this chunk
+            call handle_error(gas_concentrations%set_vmr( &
+               trim(lower_case(gas_species(igas))), vol_mix_ratio_day(1:nday,1:nlev_rad)) &
+            )
+         else
+            ! Set volumn mixing ratio in gas concentration object for just columns
+            ! in this chunk
+            call handle_error(gas_concentrations%set_vmr( &
+               trim(lower_case(gas_species(igas))), vol_mix_ratio_out(1:ncol,1:nlev_rad)) &
+            )
+         end if
+
+      end do
+
+   end subroutine set_gas_concentrations
 
 
-logical function string_in_list(string, list)
-   character(len=*), intent(in) :: string
-   character(len=*), intent(in) :: list(:)
-   integer :: list_index
-   
-   ! Set to false initially
-   string_in_list = .false.
+   logical function string_in_list(string, list)
+      character(len=*), intent(in) :: string
+      character(len=*), intent(in) :: list(:)
+      integer :: list_index
 
-   ! Loop over items in list, and if we find a match then set flag to true and
-   ! exit loop
-   do list_index = 1,size(list)
-      if (trim(list(list_index)) == trim(string)) then
-         string_in_list = .true.
-         exit 
-      end if
-   end do
-end function string_in_list
+      ! Set to false initially
+      string_in_list = .false.
+
+      ! Loop over items in list, and if we find a match then set flag to true and
+      ! exit loop
+      do list_index = 1,size(list)
+         if (trim(list(list_index)) == trim(string)) then
+            string_in_list = .true.
+            exit
+         end if
+      end do
+   end function string_in_list
 
 
    subroutine expand_day_fluxes(daytime_fluxes, expanded_fluxes, day_indices)

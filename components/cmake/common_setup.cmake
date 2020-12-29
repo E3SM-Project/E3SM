@@ -353,7 +353,7 @@ list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/include")
 string(FIND "${CAM_CONFIG_OPTS}" "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
   # The following is for the COSP simulator code:
-  get_filename_component(COSP_LIBDIR ${EXEROOT}/atm/obj/cam/src/physics/cosp ABSOLUTE)
+  set(USE_COSP TRUE)
 endif()
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)

@@ -29,6 +29,7 @@ MODULE seq_infodata_mod
   use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
   use seq_comm_mct, only: num_inst_wav, num_inst_iac
   use shr_orb_mod,  only: SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL, shr_orb_params
+  use shr_orb_mod,  only: set_constant_zenith_angle_deg
 
   implicit none
 
@@ -97,6 +98,7 @@ MODULE seq_infodata_mod
      real(SHR_KIND_R8)       :: orb_obliqr      ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_lambm0      ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_mvelpp      ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: constant_zenith_deg ! See shr_orb_mod
      character(SHR_KIND_CS)  :: wv_sat_scheme   ! Water vapor saturation pressure scheme
      real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
      logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
@@ -344,6 +346,7 @@ CONTAINS
     real(SHR_KIND_R8)      :: orb_obliqr         ! Obliquity in radians
     real(SHR_KIND_R8)      :: orb_lambm0         ! lon of per at vernal equ
     real(SHR_KIND_R8)      :: orb_mvelpp         ! mvelp plus pi
+    real(SHR_KIND_R8)      :: constant_zenith_deg! constant, uniform solar zenith angle [degrees]
     character(SHR_KIND_CS) :: wv_sat_scheme      ! Water vapor saturation pressure scheme
     real(SHR_KIND_R8)      :: wv_sat_transition_start! Saturation transition range
     logical                :: wv_sat_use_tables  ! Saturation pressure lookup tables
@@ -432,6 +435,7 @@ CONTAINS
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
+         constant_zenith_deg,                              &
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
          tfreeze_option, glc_renormalize_smb,              &
@@ -499,6 +503,7 @@ CONTAINS
        orb_obliq             = SHR_ORB_UNDEF_REAL
        orb_eccen             = SHR_ORB_UNDEF_REAL
        orb_mvelp             = SHR_ORB_UNDEF_REAL
+       constant_zenith_deg   = -1
        wv_sat_scheme         = "GoffGratch"
        wv_sat_transition_start = 20.0
        wv_sat_use_tables     = .false.
@@ -823,6 +828,7 @@ CONTAINS
        infodata%orb_obliqr = orb_obliqr
        infodata%orb_lambm0 = orb_lambm0
        infodata%orb_mvelpp = orb_mvelpp
+       infodata%constant_zenith_deg = constant_zenith_deg
 
        !--- Derive a few things ---
        infodata%rest_case_name = ' '
@@ -904,6 +910,12 @@ CONTAINS
     end if
 
     call seq_infodata_bcast(infodata,mpicom)
+
+    ! If constant_zenith_deg is positive then set the corresponding module
+    ! variable in shr_orb_mod to override behavior of shr_orb_cosz()
+    if ( infodata%constant_zenith_deg >= 0 ) then
+       call set_constant_zenith_angle_deg(infodata%constant_zenith_deg)
+    end if
 
   END SUBROUTINE seq_infodata_Init
 
@@ -2178,6 +2190,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
     call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
+    call shr_mpi_bcast(infodata%constant_zenith_deg,     mpicom)
 
   end subroutine seq_infodata_bcast
 

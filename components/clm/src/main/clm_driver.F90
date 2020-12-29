@@ -1166,6 +1166,7 @@ end do
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
             energyflux_vars, canopystate_vars,surfalb_vars, dtime_mod, nstep_mod)
 
+
        call GridBalanceCheck(bounds_clump                , &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c , &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
@@ -1290,12 +1291,19 @@ end do
     ! ============================================================================
     ! Update history buffer
     ! ============================================================================
-        #if _CUDA
-        if(step_count == 24) then
-                call cudaProfilerStop()
-                stop
-        end if
-        #endif
+    !! Currently circular dependency prevents testing to transfer tape_gpu back
+    !! to cpu
+    transfer_hist = .false.
+    
+    do t = 1,ntapes
+        if(step_count == 0 ) cycle
+        if (mod(step_count,tape(t)%nhtfrq) == 0) transfer_hist = .true.
+    end do 
+
+    !call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
+    call hist_update_hbuf(bounds_proc)
+    !call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
+    
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
