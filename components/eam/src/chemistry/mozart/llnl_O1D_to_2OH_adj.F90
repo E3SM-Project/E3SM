@@ -184,42 +184,30 @@ contains
        if( uci7_ndx > 0 ) then
           if ( HO2NO2f_ndx > 0 ) then
              rxt(:,k,uci7_ndx) = rxt(:,k,HO2NO2f_ndx)/rxt(:,k,uci7_ndx)
-          else
-             rxt(:,k,uci7_ndx) = 0._r8
           endif
        endif
 
        if( uci8_ndx > 0 ) then
           if ( N2O5f_ndx > 0 ) then
              rxt(:,k,uci8_ndx) = rxt(:,k,N2O5f_ndx)/rxt(:,k,uci8_ndx)
-          else
-             rxt(:,k,uci8_ndx) = 0._r8
           endif
        endif
 
        if( uci9_ndx > 0 ) then
           if ( PANf_ndx > 0 ) then
              rxt(:,k,uci9_ndx) = rxt(:,k,PANf_ndx)/rxt(:,k,uci9_ndx)
-          else
-             rxt(:,k,uci9_ndx) = 0._r8
           endif
        endif
 
        if( ucih1_ndx > 0 ) then
            rxt(:,k,ucih1_ndx) = 0._r8
-       else
-           rxt(:,k,ucih1_ndx) = 0._r8
        endif
 
        if( ucih2_ndx > 0 ) then
            rxt(:,k,ucih2_ndx) = 0._r8
-       else
-           rxt(:,k,ucih2_ndx) = 0._r8
        endif
 
        if( ucih3_ndx > 0 ) then
-           rxt(:,k,ucih3_ndx) = 0._r8
-       else
            rxt(:,k,ucih3_ndx) = 0._r8
        endif
 
