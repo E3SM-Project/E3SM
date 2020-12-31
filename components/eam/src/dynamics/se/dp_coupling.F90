@@ -697,12 +697,12 @@ CONTAINS
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
                                  kebefore,se,wv,wl,wi,wr,ws,tebefore,tw, &
                                  ncol,teloc1,psterm1)
-      !before ps adjustment
+      !energy before pressure work (PW) adjustment
       call outfld('TEbeforeadj', tebefore, pcols, lchnk)
       call outfld('KEbeforeadj', kebefore, pcols, lchnk)
       
-      !adjust ps, keep the code close to applyCAMforcing_tracers
-
+      !adjust pressure, keep the code close to applyCAMforcing_tracers
+      !do not adjust Q1
       dp_adj(:ncol,:) = pdel(:ncol,:)
       do ic=1,ncol
          do k=1,pver
@@ -711,10 +711,6 @@ CONTAINS
             dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
          enddo
       enddo
-
-      ! compute water vapor adjusted dp3d:
-
-!with ps adjustment comment if below
       if (adjust_ps) then
          ! compute new dp3d from adjusted ps()
          do k=1,pver
@@ -724,50 +720,60 @@ CONTAINS
       endif
       pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
 
+      !compute energy after PW
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
                                  ke,se,wv,wl,wi,wr,ws,te,tw, &
                                  ncol,teloc2,psterm2)
-
+      !energy after PW
       call outfld('TEafteradj', te, pcols, lchnk)
       call outfld('KEafteradj', ke, pcols, lchnk)
 
+      !difference of energy: after PW minus before PW
       call outfld('TEdiff', te-tebefore, pcols, lchnk)
 
-      !compute ttend from adjustment
+      !compute temperature tend from PW adjustment
+      !keep is as local as possible
       ttendadj(:ncol,:)=0.0
       do ic=1,ncol
-      !first, ttend from local terms
-         !sum pdel into fq
+         !first, tendency from terms at each vertical level
          fq=0.0
          do k=1,pver
             ttendadj(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
+            !sum pdel into fq for the next, boundary (or ps) term
             fq=fq+pdel(ic,k)
          enddo
          
-      !second, ttend from ps term
+         !second, tendency from ps term is peanutbuttered to each level
          ttendadj(ic,1:pver) = ttendadj(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/fq
 
+         !fields summed vertically, for diagnostics
+         !temperature tendency from PW
          ttendadjhor(ic) = sum(ttendadj(ic,1:pver)/dtime)
+         !original temperature tendency from physics
          ttendhor(ic) = sum(tend(lchnk)%dtdt(ic,1:pver))
       enddo
 
+      !temperature tendency from PW for output
       call outfld('dTadj', ttendadj(:,:), pcols, lchnk)
+      !temperature tendency from PW for output, summed in vertical
       call outfld('dTadjhor', ttendadjhor(:), pcols, lchnk)
+      !original temperature tendency from physics for output, summed in vertical
       call outfld('TTENDhor', ttendhor(:), pcols, lchnk)
 
-      !sanity check
+      !sanity check for temperature tendency from PW:
+      !compute energy levels from the temperature adjusted for PW and the new
+      !adjusted pressure, other state variables (including q1) staying the same. 
+      !to pass the check, the new TE should match the old TE, 'tebefore'
       call energy_helper_eam_def(ustate,vstate,tstate+ttendadj,&
                                  qstate,ps,pdel,phisstate,&
                                  ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
                                  ncol)
-
       call outfld('TEdiffadj', teadjusted-tebefore, pcols, lchnk)
+      !faster check, in output:
+      !print *, 'OG check', tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
 
-!      print *, 'OG check', tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
-
-      !add new tendency from pressure adjustment to ttend
-!      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttendadj(:ncol,:)/dtime
-!print *, 'OG dtime ... ', dtime
+      !!!!!!!!!!!!!!!!add new tendency from pressure adjustment to ttend
+      !tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttendadj(:ncol,:)/dtime
     end do ! lchnk
 
   end subroutine measure_pressure_work
