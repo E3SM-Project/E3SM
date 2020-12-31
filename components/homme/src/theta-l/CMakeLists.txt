@@ -132,7 +132,7 @@ TARGET_LINK_LIBRARIES(theta-l dl)
 
 
 #addign setup to quickly use src/theta-l 
-CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/theta.nl
+CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/theta-src.nl
                 ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/movies)
