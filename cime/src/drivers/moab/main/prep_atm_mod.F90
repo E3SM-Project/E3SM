@@ -597,6 +597,7 @@ contains
 
     context_id = ocn(1)%cplcompid
     wgtIdef = 'scalar'//CHAR(0)
+    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
     num_proj = num_proj + 1
 
     if (atm_present .and. ocn_present) then
@@ -640,7 +641,7 @@ contains
       else  ! original send from spectral elements
         tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
         !  the separator will be ';' semicolon
-        tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
+
         if (mhid .ge. 0) then !  send because we are on atm pes
 
           ! basically, adjust the migration of the tag we want to project; it was sent initially with
@@ -678,6 +679,7 @@ contains
       if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
         ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
         !  hard coded now, it should be a runtime option in the future
+
         ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in applying weights '
