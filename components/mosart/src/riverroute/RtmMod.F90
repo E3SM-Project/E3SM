@@ -228,6 +228,14 @@ contains
     character(len=256):: nlfilename_rof       ! namelist filename
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
+
+!global (glo), temporary
+    integer , pointer :: ID0_global(:)  ! local ID index
+    integer , pointer :: dnID_global(:) ! downstream ID based on ID0
+    integer , pointer :: nUp_global(:)  ! number of upstream units
+    integer , pointer :: nUp_dstrm_global(:)  ! number of units flowing into the downstream unit
+    real(r8), pointer :: area_global(:) ! area
+
     character(len=*),parameter :: subname = '(Rtmini) '
     integer           :: rtmn                 ! total number of cells
 
@@ -351,6 +359,7 @@ contains
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
@@ -423,8 +432,7 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
-       write(iulog,*) '   sediflag              = ',inundflag
-       write(iulog,*) '   heatflag              = ',inundflag
+       write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
@@ -578,7 +586,7 @@ contains
     ! reading the routing parameters
     allocate ( &
               ID0_global(rtmlon*rtmlat), area_global(rtmlon*rtmlat), &
-              dnID_global(rtmlon*rtmlat), &
+              dnID_global(rtmlon*rtmlat), nUp_global(rtmlon*rtmlat), nUp_dstrm_global(rtmlon*rtmlat),&
               stat=ier)
     if (ier /= 0) then
        write(iulog,*) subname, ' : Allocation error for ID0_global'
@@ -688,6 +696,19 @@ contains
              call shr_sys_abort(subname//' ERROR bad IDkey')
           endif
        endif
+    enddo
+    
+    nUp_global = 0
+    nUp_dstrm_global = 0
+    do n=1,rtmlon*rtmlat
+       if(dnID_global(n) > 0  .and. dnID_global(n) <= rtmlon*rtmlat) then
+              nUp_global(dnID_global(n)) =  nUp_global(dnID_global(n)) + 1
+       end if
+    enddo
+    do n=1,rtmlon*rtmlat
+       if(dnID_global(n) > 0  .and. dnID_global(n) <= rtmlon*rtmlat) then
+           nUp_dstrm_global(n) = nUp_global(dnID_global(n))
+       end if
     enddo
     deallocate(ID0_global)
 
@@ -1248,12 +1269,27 @@ contains
           endif
           cnt = cnt + 1
           rtmCTL%dsig(nr) = dnID_global(n)
+          rtmCTL%iDown(nr) = rglo2gdc(dnID_global(n))
        endif
+       rtmCTL%nUp_dstrm(nr) = nUp_dstrm_global(n)
     enddo
+    
+    rtmCTL%iUp = 0
+    rtmCTL%nUp = 0
+    do nr = rtmCTL%begr,rtmCTL%endr
+        do n = rtmCTL%begr,rtmCTL%endr
+            if(rtmCTL%iDown(n) == nr) then
+                rtmCTL%nUp(nr) = rtmCTL%nUp(nr) + 1  ! initial value of rtmCTL%nUp is 0
+                rtmCTL%iUp(nr,rtmCTL%nUp(nr)) = n
+            end if
+        end do
+    enddo
+    
     deallocate(gmask)
     deallocate(rglo2gdc)
     deallocate(rgdc2glo)
-    deallocate (dnID_global,area_global)
+    deallocate(dnID_global,area_global)
+    deallocate(nUp_global,nUp_dstrm_global)
     deallocate(idxocn)
     call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'mosart totarea',all=.true.)
     if (masterproc) write(iulog,*) subname,'  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
@@ -3176,7 +3212,7 @@ contains
   integer :: dids(2)               ! variable dimension ids 
   integer :: dsizes(2)             ! variable dimension lengths
   integer :: ier                   ! error code
-  integer :: begr, endr, iunit, nn, n, cnt, nr, nt
+  integer :: begr, endr, iunit, nn, n, cnt, nr, nt, i, j
   integer :: numDT_r, numDT_t
   integer :: lsize, gsize
   integer :: igrow, igcol, iwgt, idim
@@ -3750,6 +3786,30 @@ contains
     
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
+
+     if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+        allocate (TRunoff%rslp_energy(begr:endr))
+        TRunoff%rslp_energy = 0.0_r8
+        
+        allocate (TRunoff%wr_dstrm(begr:endr, nt_rtm))
+        TRunoff%wr_dstrm = 0.0_r8
+
+        allocate (TRunoff%yr_dstrm(begr:endr))
+        TRunoff%yr_dstrm = 0.0_r8    
+
+        allocate (TRunoff%erin_dstrm(begr:endr,nt_rtm))
+        TRunoff%erin_dstrm = 0.0_r8 
+
+        do nr = rtmCTL%begr,rtmCTL%endr
+            do i=1, rtmCTL%nUp(nr)
+                n = rtmCTL%iUp(nr,i)            
+                if(rtmCTL%iDown(n).ne.nr) then
+                   write(iulog,*) trim(subname),' MOSART ERROR: upstream-downstream relationships ',nr
+                   call shr_sys_abort(trim(subname)//' ERROR upstream-downstream relationships incorrect')
+                end if
+            enddo
+        enddo
+     end if
    
      if (inundflag) then
         !allocate (TRunoff%wr_ini(begr:endr))
@@ -3964,6 +4024,7 @@ contains
               TUnit%twidth(iunit) = 0._r8
            end if
         else
+           TUnit%rlen(iunit) = 0._r8
            TUnit%hlen(iunit) = 0._r8
            TUnit%tlen(iunit) = 0._r8
            TUnit%twidth(iunit) = 0._r8
@@ -3991,6 +4052,47 @@ contains
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do
   end if  ! endr >= begr
+
+  ! retrieve the downstream channel attributes after some post-processing above
+  if (Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+     allocate (TUnit%rlen_dstrm(begr:endr))
+     allocate (TUnit%rslp_dstrm(begr:endr))
+
+     ! --------------------------------- 
+     ! Need code to retrieve values of TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:) .
+     ! --------------------------------- 
+       call mct_aVect_zero(avsrc_dnstrm)
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          avsrc_dnstrm%rAttr(1,cnt) = TUnit%rlen(iunit)
+       enddo
+       call mct_aVect_zero(avdst_dnstrm)
+       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          TUnit%rlen_dstrm(iunit) = avdst_dnstrm%rAttr(1,cnt)
+       enddo
+
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          avsrc_dnstrm%rAttr(1,cnt) = TUnit%rslp(iunit)
+       enddo
+       call mct_aVect_zero(avdst_dnstrm)
+       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
+       cnt = 0
+       do iunit = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          TUnit%rslp_dstrm(iunit) = avdst_dnstrm%rAttr(1,cnt)
+       enddo
+
+     if (masterproc) write(iulog,FORMR) trim(subname),' set rlen_dstrm ',minval(Tunit%rlen_dstrm),maxval(Tunit%rlen_dstrm)
+     call shr_sys_flush(iulog)
+     if (masterproc) write(iulog,FORMR) trim(subname),' set rslp_dstrm ',minval(Tunit%rslp_dstrm),maxval(Tunit%rslp_dstrm)
+     call shr_sys_flush(iulog)
+  end if
 
   !--- compute areatot from area using dnID ---
   !--- this basically advects upstream areas downstream and
