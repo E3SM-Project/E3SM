@@ -59,6 +59,10 @@ module RunoffMod
      !    - local
      integer           :: begr,endr        ! local start/stop indices
      integer           :: lnumr            ! local number of cells
+     integer , pointer :: iDown(:)         ! downstream index, local index
+     integer , pointer :: nUp(:)           ! number of upstream units, maximum 8
+     integer , pointer :: nUp_dstrm(:)      ! number of units flowing into the downstream units, maximum 8
+     integer , pointer :: iUp(:,:)         ! indices of upstream units, local
 
      !    - local
      real(r8), pointer :: runofflnd(:,:)   ! runoff masked for land (m3 H2O/s)
@@ -251,6 +255,8 @@ module RunoffMod
      integer , pointer :: iUp(:,:)     ! IDs of upstream units, corresponding to the subbasin ID in the input table
   
      integer , pointer :: indexDown(:) ! indices of the downstream units in the ID array. sometimes subbasins IDs may not be continuous
+     integer , pointer :: iDown(:)     ! indices of the downstream units, local
+     integer , pointer :: nUp_dstrm(:) ! number of upstream units, maximum 8
   
      integer , pointer :: numDT_r(:)   ! for a main reach, the number of sub-time-steps needed for numerical stability
      integer , pointer :: numDT_t(:)   ! for a subnetwork reach, the number of sub-time-steps needed for numerical stability
@@ -341,6 +347,10 @@ module RunoffMod
      real(r8), pointer :: pr(:,:)      ! wetness perimeter, [m]
      real(r8), pointer :: vr(:,:)      ! flow velocity, [m/s]
      real(r8), pointer :: tr(:,:)      ! mean travel time of the water within the channel, [s]
+     real(r8), pointer :: rslp_energy(:)! energy slope of channel water surface [-]
+     real(r8), pointer :: wr_dstrm(:,:)  ! Downstream-channel water volume  (to constrain large upward flow from downstream channel to current channel ) (m^3 or kg).
+     real(r8), pointer :: yr_dstrm(:)  ! Downstream-channel water depth (m).
+
      !! exchange fluxes
      real(r8), pointer :: erlg(:,:)    ! evaporation, [m/s]
      real(r8), pointer :: erlateral(:,:) ! lateral flow from hillslope, including surface and subsurface runoff generation components, [m3/s]
@@ -357,6 +367,7 @@ module RunoffMod
      real(r8), pointer :: erin1(:,:)   ! inflow from upstream links during previous step, used for Muskingum method, [m3/s]
      real(r8), pointer :: erin2(:,:)   ! inflow from upstream links during current step, used for Muskingum method, [m3/s]
      real(r8), pointer :: ergwl(:,:)   ! flux item for the adjustment of water balance residual in glacie, wetlands and lakes dynamics [m3/s]
+     real(r8), pointer :: erin_dstrm(:,:)    ! total riverine inflow into the downstream link[m3/s]
 
      !! for Runge-Kutta algorithm
      real(r8), pointer :: wrtemp(:,:)  ! temporary storage item, for 4th order Runge-Kutta  algorithm;
@@ -498,6 +509,10 @@ contains
              rtmCTL%latc(begr:endr),              &
              rtmCTL%dsig(begr:endr),              &
              rtmCTL%rdsig(begr:endr),             &
+             rtmCTL%iDown(begr:endr),             &
+             rtmCTL%nUp(begr:endr),               &
+             rtmCTL%nUp_dstrm(begr:endr),               &
+             rtmCTL%iUp(begr:endr,8),             &
              rtmCTL%outletg(begr:endr),           &
              rtmCTL%routletg(begr:endr),          &
              rtmCTL%inundwf(begr:endr),           &
@@ -551,6 +566,11 @@ contains
        call shr_sys_abort
     end if
 
+    rtmCTL%iDown(:) = 0
+    rtmCTL%iUp(:,:) = 0
+    rtmCTL%nUp(:) = 0
+    rtmCTL%nUp_dstrm(:) = 0
+    
     rtmCTL%runoff(:,:)     = 0._r8
     rtmCTL%runofflnd(:,:)  = spval
     rtmCTL%runoffocn(:,:)  = spval
