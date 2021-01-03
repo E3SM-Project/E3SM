@@ -1,8 +1,8 @@
 # CMake initial cache file
 #
-SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
-SET (CMAKE_C_COMPILER mpicc CACHE FILEPATH "")
-SET (CMAKE_CXX_COMPILER mpicxx CACHE FILEPATH "")
+SET (CMAKE_Fortran_COMPILER mpiifort  CACHE FILEPATH "")
+SET (CMAKE_C_COMPILER mpiicc CACHE FILEPATH "")
+SET (CMAKE_CXX_COMPILER mpiicpc CACHE FILEPATH "")
 
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_ZEN2 ON CACHE BOOL "")
@@ -41,8 +41,10 @@ ELSEIF ("${CPR_OUTPUT}" MATCHES "GNU Fortran.*")
   SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 endif()
 
-SET (USE_MPIEXEC "srun" CACHE STRING "")
-SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
+#SET (USE_MPIEXEC "srun" CACHE STRING "")
+#SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
+SET (USE_MPIEXEC "mpirun" CACHE STRING "")
+SET (USE_MPI_OPTIONS "--bind-to=cores" CACHE STRING "")
 SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
 SET (CPRNC_DIR /lcrc/group/e3sm/soft/tools/cprnc CACHE FILEPATH "")
