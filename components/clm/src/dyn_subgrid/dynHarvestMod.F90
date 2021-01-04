@@ -173,7 +173,8 @@ contains
     !-----------------------------------------------------------------------
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    call dynHarvest_file%time_info%set_current_year_get_year()
+    ! input harvest data for current year are stored in year+1 in the file
+    call dynHarvest_file%time_info%set_current_year_get_year(1)
     if (use_cn .or. use_fates) then
        harvest_rates(1:num_harvest_vars,bounds%begg:bounds%endg) = 0._r8
 
