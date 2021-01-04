@@ -146,7 +146,7 @@ module ocn_tracer_advection
                                              maxLevelCell, maxLevelEdgeTop,    &
                                              highOrderAdvectionMask,           &
                                              edgeSignOnCell, meshPool,         &
-                                             diagnosticsPool, computeBudgets)
+                                             computeBudgets)
 
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
