@@ -28,6 +28,7 @@ module ocn_tidal_forcing
    use ocn_constants
    use ocn_config
    use ocn_equation_of_state
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -160,7 +161,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)!{{{
+   subroutine ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -169,7 +170,6 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), pointer, intent(in) :: diagnosticsPool !< Input: Diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -213,7 +213,6 @@ contains
       real (kind=RKIND) :: totalDepth, tidalHeight
 
       character (len=StrKIND), pointer :: simulationStartTime, xtime
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
       type (MPAS_Time_type) :: startTime, xtime_timeType, simulationStartTime_timeType
 
       if ( .not. tidalfluxOn ) return
@@ -224,9 +223,6 @@ contains
                                              tidalLayerThicknessTendency)
       call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
       call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
-
-      ! compute time since start of simulation, in days
-      call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
 
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
