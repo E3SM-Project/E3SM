@@ -1063,7 +1063,6 @@ contains
        ! homme.
        call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete,tl)
 #endif
-
        call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
 
        ! E(1) Energy after CAM forcing
@@ -1145,7 +1144,9 @@ contains
     ! =================================
     ! update dynamics time level pointers
     ! =================================
+
     call TimeLevel_update(tl,"leapfrog")
+
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_remap - dt       
     !   u(n0)    dynamics at  t+dt_remap
@@ -1891,9 +1892,13 @@ contains
     !   needs to be updated with the new floating levels
 #ifdef MODEL_THETA_L
     do k=1,nlev
-      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,np1)/ &
+      elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,n0)/ &
                 elem(1)%state%dp3d(:,:,k,n0))*elem(1)%state%dp3d(:,:,k,np1)
     enddo
+#else
+   do k=1,nlev
+     elem(1)%state%T(:,:,k,np1) = elem(1)%state%T(:,:,k,n0)
+   enddo
 #endif
 
     do p=1,qsize
