@@ -1470,7 +1470,9 @@ subroutine normalizencheck_landuse(ldomain)
                 if ( pctpft_full(n,m) < 0.0_r8 )then
                    write (6,*)'pctpft_full < 0.0 = ', pctpft_full(n,m), &
                    ' n, m, suma, pcturb_excess, sumpft = ',  n, m, suma, pcturb_excess, sumpft
-                   if ( abs(pctpft_full(n,m)) > 1.e-6_r8 )then
+                   ! Note that the tolerance here (0.00001_r8) matches the
+                   ! tolerance for the error check on the sum in mkpftMod: mkpft
+                   if ( abs(pctpft_full(n,m)) > 1.e-5_r8 )then
                       call abort()
                    end if
                    pctpft_full(n,m) = 0.0_r8
