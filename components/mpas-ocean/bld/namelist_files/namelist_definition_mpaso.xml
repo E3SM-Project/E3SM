@@ -1392,7 +1392,7 @@ Valid values: .true. and .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_adv_first_direction" type="character"
+<entry id="config_adv_first_direction" type="char*1024"
 	category="advection" group="advection">
 If 'horizontal', advection is done with horizontal first, then vertical. If 'vertical', then the opposite.
 
@@ -2177,7 +2177,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_activeTracer_vert_limiter" type="character"
+<entry id="config_activeTracer_vert_limiter" type="char*1024"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
 See options.
 
