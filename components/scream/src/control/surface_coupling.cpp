@@ -71,6 +71,9 @@ register_import(const std::string& fname,
   // Set view data ptr
   info.data = field.get_view().data();
 
+  // Set cpl index
+  info.cpl_idx = cpl_idx;
+
   const auto& layout = field.get_header().get_identifier().get_layout();
   const auto& alloc_prop = field.get_header().get_alloc_properties();
   const auto& tags = layout.tags();
@@ -80,14 +83,15 @@ register_import(const std::string& fname,
   switch (layout.rank()) {
     case 1:
       EKAT_REQUIRE_MSG(vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 2d scalar.\n");
-      info.col_size = 1;
+      info.col_stride = 1;
+      info.col_offset = 0;
       break;
     case 2:
       EKAT_REQUIRE_MSG(tags[1]==VL || tags[1]==VAR || tags[1]==CMP,
                          "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of export field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
 
-      info.col_size = alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = alloc_prop.get_last_dim_extent<Real>();
       info.col_offset = vecComp;
       break;
     case 3:
@@ -97,8 +101,8 @@ register_import(const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of export field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
 
-      info.col_size = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
+      info.col_stride = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
+      info.col_offset = tags[1]==VL ? 0 : vecComp;
       break;
     default:
       EKAT_ERROR_MSG("Error! Unsupported field rank for import field '" + fname + "'.\n");
@@ -149,7 +153,10 @@ register_export (const std::string& fname,
   // Set view data ptr
   info.data = field.get_view().data();
 
-  // To figure out col_size and col_offset, we need to inspect the field layout,
+  // Set cpl index
+  info.cpl_idx = cpl_idx;
+
+  // To figure out col_stride and col_offset, we need to inspect the field layout,
   // as well as its allocation properties (to handle the case od padding)
   const auto& layout = field.get_header().get_identifier().get_layout();
   const auto& alloc_prop = field.get_header().get_alloc_properties();
@@ -160,15 +167,16 @@ register_export (const std::string& fname,
   switch (layout.rank()) {
     case 1:
       EKAT_REQUIRE_MSG(vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 2d scalar.\n");
-      info.col_size = 1;
+      info.col_stride = 1;
+      info.col_offset = 0;
       break;
     case 2:
       EKAT_REQUIRE_MSG(tags[1]==VL || tags[1]==VAR || tags[1]==CMP,
                          "Error! Unexpected tag '" + e2str(tags[1]) + "' for second dimension of import field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(tags.back()!=VL || vecComp==-1, "Error! Vector component specified, but field '" + fname + "' is a 3d scalar.\n");
 
-      info.col_size = alloc_prop.get_last_dim_extent<Real>();
-      info.col_offset = vecComp;
+      info.col_stride = alloc_prop.get_last_dim_extent<Real>();
+      info.col_offset = tags[1]==VL ? 0 : vecComp;
       break;
     case 3:
       EKAT_REQUIRE_MSG(tags[1]==VAR || tags[1]==CMP,
@@ -177,7 +185,7 @@ register_export (const std::string& fname,
                          "Error! Unexpected tag '" + e2str(tags[2]) + "' for third dimension of import field '" + fname + "'.\n");
       EKAT_REQUIRE_MSG(vecComp>=0, "Error! Vector component not specified for 3d vector field '" + fname + "/.\n");
 
-      info.col_size = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
+      info.col_stride = layout.dim(1)*alloc_prop.get_last_dim_extent<Real>();
       info.col_offset = vecComp;
       break;
     default:
@@ -226,15 +234,23 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
   Kokkos::deep_copy(m_scream_imports_dev, m_scream_imports_host);
   Kokkos::deep_copy(m_scream_exports_dev, m_scream_exports_host);
 
-  // Check input pointers
-  EKAT_REQUIRE_MSG(cpl_exports_ptr!=nullptr, "Error! Data pointer for exports is null.\n");
-  EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
+  if (m_num_imports>0) {
+    // Check input pointer
+    EKAT_REQUIRE_MSG(cpl_imports_ptr!=nullptr, "Error! Data pointer for imports is null.\n");
 
-  // Setup the host and device 2d views
-  m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_imports);
-  m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_exports);
-  m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
-  m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+    // Setup the host and device 2d views
+    m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(cpl_imports_ptr,m_num_cols,m_num_imports);
+    m_cpl_imports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_imports_view_h);
+  }
+
+  if (m_num_exports>0) {
+    // Check input pointer
+    EKAT_REQUIRE_MSG(cpl_exports_ptr!=nullptr, "Error! Data pointer for exports is null.\n");
+
+    // Setup the host and device 2d views
+    m_cpl_exports_view_h = decltype(m_cpl_exports_view_h)(cpl_exports_ptr,m_num_cols,m_num_exports);
+    m_cpl_exports_view_d = Kokkos::create_mirror_view(device_type(),m_cpl_exports_view_h);
+  }
 
   // Finally, mark registration as completed.
   m_state = RepoState::Closed;
@@ -242,6 +258,10 @@ registration_ends (cpl_data_ptr_type cpl_imports_ptr,
 
 void SurfaceCoupling::do_import ()
 {
+  if (m_num_imports==0) {
+    return;
+  }
+
   using policy_type = KokkosTypes<device_type>::RangePolicy;
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -260,13 +280,17 @@ void SurfaceCoupling::do_import ()
 
     const auto& info = scream_imports(ifield);
 
-    auto offset = num_cols*info.col_size + info.col_offset;
+    auto offset = icol*info.col_stride + info.col_offset;
     info.data[offset] = cpl_imports_view_d(icol,info.cpl_idx);
   });
 }
 
 void SurfaceCoupling::do_export ()
 {
+  if (m_num_exports==0) {
+    return;
+  }
+
   using policy_type = KokkosTypes<device_type>::RangePolicy;
 
   // Local copies, to deal with CUDA's handling of *this.
@@ -281,7 +305,7 @@ void SurfaceCoupling::do_export ()
     const int icol   = i % num_cols;
     const auto& info = scream_exports(ifield);
 
-    auto offset = num_cols*info.col_size + info.col_offset;
+    auto offset = icol*info.col_stride + info.col_offset;
     cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
   });
 
