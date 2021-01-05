@@ -1074,7 +1074,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call t_startf ('diag_physvar_ic')
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
-#ifdef MAML
+          
+          !! Jungmin
           ! Average albedos and lwup before tphysbc
           cam_in(c)%aldir = SUM(cam_in(c)%aldir_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%asdir = SUM(cam_in(c)%asdir_mi,DIM=2)/real(num_inst_atm,r8)
@@ -1085,8 +1086,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           cam_in(c)%shf   = SUM(cam_in(c)%shf_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%lhf   = SUM(cam_in(c)%lhf_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%cflx(:,1) = SUM(cam_in(c)%cflx1_mi,DIM=2)/real(num_inst_atm,r8)
-#endif
-          !! Jungmin
           do ii = 1, cam_in(c)%ncol
             rlat = get_rlat_p(c,ii)*180._r8/SHR_CONST_PI 
             rlon = get_rlon_p(c,ii)*180._r8/SHR_CONST_PI 
@@ -1099,7 +1098,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                              " landfrac=",F5.3," icefrac=",F5.3, " ocnfrac=",F5.3,&
                              " aldir=",F5.3," aldif=",F5.3," asdir=",F5.3," asdif=",F5.3, &
                              " ts=",F7.2," lwup=",F7.2, &
-                             " shf=",F7.2," lhf=",F7.2," cflx1=",E6.3)') &
+                             " shf=",F7.2," lhf=",F7.2," cflx1=",E8.4)') &
                              nstep,inst_index,c,ii,& 
                              rlat, rlon, rcol,  &
                              cam_in(c)%landfrac(ii), cam_in(c)%icefrac(ii), cam_in(c)%ocnfrac(ii), &
@@ -1274,10 +1273,9 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     integer :: c                                 ! chunk index
     integer :: ncol                              ! number of columns
     integer :: nstep                             ! current timestep number
-#ifdef MAML
+! Jungmin
     integer :: i, ii
-#endif
-
+! Jungmin
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
@@ -1333,15 +1331,15 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        !! 
 
        if(ieflx_opt>0) then
-          call check_ieflx_fix(c, ncol, nstep, cam_in(c)%shf)
-#ifdef MAML
+         !call check_ieflx_fix(c, ncol, nstep, cam_in(c)%shf)
+   !#ifdef MAML
          
          do ii = 1, num_inst_atm
              call check_ieflx_fix(c,ncol,nstep,cam_in(c)%shf_mi(:,ii))
-          end do ! ii
+         end do ! ii
           ! Since shf_mi changed, redefine shf by averaging shf_mi anew
           cam_in(c)%shf = SUM(cam_in(c)%shf_mi,DIM=2)/real(num_inst_atm,r8)
-#endif          
+   !#endif          
        end if
 
        !
@@ -1973,9 +1971,7 @@ subroutine tphysbc (ztodt,               &
    use crmclouds_camaerosols,  only: crmclouds_mixnuc_tend
 #endif
 
-#ifdef MAML
    use seq_comm_mct,       only : num_inst_atm
-#endif
 
     implicit none
 
@@ -2123,9 +2119,7 @@ subroutine tphysbc (ztodt,               &
     
     ! w holds position of gathered points vs longitude index
     integer :: lengath
-#ifdef MAML
     integer :: ii
-#endif
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
