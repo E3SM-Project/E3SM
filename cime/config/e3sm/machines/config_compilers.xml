@@ -1273,6 +1273,7 @@ for mct, etc.
   <ADD_FFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS_NOOPT>
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_LDFLAGS>
+  <ADD_FFLAGS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --fflags)</ADD_FFLAGS>
   <ADD_SLIBS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
   <ADD_SLIBS>$(shell $(NETCDF_C_PATH)/bin/nc-config --libs)</ADD_SLIBS>
   <ADD_SLIBS>-mkl</ADD_SLIBS>
