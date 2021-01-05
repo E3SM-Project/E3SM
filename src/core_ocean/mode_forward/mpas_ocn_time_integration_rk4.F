@@ -425,7 +425,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
-              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
+              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, meshPool, 1)
               block => block % next
            end do
 
@@ -767,7 +767,7 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
 
-         call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
+         call ocn_time_average_coupled_accumulate(statePool, forcingPool, 2)
 
          if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(meshPool)
@@ -858,8 +858,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, &
-                        diagnosticsPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, meshPool, 1, dt)
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}
 
@@ -921,7 +920,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
+      call ocn_tend_thick(tendPool, forcingPool, meshPool)
 
 
    end subroutine ocn_time_integrator_rk4_compute_thick_tends!}}}
@@ -989,8 +988,8 @@ module ocn_time_integration_rk4
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, meshPool, 1)
       endif
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
-                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
+                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
 
@@ -1053,8 +1052,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, &
-                        diagnosticsPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, meshPool, 1, dt)
 
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
@@ -1068,14 +1066,14 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
+      call ocn_tend_thick(tendPool, forcingPool, meshPool)
 
       if (config_filter_btr_mode) then
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, meshPool, 1)
       endif
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
-                           scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
+                           dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
 

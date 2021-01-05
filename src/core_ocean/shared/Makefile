@@ -144,7 +144,7 @@ mpas_ocn_vmix_cvmix.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnost
 
 mpas_ocn_vmix_coefs_redi.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
-mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_equation_of_state_jm.o: mpas_ocn_constants.o mpas_ocn_config.o
 

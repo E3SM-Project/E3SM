@@ -193,19 +193,19 @@ contains
       nCells = nCellsAll
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 0, 'relative', density, err, &
                                          inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
                                          timeLevelIn=timeLevel)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
 
@@ -1756,13 +1756,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
+    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, timeLevelIn)!{{{
 
       type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Diagnostics information derived from State
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       integer, intent(in), optional :: timeLevelIn
 
       ! pool pointers
@@ -1853,8 +1851,9 @@ contains
       nCells = nCellsHalo( 2 )
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, nCells, 0, 'surfaceDisplaced', &
-                                         densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
+                                         nCells, 0, 'surfaceDisplaced', densitySurfaceDisplaced, &
+                                         err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
       !$omp parallel
