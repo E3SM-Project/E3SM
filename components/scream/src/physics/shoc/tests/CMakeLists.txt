@@ -65,7 +65,7 @@ set(SHOC_TESTS_SRCS
     shoc_pblintd_cldcheck_tests.cpp
     shoc_compute_shoc_vapor_tests.cpp
     shoc_update_prognostics_implicit_tests.cpp
-    shoc_shoc_main_tests.cpp
+    shoc_main_tests.cpp
     shoc_pblintd_height_tests.cpp
     shoc_vd_shoc_decomp_and_solve_tests.cpp
     shoc_pblintd_surf_temp_tests.cpp

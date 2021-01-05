@@ -152,13 +152,13 @@ void Functions<S,D>::shoc_assumed_pdf(
                  ekat::min(100,
                            ekat::max(0, (3*tmp_val_1*(1 - a*ekat::square(tmp_val_2) - (1-a)*ekat::square(tmp_val_1))
                                          - (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
-                                         /(3*a*(tmp_val_1 - tmp_val_2))*thlsec)));
+                                         /(3*a*(tmp_val_1 - tmp_val_2))))*thlsec);
       thl2_2.set(condition,
                  ekat::min(100,
                            ekat::max(0, (-3*tmp_val_2*(1 - a*ekat::square(tmp_val_2)
                                          - (1 - a)*ekat::square(tmp_val_1))
                                          + (Skew_thl - a*ekat::cube(tmp_val_2) - (1 - a)*ekat::cube(tmp_val_1)))
-                                         /(3*(1 - a)*(tmp_val_1 - tmp_val_2))*thlsec)));
+                                         /(3*(1 - a)*(tmp_val_1 - tmp_val_2))))*thlsec);
 
       thl1_1.set(condition, tmp_val_2*sqrtthl+thl_first);
       thl1_2.set(condition, tmp_val_1*sqrtthl+thl_first);
