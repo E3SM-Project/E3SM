@@ -116,7 +116,6 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaScaling
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaSfcTaper
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaCell
-   real(kind=RKIND), dimension(:,:), pointer :: k33
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
@@ -335,6 +334,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
