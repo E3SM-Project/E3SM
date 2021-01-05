@@ -1,0 +1,116 @@
+#!/bin/csh -f
+# chrysalis syslog script: 
+#  mach_syslog <sampling interval (in seconds)> <job identifier> <timestamp> <run directory> <timing directory> <output directory> 
+
+set sample_interval = $1
+set jid = $2
+set lid = $3
+set run = $4
+set timing = $5
+set dir = $6
+
+# Wait until job task-to-node mapping information is output before saving output file.
+# Target length was determined empirically (maximum number of lines before job mapping 
+#  information starts + number of nodes), and it may need to be adjusted in the future.
+# (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
+set nnodes = `squeue --noheader -o '%D' --job $jid | sed 's/^0*\([0-9]*\)/\1/' `
+if ("X$nnodes" == "X") set nnodes = 0
+@ target_lines = 150 + $nnodes
+sleep 10
+set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+while ($outlth < $target_lines)
+  sleep 60
+  set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
+end
+
+set TimeLeft     = `squeue --noheader -O 'timeleft' --job $jid `
+set TimeLeftwday = `echo $TimeLeft | grep '-' `
+if ("X$TimeLeftwday" == "X") then
+  set left_days  = 0
+  set TimeLeftwhour = `echo $TimeLeft | grep '.*:.*:.*' `
+  if ("X$TimeLeftwhour" == "X") then
+    set left_hours = 0
+    set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+    set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+  else
+    set left_hours = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+    set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+    set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+  endif
+else
+  set left_days  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+  set left_hours = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+  set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+  set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\4/' `
+endif
+
+if ("X$left_days"  == "X") set left_days = 0
+if ("X$left_hours" == "X") set left_hours = 0
+if ("X$left_mins"  == "X") set left_mins = 0
+if ("X$left_secs"  == "X") set left_secs = 0
+@ remaining = 86400 * $left_days + 3600 * $left_hours + 60 * $left_mins + $left_secs
+cat > $run/Walltime.Remaining <<EOF1
+$remaining $sample_interval
+EOF1
+/bin/cp --preserve=timestamps $run/e3sm.log.$lid $dir/e3sm.log.$lid.$remaining
+if ($remaining <= 0) then
+  squeue -t R -o  "%.10i %.10P %.15u %.20a %.2t %.6D %.8C %.12M %.12l %j" > $dir/squeuef.$lid.$remaining
+  squeue -s | grep -v -F extern > $dir/squeues.$lid.$remaining
+endif
+
+while ($remaining > 0)
+  echo "Wallclock time remaining: $remaining" >> $dir/atm.log.$lid.step
+  grep -Fa -e "nstep" -e "model date" $run/*atm.log.$lid | tail -n 4 >> $dir/atm.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/lnd.log.$lid.step
+  grep -Fa -e "timestep" -e "model date" $run/*lnd.log.$lid | tail -n 4 >> $dir/lnd.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/ocn.log.$lid.step
+  grep -Fa -e "timestep" -e "Step number" -e "model date" $run/*ocn.log.$lid | tail -n 4 >> $dir/ocn.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/ice.log.$lid.step
+  grep -Fa -e "timestep" -e "istep" -e "model date" $run/*ice.log.$lid | tail -n 4 >> $dir/ice.log.$lid.step
+  echo "Wallclock time remaining: $remaining" >> $dir/rof.log.$lid.step
+  grep -Fa "model date" $run/*rof.log.$lid | tail -n 4 >> $dir/rof.log.$lid.step
+  grep -Fa "model date" $run/*cpl.log.$lid  > $dir/cpl.log.$lid.step-all
+  echo "Wallclock time remaining: $remaining" >> $dir/cpl.log.$lid.step
+  tail -n 4 $dir/cpl.log.$lid.step-all >> $dir/cpl.log.$lid.step
+  /bin/cp --preserve=timestamps -u $timing/* $dir
+  squeue -t R -o  "%.10i %.10P %.15u %.20a %.2t %.6D %.8C %.12M %.12l %j" > $dir/squeuef.$lid.$remaining
+  squeue -s | grep -v -F extern > $dir/squeues.$lid.$remaining
+  chmod a+r $dir/*
+  # sleep $sample_interval
+  set sleep_remaining = $sample_interval
+  while ($sleep_remaining > 120)
+   sleep 120
+   @ sleep_remaining = $sleep_remaining - 120
+  end
+  sleep $sleep_remaining
+  # query remaining time
+  set TimeLeft     = `squeue --noheader -O 'timeleft' --job $jid `
+  set TimeLeftwday = `echo $TimeLeft | grep '-' `
+  if ("X$TimeLeftwday" == "X") then
+    set left_days  = 0
+    set TimeLeftwhour = `echo $TimeLeft | grep '.*:.*:.*' `
+    if ("X$TimeLeftwhour" == "X") then
+      set left_hours = 0
+      set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+      set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+    else
+      set left_hours = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+      set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+      set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+    endif
+  else
+    set left_days  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
+    set left_hours = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
+    set left_mins  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
+    set left_secs  = `echo $TimeLeft | sed 's/^0*\([0-9]*\)-0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\4/' `
+  endif
+  if ("X$left_days"  == "X") set left_days = 0
+  if ("X$left_hours" == "X") set left_hours = 0
+  if ("X$left_mins"  == "X") set left_mins = 0
+  if ("X$left_secs"  == "X") set left_secs = 0
+  @ remaining = 86400 * $left_days + 3600 * $left_hours + 60 * $left_mins + $left_secs
+  cat > $run/Walltime.Remaining << EOF2
+$remaining $sample_interval
+EOF2
+
+end
