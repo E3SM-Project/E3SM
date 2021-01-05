@@ -603,7 +603,7 @@ contains
     if (atm_present .and. ocn_present) then
       if (atm_pg_active ) then ! use data from AtmPhys mesh, but mesh from pg
         ! in this case, we will send from phys grid directly to intx atm ocn context!
-        if (mhpgid .ge. 0) then !  send because we are on atm pes,
+        if (mphaid .ge. 0) then !  send because we are on atm pes, also mphaid >= 0
 
           ! basically, adjust the migration of the tag we want to project; it was sent initially with
           ! trivial partitioning, now we need to adjust it for "coverage" mesh
