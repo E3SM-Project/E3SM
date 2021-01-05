@@ -1077,7 +1077,11 @@ contains
         endif
 #ifdef MOABDEBUG
         ! debug test
-        outfile = 'recMeshAtm.h5m'//CHAR(0)
+        if (atm_pg_active) then !
+          outfile = 'recMeshAtmPG.h5m'//CHAR(0)
+        else
+          outfile = 'recMeshAtm.h5m'//CHAR(0)
+        endif
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0)
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
@@ -1123,19 +1127,19 @@ contains
       ! we can receive those tags only on coupler pes, when mbaxid exists
       ! we have to check that before we can define the tag
       if (mbaxid .ge. 0 ) then
-        tagnameProj = 'T_ph16'//CHAR(0)
+        tagname = 'T_ph16'//CHAR(0)
         tagtype = 1  ! dense, double
         if (atm_pg_active) then
           numco = 1 ! just one value per cell !
         else
           numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
         endif
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
         ! define more tags
-        tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        tagname = 'u_ph16'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+        tagname = 'v_ph16'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags '
           call shr_sys_abort(subname//' ERROR in defining tags ')
