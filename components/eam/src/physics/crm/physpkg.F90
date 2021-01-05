@@ -1080,7 +1080,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           cam_in(c)%asdir = SUM(cam_in(c)%asdir_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%aldif = SUM(cam_in(c)%aldif_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%asdif = SUM(cam_in(c)%asdif_mi,DIM=2)/real(num_inst_atm,r8)
-          cam_in(c)%lwup = SUM(cam_in(c)%lwup_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%lwup  = SUM(cam_in(c)%lwup_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%ts    = SUM(cam_in(c)%ts_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%shf   = SUM(cam_in(c)%shf_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%lhf   = SUM(cam_in(c)%lhf_mi,DIM=2)/real(num_inst_atm,r8)
+          cam_in(c)%cflx(:,1) = SUM(cam_in(c)%cflx1_mi,DIM=2)/real(num_inst_atm,r8)
 #endif
           !! Jungmin
           do ii = 1, cam_in(c)%ncol
@@ -1090,18 +1094,22 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
             if(rcol.eq.223) then
             !if(cam_in(c)%landfrac(ii).eq.1) then
                !if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
-               write(iulog,'("B4 tphysbc CALL: nstep=",I5," chunk ind=",I5," icol=",I5," inst_index=",I3,&
+               write(iulog,'("B4 tphysbc CALL: nstep=",I5," inst_index=",I4," chunk ind=",I5," icol=",I5,&
                              " lat=",F8.3," lon=",F8.3, " rcol=",I5, &
-                             " landfrac=",F7.3," icefrac=",F7.3, &
-                             " cam_in%aldir=",F7.3," cam_in%aldif=",F7.3, &
-                             " cam_in%asdir=",F7.3," cam_in%asdif=",F7.3)') &
-                             nstep,c,ii,inst_index,& 
+                             " landfrac=",F5.3," icefrac=",F5.3, " ocnfrac=",F5.3,&
+                             " aldir=",F5.3," aldif=",F5.3," asdir=",F5.3," asdif=",F5.3, &
+                             " ts=",F7.2," lwup=",F7.2, &
+                             " shf=",F7.2," lhf=",F7.2," cflx1=",E6.3)') &
+                             nstep,inst_index,c,ii,& 
                              rlat, rlon, rcol,  &
-                             cam_in(c)%landfrac(ii), cam_in(c)%icefrac(ii),&
-                             cam_in(c)%aldir(ii),cam_in(c)%aldif(ii),cam_in(c)%asdir(ii),cam_in(c)%asdif(ii)
+                             cam_in(c)%landfrac(ii), cam_in(c)%icefrac(ii), cam_in(c)%ocnfrac(ii), &
+                             cam_in(c)%aldir(ii),cam_in(c)%aldif(ii),cam_in(c)%asdir(ii),cam_in(c)%asdif(ii), &
+                             cam_in(c)%ts(ii),cam_in(c)%lwup(ii),cam_in(c)%shf(ii),cam_in(c)%lhf(ii),cam_in(c)%cflx(ii,1)
                do jj = 1, num_inst_atm
-                  write(iulog,'("      jj=",I3," aldir_mi=",F7.3," aldif_mi=",F7.3," asdir_mi=",F7.3," asdif_mi=",F7.3)') &
-                              jj,cam_in(c)%aldir_mi(ii,jj),cam_in(c)%aldif_mi(ii,jj),cam_in(c)%asdir_mi(ii,jj),cam_in(c)%asdif_mi(ii,jj)
+                  write(iulog,'("      jj=",I3," aldir_mi=",F5.3," aldif_mi=",F5.3," asdir_mi=",F5.3," asdif_mi=",F5.3, &
+                                    "ts=",F7.2," lwup=",F7.2," shf=",F7.2," lhf=",F7.2," cflx1=",F6.3)') &
+                              jj,cam_in(c)%aldir_mi(ii,jj),cam_in(c)%aldif_mi(ii,jj),cam_in(c)%asdir_mi(ii,jj),cam_in(c)%asdif_mi(ii,jj), &
+                              cam_in(c)%ts_mi(ii,jj), cam_in(c)%lwup_mi(ii,jj), cam_in(c)%shf_mi(ii,jj), cam_in(c)%lhf_mi(ii,jj), cam_in(c)%cflx1_mi(ii,jj)
                end do! jj
                !end if
             end if   
@@ -1110,7 +1118,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
-
           end_count = shr_sys_irtc(irtc_rate)
           chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
           call update_cost_p(c, chunk_cost)
@@ -1327,6 +1334,14 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
        if(ieflx_opt>0) then
           call check_ieflx_fix(c, ncol, nstep, cam_in(c)%shf)
+#ifdef MAML
+         
+         do ii = 1, num_inst_atm
+             call check_ieflx_fix(c,ncol,nstep,cam_in(c)%shf_mi(:,ii))
+          end do ! ii
+          ! Since shf_mi changed, redefine shf by averaging shf_mi anew
+          cam_in(c)%shf = SUM(cam_in(c)%shf_mi,DIM=2)/real(num_inst_atm,r8)
+#endif          
        end if
 
        !
@@ -2260,23 +2275,16 @@ subroutine tphysbc (ztodt,               &
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
-#if defined(MMF_FLUX_BYPASS)
     if(.not.use_qqflx_fixer) then 
+#if defined(MMF_FLUX_BYPASS)
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-#ifdef MAML
        ! check the lowest moisture imbalance at CRM grid level 
        do ii = 1, num_inst_atm
          call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
                state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf_mi(:,ii) ,         &
                cam_in%lhf_mi(:,ii) , cam_in%cflx1_mi(:,ii) )
        end do! ii
-       ! cam_in%[X]_mi is adjusted, therefore cam_in%[X] are recomputed
-       !call cam_in_avg_mi(cam_in%lhf, cam_in%lhf_mi, cam_in%ncol)
-       !call cam_in_avg_mi(cam_in%shf, cam_in%shf_mi, cam_in%ncol)
-       !call cam_in_avg_mi(cam_in%cflx(:,1), cam_in%cflx1_mi, cam_in%ncol)
-       !! Jungmin
-       write(iulog,*) "qneg4 inside MMF_FLUX_BYPASS and MAML"
        !! Jungmin
        cam_in%lhf(1:ncol)    = SUM(cam_in%lhf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
        cam_in%shf(1:ncol)    = SUM(cam_in%shf_mi(1:ncol,:),2)/real(num_inst_atm,r8)
@@ -2287,7 +2295,6 @@ subroutine tphysbc (ztodt,               &
             cam_in%lhf , cam_in%cflx )
 #endif
     end if 
-#endif
 
     if(use_mass_borrower) then 
 

@@ -562,9 +562,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     uhl(icrm) = u0(icrm,1)
     vhl(icrm) = v0(icrm,1)
     ! estimate roughness length assuming logarithmic profile of velocity near the surface:
-    ustar(icrm) = sqrt(crm_input%tau00(icrm)/rho(icrm,1))
-    z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
-    z0(icrm) = max(real(0.00001D0,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
+    !ustar(icrm) = sqrt(crm_input%tau00(icrm)/rho(icrm,1))
+    !z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
+    !z0(icrm) = max(real(0.00001D0,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
     crm_output%subcycle_factor(icrm) = 0.
     crm_output%prectend (icrm)=colprec (icrm)
     crm_output%precstend(icrm)=colprecs(icrm)
@@ -1468,15 +1468,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* m2005 */
 
 #ifdef MAML
-<<<<<<< HEAD
         ! output CRM precip and snow to pass down individual CLM instances
         crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.D0      ! mm/s --> m/s
         crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.D0     ! mm/s --> m/s
-=======
-        ! output CRM precip and snow to pass down individual ELM instances
-        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.      ! mm/s --> m/s
-        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.     ! mm/s --> m/s
->>>>>>> 2way MAML: direct communication between ELM and CRM atmosphere
 #endif
 
         if(precsfc(icrm,i,j).gt.10.D0/86400.D0) then

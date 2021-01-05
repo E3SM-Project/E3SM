@@ -132,29 +132,6 @@ contains
           cam_in(c)%ocnfrac  (i) =  x2a(index_x2a_Sf_ofrac, ig)
 	       cam_in(c)%landfrac (i) =  x2a(index_x2a_Sf_lfrac, ig)
           
-          !! Jungmin
-          rcol = get_gcol_p(c,i) 
-          if(rcol.eq.223 .or. rcol.eq.237) then 
-            rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
-            rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
-            nstep = get_nstep()
-            write(iulog,'("ATM_IMPORT: nstep=",I5," chunk ind=",I5," icol=",I5, " rcol=",I5," inst_index=",I3," ig=",I5,&
-                          " lat=",F8.3," lon=",F8.3," overwrite=",L4,&
-                          " landfrac=",F5.3," icefrac=",F5.3," ocnfrac=",F5.3, &
-                          " cam_in%shf_mi=",F7.3," cam_in%lhf_mi=",F7.3, " cam_in%cflx1_mi=",F20.10,&
-                          " cam_in%aldir_mi=",F5.3," cam_in%aldif_mi=",F5.3, &
-                          " cam_in%asdir_mi=",F5.3," cam_in%asdif_mi=",F5.3, &
-                          " cam_in%lwup_mi=",F6.2," cam_in%ts_mi=",F6.2, &
-                          " cam_in%snowhland_mi=",F6.2)') &
-                          nstep,c,i,rcol,inst_index,ig,&
-                          rlat, rlon,overwrite_flds, &
-                          cam_in(c)%landfrac(i), cam_in(c)%icefrac(i),cam_in(c)%ocnfrac(i),&
-                          cam_in(c)%shf_mi(i,inst_index),cam_in(c)%lhf_mi(i,inst_index),cam_in(c)%cflx1_mi(i,inst_index),&
-                          cam_in(c)%aldir_mi(i,inst_index),cam_in(c)%aldif_mi(i,inst_index),cam_in(c)%asdir_mi(i,inst_index),cam_in(c)%asdif_mi(i,inst_index),&
-                          cam_in(c)%lwup_mi(i,inst_index),cam_in(c)%ts_mi(i,inst_index),cam_in(c)%snowhland_mi(i,inst_index),cam_in(c)%cflx1_mi(i,inst_index)
-          end if
-          !! Jungmin
-          
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
@@ -351,21 +328,21 @@ contains
           nstep = get_nstep()
           !if(cam_in(c)%landfrac(i).eq.1) then
           !  if(rlat.gt.-15._r8 .and. rlat.lt.15._r8) then
-          if(rcol.eq.223 .or. rcol.eq.237) then 
-            write(iulog,'("ATM_EXPORT: nstep=",I5," chunk ind=",I5," icol=",I5," rcol=",I5," inst_index=",I3," ig=",I5,&
+          if(rcol.eq.223) then! .or. rcol.eq.237) then 
+            write(iulog,'("ATM_EXPORT: nstep=",I5," inst_index=",I4," chunk ind=",I5," icol=",I5," rcol=",I5," ig=",I5,&
                           " lat=",F8.3," lon=",F8.3,&
-                          " cam_out%soll_mi=",F7.3," cam_out%sols_mi=",F7.3," cam_out%solld_mi=",F7.3," cam_out%solsd_mi=",F7.3, &
-                          " cam_out%flwds_mi=",F7.3, &
-                          " cam_out%tbot_mi=",F7.3," cam_out%thbot_mi=",F7.3," cam_out%qbot_mi=",F7.3," cam_out%rho_mi=",F7.3, &
-                          " cam_out%ubot_mi=",F7.3," cam_out%vbot_mi=",F7.3)') &
-                          nstep,c,i,rcol,inst_index,ig,&
+                          " soll_mi=",F7.2," sols_mi=",F7.2," solld_mi=",F7.2," solsd_mi=",F7.2, &
+                          " flwds_mi=",F7.2, &
+                          " tbot_mi=",F7.2," thbot_mi=",F7.2," qbot_mi=",F5.3, &
+                          " ubot_mi=",F7.3," vbot_mi=",F7.3)') &
+                          nstep,inst_index,c,i,rcol,ig,&
                           rlat, rlon, &
                           cam_out(c)%soll_mi(i,inst_index), &
                           cam_out(c)%sols_mi(i,inst_index), &
                           cam_out(c)%solld_mi(i,inst_index), &
                           cam_out(c)%solsd_mi(i,inst_index),&
                           cam_out(c)%flwds_mi(i,inst_index),&
-                          cam_out(c)%tbot_mi(i,inst_index),cam_out(c)%thbot_mi(i,inst_index),cam_out(c)%qbot_mi(i,1,inst_index),cam_out(c)%rho_mi(i,inst_index),&
+                          cam_out(c)%tbot_mi(i,inst_index),cam_out(c)%thbot_mi(i,inst_index),cam_out(c)%qbot_mi(i,1,inst_index),&
                           cam_out(c)%ubot_mi(i,inst_index),cam_out(c)%vbot_mi(i,inst_index)
           end if
           !! Jungmin

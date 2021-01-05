@@ -41,7 +41,7 @@ contains
     use netcdf
     !! Jungmin
     use decompMod   , only : ldecomp
-    use clm_varctl       , only : inst_index
+    use elm_varctl       , only : inst_index
     !! Jungmin
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
@@ -1084,12 +1084,12 @@ contains
          
        !! Jungmin
        gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
-       if(gcol.eq.223 .or. gcol.eq.237) then
+       if(gcol.eq.223) then! .or. gcol.eq.237) then
          nstep = get_nstep() 
-         write(iulog,'("LND_IMPORT: nstep=",I5," inst_index=",I3," g=",I5," i=",I3, "rcol=",I5, &
+         write(iulog,'("LND_IMPORT: nstep=",I5," inst_index=",I4," g=",I5," i=",I3, "rcol=",I5, &
                         " lat=",F8.3," lon=",F8.3,&
-                        " sollxy=",F8.3," solsxy=",F8.3," solldxy=",F8.3," solsdxy=",F8.3," flwdsxy=",F8.3, &
-                        " tbot=",F7.3," thbot=",F7.3," qbot=",F7.5,"ubot=",F7.3," vbot=",F7.3," ref_hgt=",F8.3)') &
+                        " soll=",F7.2," sols=",F7.2," solld=",F7.2," solsd=",F7.2," flwds=",F7.2, &
+                        " tbot=",F7.2," thbot=",F7.2," qbot=",F5.3,"ubot=",F7.3," vbot=",F7.3)') &
                         nstep,inst_index,g,i,gcol,&
                         grc_pp%latdeg(g),grc_pp%londeg(g),&
                         x2l(index_x2l_Faxa_swndr,i), &
@@ -1101,7 +1101,7 @@ contains
                         x2l(index_x2l_Sa_ptem,i), &
                         x2l(index_x2l_Sa_shum,i), &
                         x2l(index_x2l_Sa_u,i), &
-                        x2l(index_x2l_Sa_v,i),x2l(index_x2l_Sa_z,i)
+                        x2l(index_x2l_Sa_v,i)
        end if           
        !! Jungmin        
 
@@ -1347,7 +1347,7 @@ contains
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     !! Jungmin
     use decompMod   , only : ldecomp
-    use clm_varctl       , only : inst_index
+    use elm_varctl       , only : inst_index
     !! Jungmin
     !
     ! !ARGUMENTS:
@@ -1392,20 +1392,17 @@ contains
        l2x(index_l2x_Fall_evap,i)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
        l2x(index_l2x_Fall_swnet,i)  =  lnd2atm_vars%fsa_grc(g)
        !! Jungmin
-       !if(grc_pp%latdeg(g).gt.-15 .and. grc_pp%latdeg(g).lt.15.) then
        gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
-       if(gcol.eq.223 .or. gcol.eq.237) then
+       if(gcol.eq.223 ) then! .or. gcol.eq.237) then
          nstep = get_nstep()
          write(iulog,'("LND_EXPORT: nstep=",I5," bounds=",I5," ig=",I3," inst_index=",I3," rcol=",I5, &
                         " lat=",F8.3," lon=",F8.3,&
-                        " asdir=",F7.3," aldir=",F7.3," asdif=",F7.3," aldif=",F7.3, &
-                        " lhf=",F10.3," shf=",F10.3," cflx1=",F20.10," lwup=",F9.3," ts=",F7.3)') &
+                        " aldir=",F5.3," aldif=",F5.3," asdif=",F5.3," asdif=",F5.3, &
+                        " ts=",F7.2," lwup=",F7.2," shf=",F7.2," lhf=",F7.2," cflx1=",E6.3)') &
                         nstep, g,i,inst_index,gcol,&
                         grc_pp%latdeg(g),grc_pp%londeg(g),&
-                        lnd2atm_vars%albd_grc(g,1),lnd2atm_vars%albd_grc(g,2),&
-                        lnd2atm_vars%albi_grc(g,1),lnd2atm_vars%albi_grc(g,2),&
-                        -lnd2atm_vars%eflx_lh_tot_grc(g),-lnd2atm_vars%eflx_sh_tot_grc(g),-lnd2atm_vars%qflx_evap_tot_grc(g),&
-                        -lnd2atm_vars%eflx_lwrad_out_grc(g),lnd2atm_vars%t_rad_grc(g)
+                        l2x(index_l2x_Sl_anidr,i),l2x(index_l2x_Sl_anidf,i),l2x(index_l2x_Sl_avsdr,i),l2x(index_l2x_Sl_avsdf,i),&
+                        l2x(index_l2x_Sl_t,i), l2x(index_l2x_Fall_lwup,i), l2x(index_l2x_Fall_sen,i), l2x(index_l2x_Fall_lat,i), l2x(index_l2x_Fall_evap,i)
        end if           
        !! Jungmin        
        if (index_l2x_Fall_fco2_lnd /= 0) then
