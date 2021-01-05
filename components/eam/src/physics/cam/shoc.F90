@@ -4389,7 +4389,6 @@ subroutine pblintd_surf_temp(&
 
     !===================
     ! const parameter for Diagnosis of PBL depth
-    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
     real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
     real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
     real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
@@ -4413,7 +4412,7 @@ subroutine pblintd_surf_temp(&
        check(i)  = (kbfs(i) > 0._rtype)
        tlv(i)    = thv(i,nlev)
        if (check(i)) then
-          phiminv      = bfb_pow((1._rtype - binm*pblh(i)/obklen(i)), onet)
+          phiminv      = bfb_cbrt(1._rtype - binm*pblh(i)/obklen(i))
           rino(i,nlev) = 0.0_rtype
           tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv )
        end if
