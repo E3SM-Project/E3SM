@@ -65,7 +65,6 @@ if (NOT CUDA_BUILD)
     shoc_shoc_main.cpp
     shoc_pblintd_height.cpp
     shoc_tridiag_solver.cpp
-    shoc_pblintd_init.cpp
     shoc_pblintd_surf_temp.cpp
     shoc_pblintd_check_pblh.cpp
     shoc_pblintd.cpp

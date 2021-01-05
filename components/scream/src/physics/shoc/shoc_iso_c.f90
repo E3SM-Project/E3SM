@@ -1354,18 +1354,6 @@ contains
     call pblintd_height(shcol, nlev, z, u, v, ustar, thv, thv_ref, pblh, rino, check)
   end subroutine pblintd_height_c
 
-  subroutine pblintd_init_c(shcol, nlev, z, check, rino, pblh) bind(C)
-    use shoc, only : pblintd_init
-
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev
-    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z
-    logical(kind=c_bool) , intent(out), dimension(shcol) :: check
-    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: rino
-    real(kind=c_real) , intent(out), dimension(shcol) :: pblh
-
-    call pblintd_init(shcol, nlev, z, check, rino, pblh)
-  end subroutine pblintd_init_c
-
   subroutine vd_shoc_decomp_c(shcol, nlev, nlevi, kv_term, tmpi, rdp_zt, dtime, flux, du, dl, d) bind(C)
     use shoc, only : vd_shoc_decomp
 

@@ -479,17 +479,19 @@ struct Functions
   static void shoc_main(const Int& shcol, const Int& nlev, const Int& nlevi, const Spack& dtime, const Int& nadv, const uview_1d<const Spack>& host_dx, const uview_1d<const Spack>& host_dy, const uview_1d<const Spack>& thv, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& pres, const uview_1d<const Spack>& presi, const uview_1d<const Spack>& pdel, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& wtracer_sfc, const Int& num_qtracers, const uview_1d<const Spack>& w_field, const uview_1d<const Spack>& exner, const uview_1d<const Spack>& phis, const uview_1d<Spack>& host_dse, const uview_1d<Spack>& tke, const uview_1d<Spack>& thetal, const uview_1d<Spack>& qw, const uview_1d<Spack>& u_wind, const uview_1d<Spack>& v_wind, const uview_1d<Spack>& qtracers, const uview_1d<Spack>& wthv_sec, const uview_1d<Spack>& tkh, const uview_1d<Spack>& tk, const uview_1d<Spack>& shoc_ql, const uview_1d<Spack>& shoc_cldfrac, const uview_1d<Spack>& pblh, const uview_1d<Spack>& shoc_mix, const uview_1d<Spack>& isotropy, const uview_1d<Spack>& w_sec, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& w3, const uview_1d<Spack>& wqls_sec, const uview_1d<Spack>& brunt, const uview_1d<Spack>& shoc_ql2);
 
   KOKKOS_FUNCTION
-  static void pblintd_height(const MemberType& team, const Int& nlev, const Int& npbl,
-         const uview_1d<const Spack>& z, const uview_1d<const Spack>& u,
-         const uview_1d<const Spack>& v, const Scalar& ustar, const uview_1d<const Spack>& thv,
-         const Scalar& thv_ref, Scalar& pblh, const uview_1d<Spack>& rino, bool& check);
-
-  KOKKOS_FUNCTION
-  static void pblintd_init(
-      const Scalar& z, 
-      bool& check, 
-      Scalar& rino, 
-      Scalar& pblh);
+  static void pblintd_height(
+    const MemberType& team,
+    const Int& nlev,
+    const Int& npbl,
+    const uview_1d<const Spack>& z,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const Scalar& ustar,
+    const uview_1d<const Spack>& thv,
+    const Scalar& thv_ref,
+    Scalar& pblh,
+    const uview_1d<Spack>& rino,
+    bool& check);
   
   KOKKOS_FUNCTION
   static void vd_shoc_decomp(
@@ -513,9 +515,6 @@ struct Functions
     const uview_2d<Spack>&  var);
 
   KOKKOS_FUNCTION
-  static void pblintd_init(const Int& shcol, const Int& nlev, const uview_1d<const Spack>& z, const uview_1d<bool>& check, const uview_1d<Spack>& rino, const uview_1d<Spack>& pblh);
-
-  KOKKOS_FUNCTION
   static void pblintd_surf_temp(const Int& nlev, const Int& nlevi, const Int& npbl,
       const uview_1d<const Spack>& z, const Scalar& ustar,
       const Scalar& obklen, const Scalar& kbfs,
@@ -527,7 +526,25 @@ struct Functions
               const uview_1d<const Spack>& z, const Scalar& ustar, const bool& check, Scalar& pblh);
 
   KOKKOS_FUNCTION
-  static void pblintd(const Int& shcol, const Int& nlev, const Int& nlevi, const uview_1d<const Spack>& z, const uview_1d<const Spack>& zi, const uview_1d<const Spack>& thl, const uview_1d<const Spack>& ql, const uview_1d<const Spack>& q, const uview_1d<const Spack>& u, const uview_1d<const Spack>& v, const uview_1d<const Spack>& ustar, const uview_1d<const Spack>& obklen, const uview_1d<const Spack>& kbfs, const uview_1d<const Spack>& cldn, const uview_1d<Spack>& pblh);
+  static void pblintd(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Int&                   npbl,
+    const uview_1d<const Spack>& z,
+    const uview_1d<const Spack>& zi,
+    const uview_1d<const Spack>& thl,
+    const uview_1d<const Spack>& ql,
+    const uview_1d<const Spack>& q,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const Scalar&                ustar,
+    const Scalar&                obklen,
+    const Scalar&                kbfs,
+    const uview_1d<const Spack>& cldn,
+    const uview_1d<Spack>&       rino,
+    const uview_1d<Spack>&       thv,
+    Scalar&                      pblh);
 
   KOKKOS_FUNCTION
   static void shoc_grid(
@@ -624,9 +641,7 @@ struct Functions
 # include "shoc_dp_inverse_impl.hpp"
 # include "shoc_shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
-# include "shoc_pblintd_init_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
-# include "shoc_pblintd_init_impl.hpp"
 # include "shoc_pblintd_surf_temp_impl.hpp"
 # include "shoc_pblintd_check_pblh_impl.hpp"
 # include "shoc_pblintd_impl.hpp"

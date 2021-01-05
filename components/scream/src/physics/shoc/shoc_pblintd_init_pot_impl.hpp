@@ -25,7 +25,7 @@ void Functions<S,D>
    const Int nlev_pack = ekat::npack<Spack>(nlev);
 
    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const int& k) {
-     auto th = thl(k) + (lcond/cp)*ql(k);
+     const auto th = thl(k) + (lcond/cp)*ql(k);
      thv(k) = th * (one + eps*q(k) - ql(k));
    });
 }
