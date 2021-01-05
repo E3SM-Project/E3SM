@@ -1051,15 +1051,16 @@ def convert_to_string(value, type_str=None, vid=""):
     """
     if value is not None and not isinstance(value, six.string_types):
         if type_str == "char":
-            expect(isinstance(value, six.string_types), "Wrong type for entry id '{}'".format(vid))
+            expect(isinstance(value, six.string_types), "Wrong type (char) for entry id '{}', value '{}'".format(vid, value))
         elif type_str == "integer":
-            expect(isinstance(value, six.integer_types), "Wrong type for entry id '{}'".format(vid))
+            value = int(value)
+            expect(isinstance(value, six.integer_types), "Wrong type (integer) for entry id '{}', value '{}'".format(vid, value))
             value = str(value)
         elif type_str == "logical":
-            expect(type(value) is bool, "Wrong type for entry id '{}'".format(vid))
+            expect(type(value) is bool, "Wrong type (logical) for entry id '{}', value '{}'".format(vid, value))
             value = "TRUE" if value else "FALSE"
         elif type_str == "real":
-            expect(type(value) is float, "Wrong type for entry id '{}'".format(vid))
+            expect(type(value) is float, "Wrong type (real) for entry id '{}', value '{}'".format(vid, value))
             value = str(value)
         else:
             expect(False, "Unknown type '{}'".format(type_str))
