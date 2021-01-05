@@ -111,13 +111,14 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: velocityMeridional
    real (kind=RKIND), dimension(:,:), pointer :: velocityZonal
 
-   real(kind=RKIND), dimension(:, :), pointer :: kappaGMCell
-   real(kind=RKIND), dimension(:, :), pointer :: kappaRediSfcTaper
-   real(kind=RKIND), dimension(:, :), pointer :: kappaRediCell
-   real(kind=RKIND), dimension(:, :), pointer :: k33
+   real(kind=RKIND), dimension(:,:), pointer :: kappaGMCell
+   real(kind=RKIND), dimension(:,:), pointer :: RediKappaScaling
+   real(kind=RKIND), dimension(:,:), pointer :: RediKappaSfcTaper
+   real(kind=RKIND), dimension(:,:), pointer :: RediKappaCell
+   real(kind=RKIND), dimension(:,:), pointer :: k33
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
-   real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
+   real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
 
    integer, dimension(:), pointer :: indMLD
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
@@ -330,13 +331,14 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappaCell', RediKappaCell)
 
       call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
 

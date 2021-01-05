@@ -28,6 +28,7 @@ module ocn_time_average_coupled
     use ocn_tracer_ecosys
     use ocn_tracer_DMS
     use ocn_tracer_MacroMolecules
+    use ocn_diagnostics_variables
 
     implicit none
     save
@@ -194,19 +195,17 @@ module ocn_time_average_coupled
 !>  This routine accumulated the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, timeLevel)!{{{
-        type (mpas_pool_type), intent(in) :: diagnosticsPool
+    subroutine ocn_time_average_coupled_accumulate(statePool, forcingPool, timeLevel)!{{{
         type (mpas_pool_type), intent(in) :: statePool
         type (mpas_pool_type), intent(inout) :: forcingPool
         integer, intent(in) :: timeLevel
 
-        real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, avgSurfaceVelocity
-        real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
+        real (kind=RKIND), dimension(:,:), pointer :: avgSurfaceVelocity
+        real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
-        real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
         integer :: iCell
         integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled, nCells
-        real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities, &
+        real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce
 
@@ -238,11 +237,6 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgOceanSurfacePhytoC, &
                                                       avgOceanSurfaceDOC
 
-        call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
-        call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
-        call mpas_pool_get_array(diagnosticsPool, 'gradSSHZonal', gradSSHZonal)
-        call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', gradSSHMeridional)
-
         call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
@@ -273,8 +267,6 @@ module ocn_time_average_coupled
         !$omp end parallel
 
         if(trim(config_land_ice_flux_mode) == 'coupled') then
-           call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
-           call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
            call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, timeLevel)
 
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
