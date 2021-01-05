@@ -2202,7 +2202,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_r8, site_ground_r8, site_size_pft_r8
    use FatesIOVariableKindMod, only : site_size_r8, site_pft_r8, site_age_r8
    use FatesIOVariableKindMod, only : site_fuel_r8, site_cwdsc_r8, site_scag_r8
-   use FatesIOVariableKindMod, only : site_scagpft_r8, site_agepft_r8
+   use FatesIOVariableKindMod, only : site_scagpft_r8, site_agepft_r8, site_agefuel_r8
    use FatesIOVariableKindMod, only : site_height_r8, site_elem_r8, site_elpft_r8
    use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
@@ -2338,7 +2338,8 @@ end subroutine wrap_update_hifrq_hist
              site_age_r8, site_height_r8, site_fuel_r8, site_cwdsc_r8, &
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, & 
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
-             site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8)
+             site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
+             site_agefuel_r8)
 
            d_index = this%fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = this%fates_hist%dim_bounds(d_index)%name
@@ -2679,6 +2680,9 @@ end subroutine wrap_update_hifrq_hist
    
    fates%coage_class_begin = 1
    fates%coage_class_end = nlevcoage
+
+   fates%agefuel_begin = 1
+   fates%agefuel_end   = nlevage_fates * nfsc_fates
    
  end subroutine hlm_bounds_to_fates_bounds
 
