@@ -148,10 +148,9 @@ contains
      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, zMid
 
-     real (kind=RKIND), dimension(:,:), pointer :: density
+     real (kind=RKIND), dimension(:,:), pointer :: density, tracersSurfaceValue
      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceDraft, &
                                                  effectiveDensityInLandIce
-
 
      real(kind=RKIND), dimension(:,:), pointer :: origZMid
      integer, dimension(:), pointer :: origMaxLevelCell, modifySSHMask
@@ -174,8 +173,9 @@ contains
        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
+       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
 
-       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+       call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
            nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
@@ -213,8 +213,9 @@ contains
          call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
          call mpas_pool_get_array(diagnosticsPool, 'density', density)
          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+         call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
 
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+         call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
              nCells, 0, 'relative', density, iErr, &
              timeLevelIn=1)
 
@@ -283,13 +284,14 @@ contains
        call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
        call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
        call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
        call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
 
 
-       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+       call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
            nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
