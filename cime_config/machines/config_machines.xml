@@ -1186,7 +1186,7 @@
         <command name="load">netcdf-c/4.4.1-qvxyzq2</command>
         <command name="load">netcdf-cxx/4.2-binixgj</command>
         <command name="load">netcdf-fortran/4.4.4-rdxohvp</command>
-        <command name="load">parallel-netcdf/1.12.1-kstkfoc</command>
+        <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gcc/9.2.0-ugetvbp</command>
@@ -1222,7 +1222,9 @@
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
     <environment_variables mpilib="impi">
-      <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">core</env>
     </environment_variables>
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
