@@ -31,12 +31,6 @@ module variance_transport_mod
    real(crm_rknd), allocatable :: t_vt_pert(:,:,:,:) ! LSE perturbation from horizontal mean
    real(crm_rknd), allocatable :: q_vt_pert(:,:,:,:) ! QT  perturbation from horizontal mean
 
-#if defined(MMF_VT_KMAX)
-   integer, parameter :: filter_wn_max = MMF_VT_KMAX
-#else
-   integer, parameter :: filter_wn_max = 0
-#endif
-
 contains
 
 !===============================================================================
@@ -84,7 +78,7 @@ end subroutine deallocate_VT
 
 !===============================================================================
 !===============================================================================
-subroutine VT_filter(ncrms,f_in,f_out)
+subroutine VT_filter(ncrms,filter_wn_max,f_in,f_out)
    !----------------------------------------------------------------------------
    ! Purpose: use FFT to filter out high frequency modes
    !----------------------------------------------------------------------------
@@ -94,8 +88,10 @@ subroutine VT_filter(ncrms,f_in,f_out)
 
    ! interface arguments
    integer, intent(in) :: ncrms
+   integer, intent(in) :: filter_wn_max
    real(crm_rknd), dimension(ncrms,nx,ny,nzm), intent(in ) :: f_in
    real(crm_rknd), dimension(ncrms,nx,ny,nzm), intent(out) :: f_out
+
 
    ! local variables
    integer, parameter :: lensav = nx+15 ! must be at least N + INT(LOG(REAL(N))) + 4.
@@ -144,7 +140,7 @@ end subroutine VT_filter
 
 !===============================================================================
 !===============================================================================
-subroutine VT_diagnose(ncrms)
+subroutine VT_diagnose(ncrms,filter_wn_max)
    !----------------------------------------------------------------------------
    ! Purpose: Diagnose amplitude for each wavenumber for variance transport
    !----------------------------------------------------------------------------
@@ -154,6 +150,7 @@ subroutine VT_diagnose(ncrms)
 
    ! interface arguments
    integer, intent(in) :: ncrms
+   integer, intent(in) :: filter_wn_max
 
    ! local variables
    real(crm_rknd), allocatable :: t_mean(:,:)

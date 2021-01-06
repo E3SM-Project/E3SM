@@ -3628,6 +3628,10 @@ add_default($nl, 'MMF_microphysics_scheme');
 add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
 
+# MMF Variance Transport
+add_default($nl, 'use_MMF_VT');
+add_default($nl, 'MMF_VT_max_wavenumber');
+
 # MMF CRM mean-state acceleration
 add_default($nl, 'use_crm_accel');
 add_default($nl, 'crm_accel_uv');

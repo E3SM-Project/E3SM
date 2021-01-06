@@ -61,9 +61,11 @@ integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arith
                                                        ! 2==> Yes-Average in emissivity.
 
 character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
-logical           :: use_MMF            = .false.    ! true => use MMF / super-parameterization
+logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MAML             = .false.    ! true => use Multiple Atmosphere and Multiple Land
+logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
+integer           :: MMF_VT_max_wavenumber= 0          ! if >0 then use filtered MMF variance transport
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
 real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
 logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
@@ -183,6 +185,7 @@ subroutine phys_ctl_readnl(nlfile)
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, use_MMF, use_ECPP, use_MAML, &
+      use_MMF_VT, MMF_VT_max_wavenumber, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -229,9 +232,11 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
-   call mpibcast(use_MMF,                       1 , mpilog,  0, mpicom)
+   call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MAML,                        1 , mpilog,  0, mpicom)
+   call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
+   call mpibcast(MMF_VT_max_wavenumber,           1 , mpiint,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
    call mpibcast(crm_accel_factor,                1 , mpir8,   0, mpicom)
    call mpibcast(crm_accel_uv,                    1 , mpilog,  0, mpicom)
@@ -436,6 +441,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, use_MAML_out, &
+                        use_MMF_VT_out, MMF_VT_max_wavenumber_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         do_aerocom_ind3_out,  &
@@ -469,6 +475,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MAML_out
+   logical,           intent(out), optional :: use_MMF_VT_out
+   integer,           intent(out), optional :: MMF_VT_max_wavenumber_out
    logical,           intent(out), optional :: use_crm_accel_out
    real(r8),          intent(out), optional :: crm_accel_factor_out
    logical,           intent(out), optional :: crm_accel_uv_out
@@ -537,9 +545,12 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(radiation_scheme_out    ) ) radiation_scheme_out     = radiation_scheme
 
    if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
-   if ( present(use_MMF_out           ) ) use_MMF_out            = use_MMF
+   if ( present(use_MMF_out             ) ) use_MMF_out            = use_MMF
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MAML_out            ) ) use_MAML_out             = use_MAML
+   if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
+   if ( present(MMF_VT_max_wavenumber_out)) MMF_VT_max_wavenumber_out= MMF_VT_max_wavenumber
+   
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
    if ( present(crm_accel_uv_out        ) ) crm_accel_uv_out         = crm_accel_uv

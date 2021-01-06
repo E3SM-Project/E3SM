@@ -45,14 +45,16 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p,
                     real *crm_output_precl_p, real *crm_output_precsc_p, 
                     real *crm_output_precsl_p, real *crm_output_prec_crm_p, real *crm_clear_rh_p,
-                    real *lat0_p, real *long0_p, int *gcolp_p, 
-                    int igstep_in,
+                    real *lat0_p, real *long0_p, int *gcolp_p, int igstep_in,
+                    bool use_VT_in, int VT_filter_wn_max_in,
                     bool use_crm_accel_in, real crm_accel_factor_in, bool crm_accel_uv_in) {
 
   dt_glob = dt_gl;
   pcols = pcols_in;
   ncrms = ncrms_in;
   igstep = igstep_in;
+  use_VT = use_VT_in;
+  VT_filter_wn_max = VT_filter_wn_max_in;
   use_crm_accel = use_crm_accel_in;
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;

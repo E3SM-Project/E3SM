@@ -247,10 +247,8 @@ void post_timeloop() {
     vln  (k,icrm) = vln  (k,icrm) * factor_xy;
   });
 
-#if defined(MMF_VT)
   // extra diagnostic step here for output tendencies
-  VT_diagnose();
-#endif
+  if (use_VT) { VT_diagnose(); }
 
   // for (int k=0; k<plev; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
@@ -263,16 +261,16 @@ void post_timeloop() {
     crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
     crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
 #endif
-#if defined(MMF_VT)
-    if ( k > (plev-nzm-1) ) {
-      int l = plev-(k+1);
-      crm_output_t_vt_tend(k,icrm) = ( t_vt(l,icrm) - crm_input_t_vt(k,icrm) ) * icrm_run_time;
-      crm_output_q_vt_tend(k,icrm) = ( q_vt(l,icrm) - crm_input_q_vt(k,icrm) ) * icrm_run_time;
-    } else {
-      crm_output_t_vt_tend(k,icrm) = 0.0;
-      crm_output_q_vt_tend(k,icrm) = 0.0;
+    if (use_VT) {
+      if ( k > (plev-nzm-1) ) {
+        int l = plev-(k+1);
+        crm_output_t_vt_tend(k,icrm) = ( t_vt(l,icrm) - crm_input_t_vt(k,icrm) ) * icrm_run_time;
+        crm_output_q_vt_tend(k,icrm) = ( q_vt(l,icrm) - crm_input_q_vt(k,icrm) ) * icrm_run_time;
+      } else {
+        crm_output_t_vt_tend(k,icrm) = 0.0;
+        crm_output_q_vt_tend(k,icrm) = 0.0;
+      }
     }
-#endif
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
@@ -297,10 +295,10 @@ void post_timeloop() {
     crm_output_ultend (k,icrm) = 0.0;
     crm_output_vltend (k,icrm) = 0.0;
 #endif
-#if defined(MMF_VT)
-    crm_output_t_vt_tend(k,icrm) = 0.;
-    crm_output_q_vt_tend(k,icrm) = 0.;
-#endif
+    if (use_VT) {
+      crm_output_t_vt_tend(k,icrm) = 0.;
+      crm_output_q_vt_tend(k,icrm) = 0.;
+    }
   });
 
   // Save the last step to the permanent core:
@@ -515,10 +513,10 @@ void post_timeloop() {
 
     crm_output_qt_ls     (l,icrm) = qtend(k,icrm);
     crm_output_t_ls      (l,icrm) = ttend(k,icrm);
-#if defined(MMF_VT)
-    crm_output_t_vt_ls   (l,icrm) = t_vt_tend(k,icrm);
-    crm_output_q_vt_ls   (l,icrm) = q_vt_tend(k,icrm);
-#endif
+    if (use_VT) {
+      crm_output_t_vt_ls   (l,icrm) = t_vt_tend(k,icrm);
+      crm_output_q_vt_ls   (l,icrm) = q_vt_tend(k,icrm);
+    }
   });
 
   parallel_for( ncrms , YAKL_LAMBDA(int icrm) {

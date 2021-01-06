@@ -85,6 +85,7 @@ subroutine crm_physics_register()
    ! local variables
    integer idx
    logical           :: use_ECPP
+   logical           :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
@@ -109,6 +110,7 @@ subroutine crm_physics_register()
 #endif
 
    call phys_getopts( use_ECPP_out = use_ECPP)
+   call phys_getopts( use_MMF_VT_out = use_MMF_VT )
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    if(masterproc) then
@@ -130,13 +132,13 @@ subroutine crm_physics_register()
    ! Setup CRM internal parameters
    call setparm()
 
-#if defined(MMF_VT)
-   ! add variance tracers
-   call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
-                 longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
-   call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
-                 longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
-#endif
+   if (use_MMF_VT) then
+      ! add variance tracers
+      call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                    longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
+      call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), cnst_ind, &
+                    longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
+   end if
 
    ! Register MMF history variables
    call crm_history_register()
@@ -240,11 +242,13 @@ subroutine crm_physics_init(state,species_class)
    integer :: m
    integer :: ierror   ! Error code
    logical :: use_ECPP
+   logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
    integer :: idx_vt_t, idx_vt_q
    integer :: lchnk, ncol
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
 #ifdef ECPP
@@ -283,16 +287,16 @@ subroutine crm_physics_init(state,species_class)
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
 
-#if defined(MMF_VT)
-   ! initialize variance transport tracers
-   call cnst_get_ind( 'VT_T', idx_vt_t )
-   call cnst_get_ind( 'VT_Q', idx_vt_q )
-   do lchnk = begchunk, endchunk
-      ncol  = state(lchnk)%ncol
-      state(lchnk)%q(:ncol,:pver,idx_vt_t) = 0
-      state(lchnk)%q(:ncol,:pver,idx_vt_q) = 0
-   end do
-#endif /* MMF_VT */
+   if (use_MMF_VT) then
+      ! initialize variance transport tracers
+      call cnst_get_ind( 'VT_T', idx_vt_t )
+      call cnst_get_ind( 'VT_Q', idx_vt_q )
+      do lchnk = begchunk, endchunk
+         ncol  = state(lchnk)%ncol
+         state(lchnk)%q(:ncol,:pver,idx_vt_t) = 0
+         state(lchnk)%q(:ncol,:pver,idx_vt_q) = 0
+      end do
+   end if
 
 end subroutine crm_physics_init
 
@@ -418,6 +422,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8) :: ideep_crm(pcols)                    ! gathering array for convective columns
    logical  :: ls, lu, lv, lq(pcnst)               ! flags for updating ptend
    logical  :: use_ECPP                            ! flag for ECPP mode
+   logical  :: use_MMF_VT                          ! flag for MMF variance transport
+   integer  :: MMF_VT_max_wavenumber               ! wavenumber cutoff for filtered variance transport
    character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
@@ -475,6 +481,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    crm_run_time = ztodt
 
    call phys_getopts(use_ECPP_out = use_ECPP)
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT)
+   call phys_getopts(MMF_VT_max_wavenumber_out = MMF_VT_max_wavenumber)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    nstep = get_nstep()
@@ -856,12 +864,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       !---------------------------------------------------------------------------------------------
       ! Variance transport
       !---------------------------------------------------------------------------------------------
-#if defined(MMF_VT)
-      call cnst_get_ind( 'VT_T', idx_vt_t )
-      call cnst_get_ind( 'VT_Q', idx_vt_q )
-      crm_input%t_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_t)
-      crm_input%q_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_q)
-#endif /* MMF_VT */
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         crm_input%t_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_t)
+         crm_input%q_vt(:ncol,:pver) = state%q(:ncol,:pver,idx_vt_q)
+      end if
       !---------------------------------------------------------------------------------------------
       ! Set the input wind (also sets CRM orientation)
       !---------------------------------------------------------------------------------------------
@@ -919,6 +927,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
+               use_MMF_VT, MMF_VT_filter_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
       call t_stopf('crm_call')
@@ -954,6 +963,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
+               use_MMF_VT, MMF_VT_filter_wn_max, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
@@ -972,12 +982,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%q(:ncol,:pver,ixcldliq) = crm_output%qcltend(1:ncol,1:pver)
       ptend%q(:ncol,:pver,ixcldice) = crm_output%qiltend(1:ncol,1:pver)
 
-#if defined(MMF_VT)
-      call cnst_get_ind( 'VT_T', idx_vt_t )
-      call cnst_get_ind( 'VT_Q', idx_vt_q )
-      ptend%q(1:ncol,1:pver,idx_vt_t) = crm_output%t_vt_tend(1:ncol,1:pver)
-      ptend%q(1:ncol,1:pver,idx_vt_q) = crm_output%q_vt_tend(1:ncol,1:pver)
-#endif /* MMF_VT */
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         ptend%q(1:ncol,1:pver,idx_vt_t) = crm_output%t_vt_tend(1:ncol,1:pver)
+         ptend%q(1:ncol,1:pver,idx_vt_q) = crm_output%q_vt_tend(1:ncol,1:pver)
+      end if
 
       !---------------------------------------------------------------------------------------------
       ! Add radiative heating tendency above CRM
@@ -1076,12 +1086,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%lu           = .FALSE.
       ptend%lv           = .FALSE.
 
-#if defined(MMF_VT)
-      call cnst_get_ind( 'VT_T', idx_vt_t )
-      call cnst_get_ind( 'VT_Q', idx_vt_q )
-      ptend%lq(idx_vt_t) = .TRUE.
-      ptend%lq(idx_vt_q) = .TRUE.
-#endif /* MMF_VT */
+      if (use_MMF_VT) then
+         call cnst_get_ind( 'VT_T', idx_vt_t )
+         call cnst_get_ind( 'VT_Q', idx_vt_q )
+         ptend%lq(idx_vt_t) = .TRUE.
+         ptend%lq(idx_vt_q) = .TRUE.
+      end if
 
       !---------------------------------------------------------------------------------------------
       ! CRM momentum tendencies

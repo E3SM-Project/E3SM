@@ -1860,6 +1860,9 @@ real a_bg;
 real a_pr;
 real a_gr;
 
+bool use_VT;
+int  VT_filter_wn_max;
+
 bool crm_accel_uv;
 bool use_crm_accel;
 real crm_accel_factor;

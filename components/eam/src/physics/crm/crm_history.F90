@@ -415,6 +415,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    integer :: ixcldliq, ixcldice       ! liquid and ice constituent indices
    integer :: i, k                     ! loop iterators
    logical :: use_ECPP
+   logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
    integer :: idx_vt_t, idx_vt_q
 
@@ -424,6 +425,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call cnst_get_ind('CLDICE', ixcldice)
 
    call phys_getopts(use_ECPP_out = use_ECPP)
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    lchnk = state%lchnk
@@ -641,16 +643,16 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('MMF_DV',ptend%v, pcols, lchnk )
 #endif /* MMF_MOMENTUM_FEEDBACK */
 
-#if defined( MMF_VT )
-   call cnst_get_ind( 'VT_T', idx_vt_t )
-   call cnst_get_ind( 'VT_Q', idx_vt_q )
-   call outfld('MMF_VT_T',      state%q(:,:,idx_vt_t), pcols, lchnk )
-   call outfld('MMF_VT_Q',      state%q(:,:,idx_vt_q), pcols, lchnk )
-   call outfld('MMF_VT_TEND_T', ptend%q(:,:,idx_vt_t), pcols, lchnk )
-   call outfld('MMF_VT_TEND_Q', ptend%q(:,:,idx_vt_q), pcols, lchnk )
-   call outfld('MMF_VT_TLS',    crm_output%t_vt_ls,    pcols, lchnk )
-   call outfld('MMF_VT_QLS',    crm_output%q_vt_ls,    pcols, lchnk )
-#endif
+   if (use_MMF_VT) then
+      call cnst_get_ind( 'VT_T', idx_vt_t )
+      call cnst_get_ind( 'VT_Q', idx_vt_q )
+      call outfld('MMF_VT_T',      state%q(:,:,idx_vt_t), pcols, lchnk )
+      call outfld('MMF_VT_Q',      state%q(:,:,idx_vt_q), pcols, lchnk )
+      call outfld('MMF_VT_TEND_T', ptend%q(:,:,idx_vt_t), pcols, lchnk )
+      call outfld('MMF_VT_TEND_Q', ptend%q(:,:,idx_vt_q), pcols, lchnk )
+      call outfld('MMF_VT_TLS',    crm_output%t_vt_ls,    pcols, lchnk )
+      call outfld('MMF_VT_QLS',    crm_output%q_vt_ls,    pcols, lchnk )
+   end if
 
 end subroutine crm_history_out
 !---------------------------------------------------------------------------------------------------

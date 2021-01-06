@@ -47,10 +47,10 @@ void timeloop() {
 
       //-----------------------------------------------------------
       // variance transport forcing
-#if defined(MMF_VT)
-      VT_diagnose();
-      VT_forcing();
-#endif
+      if (use_VT) {
+        VT_diagnose();
+        VT_forcing();
+      }
 
       //------------------------------------------------------------
       //       Large-scale and surface forcing:

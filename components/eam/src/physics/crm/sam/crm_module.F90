@@ -46,6 +46,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
+                use_VT, VT_filter_wn_max, &
                 use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
@@ -95,6 +96,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), intent(in) :: longitude0(:)
     integer       , intent(in) :: igstep
     integer       , intent(in) :: gcolp(:)
+    logical       , intent(in) :: use_VT
+    integer       , intent(in) :: VT_filter_wn_max
     logical       , intent(in) :: use_crm_accel_in
     real(crm_rknd), intent(in) :: crm_accel_factor_in
     logical       , intent(in) :: crm_accel_uv_in
@@ -247,9 +250,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined(MMF_ESMT)
   call allocate_scalar_momentum(ncrms)
 #endif
-#if defined(MMF_VT)
-  call allocate_VT(ncrms)
-#endif
+  if (use_VT) call allocate_VT(ncrms)
 
   crm_rad_temperature => crm_rad%temperature(1:ncrms,:,:,:)
   crm_rad_qv          => crm_rad%qv         (1:ncrms,:,:,:)
@@ -532,9 +533,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_VT)
-  call VT_diagnose(ncrms)
-#endif
+  if (use_VT) call VT_diagnose(ncrms,VT_filter_wn_max)
 
   !$acc parallel loop collapse(2) async(asyncid)
   do k=1,nzm
@@ -565,11 +564,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       vg0  (icrm,k) = vln(icrm,l)
       tg0  (icrm,k) = crm_input%tl(icrm,l)+gamaz(icrm,k)-fac_cond*crm_input%qccl(icrm,l)-fac_sub*crm_input%qiil(icrm,l)
       qg0  (icrm,k) = crm_input%ql(icrm,l)+crm_input%qccl(icrm,l)+crm_input%qiil(icrm,l)
-#if defined(MMF_VT)
-      ! variance transport input forcing
-      t_vt_tend(icrm,k) = ( crm_input%t_vt(icrm,l) - t_vt(icrm,k) )*idt_gl
-      q_vt_tend(icrm,k) = ( crm_input%q_vt(icrm,l) - q_vt(icrm,k) )*idt_gl
-#endif
+      if (use_VT) then
+        ! variance transport input forcing
+        t_vt_tend(icrm,k) = ( crm_input%t_vt(icrm,l) - t_vt(icrm,k) )*idt_gl
+        q_vt_tend(icrm,k) = ( crm_input%q_vt(icrm,l) - q_vt(icrm,k) )*idt_gl
+      end if
     end do ! k
   end do ! icrm
 
@@ -758,10 +757,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       !------------------------------------------------------------
       ! variance transport forcing
-#if defined(MMF_VT)
-      call VT_diagnose(ncrms)
-      call VT_forcing(ncrms)
-#endif
+      if (use_VT) then
+        call VT_diagnose(ncrms,VT_filter_wn_max)
+        call VT_forcing(ncrms)
+      end if
 
       !------------------------------------------------------------
       !       Large-scale and surface forcing:
@@ -1231,10 +1230,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_VT)
   ! extra diagnostic step here for output tendencies
-  call VT_diagnose(ncrms)
-#endif
+  if (use_VT) call VT_diagnose(ncrms,VT_filter_wn_max)
 
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1 , plev
@@ -1271,21 +1268,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-#if defined(MMF_VT)
-  ! zero out tendencies in top 2 CRM levels and above CRM top
-  do k = 1,plev
-    do icrm = 1,ncrms
-      if ( k>(ptop+1) ) then
-        l = plev-k+1
-        crm_output%t_vt_tend(icrm,k) = ( t_vt(icrm,l) - crm_input%t_vt(icrm,k) ) * icrm_run_time
-        crm_output%q_vt_tend(icrm,k) = ( q_vt(icrm,l) - crm_input%q_vt(icrm,k) ) * icrm_run_time
-      else
-        crm_output%t_vt_tend(icrm,k) = 0.
-        crm_output%q_vt_tend(icrm,k) = 0.
-      end if
+  if (use_VT) then
+    ! zero out tendencies in top 2 CRM levels and above CRM top
+    do k = 1,plev
+      do icrm = 1,ncrms
+        if ( k>(ptop+1) ) then
+          l = plev-k+1
+          crm_output%t_vt_tend(icrm,k) = ( t_vt(icrm,l) - crm_input%t_vt(icrm,k) ) * icrm_run_time
+          crm_output%q_vt_tend(icrm,k) = ( q_vt(icrm,l) - crm_input%q_vt(icrm,k) ) * icrm_run_time
+        else
+          crm_output%t_vt_tend(icrm,k) = 0.
+          crm_output%q_vt_tend(icrm,k) = 0.
+        end if
+      end do
     end do
-  end do
-#endif /* MMF_VT */
+  end if
 
   !-------------------------------------------------------------
   !
@@ -1629,10 +1626,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
       crm_output%qt_ls     (icrm,l) = qtend(icrm,k)
       crm_output%t_ls      (icrm,l) = ttend(icrm,k)
-#if defined(MMF_VT)
-      crm_output%t_vt_ls   (icrm,l) = t_vt_tend(icrm,k)
-      crm_output%q_vt_ls   (icrm,l) = q_vt_tend(icrm,k)
-#endif
+      if (use_VT) then
+        crm_output%t_vt_ls (icrm,l) = t_vt_tend(icrm,k)
+        crm_output%q_vt_ls (icrm,l) = q_vt_tend(icrm,k)
+      end if
     enddo
   enddo
 
@@ -1749,9 +1746,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined( MMF_ESMT )
   call deallocate_scalar_momentum()
 #endif
-#if defined(MMF_VT)
-  call deallocate_VT()
-#endif
+  if (use_VT) call deallocate_VT()
 
 end subroutine crm
 

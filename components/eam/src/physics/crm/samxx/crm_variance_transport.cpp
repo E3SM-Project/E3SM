@@ -3,19 +3,13 @@
 //==============================================================================
 //==============================================================================
 
-void VT_filter(real4d &f_in, real4d &f_out) {
+void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   // local variables
   int nx2 = nx+2;
   int ny2 = ny+2*YES3D;
   real4d fft_out ("fft_out" , nzm, ny2, nx2, ncrms);
 
   int constexpr fftySize = ny > 4 ? ny : 4;
-
-#if defined(MMF_VT_KMAX)
-  int filter_wn_max = MMF_VT_KMAX;
-#else
-  int filter_wn_max = 1;
-#endif
   
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
@@ -119,12 +113,6 @@ void VT_diagnose() {
   real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
   real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
 
-#if defined(MMF_VT_KMAX)
-  int filter_wn_max = MMF_VT_KMAX;
-#else
-  int filter_wn_max = 1;
-#endif
-
   //----------------------------------------------------------------------------
   // calculate horizontal mean
   //----------------------------------------------------------------------------
@@ -158,7 +146,7 @@ void VT_diagnose() {
   //----------------------------------------------------------------------------
   // calculate anomalies
   //----------------------------------------------------------------------------
-  if (filter_wn_max>0) {
+  if (VT_filter_wn_max>0) {
   // use filtered state for anomalies
 
     // do k = 1,nzm
@@ -172,8 +160,8 @@ void VT_diagnose() {
       tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
     });
 
-    VT_filter( tmp_t, t_vt_pert );
-    VT_filter( tmp_q, q_vt_pert );
+    VT_filter( VT_filter_wn_max, tmp_t, t_vt_pert );
+    VT_filter( VT_filter_wn_max, tmp_q, q_vt_pert );
 
   } else { 
   // use total variance
