@@ -26,6 +26,7 @@ module ocn_forcing
    use mpas_log
    use mpas_dmpar
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -95,10 +96,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, err, timeLevelIn)!{{{
+    subroutine ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
         type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
         type (mpas_pool_type), intent(in) :: statePool !< Input: State information
-        type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostics information
         type (mpas_pool_type), intent(inout) :: forcingPool !< Input/Output: Forcing information
         integer, intent(out) :: err !< Output: Error code
         integer, intent(in), optional :: timeLevelIn
@@ -111,8 +111,6 @@ contains
 
         real (kind=RKIND) :: zTop, zBot, transmissionCoeffTop, transmissionCoeffBot
 
-        real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
-        real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
         real (kind=RKIND), dimension(:,:), pointer :: layerThickness, fractionAbsorbed, fractionAbsorbedRunoff
 
         integer :: iCell, k, timeLevel, nCells
@@ -132,10 +130,6 @@ contains
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
-
-        call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
-        call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficientRunoff',  &
-                                                   surfaceFluxAttenuationCoefficientRunoff)
 
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
         call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
