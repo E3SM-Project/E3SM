@@ -771,7 +771,7 @@ contains
     integer n
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices
+         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
@@ -884,9 +884,24 @@ contains
 
         deallocate(moabconn)
         ! use merge vertices new imoab method to fix cells
-        ierr = iMOAB_MergeVertices(mlnid)
+        deallocate(vgids) ! use it for global ids, for elements in full mesh or vertices in point cloud
+        allocate(vgids(lsz*ldomain%nv)) ! 
+        do n = 1, lsz
+          do i=1,ldomain%nv
+            vgids( (n-1)*ldomain%nv+i ) = (ldecomp%gdc2glo(bounds%begg+n-1)-1)*ldomain%nv+i ! local to global !
+          end do
+        end do
+        ent_type = 0 ! vertices now
+        tagname = 'GLOBAL_ID'//CHAR(0)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids )
         if (ierr > 0 )  &
-          call endrun('Error: fail to fix vertices in land mesh ')
+          call endrun('Error: fail to set global ID tag on vertices in land mesh ')
+        ierr = iMOAB_UpdateMeshInfo( mlnid )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to update mesh info ')
+        !ierr = iMOAB_MergeVertices(mlnid)
+        !if (ierr > 0 )  &
+        !  call endrun('Error: fail to fix vertices in land mesh ')
 
     else ! old point cloud mesh
         allocate(moab_vert_coords(lsz*dims))
