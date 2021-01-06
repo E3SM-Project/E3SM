@@ -15,6 +15,7 @@ module ocn_gm
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -84,7 +85,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_GM_compute_Bolus_velocity(statePool, diagnosticsPool, &
+   subroutine ocn_GM_compute_Bolus_velocity(statePool, &
                                             meshPool, scratchPool, timeLevelIn)
       !{{{
 
@@ -108,7 +109,6 @@ contains
       !-----------------------------------------------------------------
 
       type(mpas_pool_type), intent(inout) :: &
-         diagnosticsPool, &! pool containing some diagnostics
          scratchPool           ! pool containing some scratch space
 
       !-----------------------------------------------------------------
@@ -117,18 +117,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real(kind=RKIND), dimension(:, :), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
-                                                    normalVelocity, tangentialVelocity, layerThicknessEdge, &
-                                                    k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
-                                                    layerThickness, inSituThermalExpansionCoeff, &
-                                                    inSituSalineContractionCoeff, RediKappaScaling, gmKappaScaling, RediKappaSfcTaper, &
-                                                    zTop, RiTopOfCell
+      real(kind=RKIND), dimension(:, :), pointer :: &
+                                                    normalVelocity, &
+                                                    layerThickness
 
-      real(kind=RKIND), dimension(:), pointer   :: c_Visbeck, gmBolusKappa, cGMphaseSpeed, &
-                ssh, eddyLength, eddyTime, betaEdge, fEdge, gmResolutionTaper, RediKappa
-      real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
+      real(kind=RKIND), dimension(:), pointer   :: &
+                ssh, fEdge
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
+      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
@@ -170,31 +166,6 @@ contains
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-
-      call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff', inSituThermalExpansionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
-
-      call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
-      call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
-      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -604,13 +575,7 @@ contains
          ! When config_GM_closure = 'Visbeck' actually modify the value of gmBolusKappa based on
          ! Visbeck et al (1997), JPO as recast by Cessi (2008), JPO
          if (local_config_GM_compute_Visbeck) then
-           call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-           call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-           call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
-           call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
-           call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-           call mpas_pool_get_array(diagnosticsPool, 'c_Visbeck', c_Visbeck)
            !$omp parallel
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2)
@@ -661,9 +626,7 @@ contains
          ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
          ! Eden and Greatbach (2008), Ocean Model., but assuming quasi-geostrophy to simplify the EKE budget
          if (local_config_GM_compute_EdenGreatbatch) then
-           call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-           call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
 
            !$omp parallel
            !$omp do schedule(runtime) private(cell1, cell2, sigma, RiTopOfEdge, &

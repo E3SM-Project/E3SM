@@ -351,7 +351,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+   subroutine ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
       forcingPool, scratchPool, statePool, dt, err) !{{{
 
       !-----------------------------------------------------------------
@@ -361,8 +361,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool, &     !< Input: mesh information
-         diagnosticsPool !< Input: diagnostics information
+         meshPool        !< Input: mesh information
       real(kind=RKIND), intent(in) :: dt ! the time step over which to accumulate fluxes
 
       !-----------------------------------------------------------------
@@ -398,7 +397,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
                                                   landIceSurfaceTemperature, &
-                                                  landIceFrictionVelocity, &
                                                   landIceFreshwaterFlux, &
                                                   landIceHeatFlux, heatFluxToLandIce
       real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMassOld, &
@@ -408,10 +406,9 @@ contains
 
       integer, dimension(:), pointer :: landIceMask
 
-      real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, &
-                                                    landIceInterfaceTracers, &
-                                                    landIceTracerTransferVelocities
-      integer, pointer :: indexBLT, indexBLS, indexIT, indexIS, indexHeatTrans, indexSaltTrans
+      real (kind=RKIND), dimension(:,:), pointer :: &
+                                                    landIceInterfaceTracers
+      integer, pointer :: indexIT, indexIS
 
       ! Scratch Arrays
       !---
@@ -433,18 +430,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
-      call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
-
       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-      call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerTemperature', indexBLT)
-      call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceBoundaryLayerSalinity', indexBLS)
-
-      if(jenkinsOn .or. hollandJenkinsOn) then
-        call mpas_pool_get_array(diagnosticsPool, 'landIceTracerTransferVelocities', landIceTracerTransferVelocities)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceHeatTransferVelocity', indexHeatTrans)
-        call mpas_pool_get_dimension(diagnosticsPool, 'index_landIceSaltTransferVelocity', indexSaltTrans)
-      end if
 
       call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
