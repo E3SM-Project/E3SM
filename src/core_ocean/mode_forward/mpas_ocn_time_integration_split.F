@@ -1706,7 +1706,7 @@ module ocn_time_integration_split
 
                ! Efficiency note: We really only need this to compute layerThicknessEdge, density, pressure, and SSH
                ! in this diagnostics solve.
-               call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, &
+               call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
                           scratchPool, tracersPool, 2, full=.false.)
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1944,7 +1944,7 @@ module ocn_time_integration_split
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows.
-        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+        call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
         block => block % next
       end do
@@ -1961,7 +1961,7 @@ module ocn_time_integration_split
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
  !       if (config_use_GM.or.config_use_Redi) then
- !          call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+ !          call ocn_gm_compute_Bolus_velocity(statePool, &
  !             meshPool, scratchPool, timeLevelIn=2)
  !       end if
         call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
@@ -2057,14 +2057,14 @@ module ocn_time_integration_split
             !$omp end parallel
          end if
 
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
 !         ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
 !         if (config_use_GM.or.config_use_Redi) then
-!            call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+!            call ocn_gm_compute_Bolus_velocity(statePool, &
 !               meshPool, scratchPool, timeLevelIn=2)
 !         end if
 
