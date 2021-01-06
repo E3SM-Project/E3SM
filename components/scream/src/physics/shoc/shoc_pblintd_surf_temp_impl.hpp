@@ -20,7 +20,6 @@ void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const 
       Scalar& pblh, bool& check, const uview_1d<Spack>& rino)
 {
   // const parameter for Diagnosis of PBL depth
-  const Scalar onet  = 1./3.;
   const Scalar fak   =  8.5;
   const Scalar betam = 15.0;
   const Scalar sffrac=  0.1;
@@ -38,7 +37,7 @@ void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const 
   check  = kbfs > 0.;
   tlv    = thvs(nlev-1);
   if (check) {
-     const auto phiminv = std::pow((1 - binm*pblh/obklen), onet);
+     const auto phiminv = std::cbrt(1 - binm*pblh/obklen);
      rinos(nlev-1) = 0.0;
      tlv  = thvs(nlev-1) + kbfs*fak/(ustar*phiminv);
   }
