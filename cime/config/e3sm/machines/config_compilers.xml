@@ -1267,6 +1267,32 @@ for mct, etc.
   <CXX_LIBS>-lstdc++</CXX_LIBS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="chrysalis">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</ADD_FFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp -static-intel</ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_LDFLAGS>
+  <ADD_FFLAGS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --fflags)</ADD_FFLAGS>
+  <ADD_SLIBS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_C_PATH)/bin/nc-config --libs)</ADD_SLIBS>
+  <ADD_SLIBS>-mkl</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
+  <MPICC  MPILIB="impi"> mpiicc </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+</compiler>
+
+<compiler MACH="chrysalis" COMPILER="gnu">
+  <ADD_SLIBS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_C_PATH)/bin/nc-config --libs)</ADD_SLIBS>
+  <ADD_SLIBS>-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_gf_lp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</ADD_SLIBS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+</compiler>
+
 <compiler COMPILER="intel" MACH="bebop">
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
