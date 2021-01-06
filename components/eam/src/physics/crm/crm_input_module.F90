@@ -73,10 +73,10 @@ contains
       if (.not. allocated(this%vl))       allocate(this%vl(ncrms,nlev))
       if (.not. allocated(this%ocnfrac))  allocate(this%ocnfrac(ncrms))
       if (.not. allocated(this%wndls))    allocate(this%wndls(ncrms))
-      ! for MAML
+      ! Extra dimension (nx,ny) are for MAML
       if (.not. allocated(this%tau00))    allocate(this%tau00(ncrms,nx,ny))
       if (.not. allocated(this%bflxls))   allocate(this%bflxls(ncrms,nx,ny))
-      if (.not. allocated(this%ts))   allocate(this%ts(ncrms,nx,ny))
+      if (.not. allocated(this%ts))       allocate(this%ts(ncrms,nx,ny))
       if (.not. allocated(this%fluxu00))  allocate(this%fluxu00(ncrms,nx,ny))
       if (.not. allocated(this%fluxv00))  allocate(this%fluxv00(ncrms,nx,ny))
       if (.not. allocated(this%fluxt00))  allocate(this%fluxt00(ncrms,nx,ny))
