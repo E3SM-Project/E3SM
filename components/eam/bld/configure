@@ -1294,10 +1294,11 @@ EOF
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Superparameterization mode (MMF)
+# Multiscale Modelling Framework mode (MMF)
 if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
+    if (defined $opts{'use_MMF_VT'})          { $cfg_ref->set('use_MMF_VT', 1); }
     $cfg_ref->set('use_MMF', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
     $cfg_ref->set('crm_ny', $opts{'crm_ny'});
