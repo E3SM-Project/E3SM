@@ -146,7 +146,7 @@ void VT_diagnose() {
   //----------------------------------------------------------------------------
   // calculate anomalies
   //----------------------------------------------------------------------------
-  if (VT_filter_wn_max>0) {
+  if (VT_wn_max>0) {
   // use filtered state for anomalies
 
     // do k = 1,nzm
@@ -160,8 +160,8 @@ void VT_diagnose() {
       tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
     });
 
-    VT_filter( VT_filter_wn_max, tmp_t, t_vt_pert );
-    VT_filter( VT_filter_wn_max, tmp_q, q_vt_pert );
+    VT_filter( VT_wn_max, tmp_t, t_vt_pert );
+    VT_filter( VT_wn_max, tmp_q, q_vt_pert );
 
   } else { 
   // use total variance

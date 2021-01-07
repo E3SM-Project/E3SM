@@ -4053,7 +4053,7 @@ Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
 </entry>
 
-<entry id="MMF_VT_max_wavenumber" type="real" category="conv"
+<entry id="MMF_VT_wn_max" type="real" category="conv"
        group="phys_ctl_nl" valid_values="">
 Wavenumber cutoff for filtered MMF variance transport. 
 A value of 0 disables filtering so that the total

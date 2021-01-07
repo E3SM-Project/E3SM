@@ -46,7 +46,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_input, crm_state, crm_rad,  &
                 crm_ecpp_output, crm_output, crm_clear_rh, &
                 latitude0, longitude0, gcolp, igstep, &
-                use_VT, VT_filter_wn_max, &
+                use_VT, VT_wn_max, &
                 use_crm_accel_in, crm_accel_factor_in, crm_accel_uv_in)
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     integer       , intent(in) :: igstep
     integer       , intent(in) :: gcolp(:)
     logical       , intent(in) :: use_VT
-    integer       , intent(in) :: VT_filter_wn_max
+    integer       , intent(in) :: VT_wn_max
     logical       , intent(in) :: use_crm_accel_in
     real(crm_rknd), intent(in) :: crm_accel_factor_in
     logical       , intent(in) :: crm_accel_uv_in
@@ -533,7 +533,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
   enddo
 
-  if (use_VT) call VT_diagnose(ncrms,VT_filter_wn_max)
+  if (use_VT) call VT_diagnose(ncrms,VT_wn_max)
 
   !$acc parallel loop collapse(2) async(asyncid)
   do k=1,nzm
@@ -758,7 +758,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       !------------------------------------------------------------
       ! variance transport forcing
       if (use_VT) then
-        call VT_diagnose(ncrms,VT_filter_wn_max)
+        call VT_diagnose(ncrms,VT_wn_max)
         call VT_forcing(ncrms)
       end if
 
@@ -1231,7 +1231,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   ! extra diagnostic step here for output tendencies
-  if (use_VT) call VT_diagnose(ncrms,VT_filter_wn_max)
+  if (use_VT) call VT_diagnose(ncrms,VT_wn_max)
 
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1 , plev

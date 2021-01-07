@@ -422,10 +422,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8) :: ideep_crm(pcols)                    ! gathering array for convective columns
    logical  :: ls, lu, lv, lq(pcnst)               ! flags for updating ptend
    logical  :: use_ECPP                            ! flag for ECPP mode
-   logical  :: use_MMF_VT                          ! flag for MMF variance transport
-   integer  :: MMF_VT_max_wavenumber               ! wavenumber cutoff for filtered variance transport
    character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
+   logical(c_bool):: use_MMF_VT                    ! flag for MMF variance transport (for C++ CRM)
+   logical        :: use_MMF_VT_tmp                ! flag for MMF variance transport (for Fortran CRM)
+   integer        :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
 
    real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
    real(r8) :: tmp_q_sat                           ! temporary saturation specific humidity
@@ -481,9 +483,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    crm_run_time = ztodt
 
    call phys_getopts(use_ECPP_out = use_ECPP)
-   call phys_getopts(use_MMF_VT_out = use_MMF_VT)
-   call phys_getopts(MMF_VT_max_wavenumber_out = MMF_VT_max_wavenumber)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+
+   use_MMF_VT = .false.
+   call phys_getopts(use_MMF_VT_out = use_MMF_VT_tmp)
+   call phys_getopts(MMF_VT_wn_max_out = MMF_VT_wn_max)
+   use_MMF_VT = use_MMF_VT_tmp
 
    nstep = get_nstep()
    lchnk = state%lchnk
@@ -927,7 +932,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
-               use_MMF_VT, MMF_VT_filter_wn_max, &
+               use_MMF_VT, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
       call t_stopf('crm_call')
@@ -963,7 +968,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
-               use_MMF_VT, MMF_VT_filter_wn_max, &
+               use_MMF_VT, MMF_VT_wn_max, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')

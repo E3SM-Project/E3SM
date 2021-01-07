@@ -34,13 +34,13 @@ module cpp_interface_mod
                    crm_output_z0m, crm_output_taux, crm_output_tauy, crm_output_precc, crm_output_precl, crm_output_precsc, &
                    crm_output_precsl, crm_output_prec_crm, crm_clear_rh, &
                    lat0, long0, gcolp, igstep,  &
-                   use_VT, VT_filter_wn_max, &
+                   use_VT, VT_wn_max, &
                    use_crm_accel, crm_accel_factor, crm_accel_uv) bind(C,name="crm")
       use params, only: crm_rknd, crm_iknd, crm_lknd
       use iso_c_binding, only: c_bool
       implicit none
       logical(c_bool), value :: use_VT
-      integer(crm_iknd), value :: VT_filter_wn_max
+      integer(crm_iknd), value :: VT_wn_max
       logical(c_bool), value :: use_crm_accel, crm_accel_uv
       integer(crm_iknd), value :: ncrms_in, pcols_in, plev, igstep
       real(crm_rknd), value :: dt_gl, crm_accel_factor

@@ -3630,7 +3630,7 @@ add_default($nl, 'use_ECPP');
 
 # MMF Variance Transport
 add_default($nl, 'use_MMF_VT');
-add_default($nl, 'MMF_VT_max_wavenumber');
+add_default($nl, 'MMF_VT_wn_max');
 
 # MMF CRM mean-state acceleration
 add_default($nl, 'use_crm_accel');

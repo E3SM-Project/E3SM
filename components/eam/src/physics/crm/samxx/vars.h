@@ -231,7 +231,7 @@ extern real a_pr;
 extern real a_gr;
 
 extern bool use_VT;
-extern int  VT_filter_wn_max;
+extern int  VT_wn_max;
 
 extern bool crm_accel_uv;
 extern bool use_crm_accel;

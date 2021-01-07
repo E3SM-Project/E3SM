@@ -225,8 +225,8 @@ subroutine VT_diagnose(ncrms,filter_wn_max)
          end do
       end do
 
-      call VT_filter( ncrms, tmp_t, t_vt_pert )
-      call VT_filter( ncrms, tmp_q, q_vt_pert )
+      call VT_filter( ncrms, filter_wn_max, tmp_t, t_vt_pert )
+      call VT_filter( ncrms, filter_wn_max, tmp_q, q_vt_pert )
 
    else ! use total variance
 
