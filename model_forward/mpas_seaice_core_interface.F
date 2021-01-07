@@ -601,14 +601,16 @@ module seaice_core_interface
           config_testing_system_test, &
           config_use_snicar_ad, &
           config_perform_unit_test, &
-          config_use_prescribed_ice
+          config_use_prescribed_ice, &
+          config_use_periodic_velocities
 
      logical, pointer :: &
           pkgForcingActive, &
           pkgTestingSystemTestActive, &
           pkgSnicarActive, &
           pkgUnitTestsActive, &
-          pkgPrescribedActive
+          pkgPrescribedActive, &
+          pkgSpecialBoundariesActive
 
      ierr = 0
 
@@ -653,9 +655,15 @@ module seaice_core_interface
      ! pkgPrescribed
      call MPAS_pool_get_config(configPool, "config_use_prescribed_ice", config_use_prescribed_ice)
      call MPAS_pool_get_package(packagePool, "pkgPrescribedActive", pkgPrescribedActive)
-     ! see if we are testing the testing system
      if (config_use_prescribed_ice) then
         pkgPrescribedActive = .true.
+     endif
+
+     ! pkgSpecialBoundaries
+     call MPAS_pool_get_config(configPool, "config_use_periodic_velocities", config_use_periodic_velocities)
+     call MPAS_pool_get_package(packagePool, "pkgSpecialBoundariesActive", pkgSpecialBoundariesActive)
+     if (config_use_periodic_velocities) then
+        pkgSpecialBoundariesActive = .true.
      endif
 
    end subroutine setup_packages_other!}}}
