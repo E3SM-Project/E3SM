@@ -90,6 +90,8 @@
     config_use_ocean_stress = true
     config_use_surface_tilt = true
     config_geostrophic_surface_tilt = true
+    config_ocean_stress_type = 'quadratic'
+    config_use_periodic_velocities = false
 /
 &advection
     config_advection_type = 'incremental_remap'

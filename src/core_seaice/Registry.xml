@@ -624,6 +624,14 @@
 			description="If true calculate the sea surface tilt stress assuming currents are geostrophic."
 			possible_values="true or. false."
 		/>
+		<nml_option name="config_ocean_stress_type" type="character" default_value="quadratic" units="unitless"
+			description="Method for calculating ocean stress."
+			possible_values="'linear', or 'quadratic'"
+		/>
+		<nml_option name="config_use_periodic_velocities" type="logical" default_value="true" units="unitless"
+			description="Use the special boundaries periodic velocities option."
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
@@ -2401,6 +2409,9 @@
 		<!-- prescribed -->
 		<package name="pkgPrescribed" description=""/>
 
+		<!-- Special boundaries -->
+		<package name="pkgSpecialBoundaries" description="Include variables for special boundaries such as periodicity"/>
+
 	</packages>
 
 <!--TODO WHL - Convert iceVolume and snowVolume to iceThickness and snowThickness (and change the source code accordingly) -->
@@ -4173,6 +4184,14 @@
 		<var name="strain11Analytical" type="real" dimensions="nVertices Time"/>
 		<var name="strain22Analytical" type="real" dimensions="nVertices Time"/>
 		<var name="strain12Analytical" type="real" dimensions="nVertices Time"/>
+	</var_struct>
+
+	<!-- Special boundaries -->
+	<var_struct name="special_boundaries" time_levs="1" packages="pkgSpecialBoundaries">
+	        <var name="vertexBoundaryType" type="integer" dimensions="nVertices"/>
+	        <var name="vertexBoundaryTypeLocal" type="integer" dimensions="nVertices"/>
+	        <var name="vertexBoundarySource" type="integer" dimensions="nVertices"/>
+	        <var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"
