@@ -189,7 +189,7 @@ contains
       !$omp end do
       !$omp end parallel
 
-      nCells = nCellsArray(1)
+      nCells = nCellsArray(2)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
 
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
