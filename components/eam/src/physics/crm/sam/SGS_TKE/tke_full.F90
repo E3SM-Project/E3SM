@@ -125,7 +125,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
     enddo
   enddo
 
-  #if defined( SP_CRM_SFC_FLUX ) || defined( MAML )
+#if defined( SP_CRM_SFC_FLUX ) || defined( MAML )
 
   if((nstep.eq.1).AND.(icycle.eq.1)) then
     !bloss(2016-05-09): 
