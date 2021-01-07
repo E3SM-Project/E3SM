@@ -2789,8 +2789,10 @@ contains
                   'set_albedo: size(albedo_dir, 1) /= nswbands')
       call assert(size(albedo_dir, 2) <= pcols, &
                   'set_albedo: size(albedo_dir, 2) > pcols')
-      call assert(size(albedo_dir, 3) <= pcols, &
+#if defined( MAML )
+      call assert(size(albedo_dir, 3) <= num_inst_atm, &
                   'set_albedo: size(albedo_dir, 3) = crm_nx_rad > num_inst_atm') ! For MAML
+#endif      
       call assert(all(shape(albedo_dir) == shape(albedo_dif)), &
                   'set_albedo: albedo_dir and albedo_dif have inconsistent shapes')
       
