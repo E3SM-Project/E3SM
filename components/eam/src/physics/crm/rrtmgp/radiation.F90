@@ -1644,8 +1644,7 @@ contains
                         call get_gas_vmr(icall, state, pbuf, trim(active_gases(igas)), vmr_col(igas,1:ncol,ktop:kbot))
                         ! Copy top model level to level above model top
                         vmr_col(igas,1:ncol,1) = vmr_col(igas,1:ncol,ktop)
-
-                        !! Jungmin
+#if defined( PRINTOUT )
                         do icol = 1,ncol
                            rcol = get_gcol_p(cam_in%lchnk,icol)
                            clat = get_rlat_p(cam_in%lchnk,icol)*180_r8/SHR_CONST_PI 
@@ -1661,6 +1660,7 @@ contains
                               end if
                             end do
                          end do
+#endif                         
                      end do
                      call t_stopf('rad_gas_concentrations')
 
@@ -1748,7 +1748,7 @@ contains
                         aer_optics_sw%ssa(j,ktop:kbot,:) = aer_ssa_bnd_sw(ic,:,:)
                         aer_optics_sw%g  (j,ktop:kbot,:) = aer_asm_bnd_sw(ic,:,:)
                         vmr_all(:,j,:) = vmr_col(:,ic,:)
-                        !! Jungmin
+#if defined( PRINTOUT )
                         rcol = get_gcol_p(cam_in%lchnk,ic)
                         if(rcol.eq.223) then
                            clat = get_rlat_p(cam_in%lchnk,ic)*180._r8/SHR_CONST_PI
@@ -1764,7 +1764,7 @@ contains
                                        albedo_dir_col(iband,ic,ix,iy),albedo_dif_col(iband,ic,ix,iy)
                            end do! iband
                         end if
-                        !! Jungmin
+#endif
                         j = j + 1
                      end do  ! ic = 1,ncol
                      call t_stopf('rad_pack_columns')
@@ -1845,7 +1845,7 @@ contains
                   call average_packed_array(fluxes_clrsky_all%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
                   call average_packed_array(fluxes_clrsky_all%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn_dir(1:ncol,:,iband))
                end do
-               !! Jungmin
+#if defined( PRINTOUT )
                j = 1
                do iy = 1, crm_ny_rad
                   do ix = 1, crm_nx_rad
@@ -1877,8 +1877,7 @@ contains
                      end do! icol
                   end do ! ix
                end do ! iy   
-               !! Jungmin
-               
+#endif               
                call t_stopf('rad_average_fluxes_sw')
 
                ! Send fluxes to history buffer
@@ -1996,8 +1995,7 @@ contains
                   call outfld('CRM_QRL', crm_qrl(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                   call outfld('CRM_QRLC', crm_qrlc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                end if
-               
-               !! Jungmin
+#if defined( PRINTOUT )               
                j = 1
                do iy = 1, crm_ny_rad
                   do ix = 1, crm_nx_rad
@@ -2027,8 +2025,7 @@ contains
                      end do! icol
                   end do! ix   
                end do! iy
-               !! Jungmin
-
+#endif
                ! Set net fluxes used in other components
                call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
 
@@ -2534,8 +2531,7 @@ contains
       else
          call endrun('flux_type ' // band // ' not known.')
       end if
-      
-      !! Jungmin
+#if defined( PRINTOUT )      
       do iy = 1, crm_ny
          do ix = 1, crm_nx
             do icol = 1,size(fluxes%flux_dn, 1)
@@ -2583,7 +2579,7 @@ contains
             end do ! icol
          end do! ix
       end do! iy
-      !! Jungmin
+#endif
 
    end subroutine export_surface_fluxes
 
@@ -2830,23 +2826,12 @@ contains
                   ! Entire band is in the visible
                   albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%asdir_mi(1:ncol,ii)
                   albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%asdif_mi(1:ncol,ii)
-                  !! Jungmin
-                  !if(icol.gt.0) then
-                  !   write(*,'("VISIBLE:icol=",I3," jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "asdir_mi=",F7.3, "asdif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%asdir_mi(icol,ii),cam_in%asdif_mi(icol,ii)
-                  !end if
-                  !! Jungmin
                else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
                         .not.is_visible(wavenumber_limits(2,iband))) then
 
                   ! Entire band is in the longwave (near-infrared)
                   albedo_dir(iband,1:ncol,i_rad,j_rad) = albedo_dir(iband,1:ncol,i_rad,j_rad) + cam_in%aldir_mi(1:ncol,ii)
                   albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + cam_in%aldif_mi(1:ncol,ii)
-                  !! Jungmin
-                  !if(icol.gt.0) then
-                  !   write(*,'("NIR: icol=",I3,"jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "aldir_mi=",F7.3, "aldif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%aldir_mi(icol,ii),cam_in%aldif_mi(icol,ii)
-                  !end if
-                  !! Jungmin
-
                else
 
                   ! Band straddles the visible to near-infrared transition, so we take
@@ -2856,19 +2841,13 @@ contains
                                                          0.5 * (cam_in%aldir_mi(1:ncol,ii) + cam_in%asdir_mi(1:ncol,ii))
                   albedo_dif(iband,1:ncol,i_rad,j_rad) = albedo_dif(iband,1:ncol,i_rad,j_rad) + &
                                                          0.5 * (cam_in%aldif_mi(1:ncol,ii) + cam_in%asdif_mi(1:ncol,ii))
-                  !! Jungmin
-                  !if(icol.gt.0) then
-                  !   write(*,'("MIDWAY: icol=",I3,"jj=",I3," ii=",I3," j_rad=",I3," i_rad=",I3," iband=",I3," albedo_dir=",F7.3, "albedo_dif=",F7.3, "aldir_mi=",F7.3, " asdir_mi=",F7.3,"aldif_mi=",F7.3," asdif_mi=",F7.3)') icol,jj,ii,j_rad,i_rad,iband,albedo_dir(iband,icol,i_rad,j_rad),albedo_dif(iband,icol,i_rad,j_rad),cam_in%aldir_mi(icol,ii),cam_in%asdir_mi(icol,ii),cam_in%aldif_mi(icol,ii),cam_in%asdif_mi(icol,ii)
-                  !end if
-                  !! Jungmin
-
                end if
             end do ! iband = 1, nswbands
          end do! ii = 1, num_inst_atm
       end do! jj = 1, crm_ny
       albedo_dir(:,:,:,:) = albedo_dir(:,:,:,:) * area_factor 
       albedo_dif(:,:,:,:) = albedo_dif(:,:,:,:) * area_factor 
-      !! Jungmin
+#if defined( PRINTOUT )
       do icol=1,ncol
          gcol = get_gcol_p(cam_in%lchnk,icol)
          if(gcol.eq.223) then
@@ -2890,7 +2869,7 @@ contains
             end do   
          end if
       end do! icol
-      !! Jungmin
+#endif
       if(num_inst_atm.eq.1) then
          ! for non-MAML case
          do i_rad = 2, crm_nx_rad

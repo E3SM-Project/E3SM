@@ -9,9 +9,6 @@ module microphysics
   use grid, only: nx,ny,nzm,nz, dimx1_s,dimx2_s,dimy1_s,dimy2_s ! subdomain grid information
   use params, only: doprecip, docloud, crm_rknd, asyncid
   use micro_params
-  !! Jungmin
-  use cam_logfile,      only : iulog
-  !! Jungmin
   implicit none
 
   !----------------------------------------------------------------------

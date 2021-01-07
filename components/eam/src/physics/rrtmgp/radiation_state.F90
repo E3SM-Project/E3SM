@@ -65,7 +65,7 @@ contains
          pmid(:,1) = 0.5_r8 * pint(:,ktop) !state%pint(:ncol,1)
          pint(:,1) = 1.01_r8
       end if
-      !! Jungmin
+#if defined( PRINTOUT )      
       do i = 1,ncol
          rcol = get_gcol_p(cam_in%lchnk,i)
          if(rcol.eq.237) then
@@ -81,7 +81,7 @@ contains
             end do
          end if
       end do
-      !! Jungmin
+#endif      
    end subroutine set_rad_state
 
    !----------------------------------------------------------------------------

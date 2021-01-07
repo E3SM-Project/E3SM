@@ -1081,8 +1081,7 @@ contains
        atm2lnd_vars%forc_pbot_not_downscaled_grc(g)  = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy  Atm state Pa
        atm2lnd_vars%forc_t_not_downscaled_grc(g)     = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
        atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = x2l(index_x2l_Faxa_lwdn,i)    ! flwdsxy Atm flux  W/m^2
-         
-       !! Jungmin
+#if defined( PRINTOUT )         
        gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
        if(gcol.eq.223) then! .or. gcol.eq.237) then
          nstep = get_nstep() 
@@ -1103,8 +1102,7 @@ contains
                         x2l(index_x2l_Sa_u,i), &
                         x2l(index_x2l_Sa_v,i)
        end if           
-       !! Jungmin        
-
+#endif
        forc_rainc                                    = x2l(index_x2l_Faxa_rainc,i)   ! mm/s
        forc_rainl                                    = x2l(index_x2l_Faxa_rainl,i)   ! mm/s
        forc_snowc                                    = x2l(index_x2l_Faxa_snowc,i)   ! mm/s
@@ -1391,7 +1389,7 @@ contains
        l2x(index_l2x_Fall_lwup,i)   = -lnd2atm_vars%eflx_lwrad_out_grc(g)
        l2x(index_l2x_Fall_evap,i)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
        l2x(index_l2x_Fall_swnet,i)  =  lnd2atm_vars%fsa_grc(g)
-       !! Jungmin
+#if defined( PRINTOUT )       
        gcol = (mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1)
        if(gcol.eq.223 ) then! .or. gcol.eq.237) then
          nstep = get_nstep()
@@ -1404,7 +1402,7 @@ contains
                         l2x(index_l2x_Sl_anidr,i),l2x(index_l2x_Sl_anidf,i),l2x(index_l2x_Sl_avsdr,i),l2x(index_l2x_Sl_avsdf,i),&
                         l2x(index_l2x_Sl_t,i), l2x(index_l2x_Fall_lwup,i), l2x(index_l2x_Fall_sen,i), l2x(index_l2x_Fall_lat,i), l2x(index_l2x_Fall_evap,i)
        end if           
-       !! Jungmin        
+#endif
        if (index_l2x_Fall_fco2_lnd /= 0) then
           l2x(index_l2x_Fall_fco2_lnd,i) = -lnd2atm_vars%nee_grc(g)  
        end if

@@ -431,12 +431,6 @@ module restart_physics
             do i=begchunk,endchunk
                ncol = cam_out(i)%ncol
                tmpfield(:ncol, i) = cam_out(i)%flwds_mi(:ncol,m)
-               !! Jungmin
-               !do jj = 1,ncol
-               ! write(iulog,'("write_restart: i,j,jj,",I3,I3,I3,"index=",I3,"flwds_mi=",F7.3)') &
-               !                        i,jj,m,cam_out(i)%flwds_mi(jj,m)
-               !end do! jj                        
-               !! Jungmin
             end do
             call pio_write_darray(File, flwds_mi_desc(m), iodesc, tmpfield, ierr)
 
@@ -837,10 +831,6 @@ module restart_physics
               do c= begchunk, endchunk
                  do i = 1, pcols
                     cam_out(c)%flwds_mi(i,m) = tmpfield2(i, c)
-                 !! Jungmin
-                 !write(iulog,'("read_physics: chunk=",I3," icol=",I3," jj=",I3,"cam_out(c)%flwds_mi(i,jj)=",F7.3," index=",I3)') &
-                 !             c,i,m,cam_out(c)%flwds_mi(i,m)
-                 !! Jungmin             
                  end do
               end do
            end if

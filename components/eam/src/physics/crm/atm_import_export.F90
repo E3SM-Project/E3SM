@@ -25,7 +25,6 @@ contains
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step, get_nstep
-    use maml_module   , only: cam_in_avg_mi_all
     !
     ! Arguments
     !
@@ -253,14 +252,6 @@ contains
        first_time = .false.
     end if
 
-    !
-    ! For MMF-MAML configuration, cam_in fields that are specific to the
-    ! multi-instance functionality are averaged across the instances.
-    !
-    !do c = begchunk, endchunk
-    !  call cam_in_avg_mi_all(cam_in(c))
-    !end do! c  
-
   end subroutine atm_import
 
   !===============================================================================
@@ -320,7 +311,7 @@ contains
           a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols_mi(i,inst_index)
           a2x(index_a2x_Faxa_swndf,ig) = cam_out(c)%solld_mi(i,inst_index)
           a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd_mi(i,inst_index)
-          
+#if defined( PRINTOUT )          
           !! Jungmin
           rlat = get_rlat_p(c,i)*180._r8/SHR_CONST_PI 
           rlon = get_rlon_p(c,i)*180._r8/SHR_CONST_PI 
@@ -345,9 +336,7 @@ contains
                           cam_out(c)%tbot_mi(i,inst_index),cam_out(c)%thbot_mi(i,inst_index),cam_out(c)%qbot_mi(i,1,inst_index),&
                           cam_out(c)%ubot_mi(i,inst_index),cam_out(c)%vbot_mi(i,inst_index)
           end if
-          !! Jungmin
-
-
+#endif
           ! aerosol deposition fluxes
           a2x(index_a2x_Faxa_bcphidry,ig) = cam_out(c)%bcphidry(i)
           a2x(index_a2x_Faxa_bcphodry,ig) = cam_out(c)%bcphodry(i)

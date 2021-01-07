@@ -262,7 +262,7 @@ contains
                      count(x > (max_x + tolerance_local)), ' values above threshold ', &
                      '; max = ', maxval(x)
          end if
-         !! Jungmin
+#if defined( PRINTOUT )         
          do jj = 1, size(x,2)
             do ii = 1, size(x,1)
                if(x(ii,jj).gt.max_x) then
@@ -270,7 +270,7 @@ contains
                end if
             end do !ii
          end do !jj   
-         !! Jungmin
+#endif         
          ! Clip values
          where (x > max_x)
             x = max_x

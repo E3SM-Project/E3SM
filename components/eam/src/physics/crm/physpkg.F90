@@ -1075,7 +1075,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           call diag_physvar_ic ( c,  phys_buffer_chunk, cam_out(c), cam_in(c) )
           call t_stopf ('diag_physvar_ic')
           
-          !! Jungmin
           ! Average albedos and lwup before tphysbc
           cam_in(c)%aldir = SUM(cam_in(c)%aldir_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%asdir = SUM(cam_in(c)%asdir_mi,DIM=2)/real(num_inst_atm,r8)
@@ -1086,6 +1085,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
           cam_in(c)%shf   = SUM(cam_in(c)%shf_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%lhf   = SUM(cam_in(c)%lhf_mi,DIM=2)/real(num_inst_atm,r8)
           cam_in(c)%cflx(:,1) = SUM(cam_in(c)%cflx1_mi,DIM=2)/real(num_inst_atm,r8)
+#if defined( PRINTOUT )          
           do ii = 1, cam_in(c)%ncol
             rlat = get_rlat_p(c,ii)*180._r8/SHR_CONST_PI 
             rlon = get_rlon_p(c,ii)*180._r8/SHR_CONST_PI 
@@ -1113,7 +1113,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                !end if
             end if   
           end do !! ii
-          !! Jungmin
+#endif
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )

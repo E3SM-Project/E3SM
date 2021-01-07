@@ -941,9 +941,6 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
    if (co2_transport()) then
       cam_out%co2prog(1:ncol) = state%q(1:ncol,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
    end if
-   !! Jungmin
-   !write(iulog,'("num_inst_atm:",I)') num_inst_atm
-   !! Jungmin
    if(.not.use_MAML) then
       ! for default MMF, without MAML
    
@@ -992,21 +989,6 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
          cam_out%precsl_mi(i,:) = cam_out%precsl(i)
          cam_out%precc_mi(i,:)  = cam_out%precc(i)
          cam_out%precl_mi(i,:)  = cam_out%precl(i)
-         
-         !! Jungmin
-         !if(masterproc) then
-         !   write(iulog,*) 'i:',i,'landfrac:',cam_in%landfrac(i)
-         !   write(iulog,*),"cam_export:",i,' cam_out%tbot:',cam_out%tbot(i),'cam_out%tbot_mi:', (cam_out%tbot_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%ubot:',cam_out%ubot(i),'cam_out%ubot_mi:', (cam_out%ubot_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%vbot:',cam_out%vbot(i),'cam_out%vbot_mi:', (cam_out%vbot_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%rho:',cam_out%rho(i),'cam_out%rho_mi:', (cam_out%rho_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%precsc:',cam_out%precsc(i),'cam_out%precsc_mi:', (cam_out%precsc_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%precsl:',cam_out%precsl(i),'cam_out%precsl_mi:', (cam_out%precsl_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%precc:',cam_out%precc(i),'cam_out%precc_mi:', (cam_out%precc_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%precl:',cam_out%precl(i),'cam_out%precl_mi:', (cam_out%precl_mi(i,j),j=1,num_inst_atm)
-         !   write(iulog,*),"cam_export:",i,' cam_out%qbot1:',cam_out%qbot(i,1),'cam_out%qbot1_mi:', (cam_out%qbot_mi(i,1,j),j=1,num_inst_atm)
-         !end if
-         !! Jungmin
       end do! i = 1, ncol   
    else   
       ! for MMF-MAML, land/ice surfaces are coupled to CRM atmosphere 
@@ -1072,7 +1054,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
             cam_out%precl(i)  = cam_out%precl(i)  + cam_out%precl_mi(i,j) *avgfac
          end do
       end do! i = 1, ncol
-      !! Jungmin
+#if defined( PRINTOUT )      
       do i = 1,ncol
          rcol = get_gcol_p(lchnk,i)         
          if(rcol.eq.223) then! .or. rcol.eq.237) then
@@ -1098,7 +1080,7 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
             end do ! j
          end if   
       end do
-      !! Jungmin
+#endif
    end if ! .not.use_MAML
    !
    ! total snowfall rate: needed by slab ocean model
