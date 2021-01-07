@@ -29,7 +29,7 @@
 #  define bfb_erf(val) cxx_erf(val)
 #else
 #  define bfb_pow(base, exp) (base)**(exp)
-#  define bfb_cbrt(base) (base)**thrd
+#  define bfb_cbrt(base) (base)**(1.0D0/3.0D0)
 #  define bfb_gamma(val) gamma(val)
 #  define bfb_log(val) log(val)
 #  define bfb_log10(val) log10(val)
