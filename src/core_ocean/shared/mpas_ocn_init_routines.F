@@ -570,7 +570,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool, tracersPool
-      type (mpas_pool_type), pointer :: forcingPool, diagnosticsPool, scratchPool
+      type (mpas_pool_type), pointer :: forcingPool, scratchPool
       integer :: i, iEdge, iCell, k
       integer :: err1
 
@@ -593,7 +593,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
