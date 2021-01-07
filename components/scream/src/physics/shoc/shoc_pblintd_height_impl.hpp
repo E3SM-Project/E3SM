@@ -11,134 +11,83 @@ namespace shoc {
  * #include this file, but include shoc_functions.hpp instead.
  */
 
+// PBL height calculation: Scan upward until the Richardson number between
+// the first level and the current level exceeds the "critical" value.
+
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::pblintd_height(const MemberType& team, const Int& nlev, const Int& npbl, 
-        const uview_1d<const Spack>& z, const uview_1d<const Spack>& u, 
-        const uview_1d<const Spack>& v, const Scalar& ustar, const uview_1d<const Spack>& thv, 
-        const Scalar& thv_ref, Scalar& pblh, const uview_1d<Spack>& rino, bool& check)
+void Functions<S,D>::pblintd_height(
+  const MemberType& team,
+  const Int& nlev,
+  const Int& npbl,
+  const uview_1d<const Spack>& z,
+  const uview_1d<const Spack>& u,
+  const uview_1d<const Spack>& v,
+  const Scalar& ustar,
+  const uview_1d<const Spack>& thv,
+  const Scalar& thv_ref,
+  Scalar& pblh,
+  const uview_1d<Spack>& rino,
+  bool& check)
 {
-  //
-  // PBL height calculation:  Scan upward until the Richardson number between
-  // the first level and the current level exceeds the "critical" value.
-  //
-  const Scalar tiny = 1.e-36;
-  const Scalar fac  = 100.;
-  const Scalar ricr  =  0.3;
-  const Scalar ggr = C::gravit;
+  if (!check)
+    return;
 
-  Spack z_plus, z_mid, rino_plus, rino_mid;
-  Spack vvk, pblh_sp, rino_sp;
+  const auto ggr = C::gravit;
+  const Scalar tiny = 1e-36;
+  const Scalar fac = 100;
+  const Scalar ricr = 0.3;
 
-  Int index = 0;
-  const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k, Int& local_max) {
-     //
-    // To calculate the first highest level index that exceeds the "critical" value for the following
-    // Richardson interpolation.
-    //
-    const Int i = team.league_rank();
+  const auto nlev_v = (nlev-1)/Spack::n;
+  const auto nlev_p = (nlev-1)%Spack::n;
 
-    auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
-    auto range_pack2 = range_pack1;
-    range_pack2.set(range_pack1 > nlev, nlev); 
+  // Compute rino values and find max index s.t. rino(k) >= ricr
+  Int max_indx;
 
-    const auto rmask = range_pack1 < nlev-1;
-    const auto lmask = range_pack1 >= nlev-npbl;
+  const Int lower_pack_indx = (nlev-npbl)/Spack::n;
+  const Int upper_pack_indx = (nlev-1)/Spack::n+1;
+  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx),
+                          [&] (const Int& k, Int& local_max) {
+    auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
+    const auto in_range = (indices_pack < nlev-1 && indices_pack >= nlev-npbl);
 
-    const int nlev_indx  = (nlev-1)%Spack::n;
-    const auto u_nlev    = u(nlev_pack-1)[nlev_indx];
-    const auto v_nlev    = v(nlev_pack-1)[nlev_indx];
-    const auto thv_nlev  = thv(nlev_pack-1)[nlev_indx];
-    const auto z_nlev    = z(nlev_pack-1)[nlev_indx];
+    Spack vvk(0);
+    vvk.set(in_range,
+            ekat::max(tiny,
+                      ekat::square(u(k) - u(nlev_v)[nlev_p]) +
+                      ekat::square(v(k) - v(nlev_v)[nlev_p]) +
+                      fac*(ustar*ustar)));
+    rino(k).set(in_range,
+                ggr*(thv(k) - thv_ref)*(z(k) - z(nlev_v)[nlev_p])/(thv(nlev_v)[nlev_p]*vvk));
 
-    auto index_max_pack = ekat::range<IntSmallPack>(k*Spack::n);
-    index_max_pack.set(!(lmask && rmask), 0);
+    // Set indices_pack entry to -1 if rino(k)<ricr or
+    // if global index is not in [nlev-npbl, nlev-1)
+    indices_pack.set(rino(k)<ricr || !in_range, -1);
 
-    if ((lmask && rmask).any()) {
-      vvk.set(lmask && rmask, 
-              ekat::square(u(k) - u_nlev) + ekat::square(v(k) - v_nlev) + fac*(ustar*ustar));
-      vvk.set(lmask && rmask,  ekat::max(vvk, tiny));
+    // Local max index s.t. rino(k)>=ricr and k in [nlev-npbl, nlev-1)
+    if (local_max < ekat::max(indices_pack))
+      local_max = ekat::max(indices_pack);
 
-      rino_sp.set(lmask && rmask,  
-                  ggr*(thv(k)-thv_ref)*(z(k)-z_nlev)/(thv_nlev*vvk));
+  }, Kokkos::Max<Int>(max_indx));
 
-      const auto rino_lt_ricr = rino_sp < ricr;
+  // Set check=false and compute pblh only if
+  // there was an index s.t. rino(k)>=ricr.
+  // If no index was found, set max_index=nlev-npbl.
+  if (max_indx != -1) {
+    const auto max_indx_v = max_indx/Spack::n;
+    const auto max_indx_p = max_indx%Spack::n;
+    const auto max_indx_p1_v = (max_indx+1)/Spack::n;
+    const auto max_indx_p1_p = (max_indx+1)%Spack::n;
 
-      index_max_pack.set(rino_lt_ricr, 0);
-    }
+    pblh = z(max_indx_p1_v)[max_indx_p1_p] +
+           (ricr - rino(max_indx_p1_v)[max_indx_p1_p])/
+           (rino(max_indx_v)[max_indx_p] - rino(max_indx_p1_v)[max_indx_p1_p])*
+           (z(max_indx_v)[max_indx_p] - z(max_indx_p1_v)[max_indx_p1_p]);
 
-    const Int max_indx = ekat::max(index_max_pack);
-
-    if (max_indx > local_max) {
-       local_max = max_indx;
-    }
-  }, Kokkos::Max<int>(index));
-
-  team.team_barrier();
-
-  //
-  // using interpolation to calculate rino (richardson number), and latest updated rino is then used
-  // to calculate pblh.
-  //
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
-     auto range_pack2 = range_pack1;
-     range_pack2.set(range_pack1 > nlev, nlev);
-
-     const auto lmask = range_pack2 < nlev-1;
-     const auto rmask = range_pack2 >= nlev-npbl;
-     auto max_index = (range_pack2 >= index) && lmask && rmask;
-
-     if (max_index.any()) {
-       const int nlev_indx  = (nlev-1)%Spack::n;
-       const auto u_nlev    = u(nlev_pack-1)[nlev_indx];
-       const auto v_nlev    = v(nlev_pack-1)[nlev_indx];
-       const auto thv_nlev  = thv(nlev_pack-1)[nlev_indx];
-       const auto z_nlev    = z(nlev_pack-1)[nlev_indx];
-
-       vvk.set(max_index,
-               ekat::square(u(k) - u_nlev) + ekat::square(v(k) - v_nlev) + fac*(ustar*ustar));
-       vvk.set(max_index,  ekat::max(vvk, tiny));
-
-       rino(k).set(max_index,
-                   ggr*(thv(k)-thv_ref)*(z(k)-z_nlev)/(thv_nlev*vvk));
-    }
-  });
-
-  team.team_barrier();
-  const auto srino = scalarize(rino);
-  const auto sz = scalarize(z);
-
-  //
-  //  calculate pblh depending on latest updated richarson number. this calculation is separate from
-  //  the richarson number calculation because rino is required to be updated in parallel first.
-  //
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
-     auto range_pack2 = range_pack1;
-     range_pack2.set(range_pack1 > nlev, nlev);
-
-     const auto lmask = range_pack2 < nlev-1;
-     const auto rmask = range_pack2 >= nlev-npbl;
-     auto max_index = (range_pack2 >= index) && lmask && rmask;
-
-     if (max_index.any()) {
-
-       ekat::index_and_shift<1>(sz, range_pack2, z_mid, z_plus);
-       ekat::index_and_shift<1>(srino, range_pack2, rino_mid, rino_plus);
-       pblh_sp.set(max_index, z_plus+(ricr-rino_plus)/(rino_mid-rino_plus)*(z_mid-z_plus));
-
-       if (max_index.any() && (range_pack2 == index).any()) {
-         auto pblh_indx = index - k*Spack::n;
-         const auto rino_ge_ricr = rino(k) >= ricr;
-         if (rino_ge_ricr[pblh_indx]) {
-           pblh = pblh_sp[pblh_indx];
-           check = false;
-         }
-       }
-     }
-  });
+    check = false;
+  } else {
+    max_indx = nlev-npbl;
+  }
 }
 } // namespace shoc
 } // namespace scream

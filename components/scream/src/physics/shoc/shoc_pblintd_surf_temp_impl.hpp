@@ -14,9 +14,9 @@ namespace shoc {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const Int& npbl,
-      const uview_1d<const Spack>& z, const Scalar& ustar, 
-      const Scalar& obklen, const Scalar& kbfs, 
-      const uview_1d<const Spack>& thv, Scalar& tlv, 
+      const uview_1d<const Spack>& z, const Scalar& ustar,
+      const Scalar& obklen, const Scalar& kbfs,
+      const uview_1d<const Spack>& thv, Scalar& tlv,
       Scalar& pblh, bool& check, const uview_1d<Spack>& rino)
 {
   // const parameter for Diagnosis of PBL depth
@@ -25,21 +25,22 @@ void Functions<S,D>::pblintd_surf_temp(const Int& nlev, const Int& nlevi, const 
   const Scalar sffrac=  0.1;
   const Scalar binm  = betam*sffrac;
 
-  //
   // Estimate an effective surface temperature to account for surface
   // fluctuations
-  //
-  const auto zs    = scalarize(z);
-  const auto thvs  = scalarize(thv);
-  const auto rinos = scalarize(rino);
-
-  if (check) pblh = zs(nlevi-npbl-1);
-  check  = kbfs > 0.;
-  tlv    = thvs(nlev-1);
   if (check) {
-     const auto phiminv = std::cbrt(1 - binm*pblh/obklen);
-     rinos(nlev-1) = 0.0;
-     tlv  = thvs(nlev-1) + kbfs*fak/(ustar*phiminv);
+    const auto view_indx = (nlevi-npbl-1)/Spack::n;
+    const auto pack_indx = (nlevi-npbl-1)%Spack::n;
+    pblh = z(view_indx)[pack_indx];
+  }
+  check = (kbfs > 0);
+
+  const auto view_indx = (nlev-1)/Spack::n;
+  const auto pack_indx = (nlev-1)%Spack::n;
+  tlv = thv(view_indx)[pack_indx];
+  if (check) {
+    rino(view_indx)[pack_indx] = 0;
+    const Scalar phiminv = std::cbrt(1-binm*pblh/obklen);
+    tlv += kbfs*fak/(ustar*phiminv);
   }
 }
 

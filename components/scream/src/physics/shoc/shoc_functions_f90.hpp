@@ -836,21 +836,6 @@ struct VdShocDecompandSolveData : public PhysicsTestData {
   PTD_STD_DEF(VdShocDecompandSolveData, 5, shcol, nlev, nlevi, dtime, n_rhs);
 };
 
-struct PblintdInitData : public PhysicsTestData {
-  // Inputs
-  Int shcol, nlev;
-  Real *z;
-
-  // Outputs
-  bool *check;
-  Real *rino, *pblh;
-
-  PblintdInitData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &z, &rino }, { &pblh }}, {}, {{ &check }}), shcol(shcol_), nlev(nlev_) {}
-
-  PTD_STD_DEF(PblintdInitData, 2, shcol, nlev);
-};
-
 struct PblintdSurfTempData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi;
@@ -964,7 +949,6 @@ void update_prognostics_implicit                    (UpdatePrognosticsImplicitDa
 void shoc_main                                      (ShocMainData& d);
 void pblintd_height                                 (PblintdHeightData& d);
 void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d);
-void pblintd_init                                   (PblintdInitData& d);
 void pblintd_surf_temp(PblintdSurfTempData& d);
 void pblintd_check_pblh(PblintdCheckPblhData& d);
 void pblintd(PblintdData& d);
@@ -1056,11 +1040,9 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
 
 void pblintd_height_f(Int shcol, Int nlev, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 
-void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
-
 void vd_shoc_decomp_and_solve_f(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
                                 Real* flux, Real* var);
-void pblintd_init_f(Int shcol, Int nlev, Real* z, bool* check, Real* rino, Real* pblh);
+
 void pblintd_surf_temp_f(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 
 void pblintd_check_pblh_f(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* ustar, bool* check, Real* pblh);

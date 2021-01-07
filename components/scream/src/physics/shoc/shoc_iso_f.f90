@@ -470,16 +470,6 @@ end subroutine dp_inverse_f
     logical(kind=c_bool) , intent(inout), dimension(shcol) :: check
   end subroutine pblintd_height_f
 
-  subroutine pblintd_init_f(shcol, nlev, z, check, rino, pblh) bind(C)
-    use iso_c_binding
-
-    integer(kind=c_int) , value, intent(in) :: shcol, nlev
-    real(kind=c_real) , intent(in), dimension(shcol, nlev) :: z
-    logical(kind=c_bool) , intent(out), dimension(shcol) :: check
-    real(kind=c_real) , intent(out), dimension(shcol, nlev) :: rino
-    real(kind=c_real) , intent(out), dimension(shcol) :: pblh
-  end subroutine pblintd_init_f
-
   subroutine vd_shoc_decomp_and_solve_f(shcol, nlev, nlevi, num_rhs, kv_term, tmpi, rdp_zt, dtime, flux, var) bind(C)
     use iso_c_binding
 
