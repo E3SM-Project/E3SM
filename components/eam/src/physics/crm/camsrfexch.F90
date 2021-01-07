@@ -1015,9 +1015,19 @@ subroutine cam_export(state,cam_out,cam_in,pbuf)
          cam_out%tbot_mi  (1:ncol,j)   = crm_t(1:ncol,j,1,1)
          cam_out%thbot_mi (1:ncol,j)   = cam_out%tbot_mi(1:ncol,j) * state%exner(1:ncol,pver) ! potential temperature
          cam_out%qbot_mi  (1:ncol,1,j) = crm_qv(1:ncol,j,1,1)
+#if defined (GCMWindForELM)         
+         do i = 1, ncol
+            umb(i)           = state%u(i,pver)
+            vmb(i)           = state%v(i,pver)
+            vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+            cam_out%ubot_mi(i,j)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+            cam_out%vbot_mi(i,j)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+         end do! i  
+#else         
          ! u and v will use CRM value (must transform because of CRM orientation)
          cam_out%ubot_mi  (1:ncol,j)   = crm_u(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) - crm_v(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
          cam_out%vbot_mi  (1:ncol,j)   = crm_v(1:ncol,j,1,1) * cos(crm_angle(1:ncol)) + crm_u(1:ncol,j,1,1) * sin(crm_angle(1:ncol))
+#endif
          cam_out%precc_mi (1:ncol,j)   = crm_pcp(1:ncol,j,1)  
          cam_out%precsc_mi(1:ncol,j)   = crm_snw(1:ncol,j,1)
          cam_out%rho_mi   (1:ncol,j)   = cam_out%pbot(1:ncol)/(rair*cam_out%tbot_mi(1:ncol,j))  ! air density
