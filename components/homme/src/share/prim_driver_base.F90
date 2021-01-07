@@ -144,12 +144,14 @@ contains
 #ifndef CAM
   subroutine prim_init1_no_cam(par)
     use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
-    use cube_mod,       only : cubeelemcount
+    use cube_mod,       only : CubeElemCount
+    use planar_mod,     only : PlaneElemCount
     use parallel_mod,   only : parallel_t, abortmp
     use namelist_mod,   only : readnl
     use quadrature_mod, only : test_gauss, test_gausslobatto
     use repro_sum_mod,  only : repro_sum_defaultopts, repro_sum_setopts
     use time_mod,       only : nmax, time_at
+    use control_mod, only : topology
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use common_io_mod,  only : homme_pio_init
 #endif
@@ -173,8 +175,13 @@ contains
     if (MeshUseMeshFile) then
        total_nelem = MeshCubeElemCount()
     else
+      if (topology=="cube") then
        total_nelem = CubeElemCount()
+     else if (topology=="plane") then
+       total_nelem      = PlaneElemCount()
     end if
+    end if
+
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call homme_pio_init(par%rank,par%comm)
 #endif
@@ -221,18 +228,26 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
-    use control_mod, only : topology, partmethod, z2_map_method, cubed_sphere_map
+    use control_mod, only : topology, geometry, partmethod, z2_map_method, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, cube_init_atomic, &
-                          set_corner_coordinates, &
-                          set_area_correction_map0, set_area_correction_map2
+                          set_corner_coordinates
+    ! --------------------------------
+    use geometry_mod, only: set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
                          MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+    ! --------------------------------
+    use planar_mod,  only : PlaneEdgeCount , PlaneElemCount, PlaneTopology
+    ! --------------------------------
+    use planar_mesh_mod, only :   PlaneMeshSetCoordinates,      &
+                          MeshPlaneTopology, MeshPlaneTopologyCoords
+    ! --------------------------------
+    use planar_mod, only : plane_init_atomic, plane_set_corner_coordinates
     ! --------------------------------
     use metagraph_mod, only : localelemcount, initmetagraph, printmetavertex
     ! --------------------------------
@@ -297,9 +312,12 @@ contains
     if (MeshUseMeshFile) then
        nelem = MeshCubeElemCount()
        nelem_edge = MeshCubeEdgeCount()
-    else
+    else if (topology=="cube") then
        nelem      = CubeElemCount()
        nelem_edge = CubeEdgeCount()
+     else if (topology=="plane") then
+       nelem      = PlaneElemCount()
+       nelem_edge = PlaneEdgeCount()
     end if
 
     ! we want to exit elegantly when we are using too many processors.
@@ -317,10 +335,10 @@ contains
        call sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
     end if
 
-    if (topology=="cube" .and. .not. can_scalably_init_grid) then
+    if (.not. can_scalably_init_grid) then
 
        if (par%masterproc) then
-          write(iulog,*)"creating cube topology..."
+          write(iulog,*)"creating topology..."
        end if
 
        allocate(GridVertex(nelem))
@@ -334,15 +352,22 @@ contains
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
+           if (topology=="cube") then
            call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
            !MD:TODO: still need to do the coordinate transformation for this case.
-
+         else if  (topology=="plane") then
+           call MeshPlaneTopologyCoords(GridEdge,GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+         end if
 
        else
+         if (topology=="cube") then
            call CubeTopology(GridEdge,GridVertex)
            if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
               call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
            endif
+        else if (topology=="plane") then
+         call PlaneTopology(GridEdge,GridVertex)
+       end if
         end if
 
        if(par%masterproc)       write(iulog,*)"...done."
@@ -485,19 +510,36 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-    if (topology=="cube") then
-       if(par%masterproc) write(iulog,*) "initializing cube elements..."
-       if (MeshUseMeshFile) then
-           call MeshSetCoordinates(elem)
-       else
-           do ie=1,nelemd
+        if(par%masterproc) write(6,*)"initializing elements..."
+    
+         if (MeshUseMeshFile) then
+          if (geometry=="sphere") then
+            call MeshSetCoordinates(elem)
+          else if  (geometry=="plane") then
+            call PlaneMeshSetCoordinates(elem)
+          end if
+         else
+          if (geometry=="sphere") then
+            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
-           end do
-       end if
-       do ie=1,nelemd
-          call cube_init_atomic(elem(ie),gp%points)
-       enddo
-    end if
+            enddo
+          else if (geometry=="plane") then
+           do ie=1,nelemd
+              call plane_set_corner_coordinates(elem(ie))
+           enddo
+          end if
+           !call assign_node_numbers_to_elem(elem, GridVertex)
+         endif
+    
+      if (geometry=="sphere") then
+         do ie=1,nelemd
+            call cube_init_atomic(elem(ie),gp%points)
+         enddo
+      else if (geometry=="plane") then
+        do ie=1,nelemd
+           call plane_init_atomic(elem(ie),gp%points)
+        enddo
+      end if
 
     ! =================================================================
     ! Initialize mass_matrix
@@ -784,7 +826,7 @@ contains
   end interface
 #endif
 
-    if (topology == "cube") then
+    if (topology == "cube" .OR. topology=='plane') then
        call test_global_integral(elem, hybrid,nets,nete)
     end if
 
@@ -847,10 +889,6 @@ contains
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
-
-    if (topology /= "cube") then
-       call abortmp('Error: only cube topology supported for primaitve equations')
-    endif
 
 #if !defined(CAM) && !defined(SCREAM)
 

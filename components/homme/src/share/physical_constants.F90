@@ -72,7 +72,11 @@ module physical_constants
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv   = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth0     = 1.0_real_kind/rearth0
   real (kind=real_kind), public            :: rrearth      = rrearth0
+
 #endif
+
+real (kind=real_kind), public :: scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
+real (kind=real_kind), public :: Lx, Ly, Sx, Sy, dx, dy, dx_ref, dy_ref
 
   real (kind=real_kind), public, parameter :: TREF = 288
 
