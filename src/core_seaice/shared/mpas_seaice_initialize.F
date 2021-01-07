@@ -64,6 +64,8 @@ contains
          seaice_mesh_pool_create
     use seaice_prescribed, only: &
          seaice_init_prescribed_ice
+    use seaice_special_boundaries, only: &
+         seaice_init_special_boundaries
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -87,6 +89,9 @@ contains
 
     ! initialize junk values
     call init_junk_values(domain)
+
+    ! initialize special boundaries
+    call seaice_init_special_boundaries(domain)
 
     ! initialize prescribed ice
     call seaice_init_prescribed_ice(domain)

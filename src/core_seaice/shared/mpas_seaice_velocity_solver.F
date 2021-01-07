@@ -30,6 +30,14 @@ module seaice_velocity_solver
        seaice_init_velocity_solver, &
        seaice_run_velocity_solver
 
+  ! ocean stress type
+  integer :: &
+       oceanStressType
+
+  integer, parameter :: &
+       QUADRATIC_OCEAN_STRESS = 1, &
+       LINEAR_OCEAN_STRESS = 2
+
   ! velocity solver constants
   real(kind=RKIND), parameter, private :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
@@ -76,7 +84,8 @@ contains
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme, &
          config_variational_basis, &
-         config_wachspress_integration_type
+         config_wachspress_integration_type, &
+         config_ocean_stress_type
 
     logical, pointer :: &
          config_use_velocity_solver, &
@@ -132,6 +141,16 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
 
     if (config_use_velocity_solver) then
+
+       ! options
+       call MPAS_pool_get_config(domain % configs, "config_ocean_stress_type", config_ocean_stress_type)
+       if (trim(config_ocean_stress_type) == "quadratic") then
+          oceanStressType = QUADRATIC_OCEAN_STRESS
+       else if (trim(config_ocean_stress_type) == "linear") then
+          oceanStressType = LINEAR_OCEAN_STRESS
+       else
+          call MPAS_log_write("config_ocean_stress_type unknown: "//trim(config_ocean_stress_type), MPAS_LOG_CRIT)
+       endif
 
        ! initialize the evp solver
        call seaice_init_evp(domain)
@@ -2337,6 +2356,9 @@ contains
        domain, &
        clock)!{{{
 
+    use seaice_special_boundaries, only: &
+         seaice_periodic_velocity
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -2366,6 +2388,9 @@ contains
     call mpas_timer_stop("Velocity solver memcpy HtoD")
 #endif
 
+    ! periodic velocity
+    call seaice_periodic_velocity(domain)
+
     call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
 
     do iElasticSubcycle = 1, config_elastic_subcycle_number
@@ -2374,6 +2399,9 @@ contains
             domain, &
             clock, &
             iElasticSubcycle)
+
+       ! periodic velocity
+       call seaice_periodic_velocity(domain)
 
     enddo
 
@@ -2599,23 +2627,40 @@ contains
 
           call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
 
-          do iVertex = 1, nVerticesSolve
+          if (oceanStressType == QUADRATIC_OCEAN_STRESS) then
 
-             if (solveVelocity(iVertex) == 1) then
+             do iVertex = 1, nVerticesSolve
 
-                oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
-                     sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
-                          (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
+                if (solveVelocity(iVertex) == 1) then
 
-             endif
+                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex) * &
+                        sqrt((uOceanVelocityVertex(iVertex) - uVelocity(iVertex))**2 + &
+                             (vOceanVelocityVertex(iVertex) - vVelocity(iVertex))**2)
 
-          enddo ! iVertex
-       else
+                endif
+
+             enddo ! iVertex
+
+          else if (oceanStressType == LINEAR_OCEAN_STRESS) then
+
+             do iVertex = 1, nVerticesSolve
+
+                if (solveVelocity(iVertex) == 1) then
+
+                   oceanStressCoeff(iVertex) = seaiceIceOceanDragCoefficient * seaiceDensitySeaWater * iceAreaVertex(iVertex)
+
+                endif
+
+             enddo ! iVertex
+
+          end if ! oceanStressType
+
+       else ! configUseOceanStress
 
           ! no ocean stress
           oceanStressCoeff = 0.0_RKIND
 
-       endif
+       endif ! configUseOceanStress
 
        block => block % next
     end do
