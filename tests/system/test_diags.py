@@ -116,7 +116,13 @@ class TestAllSets(unittest.TestCase):
             print('\npath_to_actual_png={}'.format(path_to_actual_png))
             print('path_to_expected_png={}'.format(path_to_expected_png))
             print('diff has {} nonzero pixels.'.format(num_nonzero_pixels))
-            self.assertTrue(num_nonzero_pixels < 5)
+            width, height = expected_png.size
+            num_pixels = width * height
+            print('total number of pixels={}'.format(num_pixels))
+            fraction = num_nonzero_pixels/num_pixels
+            print('num_nonzero_pixels/num_pixels fraction={}'.format(fraction))
+            # Fraction of mismatched pixels should be less than 0.01%
+            self.assertTrue(fraction < 0.0001)
 
     def check_plots_generic(self, set_name, case_id, ref_name, variables, region, plev=None):
         case_id_lower = case_id.lower()
