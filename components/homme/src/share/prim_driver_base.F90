@@ -1887,8 +1887,7 @@ contains
         + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
     enddo
 
-    ! If running theta_l model then the floating potential temperature
-    !   needs to be updated with the new floating levels
+    ! Update temperature variable for the theta-l or preqx implementation
 #ifdef MODEL_THETA_L
     do k=1,nlev
       elem(1)%state%vtheta_dp(:,:,k,np1) = (elem(1)%state%vtheta_dp(:,:,k,n0)/ &
