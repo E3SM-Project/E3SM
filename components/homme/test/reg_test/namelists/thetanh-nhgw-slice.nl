@@ -41,7 +41,7 @@
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /
 &analysis_nl
-  output_dir        = "./"                      ! destination dir for netcdf file
+  output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 0,                        ! 1=days, 2=hours, 0=timesteps
   output_frequency  = 200,                      ! steps
   output_varnames1  ='T','Th','ps','u','v','omega'   ! variables to write to file

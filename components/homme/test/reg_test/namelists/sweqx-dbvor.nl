@@ -32,7 +32,7 @@ wght_fm       = 0.10D0
 &analysis_nl
 output_timeunits=0,
 output_frequency=250,
-output_dir ="./"
+output_dir        = "./movies/"               ! destination dir for netcdf file
 interp_type       = 0                         ! 0=native grid, 1=bilinear
 output_type       ='netcdf'                   ! netcdf or pnetcdf
 /
