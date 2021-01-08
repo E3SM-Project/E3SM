@@ -88,10 +88,10 @@ module crm_output_module
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
       real(crm_rknd), allocatable :: qiltend (:,:)          ! CRM output tendency of cloud ice
 
-      real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for variance transport
-      real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for variance transport
-      real(crm_rknd), allocatable :: t_vt_ls   (:,:)       ! variance transport tendency
-      real(crm_rknd), allocatable :: q_vt_ls   (:,:)       ! variance transport tendency
+      real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for LSE variance transport
+      real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for QT  variance transport
+      real(crm_rknd), allocatable :: t_vt_ls   (:,:)       ! large-scale LSE variance transport tendency from GCM
+      real(crm_rknd), allocatable :: q_vt_ls   (:,:)       ! large-scale QT  variance transport tendency from GCM
 
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction

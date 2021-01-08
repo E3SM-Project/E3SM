@@ -6,8 +6,8 @@ void setperturb() {
   int  constexpr perturb_num_layers  = 5;    // Number of levels to perturb
   real constexpr perturb_t_magnitude = 1.0;  // perturbation LSE amplitube [K]
   real factor_xy = 1. / (nx*ny);
-  auto t_host     = t    .createHostCopy();
-  auto t0_host    = t0   .createHostCopy();
+  auto t_host     = t.createHostCopy();
+  auto t0_host    = t0.createHostCopy();
   auto gcolp_host = gcolp.createHostCopy();
   // Apply random liquid static energy (LSE) perturbations
   for (int icrm = 0; icrm < ncrms; icrm++) {

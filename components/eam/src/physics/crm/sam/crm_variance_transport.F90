@@ -294,14 +294,21 @@ subroutine VT_forcing(ncrms)
    integer, intent(in) :: ncrms
 
    ! local variables
-   real(crm_rknd), parameter   :: pert_scale_min = 1.0 - 0.1
-   real(crm_rknd), parameter   :: pert_scale_max = 1.0 + 0.1
    real(crm_rknd), allocatable :: t_pert_scale(:,:)
    real(crm_rknd), allocatable :: q_pert_scale(:,:)
    real(crm_rknd) :: ttend_loc, qtend_loc
    real(crm_rknd) :: tmp_t_scale, tmp_q_scale
    integer :: i, j, k, icrm   ! loop iterators
    integer :: idx_qt
+
+   ! min and max perturbation scaling values are used to limit the 
+   ! large-scale forcing from variance transport. This is meant to 
+   ! protect against creating unstable situations, although 
+   ! problematic scenarios were extremely rare in testing.
+   ! A scaling limit of +/- 10% was found to be adequate.
+   real(crm_rknd), parameter   :: pert_scale_min = 1.0 - 0.1
+   real(crm_rknd), parameter   :: pert_scale_max = 1.0 + 0.1
+   
    !----------------------------------------------------------------------------
 
    allocate( t_pert_scale( ncrms, nzm ) )

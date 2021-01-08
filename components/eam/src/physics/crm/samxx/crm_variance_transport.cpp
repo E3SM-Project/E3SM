@@ -110,8 +110,6 @@ void VT_diagnose() {
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
   real2d q_mean("q_mean", nzm, ncrms);
-  real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
-  real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
@@ -130,10 +128,8 @@ void VT_diagnose() {
   //    do i = 1,nx
   //      do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    real t_tmp = t(k,j+offy_s,i+offx_s,icrm);
-    real q_tmp = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) ;
-    yakl::atomicAdd( t_mean(k,icrm) , t_tmp);
-    yakl::atomicAdd( q_mean(k,icrm) , q_tmp);
+    yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
+    yakl::atomicAdd( q_mean(k,icrm) , qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) );
   });
 
   // do k = 1,nzm
@@ -144,10 +140,13 @@ void VT_diagnose() {
   });
 
   //----------------------------------------------------------------------------
-  // calculate anomalies
+  // calculate fluctuations - either from horz mean or with a low-pass filter
   //----------------------------------------------------------------------------
-  if (VT_wn_max>0) {
-  // use filtered state for anomalies
+  if (VT_wn_max>0) { // use filtered state for fluctuations
+  
+
+    real4d tmp_t("tmp_t", nzm, ny, nx, ncrms);
+    real4d tmp_q("tmp_q", nzm, ny, nx, ncrms);
 
     // do k = 1,nzm
     //   do j = 1,ny
@@ -163,8 +162,7 @@ void VT_diagnose() {
     VT_filter( VT_wn_max, tmp_t, t_vt_pert );
     VT_filter( VT_wn_max, tmp_q, q_vt_pert );
 
-  } else { 
-  // use total variance
+  } else { // use total variance
 
     // do k = 1,nzm
     //   do j = 1,ny
@@ -186,10 +184,8 @@ void VT_diagnose() {
   //     do i = 1,nx
   //       do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    real t_tmp = t_vt_pert(k,j,i,icrm) * t_vt_pert(k,j,i,icrm) ;
-    real q_tmp = q_vt_pert(k,j,i,icrm) * q_vt_pert(k,j,i,icrm) ;
-    yakl::atomicAdd( t_vt(k,icrm) , t_tmp);
-    yakl::atomicAdd( q_vt(k,icrm) , q_tmp);
+    yakl::atomicAdd( t_vt(k,icrm) , t_vt_pert(k,j,i,icrm) * t_vt_pert(k,j,i,icrm) );
+    yakl::atomicAdd( q_vt(k,icrm) , q_vt_pert(k,j,i,icrm) * q_vt_pert(k,j,i,icrm) );
   });
 
 
@@ -225,6 +221,11 @@ void VT_forcing() {
 
   int idx_qt = index_water_vapor;
 
+  // min and max perturbation scaling values are used to limit the 
+  // large-scale forcing from variance transport. This is meant to 
+  // protect against creating unstable situations, although 
+  // problematic scenarios were extremely rare in testing.
+  // A scaling limit of +/- 10% was found to be adequate.
   real constexpr pert_scale_min = 1.0 - 0.1;
   real constexpr pert_scale_max = 1.0 + 0.1;
 
