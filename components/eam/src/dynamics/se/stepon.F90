@@ -356,9 +356,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! apply forcing to state tl_f
          ! requires forward-in-time timestepping, checked in namelist_mod.F90i
 
-         !ftype1 also requires a call to applycamforcing_dynamics, below
+         !ftype1 also requires a call ty applycamforcing_dynamics, below
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-
       endif !ftype=1 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
