@@ -51,7 +51,7 @@ contains
       iy1 = iy1 + (iy0-ix0)/2048
       ix1 = mod (iy1, 2048)
       rand_ = ix1*2048 + ix0
-      rand_ = rand_ / 4194304.
+      rand_ = rand_ / 4194304.D0
     end if
     return
   end

@@ -32,13 +32,13 @@ contains
     real(crm_rknd) andiff,across,pp,pn
 
     !Statement functions
-    andiff(x1,x2,a,b)=(abs(a)-a*a*b)*0.5*(x2-x1)
-    across(x1,a1,a2)=0.03125*a1*a2*x1
+    andiff(x1,x2,a,b)=(abs(a)-a*a*b)*0.5D0*(x2-x1)
+    across(x1,a1,a2)=0.03125D0*a1*a2*x1
     pp(y)= max(real(0.,crm_rknd),y)
     pn(y)=-min(real(0.,crm_rknd),y)
 
     nonos = .true.
-    eps = 1.e-10
+    eps = 1.D-10
 
     j=1
 

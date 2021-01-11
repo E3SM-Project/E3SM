@@ -41,7 +41,7 @@ void ice_fall() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qifall(k,icrm) = 0.0;
     tlatqi(k,icrm) = 0.0;
   });

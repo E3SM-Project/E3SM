@@ -409,6 +409,11 @@
     <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F-MMFXX-AQP1</alias>
+    <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
   <!-- *********************************** -->

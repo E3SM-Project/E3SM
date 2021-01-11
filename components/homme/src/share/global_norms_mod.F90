@@ -43,7 +43,7 @@ contains
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
     use dimensions_mod, only : np, nelemd
-    use physical_constants, only : dd_pi
+    use physical_constants, only : dd_pi, domain_size
     use parallel_mod, only: global_shared_buf, global_shared_sum
 
     type(element_t)      , intent(in) :: elem(:)
@@ -87,7 +87,9 @@ contains
 !JMD    print *,'global_integral: after wrap_repro_sum'
     I_tmp = global_shared_sum(1)
 !JMD    print *,'global_integral: after global_shared_sum'
-    I_sphere = I_tmp(1)/(4.0D0*DD_PI)
+
+    I_sphere = I_tmp(1)/domain_size
+
 
   end function global_integral
 
@@ -107,11 +109,12 @@ contains
     use mesh_mod,     only : MeshUseMeshFile          
 
     use reduction_mod, only : ParallelMin,ParallelMax
-    use physical_constants, only : rrearth, rearth,dd_pi
+    use physical_constants, only : scale_factor,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t
     use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
+    use control_mod, only : geometry
 
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
@@ -133,8 +136,8 @@ contains
 
     h(:,:,nets:nete)=1.0D0
 
-    ! Calculate surface area by integrating 1.0d0 over sphere and dividing by 4*DD_PI
-    ! (Should be 1)
+    ! Calculate surface area by integrating 1.0d0 over domain
+    ! (Should be 1 for unit sphere and Lx * Ly for plane)
     I_sphere = global_integral(elem, h(:,:,nets:nete),hybrid,np,nets,nete)
 
     min_area=1d99
@@ -188,9 +191,9 @@ contains
     avg_min_dx = global_shared_sum(2)/dble(nelem)
 
     ! Physical units for area
-    min_area = min_area*rearth*rearth/1000000_real_kind
-    max_area = max_area*rearth*rearth/1000000_real_kind
-    avg_area = avg_area*rearth*rearth/1000000_real_kind
+    min_area = min_area*scale_factor*scale_factor/1000000_real_kind
+    max_area = max_area*scale_factor*scale_factor/1000000_real_kind
+    avg_area = avg_area*scale_factor*scale_factor/1000000_real_kind
 
 
     ! for an equation du/dt = i c u, leapfrog is stable for |c u dt| < 1
@@ -202,12 +205,12 @@ contains
     if (hybrid%masterthread) then
        write(iulog,* )""
        write(iulog,* )"Running Global Integral Diagnostic..."
-       write(iulog,*)"Area of unit sphere is",I_sphere
+         write(iulog,*)"Area of manifold is",I_sphere
        write(iulog,*)"Should be 1.0 to round off..."
        write(iulog,'(a,f9.3)') 'Element area:  max/min',(max_area/min_area)
-       if (.not.MeshUseMeshFile) then 
+       if (.not.MeshUseMeshFile .and. geometry == "sphere") then
            write(iulog,'(a,f6.3,f8.2)') "Average equatorial node spacing (deg, km) = ", &
-                dble(90)/dble(ne*(np-1)), DD_PI*rearth/(2000.0d0*dble(ne*(np-1)))
+                dble(90)/dble(ne*(np-1)), DD_PI*scale_factor/(2000.0d0*dble(ne*(np-1)))
        end if
        write(iulog,'(a,2f9.3)') 'norm of Dinv (min, max): ', min_normDinv, max_normDinv
        write(iulog,'(a,1f8.2)') 'Max Dinv-based element distortion: ', max_ratio
@@ -218,7 +221,7 @@ contains
 
     if(present(mindxout)) then
         ! min_len now based on norm(Dinv)
-        min_len = 0.002d0*rearth/(dble(np-1)*max_normDinv)
+        min_len = 0.002d0*scale_factor/(dble(np-1)*max_normDinv)
         mindxout=1000_real_kind*min_len
     end if
 
@@ -253,7 +256,7 @@ contains
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
-    use physical_constants, only : rrearth, rearth,dd_pi
+    use physical_constants, only : scale_factor_inv, scale_factor,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
@@ -383,12 +386,12 @@ contains
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
            elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * &
-                (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
+                (lambda_vis**2) * ((scale_factor_inv*elem(ie)%normDinv)**4)
 
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
                 stable_hv = sqrt( max_hypervis_courant / &
-                     (  dtnu * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4 ) )
+                     (  dtnu * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4 ) )
 
 #if 0
          ! Useful print statements for debugging the adjustments to hypervis 
@@ -401,7 +404,7 @@ contains
 
 !                make sure that: elem(ie)%hv_courant <=  max_hypervis_courant 
                 elem(ie)%variable_hyperviscosity = stable_hv
-                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4               
+                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (scale_factor_inv*elem(ie)%normDinv)**4               
             end if
             normDinv_hypervis = max(normDinv_hypervis, elem(ie)%hv_courant/dtnu)
 
@@ -457,7 +460,7 @@ contains
             (lambda**(-hypervis_scaling/2) )
     else
        ! constant coefficient formula:
-       normDinv_hypervis = (lambda_vis**2) * (rrearth*max_normDinv)**4
+       normDinv_hypervis = (lambda_vis**2) * (scale_factor_inv*max_normDinv)**4
     endif
 
 
@@ -526,17 +529,17 @@ contains
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
-            min_gw/(120.0d0*max_normDinv*rrearth),'s'
+            min_gw/(120.0d0*max_normDinv*scale_factor_inv),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
-            1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
+            1/(120.0d0*max_normDinv*lambda_max*scale_factor_inv),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
-                                   1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
+                                   1/(120.0d0*max_normDinv*lambda_max*scale_factor_inv),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
-                                   1/(342.0d0*max_normDinv*lambda_max*rrearth),'s'
+                                   1/(342.0d0*max_normDinv*lambda_max*scale_factor_inv),'s'
        if (nu>0) then
           if (hypervis_order==1) then
               write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',&
-                   1/(nu*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+                   1/(nu*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
           endif
           if (hypervis_order==2) then
              ! counrant number = dtnu*normDinv_hypervis  < S
@@ -560,18 +563,18 @@ contains
 #ifdef MODEL_THETA_L
           nu_top_actual=maxval(nu_scale_top)*nu_top
           write(iulog,'(a,f10.2,a)') 'scaled nu_top viscosity CFL: dt < S*', &
-               1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+               1.0d0/(nu_top_actual*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
 #else
           nu_top_actual=4*nu_top
           write(iulog,'(a,f10.2,a)') '4*nu_top viscosity CFL: dt < S*', &
-               1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+               1.0d0/(nu_top_actual*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
 #endif
        end if
 
       if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', &
-           1.0d0/(dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
+           1.0d0/(dcmip16_mu*  ((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
       if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', &
-           1.0d0/(dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+           1.0d0/(dcmip16_mu_s*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
 
       if (hypervis_power /= 0) then
         write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &

@@ -924,7 +924,7 @@ contains
 
 
   subroutine set_prescribed_velocity(elem,n0,time)
-  use control_mod, only :  topology, test_case
+  use control_mod, only :  test_case
   use element_mod, only : element_t
   use dimensions_mod, only : nlev
   use shallow_water_mod, only : tc1_velocity, vortex_velocity, swirl_velocity
@@ -936,15 +936,15 @@ contains
   integer :: n0,k
   real (kind=real_kind) :: time
 
-  if (topology == "cube" .and. test_case=="swtc1") then
+  if (test_case=="swtc1") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=tc1_velocity(elem%spherep,elem%Dinv)
      end do
-  else if (topology == "cube" .and. test_case=="vortex") then                
+  else if (test_case=="vortex") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=vortex_velocity(time,elem%spherep,elem%Dinv)
      end do
-  else if (topology == "cube" .and. test_case=="swirl") then                
+  else if (test_case=="swirl") then
      do k=1,nlev
         elem%state%v(:,:,:,k,n0)=swirl_velocity(time,elem%spherep,elem%Dinv)
      end do

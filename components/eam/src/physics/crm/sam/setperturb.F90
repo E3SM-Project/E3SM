@@ -33,7 +33,7 @@ contains
       integer, parameter :: perturb_num_layers  = 5   ! Number of levels to perturb
       integer, parameter :: perturb_t_magnitude = 1.0 ! perturbation LSE amplitube [K]
 
-      factor_xy = 1./real((nx*ny),crm_rknd)
+      factor_xy = 1.D0/real((nx*ny),crm_rknd)
 
       ! set the sub-grid scale (SGS) turbulence fields
       call setperturb_sgs(ncrms,icrm,0)  

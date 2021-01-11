@@ -100,6 +100,9 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/viscosity_base.F90
     ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
+    ${SRC_SHARE_DIR}/planar_mod.F90
+    ${SRC_SHARE_DIR}/geometry_mod.F90
+    ${SRC_SHARE_DIR}/planar_mesh_mod.F90
   )
 
   SET(TEST_SRC_F90
@@ -117,6 +120,8 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip2016-terminator.F90
     ${TEST_SRC_DIR}/dcmip2016-tropical-cyclone.F90
     ${TEST_SRC_DIR}/held_suarez_mod.F90
+    ${TEST_SRC_DIR}/dry_planar.F90
+    ${TEST_SRC_DIR}/moist_planar.F90
     ${TEST_SRC_DIR}/mtests.F90
   )
 
