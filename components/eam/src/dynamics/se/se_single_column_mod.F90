@@ -288,7 +288,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
         call outfld('QDIFF',qdiff_out,npsq,ie)
       else
         call outfld('TDIFF',tdiff_dyn,plon,begchunk)
-        call outfld('QDIFF',tdiff_dyn,plon,begchunk)
+        call outfld('QDIFF',qdiff_dyn,plon,begchunk)
       endif
     
     enddo
