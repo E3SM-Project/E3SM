@@ -932,7 +932,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
-               use_MMF_VT, MMF_VT_wn_max, &
+               use_MMF_VT_tmp, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
       call t_stopf('crm_call')
