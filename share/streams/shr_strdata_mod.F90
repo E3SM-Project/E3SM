@@ -1035,6 +1035,8 @@ contains
           if (trim(SDAT%tintalgo(n)) == 'coszen') then
              call t_startf(trim(lstr)//trim(timname)//'_coszen')
 
+             write(6,*)'DEBUG: stream is ',n
+
              !--- make sure orb info has been set ---
              if (SDAT%eccen == SHR_ORB_UNDEF_REAL) then
                 call shr_sys_abort(subname//' ERROR in orb params for coszen tinterp')

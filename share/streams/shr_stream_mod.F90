@@ -159,7 +159,7 @@ module shr_stream_mod
   !----- parameters -----
   real(SHR_KIND_R8)   ,parameter :: spd = SHR_CONST_CDAY ! seconds per day
   integer(SHR_KIND_IN),parameter :: initarr_size = 3     ! size of initarr
-  integer(SHR_KIND_IN),save :: debug = 0        ! edit/turn-on for debug write statements
+  integer(SHR_KIND_IN),save :: debug = 2        ! edit/turn-on for debug write statements
   logical             ,save :: doabort = .true. ! flag if abort on error
   character(len=*), parameter :: sourcefile = &
        __FILE__
@@ -1029,6 +1029,10 @@ contains
     dDateF  = yrFirst * 10000 + 101 ! first date in valid range
     dDateL  = (yrLast+1)  * 10000 + 101 ! last date in valid range
 
+    write(s_logunit,*)'DEBUG1: mdatein = ',mdatein
+    write(s_logunit,*)'DEBUG1: yrfirst = ',yrfirst
+    write(s_logunit,*)'DEBUG1: yrlast  = ',yrlast
+
     if (cycle) then
        dYear  = yrFirst + modulo(mYear-yrAlign+(2*nYears),nYears)   ! current data year
     else
@@ -1043,9 +1047,9 @@ contains
     dDateIn = dYear*10000 + modulo(mDateIn,10000) ! mDateIn mapped to range of data years
     rDateIn = dDateIn + secIn/spd                 ! dDateIn + fraction of a day
 
-    !   write(s_logunit,*) 'tcx fbd1 ',mYear,dYear,dDateIn,rDateIn
-    !   write(s_logunit,*) 'tcx fbd2 ',yrFirst,yrLast,yrAlign,nYears
-    !   call shr_sys_flush(s_logunit)
+    write(s_logunit,*) 'fbd1 ',mYear,dYear,dDateIn,rDateIn
+    write(s_logunit,*) 'fbd2 ',yrFirst,yrLast,yrAlign,nYears
+    call shr_sys_flush(s_logunit)
 
     !----------------------------------------------------------------------------
     ! find least valid date (lvd)
@@ -1054,6 +1058,7 @@ contains
     if (.not. strm%found_lvd) then
        A:    do k=1,strm%nFiles
           if (.not. strm%file(k)%haveData) then
+             write(s_logunit,*)'DEBUG1: calling shr_stream_readtCoord for k= ',k
              call shr_stream_readtCoord(strm, k, rCode)
              if ( rCode /= 0 )then
                 call shr_stream_abort(trim(subName)//" ERROR: readtCoord1")
@@ -1061,6 +1066,8 @@ contains
              end if
           end if
           do n=1,strm%file(k)%nt
+             write(s_logunit,*)'DEBUG1: n,k,strm%file(k)%nt,ddateF= ',n,k,strm%file(k)%nt,ddateF
+             write(s_logunit,*)'DEBUG1: n,k,strm%file(k)%date(n)  = ',n,k,strm%file(k)%date(n)
              if ( dDateF <= strm%file(k)%date(n) ) then
                 !--- found a date in or beyond yearFirst ---
                 strm%k_lvd = k
@@ -1070,6 +1077,7 @@ contains
              end if
           end do
        end do A
+       write(s_logunit,*)'DEBUG1: strm%k_lvd, strm%n_lvd= ',strm%k_lvd,strm%n_lvd
        if (.not. strm%found_lvd) then
           rCode = 1
           write(s_logunit,F00)  "ERROR: LVD not found, all data is before yearFirst"
@@ -1083,6 +1091,7 @@ contains
           end if
        end if
        if (debug>1 .and. s_loglev > 0) then
+          write(s_logunit,*)"DEBUG: found LVD = ",strm%file(k)%date(n)
           if (strm%found_lvd) write(s_logunit,F01) "DEBUG: found LVD = ",strm%file(k)%date(n)
        end if
     end if
@@ -1104,8 +1113,8 @@ contains
        rDategvd = 99991231.0
     endif
 
-    !   write(s_logunit,*) 'tcx fbd3 ',rDateIn,rDatelvd,rDategvd
-    !   call shr_sys_flush(s_logunit)
+    write(s_logunit,*) 'fbd3 ',rDateIn,rDatelvd,rDategvd
+    call shr_sys_flush(s_logunit)
 
     !-----------------------------------------------------------
     ! dateIn < rDatelvd
@@ -1137,8 +1146,8 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB = strm%file(k_ub)%secs(n_ub)
           fileUB = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb1 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
+          write(s_logunit,*)'fb1 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+          call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -1191,8 +1200,8 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB   = strm%file(k_ub)%secs(n_ub)
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb2 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
+          write(s_logunit,*)'fb2 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+          call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -1226,8 +1235,8 @@ contains
           mDateUB = 99991231
           secUB   = 0
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb3 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
+          write(s_logunit,*)'fb3 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+          call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -1249,8 +1258,8 @@ contains
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
           secUB   = strm%file(k_ub)%secs(n_ub)
           fileUB  = strm%file(k_ub)%name
-          !         write(s_logunit,*)'tcx fb4 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-          !         call shr_sys_flush(s_logunit)
+          write(s_logunit,*)'fb4 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+          call shr_sys_flush(s_logunit)
           return
        endif
 
@@ -1332,8 +1341,8 @@ contains
                 mDateUB = 99991231
                 secUB   = 0
                 fileUB  = strm%file(k_ub)%name
-                !               write(s_logunit,*)'tcx fb5 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                !               call shr_sys_flush(s_logunit)
+                write(s_logunit,*)'fb5 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+                call shr_sys_flush(s_logunit)
                 return
              endif
 
@@ -1355,8 +1364,8 @@ contains
                 call shr_cal_ymd2date(yy,mm,dd,mDateUB)
                 secUB   = strm%file(k_ub)%secs(n_ub)
                 fileUB  = strm%file(k_ub)%name
-                !               write(s_logunit,*)'tcx fb6 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                !               call shr_sys_flush(s_logunit)
+                write(s_logunit,*)'fb6 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+                call shr_sys_flush(s_logunit)
                 return
              endif
 
@@ -1392,8 +1401,8 @@ contains
                    call shr_cal_ymd2date(yy,mm,dd,mDateUB)
                    secUB = strm%file(k_ub)%secs(n_ub)
                    fileUB = strm%file(k_ub)%name
-                   !                  write(s_logunit,*)'tcx fb7 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
-                   !                  call shr_sys_flush(s_logunit)
+                   write(s_logunit,*)'fb7 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
+                   call shr_sys_flush(s_logunit)
                    return
                 endif
              enddo
