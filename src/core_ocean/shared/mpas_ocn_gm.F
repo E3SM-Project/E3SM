@@ -132,7 +132,7 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
+      real(kind=RKIND)                 :: sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -698,8 +698,8 @@ contains
 
          nEdges = nEdgesArray(3)
          !!$omp parallel
-         !!$omp do schedule(runtime) private(cell1, cell2, k, gradDensityTopOfEdge, dzdxTopOfEdge, &
-         !!$omp             gradDensityConstZTopOfEdge, kappaGMEdge, BruntVaisalaFreqTopEdge, N) &
+         !!$omp do schedule(runtime) private(cell1, cell2, k, &
+         !!$omp             BruntVaisalaFreqTopEdge, N) &
          !!$omp firstprivate(tridiagB, tridiagC, rightHandSide, tridiagA)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
