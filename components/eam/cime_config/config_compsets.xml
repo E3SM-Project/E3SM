@@ -222,8 +222,8 @@
   </compset>
 
   <compset>
-    <alias>F20TRC5v2-CMIP6</alias>
-    <lname>20TRv2_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F20TR</alias>
+    <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -232,8 +232,8 @@
   </compset>
 
   <compset>
-    <alias>F2010SC5v2-CMIP6</alias>
-    <lname>2010Sv2_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F2010</alias>
+    <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>

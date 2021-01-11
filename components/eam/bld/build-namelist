@@ -799,6 +799,10 @@ else {
 }
 add_default($nl, 'ncdata', %atts);
 
+# ieflx_opt, the setting is moved out of use_case file and run_script
+# 0: uncoupled, 2: coupled, distinguished by ocn comp name as seen by atm's configure command
+add_default($nl,'ieflx_opt');
+
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)

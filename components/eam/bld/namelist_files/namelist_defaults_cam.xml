@@ -265,6 +265,10 @@
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
+<!-- ieflx_opt 0: atmonly, 2: coupled -->
+<ieflx_opt  ocn="docn" >0</ieflx_opt>
+<ieflx_opt  ocn="mpaso" >2</ieflx_opt>
+
 <!-- Bulk aerosol physical properties (includes optics) -->
 
 <!-- CAM3 Bulk aerosols.  Optics for CAM-RT -->
