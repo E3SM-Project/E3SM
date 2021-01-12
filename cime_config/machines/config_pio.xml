@@ -6,6 +6,7 @@
     <values>
       <value>2</value>
       <value mach="sooty">1</value>
+      <value mach="chrysalis" mpilib="openmpi">1</value>
     </values>
   </entry>
 
