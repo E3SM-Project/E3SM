@@ -26,6 +26,7 @@ module ocn_sediment_flux_index
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -155,7 +156,6 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       real (kind=RKIND), dimension(:,:), pointer :: velX, velY, velZ
       real (kind=RKIND), dimension(:), pointer :: posX, posY
@@ -177,7 +177,6 @@ contains
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'sedimentFluxIndexAM', sedimentFluxIndexAMPool)
 
          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
@@ -190,13 +189,13 @@ contains
          if (use_lat_lon_coords) then
             call mpas_pool_get_array(meshPool, 'lonCell', posX)
             call mpas_pool_get_array(meshPool, 'latCell', posY)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velX)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velY)
+            velX => velocityZonal
+            velY => velocityMeridional
          else
             call mpas_pool_get_array(meshPool, 'xCell', posX)
             call mpas_pool_get_array(meshPool, 'yCell', posY)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityX', velX)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityY', velY)
+            velX => velocityX
+            velY => velocityY
          end if 
 
          call mpas_pool_get_array(sedimentFluxIndexAMPool, 'sedimentFluxIndexVAX', sfiVAx)

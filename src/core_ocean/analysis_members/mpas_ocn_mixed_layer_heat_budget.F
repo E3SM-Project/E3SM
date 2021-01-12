@@ -27,6 +27,7 @@ module ocn_mixed_layer_heat_budget
    use mpas_log
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -167,7 +168,6 @@ contains
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: statePool
       type(mpas_pool_type), pointer :: meshPool
-      type(mpas_pool_type), pointer :: diagnosticsPool
       type(mpas_pool_type), pointer :: tracersPool
       type(mpas_pool_type), pointer :: tracerTendPool
       type(mpas_pool_type), pointer :: tendPool
@@ -177,13 +177,12 @@ contains
       integer :: iTracer, k, iCell, num_tracers
       integer, dimension(:), pointer :: maxLevelCell
 
-      real(kind=RKIND), dimension(:, :, :), pointer :: activeTracerSurfaceFluxTendency, &
-          activeTracerHorMixTendency, activeTracerNonLocalTendency, activeTracerVerticalAdvectionTendency, &
-          activeTracerHorizontalAdvectionTendency, activeTracerVertMixTendency, tracers, tracerTend
+      real(kind=RKIND), dimension(:, :, :), pointer :: &
+          tracers, tracerTend
       real(kind=RKIND), dimension(:, :), pointer :: activeTracerForcingMLTend, &
           activeTracerNonLocalMLTend, activeTracerHorMixMLTend, activeTracerVertMixMLTend, &
           activeTracerHorAdvectionMLTend, activeTracerVertAdvectionMLTend, activeTracersML, &
-          temperatureShortWaveTendency, layerThickness, BruntVaisalaFreqTop, activeTracersTendML
+          layerThickness, activeTracersTendML
       real(kind=RKIND), dimension(:), pointer ::  dThreshMLD, bruntVaisalaFreqML
       real(kind=RKIND) :: depth, difference
       err = 0
@@ -194,7 +193,6 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'state', statePool)
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block%structs, 'mixedLayerHeatBudgetAM', mixedLayerHeatBudgetAMPool)
          call mpas_pool_get_subpool(block%structs, 'mixedLayerDepthsAM', mixedLayerDepthsAMPool)
          call mpas_pool_get_subpool(block%structs, 'tend', tendPool)
@@ -205,22 +203,6 @@ contains
          call mpas_pool_get_dimension(block%dimensions, 'nCellsSolve', nCellsSolve)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerSurfaceFluxTendency', &
-                                  activeTracerSurfaceFluxTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorMixTendency', &
-                                  activeTracerHorMixTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerNonLocalTendency', &
-                                  activeTracerNonLocalTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerVerticalAdvectionTendency', &
-                                  activeTracerVerticalAdvectionTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerHorizontalAdvectionTendency', &
-                                  activeTracerHorizontalAdvectionTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'activeTracerVertMixTendency', &
-                                  activeTracerVertMixTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'temperatureShortWaveTendency', &
-                                  temperatureShortWaveTendency)
-         call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
