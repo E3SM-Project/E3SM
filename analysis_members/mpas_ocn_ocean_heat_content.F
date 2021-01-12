@@ -29,6 +29,7 @@ module ocn_ocean_heat_content
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -158,7 +159,6 @@ contains
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: statePool
       type(mpas_pool_type), pointer :: meshPool
-      type(mpas_pool_type), pointer :: diagnosticsPool
       type(mpas_pool_type), pointer :: tracersPool
 
       ! Here are some example variables which may be needed for your analysis member
@@ -167,7 +167,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
       real(kind=RKIND), dimension(:, :, :), pointer :: tracers
-      real(kind=RKIND), dimension(:, :), pointer :: zMid, layerThickness
+      real(kind=RKIND), dimension(:, :), pointer :: layerThickness
       real(kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, &
                                                  oceanHeatContentSfcToBot, oceanHeatContentSfcTo700m, &
                                                  oceanHeatContent700mTo2000m, oceanHeatContent2000mToBot
@@ -181,7 +181,6 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'state', statePool)
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block%structs, 'layeredOceanHeatContent', oceanHeatContentAMPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -199,7 +198,6 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
          call mpas_pool_get_array(oceanHeatContentAMPool, 'oceanHeatContentSfcToBot', oceanHeatContentSfcToBot)

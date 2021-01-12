@@ -27,6 +27,7 @@ module ocn_test_compute_interval
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -169,9 +170,7 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: testComputeIntervalAMPool
-      character (len=StrKIND), pointer :: xtime
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -190,8 +189,6 @@ contains
          call mpas_pool_get_array(testComputeIntervalAMPool, 'testComputeIntervalCounter',testComputeIntervalCounter)
 
          testComputeIntervalCounter = testComputeIntervalCounter + 1
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
          block => block % next
       end do
 

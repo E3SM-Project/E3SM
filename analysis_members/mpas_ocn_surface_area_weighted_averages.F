@@ -27,6 +27,7 @@ module ocn_surface_area_weighted_averages
    use mpas_log
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -158,7 +159,6 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
 
@@ -196,7 +196,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: windStressMeridional
       real (kind=RKIND), dimension(:), pointer :: atmosphericPressure
       real (kind=RKIND), dimension(:), pointer :: ssh
-      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       ! pointers to data in mesh pool
@@ -272,7 +271,6 @@ contains
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
             call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
    
@@ -326,7 +324,6 @@ contains
             call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
             call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
             call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-            call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth',boundaryLayerDepth)
    
             ! compute mask
             call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)

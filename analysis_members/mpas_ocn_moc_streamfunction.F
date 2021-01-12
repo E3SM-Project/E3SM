@@ -26,6 +26,7 @@ module ocn_moc_streamfunction
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -314,7 +315,6 @@ contains
       type (mpas_pool_type), pointer :: mocStreamfunctionAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: regionPool
@@ -328,7 +328,6 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binBoundaryMocStreamfunction
       real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepth, mocStreamValLatAndDepthTotal
       real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepthGM
-      real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
       real (kind=RKIND), dimension(:,:), pointer :: sumVertBinVelocity
 
       !!!! TRANSECT VARIABLES !!!!
@@ -460,7 +459,6 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
          call mpas_pool_get_array(mocStreamfunctionAMPool, 'binBoundaryMocStreamfunction', binBoundaryMocStreamfunction)
 
@@ -469,7 +467,6 @@ contains
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
@@ -563,7 +560,6 @@ contains
        do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
-           call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
            call mpas_pool_get_array(mocStreamfunctionAMPool, 'binBoundaryMocStreamfunction', binBoundaryMocStreamfunction)
 
@@ -572,7 +568,6 @@ contains
 
            call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-           call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertVelocityTop)
            call mpas_pool_get_array(meshPool, 'latCell', latCell)
            call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
@@ -583,7 +578,7 @@ contains
            call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
            call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
            call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
-           call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalVelocity)
+           normalVelocity => normalGMBolusVelocity
            call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
            call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -625,10 +620,10 @@ contains
               do k = 1,maxLevelCell(iCell)
                  do i = 1, regionsInAddGroup
                     currentRegion = regionsInGroup(i, regionGroupNumber)
-                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertVelocityTop(k, iCell) * &
+                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertGMBolusVelocityTop(k, iCell) * &
                           areaCell(iCell) * regionCellMasks(currentRegion, iCell))
                  end do
-                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertVelocityTop(k, iCell) * areaCell(iCell))
+                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertGMBolusVelocityTop(k, iCell) * areaCell(iCell))
               end do
            end do
 

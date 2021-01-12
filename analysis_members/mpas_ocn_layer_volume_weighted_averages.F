@@ -28,6 +28,7 @@ module ocn_layer_volume_weighted_averages
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -161,7 +162,6 @@ contains
       type (mpas_pool_type), pointer :: layerVolumeWeightedAverageAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -174,22 +174,7 @@ contains
 
       ! pointers to data in pools to be analyzed
       real (kind=RKIND), dimension(:,:),   pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:),   pointer :: density
-      real (kind=RKIND), dimension(:,:),   pointer :: potentialDensity
-      real (kind=RKIND), dimension(:,:),   pointer :: BruntVaisalaFreqTop
-      real (kind=RKIND), dimension(:,:),   pointer :: velocityZonal
-      real (kind=RKIND), dimension(:,:),   pointer :: velocityMeridional
-      real (kind=RKIND), dimension(:,:),   pointer :: vertVelocityTop
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVertMixTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerHorizontalAdvectionTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerVerticalAdvectionTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerSurfaceFluxTendency
-      real (kind=RKIND),dimension(:,:),pointer::temperatureShortWaveTendency
-      real (kind=RKIND),dimension(:,:,:),pointer::activeTracerNonLocalTendency
-      real (kind=RKIND), dimension(:,:),   pointer :: kineticEnergyCell
-      real (kind=RKIND), dimension(:,:),   pointer :: relativeVorticityCell
-      real (kind=RKIND), dimension(:,:),   pointer :: divergence
 
       ! pointers to data in mesh pool
       integer, pointer :: nVertLevels, nCells, nCellsSolve, nLayerVolWeightedAvgFields, nOceanRegionsTmp
@@ -258,7 +243,6 @@ contains
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -291,26 +275,7 @@ contains
          ! get pointers to data that will be analyzed
          ! listed in the order in which the fields appear in {avg,min,max}ValueWithinOceanLayerRegion
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-         call mpas_pool_get_array(diagnosticsPool, 'density', density)
-         call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
-         call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-         call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
-         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
-         call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-         if ( computeActiveTracerBudgetsOn ) then
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
-                   activeTracerHorizontalAdvectionTendency)
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerVerticalAdvectionTendency', &
-                   activeTracerVerticalAdvectionTendency)
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerVertMixTendency',activeTracerVertMixTendency)
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
-           call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
-           call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
-         end if
 
          ! initialize buffers
          workBufferSum(:) = 0.0_RKIND
