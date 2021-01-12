@@ -1493,6 +1493,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+     real(r8) :: water_forms(5)
+
+
     !
     !-----------------------------------------------------------------------
     !
@@ -1587,6 +1590,10 @@ end if ! l_tracer_aero
     call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
 
     state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+
+    call get_water_mass(state,state%water_before_physstep(1:ncol))
+    call get_water_energy(state,state%energy_water_before_physstep(1:ncol))
+
 
 #if 0
 !remove all fluxes for now
@@ -2932,12 +2939,30 @@ end if ! l_rad
 !!!! compute net energy budget here
 !!!! expected TE2-TE1 = restom - ressurf
 
+
+!my guess is that precc etc are fluxes, since CG script uses them like fluxesand
+!they are called rates in cam exchange
     state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
     state%delta_te_flux(1:ncol) = &
           ( fsnt(1:ncol) - flnt(1:ncol) ) &
         - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
             -        (latvap+latice)*cam_in%cflx(:ncol,1) &
             + 1000.0*latice         *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
+
+    call get_water_mass(state,state%water_after_physstep(1:ncol))
+    call get_water_energy(state,state%energy_water_after_physstep(1:ncol))
+
+    state%water_delta(1:ncol) = state%water_after_physstep(1:ncol) - &
+                                (state%water_before_physstep(1:ncol) + cam_in%cflx(1:ncol)*ztodt)
+    state%energy_water_delta(1:ncol) = state%energy_water_after_physstep(1:ncol) - &
+                                (state%energy_water_before_physstep(1:ncol) + cam_in%cflx(1:ncol)*(latvap+latice)*ztodt)
+
+    state%water_flux_to_send(1:ncol) = &
+       cam_out%precc(1:ncol) + cam_out%precl(1:ncol) + cam_out%precsc(1:ncol) + cam_out%precsl(1:ncol)
+
+    state%energy_water_flux_to_send(1:ncol) = &
+       1000.0*latice*( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol))
 
 
     ! Write export state to history file

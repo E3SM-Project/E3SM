@@ -792,7 +792,7 @@ end subroutine check_energy_save_local_te
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,5)   
+    real(r8) :: te(pcols,begchunk:endchunk,9)   
                                          ! total energy of input/output states (copy)
     real(r8) :: te_glob(3)               ! global means of total energy
     real(r8), pointer :: teout(:)
@@ -816,6 +816,15 @@ end subroutine check_energy_save_local_te
        te(:ncol,lchnk,4) = state(lchnk)%delta_te(:ncol)
        te(:ncol,lchnk,5) = state(lchnk)%delta_te_flux(:ncol)
 
+!precip fluxes
+       te(:ncol,lchnk,6) = state(lchnk)%water_flux_to_send(:ncol)
+!difference in water mass after and before
+       te(:ncol,lchnk,7) = state(lchnk)%water_delta(:ncol)
+!energy from precip fluxes 
+       te(:ncol,lchnk,8) = state(lchnk)%energy_water_flux_to_send(:ncol)
+!difference in water energy
+       te(:ncol,lchnk,9) = state(lchnk)%energy_water_delta(:ncol)
+
     end do
 
     ! Compute global means of input and output energies and of
@@ -834,8 +843,19 @@ end subroutine check_energy_save_local_te
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
-          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep-1, dTE/dt, R-R, diff", nstep-1, te_glob(4)/dtime, te_glob(5),&
+
+!difference in energy dTE, RR, and their difference 
+         write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep-1, dTE/dt, R-R, diff", nstep-1, te_glob(4)/dtime, te_glob(5),&
  te_glob(4)/dtime-te_glob(5)
+
+!same for water
+          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep-1, dW/dt, WFlux, diff", nstep-1, te_glob(7)/dtime, te_glob(6),&
+ te_glob(7)/dtime-te_glob(6)
+
+!water energy
+          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep-1, dWE/dt, WEflux, diff", nstep-1, te_glob(9)/dtime, te_glob(8),&
+ te_glob(9)/dtime-te_glob(8)
+
        end if
     else
        heat_glob = 0._r8
