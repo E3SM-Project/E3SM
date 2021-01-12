@@ -205,7 +205,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c170712.nc</finidat>
 
 <!-- for present day simulations - year 1950 -->
-<fsurdat hgrid="ne120np4"     sim_year="1950" >
+<fsurdat hgrid="ne120np4"     sim_year="1955" >
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1950_c20180108.nc</fsurdat>
 
 <!-- for present day simulations - year 2015 -->
