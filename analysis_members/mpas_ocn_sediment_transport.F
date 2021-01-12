@@ -25,6 +25,7 @@ module ocn_sediment_transport
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -154,7 +155,6 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       real (kind=RKIND), pointer :: salpha, SD50, rho0, rhoS, Vh, Dv,Ws
       real (kind=RKIND), pointer :: tau_ce, Erate, poro, tau_cd, Cd, Manning
@@ -165,7 +165,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: bedld_x, bedld_y
       real (kind=RKIND), dimension(:), pointer :: SSC_ref
       real (kind=RKIND), dimension(:,:), pointer :: SSC
-      real (kind=RKIND), dimension(:,:), pointer :: zMid
 
       logical, pointer :: on_a_sphere, use_lat_lon_coords
       logical, pointer :: bedload, suspended
@@ -217,10 +216,8 @@ contains
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'sedimentTransportAM', sedimentTransportAMPool)
 
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
          call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
@@ -231,13 +228,13 @@ contains
          if (use_lat_lon_coords) then
             call mpas_pool_get_array(meshPool, 'lonCell', posX)
             call mpas_pool_get_array(meshPool, 'latCell', posY)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velX)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velY)
+            velX => velocityZonal
+            velY => velocityMeridional
          else
             call mpas_pool_get_array(meshPool, 'xCell', posX)
             call mpas_pool_get_array(meshPool, 'yCell', posY)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityX', velX)
-            call mpas_pool_get_array(diagnosticsPool, 'velocityY', velY)
+            velX => velocityX
+            velY => velocityY
          end if 
 
 
