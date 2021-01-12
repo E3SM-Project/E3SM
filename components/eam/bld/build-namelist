@@ -318,15 +318,15 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 my $nl_defaults_file;
 if (@usr_src_dirs) {
     foreach my $dir (@usr_src_dirs) {
-	if (-f "$dir/namelist_defaults_cam.xml") {
-	    $nl_defaults_file = "$dir/namelist_defaults_cam.xml";
+	if (-f "$dir/namelist_defaults_eam.xml") {
+	    $nl_defaults_file = "$dir/namelist_defaults_eam.xml";
 	    last;
 	}
     }
 }
 if (! defined $nl_defaults_file) {
     # default location of namelist defaults file
-    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_cam.xml";
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_eam.xml";
     (-f "$nl_defaults_file")  or  die <<"EOF";
     ** $ProgName - ERROR: Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
