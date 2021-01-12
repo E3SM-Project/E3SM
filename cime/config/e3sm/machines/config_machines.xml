@@ -1023,7 +1023,7 @@
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
         <arg name="binding">--cpu_bind=cores</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+        <arg name="placement">-m plane=$MAX_MPITASKS_PER_NODE</arg>
       </arguments>
     </mpirun>
     <module_system type="module">
