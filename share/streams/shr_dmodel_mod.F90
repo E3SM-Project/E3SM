@@ -647,15 +647,10 @@ CONTAINS
     oSecLB  = mSecLB
     oDateUB = mDateUB
     oSecUB  = mSecUB
-    write(logunit,*)'DEBUG: oDateLB,oSecLB= ',oDateLB,oSecLB
-    write(logunit,*)'DEBUG: oDateUB,oSecUB= ',oDateUB,oSecUB
 
     rDateM  = real(mDate  ,R8) + real(mSec  ,R8)/spd
     rDateLB = real(mDateLB,R8) + real(mSecLB,R8)/spd
     rDateUB = real(mDateUB,R8) + real(mSecUB,R8)/spd
-    write(logunit,*)'RdateM = ',rdatem
-    write(logunit,*)'RdateLB= ',rdatelb
-    write(logunit,*)'RdateuB= ',rdateub
     call t_stopf(trim(lstr)//'_setup')
 
     if (rDateM < rDateLB .or. rDateM > rDateUB) then
@@ -667,8 +662,6 @@ CONTAINS
           call shr_stream_findBounds(stream,mDate,mSec,                 &
                ivals(1),dDateLB,ivals(2),ivals(5),fn_lb, &
                ivals(3),dDateUB,ivals(4),ivals(6),fn_ub  )
-          write(logunit,*)'DEBUG: after findbounds ',ivals(1),ivals(2)
-          write(logunit,*)'DEBUG: after findbounds ',ivals(3),ivals(4)
           call shr_stream_getFilePath(stream,path)
           localCopy = (shr_file_queryPrefix(path) /= shr_file_noPrefix )
        endif

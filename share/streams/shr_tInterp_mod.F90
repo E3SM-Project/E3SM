@@ -285,9 +285,6 @@ contains
     ldt = dt
 
     !--- get LB & UB dates ---
-    write(6,*)'DEBUG ymd1,tod1= ',ymd1,tod1
-    write(6,*)'DEBUG ymd2,tod2= ',ymd2,tod2
-
     call shr_cal_timeSet(reday1,ymd1,tod1,calendar)
     call shr_cal_timeSet(reday2,ymd2,tod2,calendar)
     if (reday1 > reday2) call shr_sys_abort(subname//'ERROR: lower-bound > upper-bound')
