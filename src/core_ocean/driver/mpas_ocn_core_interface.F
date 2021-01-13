@@ -112,6 +112,7 @@ module ocn_core_interface
       logical, pointer :: initModeActive
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
+      logical, pointer :: semiImplicitTimePKGActive
       logical, pointer :: windStressBulkPKGActive
       logical, pointer :: variableBottomDragPKGActive
       logical, pointer :: tracerBudgetActive
@@ -195,14 +196,20 @@ module ocn_core_interface
 
       !
       ! test for integration scheme
-      ! (TDR: this makes no sense, if split or unsplit then splitTimeIntegratorActive = .true.)
       !
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
       if ( forwardModeActive ) then
          if (    config_time_integrator == trim('split_explicit') &
-            .or. config_time_integrator == trim('unsplit_explicit') ) then
+            .or. config_time_integrator == trim('unsplit_explicit') &
+            .or. config_time_integrator == trim('semi_implicit') ) then
             splitTimeIntegratorActive = .true.
+         end if
+      endif
+      call mpas_pool_get_package(packagePool, 'semiImplicitTimePKGActive', semiImplicitTimePKGActive)
+      if ( forwardModeActive ) then
+         if (config_time_integrator == trim('semi_implicit') ) then
+            semiImplicitTimePKGActive = .true.
          end if
       endif
 

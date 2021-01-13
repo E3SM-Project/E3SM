@@ -225,7 +225,8 @@ contains
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
          RK4On = 1
       elseif ( trim( config_time_integrator ) == 'split_explicit' &
-        .or. trim( config_time_integrator ) == 'unsplit_explicit') then
+        .or. trim( config_time_integrator ) == 'unsplit_explicit' &
+        .or. trim( config_time_integrator ) == 'semi_implicit') then
          ! For split explicit, Coriolis tendency uses eta/h because the Coriolis term
          ! is added separately to the momentum tendencies.
          RK4On = 0
