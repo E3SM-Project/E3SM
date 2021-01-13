@@ -2357,7 +2357,8 @@ contains
        clock)!{{{
 
     use seaice_special_boundaries, only: &
-         seaice_periodic_velocity
+         seaice_set_special_boundaries_velocity, &
+         seaice_set_special_boundaries_velocity_masks
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -2388,8 +2389,9 @@ contains
     call mpas_timer_stop("Velocity solver memcpy HtoD")
 #endif
 
-    ! periodic velocity
-    call seaice_periodic_velocity(domain)
+    ! special boundaries
+    call seaice_set_special_boundaries_velocity(domain)
+    call seaice_set_special_boundaries_velocity_masks(domain)
 
     call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
 
@@ -2400,8 +2402,9 @@ contains
             clock, &
             iElasticSubcycle)
 
-       ! periodic velocity
-       call seaice_periodic_velocity(domain)
+       ! special boundaries
+       call seaice_set_special_boundaries_velocity(domain)
+       call seaice_set_special_boundaries_velocity_masks(domain)
 
     enddo
 

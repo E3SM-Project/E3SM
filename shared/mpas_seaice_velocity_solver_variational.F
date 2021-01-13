@@ -106,7 +106,121 @@ contains
 
     endif
 
+    !call homogenize_variational_basis_field()
+
   end subroutine seaice_init_velocity_solver_variational
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  homogenize_variational_basis_field
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 9th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine homogenize_variational_basis_field()
+
+    use seaice_mesh_pool, only: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         nCells
+
+    integer :: &
+         iCell
+
+    integer, parameter :: &
+         iCellHomogenize = 1111
+
+    !call homogenize_cell(basisGradientU, iCellHomogenize)
+    !call homogenize_cell(basisGradientV, iCellHomogenize)
+    !call homogenize_cell(basisIntegralsMetric, iCellHomogenize)
+    !call homogenize_cell(basisIntegralsU, iCellHomogenize)
+    !call homogenize_cell(basisIntegralsV, iCellHomogenize)
+
+    do iCell = 1, nCells
+
+       basisGradientU(:,:,iCell)       = basisGradientU(:,:,iCellHomogenize)
+       basisGradientV(:,:,iCell)       = basisGradientV(:,:,iCellHomogenize)
+       basisIntegralsMetric(:,:,iCell) = basisIntegralsMetric(:,:,iCellHomogenize)
+       basisIntegralsU(:,:,iCell)      = basisIntegralsU(:,:,iCellHomogenize)
+       basisIntegralsV(:,:,iCell)      = basisIntegralsV(:,:,iCellHomogenize)
+
+    enddo ! iCell
+
+  end subroutine homogenize_variational_basis_field
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  homogenize_variational_basis_field
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 9th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine homogenize_cell(&
+       field, &
+       iCell)
+
+    real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
+         field
+
+    integer, intent(in) :: &
+         iCell
+
+    integer :: &
+         iVertexOnCell1, &
+         iVertexOnCell2, &
+         nCanonicalValues, &
+         iCV
+
+    real(kind=RKIND), dimension(100) :: &
+         canonicalValues
+
+    logical :: &
+         lFound
+
+    nCanonicalValues = 0
+
+    do iVertexOnCell1 = 1, 6
+       do iVertexOnCell2 = 1, 6
+
+          lFound = .false.
+          do iCV = 1, nCanonicalValues
+
+             if (abs(abs(canonicalValues(iCV) - abs(field(iVertexOnCell1,iVertexOnCell2,iCell)))) < 1e-12) then
+                lFound = .true.
+                field(iVertexOnCell1,iVertexOnCell2,iCell) = canonicalValues(iCV) * sign(1.0, field(iVertexOnCell1,iVertexOnCell2,iCell))
+                exit
+             endif
+
+          enddo ! iCV
+
+          if (.not. lFound) then
+             nCanonicalValues = nCanonicalValues + 1
+             canonicalValues(nCanonicalValues) = abs(field(iVertexOnCell1,iVertexOnCell2,iCell))
+          endif
+
+       enddo ! iVertexOnCell2
+    enddo ! iVertexOnCell1
+
+    !do iVertexOnCell1 = 1, 6
+    !   do iVertexOnCell2 = 1, 6
+    !      write(*,*) iVertexOnCell1, iVertexOnCell2, field(iVertexOnCell1,iVertexOnCell2,iCell)
+    !   enddo ! iVertexOnCell2
+    !enddo ! iVertexOnCell1
+
+  end subroutine homogenize_cell
 
 !-----------------------------------------------------------------------
 ! time step
