@@ -191,7 +191,7 @@ subroutine zm_conv_init(pref_edge)
        call add_default('ZMDLIQ   ', history_budget_histfile_num, ' ')
        call add_default('ZMDICE   ', history_budget_histfile_num, ' ')
 
-       if( cam_physpkg_is('cam4') .or. cam_physpkg_is('cam5') ) then
+       if( cam_physpkg_is('cam4') .or. cam_physpkg_is('default') ) then
           call add_default('ZMMTT    ', history_budget_histfile_num, ' ')
        end if
 
