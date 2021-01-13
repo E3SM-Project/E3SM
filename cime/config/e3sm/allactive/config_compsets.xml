@@ -74,6 +74,11 @@
   <lname>20TR_CAM5%CMIP6-HR_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>A_WCYCL20TRS_CMIP6_LRtunedHR</alias>
+  <lname>20TR_CAM5%CMIP6-LRtunedHR_CLM45%SPBC_MPASCICE%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- E3SM v1 science compsets -->
 
 <compset>
