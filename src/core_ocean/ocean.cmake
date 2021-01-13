@@ -3,6 +3,14 @@
 list(APPEND CPPDEFS "-DCORE_OCEAN")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 
+# check if lapack is linked
+find_package(LAPACK)
+find_package(BLAS)
+if(LAPACK_FOUND AND BLAS_FOUND)
+  list(APPEND CPPDEFS "-DUSE_LAPACK")
+  list(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
+endif()
+
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
   ../../mpas-ocean/driver/ocn_comp_mct.F
@@ -16,6 +24,7 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_forward/mpas_ocn_time_integration.F
   core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
   core_ocean/mode_forward/mpas_ocn_time_integration_split.F
+  core_ocean/mode_forward/mpas_ocn_time_integration_si.F
 
   core_ocean/mode_analysis/mpas_ocn_analysis_mode.F
 
