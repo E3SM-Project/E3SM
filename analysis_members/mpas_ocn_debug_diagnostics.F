@@ -29,6 +29,7 @@ module ocn_debug_diagnostics
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -158,7 +159,6 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       !type (mpas_pool_type), pointer :: debugDiagnosticsAM
 
       ! Here are some example variables which may be needed for your analysis member
@@ -168,9 +168,6 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND) :: dzVert1, dzVert2, dzEdgeK, dzEdgeKp1, rx1, localMaxRx1
-      real (kind=RKIND), pointer :: globalRx1Max
-      real (kind=RKIND), dimension(:), pointer :: rx1MaxCell
-      real (kind=RKIND), dimension(:,:), pointer :: zMid
 
       err = 0
 
@@ -182,11 +179,10 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          !call mpas_pool_get_subpool(block % structs, 'debugDiagnosticsAM', debugDiagnosticsAMPool)
 
          if ( config_AM_debugDiagnostics_check_state ) then
-            call ocn_test_ocean_state(dminfo, meshPool, diagnosticsPool, statePool)
+            call ocn_test_ocean_state(dminfo, meshPool, statePool)
          end if
 
          ! Here are some example variables which may be needed for your analysis member
@@ -194,21 +190,13 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-
          !-----------------------------------------------------------------
          !
          ! Compute Haney number, rx1
          !
          !-----------------------------------------------------------------
 
-         call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
-         call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max)
-
         ! These could be included for edge or cell fields with depth:
-        ! call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge)
-        ! call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
-        ! call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
         ! rx1Edge(:,:) = 0.0_RKIND
         ! rx1Cell(:,:) = 0.0_RKIND
         ! rx1MaxEdge(:) = 0.0_RKIND
@@ -338,14 +326,12 @@ contains
 
    end subroutine ocn_finalize_debug_diagnostics!}}}
 
-   subroutine ocn_test_ocean_state(dminfo, meshPool, diagnosticsPool, statePool)!{{{
+   subroutine ocn_test_ocean_state(dminfo, meshPool, statePool)!{{{
 
       type (dm_info) :: dminfo
-      type (mpas_pool_type), pointer :: statePool, meshPool, diagnosticsPool, tracersPool
-      character (len=StrKIND), pointer :: xtime
+      type (mpas_pool_type), pointer :: statePool, meshPool, tracersPool
       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, dimension(:), pointer :: maxLevelCell
@@ -364,8 +350,6 @@ contains
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
-      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
 

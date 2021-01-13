@@ -35,6 +35,7 @@ module ocn_harmonic_analysis
    use mpas_constants
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_vel_tidal_potential, only: char_array,tidal_constituent_factors
 
    implicit none
@@ -286,7 +287,6 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: harmonicAnalysisAMPool 
       type (mpas_time_type) :: current_time
       type (mpas_time_type) :: harmonicAnalysisStart
@@ -294,7 +294,6 @@ contains
 
       integer, pointer :: nCellsSolve      
       integer, pointer :: nAnalysisConstituents
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
       real (kind=RKIND), dimension(:),   pointer :: ssh
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresLHSMatrix
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresRHSVector
@@ -332,11 +331,9 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'harmonicAnalysisAM', harmonicAnalysisAMPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_array(diagnosticsPool, "daysSinceStartOfSim", daysSinceStartOfSim)
          call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'nAnalysisConstituents', nAnalysisConstituents)
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'leastSquaresLHSMatrix', leastSquaresLHSMatrix)
