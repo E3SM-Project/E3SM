@@ -843,7 +843,7 @@ struct Functions
 # include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_isotropic_ts_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"
-# include "shoc_shoc_main_impl.hpp"
+# include "shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
 # include "shoc_pblintd_surf_temp_impl.hpp"
