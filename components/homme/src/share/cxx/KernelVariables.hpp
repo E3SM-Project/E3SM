@@ -78,7 +78,7 @@ public:
       : team(team_in)
       , ie(team_in.league_rank())
       , iq(-1)
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
       , team_idx(utils.get_workspace_idx(team_in))
       , team_utils(&utils)
 #else
@@ -105,7 +105,7 @@ public:
       : team(team_in)
       , ie(team_in.league_rank() / qsize)
       , iq(team_in.league_rank() % qsize)
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
       , team_idx(utils.get_workspace_idx(team_in))
       , team_utils(&utils)
 #else
@@ -116,7 +116,7 @@ public:
     // Nothing to be done here
   }
 
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
   KOKKOS_INLINE_FUNCTION
   ~KernelVariables() {
     if (team_utils != nullptr) {
