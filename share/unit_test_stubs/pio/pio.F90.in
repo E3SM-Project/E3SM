@@ -144,6 +144,7 @@ module pio
   interface PIO_init
      module procedure init_intracom
      module procedure init_intercom
+     module procedure init_intercom_from_comms
   end interface
 
   public :: PIO_initdecomp
@@ -398,6 +399,15 @@ contains
 
     type (iosystem_desc_t), intent(out)  :: iosystem(component_count)  ! io descriptor to initalize
   end subroutine init_intercom
+
+  subroutine init_intercom_from_comms(iosystem, world_comm, comp_comms, io_comm, rearranger)
+    type(iosystem_desc_t), intent(out) :: iosystem(:)
+    integer, intent(in) :: world_comm
+    integer, intent(in) :: comp_comms(:)
+    integer, intent(in) :: io_comm
+    integer, intent(in) :: rearranger
+
+  end subroutine init_intercom_from_comms
 
   subroutine PIO_initdecomp_bc(iosystem,basepiotype,dims,compstart,compcount,iodesc,iostart,iocount)
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -767,16 +777,16 @@ contains
 ! TYPE real,int,double
   subroutine read_darray_1d_{TYPE} (File,varDesc, ioDesc, array, iostat)
     type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
+         File                   ! file information
 
     type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
+         varDesc                      ! variable descriptor
 
     type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
+         ioDesc                      ! iodecomp descriptor
 
     {VTYPE}, dimension(:), intent(inout) ::  &
-	 array                 ! array to be read
+         array                 ! array to be read
 
     integer(i4), intent(out) :: iostat
 
@@ -787,13 +797,13 @@ contains
 ! DIMS 2,3,4,5,6,7
   subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc,ioDesc, array, iostat)
     type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
+         File                   ! file information
 
     type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
+         varDesc                      ! variable descriptor
 
     type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
+         ioDesc                      ! iodecomp descriptor
 
     {VTYPE}, intent(inout) ::  array{DIMSTR}                 ! array to be read
 
