@@ -254,7 +254,6 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: forcingPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       !-----------------------------------------------------------------
       ! define local scalars holding length of dimensions
@@ -386,15 +385,6 @@ contains
       ! define some arrays in z-coordinates, obtained from diagnostics and forcing
       !-----------------------------------------------------------------
       real(KIND=RKIND), dimension(:), pointer :: atmosphericPressure
-      real(KIND=RKIND), dimension(:,:), pointer :: zMid
-      real(KIND=RKIND), dimension(:,:), pointer :: zTop
-      real(KIND=RKIND), dimension(:,:), pointer :: density
-      real(KIND=RKIND), dimension(:,:), pointer :: potentialDensity
-      real(KIND=RKIND), dimension(:,:), pointer :: pressure
-      real(KIND=RKIND), dimension(:,:), pointer :: velocityZonal
-      real(KIND=RKIND), dimension(:,:), pointer :: velocityMeridional
-      real(KIND=RKIND), dimension(:,:), pointer :: relativeVorticityCell ! jas used for testing
-      !real(KIND=RKIND), dimension(:,:), pointer :: wCellCenter
 
       !-----------------------------------------------------------------
       ! define local test variables
@@ -439,7 +429,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
          !--------------------------------------------------
          ! assign pointers for mesh-related variables
@@ -457,17 +446,6 @@ contains
          ! assign pointers used from forcing pool
          !--------------------------------------------------
          call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
-
-         !--------------------------------------------------
-         ! get diagnostic variables
-         !--------------------------------------------------
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-         call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-         call mpas_pool_get_array(diagnosticsPool, 'density', density)
-         call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
-         call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
 
          !--------------------------------------------------
          ! variables that define the vertical coordinate system in density/buoyancy space
@@ -1011,8 +989,6 @@ contains
          ! calculate potential vorticity fluxes using curl of u
          !-------------------------------------------------------------
          if(config_AM_eliassenPalm_debug) then
-
-            call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
 
             ! store relVortMidBuoyCoor in array1_3Dbuoy
             call linear_interp_1d_field_along_column(nVertLevels, nCells, nBuoyancyLayers, &

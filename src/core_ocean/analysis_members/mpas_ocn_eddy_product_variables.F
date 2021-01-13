@@ -45,6 +45,7 @@ module ocn_eddy_product_variables
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -175,7 +176,6 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: tracersPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       integer, pointer :: nEdges, nVertLevels, nCellsSolve
       integer :: iTracer, k, iCell, iEdge, cell1, cell2
@@ -184,10 +184,10 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: ssh, SSHSquared
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, GMBolusVelocityZonal, GMBolusVelocityMeridional, &
+      real (kind=RKIND), dimension(:,:), pointer :: &
            velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature, &
            velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM, normalVelocity, normalVelocitySquared, &
-           normalVelocityTimesTemperature, normalGMBolusVelocity, normalGMBolusVelocityTimesTemperature, normalGMBolusVelocitySquared
+           normalVelocityTimesTemperature, normalGMBolusVelocityTimesTemperature, normalGMBolusVelocitySquared
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
@@ -199,7 +199,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'eddyProductVariablesAM', eddyProductVariablesAMPool)
 
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
@@ -211,8 +210,6 @@ contains
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
 
          call mpas_pool_get_array(statePool, 'ssh',ssh, 1)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
@@ -230,9 +227,6 @@ contains
          ! I repeated the block of code here for better performance, rather than
          ! split the GM and non-GM variables into separate loops.
          if (config_use_GM) then
-            call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-            call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
-            call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
             call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
             call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
                velocityMeridionalTimesTemperature_GM)
