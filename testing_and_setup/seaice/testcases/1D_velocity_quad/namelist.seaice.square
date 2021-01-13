@@ -3,7 +3,7 @@
     config_calendar_type = 'gregorian_noleap'
     config_start_time = '2000-01-01_00:00:00'
     config_stop_time = 'none'
-    config_run_duration = '00-00-01_00:00:00'
+    config_run_duration = '00-00-03_00:00:00'
     config_num_halos = 2
 /
 &io
@@ -34,12 +34,12 @@
     config_do_restart_snow_grain_radius = false
 /
 &dimensions
-    config_nCategories = 5
-    config_nIceLayers = 7
+    config_nCategories = 1
+    config_nIceLayers = 1
     config_nSnowLayers = 1
 /
 &initialize
-    config_initial_condition_type = 'cice_default'
+    config_initial_condition_type = 'none'
     config_initial_ice_area = 1.0
     config_initial_ice_volume = 1.0
     config_initial_snow_volume = 0.0
@@ -48,16 +48,16 @@
     config_initial_velocity_type = 'uniform'
     config_initial_uvelocity = 0.0
     config_initial_vvelocity = 0.0
-    config_calculate_coriolis = true
+    config_calculate_coriolis = false
 /
 &use_sections
-    config_use_dynamics = false
+    config_use_dynamics = true
     config_use_velocity_solver = true
-    config_use_advection = true
-    config_use_forcing = true
-    config_use_column_package = true
-    config_use_prescribed_ice = true
-    config_use_prescribed_ice_forcing = true
+    config_use_advection = false
+    config_use_forcing = false
+    config_use_column_package = false
+    config_use_prescribed_ice = false
+    config_use_prescribed_ice_forcing = false
 /
 &forcing
     config_atmospheric_forcing_type = 'CORE'
@@ -78,9 +78,9 @@
 /
 &velocity_solver
     config_dynamics_subcycle_number = 1
-    config_rotate_cartesian_grid = true
-    config_include_metric_terms = true
-    config_elastic_subcycle_number = 120
+    config_rotate_cartesian_grid = false
+    config_include_metric_terms = false
+    config_elastic_subcycle_number = 1200
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
     config_wachspress_integration_type = 'dunavant'
@@ -88,10 +88,10 @@
     config_revised_evp = false
     config_use_air_stress = true
     config_use_ocean_stress = true
-    config_use_surface_tilt = true
-    config_geostrophic_surface_tilt = true
-    config_ocean_stress_type = 'quadratic'
-    config_use_special_boundaries_velocity = false
+    config_use_surface_tilt = false
+    config_geostrophic_surface_tilt = false
+    config_ocean_stress_type = 'linear'
+    config_use_special_boundaries_velocity = true
     config_use_special_boundaries_velocity_masks = false
 /
 &advection
@@ -105,7 +105,7 @@
     config_use_column_shortwave = true
     config_use_column_vertical_thermodynamics = true
     config_use_column_biogeochemistry = false
-    config_use_column_itd_thermodynamics = false
+    config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
     config_use_column_snow_tracers = false
 /
@@ -424,7 +424,7 @@
     config_AM_pondDiagnostics_write_on_startup = false
 /
 &AM_unitConversion
-    config_AM_unitConversion_enable = true
+    config_AM_unitConversion_enable = false
     config_AM_unitConversion_compute_interval = 'dt'
     config_AM_unitConversion_output_stream = 'none'
     config_AM_unitConversion_compute_on_startup = false
