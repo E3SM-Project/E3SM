@@ -149,7 +149,7 @@ contains
       do iCell = 1, nCellsSolve
         do k = 1, maxLevelCell(iCell)
           ! use ssh as a proxy too for baroclinic mode
-          if (trim(config_time_integrator) == 'split_explicit') then
+          if (trim(config_time_integrator) == 'split_explicit' .or. trim(config_time_integrator) == 'semi_implicit') then
             layerThick = min(layerThicknessNew(k, iCell), (sshSubcycleNew(iCell)+bottomDepth(iCell))/maxLevelCell(iCell))
           else
             layerThick = layerThicknessNew(k, iCell)
