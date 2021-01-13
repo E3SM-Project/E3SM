@@ -8,23 +8,15 @@
 
 <sim_year_range>constant</sim_year_range>
 
-<stream_year_first_ndep phys="clm4_0" bgc="cn"   ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  phys="clm4_0" bgc="cn"   ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_ndep phys="clm4_0" bgc="cndv" ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  phys="clm4_0" bgc="cndv" ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_ndep>
+<stream_year_first_ndep phys="elm" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_ndep phys="clm5_0" use_cn=".true." ndepsrc="stream" >2000</stream_year_first_ndep>
-<stream_year_last_ndep  phys="clm5_0" use_cn=".true." ndepsrc="stream" >2000</stream_year_last_ndep>
 
-<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
+<stream_year_first_popdens phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
 
-<stream_year_first_popdens phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="clm5_0" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
 
 <fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 

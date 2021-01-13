@@ -28,7 +28,7 @@
        <li>Site specific point name (sitespf_pt)</li>
        <li>Glacier model grid size (glc_grid)</li>
        <li>Crop model (crop)</li>
-       <li>Irrigation model (irrig) (clm4_0 only)</li>
+       <li>Irrigation model (irrig) </li>
        <li>Data model forcing source (forcing)</li>
        <li>Representative concentration pathway for future scenarios (rcp)</li>
        <li>New good wood harvest (newwoodharv)</li>
