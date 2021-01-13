@@ -3,17 +3,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-fig, axes = plt.subplots(2,1,figsize=(5,6))
+fig, axes = plt.subplots()
 
+subcycleNumber = 7680
 
-#subcycleNumbers = [120,240,480,960,1920,3840,7680]
-subcycleNumbers = [7680]
-operatorMethod = "wachspress"
+operatorMethods = ["wachspress","pwl","weak"]
 
-for subcycleNumber in subcycleNumbers:
+for operatorMethod in operatorMethods:
 
     # data in
-    filenameIn = "./output_quad_%s_%i/output.2000.nc" %(operatorMethod,subcycleNumber)
+    filenameIn = "./output_hex_%s_%i/output.2000.nc" %(operatorMethod,subcycleNumber)
     filein = Dataset(filenameIn, "r")
 
     nCells = len(filein.dimensions["nCells"])
@@ -48,7 +47,7 @@ for subcycleNumber in subcycleNumbers:
         x = []
         u = []
         for iVertex in range(0,nVertices):
-            if (yVertex[iVertex] == 32000.0):
+            if (math.fabs(yVertex[iVertex] - 508068.236886871) < 1e-8):
                 x.append(xVertex[iVertex])
                 u.append(uVelocities[iTime,iVertex])
         x = np.array(x)
@@ -62,11 +61,9 @@ for subcycleNumber in subcycleNumbers:
         us.append(math.sqrt(np.sum(np.power(u,2))))
 
         if (iTime == nTimes-1):
-            axes[0].plot(x, u, label="%i" %(subcycleNumber))
+            axes.plot(x, u, label=operatorMethod)
 
-    axes[1].plot(us, label="%i" %(subcycleNumber))
-
-axes[0].plot(x, np.zeros(x.shape[0]), zorder=1, c='k')
+#axes.plot(x, np.zeros(x.shape[0]), zorder=1, c='k')
 
 uAir = 1.0
 rhoair = 1.3
@@ -101,14 +98,10 @@ for xx in x:
     u = max((airStress - 0.5*(alpha + 1.0) * dPdx) / oceanStressCoeff, 0.0)
     uu.append(u)
 
-axes[0].plot(x, uu, zorder=2, c='r')
+axes.plot(x, uu, zorder=2, c='r')
 
-axes[0].set_xlabel("time")
-axes[0].set_ylabel("uVelocity")
-axes[0].legend()
+axes.set_xlabel("time")
+axes.set_ylabel("uVelocity")
+axes.legend()
 
-axes[1].set_xlabel("time")
-axes[1].set_ylabel("sqrt(sum(pow(u,2)))")
-axes[1].legend()
-
-plt.savefig("1D_velocity.png",dpi=300)
+plt.savefig("1D_velocity_operator.png",dpi=300)

@@ -628,8 +628,12 @@
 			description="Method for calculating ocean stress."
 			possible_values="'linear', or 'quadratic'"
 		/>
-		<nml_option name="config_use_periodic_velocities" type="logical" default_value="true" units="unitless"
-			description="Use the special boundaries periodic velocities option."
+		<nml_option name="config_use_special_boundaries_velocity" type="logical" default_value="false" units="unitless"
+			description="Use the special boundaries velocities option."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_special_boundaries_velocity_masks" type="logical" default_value="false" units="unitless"
+			description="Use the special boundaries velocity mask option."
 			possible_values="true or false"
 		/>
 	</nml_record>
@@ -4189,9 +4193,10 @@
 	<!-- Special boundaries -->
 	<var_struct name="special_boundaries" time_levs="1" packages="pkgSpecialBoundaries">
 	        <var name="vertexBoundaryType" type="integer" dimensions="nVertices"/>
-	        <var name="vertexBoundaryTypeLocal" type="integer" dimensions="nVertices"/>
 	        <var name="vertexBoundarySource" type="integer" dimensions="nVertices"/>
 	        <var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
+		<var name="solveVelocitySpecialBoundaries" type="integer" dimensions="nVertices"/>
+		<var name="solveStressSpecialBoundaries" type="integer" dimensions="nCells"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"

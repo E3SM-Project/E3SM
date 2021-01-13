@@ -22,14 +22,18 @@ module seaice_special_boundaries
 
   public :: &
        seaice_init_special_boundaries, &
-       seaice_periodic_velocity
+       seaice_set_special_boundaries_velocity, &
+       seaice_set_special_boundaries_velocity_masks
 
   logical, pointer :: &
-       usePeriodicVelocities
+       useSpecialBoundariesVelocity, &
+       useSpecialBoundariesVelocityMasks
 
   integer, parameter :: &
-       VERTEX_BOUNDARY_NONE = 0, &
-       VERTEX_BOUNDARY_PERIODIC = 1
+       VELOCITY_BOUNDARY_NONE = 0, &
+       VELOCITY_BOUNDARY_PERIODIC = 1, &
+       VELOCITY_BOUNDARY_REVERSE = 2, &
+       VELOCITY_BOUNDARY_ZERO = 3
 
 contains
 
@@ -50,13 +54,13 @@ contains
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
 
-    call init_periodic_boundaries(domain)
+    call init_special_boundaries_velocity(domain)
 
   end subroutine seaice_init_special_boundaries
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_periodic_boundaries
+!  init_special_boundaries_velocity
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -66,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_periodic_boundaries(domain)
+  subroutine init_special_boundaries_velocity(domain)
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -97,9 +101,10 @@ contains
     integer :: &
          iVertex
 
-    call MPAS_pool_get_config(domain % configs, "config_use_periodic_velocities", usePeriodicVelocities)
+    call MPAS_pool_get_config(domain % configs, "config_use_special_boundaries_velocity", useSpecialBoundariesVelocity)
+    call MPAS_pool_get_config(domain % configs, "config_use_special_boundaries_velocity_masks", useSpecialBoundariesVelocityMasks)
 
-    if (usePeriodicVelocities) then
+    if (useSpecialBoundariesVelocity) then
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
@@ -138,11 +143,11 @@ contains
 
     endif
 
-  end subroutine init_periodic_boundaries
+  end subroutine init_special_boundaries_velocity
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_periodic_velocity
+!  seaice_set_special_boundaries_velocity
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -152,7 +157,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_periodic_velocity(domain)
+  subroutine seaice_set_special_boundaries_velocity(domain)
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -183,7 +188,7 @@ contains
          iVertex, &
          iVertexSource
 
-    if (usePeriodicVelocities) then
+    if (useSpecialBoundariesVelocity) then
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
@@ -200,18 +205,26 @@ contains
           call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
           call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
 
-          call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
-          call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
-          call MPAS_pool_get_array(meshPool, "indexToVertexID", indexToVertexID)
-
           do iVertex = 1, nVertices
 
-             if (vertexBoundaryType(iVertex) == VERTEX_BOUNDARY_PERIODIC) then
+             if (vertexBoundaryType(iVertex) == VELOCITY_BOUNDARY_PERIODIC) then
 
                 iVertexSource = vertexBoundarySource(iVertex)
 
                 uVelocity(iVertex) = uVelocity(iVertexSource)
                 vVelocity(iVertex) = vVelocity(iVertexSource)
+
+             else if (vertexBoundaryType(iVertex) == VELOCITY_BOUNDARY_REVERSE) then
+
+                iVertexSource = vertexBoundarySource(iVertex)
+
+                uVelocity(iVertex) = -uVelocity(iVertexSource)
+                vVelocity(iVertex) = -vVelocity(iVertexSource)
+
+             else if (vertexBoundaryType(iVertex) == VELOCITY_BOUNDARY_ZERO) then
+
+                uVelocity(iVertex) = 0.0
+                vVelocity(iVertex) = 0.0
 
              endif
 
@@ -222,7 +235,77 @@ contains
 
     endif
 
-  end subroutine seaice_periodic_velocity
+  end subroutine seaice_set_special_boundaries_velocity
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_set_special_boundaries_velocity_masks
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 23rd December 2020
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_set_special_boundaries_velocity_masks(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    type(block_type), pointer :: &
+         blockPtr
+
+    type(mpas_pool_type), pointer :: &
+         velocitySolverPool, &
+         specialBoundariesPool
+
+    integer, dimension(:), pointer :: &
+         solveVelocity, &
+         solveStress, &
+         solveVelocitySpecialBoundaries, &
+         solveStressSpecialBoundaries
+
+    integer, pointer :: &
+         nCells, &
+         nVertices
+
+    integer :: &
+         iCell, &
+         iVertex
+
+    if (useSpecialBoundariesVelocityMasks) then
+
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
+
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nVertices", nVertices)
+
+          call MPAS_pool_get_subpool(blockPtr % structs, "special_boundaries", specialBoundariesPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+
+          call MPAS_pool_get_array(specialBoundariesPool, "solveVelocitySpecialBoundaries", solveVelocitySpecialBoundaries)
+          call MPAS_pool_get_array(specialBoundariesPool, "solveStressSpecialBoundaries", solveStressSpecialBoundaries)
+
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+          call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+
+          do iVertex = 1, nVertices
+             solveVelocity(iVertex) = solveVelocitySpecialBoundaries(iVertex)
+          enddo ! iVertex
+
+          do iCell = 1, nCells
+             solveStress(iCell) = solveStressSpecialBoundaries(iCell)
+          enddo ! iCell
+
+          blockPtr => blockPtr % next
+       enddo
+
+    endif
+
+  end subroutine seaice_set_special_boundaries_velocity_masks
 
   !-----------------------------------------------------------------------
 
