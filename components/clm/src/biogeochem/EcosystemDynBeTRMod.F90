@@ -10,7 +10,7 @@ module EcosystemDynBeTRMod
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
   use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
-  use clm_varctl                , only : use_pheno_flux_limiter
+  use clm_varctl                , only : use_pheno_flux_limiter, iulog
   use clm_varpar                , only : nlevsoi
   use clm_varctl                , only : use_erosion
   use decompMod                 , only : bounds_type
@@ -511,10 +511,10 @@ module EcosystemDynBeTRMod
     use CarbonStateUpdate3BeTRMod         , only : CarbonStateUpdate3
     use NitrogenStateUpdate1BeTRMod       , only : NitrogenStateUpdate1
     use NitrogenStateUpdate2BeTRMod       , only : NitrogenStateUpdate2, NitrogenStateUpdate2h
-    use NitrogenStateUpdate3BeTRMod       , only : NitrogenStateUpdate3
+    use NitrogenStateUpdate3BeTRMod       , only : NitrogenStateUpdate3Veg
     use PhosphorusStateUpdate1BeTRMod     , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2BeTRMod     , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusStateUpdate3BeTRMod     , only : PhosphorusStateUpdate3
+    use PhosphorusStateUpdate3BeTRMod     , only : PhosphorusStateUpdate3Veg
     use GapMortalityMod                   , only : GapMortality
     use FireMod                           , only : FireArea, FireFluxes
     use CarbonIsoFluxMod                  , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
@@ -950,26 +950,26 @@ module EcosystemDynBeTRMod
      call PhosphorusOcclusion(num_soilc, filter_soilc, &
              cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
      call t_stopf('PhosphorusOcclusion')
+!     write(iulog,*)'NitrogenLeaching'
+!     call t_startf('NitrogenLeaching')
+!     call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+!            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+!     call t_startf('NitrogenLeaching')
 
-     call t_startf('NitrogenLeaching')
-     call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
-     call t_startf('NitrogenLeaching')
+!     call t_startf('PhosphorusLeaching')
+!     call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+!            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+!     call t_stopf('PhosphorusLeaching')
 
-     call t_startf('PhosphorusLeaching')
-     call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
-            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-     call t_stopf('PhosphorusLeaching')
+     call t_startf('CNUpdate3Veg')
+     call NitrogenStateUpdate3Veg(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            veg_ns,  veg_nf)
+     call t_stopf('CNUpdate3Veg')
 
-     call t_startf('CNUpdate3')
-     call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            col_ns, veg_ns, col_nf, veg_nf)
-     call t_stopf('CNUpdate3')
-
-     call t_startf('PUpdate3')
-     call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars,col_ps, veg_ps, col_pf, veg_pf,ldecomp_on=.false.)
-     call t_stopf('PUpdate3')
+     call t_startf('PUpdate3Veg')
+     call PhosphorusStateUpdate3Veg(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars,veg_ps, veg_pf)
+     call t_stopf('PUpdate3Veg')
 
      call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
   end subroutine CNEcosystemDynBeTR1
@@ -1583,8 +1583,8 @@ module EcosystemDynBeTRMod
     use PhosphorusDynamicsMod         , only: PhosphorusWeathering,PhosphorusAdsportion
     use PhosphorusDynamicsMod         , only: PhosphorusDesoprtion,PhosphorusOcclusion
     use NitrogenDynamicsMod       , only: NitrogenLeaching
-    use NitrogenStateUpdate3BeTRMod   , only: NitrogenStateUpdate3
-    use PhosphorusStateUpdate3BeTRMod     , only: PhosphorusStateUpdate3
+    use NitrogenStateUpdate3BeTRMod   , only: NitrogenStateUpdate3Soil
+    use PhosphorusStateUpdate3BeTRMod     , only: PhosphorusStateUpdate3Soil
     use PrecisionControlMod  , only: PrecisionControl
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
@@ -1623,6 +1623,27 @@ module EcosystemDynBeTRMod
     !-----------------------------------------------------------------------
     ! only do if ed is off
     if( .not. use_fates) then
+
+       call t_startf('NitrogenLeaching')
+       call NitrogenLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, nitrogenstate_vars, nitrogenflux_vars)
+       call t_startf('NitrogenLeaching')
+
+       call t_startf('PhosphorusLeaching')
+       call PhosphorusLeaching(bounds, num_soilc, filter_soilc, &
+            waterstate_vars, waterflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+       call t_stopf('PhosphorusLeaching')
+
+       call t_startf('CNUpdate3')
+       call NitrogenStateUpdate3Soil(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            col_ns,  col_nf)
+       call t_stopf('CNUpdate3')
+
+       call t_startf('PUpdate3')
+       call PhosphorusStateUpdate3Soil(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+            cnstate_vars,col_ps, col_pf, is_decomp_on= .false.)
+       call t_stopf('PUpdate3')
+
        call t_startf('CNPsum')
        call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
