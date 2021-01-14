@@ -318,10 +318,10 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
   {
     ShocMainData f90_data[] = {
       // shcol, nlev, nlevi, num_qtracers, dtime, nadv
-      ShocMainData(12, 71, 72,  10, 5, 12),
-      ShocMainData(10, 12, 13,   7, 6, 10),
-      ShocMainData(7,  16, 17,   2, 1,  1),
-      ShocMainData(2,   7,  8,  25, 1,  5)
+      ShocMainData(12, 72, 73,  5, 5, 15),
+      ShocMainData(8,  12, 13,  3, 6, 10),
+      ShocMainData(7,  16, 17,  3, 1,  1),
+      ShocMainData(2,   7,  8,  2, 1,  5)
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
@@ -329,9 +329,9 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize({{d.presi, {700e2,1000e2}},
-                  {d.tkh, {3,20}},
-                  {d.wthl_sfc, {-1,1}},
-                  {d.thetal, {900, 1000}}});
+                   {d.tkh, {3,20}},
+                   {d.wthl_sfc, {-1,1}},
+                   {d.thetal, {900, 1000}}});
 
       // Generate grid as decreasing set of points.
       // Allows interpolated values to stay withing
