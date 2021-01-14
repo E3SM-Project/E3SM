@@ -413,7 +413,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
       // Allows interpolated values to stay withing
       // reasonable range, avoiding errors in
       // shoc_assumed_pdf.
-      const Real upper = 3000;
+      const Real upper = 10;
       const Real lower = 0;
       for (Int s = 0; s < d.shcol; ++s) {
         for (Int k=0; k<d.nlevi; ++k) {

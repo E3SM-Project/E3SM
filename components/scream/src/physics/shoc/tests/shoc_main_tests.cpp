@@ -331,13 +331,13 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
       d.randomize({{d.presi, {700e2,1000e2}},
                    {d.tkh, {3,20}},
                    {d.wthl_sfc, {-1,1}},
-                   {d.thetal, {910, 970}}});
+                   {d.thetal, {800, 900}}});
 
       // Generate grid as decreasing set of points.
       // Allows interpolated values to stay withing
       // reasonable range, avoiding errors in
       // shoc_assumed_pdf.
-      const Real upper = 3000;
+      const Real upper = 10;
       const Real lower = 0;
       for (Int s = 0; s < d.shcol; ++s) {
         for (Int k=0; k<d.nlevi; ++k) {
