@@ -61,15 +61,15 @@
   <TESTS>e3sm_developer</TESTS>
   <COMPILERS>intel,gnu</COMPILERS>
   <MPILIBS>mpt</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/cori-haswell</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-  <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-  <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-  <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+  <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+  <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
@@ -78,7 +78,7 @@
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-  <PROJECT>acme</PROJECT>
+  <PROJECT>e3sm</PROJECT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
   <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
@@ -86,7 +86,7 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n {{ total_tasks }}</arg>
+      <arg name="num_tasks" > -n $TOTALPES</arg>
       <arg name="thread_count">-c $SHELL{echo 64/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
       <arg name="binding"> $SHELL{if [ 32 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
       <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
@@ -110,7 +110,7 @@
       <command name="rm">cce</command>
       <command name="rm">gcc</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="rm">cray-parallel-hdf5</command>
+      <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">pmi</command>
       <command name="rm">cray-libsci</command>
       <command name="rm">cray-mpich2</command>
@@ -126,17 +126,19 @@
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
       <command name="rm">zlib</command>
+      <command name="rm">craype-hugepages2M</command>
+      <command name="rm">darshan</command>
 
-        <!-- first load basic defaults, then remove/swap/load as necessary -->
-        <command name="load">craype</command>
-        <command name="load">PrgEnv-intel</command>
-        <command name="load">cray-mpich</command>
-        <command name="rm">craype-mic-knl</command>
-        <command name="load">craype-haswell</command>
+      <!-- first load basic defaults, then remove/swap/load as necessary -->
+      <command name="load">craype</command>
+      <command name="load">PrgEnv-intel</command>
+      <command name="load">cray-mpich</command>
+      <command name="rm">craype-mic-knl</command>
+      <command name="load">craype-haswell</command>
     </modules>
-    
+
     <modules mpilib="mpt">
-        <command name="swap">cray-mpich cray-mpich/7.7.6</command>
+      <command name="swap">cray-mpich cray-mpich/7.7.6</command>
     </modules>
 
     <modules compiler="intel">
@@ -187,14 +189,12 @@
 
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
     <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-    <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
   </environment_variables>
   <environment_variables compiler="intel">
     <env name="FORT_BUFFERED">yes</env>
@@ -208,15 +208,15 @@
   <TESTS>e3sm_developer</TESTS>
   <COMPILERS>intel,gnu,gnu7</COMPILERS>
   <MPILIBS>mpt,impi</MPILIBS>
-  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
+  <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/cori-knl</CIME_OUTPUT_ROOT>
   <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
   <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-  <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-  <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
   <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-  <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-  <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+  <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+  <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
   <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
@@ -225,7 +225,7 @@
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
   <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-  <PROJECT>acme</PROJECT>
+  <PROJECT>e3sm</PROJECT>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
   <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
@@ -233,8 +233,8 @@
     <executable>srun</executable>
     <arguments>
       <arg name="label"> --label</arg>
-      <arg name="num_tasks" > -n {{ total_tasks }}</arg>
-      <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+      <arg name="num_tasks" > -n $TOTALPES</arg>
+      <arg name="thread_count">-c $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 68 -ge $mpn ]; then c0=`expr 272 / $mpn`; c1=`expr $c0 / 4`; cflag=`expr $c1 \* 4`; echo $cflag|bc ; else echo 272/$mpn|bc;fi;} </arg>
       <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
       <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
@@ -259,7 +259,7 @@
       <command name="rm">cce</command>
       <command name="rm">gcc</command>
       <command name="rm">cray-parallel-netcdf</command>
-      <command name="rm">cray-parallel-hdf5</command>
+      <command name="rm">cray-hdf5-parallel</command>
       <command name="rm">pmi</command>
       <command name="rm">cray-mpich2</command>
       <command name="rm">cray-mpich</command>
@@ -272,6 +272,8 @@
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
       <command name="rm">zlib</command>
+      <command name="rm">craype-hugepages2M</command>
+      <command name="rm">darshan</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
       <command name="load">craype</command>
@@ -338,14 +340,12 @@
   <environment_variables>
     <env name="MPICH_ENV_DISPLAY">1</env>
     <env name="MPICH_VERSION_DISPLAY">1</env>
-    <env name="MPICH_CPUMASK_DISPLAY">1</env>
+    <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
 
     <env name="OMP_STACKSIZE">128M</env>
     <env name="OMP_PROC_BIND">spread</env>
     <env name="OMP_PLACES">threads</env>
     <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-    <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
   </environment_variables>
 
   <environment_variables mpilib="mpt">
