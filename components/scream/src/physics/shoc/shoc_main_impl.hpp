@@ -233,6 +233,7 @@ void Functions<S,D>::shoc_main_internal(
   compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
                      shoc_qv);             // Output
 
+  team.team_barrier();
   shoc_diag_obklen(uw_sfc,vw_sfc,           // Input
                    wthl_sfc,wqw_sfc,        // Input
                    thetal(nlev_v)[nlev_p],  // Input
