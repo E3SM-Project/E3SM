@@ -303,13 +303,16 @@ contains
          usePlanetVorticity = .false.
 
       case ('unsplit_explicit')
-         ! For split explicit, Coriolis tendency uses eta/h because
+         ! For unsplit explicit, Coriolis tendency uses eta/h because
          ! the Coriolis term is added separately to the momentum 
          ! tendencies.
          usePlanetVorticity = .false.
 
       case ('semi_implicit')
-         usePlanetaryVorticity = .false.
+         ! For semi-implicit, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum 
+         ! tendencies.
+         usePlanetVorticity = .false.
 
       end select
 
