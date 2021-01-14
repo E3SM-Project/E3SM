@@ -1534,6 +1534,8 @@
 <nu_top dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 1e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 1e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 1e5 </nu_top>
 
 
 <!-- tensor hyperviscsoity -->
@@ -1575,6 +1577,8 @@
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 75 </se_tstep>
+<se_tstep dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 75 </se_tstep>
 
 
 <se_tstep            dyn_target="theta-l" hgrid="ne240np4"> 37.5 </se_tstep>
@@ -1597,10 +1601,14 @@
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_conus_x4v1"      > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_exan4v1"      > 3 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_twpx4v1"      > 3 </hypervis_subcycle_tom>
 
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_northamericax4v1" > 2 </hypervis_subcycle>
 <hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"   > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_twpx4v1"   > 2 </hypervis_subcycle>
+<hypervis_subcycle dyn_target="theta-l" hgrid="ne0np4_enax4v1"   > 2 </hypervis_subcycle>
 
 
 
