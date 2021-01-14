@@ -1662,7 +1662,7 @@ module li_calving
          endif
       enddo
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'uncalvedVolumeNonDynCell')
+      call mpas_dmpar_field_halo_exch(domain, 'unablatedVolumeNonDynCell')
       call mpas_timer_stop("halo updates")
       !call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
@@ -1694,7 +1694,7 @@ module li_calving
             ! This is a non-dynamic location that still has calving to offer - a location where calving needs to be propagated
 
             !call mpas_log_write("Passing calving from non-dynamic cell $i.  $r available to pass", &
-            !        realArgs=(/uncalvedVolumeNonDynCell(iCell)/), intArgs=(/iCell/))
+            !        realArgs=(/unablatedVolumeNonDynCell(iCell)/), intArgs=(/iCell/))
 
             volumeAvailableToPass = unablatedVolumeNonDynCell(iCell)
 
