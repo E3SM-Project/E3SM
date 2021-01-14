@@ -1673,7 +1673,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
+      <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="impi">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
@@ -1692,14 +1692,13 @@
       <env name="OMPI_CC">gcc</env>
       <env name="OMPI_CXX">g++</env>
       <env name="OMPI_FC">gfortran</env>
-      <env name="PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/bin:$ENV{PATH}</env>
-      <env name="LD_LIBRARY_PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
-      <env name="PATH">/home/azamat/soft/cmake/3.18.5/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/lib:/home/azamat/soft/libs:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/home/azamat/soft/openmpi/2.1.6/gcc8.2.0/bin:/home/azamat/soft/cmake/3.18.5/bin:$ENV{PATH}</env>
       <env name="CMAKE_ROOT">/home/azamat/soft/cmake/3.18.5</env>
       <env name="ACLOCAL_PATH">/home/azamat/soft/cmake/3.18.5/share/aclocal</env>
       <env name="CMAKE_PREFIX_PATH">/home/azamat/soft/cmake/3.18.5</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_DEBUG">10</env>
@@ -1768,7 +1767,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
+      <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>

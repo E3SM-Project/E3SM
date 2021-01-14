@@ -2330,7 +2330,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib</append>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
-    <append>-L/gpfs/jlse-fs0/projects/climate/soft/libs -llapack -lblas</append>
+    <append>-L/home/azamat/soft/libs -llapack -lblas</append>
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
