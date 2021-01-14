@@ -329,9 +329,9 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     // Generate random input data
     for (auto& d : f90_data) {
       d.randomize({{d.presi, {700e2,1000e2}},
-                   {d.tkh, {3,20}},
-                   {d.wthl_sfc, {-1,1}},
-                   {d.thetal, {800, 900}}});
+                  {d.tkh, {3,20}},
+                  {d.wthl_sfc, {-1,1}},
+                  {d.thetal, {900, 1000}}});
 
       // Generate grid as decreasing set of points.
       // Allows interpolated values to stay withing
