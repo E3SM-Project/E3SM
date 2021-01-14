@@ -52,27 +52,37 @@ contains
     ! Determine attribute vector indices
 
     ! List of cpl names of inputs that scream cares about
-    cpl_names_x2a(1)  = 'Faxx_evap' ! SHOC input
-    cpl_names_x2a(2)  = 'Faxx_sen'  ! SHOC input
-    cpl_names_x2a(3)  = 'Faxx_lat'  ! Needed for energy fixer (?)
-    cpl_names_x2a(4)  = 'Faxx_taux' ! SHOC input
-    cpl_names_x2a(5)  = 'Faxx_tauy' ! SHOC input
-    cpl_names_x2a(6)  = 'Faxx_lwup' ! RRTMGP input
-    cpl_names_x2a(7)  = 'Sx_avsdr'  ! RRTMGP input
-    cpl_names_x2a(8)  = 'Sx_anidr'  ! RRTMGP input
-    cpl_names_x2a(9)  = 'Sx_avsdf'  ! RRTMGP input
-    cpl_names_x2a(10) = 'Sx_anidf'  ! RRTMGP input
-    cpl_names_x2a(11) = 'Sx_t'      ! SHOC input (?)
-    cpl_names_x2a(12) = 'Sl_snowh'  ! SHOC input (?)
-    cpl_names_x2a(13) = 'Si_snowh'  ! UNUSED
-    cpl_names_x2a(14) = 'Sx_tref'   ! UNUSED
-    cpl_names_x2a(15) = 'Sx_qref'   ! UNUSED
-    cpl_names_x2a(16) = 'Sx_u10'    ! UNUSED
-    cpl_names_x2a(17) = 'Sf_ifrac'  ! RRTMGP input
-    cpl_names_x2a(18) = 'Sf_ofrac'  ! SHOCK input (?)
-    cpl_names_x2a(19) = 'Sf_lfrac'  ! RRTMGP input
-    cpl_names_x2a(20) = 'So_ustar'  ! SHOC (?): doesn't seem to be cam_in%ustar though
-    cpl_names_x2a(21) = 'So_re'     ! UNUSED
+
+    !Following inputs are surface values so they are dimensioned (1:ncol) for each chunk.
+    !"cam_in" derived type is populated using these inputs in atm_import_export.F90
+    !using values from other model components
+    !"cam_in" is then used by SCREAM model
+
+    !Comments after the inputs below are organized as follows:
+    !Long name [units] (cam_in member which captures the input) [List of parameterizations which are using this input currently]
+
+    cpl_names_x2a(1)  = 'Faxx_evap' ! Surface water vapor flux    [kg/kg](cam_in%cflx) [SHOC/check_energy_chng]
+    cpl_names_x2a(2)  = 'Faxx_sen'  ! Surface sensible heat flux  [W/m2] (cam_in%shf)  [SHOC/check_energy_chng]
+    cpl_names_x2a(3)  = 'Faxx_lat'  ! Surface latent heat flux    [W/m2] (cam_in%lhf)  [energy fixer qqflx_fixer/qneg4]????
+    cpl_names_x2a(4)  = 'Faxx_taux' ! Surface stress in X         [N/m2] (cam_in%wsx)  [SHOC]
+    cpl_names_x2a(5)  = 'Faxx_tauy' ! Surface stress in Y         [N/m2] (cam_in%wsx)  [SHOC]
+    cpl_names_x2a(6)  = 'Faxx_lwup' ! long wave up radiation flux [W/m2] (cam_in%lwup) [RRTMGP]
+    cpl_names_x2a(7)  = 'Sx_avsdr'  ! short wave direct albedo    [no units] (cam_in%asdir)[RRTMGP]
+    cpl_names_x2a(8)  = 'Sx_anidr'  ! long wave direct albedo     [no units] (cam_in%aldir)[RRTMGP]
+    cpl_names_x2a(9)  = 'Sx_avsdf'  ! short wave difuse albedo    [no units] (cam_in%asdif)[RRTMGP]
+    cpl_names_x2a(10) = 'Sx_anidf'  ! long wave difuse albedo     [no units] (cam_in%aldif)[RRTMGP]
+    cpl_names_x2a(11) = 'Sx_t'      ! Surface temperature         [K]        (cam_in%ts)   [SHOC?? seems like it is not used]****
+    cpl_names_x2a(12) = 'Sl_snowh'  ! Water equivalent snow depth [m]        (cam_in%snowhland) [SHOC]
+    cpl_names_x2a(13) = 'Si_snowh'  ! Snow depth over ice         [m]        (cam_in%snowhice)  [***UNUSED***]
+    cpl_names_x2a(14) = 'Sx_tref'   ! Reference height temperature[K]        (cam_in%tref)      [***UNUSED***]
+
+    cpl_names_x2a(15) = 'Sx_qref'   ! Reference height humidity   [kg/kg]    (cam_in%qref)      [***UNUSED***]
+    cpl_names_x2a(16) = 'Sx_u10'    ! 10m wind speed              [m/s]      (cam_in%u10)       [***UNUSED***]
+    cpl_names_x2a(17) = 'Sf_ifrac'  ! Fraction of sfc area covered by sea-ice [no units] (cam_in%icefrac) [RRTMGP]
+    cpl_names_x2a(18) = 'Sf_ofrac'  ! Fraction of sfc area covered by ocean   [no units] (cam_in%ocnfrac) [***UNUSED***] ****SHOC input (?)
+    cpl_names_x2a(19) = 'Sf_lfrac'  ! Fraction of sfc area covered by land    [no units] (cam_in%landfrac)[SHOC/RRTMGP/ZM]
+    cpl_names_x2a(20) = 'So_ustar'  ! Friction/shear velocity     [m/s]      (cam_in%ustar) [***UNUSED***]***** SHOC computes it internally
+    cpl_names_x2a(21) = 'So_re'     ! ???? (cam_in%re) [***UNUSED***]
 
     ! Names used by scream for the input fields above
     scr_names_x2a(1)  = 'surface_water_evaporation_flux'
@@ -98,19 +108,32 @@ contains
     scr_names_x2a(21) = 'So_re'
 
     ! List of cpl names of outputs that scream needs to pass back to cpl
-    cpl_names_a2x(1)  = 'Sa_tbot'     ! Temperature (HOMME)
-    cpl_names_a2x(2)  = 'Sa_ptem'     ! Potential temperature (HOMME)
-    cpl_names_a2x(3)  = 'Sa_z'        ! Z coord of bottom layers (in m? Pa?)
-    cpl_names_a2x(4)  = 'Sa_u'        ! Horiz velocity u-comp (HOMME)
-    cpl_names_a2x(5)  = 'Sa_v'        ! Horiz velocity v-comp (HOMME)
-    cpl_names_a2x(6)  = 'Sa_pbot'     ! Pressure (HOMME)
-    cpl_names_a2x(7)  = 'Sa_dens'     ! Density (derived from P, T)
-    cpl_names_a2x(8)  = 'Sa_shum'     ! Specific humidity (Computed by ...?)
-    cpl_names_a2x(9)  = 'Faxa_rainc'  ! Liquid convective precip. P3 (?)
-    cpl_names_a2x(10) = 'Faxa_rainl'  ! Liquire large-scale precip. P3 (?)
-    cpl_names_a2x(11) = 'Faxa_snowc'  ! Frozen convective precip. P3 (?)
-    cpl_names_a2x(12) = 'Faxa_snowl'  ! Frozen large scale precip. P3 (?)
-    cpl_names_a2x(13)  = 'Sa_co2prog' ! NOT COMPUTED by SCREAM (?)
+
+    !Following outputs are computed in control/camsrfexch.F90 using internal SCREAM variables
+
+    !comments after the outputs are organized as follows:
+    !Long name [units] (cam_out derived type member) [optional comment about how it is computed]
+
+    cpl_names_a2x(1)  = 'Sa_tbot'     ! Lowest model level temperature [K] (cam_out%tbot)
+    cpl_names_a2x(2)  = 'Sa_ptem'     ! Potential temperature          [K] (cam_out%thbot)[Computed from temperature and exner function]
+    cpl_names_a2x(3)  = 'Sa_z'        ! Geopotential height above surface at midpoints [m] (cam_out%zbot)
+    cpl_names_a2x(4)  = 'Sa_u'        ! Zonal wind        [m/s]  (cam_out%ubot)
+    cpl_names_a2x(5)  = 'Sa_v'        ! Meridional wind   [m/s]  (cam_out%vbot)
+    cpl_names_a2x(6)  = 'Sa_pbot'     ! midpoint pressure [Pa]   (cam_out%pbot)
+    cpl_names_a2x(7)  = 'Sa_dens'     ! Density           [kg/m3](cam_out%rho) [Computed as pbot/(rair*tbot)]
+    cpl_names_a2x(8)  = 'Sa_shum'     ! Specific humidity [kg/kg](cam_out%qbot(i,1)[surface water vapor, i.e., state%q(1:ncol,pver,1)]
+
+    !'precc'  is Convective precipitation rate (liq + ice)
+    !'precsc' is Convective snow rate (water equivalent)
+    cpl_names_a2x(9)  = 'Faxa_rainc'  ! Liquid convective precip  [mm/s] (cam_out%precc-cam_out%precsc) [which scheme computes this??? P3??]
+
+    !'precl'  is Large-scale (stable) precipitation rate (liq + ice)
+    !'precsl' is Large-scale (stable) snow rate (water equivalent)
+    cpl_names_a2x(10) = 'Faxa_rainl'  ! Liquid large-scale precip [mm/s] (cam_out%precl-cam_out%precsl) [which scheme computes this, P3???]
+
+    cpl_names_a2x(11) = 'Faxa_snowc'  ! Convective snow rate      [mm/s] (cam_out%precsc) [which scheme computes this, P3???]
+    cpl_names_a2x(12) = 'Faxa_snowl'  ! Large-scale (stable) snow rate [mm/s] (cam_out%precsl) [which scheme computes this, P3???]
+    cpl_names_a2x(13)  = 'Sa_co2prog' ! Always 0.0_r8 as it is not computed by SCREAM as prognostic co2 is turned off
 
     ! Names used by scream for the output fields above
     scr_names_a2x(1)  = 'surface_temperature'
