@@ -133,11 +133,11 @@ contains
     !-------------------------------------------------------------------------------------------------
     !Important notes regarding following 4 cpl_names_a2x variables (for cpl_names_a2x indexed 9 to 12):
     !
-    !1. All the prec* variables has units of m/s in the model but they are converted to mm/s when
+    !1. All the prec* variables have the units of m/s in the model but they are converted to mm/s when
     !they are assigned to the respective cam_out members in components/eam/src/cpl/atm_import_export.F90
     !
     !2. Convective precip variables (precc and precsc, definitions below) should be zero for SCREAM since
-    !   convection schemes are turned off in SCREAM
+    !   convection scheme is turned off in SCREAM
     !   'precc'  is Convective precipitation rate (liq + ice)
     !   'precsc' is Convective snow rate (water equivalent)
     !
