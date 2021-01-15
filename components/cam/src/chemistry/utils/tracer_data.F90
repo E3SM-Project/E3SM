@@ -1032,7 +1032,7 @@ contains
        if ( all( all_data_times(:) > time ) ) then
           write(iulog,*) 'FIND_TIMES: ALL data times are after ', time
           write(iulog,*) 'FIND_TIMES: data times: ',all_data_times(:)
-          write(iulog,*) 'FIND_TIMES: time: ',time
+          write(iulog,*) 'FIND_TIMES: time: ',time, trim(file%curr_filename)
           call endrun('find_times: all(all_data_times(:) > time) '// trim(file%curr_filename) )
        endif
 

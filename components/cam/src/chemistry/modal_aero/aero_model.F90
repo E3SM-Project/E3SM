@@ -1304,7 +1304,7 @@ contains
 
     if ( mam_prevap_resusp_optaa == 30 ) then
 
-#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) 
        ntoo = modeptr_coarse
 #else
        call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')
