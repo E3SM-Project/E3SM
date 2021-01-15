@@ -41,9 +41,7 @@ module radiation
       rrtmgpxx_get_max_temperature => get_max_temperature, &
       rrtmgpxx_get_gpoint_bands_sw => get_gpoint_bands_sw, &
       rrtmgpxx_get_gpoint_bands_lw => get_gpoint_bands_lw, &
-      c_strarr, &
-      get_nband_sw, get_nband_lw, &
-      get_ngpt_sw, get_ngpt_lw
+      c_strarr
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -501,16 +499,6 @@ contains
          trim(rrtmgp_coefficients_file_sw)//C_NULL_CHAR, &
          trim(rrtmgp_coefficients_file_lw)//C_NULL_CHAR &
       )
-
-      ! Make sure number of bands in absorption coefficient files matches what we expect
-      !call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
-      !call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
-      call assert(nswbands == get_nband_sw(), 'nswbands does not match RRTMGPXX absorption coefficient data')
-      call assert(nlwbands == get_nband_lw(), 'nlwbands does not match RRTMGPXX absorption coefficient data')
-
-      ! Check that gpoints are consistent after initialization
-      call assert(nswgpts == get_ngpt_sw(), 'nswgpts does not match RRTMGPXX absorption coefficient data')
-      call assert(nlwgpts == get_ngpt_lw(), 'nlwgpts does not match RRTMGPXX absorption coefficient data')
 
       ! Check that min and max temperatures are consistent
       call assert(rrtmgp_get_min_temperature() == rrtmgpxx_get_min_temperature(), 'RRTMGP and RRTMGPXX min temperatures do not match.')
@@ -1712,6 +1700,12 @@ contains
          call assert(all(abs(fluxes_clrsky_cxx%flux_up - fluxes_clrsky_day%flux_up) < 1e-5), 'F90 and CXX clrsky_flux_up differs.')
          call assert(all(abs(fluxes_clrsky_cxx%flux_dn - fluxes_clrsky_day%flux_dn) < 1e-5), 'F90 and CXX clrsky_flux_dn differs.')
          call assert(all(abs(fluxes_clrsky_cxx%flux_net - fluxes_clrsky_day%flux_net) < 1e-5), 'F90 and CXX clrsky_flux_net differs.')
+         call assert(all(abs(fluxes_allsky_cxx%bnd_flux_up - fluxes_allsky_day%bnd_flux_up) < 1e-5), 'F90 and CXX allsky_bnd_flux_up differs.')
+         call assert(all(abs(fluxes_allsky_cxx%bnd_flux_dn - fluxes_allsky_day%bnd_flux_dn) < 1e-5), 'F90 and CXX allsky_bnd_flux_dn differs.')
+         call assert(all(abs(fluxes_allsky_cxx%bnd_flux_net - fluxes_allsky_day%bnd_flux_net) < 1e-5), 'F90 and CXX allsky_bnd_flux_net differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%bnd_flux_up - fluxes_clrsky_day%bnd_flux_up) < 1e-5), 'F90 and CXX clrsky_bnd_flux_up differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%bnd_flux_dn - fluxes_clrsky_day%bnd_flux_dn) < 1e-5), 'F90 and CXX clrsky_bnd_flux_dn differs.')
+         call assert(all(abs(fluxes_clrsky_cxx%bnd_flux_net - fluxes_clrsky_day%bnd_flux_net) < 1e-5), 'F90 and CXX clrsky_bnd_flux_net differs.')
       end if
       call free_fluxes(fluxes_allsky_cxx)
       call free_fluxes(fluxes_clrsky_cxx)
@@ -1862,9 +1856,6 @@ contains
 
       real(r8), dimension(size(gas_vmr, 1),ncol,nlev_rad) :: gas_vmr_rad
 
-      ! Fluxes from C++ interface for comparison
-      type(fluxes_t) :: fluxes_allsky_cxx, fluxes_clrsky_cxx
-
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -1882,46 +1873,20 @@ contains
       gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Do longwave radiative transfer calculations
-      call t_startf('rrtmgp_run_lw')
-      call rrtmgp_run_lw( &
-            size(active_gases), ncol, nlev_rad, &
-            gas_names, gas_vmr_rad(:,1:ncol,1:nlev_rad), &
-            surface_emissivity(1:nlwbands,1:ncol), &
-            pmid(1:ncol,:), tmid(1:ncol,:), pint(1:ncol,:), tint(1:ncol,:), &
-            cld_tau_gpt_rad(1:ncol,:,:), aer_tau_bnd_rad(1:ncol,:,:), &
-            fluxes_allsky%flux_up, fluxes_allsky%flux_dn, fluxes_allsky%flux_net, &
-            fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
-            fluxes_clrsky%flux_up, fluxes_clrsky%flux_dn, fluxes_clrsky%flux_net, &
-            fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net &
-            )
-      call t_stopf('rrtmgp_run_lw')
       call t_startf('rrtmgpxx_run_lw')
       ! Try calling C++ version
-      call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky_cxx)
-      call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky_cxx)
       call rrtmgpxx_run_lw( &
          size(active_gases), ncol, nlev_rad, &
          c_strarr(active_gases, active_gases_c), gas_vmr_rad(:,1:ncol,:), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
          cld_tau_gpt_rad(1:ncol,:,:)  , aer_tau_bnd_rad(1:ncol,:,:)  , &
-         fluxes_allsky_cxx%flux_up    , fluxes_allsky_cxx%flux_dn    , fluxes_allsky_cxx%flux_net    , &
-         fluxes_allsky_cxx%bnd_flux_up, fluxes_allsky_cxx%bnd_flux_dn, fluxes_allsky_cxx%bnd_flux_net, &
-         fluxes_clrsky_cxx%flux_up    , fluxes_clrsky_cxx%flux_dn    , fluxes_clrsky_cxx%flux_net    , &
-         fluxes_clrsky_cxx%bnd_flux_up, fluxes_clrsky_cxx%bnd_flux_dn, fluxes_clrsky_cxx%bnd_flux_net  &
+         fluxes_allsky%flux_up    , fluxes_allsky%flux_dn    , fluxes_allsky%flux_net    , &
+         fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
+         fluxes_clrsky%flux_up    , fluxes_clrsky%flux_dn    , fluxes_clrsky%flux_net    , &
+         fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net  &
          )
       call t_stopf('rrtmgpxx_run_lw')
-      ! Check fluxes
-      if (.true.) then
-         call assert(all(abs(fluxes_allsky_cxx%flux_up - fluxes_allsky%flux_up) < 1e-5), 'F90 and CXX allsky_flux_up differs.')
-         call assert(all(abs(fluxes_allsky_cxx%flux_dn - fluxes_allsky%flux_dn) < 1e-5), 'F90 and CXX allsky_flux_dn differs.')
-         call assert(all(abs(fluxes_allsky_cxx%flux_net - fluxes_allsky%flux_net) < 1e-5), 'F90 and CXX allsky_flux_net differs.')
-         call assert(all(abs(fluxes_clrsky_cxx%flux_up - fluxes_clrsky%flux_up) < 1e-5), 'F90 and CXX clrsky_flux_up differs.')
-         call assert(all(abs(fluxes_clrsky_cxx%flux_dn - fluxes_clrsky%flux_dn) < 1e-5), 'F90 and CXX clrsky_flux_dn differs.')
-         call assert(all(abs(fluxes_clrsky_cxx%flux_net - fluxes_clrsky%flux_net) < 1e-5), 'F90 and CXX clrsky_flux_net differs.')
-      end if
-      call free_fluxes(fluxes_allsky_cxx)
-      call free_fluxes(fluxes_clrsky_cxx)
 
       ! Calculate heating rates
       call calculate_heating_rate(  &

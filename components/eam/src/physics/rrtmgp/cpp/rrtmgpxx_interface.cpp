@@ -5,6 +5,7 @@
 #include "mo_rte_lw.h"
 #include "mo_optical_props.h"
 #include "const.h"
+#include "mo_fluxes_byband.h"
 
 using yakl::intrinsics::minval;
 using yakl::intrinsics::maxval;
@@ -153,6 +154,14 @@ extern "C" void rrtmgpxx_run_sw (
     auto clrsky_flux_dn = real2d("clrsky_flux_dn", clrsky_flux_dn_p, ncol, nlay+1);
     auto clrsky_flux_dn_dir = real2d("clrsky_flux_dn_dir", clrsky_flux_dn_dir_p, ncol, nlay+1);
     auto clrsky_flux_net = real2d("clrsky_flux_net", clrsky_flux_net_p, ncol, nlay+1);
+    auto allsky_bnd_flux_up = real3d("allsky_bnd_flux_up", allsky_bnd_flux_up_p, ncol, nlay+1, nswbands);
+    auto allsky_bnd_flux_dn = real3d("allsky_bnd_flux_dn", allsky_bnd_flux_dn_p, ncol, nlay+1, nswbands);
+    auto allsky_bnd_flux_dn_dir = real3d("allsky_bnd_flux_dn_dir", allsky_bnd_flux_dn_dir_p, ncol, nlay+1, nswbands);
+    auto allsky_bnd_flux_net = real3d("allsky_bnd_flux_net", allsky_bnd_flux_net_p, ncol, nlay+1, nswbands);
+    auto clrsky_bnd_flux_up = real3d("clrsky_bnd_flux_up", clrsky_bnd_flux_up_p, ncol, nlay+1, nswbands);
+    auto clrsky_bnd_flux_dn = real3d("clrsky_bnd_flux_dn", clrsky_bnd_flux_dn_p, ncol, nlay+1, nswbands);
+    auto clrsky_bnd_flux_dn_dir = real3d("clrsky_bnd_flux_dn_dir", clrsky_bnd_flux_dn_dir_p, ncol, nlay+1, nswbands);
+    auto clrsky_bnd_flux_net = real3d("clrsky_bnd_flux_net", clrsky_bnd_flux_net_p, ncol, nlay+1, nswbands);
 
     // Populate gas concentrations object
     // TODO: clean this up. We could keep gas_concs in file scope, and then
@@ -214,11 +223,15 @@ extern "C" void rrtmgpxx_run_sw (
 
     // Do the clearsky calculation before adding in clouds
     // TODO: we need band-by-band fluxes too
-    FluxesBroadband fluxes_clrsky;
+    FluxesByband fluxes_clrsky;
     fluxes_clrsky.flux_up = clrsky_flux_up;
     fluxes_clrsky.flux_dn = clrsky_flux_dn;
     fluxes_clrsky.flux_dn_dir = clrsky_flux_dn_dir;
     fluxes_clrsky.flux_net = clrsky_flux_net;
+    fluxes_clrsky.bnd_flux_up = clrsky_bnd_flux_up;
+    fluxes_clrsky.bnd_flux_dn = clrsky_bnd_flux_dn;
+    fluxes_clrsky.bnd_flux_dn_dir = clrsky_bnd_flux_dn_dir;
+    fluxes_clrsky.bnd_flux_net = clrsky_bnd_flux_net;
     rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes_clrsky);
 
     // Add in clouds
@@ -233,11 +246,15 @@ extern "C" void rrtmgpxx_run_sw (
     cloud_optics.increment(combined_optics);
 
     // Call SW flux driver
-    FluxesBroadband fluxes_allsky;
+    FluxesByband fluxes_allsky;
     fluxes_allsky.flux_up = allsky_flux_up;
     fluxes_allsky.flux_dn = allsky_flux_dn;
     fluxes_allsky.flux_dn_dir = allsky_flux_dn_dir;
     fluxes_allsky.flux_net = allsky_flux_net;
+    fluxes_allsky.bnd_flux_up = allsky_bnd_flux_up;
+    fluxes_allsky.bnd_flux_dn = allsky_bnd_flux_dn;
+    fluxes_allsky.bnd_flux_dn_dir = allsky_bnd_flux_dn_dir;
+    fluxes_allsky.bnd_flux_net = allsky_bnd_flux_net;
     rte_sw(combined_optics, top_at_1, coszrs, toa_flux, albedo_dir, albedo_dif, fluxes_allsky);
 } 
 
@@ -269,6 +286,12 @@ extern "C" void rrtmgpxx_run_lw (
     auto clrsky_flux_up = real2d("clrsky_flux_up", clrsky_flux_up_p, ncol, nlay+1);
     auto clrsky_flux_dn = real2d("clrsky_flux_dn", clrsky_flux_dn_p, ncol, nlay+1);
     auto clrsky_flux_net = real2d("clrsky_flux_net", clrsky_flux_net_p, ncol, nlay+1);
+    auto allsky_bnd_flux_up = real3d("allsky_bnd_flux_up", allsky_bnd_flux_up_p, ncol, nlay+1, nlwbands);
+    auto allsky_bnd_flux_dn = real3d("allsky_bnd_flux_dn", allsky_bnd_flux_dn_p, ncol, nlay+1, nlwbands);
+    auto allsky_bnd_flux_net = real3d("allsky_bnd_flux_net", allsky_bnd_flux_net_p, ncol, nlay+1, nlwbands);
+    auto clrsky_bnd_flux_up = real3d("clrsky_bnd_flux_up", clrsky_bnd_flux_up_p, ncol, nlay+1, nlwbands);
+    auto clrsky_bnd_flux_dn = real3d("clrsky_bnd_flux_dn", clrsky_bnd_flux_dn_p, ncol, nlay+1, nlwbands);
+    auto clrsky_bnd_flux_net = real3d("clrsky_bnd_flux_net", clrsky_bnd_flux_net_p, ncol, nlay+1, nlwbands);
 
     // Populate gas concentrations
     string1d gas_names("gas_names", ngas);
@@ -344,10 +367,13 @@ extern "C" void rrtmgpxx_run_lw (
     aerosol_optics.increment(combined_optics);
 
     // Do the clearsky calculation before adding in clouds
-    FluxesBroadband fluxes_clrsky;
+    FluxesByband fluxes_clrsky;
     fluxes_clrsky.flux_up = clrsky_flux_up;
     fluxes_clrsky.flux_dn = clrsky_flux_dn;
     fluxes_clrsky.flux_net = clrsky_flux_net;
+    fluxes_clrsky.bnd_flux_up = clrsky_bnd_flux_up;
+    fluxes_clrsky.bnd_flux_dn = clrsky_bnd_flux_dn;
+    fluxes_clrsky.bnd_flux_net = clrsky_bnd_flux_net;
     rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, combined_optics, top_at_1, lw_sources, emis_sfc, fluxes_clrsky);
 
     // Add in clouds
@@ -359,9 +385,12 @@ extern "C" void rrtmgpxx_run_lw (
     cloud_optics.increment(combined_optics);
 
     // Call LW flux driver
-    FluxesBroadband fluxes_allsky;
+    FluxesByband fluxes_allsky;
     fluxes_allsky.flux_up = allsky_flux_up;
     fluxes_allsky.flux_dn = allsky_flux_dn;
     fluxes_allsky.flux_net = allsky_flux_net;
+    fluxes_allsky.bnd_flux_up = allsky_bnd_flux_up;
+    fluxes_allsky.bnd_flux_dn = allsky_bnd_flux_dn;
+    fluxes_allsky.bnd_flux_net = allsky_bnd_flux_net;
     rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, combined_optics, top_at_1, lw_sources, emis_sfc, fluxes_allsky);
 }
