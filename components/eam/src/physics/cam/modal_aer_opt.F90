@@ -583,10 +583,14 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    burdenseasalt(:ncol)  = 0.0_r8
 #if ( defined MODAL_AERO_4MODE_MOM )
    burdenmom(:ncol)      = 0.0_r8
+   momaod(:ncol)         = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
    burdenpoly(:ncol)     = 0.0_r8
    burdenprot(:ncol)     = 0.0_r8
    burdenlip(:ncol)      = 0.0_r8
+   polyaod(:ncol)        = 0.0_r8
+   protaod(:ncol)        = 0.0_r8
+   lipaod(:ncol)         = 0.0_r8
 #endif
    ssavis(1:ncol)        = 0.0_r8
 
@@ -597,13 +601,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    soaaod(:ncol)         = 0.0_r8
    bcaod(:ncol)          = 0.0_r8
    seasaltaod(:ncol)     = 0.0_r8
-#if ( defined MODAL_AERO_4MODE_MOM )
-   burdenmom(:ncol)      = 0.0_r8
-#elif ( defined MODAL_AERO_9MODE )
-   burdenpoly(:ncol)     = 0.0_r8
-   burdenprot(:ncol)     = 0.0_r8
-   burdenlip(:ncol)      = 0.0_r8
-#endif
+
 
    ! diags for other bands
    aoduv(:ncol)          = 0.0_r8
