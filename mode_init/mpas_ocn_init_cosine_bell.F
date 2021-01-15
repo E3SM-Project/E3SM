@@ -11,14 +11,16 @@
 !
 !  ocn_init_cosine_bell
 !
-!> \brief MPAS ocean initialize case -- CVMix Unit Test
-!> WSwSBF means Wind Stress with Surface Buoyancy Forcing
-!> \author Todd Ringler
-!> \date   04/23/2015
+!> \brief MPAS ocean initialize case -- Cosine Bell
+!> \author Luke Van Roekel
+!> \date   09/01/2020
 !> \details
 !>  This module contains the routines for initializing the
-!>  the cvmix WSwSBF unit test configuration. This in a
-!>  single column configuration
+!>  the cosine bell test case
+!>  Reference: Section 2a in Skamarock, W.C. and A. Gassmann, 2011: Conservative
+!>  Transport Schemes for Spherical Geodesic Grids: High-Order Flux Operators for
+!>  ODE-Based Time Integration. Mon. Wea. Rev., 139, 2962–2975,
+!>  https://doi.org/10.1175/MWR-D-10-05056.1
 !
 !-----------------------------------------------------------------------
 
@@ -68,12 +70,14 @@ contains
 !
 !  routine ocn_init_setup_cosine_bell
 !
-!> \brief   Setup for cvmix WSwSBF unit test configuration
-!> \author  Todd Ringler
-!> \date    04/23/2015
+!> \brief   Set-up for test case
+!> \author  Luke Van Roekel
+!> \date    09/01/2020
 !> \details
-!>  This routine sets up the initial conditions for the cvmix WSwSBF
-!unit test configuration.
+!>  Reference: Section 2a in Skamarock, W.C. and A. Gassmann, 2011: Conservative
+!>  Transport Schemes for Spherical Geodesic Grids: High-Order Flux Operators for
+!>  ODE-Based Time Integration. Mon. Wea. Rev., 139, 2962–2975,
+!>  https://doi.org/10.1175/MWR-D-10-05056.1
 !
 !-----------------------------------------------------------------------
 
@@ -97,7 +101,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth,refZMid
-      real (kind=RKIND), dimension(:), pointer :: lonCell, latEdge, latCell, latVertex 
+      real (kind=RKIND), dimension(:), pointer :: lonCell, latEdge, latCell, latVertex
       real (kind=RKIND), dimension(:), pointer :: bottomDepth, angleEdge
       real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex,xCell, yCell
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness,restingThickness,normalVelocity
@@ -151,7 +155,7 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing',forcingPool)
 
         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      
+
         call mpas_pool_get_dimension(meshPool, 'nVertLevels',nVertLevels)
         call mpas_pool_get_dimension(meshPool, 'nCellsSolve',nCellsSolve)
         call mpas_pool_get_dimension(meshPool, 'nEdge', nEdge)
@@ -196,7 +200,7 @@ contains
            if(associated(activeTracers) ) then
 
            ! Loop from surface through surface layer depth
-        
+
            activeTracers(index_temperature, :, iCell) = config_cosine_bell_temperature
            activeTracers(index_salinity, :, iCell) = config_cosine_bell_salinity
           endif
@@ -215,7 +219,7 @@ contains
         endif
         ! Set layerThickness
         do k = 1, nVertLevels
-           layerThickness(k, iCell) = 100.0_RKIND 
+           layerThickness(k, iCell) = 100.0_RKIND
            restingThickness(k, iCell) = layerThickness(k, iCell)
         end do
 
@@ -256,12 +260,10 @@ contains
 !
 !  routine ocn_init_validate_cosine_bell
 !
-!> \brief   Validation for CVMix WSwSBF mixing unit test case
-!> \author  Doug Jacobsen
-!> \date    04/01/2015
+!> \brief   Validation for test case
+!> \author  Luke Van Roekel
+!> \date    09/01/2020
 !> \details
-!>  This routine validates the configuration options for the CVMix
-!WSwSBF mixing unit test configuration.
 !
 !-----------------------------------------------------------------------
 
@@ -286,7 +288,7 @@ contains
 
       call mpas_pool_get_config(configPool, 'config_vert_levels',config_vert_levels)
 
-      config_vert_levels = 3 
+      config_vert_levels = 3
 
    !--------------------------------------------------------------------
 
