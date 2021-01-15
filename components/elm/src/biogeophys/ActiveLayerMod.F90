@@ -7,7 +7,7 @@ module ActiveLayerMod
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_const_mod   , only : SHR_CONST_TKFRZ
-  use clm_varctl      , only : iulog
+  use elm_varctl      , only : iulog
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
   use GridcellType    , only : grc_pp       
@@ -44,10 +44,10 @@ contains
     !
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
-    use clm_varpar       , only : nlevgrnd
+    use elm_varpar       , only : nlevgrnd
     use clm_time_manager , only : get_curr_date, get_step_size
-    use clm_varctl       , only : iulog
-    use clm_varcon       , only : zsoi
+    use elm_varctl       , only : iulog
+    use elm_varcon       , only : zsoi
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter

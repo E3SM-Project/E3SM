@@ -9,7 +9,7 @@ module dynTimeInfoMod
   ! single time sample per year.
   !
   ! !USES:
-  use clm_varctl     , only : iulog
+  use elm_varctl     , only : iulog
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
 

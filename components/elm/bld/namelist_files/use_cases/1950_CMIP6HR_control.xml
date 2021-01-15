@@ -8,14 +8,14 @@
 
 <sim_year_range>constant</sim_year_range>
 
-<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_ndep>
-<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_ndep>
+<stream_year_first_ndep phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_ndep>
 
-<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_pdep>
-<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_pdep>
+<stream_year_first_pdep phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_pdep>
+<stream_year_last_pdep  phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_pdep>
 
-<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_popdens>
-<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_popdens>
+<stream_year_first_popdens phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_popdens>
 
 <!-- CMIP6 HighResMIP compsets -->
 <fsurdat hgrid="ne120np4" >lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1950_c20180108.nc </fsurdat>

@@ -894,7 +894,7 @@ end subroutine EM_VSFM_Populate_E2L_List
     use initGridCellsMod          , only : initGhostGridCells
     use decompMod                 , only : get_proc_total_ghosts
     use UnstructuredGridType      , only : ScatterDataG2L
-    use clm_instMod               , only : soilstate_vars
+    use elm_instMod               , only : soilstate_vars
     use mpp_bounds                , only : bounds_proc_begc_all, bounds_proc_endc_all
     use mpp_bounds                , only : bounds_proc_begc, bounds_proc_endc
     use mpp_bounds                , only : bounds_proc_begg_all, bounds_proc_endg_all
@@ -1316,8 +1316,8 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     ! !DESCRIPTION:
     !
-    use clm_instMod               , only : soilstate_vars
-    use clm_instMod               , only : soilhydrology_vars
+    use elm_instMod               , only : soilstate_vars
+    use elm_instMod               , only : soilhydrology_vars
     use mpp_varcon                , only : istcrop
     use mpp_varcon                , only : istsoil
     use mpp_varcon                , only : icol_road_perv
@@ -1444,8 +1444,8 @@ end subroutine EM_VSFM_Populate_E2L_List
     !
     ! !DESCRIPTION:
     !
-    use clm_instMod               , only : soilstate_vars
-    use clm_instMod               , only : soilhydrology_vars
+    use elm_instMod               , only : soilstate_vars
+    use elm_instMod               , only : soilhydrology_vars
     use mpp_varcon                , only : istcrop
     use mpp_varcon                , only : istsoil
     use mpp_varcon                , only : icol_road_perv

@@ -7,7 +7,7 @@ module surfrdUtilsMod
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use clm_varctl   , only : iulog
+  use elm_varctl   , only : iulog
   use abortutils   , only : endrun
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use spmdMod      , only : masterproc
@@ -71,8 +71,8 @@ contains
     !        Convert generic crop types that were read in as seperate CFT's on
     !        a crop landunit, and put them on the vegetated landunit.
     ! !USES:
-    use clm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
-    use clm_varpar      , only : cft_size, natpft_size
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
+    use elm_varpar      , only : cft_size, natpft_size
     use pftvarcon       , only : nc3crop
     use landunit_varcon , only : istsoil, istcrop
     ! !ARGUMENTS:
@@ -111,9 +111,9 @@ contains
    !        The PCT of natural vegetation and crops are updated after creating
    !        the new crop landunit 
    ! !USES:
-   use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
-   use clm_varpar      , only : cft_size, natpft_size
-   use clm_varpar      , only : cft_size, cft_lb, cft_ub, natpft_lb, natpft_ub
+   use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
+   use elm_varpar      , only : cft_size, natpft_size
+   use elm_varpar      , only : cft_size, cft_lb, cft_ub, natpft_lb, natpft_ub
    use pftvarcon       , only : nc3crop
    use landunit_varcon , only : istsoil, istcrop
    ! !ARGUMENTS:
@@ -197,9 +197,9 @@ contains
     ! Should only be called if using prognostic crops - otherwise, wt_cft is meaningless
     !
     ! !USES:
-    use clm_varctl , only : irrigate
-    use clm_varpar , only : cft_lb, cft_ub, cft_size
-    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoclmpft
+    use elm_varctl , only : irrigate
+    use elm_varpar , only : cft_lb, cft_ub, cft_size
+    use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
     !
     ! !ARGUMENTS:
 
@@ -258,32 +258,32 @@ contains
     end if
 
     ! ------------------------------------------------------------------------
-    ! Merge CFTs into the list of crops that CLM knows how to model
+    ! Merge CFTs into the list of crops that ELM knows how to model
     ! ------------------------------------------------------------------------
 
     if (verbose .and. masterproc) then
        write(iulog, *) trim(subname) // ' merging wheat, barley, and rye into temperate cereals'
-       write(iulog, *) trim(subname) // ' clm knows how to model corn, temperate cereals, and soybean'
+       write(iulog, *) trim(subname) // ' elm knows how to model corn, temperate cereals, and soybean'
        write(iulog, *) trim(subname) // ' all other crops are lumped with the generic crop pft'
     end if
 
     do g = begg, endg
        do m = 1, npcropmax
-          if (m /= mergetoclmpft(m)) then
-             wt_cft_to                   = wt_cft(g, mergetoclmpft(m))
+          if (m /= mergetoelmpft(m)) then
+             wt_cft_to                   = wt_cft(g, mergetoelmpft(m))
              wt_cft_from                 = wt_cft(g, m)
              wt_cft_merge                = wt_cft_to + wt_cft_from
-             wt_cft(g, mergetoclmpft(m)) = wt_cft_merge
+             wt_cft(g, mergetoelmpft(m)) = wt_cft_merge
              wt_cft(g, m)                = 0._r8
              if (wt_cft_merge > 0._r8) then
-                fert_cft(g,mergetoclmpft(m)) = (wt_cft_to * fert_cft(g,mergetoclmpft(m)) + &
+                fert_cft(g,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,mergetoelmpft(m)) + &
                                                 wt_cft_from * fert_cft(g,m)) / wt_cft_merge
              end if
           end if
        end do
     end do
 
-    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoclmpft')
+    call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': mergetoelmpft')
 
   end subroutine collapse_crop_types
 

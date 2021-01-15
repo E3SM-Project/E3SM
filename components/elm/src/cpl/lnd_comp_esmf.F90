@@ -3,8 +3,8 @@ module lnd_comp_esmf
 #ifdef ESMF_INTERFACE  
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
-  !  Interface of the active land model component of CESM the CLM (Community Land Model)
-  !  with the main CESM driver. This is a thin interface taking CESM driver information
+  !  Interface of the active land model component of E3SM the ELM (E3SM Land Model)
+  !  with the main E3SM driver. This is a thin interface taking E3SM driver information
   !  in MCT (Model Coupling Toolkit) format and converting it to use by CLM and outputing
   !  if in ESMF (Earth System Modelling Framework) format.
   !
@@ -16,9 +16,9 @@ module lnd_comp_esmf
   use abortutils        , only : endrun
   use domainMod         , only : ldomain
   use decompMod         , only : ldecomp, bounds_type, get_proc_bounds
-  use clm_varctl        , only : iulog
-  use clm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-  use clm_cpl_indices
+  use elm_varctl        , only : iulog
+  use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+  use elm_cpl_indices
   use lnd_import_export
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -26,13 +26,13 @@ module lnd_comp_esmf
   SAVE
   private                              ! By default make data private
   !
-  public :: lnd_register_esmf          ! register clm initial, run, final methods
-  public :: lnd_init_esmf              ! clm initialization
-  public :: lnd_run_esmf               ! clm run phase
-  public :: lnd_final_esmf             ! clm finalization/cleanup
+  public :: lnd_register_esmf          ! register elm initial, run, final methods
+  public :: lnd_init_esmf              ! elm initialization
+  public :: lnd_run_esmf               ! elm run phase
+  public :: lnd_final_esmf             ! elm finalization/cleanup
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: lnd_distgrid_esmf        ! Distribute clm grid
+  private :: lnd_distgrid_esmf        ! Distribute elm grid
   private :: lnd_domain_esmf          ! Set the land model domain information
   !---------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ contains
   subroutine lnd_register_esmf(comp, rc)
     !
     ! !DESCRIPTION:
-    ! Register the clm initial, run, and final phase methods with ESMF.
+    ! Register the elm initial, run, and final phase methods with ESMF.
     !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp  ! CLM grid component
@@ -77,12 +77,12 @@ contains
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, initialize3
-    use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, noland
-    use clm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
-    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
+    use elm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, noland
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use spmdMod          , only : masterproc, spmd_init
     use seq_timemgr_mod  , only : seq_timemgr_EClockGetData
@@ -108,7 +108,7 @@ contains
     integer                      :: lsize                 ! size of attribute vector
     integer                      :: g,i,j                 ! indices
     integer                      :: dtime_sync            ! coupling time-step from the input synchronization clock
-    integer                      :: dtime_clm             ! clm time-step
+    integer                      :: dtime_elm             ! elm time-step
     logical                      :: exists                ! true if file exists
     real(r8)                     :: scmlat                ! single-column latitude
     real(r8)                     :: scmlon                ! single-column longitude
@@ -120,7 +120,7 @@ contains
     character(len=SHR_KIND_CL)   :: hostname              ! hostname of machine running on
     character(len=SHR_KIND_CL)   :: version               ! Model version
     character(len=SHR_KIND_CL)   :: username              ! user running the model
-    integer                      :: nsrest                ! clm restart type
+    integer                      :: nsrest                ! elm restart type
     integer                      :: ref_ymd               ! reference date (YYYYMMDD)
     integer                      :: ref_tod               ! reference time of day (sec)
     integer                      :: start_ymd             ! start date (YYYYMMDD)
@@ -142,7 +142,7 @@ contains
 
     ! Determine indices
 
-    call clm_cpl_indices_set()
+    call elm_cpl_indices_set()
 
     rc = ESMF_SUCCESS
 
@@ -208,7 +208,7 @@ contains
 
     call control_setNL("lnd_in"//trim(inst_suffix))
 
-    ! Initialize clm
+    ! Initialize elm
     ! initialize1 reads namelist, grid and surface data
     ! initialize2 performs rest of initialization    
 
@@ -261,7 +261,7 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    call clm_varctl_set(                                         &
+    call elm_varctl_set(                                         &
          caseid_in=caseid, ctitle_in=ctitle,                     &
          brnch_retain_casename_in=brnch_retain_casename,         &
          single_column_in=single_column, scmlat_in=scmlat,       &
@@ -366,19 +366,19 @@ contains
     call ESMF_StateAdd(import_state, (/x2l/), rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    ! Finish initializing clm
+    ! Finish initializing elm
 
     call initialize2()
     call initialize3()
 
-    ! Check that clm internal dtime aligns with clm coupling interval
+    ! Check that elm internal dtime aligns with elm coupling interval
 
     call seq_timemgr_EClockGetData(EClock, dtime=dtime_sync )
-    dtime_clm = get_step_size()
+    dtime_elm = get_step_size()
     if(masterproc) write(iulog,*)'dtime_sync= ',dtime_sync,&
-         ' dtime_clm= ',dtime_clm,' mod = ',mod(dtime_sync,dtime_clm)
-    if (mod(dtime_sync,dtime_clm) /= 0) then
-       write(iulog,*)'clm dtime ',dtime_clm,' and Eclock dtime ',dtime_sync,' never align'
+         ' dtime_elm= ',dtime_elm,' mod = ',mod(dtime_sync,dtime_elm)
+    if (mod(dtime_sync,dtime_elm) /= 0) then
+       write(iulog,*)'elm dtime ',dtime_elm,' and Eclock dtime ',dtime_sync,' never align'
        call endrun( sub//' ERROR: time out of sync' )
     end if
 
@@ -452,15 +452,15 @@ contains
   subroutine lnd_run_esmf(comp, import_state, export_state, EClock, rc)
     !
     ! !DESCRIPTION:
-    ! Run clm model
+    ! Run elm model
     !
     ! !USES:
     use shr_file_mod      , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod      , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_orb_mod       , only : shr_orb_decl
-    use clm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-    use clm_driver        , only : clm_drv
-    use clm_varorb        , only : eccen, obliqr, lambm0, mvelpp
+    use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use elm_driver        , only : elm_drv
+    use elm_varorb        , only : eccen, obliqr, lambm0, mvelpp
     use clm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager  , only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use seq_timemgr_mod   , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
@@ -497,7 +497,7 @@ contains
     logical :: dosend                     ! true => send data back to driver
     logical :: doalb                      ! .true. ==> do albedo calculation on this time step
     real(r8):: nextsw_cday                ! calday from clock of next radiation computation
-    real(r8):: caldayp1                   ! clm calday plus dtime offset
+    real(r8):: caldayp1                   ! elm calday plus dtime offset
     real(r8):: calday                     ! calendar day for nstep
     real(r8):: declin                     ! solar declination angle in radians for nstep
     real(r8):: declinp1                   ! solar declination angle in radians for nstep+1
@@ -613,15 +613,15 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-       ! Run clm 
+       ! Run elm 
 
-       call t_barrierf('sync_clm_run', mpicom)
-       call t_startf ('clm_run')
+       call t_barrierf('sync_elm_run', mpicom)
+       call t_startf ('elm_run')
        calday = get_curr_calday()
        call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
        call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
-       call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
-       call t_stopf ('clm_run')
+       call elm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
+       call t_stopf ('elm_run')
 
        ! Map CLM data type to MCT
        ! Reset landfrac on atmosphere grid to have the right domain
@@ -636,11 +636,11 @@ contains
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, fptr)
        call t_stopf ('lc_lnd_export')
 
-       ! Advance clm time step
+       ! Advance elm time step
 
-       call t_startf ('lc_clm2_adv_timestep')
+       call t_startf ('lc_elm2_adv_timestep')
        call advance_timestep()
-       call t_stopf ('lc_clm2_adv_timestep')
+       call t_stopf ('lc_elm2_adv_timestep')
 
     end do
 
@@ -654,7 +654,7 @@ contains
     tod = tod
     if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
        call seq_timemgr_EclockGetData( EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
-       write(iulog,*)' clm ymd=',ymd     ,'  clm tod= ',tod
+       write(iulog,*)' elm ymd=',ymd     ,'  elm tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
        call endrun( sub//":: CLM clock not in sync with Master Sync clock" )
     end if
@@ -685,7 +685,7 @@ contains
     ! Finalize land surface model
     !
     ! !USES:
-    use clm_finalizeMod, only : final
+    use elm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_GridComp)  :: comp            ! CLM gridded component
@@ -755,7 +755,7 @@ contains
     ! Send the land model domain information to the coupler
     !
     ! !USES:
-    use clm_varcon  , only : re
+    use elm_varcon  , only : re
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds ! bounds

@@ -5,8 +5,8 @@ module SoilLittVertTranspMod
   !
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
-  use clm_varcon             , only : secspday
+  use elm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
+  use elm_varcon             , only : secspday
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -18,7 +18,7 @@ module SoilLittVertTranspMod
   use CNNitrogenStateType    , only : nitrogenstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType         , only : col_ns, col_nf, col_ps, col_pf
@@ -103,8 +103,8 @@ contains
     !
     ! !USES:
     use clm_time_manager , only : get_step_size, get_curr_date
-    use clm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
-    use clm_varcon       , only : zsoi, dzsoi_decomp, zisoi
+    use elm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
+    use elm_varcon       , only : zsoi, dzsoi_decomp, zisoi
     use TridiagonalMod   , only : Tridiagonal
     !
     ! !ARGUMENTS:

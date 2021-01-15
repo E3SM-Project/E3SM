@@ -1015,14 +1015,14 @@
     <COMPILERS>intel,intel18,gnu</COMPILERS>
     <MPILIBS>mvapich</MPILIBS>
     <PROJECT>condo</PROJECT>
-    <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lcrc/group/acme/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/anvil</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/anvil/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -1094,7 +1094,7 @@
     <environment_variables>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
@@ -1119,20 +1119,132 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="chrysalis">
+    <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
+    <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel,gnu</COMPILERS>
+    <MPILIBS>impi,openmpi</MPILIBS>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/lcrc/group/e3sm/PERF_Chrysalis</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/chrys/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>E3SM</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="impi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">subversion/1.14.0-e4smcy3</command>
+        <command name="load">perl/5.32.0-bsnc6lt</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/20.0.4-kodw73g</command>
+        <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
+      </modules>
+      <modules compiler="intel" mpilib="openmpi">
+        <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
+        <command name="load">hdf5/1.8.16-m3bsibs</command>
+        <command name="load">netcdf-c/4.4.1-7ejgpdm</command>
+        <command name="load">netcdf-cxx/4.2-sag6n3x</command>
+        <command name="load">netcdf-fortran/4.4.4-sjzkwoc</command>
+        <command name="load">parallel-netcdf/1.11.0-l362p2g</command>
+      </modules>
+      <modules compiler="intel" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
+        <command name="load">hdf5/1.8.16-se4xyo7</command>
+        <command name="load">netcdf-c/4.4.1-qvxyzq2</command>
+        <command name="load">netcdf-cxx/4.2-binixgj</command>
+        <command name="load">netcdf-fortran/4.4.4-rdxohvp</command>
+        <command name="load">parallel-netcdf/1.11.0-b74wv4m</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/9.2.0-ugetvbp</command>
+        <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">openmpi/4.0.4-hpcx-hghvhj5</command>
+        <command name="load">hdf5/1.10.7-sbsigon</command>
+        <command name="load">netcdf-c/4.7.4-a4uk6zy</command>
+        <command name="load">netcdf-cxx/4.2-fz347dw</command>
+        <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
+        <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+      <env name="KMP_AFFINITY">granularity=core,scatter</env>
+      <env name="KMP_HOT_TEAMS_MODE">1</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">core</env>
+    </environment_variables>
+    <environment_variables mpilib="impi" DEBUG="TRUE">
+      <env name="I_MPI_DEBUG">10</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="blues">
     <DESC>ANL/LCRC Linux Cluster</DESC>
     <OS>LINUX</OS>
     <COMPILERS>pgigpu</COMPILERS>
     <MPILIBS>mvapich</MPILIBS>
-    <PROJECT>ACME</PROJECT>
-    <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
+    <PROJECT>e3sm</PROJECT>
+    <SAVE_TIMING_DIR>/lcrc/group/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/blues</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lcrc/group/acme/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/blues/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/blues</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/blues/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -1162,15 +1274,13 @@
         <command name="load">cmake/3.14.2-gvwazz3</command>
       </modules>
       <modules compiler="pgigpu">
-        <command name="load">pgi/19.10-gked3en</command>
-        <command name="load">netcdf-c/4.4.1-kiulufe</command>
-        <command name="load">netcdf-cxx/4.2-4zoepaj</command>
-        <command name="load">netcdf-fortran/4.4.4-lo3whut</command>
-        <command name="load">cuda/10.0.130-kqvlz4i</command>
-      </modules>
-      <modules compiler="pgigpu" mpilib="mvapich">
-        <command name="load">mvapich2/2.2-blues-4scjxsw</command>
-        <command name="load">parallel-netcdf/1.12.0-iayqtgc</command>
+        <command name="load">nvhpc/20.9-5brtudu</command>
+        <command name="load">cuda/11.1.0-6dvax5z</command>
+        <command name="load">netcdf-c/4.7.4-ltqliri</command>
+        <command name="load">netcdf-cxx/4.2-kf5ox4e</command>
+        <command name="load">netcdf-fortran/4.5.3-6mgyroo</command>
+        <command name="load">mvapich2/2.3.4-blues-5fwicb5</command>
+        <command name="load">parallel-netcdf/1.12.1-nyuvwhn</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1181,7 +1291,7 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
-      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="mvapich">
       <env name="MV2_ENABLE_AFFINITY">0</env>
@@ -1203,13 +1313,13 @@
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,mvapich</MPILIBS>
-    <PROJECT>acme</PROJECT>
-    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/bebop</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lcrc/group/acme/acme_baselines/bebop/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lcrc/group/acme/tools/cprnc/cprnc</CCSM_CPRNC>
+    <PROJECT>e3sm</PROJECT>
+    <CIME_OUTPUT_ROOT>/lcrc/group/e3sm/$USER/scratch/bebop</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lcrc/group/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lcrc/group/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lcrc/group/e3sm/baselines/bebop/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lcrc/group/e3sm/soft/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -1282,12 +1392,12 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <environment_variables>
-      <env name="NETCDF_C_PATH">$SHELL{which nc-config | xargs dirname | xargs dirname}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{which nf-config | xargs dirname | xargs dirname}</env>
-      <env name="PATH">/lcrc/group/acme/soft/perl/5.26.0/bin:$ENV{PATH}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PATH">/lcrc/group/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDF_PATH">$SHELL{which pnetcdf_version | xargs dirname | xargs dirname}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1296,69 +1406,6 @@
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_FABRICS">shm:tmi</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="cetus">
-    <DESC>ANL IBM BG/Q, os is BGQ, 16 cores/node, batch system is cobalt</DESC>
-    <NODENAME_REGEX>cetus</NODENAME_REGEX>
-    <OS>BGQ</OS>
-    <COMPILERS>ibm</COMPILERS>
-    <MPILIBS>ibm</MPILIBS>
-    <PROJECT>ClimateEnergy_2</PROJECT>
-    <CHARGE_ACCOUNT>ClimateEnergy</CHARGE_ACCOUNT>
-    <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines//$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
-    <SUPPORTED_BY>jayesh -at- mcs.anl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>/usr/bin/runjob</executable>
-      <arguments>
-        <arg name="label">--label short</arg>
-        <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
-        <arg name="num_tasks">--np {{ total_tasks }}</arg>
-        <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
-        <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
-        <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="soft">
-      <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
-      <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
-      <cmd_path lang="sh">soft</cmd_path>
-      <modules>
-        <command name="add">+mpiwrapper-xl</command>
-        <command name="add">@ibm-compilers-2016-05</command>
-        <command name="add">+cmake</command>
-        <command name="add">+python</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <environment_variables>
-      <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"> </env>
-      <env name="BGQ_STACKSIZE"> </env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
-      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
-      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
     </environment_variables>
   </machine>
 
@@ -1464,70 +1511,6 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="mira">
-    <DESC>ANL IBM BG/Q, os is BGQ, 16 cores/node, batch system is cobalt</DESC>
-    <NODENAME_REGEX>mira.*</NODENAME_REGEX>
-    <OS>BGQ</OS>
-    <COMPILERS>ibm</COMPILERS>
-    <MPILIBS>ibm</MPILIBS>
-    <PROJECT>ClimateEnergy_2</PROJECT>
-    <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_2</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/projects/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines//$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>cobalt</BATCH_SYSTEM>
-    <SUPPORTED_BY>mickelso -at- mcs.anl.gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>/usr/bin/runjob</executable>
-      <arguments>
-        <arg name="label">--label short</arg>
-        <arg name="tasks_per_node">--ranks-per-node $MAX_MPITASKS_PER_NODE</arg>
-        <arg name="num_tasks">--np {{ total_tasks }}</arg>
-        <arg name="locargs">--block $COBALT_PARTNAME $LOCARGS</arg>
-        <arg name="bgq_smp_vars">$ENV{BGQ_SMP_VARS}</arg>
-        <arg name="stacksize">$ENV{BGQ_STACKSIZE}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="soft">
-      <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
-      <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
-      <cmd_path lang="sh">soft</cmd_path>
-      <modules>
-        <command name="add">+mpiwrapper-xl</command>
-        <command name="add">@ibm-compilers-2016-05</command>
-        <command name="add">+cmake</command>
-        <command name="add">+python</command>
-      </modules>
-    </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <environment_variables>
-      <env name="MPI_TYPE_MAX">10000</env>
-      <env name="BGQ_SMP_VARS"> </env>
-      <env name="BGQ_STACKSIZE"> </env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE">
-      <env name="BGQ_SMP_VARS">--envs BG_THREADLAYOUT=1 XL_BG_SPREADLAYOUT=YES OMP_DYNAMIC=FALSE OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="!16">
-      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=64M</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" MAX_MPITASKS_PER_NODE="16">
-      <env name="BGQ_STACKSIZE">--envs OMP_STACKSIZE=16M</env>
-    </environment_variables>
-  </machine>
-
   <machine MACH="theta">
     <DESC>ALCF Cray XC40 KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
     <NODENAME_REGEX>theta.*</NODENAME_REGEX>
@@ -1537,11 +1520,11 @@
     <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/projects/$PROJECT/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/ccsm/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/projects/ccsm/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/$PROJECT/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/ccsm/acme/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/projects/$PROJECT/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/ccsm/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -1569,38 +1552,29 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="rm">craype-mic-knl</command>
-        <command name="rm">PrgEnv-intel</command>
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">intel</command>
         <command name="rm">cray-mpich</command>
         <command name="rm">cray-parallel-netcdf</command>
         <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">cray-hdf5</command>
         <command name="rm">cray-netcdf</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="rm">cray-libsci</command>
-        <command name="rm">craype</command>
-        <command name="rm">perftools-base</command>
-        <command name="rm">darshan</command>
         <command name="load">craype/2.6.5</command>
         <command name="load">cmake/3.14.5</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.1.0.166</command>
+        <command name="rm">PrgEnv-gnu</command>
         <command name="load">PrgEnv-intel/6.0.7</command>
+        <command name="swap">intel/19.1.0.166</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/9.3.0</command>
+        <command name="rm">PrgEnv-intel</command>
         <command name="load">PrgEnv-gnu/6.0.7</command>
+        <command name="swap">gcc/9.3.0</command>
       </modules>
       <modules compiler="!intel">
-        <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/20.06.1</command>
+        <command name="swap">cray-libsci/20.06.1</command>
       </modules>
       <modules>
-        <command name="load">darshan</command>
-        <command name="load">craype-mic-knl</command>
         <command name="load">cray-mpich/7.7.14</command>
         <command name="load">cray-hdf5-parallel/1.10.6.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
@@ -1612,10 +1586,10 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/projects/ccsm/acme/libs/perl5</env>
+      <env name="PERL5LIB">/projects/ccsm/e3sm/libs/perl5</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
+      <env name="MPAS_TOOL_DIR">/projects/ccsm/e3sm/tools/mpas</env>
       <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
       <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
       <env name="SMP_VARS"> </env>
@@ -1850,7 +1824,7 @@
       </modules>
       <modules>
         <command name="load">perl/5.20.0</command>
-        <command name="load">cmake/3.3.0</command>
+        <command name="load">cmake/3.17.1</command>
         <command name="load">python/2.7.8</command>
         <command name="load">svn/1.8.13</command>
       </modules>
@@ -1871,7 +1845,7 @@
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
     <EXEROOT>/lustre/$USER/csmruns/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="MKLROOT">$ENV{MKLROOT} </env>
+      <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>

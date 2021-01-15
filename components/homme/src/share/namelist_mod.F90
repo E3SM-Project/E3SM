@@ -14,6 +14,9 @@ module namelist_mod
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
 #endif
+use physical_constants, only : rearth, rrearth, DD_PI
+use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
+use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
   use control_mod, only : &
     MAX_STRING_LEN,&
@@ -22,7 +25,9 @@ module namelist_mod
     coord_transform_method,    &       !how to represent the coordinates.
     z2_map_method,    &       !zoltan2 how to perform mapping (network-topology aware)
     topology,      &       ! Mesh topology
+    geometry,      &       ! Mesh geometry
     test_case,     &       ! test case
+    planar_slice,     &
     uselapi,       &
     numnodes,      &
     sub_case,      &
@@ -107,7 +112,7 @@ module namelist_mod
 #endif
 
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
-  use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
+  use dimensions_mod, only: ne, ne_x, ne_y, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
   use time_mod,       only: tstep, nsplit, smooth
 #else
@@ -200,6 +205,7 @@ module namelist_mod
                       COORD_TRANSFORM_METHOD,    &         ! Zoltan2 coordinate transformation method.
                       Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
                       TOPOLOGY,                  &         ! mesh topology
+                      GEOMETRY,                  &         ! mesh geometry
 #ifdef CAM
       se_partmethod,     &
       se_topology,       &
@@ -221,6 +227,8 @@ module namelist_mod
       uselapi,       &
       numnodes,      &
       ne,            &             ! element resolution factor
+      ne_x,            &             ! element resolution factor in x-dir for planar
+      ne_y,            &             ! element resolution factor in y-dir for planar
       tasknum,       &
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
@@ -277,6 +285,7 @@ module namelist_mod
       se_tstep
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
+      planar_slice,     &             ! const y-dir
       sub_case,        &             ! generic test case parameter
       nmax,            &             ! number of steps
       ndays,           &             ! number of days to simulate
@@ -377,6 +386,8 @@ module namelist_mod
     initial_total_mass=0
     mesh_file='none'
     ne              = 0
+    ne_x              = 0
+    ne_y              = 0
     transport_alg = 0
     semi_lagrange_cdr_alg = 3
     semi_lagrange_cdr_check = .false.
@@ -384,6 +395,7 @@ module namelist_mod
     semi_lagrange_nearest_point_lev = 256
     disable_diagnostics = .false.
     se_fv_phys_remap_alg = 1
+    planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
@@ -467,6 +479,11 @@ module namelist_mod
 
 #ifndef CAM
 
+
+if (topology == "plane" .and. ne /= 0) then
+call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
+end if
+
 #ifdef _PRIM
        write(iulog,*) "reading physics namelist..."
        if (test_case      == "held_suarez0"   .or. &
@@ -474,6 +491,19 @@ module namelist_mod
            test_case(1:13)== "jw_baroclinic"  .or. &
            test_case(1:5) == "dcmip"          .or. &
            test_case(1:5) == "mtest"          .or. &
+           test_case      == "planar_hydro_gravity_wave"            .or. &
+           test_case      == "planar_nonhydro_gravity_wave"           .or. &
+           test_case      == "planar_hydro_mtn_wave"            .or. &
+           test_case      == "planar_nonhydro_mtn_wave"           .or. &
+           test_case      == "planar_schar_mtn_wave"            .or. &
+           test_case      == "planar_rising_bubble"             .or. &
+           test_case      == "planar_density_current"             .or. &
+           test_case      == "planar_baroclinic_instab"             .or. &
+           test_case      == "planar_moist_rising_bubble"            .or. &
+           test_case      == "planar_moist_density_current"            .or. &
+           test_case      == "planar_moist_baroclinic_instab"            .or. &
+           test_case      == "planar_tropical_cyclone"             .or. &
+           test_case      == "planar_supercell"             .or. &
            test_case(1:4) == "asp_")  then
          write(iulog,*) "reading vertical namelist..."
 
@@ -638,9 +668,12 @@ module namelist_mod
     call MPI_bcast(COORD_TRANSFORM_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
+    call MPI_bcast(geometry,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(ne_x,              1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(ne_y,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(qsize,           1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(sub_case,        1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
@@ -716,6 +749,7 @@ module namelist_mod
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
 #endif
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(planar_slice ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
@@ -799,7 +833,7 @@ module namelist_mod
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
     if (hypervis_subcycle==-1) then
-       if (np==4) then
+       if (np==4 .and. topology == "cube") then
           ! 1.25d23 worked out by testing, for nv==4
           ! a little confusing:
           ! u,v:  nu and hypervis_subcycle
@@ -809,7 +843,7 @@ module namelist_mod
           hypervis_subcycle_q = ceiling( tstep/dt_max )
           hypervis_subcycle   = ceiling( tstep/dt_max )
        else
-          call abortmp('hypervis_subcycle auto determine only supported for nv==4')
+          call abortmp('hypervis_subcycle auto determine only supported for nv==4 and topology==cube')
        endif
     endif
 #endif
@@ -826,17 +860,25 @@ module namelist_mod
     if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
 #endif
 
+if (topology == "plane" .and. mesh_file /= "none") then
+  call abortmp("RRM grids not yet supported for plane")
+end if
 
-    if (ne /=0) then
+if (topology == "plane" .and. transport_alg /= 0) then
+  call abortmp("SL advection not yet supported for plane")
+end if
+
+
+    if (ne /=0 .or. ne_x /=0 .or. ne_y /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
       write (*,*) "namelist_mod: mesh_file:",trim(mesh_file), &
-                  " and ne:",ne," are both sepcified in the input file."
+                  " and ne/ne_x/ne_y:",ne,ne_x,ne_y," are both specified in the input file."
       write (*,*) "Specify one or the other, but not both."
-      call abortmp("Do not specify ne if using a mesh file input.")
+      call abortmp("Do not specify ne (or ne_x, ne_y) if using a mesh file input.")
     end if
     end if
     if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
-    if (ne.eq.0) then
+    if (ne.eq.0 .and. ne_x .eq. 0 .and. ne_y .eq. 0) then
 #ifndef HOMME_WITHOUT_PIOLIBRARY
        call set_mesh_dimensions()
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
@@ -853,8 +895,94 @@ module namelist_mod
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
     endif
-    if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
+    if (ne.eq.0 .and. ne_x .eq. 0 .and. ne_y .eq. 0) cubed_sphere_map=2  ! must use element_local for var-res grids
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
+
+! set geometric factors
+! Ideally this stuff moves into a separate sub routine
+! Along with all the other things that are test case specific (rearth/Omega scaling for small-earth experiments, etc.)
+    if (geometry == "plane") then
+      scale_factor = 1.0D0
+      scale_factor_inv = 1.0D0
+      laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
+    if (test_case == "planar_dbl_vrtx") then
+      Lx = 5000.0D0 * 1000.0D0
+      Ly = 5000.0D0 * 1000.0D0
+      Sx = 0.0D0
+      Sy = 0.0D0
+    else if (test_case == "planar_hydro_gravity_wave") then
+       Lx = 6000.0D0 * 1000.0D0
+       Ly = 6000.0D0 * 1000.0D0
+       Sx = -3000.0D0 * 1000.0D0
+       Sy = -3000.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_gravity_wave") then
+       Lx = 300.0D0 * 1000.0D0
+       Ly = 300.0D0 * 1000.0D0
+       Sx = -150.0D0 * 1000.0D0
+       Sy = -150.0D0 * 1000.0D0
+    else if (test_case == "planar_hydro_mtn_wave") then
+       Lx = 240.0D0 * 1000.0D0
+       Ly = 240.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_mtn_wave") then
+       Lx = 144.0D0 * 1000.0D0
+       Ly = 144.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_schar_mtn_wave") then
+       Lx = 100.0D0 * 1000.0D0
+       Ly = 100.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_density_current" .OR. test_case == "planar_moist_density_current") then
+       Lx = 51.2D0 * 1000.0D0
+       Ly = 51.2D0 * 1000.0D0
+       Sx = -25.6D0 * 1000.0D0
+       Sy = -25.6D0 * 1000.0D0
+    else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
+       Lx = 1.0D0 * 1000.0D0
+       Ly = 1.0D0 * 1000.0D0
+       Sx = 0.0D0
+       Sy = 0.0D0
+! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
+!else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_tropical_cyclone") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_supercell") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+    end if
+
+! makes the y-direction cells identical in size to the x-dir cells
+! this is important for hyperviscosity, etc.
+! Also adjusts Sy so y-dir domain is centered at 0
+    if (planar_slice .eqv. .true.) then
+    Ly = (Lx / ne_x) * ne_y
+    Sy = -Ly/2.0D0
+    end if
+
+    domain_size = Lx * Ly
+    dx = Lx/ne_x
+    dy = Ly/ne_y
+    dx_ref = 1.0D0/ne_x
+    dy_ref = 1.0D0/ne_y
+
+  else if (geometry == "sphere") then
+      scale_factor = rearth
+      scale_factor_inv = rrearth
+      domain_size = 4.0D0*DD_PI
+      laplacian_rigid_factor = rrearth
+    end if
 
 !logic around different hyperviscosity options
     if (hypervis_power /= 0) then
@@ -867,6 +995,9 @@ module namelist_mod
       endif
     endif
 
+    if (topology == "plane" .and. .not. (hypervis_power == 0 .and. hypervis_scaling > 0)) then
+      call abortmp("Error: planar grids require the use of tensor HV")
+    end if
 
     ftype = se_ftype
 
@@ -913,6 +1044,7 @@ module namelist_mod
     call set_interp_parameter('gridtype',interp_gridtype)
     call set_interp_parameter("itype",interp_type)
     if(any(interpolate_analysis)) then
+! FIX: THIS MUST CHANGE FOR PLANAR INTERPOLATION, SINCE WE DONT HAVE NE ANYMORE...
        if (interp_nlon==0 .or. interp_nlat==0) then
           ! compute interpolation grid based on number of points around equator
           call set_interp_parameter('auto',4*ne*(np-1))
@@ -956,6 +1088,7 @@ module namelist_mod
        write(iulog,*)"done reading namelist..."
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
+       write(iulog,*)"readnl: geometry      = ",TRIM( geometry )
 #ifndef CAM
        write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
        write(iulog,*)"readnl: omega         = ",omega
@@ -971,7 +1104,11 @@ module namelist_mod
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
 #endif
 
-       write(iulog,*)"readnl: ne,np         = ",NE,np
+if (topology == "cube") then
+       write(iulog,*)"readnl: ne,np         = ",ne,np
+else if (topology == "plane") then
+  write(iulog,*)"readnl: ne_x,ne_y,np         = ",ne_x,ne_y,np
+end if
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
        write(iulog,*)"readnl: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
        write(iulog,*)"readnl: Z2_MAP_METHOD    = ",Z2_MAP_METHOD

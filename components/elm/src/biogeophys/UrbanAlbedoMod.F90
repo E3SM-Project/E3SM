@@ -11,9 +11,9 @@ module UrbanAlbedoMod
   use shr_sys_mod       , only : shr_sys_flush 
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use clm_varpar        , only : numrad
-  use clm_varcon        , only : isecspday, degpsec, namel
-  use clm_varctl        , only : iulog
+  use elm_varpar        , only : numrad
+  use elm_varcon        , only : isecspday, degpsec, namel
+  use elm_varctl        , only : iulog
   use abortutils        , only : endrun  
   use UrbanParamsType   , only : urbanparams_type
   use WaterstateType    , only : waterstate_type
@@ -56,7 +56,7 @@ contains
     !
     ! !USES:
     use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz
-    use clm_varcon    , only : sb
+    use elm_varcon    , only : sb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
     !
@@ -553,7 +553,7 @@ contains
     ! and all solar zenith angles from 1 to 90 deg by 1
     !
     ! !USES:
-    use clm_varcon, only : rpi
+    use elm_varcon, only : rpi
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                      
@@ -630,8 +630,8 @@ contains
           if (coszen(l) > 0._r8) then
              if (abs(err1(l)) > 0.001_r8) then
                 write (iulog,*) 'urban direct beam solar radiation balance error',err1(l)
-                write (iulog,*) 'clm model is stopping'
-                call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                write (iulog,*) 'elm model is stopping'
+                call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
              endif
           endif
        end do
@@ -667,13 +667,13 @@ contains
              if (coszen(l) > 0._r8) then
                 if (abs(err2(l)) > 0.0006_r8 ) then
                    write (iulog,*) 'urban road incident direct beam solar radiation error',err2(l)
-                   write (iulog,*) 'clm model is stopping'
-                   call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                   write (iulog,*) 'elm model is stopping'
+                   call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
                 endif
                 if (abs(err3(l)) > 0.0006_r8 ) then
                    write (iulog,*) 'urban wall incident direct beam solar radiation error',err3(l)
-                   write (iulog,*) 'clm model is stopping'
-                   call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                   write (iulog,*) 'elm model is stopping'
+                   call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
                 end if
              end if
           end do
@@ -744,8 +744,8 @@ contains
             l = filter_urbanl(fl)
             if (abs(err(l)) > 0.001_r8) then
                write (iulog,*) 'urban diffuse solar radiation balance error',err(l) 
-               write (iulog,*) 'clm model is stopping'
-               call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+               write (iulog,*) 'elm model is stopping'
+               call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
             endif
          end do
 
@@ -1143,8 +1143,8 @@ contains
                end do
                if (iter_dir >= n) then
                   write (iulog,*) 'urban net solar radiation error: no convergence, direct beam'
-                  write (iulog,*) 'clm model is stopping'
-                  call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                  write (iulog,*) 'elm model is stopping'
+                  call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
                endif
 
                ! reflected diffuse
@@ -1215,8 +1215,8 @@ contains
                end do
                if (iter_dif >= n) then
                   write (iulog,*) 'urban net solar radiation error: no convergence, diffuse'
-                  write (iulog,*) 'clm model is stopping'
-                  call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                  write (iulog,*) 'elm model is stopping'
+                  call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
                endif
 
                ! total reflected by canyon - sum of solar reflection to sky from canyon.
@@ -1261,8 +1261,8 @@ contains
                   write(iulog,*)' sabs_canyon_dif = ',sabs_canyon_dif(l)
                   write(iulog,*)' sref_canyon_dir = ',sref_canyon_dir(l)
                   write(iulog,*)' sref_canyon_dif = ',sref_canyon_dir(l)
-                  write(iulog,*) 'clm model is stopping'
-                  call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+                  write(iulog,*) 'elm model is stopping'
+                  call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
                endif
 
                ! canyon albedo

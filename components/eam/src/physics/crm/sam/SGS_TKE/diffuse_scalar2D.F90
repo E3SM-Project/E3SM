@@ -39,7 +39,7 @@ contains
     call prefetch( dfdt )
 
     !For working around PGI bug where it didn't create enough OpenACC gangs
-    numgangs = ceiling(ncrms*nzm*ny*nx/128.)
+    numgangs = ceiling(ncrms*nzm*ny*nx/128.D0)
     !$acc parallel loop vector_length(128) num_gangs(numgangs) collapse(3) async(asyncid)
     do k = 1 , nzm
       do i = 1 , nx
@@ -103,15 +103,15 @@ contains
           if (k <= nzm-1) then
             kc=k+1
             rhoi = rhow(icrm,kc)/adzw(icrm,kc)
-            rdz2=1./(dz(icrm)*dz(icrm))
-            rdz5=0.5*rdz2 * grdf_z(icrm,k)
+            rdz2=1.D0/(dz(icrm)*dz(icrm))
+            rdz5=0.5D0*rdz2 * grdf_z(icrm,k)
             tkz=rdz5*(tkh(icrm,i,j,k)+tkh(icrm,i,j,kc))
             flx(icrm,i,j,k)=-tkz*(field(icrm,i,j,kc)-field(icrm,i,j,k))*rhoi
             !$acc atomic update
             flux(icrm,kc) = flux(icrm,kc) + flx(icrm,i,j,k)
           elseif (k == nzm) then
-            tmp=1./adzw(icrm,nz)
-            rdz=1./dz(icrm)
+            tmp=1.D0/adzw(icrm,nz)
+            rdz=1.D0/dz(icrm)
             flx(icrm,i,j,0)=fluxb(icrm,i,j)*rdz*rhow(icrm,1)
             flx(icrm,i,j,nzm)=fluxt(icrm,i,j)*rdz*tmp*rhow(icrm,nz)
             !$acc atomic update
@@ -126,7 +126,7 @@ contains
       do i=1,nx
         do icrm = 1 , ncrms
           kb=k-1
-          rhoi = 1./(adz(icrm,k)*rho(icrm,k))
+          rhoi = 1.D0/(adz(icrm,k)*rho(icrm,k))
           dfdt(icrm,i,j,k)=dtn*(dfdt(icrm,i,j,k)-(flx(icrm,i,j,k)-flx(icrm,i,j,kb))*rhoi)
           field(icrm,i,j,k)=field(icrm,i,j,k) + dfdt(icrm,i,j,k)
         enddo

@@ -4,7 +4,11 @@
 extern "C" void setparm() {
   doprecip  = true;
   dosgs     = true;
+#ifdef MMF_MOMENTUM_FEEDBACK
+  dosurface = false;
+#else
   dosurface = true;
+#endif
   dodamping = true;
   dt        = crm_dt;
   dx        = crm_dx;
@@ -33,12 +37,6 @@ extern "C" void setparm() {
   //Instead of writing function I just inline what sgs_setparm does
   dosmagor = true;
   advect_sgs = !dosmagor;
-
-  if (dosmoke) {
-    epsv=0.0;
-  } else {
-    epsv=0.61;
-  }
 
   if (navgmom_x < 0 || navgmom_y < 0) {
     nstatmom        = 1;

@@ -1,1 +1,1 @@
-./xmlchange CLM_BLDNML_OPTS='-drydep -no-megan' -append
+./xmlchange ELM_BLDNML_OPTS='-drydep -no-megan' -append

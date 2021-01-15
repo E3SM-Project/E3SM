@@ -1,0 +1,7 @@
+./xmlchange LND_DOMAIN_FILE=domain.lnd.1x1pt-brazil_navy.090715.nc
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.1x1pt-brazil_navy.090715.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange DATM_CLMNCEP_YR_END=1948
+./xmlchange NTASKS=1
+

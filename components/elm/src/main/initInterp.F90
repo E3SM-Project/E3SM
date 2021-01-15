@@ -10,12 +10,12 @@ module initInterpMod
   use shr_sys_mod    , only: shr_sys_flush
   use shr_infnan_mod , only: shr_infnan_isnan
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varctl     , only: iulog
+  use elm_varctl     , only: iulog
   use abortutils     , only: endrun
   use spmdMod        , only: masterproc
   use restUtilMod    , only: iflag_interp, iflag_copy, iflag_skip
   use restUtilMod    , only: iflag_noswitchdim, iflag_switchdim
-  use clm_varcon     , only: spval, re
+  use elm_varcon     , only: spval, re
   use ncdio_pio
   use pio
 
@@ -130,7 +130,7 @@ contains
     !--------------------------------------------------------------------
 
     if (masterproc) then
-       write (iulog,*) '**** Mapping clm initial data from input ',trim(filei),&
+       write (iulog,*) '**** Mapping elm initial data from input ',trim(filei),&
             '  to output ',trim(fileo),' ****'
     end if
 

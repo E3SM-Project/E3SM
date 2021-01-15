@@ -1,3 +1,0 @@
-&clm_inparm
-fsurdat = "$DIN_LOC_ROOT/lnd/clm2/PTCLMmydatafiles/1x1pt_US-UMB/surfdata_1x1pt_US-UMB_simyr2000_clm4_5_c131122.nc"
-/

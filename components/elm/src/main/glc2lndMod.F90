@@ -18,8 +18,8 @@ module glc2lndMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : maxpatch_glcmec
-  use clm_varctl     , only : iulog, glc_smb
+  use elm_varpar     , only : maxpatch_glcmec
+  use elm_varctl     , only : iulog, glc_smb
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp
   use TopounitType   , only : top_pp
@@ -125,7 +125,7 @@ contains
     !
     ! !USES:
     use histFileMod, only : hist_addfld1d
-    use clm_varcon , only : spval
+    use elm_varcon , only : spval
     !
     ! !ARGUMENTS:
     class(glc2lnd_type) :: this
@@ -230,7 +230,7 @@ contains
     ! glc_do_dynglacier is true
     !
     ! !USES:
-    use clm_varctl , only : glc_do_dynglacier
+    use elm_varctl , only : glc_do_dynglacier
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(inout) :: this
@@ -265,7 +265,7 @@ contains
     !
     ! !USES:
     use domainMod , only : ldomain
-    use clm_varcon, only : nameg
+    use elm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -288,7 +288,7 @@ contains
           write(iulog,*) 'You can fix this problem by adding more grid cells'
           write(iulog,*) 'to the mask defined by the fglcmask file.'
           write(iulog,*) '(Change grid cells to 1 everywhere that CISM can operate.)'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -301,7 +301,7 @@ contains
     ! Do a sanity check on the icemask_coupled_fluxes field received from CISM via coupler.
     !
     ! !USES:
-    use clm_varcon, only : nameg
+    use elm_varcon, only : nameg
     !
     ! !ARGUMENTS:
     class(glc2lnd_type), intent(in) :: this
@@ -322,7 +322,7 @@ contains
 
        if (this%icemask_coupled_fluxes_grc(g) > 0._r8 .and. this%icemask_grc(g) == 0._r8) then
           write(iulog,*) subname//' ERROR: icemask_coupled_fluxes must be a subset of icemask.'
-          call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+          call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -375,7 +375,7 @@ contains
     ! The weights updated here are some col_pp%wtlunit and lun_pp%wtgcell values
     !
     ! !USES:
-    use clm_varcon        , only : ispval
+    use elm_varcon        , only : ispval
     use landunit_varcon   , only : istice_mec
     use column_varcon     , only : col_itype_to_icemec_class
     use subgridWeightsMod , only : set_landunit_weight

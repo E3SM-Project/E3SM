@@ -3,6 +3,11 @@
 #endif
 module prim_driver_mod
 
+<<<<<<< HEAD
+=======
+  use prim_driver_base,     only: deriv1, smooth_topo_datasets
+  use prim_cxx_driver_base, only: prim_init1, prim_finalize
+>>>>>>> upstream/master
   use kinds,                only : real_kind
   use dimensions_mod,       only : qsize, nelemd, np, qsize
   use element_mod,          only : element_t
@@ -28,7 +33,10 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
     !
     ! Inputs
     !
@@ -38,8 +46,40 @@ contains
     type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
     integer,            intent(in)            :: nets     ! starting thread element number (private)
     integer,            intent(in)            :: nete     ! ending thread element number   (private)
+
+    ! Call the base version of prim_init2
+    call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
+
+    ! Init the c data structures
+    call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
+
+    !Init the kokkos functors (and their boundary exchanges)
+    call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
+  end subroutine prim_init2
+
+  subroutine prim_create_c_data_structures (tl, hvcoord, mp)
+    use iso_c_binding, only : c_loc, c_ptr, c_bool, C_NULL_CHAR
+    use theta_f2c_mod, only : init_reference_element_c, init_simulation_params_c, &
+                              init_time_level_c, init_hvcoord_c, init_elements_c
+    use time_mod,      only : TimeLevel_t
+    use hybvcoord_mod, only : hvcoord_t
+    use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
+                              nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
+                              hypervis_order, hypervis_subcycle, hypervis_scaling,    &
+                              ftype, prescribed_wind, moisture, disable_diagnostics,  &
+                              use_cpstar, transport_alg, theta_hydrostatic_mode,      &
+                              dcmip16_mu, theta_advect_form, test_case, MAX_STRING_LEN
     !
-    ! Locals
+    ! Input(s)
+    !
+    type (TimeLevel_t),       intent(in) :: tl
+    type (hvcoord_t), target, intent(in) :: hvcoord
+    real (kind=real_kind),    intent(in) :: mp(np,np)
+    !
+    ! Local(s)
     !
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
@@ -78,7 +118,10 @@ contains
     integer :: ie
     logical (kind=c_bool) :: use_semi_lagrange_transport
     real (kind=real_kind), target :: dvv (np,np), elem_mp(np,np)
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     character(len=MAX_STRING_LEN), target :: test_name
 
@@ -225,7 +268,9 @@ contains
     call init_elements_states_c (elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr)
+  end subroutine prim_init_state_views
 
+<<<<<<< HEAD
   end subroutine prim_init_state_views
 
   subroutine prim_init_ref_states_views (elem)
@@ -242,6 +287,22 @@ contains
     !
     type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
 
+=======
+  subroutine prim_init_ref_states_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use element_state, onlY : elem_theta_ref, elem_dp_ref, elem_phi_ref
+    use theta_f2c_mod, only : init_reference_states_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
+
+>>>>>>> upstream/master
     elem_theta_ref_ptr = c_loc(elem_theta_ref)
     elem_dp_ref_ptr    = c_loc(elem_dp_ref)
     elem_phi_ref_ptr   = c_loc(elem_phi_ref)
@@ -281,6 +342,7 @@ contains
   subroutine prim_init_elements_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
+<<<<<<< HEAD
     use element_state, onlY : elem_accum_iener, elem_accum_kener, elem_accum_pener, &
                               elem_accum_q1mass, elem_accum_qmass, elem_accum_qvar, &
                               elem_state_dp3d, elem_state_phinh_i, elem_state_ps_v, &
@@ -289,10 +351,13 @@ contains
                               elem_theta_ref, elem_dp_ref, elem_phi_ref
     use theta_f2c_mod, only : init_geopotential_c, init_elements_states_c, &
                               init_reference_states_c, init_diagnostics_c
+=======
+>>>>>>> upstream/master
     !
     ! Input(s)
     !
     type (element_t), intent(in) :: elem (:)
+<<<<<<< HEAD
     !
     ! Local(s)
     !
@@ -308,6 +373,8 @@ contains
     type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
 
     integer :: ie
+=======
+>>>>>>> upstream/master
 
     ! Initialize the grid-related views in C++
     call prim_init_grid_views (elem)
@@ -354,10 +421,16 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
+<<<<<<< HEAD
 #if !defined(SCREAM)
     use theta_f2c_mod,  only : push_forcing_to_c
 #endif
 
+=======
+#ifndef SCREAM
+    use theta_f2c_mod,  only : push_forcing_to_c
+#endif
+>>>>>>> upstream/master
     !
     ! Inputs
     !
@@ -395,7 +468,11 @@ contains
       compute_diagnostics = .false.
     endif
 
+<<<<<<< HEAD
 #if !defined(SCREAM)
+=======
+#ifndef SCREAM
+>>>>>>> upstream/master
     ! Scream already computes all forcing using the same pointers
     ! stored in Hommexx, so the forcing is already up to date
     call t_startf('push_to_cxx')

@@ -68,7 +68,7 @@ OPTIONS
      -nofire                Turn off wildfires for BGC setting of CN 
                             (default includes fire for CN)
      -noio                  Turn history output completely off (typically for testing).
-     -phys <name>           Value of clm4_0, clm4_5, or clm5_0 (default is clm4_0)   
+     -phys <name>           Value of elm
      -silent [or -s]        Turns on silent mode - only fatal messages issued.
      -sitespf_pt <name>     Setup for the given site specific single-point resolution.
      -snicar_frc <name>     Turn on SNICAR radiative forcing calculation. [on | off] 
@@ -119,7 +119,7 @@ my $commandline = "$cfgdir/configure @ARGV";
 # Parse command-line options.
 my %opts = (
 	    cache       => "config_cache.xml",
-            phys        => "clm4_0",
+            phys        => "elm",
             nofire      => undef,
             noio        => undef,
             clm_root    => undef,
@@ -191,15 +191,14 @@ EOF
 my @dirs = (  $cfgdir, "$perl5lib", $casecfgdir);
 unshift @INC, @dirs;
 require Build::Config;
-require config_files::clm_phys_vers;
 
 # Get the physics version
-my $phys = config_files::clm_phys_vers->new($opts{'phys'});
+my $phys = "elm";
 
 # Check for the physics specific configuration definition file.
-my $phys_string = $phys->as_filename();
+#my $phys_string = $phys->as_filename();
 
-my $config_def_file = "config_definition_$phys_string.xml";
+my $config_def_file = "config_definition.xml";
 (-f "$cfgdir/config_files/$config_def_file")  or  die <<"EOF";
 ** Cannot find configuration definition file \"$config_def_file\" in directory 
     \"$cfgdir/config_files\" **
@@ -211,11 +210,6 @@ my $config_defaults_file;
 my $std_config_defaults_file = "$cfgdir/config_files/config_defaults.xml";
 if    ($opts{'defaults'})           {
     $config_defaults_file = $opts{'defaults'};
-} elsif (defined($opts{'sitespf_pt'}) and $phys->as_long() == $phys->as_long( "clm4_0" ) ) {
-    $config_defaults_file = "$cfgdir/config_files/config_defaults_$opts{'sitespf_pt'}.xml";
-    if ( ! -f $config_defaults_file ) {
-       $config_defaults_file = "$std_config_defaults_file";
-    }
 } else {
     $config_defaults_file = "$std_config_defaults_file";
 }
@@ -315,7 +309,7 @@ if ($print>=2) { print "The configuration cache file will be created in $config_
 # physics
 
 $cfg_ref->set('phys', $opts{'phys'});
-my $phys_string = $phys->as_string();
+my $phys_string = "elm";
 if ($print>=2) { 
    if( defined($opts{'phys'}) ) { 
       print "Using version $phys_string physics.$eol"; 
@@ -325,81 +319,22 @@ if ($print>=2) {
 #-----------------------------------------------------------------------------------------------
 # supported single point configurations
 my $sitespf_pt = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if( defined($opts{'sitespf_pt'}) ) {
-    $cfg_ref->set('sitespf_pt', $opts{'sitespf_pt'});
-  }
-  $sitespf_pt = $cfg_ref->get('sitespf_pt');
-  if ($print>=2) { 
-    if( defined($opts{'sitespf_pt'}) ) { 
-      print "Using $sitespf_pt for supported single point configuration.$eol"; 
-    }
-  }
-}
 
 #-----------------------------------------------------------------------------------------------
 # NOIO option
 my $noio = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'noio'}) {
-    $cfg_ref->set('noio', "on" );
-  }
-  $noio = $cfg_ref->get('noio');
-  if ($print>=2) { 
-    if ( $noio eq "on") { print "ALL history output is turned OFF.$eol";       }
-  }
-}
+
 #-----------------------------------------------------------------------------------------------
 # BGC option
 my $bgc_mode = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'bgc'}) {
-    $cfg_ref->set('bgc', $opts{'bgc'});
-  }
-  $bgc_mode = $cfg_ref->get('bgc');
-  if ($print>=2) { print "Using $bgc_mode for bgc.$eol"; }
-  if ( $bgc_mode eq "casa" ) {
-    print "Warning:: bgc=casa is NOT validated / scientifically supported.$eol";
-  }
-}
 
 # NOFIRE option -- currently only in bgc=CN
 my $nofire = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'nofire'}) {
-    $cfg_ref->set('nofire', "on" );
-  }
-  $nofire = $cfg_ref->get('nofire');
-  if ( ($nofire eq "on") && ($bgc_mode ne "cn") ) {
-    die <<"EOF";
-** Cannot turn nofire mode on -- without cn for bgc mode** 
-EOF
-  }
-  if ($print>=2 && $bgc_mode =~ /^cn/ ) { 
-    if ( $nofire eq "off") { print "Wildfires are active as normal.$eol"; }
-    else                   { print "Wildfires are turned off.$eol";       }
-  }
-}
 
 #-----------------------------------------------------------------------------------------------
 # SPINUP option for BGC/CN mode only
 my $spinup = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'spinup'}) {
-    $cfg_ref->set('spinup', $opts{'spinup'});
-  }
-  $spinup = $cfg_ref->get('spinup');
-  if ( ($spinup ne "normal" ) && ($bgc_mode ne "cn") ) {
-    die <<"EOF";
-** Cannot turn spinup mode on -- without cn for bgc mode** 
-** 
-** Set the bgc mode by the following means from highest to lowest precedence:
-** * by the command-line option -bgc cn
-** * by a default configuration file, specified by -defaults 
-EOF
-  }
-  if ($print>=2) { print "Using $spinup for spinup for cn mode.$eol"; }
-} else {
+{
   if ($opts{'spinup'} ne "normal") {
     die <<"EOF";
 ** Spinup mode can only be controlled with configure for CLM 4.0.
@@ -421,74 +356,16 @@ if ($print>=2) { print "Using $comp_intf for comp_intf.$eol"; }
 # CROP option
 my $crpmode = undef;
 my $crop = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'crop'}) {
-    $cfg_ref->set('crop', $opts{'crop'});
-  }
-  $crpmode = "nocrop";
-  $crop = $cfg_ref->get('crop');
-  if ( $crop eq "on" ) {
-    $crpmode = "crop";
-  }
-  if ( ($crop eq "on" ) && ($bgc_mode ne "cn") && ($bgc_mode ne "cndv") ) {
-    die <<"EOF";
-** Cannot turn crop mode on -- without some form of cn for bgc mode** 
-** 
-** Set the bgc mode by the following means from highest to lowest precedence:
-** * by the command-line options -bgc cn
-** * by a default configuration file, specified by -defaults 
-EOF
-  }
-}
 
 #-----------------------------------------------------------------------------------------------
 # MAXPFT option
 
 my %maxpatchpft;
 my $maxpft = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  $maxpatchpft{'crop'}   = 21;
-  $maxpatchpft{'nocrop'} = 17;
 
-  $cfg_ref->set('maxpft', $maxpatchpft{$crpmode} );
-  $maxpft = $cfg_ref->get('maxpft');
-  if ( (($bgc_mode eq "cn") || ($bgc_mode eq "cndv")) && ($maxpft != $maxpatchpft{$crpmode}) ) {
-    die <<"EOF";
-** For CN or CNDV BGC mode you MUST set max patch PFT's to $maxpatchpft{$crpmode}
-** 
-** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}
-** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:
-** * by the command-line options -bgc, -crop and -maxpft
-** * by a default configuration file, specified by -defaults 
-**
-EOF
-  }
-  if ( $maxpft > $maxpatchpft{$crpmode} ) {
-    die <<"EOF";
-** Max patch PFT's can NOT exceed $maxpatchpft{$crpmode}
-** 
-** Set maxpft by the following means from highest to lowest precedence:
-** * by the command-line options -maxpft
-** * by a default configuration file, specified by -defaults 
-**
-EOF
-  }
-  if ( $maxpft != $maxpatchpft{$crpmode} ) {
-    print "Warning:: running with maxpft NOT equal to $maxpatchpft{$crpmode} is " .
-      "NOT validated / scientifically supported.$eol";
-  }
-  if ($print>=2) { print "Using $maxpft for maxpft.$eol"; }
-}
 #-----------------------------------------------------------------------------------------------
 # SNICAR_FRC option
 my $snicar_frc = undef;
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  if (defined $opts{'snicar_frc'}) {
-    $cfg_ref->set('snicar_frc', $opts{'snicar_frc'});
-  }
-  $snicar_frc = $cfg_ref->get('snicar_frc');
-  if ($print>=2) { print "Using $snicar_frc for snicar_frc.$eol"; }
-}
 
 #-----------------------------------------------------------------------------------------------
 # Makefile configuration #######################################################################
@@ -518,52 +395,13 @@ if ($usr_cppdefs and $print>=2) { print "Default and user CPP definitions: \'$us
 # determined by the configuration parameters that have been set above.  They will be appended to
 # the CPP definitions that were explicitly set in the defaults file or by the user on the commandline.
 my $cfg_cppdefs = '';
-if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-  $cfg_cppdefs .= " -DMAXPATCH_PFT=$maxpft";
-
-  if ($bgc_mode eq 'cn') { 
-    $cfg_cppdefs .= " -DCN";
-  }
-  if ($crop eq 'on') { 
-    $cfg_cppdefs .= " -DCROP";
-  }
-  if ($bgc_mode eq 'cndv') { 
-    $cfg_cppdefs .= " -DCNDV -DCN";
-  }
-  if ($nofire eq 'on') {
-    $cfg_cppdefs .= " -DNOFIRE";
-  }
-  if ($noio eq 'on') {
-    $cfg_cppdefs .= " -D_NOIO";
-  }
-  if ($spinup eq 'AD') { 
-    $cfg_cppdefs .= " -DAD_SPINUP";
-  } elsif ($spinup eq 'exit') { 
-    $cfg_cppdefs .= " -DEXIT_SPINUP";
-  }
-  if ( $snicar_frc eq 'on' ) {
-    $cfg_cppdefs .= " -DSNICAR_FRC";
-  }
-} elsif ($phys->as_long() >= $phys->as_long("clm4_5") ) {
-  # clm4_5 cppdefs -- SHOULD NOT BE ANY!
-  if ( $cfg_cppdefs ne '' ) {
-    die <<"EOF";
-** CPP definitions should be empty for clm5_0 and is NOT **
-EOF
-  }
-} elsif ($phys->as_long() == $phys->as_long("clm5_0") ) {
-  # clm5_0 cppdefs -- SHOULD NOT BE ANY!
-  if ( $cfg_cppdefs ne '' ) {
-    die <<"EOF";
-** CPP definitions should be empty for clm5_0 and is NOT **
-EOF
-  }
-} else {
-  # this should NOT happen
+# elm cppdefs -- SHOULD NOT BE ANY!
+if ( $cfg_cppdefs ne '' ) {
   die <<"EOF";
-** Bad CLM physics version **
+** CPP definitions should be empty for clm5_0 and is NOT **
 EOF
 }
+
 # CPP defines to put on Makefile
 my $make_cppdefs = "$usr_cppdefs $cfg_cppdefs";
 
@@ -574,7 +412,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for clm's cppdefs in cesm
+my $cpp_filename     = 'CIME_cppdefs';         # name of output file for clm's cppdefs in cesm
 
 # Write the filepath file for cesm.
 write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>0 );
@@ -624,21 +462,6 @@ sub write_filepath_cesmbld
          print $fh "../SourceMods/src.elm\n";
     }
 
-    if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-	# source root
-	my $srcdir = "$clm_root/src_clm40";
-	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
-
-	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem" );
-	foreach my $dir ( @dirs ) {
-	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
-		print $fh "$srcdir/$dir\n";
-	    } else {
-		die "** source directory does not exist: $srcdir/$dir\n";
-	    }
-	}
-    } else {
 	# source root
 	my $srcdir = "$clm_root/src";
 	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
@@ -670,20 +493,20 @@ sub write_filepath_cesmbld
 		     "external_models/emi/src/emi_data_definition",
 		     "external_models/emi/src/emi_data_exchange",
 		     "external_models/emi/src/emi_data_types",
-                     "external_models/sbetr/src/betr/betr_core",
-                     "external_models/sbetr/src/betr/betr_dtype",
-                     "external_models/sbetr/src/betr/betr_bgc",
-                     "external_models/sbetr/src/betr/betr_grid",
-                     "external_models/sbetr/src/betr/betr_para",
-                     "external_models/sbetr/src/betr/betr_main",
-                     "external_models/sbetr/src/betr/betr_math",
-                     "external_models/sbetr/src/betr/betr_rxns",
-                     "external_models/sbetr/src/betr/betr_util",
-                     "external_models/sbetr/src/driver/shared",
-                     "external_models/sbetr/src/driver/alm",
-                     "external_models/sbetr/src/Applications/app_util",
-                     "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
-                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
+         "external_models/sbetr/src/betr/betr_core",
+         "external_models/sbetr/src/betr/betr_dtype",
+         "external_models/sbetr/src/betr/betr_bgc",
+         "external_models/sbetr/src/betr/betr_grid",
+         "external_models/sbetr/src/betr/betr_para",
+         "external_models/sbetr/src/betr/betr_main",
+         "external_models/sbetr/src/betr/betr_math",
+         "external_models/sbetr/src/betr/betr_rxns",
+         "external_models/sbetr/src/betr/betr_util",
+         "external_models/sbetr/src/driver/shared",
+         "external_models/sbetr/src/driver/alm",
+         "external_models/sbetr/src/Applications/app_util",
+         "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
+         "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
 		     "utils", 
 		     "cpl" );
 
@@ -693,9 +516,7 @@ sub write_filepath_cesmbld
 	    } else {
 		die "** source directory does not exist: $srcdir/$dir\n";
 	    }
-	}
-    }
-
+	  }
 
     $fh->close;
 }

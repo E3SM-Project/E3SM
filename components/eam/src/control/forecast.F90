@@ -519,6 +519,7 @@ end if
 !
 
    do k=1,plev
+<<<<<<< HEAD
      ! If IOP mode, do not consider physics temperature tendency
      !   since that will be redundant.  In pure SCM mode, that section 
      !   of dycore is not called and thus needs to be added here.   
@@ -536,6 +537,14 @@ end if
          + ztodt*(divt(k))     
      else
        tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+=======
+     tfcst(k) = tfcst(k) &
+#ifndef MODEL_THETA_L
+         ! this term is already taken into account through
+         !  LS vertical advection in theta-l dycore
+         + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+#endif
+>>>>>>> upstream/master
          + ztodt*(t2(k) + divt(k))
      endif
 #endif

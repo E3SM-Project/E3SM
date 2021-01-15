@@ -47,14 +47,11 @@ unit_testers --- Directory of scripts to test scipts in this directory
                  (most notably build-namelist and possibly configure)
 
 ---------- XML Files describing namelists in namelist_files
-namelist_files/namelist_defaults_clm4_0.xml ------- List of default values for the clm4_0 namelist
-namelist_files/namelist_defaults_clm4_0_tools.xml - List of default values for the clm4_0 tools.
-namelist_files/namelist_defaults_clm4_5.xml ------- List of default values for the clm4_5 namelist
+namelist_files/namelist_defaults.xml ------- List of default values for the clm4_5 namelist
 namelist_files/namelist_defaults_clm4_5_tools.xml - List of default values for the clm4_5 tools.
 namelist_files/namelist_defaults_overall.xml ------ List of default values for overall settings
 namelist_files/namelist_defaults_usr_files.xml ---- List of default values for the user-files
-namelist_files/namelist_definition_clm4_0.xml ----- Definition of all namelist items for clm4_0
-namelist_files/namelist_definition_clm4_5.xml ----- Definition of all namelist items for clm4_5
+namelist_files/namelist_definition.xml ----- Definition of all namelist items for clm4_5
 namelist_files/namelist_definition.xsl ------------ Describes how to view the xml file as html
 namelist_files/namelist_defaults_drydep.xml ------- List of default values for the dry deposition module.
 namelist_files/use_cases -------------------------- Specific configurations that build-namelist uses

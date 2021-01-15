@@ -29,10 +29,7 @@
   <entry id="CAM_TARGET">
     <type>char</type>
     <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
-    <default_value>preqx</default_value>
-    <values>
-       <value compset="_EAM%SCREAM">theta-l</value>
-    </values>
+    <default_value>theta-l</default_value>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
     <desc>EAM-SE cmake target (only used with EAM_DYCORE == 'se')</desc>
@@ -122,8 +119,10 @@
       <value compset="_EAM%MMF[12]-MAML"      >-use_MAML </value>
       <value compset="_EAM%MMF[12X]"          >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_EAM%MMF[12]-MAML"      >-crm_nx 64 -crm_nx_rad 64 -crm_ny 1 -crm_ny_rad 1 </value>
-      <value compset="_EAM%MMF[12X]-AQUA"     >-aquaplanet </value>
-      <value compset="_EAM%MMF[12X]-RCE"      >-aquaplanet -rce </value>
+      <value compset="_EAM%MMF[12]-AQUA"      >-aquaplanet </value>
+      <value compset="_EAM%MMF[12]-RCE"       >-aquaplanet -rce </value>
+      <value compset="_EAM%MMFXX-AQUA"        >-aquaplanet </value>
+      <value compset="_EAM%MMFXX-RCE"         >-aquaplanet -rce </value>
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
@@ -260,9 +259,12 @@
       <value compset="2000_EAM%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
       <value compset="2000_EAM%MMF[1X]" >2000_cam5_av1c-04p2-MMF-1mom</value>
       <value compset="2000_EAM%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
-      <value compset="_EAM%MMF[12X]-RCE" >RCEMIP_EAMv1</value>
-      <value compset="_EAM%MMF[1X]-AQUA" >aquaplanet_MMF-1mom</value>
+      <value compset="_EAM%MMF[12]-RCE" >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMFXX-RCE"   >RCEMIP_EAMv1</value>
+      <value compset="_EAM%MMF1-AQUA"   >aquaplanet_MMF-1mom</value>
+      <value compset="_EAM%MMFXX-AQUA"  >aquaplanet_MMF-1mom</value>
     </values>
+
     <group>run_component_cam</group>
     <file>env_run.xml</file>
     <desc>EAM namelist use_case.  Provides the use_case option for the

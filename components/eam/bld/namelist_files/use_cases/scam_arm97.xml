@@ -15,6 +15,9 @@
 <scm_iop_srf_prop                                 scam="1"  >   .true.   </scm_iop_srf_prop>
 <nhtfrq                                           scam="1"  >   1        </nhtfrq>
 <single_column                                    scam="1"  >  .true.    </single_column>
+<se_tstep                             dyn_target="theta-l"  >   1800     </se_tstep>
+<dt_remap_factor                      dyn_target="theta-l"  >   1        </dt_remap_factor>
+<dt_tracer_factor                     dyn_target="theta-l"  >   1        </dt_tracer_factor>
 
 <!-- sim_year used for CLM datasets -->
 <sim_year>2000</sim_year>

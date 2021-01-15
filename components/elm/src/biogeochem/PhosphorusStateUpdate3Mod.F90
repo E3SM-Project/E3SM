@@ -8,11 +8,11 @@ module PhosphorusStateUpdate3Mod
   ! !USES:
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
+  use elm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
   use clm_time_manager    , only : get_step_size
-  use clm_varctl          , only : iulog, use_nitrif_denitrif
-  use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use clm_varctl          , only : use_erosion, ero_ccycle
+  use elm_varctl          , only : iulog, use_nitrif_denitrif
+  use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use PhosphorusStateType , only : phosphorusstate_type
@@ -20,9 +20,9 @@ module PhosphorusStateUpdate3Mod
   use soilorder_varcon    , only : smax,ks_sorption
   use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
-  use clm_varctl          , only : nu_com
-  use clm_varctl          , only : ECA_Pconst_RGspin
+  use elm_varctl          , only : use_pflotran, pf_cmode
+  use elm_varctl          , only : nu_com
+  use elm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp 
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf

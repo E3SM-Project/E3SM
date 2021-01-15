@@ -7,10 +7,10 @@ module SurfaceRadiationMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use clm_varctl        , only : use_snicar_frc, use_fates
+  use elm_varctl        , only : use_snicar_frc, use_fates
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
-  use clm_varcon        , only : namec
+  use elm_varcon        , only : namec
   use atm2lndType       , only : atm2lnd_type
   use WaterstateType    , only : waterstate_type
   use CanopyStateType   , only : canopystate_type
@@ -143,7 +143,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-    use clm_varcon    , only : spval
+    use elm_varcon    , only : spval
     use histFileMod   , only : hist_addfld1d, hist_addfld2d
     !
     ! !ARGUMENTS:
@@ -323,10 +323,10 @@ contains
      ! Output variables are parsun,parsha,sabv,sabg,fsa,fsr,ndvi
      !
      ! !USES:
-     use clm_varpar       , only : numrad, nlevsno
-     use clm_varcon       , only : spval, degpsec, isecspday
+     use elm_varpar       , only : numrad, nlevsno
+     use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop 
-     use clm_varctl       , only : subgridflag, use_snicar_frc, iulog
+     use elm_varctl       , only : subgridflag, use_snicar_frc, iulog
      use clm_time_manager , only : get_curr_date, get_step_size
      use SnowSnicarMod    , only : DO_SNO_OC
      use abortutils       , only : endrun
@@ -679,7 +679,7 @@ contains
              write(iulog,*)"flx_absin2  = ",sum(flx_absin(c,:))*tri(p,2)
              write(iulog,*)"albgrd_nir  = ",albgrd(c,2)
              write(iulog,*)"coszen      = ",coszen(c)
-             call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+             call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           endif
 
           ! Diagnostic: shortwave penetrating ground (e.g. top layer)

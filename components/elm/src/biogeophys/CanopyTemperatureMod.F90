@@ -16,9 +16,9 @@ module CanopyTemperatureMod
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
   use abortutils           , only : endrun
-  use clm_varctl           , only : iulog, use_fates
+  use elm_varctl           , only : iulog, use_fates
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation 
-  use CLMFatesInterfaceMod , only : hlm_fates_interface_type
+  use ELMFatesInterfaceMod , only : hlm_fates_interface_type
   use SurfaceResistanceMod , only : calc_soilevap_stress
   use VegetationPropertiesType, only : veg_vp
   use atm2lndType          , only : atm2lnd_type
@@ -76,11 +76,11 @@ contains
     !
     ! !USES:
     use QSatMod            , only : QSat
-    use clm_varcon         , only : denh2o, denice, roverg, hvap, hsub, zlnd, zsno, tfrz, spval 
+    use elm_varcon         , only : denh2o, denice, roverg, hvap, hsub, zlnd, zsno, tfrz, spval 
     use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon      , only : icol_road_imperv, icol_road_perv
     use landunit_varcon    , only : istice, istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
-    use clm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
+    use elm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    

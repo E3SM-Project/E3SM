@@ -47,10 +47,10 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
-    use clm_varpar          , only : nlevlak
-    use clm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
-    use clm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use clm_varctl          , only : use_lch4
+    use elm_varpar          , only : nlevlak
+    use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
+    use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
+    use elm_varctl          , only : use_lch4
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
@@ -473,7 +473,7 @@ contains
                   ! That probably slightly overestimates the dimensionless fetch as u* is often smaller than 0.1 u
                   cur = cur0 + curm* exp( max( -(fetch(c)*grav/ur(p)/ur(p))**(1._r8/3._r8)/fcrit, &   ! Fetch-limited
                        -(lakedepth(c)*grav/ur(p)/ur(p))**0.5_r8 ) )           ! depth-limited
-                  ! In this case fcrit is 22, not 100 in clm_varcon
+                  ! In this case fcrit is 22, not 100 in elm_varcon
                else
                   ! Fetch relationship from Vickers & Mahrt 1997
                   cur = cur0 + curm* exp( max( -(fetch(c)*grav/ustar(p)/ustar(p))**(1._r8/3._r8)/fcrit, &   ! Fetch-limited

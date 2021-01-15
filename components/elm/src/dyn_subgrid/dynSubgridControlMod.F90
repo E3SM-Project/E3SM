@@ -14,7 +14,7 @@ module dynSubgridControlMod
 #include "shr_assert.h"
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use abortutils         , only : endrun
-  use clm_varctl         , only : fname_len
+  use elm_varctl         , only : fname_len
   !
   implicit none
   private
@@ -100,8 +100,8 @@ contains
     !
     ! !USES:
     use fileutils      , only : getavu, relavu
-    use clm_nlUtilsMod , only : find_nlgroup_name
-    use clm_varctl     , only : iulog
+    use elm_nlUtilsMod , only : find_nlgroup_name
+    use elm_varctl     , only : iulog
     use spmdMod        , only : masterproc, mpicom
     use shr_mpi_mod    , only : shr_mpi_bcast
     !
@@ -186,7 +186,7 @@ contains
     ! Check consistency of namelist settingsn
     !
     ! !USES:
-    use clm_varctl     , only : iulog, use_fates, use_cn, use_crop
+    use elm_varctl     , only : iulog, use_fates, use_cn, use_crop
     !
     ! !ARGUMENTS:
     !
@@ -221,10 +221,6 @@ contains
     end if
 
     if (dyn_subgrid_control_inst%do_transient_crops) then
-       if (.not. use_crop) then
-          write(iulog,*) 'ERROR: do_transient_crops can only be true if use_crop is true'
-          call endrun(msg=errMsg(sourcefile, __LINE__))
-       end if
        if (use_fates) then
           ! NOTE(wjs, 2017-01-13) ED / FATES does not currently have a mechanism for
           ! changing its column areas, with the consequent changes in aboveground biomass

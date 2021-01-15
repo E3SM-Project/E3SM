@@ -2,6 +2,7 @@
 MACRO(THETAL_KOKKOS_SETUP)
 
   SET (KOKKOS_TARGET TRUE)
+<<<<<<< HEAD
 
   SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
   SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
@@ -21,6 +22,29 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${UTILS_TIMING_SRC_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${HOMME_BINARY_DIR}/src/share/cxx)
+=======
+
+  SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
+  SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
+  SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
+  SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
+  SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
+  SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
+  SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
+
+  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+
+  # Make INCLUDE_DIRS global so the tests can access it
+  SET (EXEC_LIB_INCLUDE_DIRS
+    ${TARGET_DIR}/cxx
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+  )
+
+>>>>>>> upstream/master
   SET (EXEC_INCLUDE_DIRS
     ${EXEC_LIB_INCLUDE_DIRS}
     ${PIO_INCLUDE_DIRS}
@@ -97,6 +121,12 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/viscosity_base.F90
     ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
+<<<<<<< HEAD
+=======
+    ${SRC_SHARE_DIR}/planar_mod.F90
+    ${SRC_SHARE_DIR}/geometry_mod.F90
+    ${SRC_SHARE_DIR}/planar_mesh_mod.F90
+>>>>>>> upstream/master
   )
 
   SET(TEST_SRC_F90
@@ -114,6 +144,11 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip2016-terminator.F90
     ${TEST_SRC_DIR}/dcmip2016-tropical-cyclone.F90
     ${TEST_SRC_DIR}/held_suarez_mod.F90
+<<<<<<< HEAD
+=======
+    ${TEST_SRC_DIR}/dry_planar.F90
+    ${TEST_SRC_DIR}/moist_planar.F90
+>>>>>>> upstream/master
     ${TEST_SRC_DIR}/mtests.F90
   )
 
@@ -121,7 +156,11 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TARGET_F90}
     ${SRC_SHARE_F90}
     ${TEST_SRC_F90}
+<<<<<<< HEAD
     ${SRC_DIR}/checksum_mod.F90
+=======
+    ${SRC_DIR}/checksum_mod.F90 
+>>>>>>> upstream/master
     ${SRC_DIR}/common_io_mod.F90
     ${SRC_DIR}/common_movie_mod.F90
     ${SRC_DIR}/interpolate_driver_mod.F90
@@ -135,11 +174,19 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_DIR}/surfaces_mod.F90
     ${SRC_DIR}/test_mod.F90
     ${UTILS_SHARE_DIR}/shr_kind_mod.F90
+<<<<<<< HEAD
     ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
     ${UTILS_SHARE_DIR}/shr_sys_mod.F90
     ${UTILS_SHARE_DIR}/shr_file_mod.F90
     ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
     ${UTILS_SHARE_DIR}/shr_const_mod.F90
+=======
+    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
+    ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
+    ${UTILS_SHARE_DIR}/shr_file_mod.F90 
+    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
+    ${UTILS_SHARE_DIR}/shr_const_mod.F90 
+>>>>>>> upstream/master
     ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   )
 
@@ -181,6 +228,7 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(THETAL_DEPS_F90
     ${THETAL_DEPS_F90}
     ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+<<<<<<< HEAD
     )
   SET(THETAL_DEPS_CXX
     ${THETAL_DEPS_CXX}
@@ -243,6 +291,70 @@ MACRO(THETAL_KOKKOS_SETUP)
     SET (QSIZE_D ${PREQX_QSIZE_D})
   ENDIF ()
 
+=======
+  )
+  SET(THETAL_DEPS_CXX
+    ${THETAL_DEPS_CXX}
+    ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+  )
+
+  IF (HOMME_USE_ARKODE)
+    SET(THETAL_DEPS_F90
+      ${THETAL_DEPS_F90}
+      ${ARKODE_DIR}/theta-l/arkode_interface.F90
+      ${ARKODE_DIR}/theta-l/arkode_mod.F90
+      ${ARKODE_DIR}/theta-l/homme_nvector.F90
+    )
+
+    SET(THETAL_DEPS_C
+      ${ARKODE_DIR}/nvector_external.h
+      ${ARKODE_DIR}/nvector_external.c
+      ${ARKODE_DIR}/column_linsol.h
+      ${ARKODE_DIR}/column_linsol.c
+    )
+  ENDIF ()
+
+  # If the user specified a file for custom compiler options use those
+  IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
+    setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
+  ENDIF ()
+
+  # We pulled prim_main off the deps cause it would create a main function
+  # clash when building the unit test (a main in prim_main.F90 and one in tester.cpp)
+  SET(THETAL_DEPS
+    ${TARGET_F90}
+    ${THETAL_DEPS_F90}
+    ${THETAL_DEPS_C}
+    ${THETAL_DEPS_CXX}
+  )
+
+  SET(EXEC_SOURCES ${THETAL_DEPS} ${SRC_DIR}/prim_main.F90)
+
+  # Set up defaults
+  IF (NOT PREQX_NP)
+    SET (PREQX_NP 4) 
+  ENDIF ()
+  IF (NOT PREQX_PLEV)
+    SET (PREQX_PLEV 20) 
+  ENDIF ()
+  IF (NOT PREQX_USE_PIO)
+    SET (PREQX_USE_PIO FALSE) 
+  ENDIF ()
+  IF (NOT PREQX_USE_ENERGY)
+    SET (PREQX_USE_ENERGY FALSE) 
+  ENDIF ()
+  IF (NOT PREQX_NC)
+    SET (PREQX_NC 0)
+  ENDIF ()
+  IF (NOT QSIZE_D)
+    SET (QSIZE_D 4)
+  ENDIF ()
+  # for some of matt's old scripts which use preqx_qsize_d
+  IF (PREQX_QSIZE_D)      
+    SET (QSIZE_D ${PREQX_QSIZE_D})
+  ENDIF ()
+
+>>>>>>> upstream/master
   SET(USE_OPENACC FALSE)
 
 ENDMACRO(THETAL_KOKKOS_SETUP)
@@ -255,5 +367,12 @@ IF (HOMME_BUILD_EXECS)
   # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
   ############################################################################
   createTestExec(theta-l_kokkos theta-l_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
+ENDIF ()
+
+IF (HOMME_BUILD_LIBS)
+  THETAL_KOKKOS_SETUP()
+
+  createExecLib(theta-l_kokkos_lib theta-l_kokkos "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
+      ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
 ENDIF ()
 

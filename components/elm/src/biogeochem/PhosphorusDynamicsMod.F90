@@ -11,12 +11,12 @@ module PhosphorusDynamicsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : dzsoi_decomp, zisoi
+  use elm_varcon          , only : dzsoi_decomp, zisoi
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type  
-  use clm_varpar          , only : nlevdecomp
-  use clm_varctl          , only : use_vertsoilc
+  use elm_varpar          , only : nlevdecomp
+  use elm_varctl          , only : use_vertsoilc
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use CNNitrogenStateType , only : nitrogenstate_type 
@@ -30,7 +30,7 @@ module PhosphorusDynamicsMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -93,7 +93,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon, only: r_weather
     !
     ! !ARGUMENTS:
@@ -160,7 +160,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_adsorp
     !
     ! !ARGUMENTS:
@@ -229,7 +229,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_desorp
     !
     ! !ARGUMENTS:
@@ -298,7 +298,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use soilorder_varcon , only : r_occlude
     !
     ! !ARGUMENTS:
@@ -370,7 +370,7 @@ contains
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevsoi
+    use elm_varpar       , only : nlevsoi
     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
@@ -489,11 +489,11 @@ contains
     ! as a function of solution P and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevsoi
-    use clm_varpar       , only : ndecomp_pools
+    use elm_varpar       , only : nlevsoi
+    use elm_varpar       , only : ndecomp_pools
     use clm_time_manager , only : get_step_size
     use soilorder_varcon , only:k_s1_biochem,k_s2_biochem,k_s3_biochem,k_s4_biochem
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
 
     !
     ! !ARGUMENTS:
@@ -603,7 +603,7 @@ contains
     !
     ! !USES:
     use pftvarcon              , only : noveg
-    use clm_varpar             , only : ndecomp_pools
+    use elm_varpar             , only : ndecomp_pools
     use clm_time_manager       , only : get_step_size
     use CNDecompCascadeConType , only : decomp_cascade_con
  

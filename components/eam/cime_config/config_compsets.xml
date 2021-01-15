@@ -291,6 +291,16 @@
     <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F2010SC5-CMIP6-MPASSI</alias>
+    <lname>2010S_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FC5AV1C-L-MPASSI</alias>
+    <lname>2000_EAM%AV1C-L_ELM%SPBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- aqua-planet -->
   <!-- *********************************** -->
@@ -453,6 +463,11 @@
   <compset>
     <alias>F-MMF1-AQPFILE</alias>
     <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F-MMFXX-AQP1</alias>
+    <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->

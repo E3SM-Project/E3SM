@@ -11,7 +11,7 @@ module PhenologyFLuxLimitMod
   use VegetationPropertiesType    , only : veg_vp
   use clm_time_manager            , only : get_step_size
   use pftvarcon                   , only : npcropmin
-  use clm_varctl                  , only : iulog
+  use elm_varctl                  , only : iulog
   use abortutils                  , only : endrun
 implicit none
   private
@@ -23,7 +23,7 @@ implicit none
   integer :: s_leafc_storage
   integer :: s_frootc
   integer :: s_frootc_xfer
-  integer :: s_frootc_sotrage
+  integer :: s_frootc_storage
   integer :: s_livestemc
   integer :: s_livestemc_xfer
   integer :: s_livestemc_storage
@@ -89,7 +89,7 @@ implicit none
   integer :: s_leafn_storage
   integer :: s_frootn
   integer :: s_frootn_xfer
-  integer :: s_frootn_sotrage
+  integer :: s_frootn_storage
   integer :: s_livestemn
   integer :: s_livestemn_xfer
   integer :: s_livestemn_storage
@@ -210,7 +210,7 @@ contains
   s_leafc_storage      = ic_next(id)
   s_frootc             = ic_next(id)
   s_frootc_xfer        = ic_next(id)
-  s_frootc_sotrage     = ic_next(id)
+  s_frootc_storage     = ic_next(id)
   s_livestemc          = ic_next(id)
   s_livestemc_xfer     = ic_next(id)
   s_livestemc_storage  = ic_next(id)
@@ -280,7 +280,7 @@ contains
   s_leafn_storage       = ic_next(id)
   s_frootn              = ic_next(id)
   s_frootn_xfer         = ic_next(id)
-  s_frootn_sotrage      = ic_next(id)
+  s_frootn_storage      = ic_next(id)
   s_livestemn           = ic_next(id)
   s_livestemn_xfer      = ic_next(id)
   s_livestemn_storage   = ic_next(id)
@@ -379,7 +379,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_leafc_storage_to_xfer        , s_leafc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootc_to_litter             , s_frootc, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootc_xfer_to_frootc        , s_frootc_xfer, nelms)
-  call spm_list_insert(spm_list, -1._r8, f_frootc_storage_to_xfer       , s_frootc_sotrage, nelms)
+  call spm_list_insert(spm_list, -1._r8, f_frootc_storage_to_xfer       , s_frootc_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_to_deadstemc       , s_livestemc,nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_xfer_to_livestemc  , s_livestemc_xfer, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemc_storage_to_xfer    , s_livestemc_storage, nelms)
@@ -406,7 +406,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc            , s_frootc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootc_xfer_to_frootc      , s_frootc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootc_storage_to_xfer     , s_frootc_xfer, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc_storage    , s_frootc_sotrage, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_cpool_to_frootc_storage    , s_frootc_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_cpool_to_livestemc         , s_livestemc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemc_xfer_to_livestemc, s_livestemc, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemc_storage_to_xfer  , s_livestemc_xfer, nelms)
@@ -457,7 +457,7 @@ contains
   call spm_list_insert(spm_list, -1._r8, f_frootn_to_litter             , s_frootn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootn_to_retransn           , s_frootn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_frootn_xfer_to_frootn        , s_frootn_xfer, nelms)
-  call spm_list_insert(spm_list, -1._r8, f_frootn_storage_to_xfer       , s_frootn_sotrage, nelms)
+  call spm_list_insert(spm_list, -1._r8, f_frootn_storage_to_xfer       , s_frootn_storage, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_litter          , s_livestemn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_retransn        , s_livestemn, nelms)
   call spm_list_insert(spm_list, -1._r8, f_livestemn_to_deadstemn       , s_livestemn, nelms)
@@ -486,7 +486,7 @@ contains
   call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn                , s_frootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootn_xfer_to_frootn          , s_frootn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_frootn_storage_to_xfer         , s_frootn_xfer, nelms)
-  call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn_storage        , s_frootn_sotrage, nelms)
+  call spm_list_insert(spm_list, 1._r8, f_npool_to_frootn_storage        , s_frootn_storage, nelms)
   call spm_list_insert(spm_list, 1._r8, f_npool_to_livestemn             , s_livestemn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_xfer_to_livestemn    , s_livestemn, nelms)
   call spm_list_insert(spm_list, 1._r8, f_livestemn_storage_to_xfer      , s_livestemn_xfer,nelms)
@@ -533,7 +533,7 @@ contains
     use VegetationDataType, only : vegetation_nitrogen_state
     use VegetationDataType, only : vegetation_phosphorus_flux
     use VegetationDataType, only : vegetation_phosphorus_state
-    use clm_varctl          , only : use_c13, use_c14
+    use elm_varctl          , only : use_c13, use_c14
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -629,7 +629,7 @@ contains
     ystates(s_leafc_storage)      = veg_cs%leafc_storage(p)
     ystates(s_frootc)             = veg_cs%frootc(p)
     ystates(s_frootc_xfer)        = veg_cs%frootc_xfer(p)
-    ystates(s_frootc_sotrage)     = veg_cs%frootc_storage(p)
+    ystates(s_frootc_storage)     = veg_cs%frootc_storage(p)
     if (woody(ivt(p)) == 1._r8) then
       ystates(s_livestemc)          = veg_cs%livestemc(p)
       ystates(s_livestemc_xfer)     = veg_cs%livestemc_xfer(p)
@@ -860,10 +860,10 @@ contains
     ystates(s_npool)               = veg_ns%npool(p)
     ystates(s_leafn)               = veg_ns%leafn(p)
     ystates(s_leafn_xfer)          = veg_ns%leafn_xfer(p)
-    ystates(s_leafn_storage)       = veg_nf%npool_to_leafn_storage(p)
+    ystates(s_leafn_storage)       = veg_ns%leafn_storage(p)
     ystates(s_frootn)              = veg_ns%frootn(p)
     ystates(s_frootn_xfer)         = veg_ns%frootn_xfer(p)
-    ystates(s_frootn_sotrage)      = veg_ns%frootn_storage(p)
+    ystates(s_frootn_storage)      = veg_ns%frootn_storage(p)
     if (woody(ivt(p)) == 1.0_r8) then
       ystates(s_livestemn)           = veg_ns%livestemn(p)
       ystates(s_livestemn_xfer)      = veg_ns%livestemn_xfer(p)
@@ -1048,7 +1048,7 @@ contains
     ystates(s_leafn_storage)       = veg_ps%leafp_storage(p)
     ystates(s_frootn)              = veg_ps%frootp(p)
     ystates(s_frootn_xfer)         = veg_ps%frootp_xfer(p)
-    ystates(s_frootn_sotrage)      = veg_pf%ppool_to_frootp_storage(p)
+    ystates(s_frootn_storage)      = veg_ps%frootp_storage(p)
     if (woody(ivt(p)) == 1.0_r8) then
       ystates(s_livestemn)           = veg_ps%livestemp(p)
       ystates(s_livestemn_xfer)      = veg_ps%livestemp_xfer(p)

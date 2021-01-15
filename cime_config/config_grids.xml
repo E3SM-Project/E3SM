@@ -1174,6 +1174,56 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30pg2_oECv3_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_EC30to60E2r2_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+	
+    <model_grid alias="ne30pg2_EC30to60E2r2-1900_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2-1900_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_WC14to60E2r3_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">WC14to60E2r3_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>WC14to60E2r3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_WC14to60E2r3-1900_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">WC14to60E2r3-1900_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>WC14to60E2r3</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg2_r05_oECv3_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
@@ -1853,6 +1903,46 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>ECwISC30to60E1r2</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_oECv3">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_oARRM60to10">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">oARRM60to10</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oARRM60to10</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_EC30to60E2r2">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_WC14to60E2r3">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">WC14to60E2r3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>WC14to60E2r3</mask>
     </model_grid>
 
     <model_grid alias="ne30_r05_oECv3">
@@ -4092,6 +4182,11 @@
     <gridmap lnd_grid="ne30np4" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_ne30np4_to_0.5x0.5rtm_aave_da_110320.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne30np4/map_0.5x0.5_nomask_to_ne30np4_nomask_aave_da_c121019.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne30np4.pg2" rof_grid="r05">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_mono.200220.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_mono.200220.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne60np4" rof_grid="r05">

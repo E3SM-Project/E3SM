@@ -105,6 +105,7 @@ contains
 
     tl = 1
 
+<<<<<<< HEAD
 #ifdef MODEL_THETA_L
     ! not going to wrap each scm call in ifdef for now,
     ! but some calls have to be wrapped
@@ -113,6 +114,8 @@ contains
     endif
 #endif
 
+=======
+>>>>>>> upstream/master
     if(par%dynproc) then
        elem=> dyn_in%elem
     else
@@ -271,8 +274,12 @@ contains
           do i = 1, np
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
+<<<<<<< HEAD
              !no scm in theta-l yet
              if (iop_mode) elem(ie)%derived%FT(i,j,:) = tmp_iop(indx_scm,:)
+=======
+             if (single_column) elem(ie)%derived%FT(i,j,:) = tmp(indx_scm,:,ie_scm)
+>>>>>>> upstream/master
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 

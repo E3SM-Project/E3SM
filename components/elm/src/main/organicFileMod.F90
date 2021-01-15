@@ -11,9 +11,9 @@ module organicFileMod
 !
 ! !USES
   use abortutils   , only : endrun
-  use clm_varctl   , only : iulog
+  use elm_varctl   , only : iulog
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use clm_varcon   , only : grlnd
+  use elm_varcon   , only : grlnd
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -46,7 +46,7 @@ contains
 ! Read the organic matter dataset.
 !
 ! !USES:
-    use clm_varctl  , only : fsurdat, single_column
+    use elm_varctl  , only : fsurdat, single_column
     use fileutils   , only : getfil
     use spmdMod     , only : masterproc
     use domainMod   , only : ldomain

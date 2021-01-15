@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 """
-Namelist creator for E3SM's CLM component
+Namelist creator for E3SM's Land Model component
 """
 
 import os, sys
@@ -26,13 +26,13 @@ def buildnml(case, caseroot, compname):
     srcroot             = case.get_value("SRCROOT")
     compset             = case.get_value("COMPSET")
     ccsm_co2_ppmv       = case.get_value("CCSM_CO2_PPMV")
-    clm_co2_type        = case.get_value("CLM_CO2_TYPE")
-    clm_usrdat_name     = case.get_value("CLM_USRDAT_NAME")
-    clm_config_opts     = case.get_value("CLM_CONFIG_OPTS")
-    clm_namelist_opts   = case.get_value("CLM_NAMELIST_OPTS")
-    clm_bldnml_opts     = case.get_value("CLM_BLDNML_OPTS")
-    clm_nml_use_case    = case.get_value("CLM_NML_USE_CASE")
-    clm_force_coldstart = case.get_value("CLM_FORCE_COLDSTART")
+    elm_co2_type        = case.get_value("ELM_CO2_TYPE")
+    elm_usrdat_name     = case.get_value("ELM_USRDAT_NAME")
+    elm_config_opts     = case.get_value("ELM_CONFIG_OPTS")
+    elm_namelist_opts   = case.get_value("ELM_NAMELIST_OPTS")
+    elm_bldnml_opts     = case.get_value("ELM_BLDNML_OPTS")
+    elm_nml_use_case    = case.get_value("ELM_NML_USE_CASE")
+    elm_force_coldstart = case.get_value("ELM_FORCE_COLDSTART")
     comp_interface      = case.get_value("COMP_INTERFACE")
     comp_glc            = case.get_value("COMP_GLC")
     din_loc_root        = case.get_value("DIN_LOC_ROOT")
@@ -78,22 +78,22 @@ def buildnml(case, caseroot, compname):
         resolution = lnd_grid
         clmusr     = ""
 
-    if mask_grid == "reg" and lnd_grid != "CLM_USRDAT":
+    if mask_grid == "reg" and lnd_grid != "ELM_USRDAT":
         config_opts = "-sitespf_pt {}".format(lnd_grid)
         resolution  = lnd_grid
         clmusr      = ""
 
-    if lnd_grid == "CLM_USRDAT":
+    if lnd_grid == "ELM_USRDAT":
         config_opts = " "
-        resolution = clm_usrdat_name
-        clmusr     = " -clm_usr_name {}".format(clm_usrdat_name)
+        resolution = elm_usrdat_name
+        clmusr     = " -clm_usr_name {}".format(elm_usrdat_name)
 
     if "1PT" in compset:
         config_opts = " -sitespf_pt reg"
 
     # TODO: clm/bld/configure needs to be converted to python
     sysmod = "{}/components/elm/bld/configure".format(srcroot)
-    sysmod += "  {} -comp_intf {} {}".format(config_opts, comp_interface, clm_config_opts)
+    sysmod += "  {} -comp_intf {} {}".format(config_opts, comp_interface, elm_config_opts)
     sysmod += " -usr_src {}/SourceMods/src.elm".format(caseroot)
     run_cmd_no_fail(sysmod, from_dir=elmconf_dir)
 
@@ -104,7 +104,7 @@ def buildnml(case, caseroot, compname):
     startfiletype = "finidat"
     start_type = "default"
     if run_type == "startup":
-        if clm_force_coldstart == "on": start_type = "cold"
+        if elm_force_coldstart == "on": start_type = "cold"
     else:
         if run_type == "hybrid":
             start_type = "startup"
@@ -166,21 +166,25 @@ def buildnml(case, caseroot, compname):
             glc_opts = "-glc_present -glc_smb .{}. ".format(glc_smb)
 
         usecase = " "
-        if clm_nml_use_case != "UNSET": usecase = "-use_case {}".format(clm_nml_use_case)
+        if elm_nml_use_case != "UNSET": usecase = "-use_case {}".format(elm_nml_use_case)
 
         start_ymd = run_startdate.replace("-", "")
         ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
 
         sysmod =  "{}/components/elm/bld/build-namelist -infile {}/Buildconf/elmconf/namelist ".format(srcroot, caseroot)
         sysmod += " -csmdata {} -inputdata {}/Buildconf/elm.input_data_list {}".format(din_loc_root, caseroot, ignore)
-        sysmod += ' -namelist " &elm_inparm  start_ymd={} {} /"'.format(start_ymd, clm_namelist_opts)
+        sysmod += ' -namelist " &elm_inparm  start_ymd={} {} /"'.format(start_ymd, elm_namelist_opts)
         sysmod += " {} {} -res {} {} -clm_start_type {}".format(usecase, glc_opts, resolution, clmusr, start_type)
         sysmod += " -envxml_dir {} -l_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, lnd_domain_path, lnd_domain_file)
-        sysmod += " -glc_nec {} -co2_ppmv {} -co2_type {} ".format(glc_nec, ccsm_co2_ppmv, clm_co2_type)
+        sysmod += " -glc_nec {} -co2_ppmv {} -co2_type {} ".format(glc_nec, ccsm_co2_ppmv, elm_co2_type)
         sysmod += " -ncpl_base_period {} ".format(ncpl_base_period)
-        sysmod += " -config {}/config_cache.xml {}".format(elmconf_dir, clm_bldnml_opts)
+        sysmod += " -config {}/config_cache.xml {}".format(elmconf_dir, elm_bldnml_opts)
         if mask_grid != "reg":
             sysmod += " -mask {}".format(mask_grid)
+
+        # check if the case still attempts to use user_nl_clm, stop proceeding if detected
+        if os.path.exists(os.path.join(caseroot, "user_nl_clm")):
+           sys.exit("\n *** STOP: It appears you are still using user_nl_clm, please change it to user_nl_elm. ***\n")
 
         # TODO: clm/bld/build-namelist needs to be converted to python
         run_cmd_no_fail(sysmod, from_dir=elmconf_dir)

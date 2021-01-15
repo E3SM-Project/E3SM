@@ -59,6 +59,11 @@ public:
                       CF90Ptr& tensorvisc,
                       CF90Ptr& vec_sph2cart, const bool consthv);
 
+<<<<<<< HEAD
+=======
+  void set_phis (const int ie, CF90Ptr& phis);
+
+>>>>>>> upstream/master
 private:
   bool m_consthv;
   int m_num_elems;

@@ -89,7 +89,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     type(crm_rad_type), target,intent(inout) :: crm_rad
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
     type(crm_output_type), target, intent(inout) :: crm_output
-    real(r8), dimension(ncrms,nz), intent(  out) :: crm_clear_rh
+    real(r8), dimension(ncrms,nzm), intent(  out) :: crm_clear_rh
     real(crm_rknd), intent(in) :: latitude0(:)
     real(crm_rknd), intent(in) :: longitude0(:)
     integer       , intent(in) :: igstep
@@ -102,9 +102,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! Local variable declarations
     !-----------------------------------------------------------------------------------------------
 
-    real(r8),       parameter :: umax = 0.5*crm_dx/crm_dt       ! maxumum ampitude of the l.s. wind
+    real(r8),       parameter :: umax = 0.5D0*crm_dx/crm_dt       ! maxumum ampitude of the l.s. wind
     real(r8),       parameter :: wmin = 2.                      ! minimum up/downdraft velocity for stat
-    real(crm_rknd), parameter :: cwp_threshold = 0.001          ! threshold for cloud condensate for shaded fraction calculation
+    real(crm_rknd), parameter :: cwp_threshold = 0.001D0          ! threshold for cloud condensate for shaded fraction calculation
     integer,        parameter :: perturb_seed_scale = 1000      ! scaling value for setperturb() seed value (seed = gcol * perturb_seed_scale)
     real(r8)        :: crm_run_time                             ! length of CRM integration
     real(r8)        :: icrm_run_time                            ! = 1 / crm_run_time
@@ -205,7 +205,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
   allocate( colprecs(ncrms) )
-  allocate( crm_clear_rh_cnt(ncrms,nz) )
+  allocate( crm_clear_rh_cnt(ncrms,nzm) )
 
   call prefetch( t00      )
   call prefetch( tln      )
@@ -292,8 +292,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call setparm()
 
   do icrm = 1 , ncrms
-    fcor(icrm)= 4*pi/86400.*sin(latitude0(icrm)*pi/180.)
-    fcorz(icrm) = sqrt(4.*(2*pi/(3600.*24.))**2-fcor(icrm)**2)
+    fcor(icrm)= 4*pi/86400.D0*sin(latitude0(icrm)*pi/180.D0)
+    fcorz(icrm) = sqrt(4.D0*(2*pi/(3600.D0*24.D0))**2-fcor(icrm)**2)
     fcory(icrm,:) = fcor(icrm)
     fcorzy(icrm,:) = fcorz(icrm)
     do j=1,ny
@@ -303,7 +303,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       end do
     end do
 
-    if(crm_input%ocnfrac(icrm).gt.0.5) then
+    if(crm_input%ocnfrac(icrm).gt.0.5D0) then
        OCEAN(icrm) = .true.
     else
        LAND(icrm) = .true.
@@ -313,17 +313,17 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     do k = 1, nzm
       z(icrm,k) = crm_input%zmid(icrm,plev-k+1) - crm_input%zint(icrm,plev+1)
       zi(icrm,k) = crm_input%zint(icrm,plev-k+2)- crm_input%zint(icrm,plev+1)
-      pres(icrm,k) = crm_input%pmid(icrm,plev-k+1)/100.
-      presi(icrm,k) = crm_input%pint(icrm,plev-k+2)/100.
-      prespot(icrm,k)=(1000./pres(icrm,k))**(rgas/cp)
+      pres(icrm,k) = crm_input%pmid(icrm,plev-k+1)/100.D0
+      presi(icrm,k) = crm_input%pint(icrm,plev-k+2)/100.D0
+      prespot(icrm,k)=(1000.D0/pres(icrm,k))**(rgas/cp)
       bet(icrm,k) = ggr/crm_input%tl(icrm,plev-k+1)
       gamaz(icrm,k)=ggr/cp*z(icrm,k)
     end do ! k
    ! zi(icrm,nz) =  crm_input%zint(plev-nz+2)
     zi(icrm,nz) = crm_input%zint(icrm,plev-nz+2)-crm_input%zint(icrm,plev+1) !+++mhwang, 2012-02-04
-    presi(icrm,nz) = crm_input%pint(icrm, plev-nz+2)/100.
+    presi(icrm,nz) = crm_input%pint(icrm, plev-nz+2)/100.D0
 
-    dz(icrm) = 0.5*(z(icrm,1)+z(icrm,2))
+    dz(icrm) = 0.5D0*(z(icrm,1)+z(icrm,2))
     do k=2,nzm
       adzw(icrm,k) = (z(icrm,k)-z(icrm,k-1))/dz(icrm)
     end do
@@ -344,8 +344,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !2012-02-04 Minghuai Wang (minghuai.wang@pnnl.gov)
       rhow(icrm,k) = (crm_input%pmid(icrm,plev-k+2)-crm_input%pmid(icrm,plev-k+1))/ggr/(adzw(icrm,k)*dz(icrm))
     end do
-    rhow(icrm,1) = 2.*rhow(icrm,2) - rhow(icrm,3)
-    rhow(icrm,nz)= 2.*rhow(icrm,nzm) - rhow(icrm,nzm-1)
+    rhow(icrm,1) = 2.D0*rhow(icrm,2) - rhow(icrm,3)
+    rhow(icrm,nz)= 2.D0*rhow(icrm,nzm) - rhow(icrm,nzm-1)
   enddo
 
   call t_startf('crm_gpu_region')
@@ -430,7 +430,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
   enddo
-
+  
 #ifdef m2005
   do icrm = 1 , ncrms
     do k=1, nzm
@@ -445,7 +445,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         do i=1, nx
           if(cloudliq(icrm,i,j,k).gt.0) then
             if(dopredictNc) then
-              if( micro_field(icrm,i,j,k,incl).eq.0) micro_field(icrm,i,j,k,incl) = 1.0e6*Nc0/rho(icrm,k)
+              if( micro_field(icrm,i,j,k,incl).eq.0) micro_field(icrm,i,j,k,incl) = 1.0D6*Nc0/rho(icrm,k)
             endif
           endif
         enddo
@@ -567,7 +567,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! estimate roughness length assuming logarithmic profile of velocity near the surface:
     ustar(icrm) = sqrt(crm_input%tau00(icrm)/rho(icrm,1))
     z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
-    z0(icrm) = max(real(0.00001,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
+    z0(icrm) = max(real(0.00001D0,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
     crm_output%subcycle_factor(icrm) = 0.
     crm_output%prectend (icrm)=colprec (icrm)
     crm_output%precstend(icrm)=colprecs(icrm)
@@ -625,6 +625,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         crm_output%flux_v    (icrm,k) = 0.
         crm_output%fluxsgs_qt(icrm,k) = 0.
         crm_output%tkez      (icrm,k) = 0.
+        crm_output%tkew      (icrm,k) = 0.
         crm_output%tkesgsz   (icrm,k) = 0.
         crm_output%tkz       (icrm,k) = 0.
         crm_output%flux_qp   (icrm,k) = 0.
@@ -898,10 +899,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                 crm_output%cldtop(icrm,l) = crm_output%cldtop(icrm,l) + 1
                 flag_top(icrm,i,j) = .false.
             endif
-            if(pres(icrm,nz-k).ge.700.) then
+            if(pres(icrm,nz-k).ge.700.D0) then
                 cwpl(icrm,i,j) = cwpl(icrm,i,j)+tmp1
                 cltemp(icrm,i,j) = max(cf3d(icrm,i,j,nz-k), cltemp(icrm,i,j))
-            else if(pres(icrm,nz-k).lt.400.) then
+            else if(pres(icrm,nz-k).lt.400.D0) then
                 cwph(icrm,i,j) = cwph(icrm,i,j)+tmp1
                 chtemp(icrm,i,j) = max(cf3d(icrm,i,j,nz-k), chtemp(icrm,i,j))
             else
@@ -913,29 +914,29 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                  !$acc atomic update
                  crm_output%cld(icrm,l) = crm_output%cld(icrm,l) + cf3d(icrm,i,j,k)
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).gt.2*wmin) then
-                   tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
+                   tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
                    !$acc atomic update
                    crm_output%mcup (icrm,l) = crm_output%mcup (icrm,l) + tmp
-                   tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1.0 - cf3d(icrm,i,j,k))
+                   tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1.0D0 - cf3d(icrm,i,j,k))
                    !$acc atomic update
                    crm_output%mcuup(icrm,l) = crm_output%mcuup(icrm,l) + tmp
                  endif
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).lt.-2*wmin) then
-                   tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
+                   tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * cf3d(icrm,i,j,k)
                    !$acc atomic update
                    crm_output%mcdn (icrm,l) = crm_output%mcdn (icrm,l) + tmp
-                   tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1. - cf3d(icrm,i,j,k))
+                   tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k)) * (1.D0 - cf3d(icrm,i,j,k))
                    !$acc atomic update
                    crm_output%mcudn(icrm,l) = crm_output%mcudn(icrm,l) + tmp
                  endif
             else
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).gt.2*wmin) then
-                   tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
+                   tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
                    !$acc atomic update
                    crm_output%mcuup(icrm,l) = crm_output%mcuup(icrm,l) + tmp
                  endif
                  if(w(icrm,i,j,k+1)+w(icrm,i,j,k).lt.-2*wmin) then
-                    tmp = rho(icrm,k)*0.5*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
+                    tmp = rho(icrm,k)*0.5D0*(w(icrm,i,j,k+1)+w(icrm,i,j,k))
                    !$acc atomic update
                    crm_output%mcudn(icrm,l) = crm_output%mcudn(icrm,l) + tmp
                  endif
@@ -1005,7 +1006,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             if(w(icrm,i,j,k).gt.0.) then
               kx=max(1, k-1)
               qsat = qsatw_crm(tabs(icrm,i,j,kx),pres(icrm,kx))
-              if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.e-5,crm_rknd),0.01*qsat)) then
+              if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.D-5,crm_rknd),0.01D0*qsat)) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
                 !$acc atomic update
                 mui_crm(icrm,l) = mui_crm(icrm,l)+tmp
@@ -1013,11 +1014,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             else if (w(icrm,i,j,k).lt.0.) then
               kx=min(k+1, nzm)
               qsat = qsatw_crm(tabs(icrm,i,j,kx),pres(icrm,kx))
-              if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.e-5,crm_rknd),0.01*qsat)) then
+              if(qcl(icrm,i,j,kx)+qci(icrm,i,j,kx).gt.min(real(1.D-5,crm_rknd),0.01D0*qsat)) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
                 !$acc atomic update
                 mdi_crm(icrm,l) = mdi_crm(icrm,l)+tmp
-              else if(qpl(icrm,i,j,kx)+qpi(icrm,i,j,kx).gt.1.0e-4) then
+              else if(qpl(icrm,i,j,kx)+qpi(icrm,i,j,kx).gt.1.0D-4) then
                 tmp = rhow(icrm,k)*w(icrm,i,j,k)
                 !$acc atomic update
                 mdi_crm(icrm,l) = mdi_crm(icrm,l)+tmp
@@ -1198,20 +1199,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 #endif
 
-#if defined(MMF_MOMENTUM_FEEDBACK)
-  !$acc wait(asyncid)
-  do icrm=1,ncrms
-    ! resolved convective momentum transport (CMT) tendencies
-    crm_output%ultend(icrm,:) = (uln(icrm,:) - crm_input%ul(icrm,:))*icrm_run_time
-    crm_output%vltend(icrm,:) = (vln(icrm,:) - crm_input%vl(icrm,:))*icrm_run_time
-
-    ! don't use tendencies from two top levels
-    crm_output%ultend(icrm,ptop:ptop+1) = 0.
-    crm_output%vltend(icrm,ptop:ptop+1) = 0.
-  enddo
-#endif /* MMF_MOMENTUM_FEEDBACK */
-
-
   !$acc parallel loop collapse(2) async(asyncid)
   do k = ptop , plev
     do icrm = 1 , ncrms
@@ -1231,6 +1218,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qltend (icrm,k) =      (qln  (icrm,k) - crm_input%ql  (icrm,k)) * icrm_run_time
       crm_output%qcltend(icrm,k) =      (qccln(icrm,k) - crm_input%qccl(icrm,k)) * icrm_run_time
       crm_output%qiltend(icrm,k) =      (qiiln(icrm,k) - crm_input%qiil(icrm,k)) * icrm_run_time
+#if defined(MMF_MOMENTUM_FEEDBACK)
+      crm_output%ultend(icrm,k) =       (uln  (icrm,k) - crm_input%ul  (icrm,k)) * icrm_run_time
+      crm_output%vltend(icrm,k) =       (vln  (icrm,k) - crm_input%vl  (icrm,k)) * icrm_run_time
+#endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
   !$acc parallel loop async(asyncid)
@@ -1248,6 +1239,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       crm_output%qltend (icrm,k) = 0.
       crm_output%qcltend(icrm,k) = 0.
       crm_output%qiltend(icrm,k) = 0.
+#if defined(MMF_MOMENTUM_FEEDBACK)
+      crm_output%ultend (icrm,k) = 0.
+      crm_output%vltend (icrm,k) = 0.
+#endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
   enddo
 
@@ -1361,8 +1356,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     do icrm = 1 , ncrms
       crm_output%cld   (icrm,k) = min( 1._r8, crm_output%cld   (icrm,k) * factor_xyt )
       crm_output%cldtop(icrm,k) = min( 1._r8, crm_output%cldtop(icrm,k) * factor_xyt )
-      crm_output%gicewp(icrm,k) = crm_output%gicewp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
-      crm_output%gliqwp(icrm,k) = crm_output%gliqwp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
+      crm_output%gicewp(icrm,k) = crm_output%gicewp(icrm,k)*crm_input%pdel(icrm,k)*1000.D0/ggr * factor_xyt
+      crm_output%gliqwp(icrm,k) = crm_output%gliqwp(icrm,k)*crm_input%pdel(icrm,k)*1000.D0/ggr * factor_xyt
       crm_output%mcup  (icrm,k) = crm_output%mcup (icrm,k) * factor_xyt
       crm_output%mcdn  (icrm,k) = crm_output%mcdn (icrm,k) * factor_xyt
       crm_output%mcuup (icrm,k) = crm_output%mcuup(icrm,k) * factor_xyt
@@ -1438,11 +1433,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
 #ifdef MAML
         ! output CRM precip and snow to pass down individual CLM instances
-        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.      ! mm/s --> m/s
-        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.     ! mm/s --> m/s
+        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.D0      ! mm/s --> m/s
+        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.D0     ! mm/s --> m/s
 #endif
 
-        if(precsfc(icrm,i,j).gt.10./86400.) then
+        if(precsfc(icrm,i,j).gt.10.D0/86400.D0) then
            !$acc atomic update
            crm_output%precc (icrm) = crm_output%precc (icrm) + precsfc(icrm,i,j)
            !$acc atomic update
@@ -1461,17 +1456,17 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   do j = 1 , ny
     do i = 1 , nx
       do icrm = 1 , ncrms
-        crm_output%prec_crm(icrm,i,j) = precsfc(icrm,i,j)/1000.           !mm/s --> m/s
+        crm_output%prec_crm(icrm,i,j) = precsfc(icrm,i,j)/1000.D0           !mm/s --> m/s
       enddo
     enddo
   enddo
 
   !$acc parallel loop async(asyncid)
   do icrm = 1 , ncrms
-    crm_output%precc (icrm) = crm_output%precc (icrm)*factor_xy/1000.
-    crm_output%precl (icrm) = crm_output%precl (icrm)*factor_xy/1000.
-    crm_output%precsc(icrm) = crm_output%precsc(icrm)*factor_xy/1000.
-    crm_output%precsl(icrm) = crm_output%precsl(icrm)*factor_xy/1000.
+    crm_output%precc (icrm) = crm_output%precc (icrm)*factor_xy/1000.D0
+    crm_output%precl (icrm) = crm_output%precl (icrm)*factor_xy/1000.D0
+    crm_output%precsc(icrm) = crm_output%precsc(icrm)*factor_xy/1000.D0
+    crm_output%precsl(icrm) = crm_output%precsl(icrm)*factor_xy/1000.D0
 
     crm_output%cltot(icrm) = crm_output%cltot(icrm) * factor_xyt
     crm_output%clhgh(icrm) = crm_output%clhgh(icrm) * factor_xyt
@@ -1485,10 +1480,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !$acc parallel loop collapse(2) async(asyncid)
   do k=1, plev
     do icrm = 1 , ncrms
-      crm_output%mu_crm(icrm,k)=0.5*(mui_crm(icrm,k)+mui_crm(icrm,k+1))
-      crm_output%md_crm(icrm,k)=0.5*(mdi_crm(icrm,k)+mdi_crm(icrm,k+1))
-      crm_output%mu_crm(icrm,k)=crm_output%mu_crm(icrm,k)*ggr/100.          !kg/m2/s --> mb/s
-      crm_output%md_crm(icrm,k)=crm_output%md_crm(icrm,k)*ggr/100.          !kg/m2/s --> mb/s
+      crm_output%mu_crm(icrm,k)=0.5D0*(mui_crm(icrm,k)+mui_crm(icrm,k+1))
+      crm_output%md_crm(icrm,k)=0.5D0*(mdi_crm(icrm,k)+mdi_crm(icrm,k+1))
+      crm_output%mu_crm(icrm,k)=crm_output%mu_crm(icrm,k)*ggr/100.D0          !kg/m2/s --> mb/s
+      crm_output%md_crm(icrm,k)=crm_output%md_crm(icrm,k)*ggr/100.D0          !kg/m2/s --> mb/s
       crm_output%eu_crm(icrm,k) = 0.
       if(mui_crm(icrm,k)-mui_crm(icrm,k+1).gt.0) then
         crm_output%eu_crm(icrm,k)=(mui_crm(icrm,k)-mui_crm(icrm,k+1))*ggr/crm_input%pdel(icrm,k)    !/s
@@ -1500,7 +1495,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       else
         dd_crm(icrm,k)=-1.*(mdi_crm(icrm,k)-mdi_crm(icrm,k+1))*ggr/crm_input%pdel(icrm,k)   !/s
       endif
-      if(abs(crm_output%mu_crm(icrm,k)).gt.1.0e-15.or.abs(crm_output%md_crm(icrm,k)).gt.1.0e-15) then
+      if(abs(crm_output%mu_crm(icrm,k)).gt.1.0D-15.or.abs(crm_output%md_crm(icrm,k)).gt.1.0D-15) then
         tmp = k
         !$acc atomic update
         crm_output%jt_crm(icrm) = min( tmp , crm_output%jt_crm(icrm) )
@@ -1525,7 +1520,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         do i=1,nx
           u2z = u2z+(u(icrm,i,j,k)-u0(icrm,k))**2
           v2z = v2z+(v(icrm,i,j,k)-v0(icrm,k))**2
-          w2z = w2z+0.5*(w(icrm,i,j,k+1)**2+w(icrm,i,j,k)**2)
+          w2z = w2z+0.5D0*(w(icrm,i,j,k+1)**2+w(icrm,i,j,k)**2)
         enddo
       enddo
       !+++mhwang
@@ -1577,6 +1572,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
       crm_output%tkesgsz   (icrm,l)= rho(icrm,k)*tmp*factor_xy
       crm_output%tkez      (icrm,l)= rho(icrm,k)*0.5*(u2z+v2z*YES3D+w2z)*factor_xy + crm_output%tkesgsz(icrm,l)
+      crm_output%tkew      (icrm,l)= rho(icrm,k)*0.5*w2z*factor_xy
       tmp = 0
       do j = 1 , ny
         do i = 1 , nx
@@ -1584,7 +1580,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
         enddo
       enddo
       crm_output%tkz       (icrm,l) = tmp * factor_xy
-      crm_output%precflux  (icrm,l) = precflux(icrm,k)/1000.       !mm/s  -->m/s
+      crm_output%precflux  (icrm,l) = precflux(icrm,k)/1000.D0       !mm/s  -->m/s
 
       crm_output%qp_fall   (icrm,l) = qpfall(icrm,k)
       crm_output%qp_evp    (icrm,l) = qpevp(icrm,k)
