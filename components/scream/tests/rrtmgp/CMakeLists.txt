@@ -10,10 +10,12 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
 
 # Test atmosphere processes
-CreateUnitTest(rrtmgp_stand_alone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics")
-set_source_files_properties("${SRC}" PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
-target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/../../externals/YAKL)
-target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests)
+if (NOT ${SCREAM_BASELINES_ONLY})
+    CreateUnitTest(rrtmgp_stand_alone "${SRC}" "${NEED_LIBS}" LABELS "rrtmgp;physics")
+    set_source_files_properties("${SRC}" PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+    target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/../../externals/YAKL)
+    target_include_directories(rrtmgp_stand_alone PUBLIC ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests)
+endif()
 
 # Copy yaml input file to run directory
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

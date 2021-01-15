@@ -53,7 +53,7 @@ namespace scream {
          * can be used as-is, but are intended to be wrapped by the SCREAM AD
          * interface to radiation.
          */
-        void rrtmgp_initialize() {
+        void rrtmgp_initialize(int ngas, const std::string gas_names[]) {
 
             /* If we've already initialized, just exit */
             if (initialized) { 
@@ -73,24 +73,18 @@ namespace scream {
              * list of gases that RRTMGP knows about.
              * NOTE: YAKL uses 1-based indexing!!!!
              */
-            int ngas = 8;
-            string1d gas_names("gas_names",ngas);
-            gas_names(1) = std::string("h2o");
-            gas_names(2) = std::string("co2");
-            gas_names(3) = std::string("o3" );
-            gas_names(4) = std::string("n2o");
-            gas_names(5) = std::string("co" );
-            gas_names(6) = std::string("ch4");
-            gas_names(7) = std::string("o2" );
-            gas_names(8) = std::string("n2" );
+            string1d gas_names_1d("gas_names",ngas);
+            for (int igas = 1; igas <= ngas; igas++) {
+                gas_names_1d(igas) = gas_names[igas-1];
+            }
 
             // Initialize GasConcs object but populate with dummy values 
             int ncol = 128;
-            int nlay = 2;
+            int nlay = 42;
             GasConcs gas_concs;
-            gas_concs.init(gas_names,ncol,nlay);
+            gas_concs.init(gas_names_1d,ncol,nlay);
             for (int igas = 1; igas < ngas+1; igas++) {
-                gas_concs.set_vmr(gas_names(igas), 0.0);
+                gas_concs.set_vmr(gas_names_1d(igas), 0.0);
             }
 
             // Load and initialize absorption coefficient data
@@ -149,7 +143,6 @@ namespace scream {
             // Calculate heating rates
         }
 
-
         OpticalProps2str get_cloud_optics_sw(
                 CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, 
                 real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
@@ -157,7 +150,7 @@ namespace scream {
             // Problem sizes
             int ncol = t_lay.dimension[0];
             int nlay = t_lay.dimension[1];
-
+ 
             // Initialize optics
             OpticalProps2str clouds;
             clouds.init(kdist.get_band_lims_wavenumber());

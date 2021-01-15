@@ -74,6 +74,22 @@ namespace scream {
             ekat::Comm            m_rrtmgp_comm;
             ekat::ParameterList   m_rrtmgp_params;
 
+            // Keep track of number of columns and levels
+            int ncol;
+            int nlay;
+
+            // Need to hard-code some dimension sizes for now. 
+            // TODO: find a better way of configuring this
+            const int nswbands = 14;
+            const int nlwbands = 16;
+
+            // These are the gases that we keep track of
+            const int ngas = 8;
+            const std::string gas_names[8] = {
+                "h2o", "co2", "o3", "n2o",
+                "co" , "ch4", "o2", "n2"
+            };
+
         private: 
             void require_unpadded(const Field<const Real>& f);
 

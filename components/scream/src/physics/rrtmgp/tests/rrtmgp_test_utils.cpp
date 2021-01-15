@@ -34,12 +34,9 @@ namespace rrtmgpTest {
 
     void dummy_atmos(
             std::string inputfile, 
-            int ncol, real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, GasConcs &gas_concs, real2d &col_dry, 
+            int ncol, real2d &p_lay, real2d &t_lay,
             real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
-
-        // Read example atmosphere profiles
-        read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
 
         // Setup boundary conditions, solar zenith angle, etc
         // NOTE: this stuff would come from the model in a real run
@@ -96,7 +93,7 @@ namespace rrtmgpTest {
     // Function to read fluxes from input file so we can compare our answers against the reference
     void read_fluxes(
             std::string inputfile, 
-            real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
+            real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
             real2d &lw_flux_up, real2d &lw_flux_dn) {
 
         // Initialize netcdf reader
@@ -106,18 +103,61 @@ namespace rrtmgpTest {
         // Initialize arrays to hold fluxes
         int nlev = io.getDimSize("lev");
         int ncol = io.getDimSize("col_flx");
-        sw_flux_up = real2d("sw_flux_up", ncol, nlev);
-        sw_flux_dn = real2d("sw_flux_dn", ncol, nlev);
-        sw_flux_dn_dir = real2d("sw_flux_dn_dir", ncol, nlev);
-        lw_flux_up = real2d("lw_flux_up", ncol, nlev);
-        lw_flux_dn = real2d("lw_flux_dn", ncol, nlev);
+        sw_flux_up  = real2d("sw_flux_up" , ncol, nlev);
+        sw_flux_dn  = real2d("sw_flux_dn" , ncol, nlev);
+        sw_flux_dir = real2d("sw_flux_dir", ncol, nlev);
+        lw_flux_up  = real2d("lw_flux_up" , ncol, nlev);
+        lw_flux_dn  = real2d("lw_flux_dn" , ncol, nlev);
 
         // Read data
-        io.read(sw_flux_up, "sw_flux_up_result");
-        io.read(sw_flux_dn, "sw_flux_dn_result");
-        io.read(sw_flux_dn_dir, "sw_flux_dir_result");
-        io.read(lw_flux_up, "lw_flux_up_result");
-        io.read(lw_flux_dn, "lw_flux_dn_result");
+        io.read(sw_flux_up,  "sw_flux_up_result" );
+        io.read(sw_flux_dn,  "sw_flux_dn_result" );
+        io.read(sw_flux_dir, "sw_flux_dir_result");
+        io.read(lw_flux_up,  "lw_flux_up_result" );
+        io.read(lw_flux_dn,  "lw_flux_dn_result" );
+    }
+
+    void write_fluxes(
+            std::string outputfile,
+            real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
+            real2d &lw_flux_up, real2d &lw_flux_dn) {
+
+        yakl::SimpleNetCDF io;
+        io.open(outputfile, yakl::NETCDF_MODE_WRITE);
+        io.write(sw_flux_up , "sw_flux_up_result" , {"col_new","lev"});
+        io.write(sw_flux_dn , "sw_flux_dn_result" , {"col_new","lev"});
+        io.write(sw_flux_dir, "sw_flux_dir_result", {"col_new","lev"});
+        io.write(lw_flux_up , "lw_flux_up_result" , {"col_new","lev"});
+        io.write(lw_flux_dn , "lw_flux_dn_result" , {"col_new","lev"});
+        io.close();
+
+    }
+
+    // TODO: This function should instead take values, not file names,
+    // because for the test we do not want to write to file
+    int compare(std::string file1, std::string file2) {
+        // Read data from baseline and test file
+        real2d sw_flux_up_1;
+        real2d sw_flux_dn_1;
+        real2d sw_flux_dir_1;
+        real2d lw_flux_up_1;
+        real2d lw_flux_dn_1;
+        read_fluxes(file1, sw_flux_up_1, sw_flux_dn_1, sw_flux_dir_1, lw_flux_up_1, lw_flux_dn_1);
+        real2d sw_flux_up_2;
+        real2d sw_flux_dn_2;
+        real2d sw_flux_dir_2;
+        real2d lw_flux_up_2;
+        real2d lw_flux_dn_2;
+        read_fluxes(file2, sw_flux_up_2, sw_flux_dn_2, sw_flux_dir_2, lw_flux_up_2, lw_flux_dn_2);
+
+        // Check values
+        int nerr = 0;
+        if (!rrtmgpTest::all_equals(sw_flux_up_1    , sw_flux_up_2 )) nerr++;
+        if (!rrtmgpTest::all_equals(sw_flux_dn_1    , sw_flux_dn_2 )) nerr++;
+        if (!rrtmgpTest::all_equals(sw_flux_dir_1   , sw_flux_dir_2)) nerr++;
+        if (!rrtmgpTest::all_equals(lw_flux_up_1    , lw_flux_up_2 )) nerr++;
+        if (!rrtmgpTest::all_equals(lw_flux_dn_1    , lw_flux_dn_2 )) nerr++;
+        return nerr;
     }
 
 }  // namespace rrtmgp

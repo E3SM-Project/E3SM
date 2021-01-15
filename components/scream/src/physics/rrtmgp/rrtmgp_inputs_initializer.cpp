@@ -1,6 +1,7 @@
 #include "physics/rrtmgp/rrtmgp_inputs_initializer.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "rrtmgp_test_utils.hpp"
+#include "mo_garand_atmos_io.h"
 #include "YAKL.h"
 
 #include <array>
@@ -57,23 +58,15 @@ namespace scream {
         count += m_fields.count("rel");
         count += m_fields.count("rei");
 
-        // These are actually outputs, but we need to initialize them in the ad
-        count += m_fields.count("sw_flux_up");
-        count += m_fields.count("sw_flux_dn");
-        count += m_fields.count("sw_flux_dn_dir");
-        count += m_fields.count("lw_flux_up");
-        count += m_fields.count("lw_flux_dn");
-  
         if (count==0) {
           return;
         }
   
         EKAT_REQUIRE_MSG(
-            count==18,
+            count==13,
             "Error! RRTMGPInputsInitializer is expected to init\n"
             "       pmid, pint, tmid, tint, col_dry, gas_vmr, sfc_alb_dir, sfc_alb_dif,\n"
             "       mu0, lwp, iwp, rel, rei,\n"
-            "       sw_flux_up, sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn,\n"
             "       but only " + std::to_string(count) + " of those have been found.\n"
             "       Please, check the atmosphere processes you are using,\n"
             "       and make sure they agree on who's initializing each field.\n"
@@ -93,11 +86,6 @@ namespace scream {
         auto d_iwp = m_fields.at("iwp").get_view();
         auto d_rel = m_fields.at("rel").get_view();
         auto d_rei = m_fields.at("rei").get_view();
-        auto d_sw_flux_up = m_fields.at("sw_flux_up").get_view();
-        auto d_sw_flux_dn = m_fields.at("sw_flux_dn").get_view();
-        auto d_sw_flux_dn_dir = m_fields.at("sw_flux_dn_dir").get_view();
-        auto d_lw_flux_up = m_fields.at("lw_flux_up").get_view();
-        auto d_lw_flux_dn = m_fields.at("lw_flux_dn").get_view();
   
         // Copies of fields for the call to the RRTMGP input initializer function, since it redefines the arrays
         real2d p_lay;
@@ -121,11 +109,15 @@ namespace scream {
         // TODO: get this from the input data, or from the yaml file
         int ncol = 128;
 
-        // Read in values from input file
+        // Read in the sample atmosphere
         std::string inputfile = "data/rrtmgp-allsky.nc";
         GasConcs gas_concs;
+        read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, ncol);
+
+        // Setup the rest of the dummy atmosphere fields
+        // Note that this depends on RRTMGP already being initialized
         rrtmgpTest::dummy_atmos(
-            inputfile, ncol, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry,
+            inputfile, ncol, p_lay, t_lay,
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei
         );
@@ -133,7 +125,7 @@ namespace scream {
         // Dimension sizes come from input data
         int ngas = gas_concs.ngas;
         int nlay = gas_concs.nlay;
-        int nswbands = 14;
+        int nswbands = rrtmgp::k_dist_sw.get_nband();
 
         // RRTMGP initialization routine needs YAKL Fortran-style arrays, which
         // we can map from the C-style Kokkos views. Note that this assumes that
@@ -174,13 +166,11 @@ namespace scream {
         // data, but we want to store the data as something easily representable
         // with Kokkos views or yakl arrays.
         // TODO: this needs to be a parallel_for
-        string1d gas_names("gas_names", ngas); 
         for (int igas = 1; igas <= ngas; igas++) {
             for (int icol = 1; icol <= ncol; icol++) {
                 for (int ilay = 1; ilay <= nlay; ilay++) {
                     // TODO: need to store this somewhere instead of just assuming
                     // we know what it is!
-                    gas_names(igas) = gas_concs.gas_name(igas);
                     gas_vmr_ptr(igas,icol,ilay) = gas_concs.concs(icol,ilay,igas);
                 }
             }

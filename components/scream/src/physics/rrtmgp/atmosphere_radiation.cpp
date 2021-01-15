@@ -35,22 +35,17 @@ namespace scream {
         auto COL = FieldTag::Column;
         auto VAR = FieldTag::Variable;
         auto CMP = FieldTag::Component;
-        constexpr int NVL = 42;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
         auto grid = grids_manager->get_grid("Physics");
-        const int ncol = grid->get_num_local_dofs();
-
-        // Need to hard-code some dimension sizes for now. TODO: find a better way of configuring this
-        int nswbands = 14;
-        int nlwbands = 16;
-        int ngas = 8;
+        ncol = grid->get_num_local_dofs();
+        nlay = grid->get_num_vertical_levels();
 
         // Set up dimension layouts
         FieldLayout scalar2d_layout     { {COL   }, {ncol    } };
-        FieldLayout scalar3d_layout_mid { {COL,VL}, {ncol,NVL} };
-        FieldLayout scalar3d_layout_int { {COL,VL}, {ncol,NVL+1} };
+        FieldLayout scalar3d_layout_mid { {COL,VL}, {ncol,nlay} };
+        FieldLayout scalar3d_layout_int { {COL,VL}, {ncol,nlay+1} };
         // Use VAR field tag for gases for now; consider adding a tag?
-        FieldLayout gas_layout          { {VAR,COL,VL}, {ngas,ncol,NVL} };
+        FieldLayout gas_layout          { {VAR,COL,VL}, {ngas,ncol,nlay} };
         FieldLayout scalar2d_swband_layout { {CMP,COL}, {nswbands,ncol} };
 
         // Set required (input) fields here
@@ -59,7 +54,6 @@ namespace scream {
         m_required_fields.emplace("tmid" , scalar3d_layout_mid, K , grid->name());
         m_required_fields.emplace("tint" , scalar3d_layout_int, K , grid->name());
         m_required_fields.emplace("col_dry", scalar3d_layout_mid, kgkg, grid->name());
-        //m_required_fields.emplace("gas_names", gas_names_layout, nondim, grid->name());
         m_required_fields.emplace("gas_vmr", gas_layout, kgkg, grid->name());
         m_required_fields.emplace("sfc_alb_dir", scalar2d_swband_layout, nondim, grid->name());
         m_required_fields.emplace("sfc_alb_dif", scalar2d_swband_layout, nondim, grid->name());
@@ -68,13 +62,6 @@ namespace scream {
         m_required_fields.emplace("iwp", scalar3d_layout_mid, kg/m3, grid->name());
         m_required_fields.emplace("rel", scalar3d_layout_mid, micron, grid->name());
         m_required_fields.emplace("rei", scalar3d_layout_mid, micron, grid->name());
-
-        // Outputs; these needed to be added to both required and computed fields?
-        m_required_fields.emplace("sw_flux_dn", scalar3d_layout_int, Wm2, grid->name());
-        m_required_fields.emplace("sw_flux_up", scalar3d_layout_int, Wm2, grid->name());
-        m_required_fields.emplace("sw_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name());
-        m_required_fields.emplace("lw_flux_up", scalar3d_layout_int, Wm2, grid->name());
-        m_required_fields.emplace("lw_flux_dn", scalar3d_layout_int, Wm2, grid->name());
 
         // Set computed (output) fields
         m_computed_fields.emplace("sw_flux_dn", scalar3d_layout_int, Wm2, grid->name());
@@ -99,8 +86,7 @@ namespace scream {
         //    appears earlier in the atm dag might provide them).
         std::vector<std::string> rrtmgp_inputs = {
             "pmid","pint","tmid","tint","col_dry","gas_vmr","sfc_alb_dir","sfc_alb_dif",
-            "mu0","lwp","iwp","rel","rei",
-            "sw_flux_up", "sw_flux_dn", "sw_flux_dn_dir", "lw_flux_up", "lw_flux_dn"
+            "mu0","lwp","iwp","rel","rei"
         };
         using strvec = std::vector<std::string>;
         const strvec& allowed_to_init = m_rrtmgp_params.get<strvec>("Initializable Inputs",strvec(0));
@@ -132,7 +118,7 @@ namespace scream {
                 "       RRTMGP was requested to init either all or none of the inputs.\n"
             );
         }
-        rrtmgp::rrtmgp_initialize();
+        rrtmgp::rrtmgp_initialize(ngas, gas_names);
     }
 
     void RRTMGPRadiation::run_impl      (const Real dt) {
@@ -161,10 +147,6 @@ namespace scream {
         auto d_lw_flux_dn = m_rrtmgp_fields_out.at("lw_flux_dn").get_view();
  
         // Map to YAKL
-        int ngas =  8;
-        int ncol = 128;
-        int nlay = 42;
-        int nswbands = 14;
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lay  ("p_lay", const_cast<Real*>(d_pmid.data()), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> t_lay  ("t_lay", const_cast<Real*>(d_tmid.data()), ncol, nlay);
         yakl::Array<double,2,memDevice,yakl::styleFortran> p_lev  ("p_lev",const_cast<Real*>(d_pint.data()), ncol, nlay+1);
@@ -185,19 +167,14 @@ namespace scream {
         yakl::Array<double,2,memDevice,yakl::styleFortran> lw_flux_dn("lw_flux_dn", d_lw_flux_dn.data(), ncol, nlay+1);
 
         // Make GasConcs from gas_vmr and gas_names
-        string1d gas_names("gas_names",ngas);
-        gas_names(1) = std::string("h2o");
-        gas_names(2) = std::string("co2");
-        gas_names(3) = std::string("o3" );
-        gas_names(4) = std::string("n2o");
-        gas_names(5) = std::string("co" );
-        gas_names(6) = std::string("ch4");
-        gas_names(7) = std::string("o2" );
-        gas_names(8) = std::string("n2" );
-
-        // Initialize GasConcs object with an "ncol" given from the calling program
+        // TODO: only allocate at initialization and 
+        // just update values here
+        string1d gas_names_1d("gas_names",ngas);
+        for (int igas = 1; igas <= ngas; igas++) {
+            gas_names_1d(igas) = gas_names[igas-1];
+        }
         GasConcs gas_concs;
-        gas_concs.init(gas_names,ncol,nlay);
+        gas_concs.init(gas_names_1d,ncol,nlay);
         real2d tmp2d;
         tmp2d = real2d("tmp", ncol, nlay);
         for (int igas = 1; igas <= ngas; igas++) {
@@ -206,8 +183,8 @@ namespace scream {
                     tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
                 }
             }
-            gas_concs.set_vmr(gas_names(igas), tmp2d);
-        } 
+            gas_concs.set_vmr(gas_names_1d(igas), tmp2d);
+        }
 
         // Run RRTMGP driver
         rrtmgp::rrtmgp_main( 
