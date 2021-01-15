@@ -2890,7 +2890,7 @@ void shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* hos
   Kokkos::resize(Kokkos::WithoutInitializing, qtracers_d,
                  shcol,nlev,ekat::npack<Spack>(num_qtracers+3));
 
-  // Pack our data into structs and ship it off to p3_main.
+  // Pack our data into structs and ship it off to shoc_main.
   SHF::SHOCInput shoc_input{host_dx_d,  host_dy_d,     zt_grid_d, zi_grid_d,
                              pres_d,    presi_d,       pdel_d,    thv_d,
                              w_field_d, wthl_sfc_d,    wqw_sfc_d, uw_sfc_d,
