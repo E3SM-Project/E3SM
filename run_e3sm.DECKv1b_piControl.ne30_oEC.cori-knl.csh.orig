@@ -28,20 +28,21 @@ set compset        = A_WCYCL1850S_CMIP6
 set resolution     = ne30_oECv3_ICG
 set machine        = cori-knl
 set walltime       = 00:30
-setenv project       m1411
+setenv project       acme
 
 ### SOURCE CODE OPTIONS
-set fetch_code     = false                                        # flag to toggle cloning source code
-set e3sm_tag       = origin/danfmartin/glc/bisicles_ngd-maint-1.2 # github tag or hash
-set tag_name       = E3SM_BISICLES_Maint-1.2                      # code sub-directory name
+set fetch_code     = false        # flag to toggle cloning source code
+set e3sm_tag       = maint-1.0   # github tag or hash
+set tag_name       = 20180420    # code sub-directory name
 
 ### CASE_NAME
-set case_name = ${tag_name}
+set case_name = ${tag_name}.${job_name}.ne30_oEC.cori-knl
 
 ### BUILD OPTIONS
 set debug_compile  = false
 set old_executable = false      # build executable is set to 'false', reuse
                                 # existing one otherwise
+
 ### SUBMIT OPTIONS
 set submit_run       = true     # submit experiment after successful build
 set debug_queue      = true     # submit to debug queue?
@@ -56,7 +57,7 @@ set run_refcase = 20171228.beta3rc13_1850.ne30_oECv3_ICG.edison
 set run_refdate = 0331-01-01
 
 ### DIRECTORIES
-set code_root_dir               = ~/Cori/E3SM
+set code_root_dir               = ~/E3SM_code
 set e3sm_simulations_dir        = /global/cscratch1/sd/$USER/E3SM_simulations
 set case_build_dir              = ${e3sm_simulations_dir}/${case_name}/build
 set case_run_dir                = ${e3sm_simulations_dir}/${case_name}/run
@@ -536,7 +537,6 @@ endsw
 umask 022
 
 set cime_dir = ${code_root_dir}/${tag_name}/cime
-echo "--- cime_dir: $cime_dir"
 set create_newcase_exe = $cime_dir/scripts/create_newcase
 if ( -f ${create_newcase_exe} ) then
   set e3sm_exe = e3sm.exe
