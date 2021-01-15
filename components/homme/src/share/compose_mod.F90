@@ -2,6 +2,9 @@ module compose_mod
 
   implicit none
 
+  logical :: compose_h2d = .false., compose_d2h = .false.
+  logical, private :: control_kokkos_init_and_fin = .true.
+
   interface
 
 #ifdef HOMME_ENABLE_COMPOSE
@@ -18,11 +21,11 @@ module compose_mod
      end subroutine cedr_unittest
 
      subroutine cedr_init_impl(comm, cdr_alg, use_sgi, gid_data, rank_data, &
-          ncell, nlclcell, nlev, independent_time_steps, hard_zero, &
+          ncell, nlclcell, nlev, qsize, independent_time_steps, hard_zero, &
           gid_data_sz, rank_data_sz) bind(c)
        use iso_c_binding, only: c_int, c_bool
        integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, &
-            gid_data_sz, rank_data_sz
+            qsize, gid_data_sz, rank_data_sz
        logical(kind=c_bool), value, intent(in) :: use_sgi, independent_time_steps, hard_zero
        integer(kind=c_int), intent(in) :: gid_data(gid_data_sz), rank_data(rank_data_sz)
      end subroutine cedr_init_impl
@@ -48,6 +51,9 @@ module compose_mod
        integer(kind=c_int), value, intent(in) :: sendsz, recvsz
        real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine cedr_set_bufs
+
+     subroutine cedr_set_null_bufs() bind(c)
+     end subroutine cedr_set_null_bufs
 
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
        use iso_c_binding, only: c_int
@@ -109,16 +115,18 @@ module compose_mod
        real(kind=c_double), intent(in) :: Q(np,np,nlev,qsize_d)
      end subroutine cedr_sl_set_Q
 
-     subroutine cedr_sl_set_pointers_end() bind(c)
+     subroutine cedr_sl_set_pointers_end(h2d, d2h) bind(c)
+       use iso_c_binding, only: c_bool
+       logical(kind=c_bool), value, intent(in) :: h2d, d2h
      end subroutine cedr_sl_set_pointers_end
 
-     subroutine cedr_sl_run(minq, maxq, nets, nete) bind(c)
+     subroutine cedr_sl_run_global(minq, maxq, nets, nete) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize
        real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
        real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
        integer(kind=c_int), value, intent(in) :: nets, nete
-     end subroutine cedr_sl_run
+     end subroutine cedr_sl_run_global
 
      subroutine cedr_sl_run_local(minq, maxq, nets, nete, use_ir, limiter_option) bind(c)
        use iso_c_binding, only: c_int, c_double
@@ -155,6 +163,9 @@ module compose_mod
        real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine slmm_set_bufs
 
+     subroutine slmm_set_null_bufs() bind(c)
+     end subroutine slmm_set_null_bufs
+
      subroutine slmm_init_finalize() bind(c)
      end subroutine slmm_init_finalize
 
@@ -165,12 +176,13 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
 
-     subroutine slmm_csl_set_elem_data(ie, metdet, qdp, dp, q, nelem_in_patch) bind(c)
-       use iso_c_binding, only: c_int, c_double
+     subroutine slmm_csl_set_elem_data(ie, metdet, qdp, n0_qdp, dp, q, nelem_in_patch, h2d, d2h) bind(c)
+       use iso_c_binding, only: c_int, c_double, c_bool
        use dimensions_mod, only : nlev, np, qsize
-       real(kind=c_double), intent(in) :: metdet(np,np), qdp(np,np,nlev,qsize), &
+       real(kind=c_double), intent(in) :: metdet(np,np), qdp(np,np,nlev,qsize,2), &
             dp(np,np,nlev), q(np,np,nlev,qsize)
-       integer(kind=c_int), value, intent(in) :: ie, nelem_in_patch
+       integer(kind=c_int), value, intent(in) :: ie, n0_qdp, nelem_in_patch
+       logical(kind=c_bool), value, intent(in) :: h2d, d2h
      end subroutine slmm_csl_set_elem_data
 
      subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info) bind(c)
@@ -204,7 +216,12 @@ module compose_mod
 
 contains
 
-  subroutine compose_init(par, elem, GridVertex)
+  subroutine compose_control_kokkos_init_and_fin(control)
+    logical, intent(in) :: control
+    control_kokkos_init_and_fin = control
+  end subroutine compose_control_kokkos_init_and_fin
+
+  subroutine compose_init(par, elem, GridVertex, init_kokkos)
     use iso_c_binding, only: c_bool
     use parallel_mod, only: parallel_t, abortmp
     use dimensions_mod, only: np, nlev, qsize, qsize_d, nelem, nelemd
@@ -219,6 +236,8 @@ contains
     type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
     type (GridVertex_t), intent(in), target :: GridVertex(:)
+    logical, optional, intent(in) :: init_kokkos
+
     integer, allocatable :: &
          nbr_id_rank(:), nirptr(:), & ! (GID, rank) in local mesh patch, starting with own
          ! These are for non-scalable grid initialization, still used for RRM.
@@ -230,17 +249,22 @@ contains
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
     integer, target :: null_target(1)
+    logical :: call_init_kokkos
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
-    call kokkos_init()
+
+    call_init_kokkos = .true.
+    if (present(init_kokkos)) call_init_kokkos = init_kokkos
+    if (control_kokkos_init_and_fin .and. call_init_kokkos) call kokkos_init()
 
     use_sgi = sgi_is_initialized()
     hard_zero = .true.
 
     independent_time_steps = dt_remap_factor < dt_tracer_factor
 
-    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
+    if (.true. .or. &
+         semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
          semi_lagrange_cdr_alg == 21) then
        if (use_sgi) then
           call sgi_get_rank2sfc(rank2sfc)
@@ -265,18 +289,18 @@ contains
        ! These lines fix ifort -check catches. The data are not used,
        ! but the function call cedr_init_impl makes -check think they
        ! are used.
-       allocate(owned_ids(1))
+       allocate(owned_ids(1), sc2gci(1), sc2rank(1))
        rank2sfc => null_target
     end if
     if (use_sgi) then
        if (.not. allocated(owned_ids)) allocate(owned_ids(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, &
+            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, qsize, &
             independent_time_steps, hard_zero, size(owned_ids), size(rank2sfc))
     else
        if (.not. allocated(sc2gci)) allocate(sc2gci(1), sc2rank(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, &
+            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, qsize, &
             independent_time_steps, hard_zero, size(sc2gci), size(sc2rank))
     end if
     if (allocated(sc2gci)) deallocate(sc2gci, sc2rank)
@@ -325,11 +349,18 @@ contains
 #endif
   end subroutine compose_init
 
-  subroutine compose_finalize()
+  subroutine compose_finalize(finalize_kokkos)
+    logical, optional, intent(in) :: finalize_kokkos
+
+    logical :: call_finalize_kokkos
+
 #ifdef HOMME_ENABLE_COMPOSE
     call cedr_finalize()
     call slmm_finalize()
-    call kokkos_finalize()
+
+    call_finalize_kokkos = .true.
+    if (present(finalize_kokkos)) call_finalize_kokkos = finalize_kokkos
+    if (control_kokkos_init_and_fin .and. call_finalize_kokkos) call kokkos_finalize()
 #endif
   end subroutine compose_finalize
   
@@ -343,9 +374,6 @@ contains
     call cedr_query_bufsz(ssz, rsz)
     sendsz = max(sendsz, ssz)
     recvsz = max(recvsz, rsz)
-#else
-    sendsz = 0
-    recvsz = 0
 #endif
   end subroutine compose_query_bufsz
 
@@ -361,6 +389,15 @@ contains
     call cedr_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
 #endif
   end subroutine compose_set_bufs
+
+  subroutine compose_set_null_bufs()
+    use kinds, only: real_kind
+
+#ifdef HOMME_ENABLE_COMPOSE
+    call slmm_set_null_bufs()
+    call cedr_set_null_bufs()
+#endif
+  end subroutine compose_set_null_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
     use iso_c_binding, only: c_int, c_double

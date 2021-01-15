@@ -86,6 +86,7 @@ struct PpmMirrored : public PpmBoundaryConditions {
   KOKKOS_INLINE_FUNCTION
   static void fill_cell_means_gs(
       KernelVariables &kv,
+      const ExecViewUnmanaged<Real[_ppm_consts::DPO_PHYSICAL_LEV]>&,
       ExecViewUnmanaged<Real[_ppm_consts::AO_PHYSICAL_LEV]> cell_means) {
     const int gs = _ppm_consts::gs;
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, gs),
@@ -135,8 +136,9 @@ struct PpmFixedParabola : public PpmBoundaryConditions {
   KOKKOS_INLINE_FUNCTION
   static void fill_cell_means_gs(
       KernelVariables &kv,
+      const ExecViewUnmanaged<Real[_ppm_consts::DPO_PHYSICAL_LEV]>& dpo,
       ExecViewUnmanaged<Real[_ppm_consts::AO_PHYSICAL_LEV]> cell_means) {
-    PpmMirrored::fill_cell_means_gs(kv, cell_means);
+    PpmMirrored::fill_cell_means_gs(kv, dpo, cell_means);
   }
 
   static constexpr const char *name() { return "Fixed Parabola PPM"; }
@@ -157,6 +159,7 @@ struct PpmFixedMeans : public PpmBoundaryConditions {
   KOKKOS_INLINE_FUNCTION
   static void fill_cell_means_gs(
       KernelVariables &kv,
+      const ExecViewUnmanaged<Real[_ppm_consts::DPO_PHYSICAL_LEV]>&,
       ExecViewUnmanaged<Real[_ppm_consts::AO_PHYSICAL_LEV]> cell_means) {
     const int gs = _ppm_consts::gs;
     constexpr int INITIAL_PADDING = _ppm_consts::INITIAL_PADDING;
@@ -171,6 +174,64 @@ struct PpmFixedMeans : public PpmBoundaryConditions {
   }
 
   static constexpr const char *name() { return "Fixed Means PPM"; }
+};
+
+// Corresponds to remap alg = 10
+struct PpmLimitedExtrap : public PpmBoundaryConditions {
+  static constexpr int fortran_remap_alg = 10;
+
+  KOKKOS_INLINE_FUNCTION static void apply_ppm_boundary (
+    const ExecViewUnmanaged<const Real[_ppm_consts::AO_PHYSICAL_LEV]>&,
+    const ExecViewUnmanaged<Real[3][NUM_PHYSICAL_LEV]>&)
+  {
+    // Nothing to do here
+  }
+
+  KOKKOS_INLINE_FUNCTION static void linextrap (
+    const Real& dx1, const Real& dx2, const Real& dx3, const Real& dx4,
+    const Real& y1, const Real& y2, Real& y3, Real& y4,
+    const Real& lo, const Real& hi)
+  {
+    const auto den = (dx1 + dx2)/2;
+    auto num = den + (dx2 + dx3)/2;
+    auto a = num/den;
+    y3 = (1-a)*y1 + a*y2;
+
+    num = num + (dx3 + dx4)/2;
+    a = num/den;
+    y4 = (1-a)*y1 + a*y2;
+
+    y3 = max(lo, min(hi, y3));
+    y4 = max(lo, min(hi, y4));
+  }
+
+  KOKKOS_INLINE_FUNCTION static void fill_cell_means_gs (
+    KernelVariables& kv, const ExecViewUnmanaged<Real[_ppm_consts::DPO_PHYSICAL_LEV]>& dpo,
+    const ExecViewUnmanaged<Real[_ppm_consts::AO_PHYSICAL_LEV]>& ao)
+  {
+    using Kokkos::parallel_reduce;
+    using Kokkos::Min;
+    using Kokkos::Max;
+
+    const int ip = _ppm_consts::INITIAL_PADDING, plev = NUM_PHYSICAL_LEV;
+
+    Real lo, hi; {
+      const auto tvr = Kokkos::ThreadVectorRange(kv.team, plev);
+      parallel_reduce(tvr, [&] (const int k, Real& lo) { lo = min(lo, ao(ip+k)); },
+                      Min<Real>(lo));
+      parallel_reduce(tvr, [&] (const int k, Real& hi) { hi = max(hi, ao(ip+k)); },
+                      Max<Real>(hi));
+    }
+
+    linextrap(dpo(ip+1), dpo(ip), dpo(ip-1), dpo(ip-2),
+              ao(ip+1), ao(ip), ao(ip-1), ao(ip-2),
+              lo, hi);
+    linextrap(dpo(ip+plev-2), dpo(ip+plev-1), dpo(ip+plev), dpo(ip+plev+1),
+              ao(ip+plev-2), ao(ip+plev-1), ao(ip+plev), ao(ip+plev+1),
+              lo, hi);
+  }
+
+  static constexpr const char* name () { return "PPM with limited extrapolation"; }
 };
 
 // Piecewise Parabolic Method stencil
@@ -229,7 +290,8 @@ struct PpmVertRemap : public VertRemapAlg {
             m_dpo(kv.ie, igp, jgp, k + _ppm_consts::INITIAL_PADDING);
       });
 
-      boundaries::fill_cell_means_gs(kv,Homme::subview(m_ao, kv.team_idx, igp, jgp));
+      boundaries::fill_cell_means_gs(kv, Homme::subview(m_dpo, kv.ie, igp, jgp),
+                                     Homme::subview(m_ao, kv.team_idx, igp, jgp));
 
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,

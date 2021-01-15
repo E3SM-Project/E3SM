@@ -130,7 +130,14 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  string(FIND ${execType} "kokkos" KOKKOS_SUFFIX_LOC)
+  if (KOKKOS_SUFFIX_LOC EQUAL -1)
+    set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_F90})
+  else ()
+    set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_CPP})
+  endif ()
+
+  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY_TYPE} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
   IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     IF(HOMME_USE_SCORPIO)
       TARGET_LINK_LIBRARIES(${execName} piof pioc)

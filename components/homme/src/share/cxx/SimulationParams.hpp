@@ -27,8 +27,8 @@ struct SimulationParams
   ForcingAlg    ftype;
   AdvectionForm theta_adv_form; // Only for theta model
 
-  int           rsplit;
-  int           qsplit;
+  int           rsplit, dt_remap_factor;
+  int           qsplit, dt_tracer_factor;
   int           qsize;
 
 
@@ -38,7 +38,7 @@ struct SimulationParams
 
   int       state_frequency;
   bool      disable_diagnostics;
-  bool      use_semi_lagrangian_transport;
+  int       transport_alg;
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
 

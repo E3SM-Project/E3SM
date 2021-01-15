@@ -21,6 +21,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${UTILS_TIMING_SRC_DIR}
     ${UTILS_TIMING_DIR}
     ${SRC_SHARE_DIR}/cxx
+    ${SRC_SHARE_DIR}/compose
     ${CMAKE_BINARY_DIR}/src/share/cxx
   )
 
@@ -167,6 +168,12 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp
     ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
     ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransport.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplGeneral.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTrajectory.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp
     ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
     ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp

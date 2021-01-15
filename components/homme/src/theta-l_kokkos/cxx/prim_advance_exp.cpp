@@ -44,10 +44,10 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   SimulationParams& params = context.get<SimulationParams>();
 
   // Determine the tracers time level
-  tl.update_tracers_levels(params.qsplit);
+  tl.update_tracers_levels(params.dt_tracer_factor);
 
   // Set eta_ave_w
-  Real eta_ave_w = 1.0/params.qsplit;
+  Real eta_ave_w = 1.0/params.dt_tracer_factor;
 
   // From f90 code: "this should not be needed, but in case physics update u without updating w b.c."
   if (!params.theta_hydrostatic_mode) {

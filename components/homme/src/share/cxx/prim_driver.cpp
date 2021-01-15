@@ -22,9 +22,39 @@ namespace Homme
 {
 
 void prim_step (const Real, const bool);
+void prim_step_flexible (const Real, const bool);
 void vertical_remap (const Real);
 void apply_test_forcing ();
 void update_q (const int np1_qdp, const int np1);
+
+static void init_dp3d_from_ps () {
+  // Initialize dp3d from ps
+  GPTLstart("tl-sc dp3d-from-ps");
+  const auto& context = Context::singleton();
+  const auto& elements = context.get<Elements>();
+  const auto& hvcoord = context.get<HybridVCoord>();
+  const auto& tl = context.get<TimeLevel>();
+  const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
+  const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
+  const auto ps0 = hvcoord.ps0;
+  const auto ps_v = elements.m_state.m_ps_v;
+  {
+    const auto dp3d = elements.m_state.m_dp3d;
+    const auto tln0 = tl.n0;
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
+      KOKKOS_LAMBDA(const int idx) {
+        const int ie   = ((idx / NUM_LEV) / NP) / NP;
+        const int igp  = ((idx / NUM_LEV) / NP) % NP;
+        const int jgp  =  (idx / NUM_LEV) % NP;
+        const int ilev =   idx % NUM_LEV;
+
+        dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
+          + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
+      });
+  }
+  ExecSpace::impl_static_fence();
+  GPTLstop("tl-sc dp3d-from-ps");
+}
 
 extern "C" {
 
@@ -38,14 +68,21 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   SimulationParams& params = context.get<SimulationParams>();
   assert(params.params_set);
 
+  const bool independent_time_steps = (params.transport_alg > 0 &&
+                                       params.dt_remap_factor < params.dt_tracer_factor);
+
   // Get time info and compute dt for tracers and remap
   TimeLevel& tl = context.get<TimeLevel>();
-  const Real dt_q = dt*params.qsplit;
-  Real dt_remap = dt_q;
-  int nstep_end = tl.nstep + params.qsplit;
-  if (params.rsplit>0) {
-    dt_remap  = dt_q*params.rsplit;
-    nstep_end = tl.nstep + params.qsplit*params.rsplit;
+  const Real dt_q = dt*params.dt_tracer_factor;
+  Real dt_remap;
+  int nstep_end; // nstep at end of this routine
+  if (params.dt_remap_factor == 0) {
+    // dt_remap_factor = 0 means use eulerian code, not vert. lagrange
+    dt_remap = dt_q;
+    nstep_end = tl.nstep + params.dt_tracer_factor;
+  } else {
+    dt_remap = dt*params.dt_remap_factor;
+    nstep_end = tl.nstep + (std::max(params.dt_remap_factor, params.dt_tracer_factor));
   }
 
   // Check if needed to compute diagnostics or energy
@@ -64,83 +101,64 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     diags.run_diagnostics(true,2);
   }
 
-  tl.update_tracers_levels(params.qsplit);
+  init_dp3d_from_ps();
+
+  if ( ! independent_time_steps) {
+    tl.update_tracers_levels(params.dt_tracer_factor);
 
 #ifndef CAM
-  apply_test_forcing ();
+    apply_test_forcing ();
 #endif
 
-  // Apply forcing.
-  // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
-  // Corresponds to ftype == 0 in Fortran
-  if(params.ftype == ForcingAlg::FORCING_DEBUG) {
-    apply_cam_forcing(dt_remap);
+    // Apply forcing.
+    // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
+    // Corresponds to ftype == 0 in Fortran
+    if(params.ftype == ForcingAlg::FORCING_DEBUG) {
+      apply_cam_forcing(dt_remap);
+    }
+    // Corresponds to ftype == 2 in Fortran
+    else if(params.ftype == ForcingAlg::FORCING_2) {
+      apply_cam_forcing_dynamics(dt_remap);
+    }
+
+    if (compute_diagnostics) {
+      Diagnostics& diags = context.get<Diagnostics>();
+      diags.run_diagnostics(true,0);
+    }
+
+    // Loop over rsplit vertically lagrangian timesteps
+    GPTLstart("tl-sc prim_step-loop");
+    prim_step(dt,compute_diagnostics);
+    for (int r=1; r<params.rsplit; ++r) {
+      tl.update_dynamics_levels(UpdateType::LEAPFROG);
+      prim_step(dt,false);
+    }
+    GPTLstop("tl-sc prim_step-loop");
+
+    tl.update_tracers_levels(params.dt_tracer_factor);
+
+    if (compute_diagnostics) {
+      Diagnostics& diags = context.get<Diagnostics>();
+      diags.run_diagnostics(false,3);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply vertical remap
+    // always for tracers
+    // if rsplit>0:  also remap dynamics and compute reference level ps_v
+    ////////////////////////////////////////////////////////////////////////
+    GPTLstart("tl-sc vertical_remap");
+    vertical_remap(dt_remap);
+    GPTLstop("tl-sc vertical_remap");
+
+    ////////////////////////////////////////////////////////////////////////
+    // time step is complete.  update some diagnostic variables:
+    // Q    (mixing ratio)
+    ////////////////////////////////////////////////////////////////////////
+    update_q(tl.np1_qdp,tl.np1);
+  } else { // independent_time_steps
+    prim_step_flexible(dt, compute_diagnostics);
   }
-  // Corresponds to ftype == 2 in Fortran
-  else if(params.ftype == ForcingAlg::FORCING_2) {
-    apply_cam_forcing_dynamics(dt_remap);
-  }
-
-  if (compute_diagnostics) {
-    Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(true,0);
-  }
-
-  // Initialize dp3d from ps
-  GPTLstart("tl-sc dp3d-from-ps");
-  Elements& elements = context.get<Elements>();
-  HybridVCoord& hvcoord = context.get<HybridVCoord>();
-  const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
-  const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
-  const auto ps0 = hvcoord.ps0;
-  const auto ps_v = elements.m_state.m_ps_v;
-  {
-    const auto dp3d = elements.m_state.m_dp3d;
-    const auto tln0 = tl.n0;
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace> (0,elements.num_elems()*NP*NP*NUM_LEV),
-                         KOKKOS_LAMBDA(const int idx) {
-      const int ie   = ((idx / NUM_LEV) / NP) / NP;
-      const int igp  = ((idx / NUM_LEV) / NP) % NP;
-      const int jgp  =  (idx / NUM_LEV) % NP;
-      const int ilev =   idx % NUM_LEV;
-
-      dp3d(ie,tln0,igp,jgp,ilev) = hybrid_ai_delta[ilev]*ps0
-                                 + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
-    });
-  }
-  ExecSpace::impl_static_fence();
-  GPTLstop("tl-sc dp3d-from-ps");
-
-  // Loop over rsplit vertically lagrangian timesteps
-  GPTLstart("tl-sc prim_step-loop");
-  prim_step(dt,compute_diagnostics);
-  for (int r=1; r<params.rsplit; ++r) {
-    tl.update_dynamics_levels(UpdateType::LEAPFROG);
-    prim_step(dt,false);
-  }
-  GPTLstop("tl-sc prim_step-loop");
-
-  tl.update_tracers_levels(params.qsplit);
-
-  if (compute_diagnostics) {
-    Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(false,3);
-  }
-
-  ////////////////////////////////////////////////////////////////////////
-  // apply vertical remap
-  // always for tracers
-  // if rsplit>0:  also remap dynamics and compute reference level ps_v
-  ////////////////////////////////////////////////////////////////////////
-  GPTLstart("tl-sc vertical_remap");
-  vertical_remap(dt_remap);
-  GPTLstop("tl-sc vertical_remap");
-
-  ////////////////////////////////////////////////////////////////////////
-  // time step is complete.  update some diagnostic variables:
-  // Q    (mixing ratio)
-  ////////////////////////////////////////////////////////////////////////
-  update_q(tl.np1_qdp,tl.np1);
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();

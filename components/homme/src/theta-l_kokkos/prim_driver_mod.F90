@@ -64,7 +64,8 @@ contains
                               hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                               ftype, prescribed_wind, moisture, disable_diagnostics,  &
                               use_cpstar, transport_alg, theta_hydrostatic_mode,      &
-                              dcmip16_mu, theta_advect_form, test_case, MAX_STRING_LEN
+                              dcmip16_mu, theta_advect_form, test_case,               &
+                              MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor
     !
     ! Input(s)
     !
@@ -75,7 +76,6 @@ contains
     ! Local(s)
     !
     integer :: ie
-    logical (kind=c_bool) :: use_semi_lagrange_transport
     real (kind=real_kind), target :: dvv (np,np), elem_mp(np,np)
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     character(len=MAX_STRING_LEN), target :: test_name
@@ -86,7 +86,6 @@ contains
     call init_reference_element_c(c_loc(dvv),c_loc(elem_mp))
 
     ! Fill the simulation params structures in C++
-    use_semi_lagrange_transport = transport_alg > 0
     test_name = TRIM(test_case) // C_NULL_CHAR
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
@@ -96,9 +95,10 @@ contains
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
-                                   LOGICAL(use_semi_lagrange_transport,c_bool),                   &
+                                   transport_alg,                                                 &
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
-                                   c_loc(test_name))
+                                   c_loc(test_name),                                              &
+                                   dt_remap_factor, dt_tracer_factor)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -119,6 +119,7 @@ contains
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use theta_f2c_mod, only : init_elements_2d_c
+    use coordinate_systems_mod, only : change_coordinates, cartesian3D_t
     !
     ! Input(s)
     !
@@ -136,7 +137,10 @@ contains
     type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr
     type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
 
-    integer :: ie
+    type (cartesian3D_t) :: sphere_cart
+    real (kind=real_kind) :: sphere_cart_vec(3,np,np), sphere_latlon_vec(2,np,np)
+
+    integer :: ie, i, j
 
     elem_D_ptr            = c_loc(elem_D)
     elem_Dinv_ptr         = c_loc(elem_Dinv)
@@ -158,11 +162,22 @@ contains
       elem_metinv       = elem(ie)%metinv
       elem_tensorvisc   = elem(ie)%tensorVisc
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
+      do j = 1,np
+         do i = 1,np
+            sphere_cart = change_coordinates(elem(ie)%spherep(i,j))
+            sphere_cart_vec(1,i,j) = sphere_cart%x
+            sphere_cart_vec(2,i,j) = sphere_cart%y
+            sphere_cart_vec(3,i,j) = sphere_cart%z
+            sphere_latlon_vec(1,i,j) = elem(ie)%spherep(i,j)%lat
+            sphere_latlon_vec(2,i,j) = elem(ie)%spherep(i,j)%lon
+         end do
+      end do
       call init_elements_2d_c (ie-1,                                      &
                                elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr,  &
                                elem_spheremp_ptr, elem_rspheremp_ptr,     &
                                elem_metdet_ptr, elem_metinv_ptr,          &
-                               elem_tensorvisc_ptr, elem_vec_sph2cart_ptr)
+                               elem_tensorvisc_ptr, elem_vec_sph2cart_ptr,&
+                               sphere_cart_vec, sphere_latlon_vec)
     enddo
   end subroutine prim_init_grid_views
 

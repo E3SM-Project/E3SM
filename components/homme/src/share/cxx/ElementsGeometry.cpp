@@ -16,7 +16,8 @@
 
 namespace Homme {
 
-void ElementsGeometry::init(const int num_elems, const bool consthv, const bool alloc_gradphis) {
+void ElementsGeometry::init(const int num_elems, const bool consthv, const bool alloc_gradphis,
+                            const bool alloc_sphere_coords) {
   // Sanity check
   assert (num_elems>0);
 
@@ -36,8 +37,8 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
 
   if(!consthv){
     m_tensorvisc   = ExecViewManaged<Real * [2][2][NP][NP]>("TENSORVISC",   m_num_elems);
-    m_vec_sph2cart = ExecViewManaged<Real * [2][3][NP][NP]>("VEC_SPH2CART", m_num_elems);
   }
+  m_vec_sph2cart = ExecViewManaged<Real * [2][3][NP][NP]>("VEC_SPH2CART", m_num_elems);
 
   m_phis     = ExecViewManaged<Real *    [NP][NP]>("PHIS",          m_num_elems);
 
@@ -48,6 +49,11 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
   if (alloc_gradphis) {
     m_gradphis = decltype(m_gradphis) ("gradient of geopotential at surface", m_num_elems);
   }
+
+  if (alloc_sphere_coords) {
+    m_sphere_cart = ExecViewManaged<Real * [NP][NP][3]>("sphere_cart", m_num_elems);
+    m_sphere_latlon = ExecViewManaged<Real * [NP][NP][2]>("sphere_latlon", m_num_elems);
+  }
 }
 
 void ElementsGeometry::
@@ -55,7 +61,8 @@ set_elem_data (const int ie,
                CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                CF90Ptr& spheremp, CF90Ptr& rspheremp,
                CF90Ptr& metdet, CF90Ptr& metinv,
-               CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv) {
+               CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv,
+               const Real* sphere_cart, const Real* sphere_latlon) {
   // Check geometry was inited
   assert (m_num_elems>0);
 
@@ -82,8 +89,8 @@ set_elem_data (const int ie,
   Tensor23View::HostMirror h_vec_sph2cart;
   if( !consthv ){
     h_tensorvisc   = Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
-    h_vec_sph2cart = Kokkos::create_mirror_view(Homme::subview(m_vec_sph2cart,ie));
   }
+  h_vec_sph2cart = Kokkos::create_mirror_view(Homme::subview(m_vec_sph2cart,ie));
 
   ScalarViewF90 h_fcor_f90         (fcor);
   ScalarViewF90 h_metdet_f90       (metdet);
@@ -128,16 +135,16 @@ set_elem_data (const int ie,
         }
       }
     }
-    for (int idim = 0; idim < 2; ++idim) {
-      for (int jdim = 0; jdim < 3; ++jdim) {
-        for (int igp = 0; igp < NP; ++igp) {
-          for (int jgp = 0; jgp < NP; ++jgp) {
-            h_vec_sph2cart (idim,jdim,igp,jgp) = h_vec_sph2cart_f90 (idim,jdim,igp,jgp);
-          }
+  }//end if consthv
+  for (int idim = 0; idim < 2; ++idim) {
+    for (int jdim = 0; jdim < 3; ++jdim) {
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          h_vec_sph2cart (idim,jdim,igp,jgp) = h_vec_sph2cart_f90 (idim,jdim,igp,jgp);
         }
       }
     }
-  }//end if consthv
+  }
 
   Kokkos::deep_copy(Homme::subview(m_fcor,ie), h_fcor);
   Kokkos::deep_copy(Homme::subview(m_metinv,ie), h_metinv);
@@ -148,7 +155,16 @@ set_elem_data (const int ie,
   Kokkos::deep_copy(Homme::subview(m_dinv,ie), h_dinv);
   if( !consthv ) {
     Kokkos::deep_copy(Homme::subview(m_tensorvisc,ie), h_tensorvisc);
-    Kokkos::deep_copy(Homme::subview(m_vec_sph2cart,ie), h_vec_sph2cart);
+  }
+  Kokkos::deep_copy(Homme::subview(m_vec_sph2cart,ie), h_vec_sph2cart);
+
+  if (sphere_cart && m_sphere_cart.size() != 0) {
+    const auto fsc = HostViewUnmanaged<const Real [NP][NP][3]>(sphere_cart);
+    Kokkos::deep_copy(Homme::subview(m_sphere_cart, ie), fsc);
+  }
+  if (sphere_latlon && m_sphere_latlon.size() != 0) {
+    const auto fsl = HostViewUnmanaged<const Real [NP][NP][2]>(sphere_latlon);
+    Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
   }
 }
 

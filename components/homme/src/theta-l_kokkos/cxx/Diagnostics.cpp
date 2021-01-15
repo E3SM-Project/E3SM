@@ -107,7 +107,7 @@ void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
   TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   // Make sure tracers timelevels are updated
-  tl.update_tracers_levels(params.qsplit);
+  tl.update_tracers_levels(params.dt_tracer_factor);
 
   // Pick tracers time-level, depending on when this routine was called
   int t2_qdp;
@@ -158,7 +158,7 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
   TimeLevel& tl = Context::singleton().get<TimeLevel>();
 
   // Make sure tracers timelevels are updated
-  tl.update_tracers_levels(params.qsplit);
+  tl.update_tracers_levels(params.dt_tracer_factor);
 
   // Pick tracers time-level, depending on when this routine was called
   if (before_advance) {

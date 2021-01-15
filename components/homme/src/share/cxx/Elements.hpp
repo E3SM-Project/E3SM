@@ -41,7 +41,8 @@ public:
 
   int num_elems () const { return m_num_elems; }
 
-  void init (const int num_elems, const bool consthv, const bool alloc_gradphis);
+  void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
+             const bool alloc_sphere_coords=false);
   void randomize (const int seed, const Real max_pressure = 1.0);
   void randomize (const int seed, const Real max_pressure, const Real ps0, const Real hyai0);
 

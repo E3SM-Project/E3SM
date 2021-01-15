@@ -38,7 +38,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling,
                                const int& ftype, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
-                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport)
+                               const bool& use_cpstar, const int& transport_alg,
+                               const int& dt_remap_factor, const int& dt_tracer_factor)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -46,7 +47,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3});
   Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
-  Errors::check_option("init_simulation_params_c","use_semi_lagrangian_transport",use_semi_lagrangian_transport,{false});
+  Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{5});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
@@ -73,6 +74,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
+  params.dt_remap_factor               = dt_remap_factor;
+  params.dt_tracer_factor              = dt_tracer_factor;
   params.prescribed_wind               = prescribed_wind;
   params.state_frequency               = state_frequency;
   params.qsize                         = qsize;
@@ -88,7 +91,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.disable_diagnostics           = disable_diagnostics;
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
   params.use_cpstar                    = use_cpstar;
-  params.use_semi_lagrangian_transport = use_semi_lagrangian_transport;
+  params.transport_alg                 = transport_alg;
 
   //set nu_ratios values
   if (params.nu != params.nu_div) {

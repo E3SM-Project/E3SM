@@ -40,6 +40,7 @@ module prim_driver_base
   private
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
   public :: prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
+  public :: prim_init1_compose
 #ifndef CAM
   public :: prim_init1_no_cam
 #endif
