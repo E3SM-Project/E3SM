@@ -63,7 +63,7 @@
     <MPILIBS>mpt</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>e3sm,acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/cori-haswell</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -105,7 +105,7 @@
         <command name="rm">cce</command>
         <command name="rm">gcc</command>
         <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-parallel-hdf5</command>
+        <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">pmi</command>
         <command name="rm">cray-libsci</command>
         <command name="rm">cray-mpich2</command>
@@ -121,6 +121,8 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
+        <command name="rm">craype-hugepages2M</command>
+        <command name="rm">darshan</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
@@ -204,7 +206,7 @@
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>e3sm,e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/e3sm_scratch/cori-knl</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -223,7 +225,7 @@
       <arguments>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 272/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="thread_count">-c $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 68 -ge $mpn ]; then c0=`expr 272 / $mpn`; c1=`expr $c0 / 4`; cflag=`expr $c1 \* 4`; echo $cflag|bc ; else echo 272/$mpn|bc;fi;} </arg>
         <arg name="binding"> $SHELL{if [ 68 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
@@ -248,7 +250,7 @@
         <command name="rm">cce</command>
         <command name="rm">gcc</command>
         <command name="rm">cray-parallel-netcdf</command>
-        <command name="rm">cray-parallel-hdf5</command>
+        <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">pmi</command>
         <command name="rm">cray-mpich2</command>
         <command name="rm">cray-mpich</command>
@@ -261,6 +263,8 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
+        <command name="rm">craype-hugepages2M</command>
+        <command name="rm">darshan</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
