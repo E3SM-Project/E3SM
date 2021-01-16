@@ -9,16 +9,13 @@ use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime, is_first_step
 use ppgrid, only: begchunk
-<<<<<<< HEAD
 use pmgrid, only: plev, plon
 use parallel_mod,            only: par
-=======
 #ifdef MODEL_THETA_L
 use element_ops, only: get_R_star
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
->>>>>>> upstream/master
 
 implicit none
 
@@ -111,7 +108,6 @@ subroutine scm_setinitial(elem)
   endif
 
 end subroutine scm_setinitial
-<<<<<<< HEAD
 
 subroutine scm_broadcast()
 
@@ -153,8 +149,6 @@ subroutine scm_broadcast()
 #endif
 
 end subroutine scm_broadcast
-=======
->>>>>>> upstream/master
 
 subroutine scm_setfield(elem,iop_update_phase1)
 
@@ -212,13 +206,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: Qt,dt
     real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
     real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
-<<<<<<< HEAD
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
-    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
+    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
-=======
-    real (kind=real_kind), dimension(nlev) :: temp_tend, dummy2, forecast_t, forecast_u, forecast_v
->>>>>>> upstream/master
     real (kind=real_kind) :: forecast_ps
     real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
@@ -243,28 +233,18 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       np_todo = np
     endif
 
-<<<<<<< HEAD
-    !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
-    !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
-    !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
-
-=======
-    ! For SCM only one column is considered
-    ie = 1
->>>>>>> upstream/master
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
     do ie=1,nelemd_todo
 
-<<<<<<< HEAD
       do k=1,nlev
         p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
       end do
 
       dt=dtime
-=======
+
 #ifdef MODEL_THETA_L
       ! If using the theta-l dycore then need to get the exner function
       !   and reference levels "dp", so we can convert the SCM forecasted
@@ -274,15 +254,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
 #endif
 
-    dt=dtime
-
     ! Get temperature from dynamics state
     call get_temperature(elem(ie),temperature,hvcoord,t1)
-
-    ! For SCM we only consider one point
-    i=1
-    j=1
->>>>>>> upstream/master
 
       do j=1,np_todo
         do i=1,np_todo
@@ -293,35 +266,46 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
 
           if (.not. use_3dfrc) then
-            dummy1(:) = 0.0_real_kind
+            temp_tend(:) = 0.0_real_kind
           else
-            dummy1(:) = elem(ie)%derived%fT(i,j,:)
+            temp_tend(:) = elem(ie)%derived%fT(i,j,:)
           endif
           dummy2(:) = 0.0_real_kind
           forecast_ps = elem(ie)%state%ps_v(i,j,t1)
+          
+#ifdef MODEL_THETA_L
+          ! At first time step the tendency term is set to the
+          !  initial condition temperature profile.  Do NOT use
+          !  as it will cause temperature profile to blow up.
+          if ( is_first_step() ) then
+            temp_tend(:) = 0.0
+          endif
+#endif          
 
           call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
             elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
             elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
             forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
             elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-#ifdef MODEL_THETA_L	    
-            elem(ie)%derived%FT(i,j,:),elem(ie)%derived%FT(i,j,:),&
-#else
-            elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
-#endif
-            forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
+            temperature(i,j,:),temperature(i,j,:),&
+            forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
             stateQin_qfcst,p(i,j,:),stateQin1,1,&
             tdiff_dyn,qdiff_dyn)         
 
+          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+
 #ifdef MODEL_THETA_L
-          elem(ie)%derived%FT(i,j,:) = forecast_t(:)
+          ! If running theta-l model then the forecast temperature needs
+          !   to be converted back to potential temperature on reference levels, 
+          !   which is what dp_coupling expects
+          call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+          elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
+                (Rgas*exner(i,j,:))
 #else
           elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
 #endif
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
-          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
   
           tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
           qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
@@ -338,48 +322,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       endif
     
     enddo
-=======
-    if (.not. use_3dfrc) then
-      temp_tend(:) = 0.0_real_kind
-    else
-      temp_tend(:) = elem(ie)%derived%fT(i,j,:)
-    endif
-    dummy2(:) = 0.0_real_kind
-    forecast_ps = elem(ie)%state%ps_v(i,j,t1)
-
-#ifdef MODEL_THETA_L
-    ! At first time step the tendency term is set to the
-    !  initial condition temperature profile.  Do NOT use
-    !  as it will cause temperature profile to blow up.
-    if ( is_first_step() ) then
-      temp_tend(:) = 0.0
-    endif
-#endif
-
-    call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
-           elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
-           elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
-           forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
-           elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-           temperature(i,j,:),temperature(i,j,:),&
-           forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
-           stateQin_qfcst,p(i,j,:),stateQin1,1)
-
-    elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
-
-#ifdef MODEL_THETA_L
-    ! If running theta-l model then the forecast temperature needs
-    !   to be converted back to potential temperature on reference levels, 
-    !   which is what dp_coupling expects
-    call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-    elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
-                (Rgas*exner(i,j,:))
-#else
-    elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
-#endif
-    elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
-    elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
->>>>>>> upstream/master
 
     end subroutine apply_SC_forcing
 
