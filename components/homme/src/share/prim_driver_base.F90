@@ -890,13 +890,6 @@ contains
     !$OMP BARRIER
 #endif
 
-<<<<<<< HEAD
-    if (topology /= "cube") then
-       call abortmp('Error: only cube topology supported for primaitve equations')
-    endif
-
-=======
->>>>>>> upstream/master
 #if !defined(CAM) && !defined(SCREAM)
 
     ! =================================

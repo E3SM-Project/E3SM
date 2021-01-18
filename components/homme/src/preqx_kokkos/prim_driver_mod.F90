@@ -34,23 +34,18 @@ contains
     type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
     integer,            intent(in)            :: nets     ! starting thread element number (private)
     integer,            intent(in)            :: nete     ! ending thread element number   (private)
-<<<<<<< HEAD
-    !
-    ! Locals
-    !
+
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
 
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
 
-    ! Init the kokkos views
-    call prim_init_elements_views (elem)
-=======
->>>>>>> upstream/master
-
     !Init the kokkos functors (and their boundary exchanges)
     call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
