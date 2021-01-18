@@ -62,7 +62,7 @@ if (NOT CUDA_BUILD)
     shoc_integ_column_stability.cpp
     shoc_isotropic_ts.cpp
     shoc_dp_inverse.cpp
-    shoc_shoc_main.cpp
+    shoc_main.cpp
     shoc_pblintd_height.cpp
     shoc_tridiag_solver.cpp
     shoc_pblintd_surf_temp.cpp

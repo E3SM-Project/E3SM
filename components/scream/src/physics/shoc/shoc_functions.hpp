@@ -39,6 +39,7 @@ struct Functions
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
+  using Pack1d = ekat::Pack<Scalar, 1>;
 
   using Mask  = ekat::Mask<Pack::n>;
   using Smask = ekat::Mask<Spack::n>;
@@ -67,6 +68,112 @@ struct Functions
   using MemberType = typename KT::MemberType;
 
   using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
+
+  // This struct stores input views for shoc_main.
+  struct SHOCInput {
+    // Grid spacing of host model in x direction [m]
+    view_1d<Pack1d> host_dx;
+    // grid spacing of host model in y direction [m]
+    view_1d<Pack1d> host_dy;
+    // heights, for thermo grid [m]
+    view_2d<Spack>  zt_grid;
+    // heights, for interface grid [m]
+    view_2d<Spack>  zi_grid;
+    // pressure levels on thermo grid [Pa]
+    view_2d<Spack>  pres;
+    // pressure levels on interface grid [Pa]
+    view_2d<Spack>  presi;
+    // Differences in pressure levels [Pa]
+    view_2d<Spack>  pdel;
+    // virtual potential temperature [K]
+    view_2d<Spack>  thv;
+    // large scale vertical velocity [m/s]
+    view_2d<Spack>  w_field;
+    // Surface sensible heat flux [K m/s]
+    view_1d<Pack1d> wthl_sfc;
+    // Surface latent heat flux [kg/kg m/s]
+    view_1d<Pack1d> wqw_sfc;
+    // Surface momentum flux (u-direction) [m2/s2]
+    view_1d<Pack1d> uw_sfc;
+    // Surface momentum flux (v-direction) [m2/s2]
+    view_1d<Pack1d> vw_sfc;
+    // Surface flux for tracers [varies]
+    view_2d<Spack>  wtracer_sfc;
+    // Exner function [-]
+    view_2d<Spack>  exner;
+    // Host model surface geopotential height
+    view_1d<Pack1d> phis;
+  };
+
+  // This struct stores input/outputs views for shoc_main.
+  struct SHOCInputOutput {
+    // prognostic temp variable of host model
+    // dry static energy [J/kg]
+    // dse = Cp*T + g*z + phis
+    view_2d<Spack>  host_dse;
+    // turbulent kinetic energy [m2/s2]
+    view_2d<Spack>  tke;
+    // liquid water potential temperature [K]
+    view_2d<Spack>  thetal;
+    // total water mixing ratio [kg/kg]
+    view_2d<Spack>  qw;
+    // u wind component [m/s]
+    view_2d<Spack>  u_wind;
+    // v wind component [m/s]
+    view_2d<Spack>  v_wind;
+    // buoyancy flux [K m/s]
+    view_2d<Spack>  wthv_sec;
+    // tracers [varies]
+    view_3d<Spack>  qtracers;
+    // eddy coefficient for momentum [m2/s]
+    view_2d<Spack>  tk;
+    // eddy coefficent for heat [m2/s]
+    view_2d<Spack>  tkh;
+    // Cloud fraction [-]
+    view_2d<Spack>  shoc_cldfrac;
+    // cloud liquid mixing ratio [kg/kg]
+    view_2d<Spack>  shoc_ql;
+  };
+
+  // This struct stores output only views for shoc_main.
+  struct SHOCOutput {
+    // planetary boundary layer depth [m]
+    view_1d<Pack1d> pblh;
+    // cloud liquid mixing ratio variance [kg^2/kg^2]
+    view_2d<Spack>  shoc_ql2;
+  };
+
+  // This struct stores output views for SHOC diagnostics for shoc_main.
+  struct SHOCHistoryOutput {
+    // Turbulent length scale [m]
+    view_2d<Spack>  shoc_mix;
+    // vertical velocity variance [m2/s2]
+    view_2d<Spack>  w_sec;
+    // temperature variance [K^2]
+    view_2d<Spack>  thl_sec;
+    // moisture variance [kg2/kg2]
+    view_2d<Spack>  qw_sec;
+    // temp moisture covariance [K kg/kg]
+    view_2d<Spack>  qwthl_sec;
+    // vertical heat flux [K m/s]
+    view_2d<Spack>  wthl_sec;
+    // vertical moisture flux [K m/s]
+    view_2d<Spack>  wqw_sec;
+    // vertical tke flux [m3/s3]
+    view_2d<Spack>  wtke_sec;
+    // vertical zonal momentum flux [m2/s2]
+    view_2d<Spack>  uw_sec;
+    // vertical meridional momentum flux [m2/s2]
+    view_2d<Spack>  vw_sec;
+    // third moment vertical velocity [m3/s3]
+    view_2d<Spack>  w3;
+    // liquid water flux [kg/kg m/s]
+    view_2d<Spack>  wqls_sec;
+    // brunt vaisala frequency [s-1]
+    view_2d<Spack>  brunt;
+    // return to isotropic timescale [s]
+    view_2d<Spack>  isotropy;
+  };
 
   //
   // --------- Functions ---------
@@ -289,9 +396,7 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const uview_1d<const Spack>& dz_zt,
-    const uview_1d<const Spack>& dz_zi,
     const uview_1d<const Spack>& wthv_sec,
-    const uview_1d<const Spack>& thetal,
     const uview_1d<const Spack>& thv,
     const uview_1d<Spack>&       thv_zi,
     const uview_1d<Spack>&       brunt,
@@ -354,9 +459,9 @@ struct Functions
     const uview_1d<Spack>&       tkh_zi,
     const uview_1d<Spack>&       tk_zi,
     const uview_1d<Spack>&       rho_zi,
-    const uview_1d<Scalar>&       du,
-    const uview_1d<Scalar>&       dl,
-    const uview_1d<Scalar>&       d,
+    const uview_1d<Scalar>&      du,
+    const uview_1d<Scalar>&      dl,
+    const uview_1d<Scalar>&      d,
     const uview_2d<Spack>&       X1,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
@@ -476,7 +581,106 @@ struct Functions
     const uview_1d<Spack>&       rdp_zt);
 
   KOKKOS_FUNCTION
-  static void shoc_main(const Int& shcol, const Int& nlev, const Int& nlevi, const Spack& dtime, const Int& nadv, const uview_1d<const Spack>& host_dx, const uview_1d<const Spack>& host_dy, const uview_1d<const Spack>& thv, const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& pres, const uview_1d<const Spack>& presi, const uview_1d<const Spack>& pdel, const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& wqw_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc, const uview_1d<const Spack>& wtracer_sfc, const Int& num_qtracers, const uview_1d<const Spack>& w_field, const uview_1d<const Spack>& exner, const uview_1d<const Spack>& phis, const uview_1d<Spack>& host_dse, const uview_1d<Spack>& tke, const uview_1d<Spack>& thetal, const uview_1d<Spack>& qw, const uview_1d<Spack>& u_wind, const uview_1d<Spack>& v_wind, const uview_1d<Spack>& qtracers, const uview_1d<Spack>& wthv_sec, const uview_1d<Spack>& tkh, const uview_1d<Spack>& tk, const uview_1d<Spack>& shoc_ql, const uview_1d<Spack>& shoc_cldfrac, const uview_1d<Spack>& pblh, const uview_1d<Spack>& shoc_mix, const uview_1d<Spack>& isotropy, const uview_1d<Spack>& w_sec, const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& w3, const uview_1d<Spack>& wqls_sec, const uview_1d<Spack>& brunt, const uview_1d<Spack>& shoc_ql2);
+  static void shoc_main_internal(
+    const MemberType&            team,
+    const Int&                   nlev,         // Number of levels
+    const Int&                   nlevi,        // Number of levels on interface grid
+    const Int&                   npbl,         // Maximum number of levels in pbl from surface
+    const Int&                   nadv,         // Number of times to loop SHOC
+    const Int&                   num_qtracers, // Number of tracers
+    const Scalar&                dtime,        // SHOC timestep [s]
+    // Input Variables
+    const Scalar&                host_dx,
+    const Scalar&                host_dy,
+    const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& zi_grid,
+    const uview_1d<const Spack>& pres,
+    const uview_1d<const Spack>& presi,
+    const uview_1d<const Spack>& pdel,
+    const uview_1d<const Spack>& thv,
+    const uview_1d<const Spack>& w_field,
+    const Scalar&                wthl_sfc,
+    const Scalar&                wqw_sfc,
+    const Scalar&                uw_sfc,
+    const Scalar&                vw_sfc,
+    const uview_1d<const Spack>& wtracer_sfc,
+    const uview_1d<const Spack>& exner,
+    const Scalar&                phis,
+    // Local Variables
+    const uview_1d<Spack>&       rho_zt,
+    const uview_1d<Spack>&       shoc_qv,
+    const uview_1d<Spack>&       dz_zt,
+    const uview_1d<Spack>&       dz_zi,
+    const uview_1d<Spack>&       thv_zi,
+    const uview_1d<Spack>&       sterm,
+    const uview_1d<Spack>&       sterm_zt,
+    const uview_1d<Spack>&       a_diss,
+    const uview_1d<Spack>&       rdp_zt,
+    const uview_1d<Spack>&       tmpi,
+    const uview_1d<Spack>&       tkh_zi,
+    const uview_1d<Spack>&       tk_zi,
+    const uview_1d<Spack>&       rho_zi,
+    const uview_1d<Scalar>&      du,
+    const uview_1d<Scalar>&      dl,
+    const uview_1d<Scalar>&      d,
+    const uview_2d<Spack>&       X1,
+    const uview_1d<Spack>&       isotropy_zi,
+    const uview_1d<Spack>&       w_sec_zi,
+    const uview_1d<Spack>&       brunt_zi,
+    const uview_1d<Spack>&       thetal_zi,
+    const uview_1d<Spack>&       wthl_sec_zt,
+    const uview_1d<Spack>&       wqw_sec_zt,
+    const uview_1d<Spack>&       w3_zt,
+    const uview_1d<Spack>&       thl_sec_zt,
+    const uview_1d<Spack>&       qwthl_sec_zt,
+    const uview_1d<Spack>&       qw_sec_zt,
+    const uview_1d<Spack>&       pblintd_thv,
+    const uview_1d<Spack>&       rino,
+    // Input/Output Variables
+    const uview_1d<Spack>&       host_dse,
+    const uview_1d<Spack>&       tke,
+    const uview_1d<Spack>&       thetal,
+    const uview_1d<Spack>&       qw,
+    const uview_1d<Spack>&       u_wind,
+    const uview_1d<Spack>&       v_wind,
+    const uview_1d<Spack>&       wthv_sec,
+    const uview_2d<Spack>&       qtracers,
+    const uview_1d<Spack>&       tk,
+    const uview_1d<Spack>&       tkh,
+    const uview_1d<Spack>&       shoc_cldfrac,
+    const uview_1d<Spack>&       shoc_ql,
+    // Output Variables
+    Scalar&                      pblh,
+    const uview_1d<Spack>&       shoc_ql2,
+    // Diagnostic Output Variables
+    const uview_1d<Spack>&       shoc_mix,
+    const uview_1d<Spack>&       w_sec,
+    const uview_1d<Spack>&       thl_sec,
+    const uview_1d<Spack>&       qw_sec,
+    const uview_1d<Spack>&       qwthl_sec,
+    const uview_1d<Spack>&       wthl_sec,
+    const uview_1d<Spack>&       wqw_sec,
+    const uview_1d<Spack>&       wtke_sec,
+    const uview_1d<Spack>&       uw_sec,
+    const uview_1d<Spack>&       vw_sec,
+    const uview_1d<Spack>&       w3,
+    const uview_1d<Spack>&       wqls_sec,
+    const uview_1d<Spack>&       brunt,
+    const uview_1d<Spack>&       isotropy);
+
+  // Return microseconds elapsed
+  static Int shoc_main(
+    const Int&               shcol,                // Number of SHOC columns in the array
+    const Int&               nlev,                 // Number of levels
+    const Int&               nlevi,                // Number of levels on interface grid
+    const Int&               npbl,                 // Maximum number of levels in pbl from surface
+    const Int&               nadv,                 // Number of times to loop SHOC
+    const Int&               num_q_tracers,        // Number of tracers
+    const Scalar&            dtime,                // SHOC timestep [s]
+    const SHOCInput&         shoc_input,           // Input
+    const SHOCInputOutput&   shoc_input_output,    // Input/Output
+    const SHOCOutput&        shoc_output,          // Output
+    const SHOCHistoryOutput& shoc_history_output); // Output (diagnostic)
 
   KOKKOS_FUNCTION
   static void pblintd_height(
@@ -639,7 +843,7 @@ struct Functions
 # include "shoc_integ_column_stability_impl.hpp"
 # include "shoc_isotropic_ts_impl.hpp"
 # include "shoc_dp_inverse_impl.hpp"
-# include "shoc_shoc_main_impl.hpp"
+# include "shoc_main_impl.hpp"
 # include "shoc_pblintd_height_impl.hpp"
 # include "shoc_tridiag_solver_impl.hpp"
 # include "shoc_pblintd_surf_temp_impl.hpp"

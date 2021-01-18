@@ -50,6 +50,8 @@ void Functions<S,D>::shoc_energy_fixer(
   Scalar se_dis = 0;
 
   // Compute linear interpolation of data into rho_zi
+  // This calculation is needed for stand alone tests,
+  // but it redundant when calling shoc_main
   linear_interp(team,zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,0);
   team.team_barrier();
 
