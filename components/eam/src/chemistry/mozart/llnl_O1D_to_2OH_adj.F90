@@ -199,17 +199,17 @@ contains
           endif
        endif
 
-       if( ucih1_ndx > 0 ) then
-           rxt(:,k,ucih1_ndx) = 0._r8
-       endif
-
-       if( ucih2_ndx > 0 ) then
-           rxt(:,k,ucih2_ndx) = 0._r8
-       endif
-
-       if( ucih3_ndx > 0 ) then
-           rxt(:,k,ucih3_ndx) = 0._r8
-       endif
+!       if( ucih1_ndx > 0 ) then
+!           rxt(:,k,ucih1_ndx) = 0._r8
+!       endif
+!
+!       if( ucih2_ndx > 0 ) then
+!           rxt(:,k,ucih2_ndx) = 0._r8
+!       endif
+!
+!       if( ucih3_ndx > 0 ) then
+!           rxt(:,k,ucih3_ndx) = 0._r8
+!       endif
 
 
 !  hetrxtrate sums over all the aerosol types: hydrolysis reactions on wetted aerosols
