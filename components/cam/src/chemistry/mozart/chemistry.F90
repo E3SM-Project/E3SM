@@ -1406,6 +1406,8 @@ end function chem_is_active
     lchnk = state%lchnk
     ncol  = state%ncol
 
+!    write(iulog,'(A,I3,A,I6)')'PJC, Chemistry: ncol =',ncol,'   lchnk =',lchnk   !pjc diagnostic
+    
     lq(:) = .false.
     do n = 1,pcnst
        m = map2chm(n)

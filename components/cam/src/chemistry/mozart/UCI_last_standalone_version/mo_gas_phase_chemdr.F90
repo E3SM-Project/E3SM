@@ -12,8 +12,6 @@ module mo_gas_phase_chemdr
   use phys_control,     only : phys_getopts
   use carma_flags_mod,  only : carma_do_hetchem
   use cam_logfile,      only : iulog
-!!  use mpishorthand,     only : mpicom     ! PJC for debugging only.
-  use shr_sys_mod,      only: shr_sys_flush ! PJC for debugging only.
 
   implicit none
   save
@@ -240,10 +238,6 @@ contains
     use mo_mass_xforms,    only : mmr2vmr, vmr2mmr, h2o_to_vmr, mmr2vmri
     use orbit,             only : zenith
     use UCI_cloudJ_interface, only: cloudJ_interface
-!    use assertions, only: assert, assert_valid, assert_range   !pjc
-    use infnan, only: isnan, isinf             ! pjc, debugging
-    use cam_abortutils,        only : endrun   ! pjc, debugging
-
 !
 ! LINOZ
 !
@@ -395,8 +389,6 @@ contains
     call phys_getopts (use_ECPP_out  = use_ECPP )
 
     call t_startf('chemdr_init')
-
-!    write(iulog,*) ' *************** Start of gas_phase_chemdr ****************** iam =',iam
 
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
@@ -692,53 +684,14 @@ contains
        call outfld('FRACDAY', fracday(:ncol), ncol, lchnk )
 
     else
-
-!       write(iulog,*) ' *************** Before CLOUDJ ****************** iam =',iam
-!       call shr_sys_flush(iulog)   ! pjc: flush buffer to iulog
-       !-----------------------------------------------------------------
-       !	... compute the photolysis rates using Fast-JX
-       !!!!!! PJC:  Currently will be overwritten by table_photo !!!!!!!!
-       !-----------------------------------------------------------------
-       call cloudJ_interface( reaction_rates, vmr, invariants, tfld, cwat, cldfr, &
-            pmid, pint, zmidr, zint, rlats, rlons, col_dens, zen_angle, asdir, &
-            invariants(1,1,indexm), ps, ts, &
-            esfact, relhum, dust_vmr, &
-            ncol, lchnk )    !pjc
-
-!       write(iulog,*) ' *********** AFTER Cloud-J ************** iam =',iam
-!       call shr_sys_flush(iulog)   ! pjc: flush buffer to iulog
-
-       
-       do m=1,max(1,rxntot)    !!! Test for NaN and Inf
-          do k = 1, pver
-             do i = 1, ncol
-                if (isnan(reaction_rates(i,k,m))) then
-                   write(iulog,'(A,i4,A,3i3)')'PJC: Reaction_rate has NaN. iam =',iam,'   i,k,m =',i,k,m  
-                  call endrun('assert_valid failed (NaN)')
-               else if (isinf(reaction_rates(i,k,m))) then
-                   write(iulog,'(A,i4,A,3i3)')'PJC: Reaction_rate has Inf. iam =',iam,'   i,k,m =',i,k,m 
-                  call endrun('assert_valid failed (inf)')
-               end if
-            end do
-         end do
-      end do
-       
-       if ( minval(reaction_rates) .LT. 0.) then
-          write(iulog,*)'iam, minval(reaction_rates), minloc(reaction_rates) =',iam, minval(reaction_rates), minloc(reaction_rates) 
-          call endrun('PJC ERROR: reaction_rate is below zero')
-       endif
-      
-!       write(iulog,*) ' *********** AFTER photolysis value checks ************** iam =',iam
-!       call shr_sys_flush(iulog)   ! pjc: flush buffer to iulog
-!!#if ( defined SPMD )
-!!       call mpibarrier(mpicom)   ! pjc
-!!#endif
        !-----------------------------------------------------------------
        !	... lookup the photolysis rates from table
        !-----------------------------------------------------------------
-!       call table_photo( reaction_rates, pmid, pdel, tfld, zmid, zint, &
-!                         col_dens, zen_angle, asdir, cwat, cldfr, &
-!                         esfact, vmr, invariants, ncol, lchnk, pbuf )
+       call table_photo( reaction_rates, pmid, pdel, tfld, zmid, zint, &
+                         col_dens, zen_angle, asdir, cwat, cldfr, &
+                         esfact, vmr, invariants, ncol, lchnk, pbuf )
+
+!       write(iulog,*)'PJC: table_photo'  !pjc
 
        if ( dst_ndx > 0 ) then
           dust_vmr(:ncol,:,1:ndust) = vmr(:ncol,:,dst_ndx:dst_ndx+ndust-1)
@@ -746,13 +699,17 @@ contains
           dust_vmr(:ncol,:,:) = 0._r8
        endif
 
+       !-----------------------------------------------------------------
+       !	... compute the photolysis rates
+       !-----------------------------------------------------------------
+       call cloudJ_interface( reaction_rates, vmr, tfld, cwat, cldfr, &
+            pmid, zmidr, col_dens, zen_angle, asdir, &
+            invariants(1,1,indexm), ps, ts, &
+            esfact, relhum, dust_vmr, &
+!            dt_diag, fracday, &
+            ncol, lchnk )    !pjc
        
     endif
-
-!    write(iulog,*)'PJC: pht_names =',pht_names    ! Debugging. pjc
-!    write(iulog,*)'PJC: tag_names =',tag_names    ! Debugging. pjc
-    
-!    write(iulog,*) ' *************** Before outfld ****************** iam =',iam
 
     do i = 1,phtcnt
        call outfld( pht_names(i), reaction_rates(:ncol,:,i), ncol, lchnk )
@@ -832,8 +789,6 @@ contains
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
     call t_stopf('chemdr_init')
-
-!    write(iulog,*) ' *************** Before Chem Solver ****************** iam =',iam
 
     !=======================================================================
     !        ... Call the class solution algorithms
