@@ -9,7 +9,9 @@ module mo_chm_diags
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
+  use gas_wetdep_opts,only : gas_wetdep_method
 
+  implicit none
   private
 
   public :: chm_diags_inti
@@ -266,12 +268,14 @@ contains
        call addfld( depflx_name(m), horiz_only,    'A', 'kg/m2/s', 'dry deposition flux ' )
        call addfld( dtchem_name(m),   (/ 'lev' /), 'A', 'kg/s', 'net tendency from chem' )
 
-       wetdep_name(m) = 'WD_'//trim(spc_name)
-       wtrate_name(m) = 'WDR_'//trim(spc_name)
+       if (gas_wetdep_method=='MOZ') then
+          wetdep_name(m) = 'WD_'//trim(spc_name)
+          wtrate_name(m) = 'WDR_'//trim(spc_name)
 
-       call addfld( wetdep_name(m),   horiz_only,    'A', 'kg/s', spc_name//' wet deposition' )
-       call addfld( wtrate_name(m),   (/ 'lev' /), 'A',   '/s', spc_name//' wet deposition rate' )
-       
+          call addfld( wetdep_name(m), horiz_only,  'A', 'kg/s', spc_name//' wet deposition' )
+          call addfld( wtrate_name(m), (/ 'lev' /), 'A',   '/s', spc_name//' wet deposition rate' )
+       endif
+
        if (spc_name(1:3) == 'num') then
           unit_basename = ' 1'
        else
@@ -776,28 +780,29 @@ contains
        !
        wrk_wd(:ncol) = wrk_wd(:ncol) * rgrav * wght(:ncol) * rearth**2
        !
+       if (gas_wetdep_method=='MOZ') then
+          call outfld( wetdep_name(m), wrk_wd(:ncol),               ncol, lchnk )
+          call outfld( wtrate_name(m), het_rates(:ncol,:,m), ncol, lchnk )
 
-       call outfld( wetdep_name(m), wrk_wd(:ncol),               ncol, lchnk )
-       call outfld( wtrate_name(m), het_rates(:ncol,:,m), ncol, lchnk )
-
-       if ( any(noy_species == m ) ) then
-          noy_wk(:ncol) = noy_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
+          if ( any(noy_species == m ) ) then
+             noy_wk(:ncol) = noy_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
+          endif
+          if ( m == id_n2o5 ) then  ! 2 NOy molecules in N2O5
+             noy_wk(:ncol) = noy_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
+          endif
+          if ( any(sox_species == m ) ) then
+             sox_wk(:ncol) = sox_wk(:ncol) + wrk_wd(:ncol)*S_molwgt/adv_mass(m)
+          endif
+          if ( any(nhx_species == m ) ) then
+             nhx_wk(:ncol) = nhx_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
+          endif
        endif
-       if ( m == id_n2o5 ) then  ! 2 NOy molecules in N2O5
-          noy_wk(:ncol) = noy_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
-       endif
-       if ( any(sox_species == m ) ) then
-          sox_wk(:ncol) = sox_wk(:ncol) + wrk_wd(:ncol)*S_molwgt/adv_mass(m)
-       endif
-       if ( any(nhx_species == m ) ) then
-          nhx_wk(:ncol) = nhx_wk(:ncol) + wrk_wd(:ncol)*N_molwgt/adv_mass(m)
-       endif
-
     end do
-    
-    call outfld( 'WD_NOY', noy_wk(:ncol), ncol, lchnk )
-    call outfld( 'WD_SOX', sox_wk(:ncol), ncol, lchnk )
-    call outfld( 'WD_NHX', nhx_wk(:ncol), ncol, lchnk )
+    if (gas_wetdep_method=='MOZ') then
+       call outfld( 'WD_NOY', noy_wk(:ncol), ncol, lchnk )
+       call outfld( 'WD_SOX', sox_wk(:ncol), ncol, lchnk )
+       call outfld( 'WD_NHX', nhx_wk(:ncol), ncol, lchnk )
+    endif
 
   end subroutine het_diags
 
