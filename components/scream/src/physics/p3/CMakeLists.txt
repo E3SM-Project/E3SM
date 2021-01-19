@@ -15,7 +15,6 @@ set(P3_SRCS
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
   atmosphere_microphysics.cpp
   p3_inputs_initializer.cpp
-  scream_p3_interface.F90
 )
 
 # Add ETI source files if not on CUDA

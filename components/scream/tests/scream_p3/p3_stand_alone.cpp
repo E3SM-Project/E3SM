@@ -3,8 +3,6 @@
 #include "control/atmosphere_driver.hpp"
 
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/p3/scream_p3_interface.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
 
 #include "physics/share/physics_only_grids_manager.hpp"
 
@@ -57,7 +55,6 @@ TEST_CASE("p3-stand-alone", "") {
 
   // Finalize 
   ad.finalize();
-  p3::P3GlobalForFortran::deinit();
 
   // If we got here, we were able to run p3
   REQUIRE(true);

@@ -1,4 +1,3 @@
-#include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
 
@@ -76,9 +75,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
-  // Call f90 routine
-  p3_init_f90 ();
-
   // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
   // Some options:
   //  - we can tell P3 it can init all inputs or specify which ones it can init. We call the
@@ -138,9 +134,6 @@ void P3Microphysics::run_impl (const Real dt)
     Kokkos::deep_copy(m_p3_host_views_out.at(it.first),it.second.get_view());
   }
 
-  // Call f90 routine
-  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["ni_activated"], m_raw_ptrs_in["nc_nuceat_tend"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"], m_raw_ptrs_out["qv_prev"], m_raw_ptrs_out["T_prev"]);
-
   // Copy outputs back to device
   for (auto& it : m_p3_fields_out) {
     Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
@@ -158,7 +151,7 @@ void P3Microphysics::run_impl (const Real dt)
 // =========================================================================================
 void P3Microphysics::finalize_impl()
 {
-  p3_finalize_f90 ();
+  // Do nothing
 }
 
 // =========================================================================================

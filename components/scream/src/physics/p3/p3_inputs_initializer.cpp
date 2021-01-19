@@ -1,5 +1,4 @@
 #include "physics/p3/p3_inputs_initializer.hpp"
-#include "physics/p3/scream_p3_interface.hpp"
 
 #include <array>
 
@@ -105,9 +104,6 @@ void P3InputsInitializer::initialize_fields ()
   auto qv_prev = h_qv_prev.data();
   auto t_prev  = h_t_prev.data();
   
-  // Call f90 routine
-  p3_standalone_init_f90 (q, T_atm, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend, qv_prev, t_prev);
-
   // Deep copy back to device
   Kokkos::deep_copy(d_q,h_q);
   Kokkos::deep_copy(d_T,h_T);

@@ -84,6 +84,11 @@ protected:
 
   ekat::ParameterList     m_p3_params;
 
+  // Keep track of field dimensions and the iteration count
+  Int m_num_cols; 
+  Int m_num_levs; 
+  Int m_it = 0; 
+
 }; // class P3Microphysics
 
 } // namespace scream
