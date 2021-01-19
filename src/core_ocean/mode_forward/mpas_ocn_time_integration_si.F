@@ -510,7 +510,7 @@ module ocn_time_integration_si
 
            call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
 
-           call ocn_tend_vel(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, stage1_tend_time, dt)
+           call ocn_tend_vel(tendPool, statePool, forcingPool, diagnosticsPool, stage1_tend_time, dt)
 
            block => block % next
          end do
