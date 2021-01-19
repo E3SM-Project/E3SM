@@ -209,7 +209,6 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
-                              iop_mode=iop_mode,                            &
                               scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
@@ -230,7 +229,7 @@ contains
     call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
                         single_column_in=single_column,&
-                        iop_mode_in=iop_mode, scmlat_in=scmlat,       &
+                        scmlat_in=scmlat,       &
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 

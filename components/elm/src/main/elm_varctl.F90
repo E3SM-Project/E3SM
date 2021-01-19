@@ -285,7 +285,6 @@ module elm_varctl
   !----------------------------------------------------------
 
   logical,  public :: single_column = .false. ! true => single column mode
-  logical,  public :: iop_mode      = .false. ! true => iop mode
   real(r8), public :: scmlat        = rundef  ! single column lat
   real(r8), public :: scmlon        = rundef  ! single column lon
 
@@ -459,9 +458,6 @@ contains
     logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the 
                                                                          ! same for branch run
     logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
-    logical,            optional, intent(IN) :: iop_mode_in              ! IOP mode
-                                                                         ! cover planet with identical
-                                                                         ! surface type
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
     real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
     integer,            optional, intent(IN) :: nsrest_in                ! 0: initial run. 1: restart: 3: branch
@@ -477,7 +473,6 @@ contains
     if ( present(caseid_in       ) ) caseid        = caseid_in
     if ( present(ctitle_in       ) ) ctitle        = ctitle_in
     if ( present(single_column_in) ) single_column = single_column_in
-    if ( present(iop_mode_in     ) ) iop_mode      = iop_mode_in
     if ( present(scmlat_in       ) ) scmlat        = scmlat_in
     if ( present(scmlon_in       ) ) scmlon        = scmlon_in
     if ( present(nsrest_in       ) ) nsrest        = nsrest_in
