@@ -260,7 +260,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       do j=1,np_todo
         do i=1,np_todo
 
-<<<<<<< HEAD
           stateQin_qfcst(:,:) = elem(ie)%state%Q(i,j,:,:)
           stateQin1(:,:) = stateQin_qfcst(:,:)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
