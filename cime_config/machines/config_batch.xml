@@ -359,14 +359,14 @@
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="20" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
       </queues>
     </batch_system>
 
     <batch_system MACH="jlse-iris" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="20" default="true">iris</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="16" default="true">iris</queue>
       </queues>
     </batch_system>
 

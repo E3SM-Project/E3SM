@@ -1657,13 +1657,14 @@
 	<command name="purge"/>
         <command name="use">/soft/modulefiles</command>
         <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
+        <command name="use">/soft/restricted/CNDA/modulefiles</command>
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/2019</command>
+	<command name="load">oneapi</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
-	<command name="load">intelmpi/2019-intel</command>
+	<command name="load">mpi</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
@@ -1676,8 +1677,8 @@
       <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="impi">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/intel19</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="OMPI_CC">icc</env>
@@ -1720,7 +1721,7 @@
     <DESC>ANL testbed for ifx compiler + IntelGPU experiments, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intelgpu</COMPILERS>
+    <COMPILERS>intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/azamat/e3sm/inputdata</DIN_LOC_ROOT>
@@ -1733,8 +1734,8 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -1745,11 +1746,9 @@
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
 	<command name="purge"/>
@@ -1757,21 +1756,16 @@
 	<command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
 	<command name="use">/soft/restricted/intel_dga/modulefiles</command>
 	<command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
-      </modules>
-      <modules compiler="intelgpu">
-        <command name="load">omp</command>
-        <command name="load">mkl</command>
+	<command name="load">oneapi</command>
 	<command name="load">mpi</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
-    </environment_variables>
-    <environment_variables compiler="intelgpu">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/intel19</env>
+      <env name="PATH">/home/crlishka/bin:/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_DOMAIN">omp</env>
       <env name="I_MPI_PIN_ORDER">spread</env>

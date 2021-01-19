@@ -2254,6 +2254,31 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
+<compiler MACH="jlse-iris" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
+  </FFLAGS>
+  <MPIFC >mpiifort</MPIFC>
+  <MPICC >mpiicc</MPICC>
+  <MPICXX>mpiicpc</MPICXX>
+  <SCC>icc</SCC>
+  <SCXX>icpc</SCXX>
+  <SFC>ifort</SFC>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -mkl</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
+  </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
 <compiler MACH="jlse-iris" COMPILER="intelgpu">
   <FFLAGS>
     <base>-convert big_endian -assume byterecl -assume realloc_lhs -fp-model consistent</base>
@@ -2273,9 +2298,6 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CXXFLAGS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CPPDEFS>
@@ -2297,12 +2319,12 @@ flags should be captured within MPAS CMake files.
     <base> -free </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <MPIFC>mpiifx</MPIFC>
+  <MPIFC>mpiifwl.sh</MPIFC>
   <MPICC>mpiicx</MPICC>
   <MPICXX>mpiicpx</MPICXX>
   <SCC>icx</SCC>
   <SCXX>icpx</SCXX>
-  <SFC>ifx</SFC>
+  <SFC>ifwl.sh</SFC>
   <LDFLAGS>
     <append compile_threaded="TRUE"> -qopenmp </append>
   </LDFLAGS>
