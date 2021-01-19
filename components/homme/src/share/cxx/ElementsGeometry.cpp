@@ -175,29 +175,6 @@ set_elem_data (const int ie,
   }
 }
 
-void ElementsGeometry::
-set_phis (const int ie, CF90Ptr& phis) {
-  // Check geometry was inited
-  assert (m_num_elems>0);
-
-  // Check input
-  assert (ie>=0 && ie<m_num_elems);
-
-  using ScalarView    = ExecViewUnmanaged<Real [NP][NP]>;
-  using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
-
-  ScalarViewF90           h_phis_f90 (phis);
-  ScalarView::HostMirror  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
-
-  for (int igp = 0; igp < NP; ++igp) {
-    for (int jgp = 0; jgp < NP; ++jgp) {
-      h_phis (igp, jgp) = h_phis_f90 (igp,jgp);
-    }
-  }
-
-  Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
-}
-
 void ElementsGeometry::randomize(const int seed) {
   // Check geometry was inited
   assert (m_num_elems>0);
