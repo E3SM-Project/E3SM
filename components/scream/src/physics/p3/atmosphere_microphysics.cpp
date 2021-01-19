@@ -1,5 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
+#include "physics/p3/p3_main_impl.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -10,6 +11,11 @@ namespace scream
 /*
  * P3 Microphysics routines
 */
+
+  using namespace p3;
+  using P3F          = Functions<Real, DefaultDevice>;
+  using Spack        = typename P3F::Spack;
+  using Pack         = ekat::Pack<Real,Spack::n>;
 
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -139,7 +145,10 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   //  - initable fields may not need initialization (e.g., some other atm proc that
   //    appears earlier in the atm dag might provide them).
 
-  std::vector<std::string> p3_inputs = {"ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev","inv_qc_relvar","nccn_prescribed"};
+  std::vector<std::string> p3_inputs = {"T_atm","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev",
+                                        "qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm","nccn_prescribed","inv_qc_relvar"
+                                       ,"th_atm","exner","dz","cld_frac_l","cld_frac_r","cld_frac_i"  // TODO: Delete these, should be local.
+                                       };
   using strvec = std::vector<std::string>;
   const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
   const bool can_init_all = m_p3_params.get<bool>("Can Initialize All Inputs", false);
@@ -209,10 +218,10 @@ void P3Microphysics::finalize_impl()
 // =========================================================================================
 void P3Microphysics::register_fields (FieldRepository<Real>& field_repo) const {
   for (auto& fid : m_required_fields) {
-    field_repo.register_field(fid);
+    field_repo.register_field<Pack>(fid);
   }
   for (auto& fid : m_computed_fields) {
-    field_repo.register_field(fid);
+    field_repo.register_field<Pack>(fid);
   }
 }
 
