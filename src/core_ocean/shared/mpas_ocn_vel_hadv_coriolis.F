@@ -22,9 +22,8 @@
 module ocn_vel_hadv_coriolis
 
    use mpas_timer
-   use mpas_derived_types
-   use mpas_pool_routines
    use ocn_constants
+   use ocn_mesh
    use ocn_config
 
    implicit none
@@ -52,8 +51,13 @@ module ocn_vel_hadv_coriolis
    !
    !--------------------------------------------------------------------
 
-   logical :: hadvAndCoriolisOn
-   integer :: RK4On
+   logical :: &
+      hadvCoriolisDisabled ! on/off switch for hadv/Coriolis tend
+                           ! use disabled since default is on
+
+   logical :: &
+      usePlanetVorticity   ! multiplicative mask for including 
+                           ! planetary vorticity term
 
 !***********************************************************************
 
@@ -66,100 +70,135 @@ contains
 !> \brief   Computes tendency term for horizontal advection and coriolis force
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
-!> \details
-
-!>  This routine computes the horizontal advection and coriolis and
-!>  advection tendencies for momentum based on current state.
-
+!> \details This routine computes the horizontal advection and 
+!>          coriolis advection tendencies for momentum based on 
+!>          current state.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hadv_coriolis_tend(meshPool, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
-                                    layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
+   subroutine ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
+                                      normPlanetVortEdge, &
+                                      layerThickEdge, normalVelocity, &
+                                      kineticEnergyCell, tend, err)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalizedRelativeVorticityEdge, &!< Input: relative vorticity over thickness, on an edge
-         normalizedPlanetaryVorticityEdge,&!< Input: planetary vorticity over thickness, on an edge
-         layerThicknessEdge,&!< Input: Thickness on edge
-         normalVelocity,&    !< Input: Horizontal velocity
-         kineticEnergyCell   !< Input: Kinetic Energy
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         normRelVortEdge,    &!< [in] relative vorticity/thickness at edge
+         normPlanetVortEdge, &!< [in] planetary vorticity/thickness at edge
+         layerThickEdge,     &!< [in] layer thickness on edge
+         normalVelocity,     &!< [in] Horizontal velocity
+         kineticEnergyCell    !< [in] Kinetic Energy
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend                 !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnEdge
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnEdge, edgeMask
-      real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
-      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer ::       &
+         iEdge, j, k,  &! loop indices for edges, vertical
+         cell1, cell2, &! neighbor cell indices
+         eoe            ! edge on edge index
 
-      integer :: j, k
-      integer :: cell1, cell2, iEdge, eoe, nEdges
-      integer, pointer :: nVertLevels
-      integer, dimension(:), pointer :: nEdgesArray
-      real (kind=RKIND) :: workVorticity, invLength, edgeWeight, r_tmp
-      real (kind=RKIND), dimension(:), allocatable :: qArr
+      real (kind=RKIND) :: &
+         avgVorticity, &! vorticity averaged across edge
+         invLength,    &! temp variable for 1/dcedge
+         edgeWeight     ! weight for summing over edges
+
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         qArr,         &! temporary vorticity array
+         tmpVorticity   ! vorticity on edge
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Set error code and exit early if disabled
+      !*** Otherwise, start timer
 
       err = 0
-
-      if ( .not. hadvAndCoriolisOn ) return
-
+      if (hadvCoriolisDisabled) return
       call mpas_timer_start("coriolis")
 
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
-      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      !*** allocate and transfer temporary arrays
 
-      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      allocate(tmpVorticity(nVertLevels,nEdgesAll), &
+                       qArr(nVertLevels,nEdgesAll))
+      !$acc enter data create(tmpVorticity, qArr)
 
-      nEdges = nEdgesArray( 1 )
+#ifndef MPAS_OPENACC
+      !$omp parallel
+#endif
+      if (usePlanetVorticity) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(tmpVorticity, normRelVortEdge, &
+         !$acc            normPlanetVortEdge) &
+         !$acc    private(k)
+#else
+         !$omp do schedule(runtime) &
+         !$omp    private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k=1,nVertLevels
+            tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge) + &
+                                 normPlanetVortEdge(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      else
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(tmpVorticity, normRelVortEdge) &
+         !$acc    private(k)
+#else
+         !$omp do schedule(runtime) &
+         !$omp    private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k=1,nVertLevels
+            tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      endif
+#ifndef MPAS_OPENACC
+         !$omp end parallel
+#endif
 
-      allocate( qArr(nVertLevels) )
-
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
+      !$acc            maxLevelEdgeTop, qArr, tmpVorticity, &
+      !$acc            normalVelocity, layerThickEdge) &
+      !$acc    private(k, j, eoe, edgeWeight, avgVorticity)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(cell1, cell2, invLength, k, qArr, j, eoe, edgeWeight, workVorticity)
-      do iEdge = 1, nEdges
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
+      !$omp    private(k, j, eoe, edgeWeight, avgVorticity)
+#endif
+      do iEdge = 1, nEdgesOwned
 
-         invLength = 1.0_RKIND / dcEdge(iEdge)
-
-         do k = 1, maxLevelEdgeTop(iEdge)
-            qArr(k) = 0.0_RKIND
+         do k = 1, nVertLevels
+            qArr(k,iEdge) = 0.0_RKIND
          end do
 
          do j = 1, nEdgesOnEdge(iEdge)
@@ -167,24 +206,48 @@ contains
             edgeWeight = weightsOnEdge(j, iEdge)
 
             do k = 1, maxLevelEdgeTop(iEdge)
-               workVorticity = 0.5_RKIND &
-                  * (  normalizedRelativeVorticityEdge(k, iEdge) + RK4On * normalizedPlanetaryVorticityEdge(k, iEdge) &
-                     + normalizedRelativeVorticityEdge(k, eoe)   + RK4On * normalizedPlanetaryVorticityEdge(k, eoe))
-               qArr(k) = qArr(k) + edgeWeight * normalVelocity(k, eoe) * workVorticity * layerThicknessEdge(k, eoe)
+               avgVorticity = 0.5_RKIND* &
+                              (tmpVorticity(k,iEdge) + &
+                               tmpVorticity(k,eoe))
+               qArr(k,iEdge) = qArr(k,iEdge) + &
+                               edgeWeight*normalVelocity(k,eoe)* &
+                               avgVorticity*layerThickEdge(k,eoe)
             end do
 
          end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, maxLevelEdgeTop, edgeMask, &
+      !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
+      !$acc    private(cell1, cell2, invLength, k)
+#else
+      !$omp do schedule(runtime) &
+      !$omp    private(cell1, cell2, invLength, k)
+#endif
+      do iEdge = 1, nEdgesOwned
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         invLength = 1.0_RKIND / dcEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
-            tend(k, iEdge) = tend(k, iEdge) + edgeMask(k, iEdge) * ( qArr(k) - ( kineticEnergyCell(k, cell2) &
-                          - kineticEnergyCell(k, cell1) ) * invLength )
+            tend(k,iEdge) = tend(k,iEdge) + &
+                        edgeMask(k,iEdge)* (qArr(k,iEdge) - &
+                           (kineticEnergyCell(k,cell2) &
+                          - kineticEnergyCell(k,cell1))*invLength)
          end do
-
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
-      deallocate( qArr )
+      !$acc exit data delete(tmpVorticity, qArr)
+      deallocate(qArr,tmpVorticity)
 
       call mpas_timer_stop("coriolis")
 
@@ -197,7 +260,7 @@ contains
 !  routine ocn_vel_hadv_coriolis_init
 !
 !> \brief   Initializes ocean momentum horizontal advection and
-!>  coriolis tendencies
+!>          coriolis tendencies
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    September 2011
 !
@@ -208,30 +271,50 @@ contains
    !--------------------------------------------------------------------
 
       !-----------------------------------------------------------------
-      !
       ! Output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Initialize returned error code and default flags
 
       err = 0
 
-      hadvAndCoriolisOn = .true.
+      hadvCoriolisDisabled = .false.
+      usePlanetVorticity   = .false.
 
-      if ( config_disable_vel_coriolis ) hadvAndCoriolisOn = .false.
+      !*** Reset module variables based in input configuration
 
-      if ( trim( config_time_integrator ) == 'RK4') then
+      if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+
+      select case (trim(config_time_integrator))
+      case ('RK4','rk4')
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
-         RK4On = 1
-      elseif ( trim( config_time_integrator ) == 'split_explicit' &
-        .or. trim( config_time_integrator ) == 'unsplit_explicit' &
-        .or. trim( config_time_integrator ) == 'semi_implicit') then
-         ! For split explicit, Coriolis tendency uses eta/h because the Coriolis term
-         ! is added separately to the momentum tendencies.
-         RK4On = 0
-      end if
+         usePlanetVorticity = .true.
 
+      case ('split_explicit')
+         ! For split explicit, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum 
+         ! tendencies.
+         usePlanetVorticity = .false.
+
+      case ('unsplit_explicit')
+         ! For unsplit explicit, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum 
+         ! tendencies.
+         usePlanetVorticity = .false.
+
+      case ('semi_implicit')
+         ! For semi-implicit, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum 
+         ! tendencies.
+         usePlanetVorticity = .false.
+
+      end select
 
    !--------------------------------------------------------------------
 
