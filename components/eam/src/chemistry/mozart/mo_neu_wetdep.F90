@@ -41,6 +41,10 @@ module mo_neu_wetdep
   logical :: do_neu_wetdep
 !
   real(r8), parameter  :: TICE=263._r8
+<<<<<<< HEAD
+=======
+
+>>>>>>> a7bf21dcac (Update NEU wet deposition)
 contains
 
 !-----------------------------------------------------------------------
@@ -148,7 +152,11 @@ subroutine neu_wetdep_init
   mapping_to_mmr = -99
   do m=1,gas_wetdep_cnt
     if ( debug .and. masterproc ) write(iulog, '(i4,a)') m,trim(gas_wetdep_list(m))
+<<<<<<< HEAD
     call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abrtf=.false. )
+=======
+    call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abort=.false. )
+>>>>>>> a7bf21dcac (Update NEU wet deposition)
     if ( debug .and. masterproc ) write(iulog, '(a,i4)') 'mapping_to_mmr ',mapping_to_mmr(m)
     if ( mapping_to_mmr(m) <= 0 ) then
       if (masterproc) write(iulog,*) 'problem with mapping_to_mmr of ',gas_wetdep_list(m)
@@ -182,6 +190,7 @@ subroutine neu_wetdep_init
     call addfld     ('HEFF_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','M/atm','Effective Henrys Law coeff.')
     call add_default('DTWR_'//trim(gas_wetdep_list(m)), 1, ' ')
     call add_default('WD_'//trim(gas_wetdep_list(m)), 1, ' ')
+<<<<<<< HEAD
     if (history_gaschmbudget_2D_levels) then
     call addfld     ('WD_L1_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L1')
     call addfld     ('WD_L2_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L2')
@@ -192,6 +201,8 @@ subroutine neu_wetdep_init
     call add_default('WD_L3_'//trim(gas_wetdep_list(m)), 1, ' ')
     call add_default('WD_L4_'//trim(gas_wetdep_list(m)), 1, ' ')
     end if
+=======
+>>>>>>> a7bf21dcac (Update NEU wet deposition)
   end do
 !
   if ( do_diag ) then
@@ -235,6 +246,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
   real(r8),       intent(in)    :: cld(ncol, pver)
   real(r8),       intent(in)    :: cmfdqr(ncol, pver)
   real(r8),       intent(inout) :: wd_tend(pcols,pver,pcnst)
+<<<<<<< HEAD
 
   logical, optional, intent(in) :: history_gaschmbudget_2D_levels
   integer, optional, intent(in) :: gaschmbudget_2D_L1_s
@@ -245,6 +257,8 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
   integer, optional, intent(in) :: gaschmbudget_2D_L3_e
   integer, optional, intent(in) :: gaschmbudget_2D_L4_s
   integer, optional, intent(in) :: gaschmbudget_2D_L4_e 
+=======
+>>>>>>> a7bf21dcac (Update NEU wet deposition)
 !
 ! local arrays and variables
 !
@@ -443,6 +457,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
       wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
     end do
     call outfld( 'WD_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+<<<<<<< HEAD
 
     if (history_gaschmbudget_2D_levels) then 
       wk_out = 0._r8
@@ -480,6 +495,8 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
     else
       mmr(1:ncol,:,mapping_to_mmr(m)) = mmr(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)*delt
     end if
+=======
+>>>>>>> a7bf21dcac (Update NEU wet deposition)
   end do
 !
   if ( do_diag ) then
