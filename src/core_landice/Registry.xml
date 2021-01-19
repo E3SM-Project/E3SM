@@ -760,8 +760,6 @@
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
-			<var name="sigmamin"/>
-			<var name="sigmamax"/>
 		</stream>
                 <!-- input stream for regions masks files (currently only used by regional stats AM, and 
                      the only field used is the regionCellMasks field -->
@@ -1078,13 +1076,16 @@ is the value of that variable from the *previous* time level!
                 />
             <var name="effectiveViscosity" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
                      description="effective viscosity"
+                     persistence="persistent"
                 />
                 <var name="epsmax" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
                      description="strain rate along the direction of maximum deviatoric principal stress"
                 />
-                <var name="sigmamax" type="real" dimensions="nCells Time" units="Pa" time_levs="1"
+                <!-- SFP: move to vel mod --> 
+                <!-- var name="sigmamax" type="real" dimensions="nCells Time" units="Pa" time_levs="1"
                      description="maximum deviatoric principal stress"
-                />
+                     persistence="persistent"
+                / -->
                 <var name="damageSource" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
                      description="damage source term"
                 />
@@ -1270,6 +1271,25 @@ is the value of that variable from the *previous* time level!
                 <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
                      description="magnitude of second principal surface strain rate"
                 />
+                <!-- SFP: moved from scratch -->
+                <var name="sigmaxx" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xx"
+                />
+                <var name="sigmayy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress yy"
+                />
+                <var name="sigmaxy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xy"
+                />
+                <var name="sigmayx" type="real" dimensions="nCells Time" units="Pa"     
+                     description="deviatoric stress yx"
+                />
+                <var name="sigmamax" type="real" dimensions="nCells Time" units="Pa"    
+                     description="maximum principal stress"
+                />
+                <var name="sigmamin" type="real" dimensions="nCells Time" units="Pa"    
+                     description="minimum principal stress"
+                />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
@@ -1403,9 +1423,10 @@ is the value of that variable from the *previous* time level!
 	       />
       <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
 	       description="depth averaged flow parameter A"
-	       persistence="scratch"
+	       persistence="persistent"
 	       />
-      <var name="sigmaxy" type="real" dimensions="nCells" units="Pa"
+      <!-- SFP: moved all of these into vel mod -->
+      <!-- var name="sigmaxy" type="real" dimensions="nCells" units="Pa"
 	       description="deviatoric stress xy"
 	       persistence="persistent"
 	       />
@@ -1424,7 +1445,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="sigmamin" type="real" dimensions="nCells" units="Pa"
 	       description="minimum principal deviatoric stress"
 	       persistence="persistent"
-	       />
+	       / -->
 	  <var name="alpha" type="real" dimensions="nCells" units="none"
 	       description="the ratio of the principal horizontal strain rate"
 	       persistence="scratch"
