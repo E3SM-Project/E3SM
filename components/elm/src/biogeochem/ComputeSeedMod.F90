@@ -11,11 +11,11 @@ module ComputeSeedMod
   use elm_varcon               , only : c3_r2, c4_r2, c14ratio
   use elm_varctl               , only : iulog
   use abortutils               , only : endrun
-  use SpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
-  use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use SpeciesMod               , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
+  use SpeciesMod               , only : CN_SPECIES_N, CN_SPECIES_P
   use VegetationPropertiesType , only : veg_vp
-  use VegetationType           , only : veg_pp                
-  use LandunitType             , only : lun_pp                
+  use VegetationType           , only : veg_pp
+  use LandunitType             , only : lun_pp
   !
   ! !PUBLIC ROUTINES:
   implicit none
@@ -35,6 +35,11 @@ module ComputeSeedMod
   integer  , parameter :: COMPONENT_SEED       = 3
   real(r8) , parameter :: leafc_seed_param     = 1._r8
   real(r8) , parameter :: deadstemc_seed_param = 0.1_r8
+  !$acc declare copyin (COMPONENT_LEAF      )
+  !$acc declare copyin (COMPONENT_DEADWOOD  )
+  !$acc declare copyin (COMPONENT_SEED      )
+  !$acc declare copyin (leafc_seed_param    )
+  !$acc declare copyin (deadstemc_seed_param)
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -43,7 +48,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine ComputeSeedAmounts(bounds,                                &
+  subroutine ComputeSeedAmounts(bounds,p,l,c,                          &
        species,                                                        &
        leaf_patch, leaf_storage_patch, leaf_xfer_patch,                &
        compute_here_patch, ignore_current_state_patch,                 &
@@ -62,33 +67,30 @@ contains
     ! here.
     !
     ! !USES:
+      !$acc routine seq
     use pftvarcon       , only : noveg
-    use landunit_varcon , only : istsoil, istcrop
     !
                                                                                   ! !ARGUMENTS:
     type(bounds_type) , intent(in)     :: bounds
+    integer, value    , intent(in)     :: p,l,c
     integer           , intent(in)     :: species                                 ! which C/N species we're operating on; should be one of the values in SpeciesMod
-    real(r8)          , intent(in)     :: leaf_patch( bounds%begp: )              ! current leaf C or N content (g/m2)
-    real(r8)          , intent(in)     :: leaf_storage_patch( bounds%begp: )      ! current leaf C or N storage content (g/m2)
-    real(r8)          , intent(in)     :: leaf_xfer_patch( bounds%begp: )         ! current leaf C or N xfer content (g/m2)
-
+    real(r8)          , intent(in)     :: leaf_patch!( bounds%begp: )             ! current leaf C or N content (g/m2)
+    real(r8)          , intent(in)     :: leaf_storage_patch!( bounds%begp: )     ! current leaf C or N storage content (g/m2)
+    real(r8)          , intent(in)     :: leaf_xfer_patch!( bounds%begp: )        ! current leaf C or N xfer content (g/m2)
                                                                                   ! whether to compute outputs for each patch
-    logical           , intent(in)     :: compute_here_patch( bounds%begp: )
-
+    logical           , intent(in)     :: compute_here_patch!( bounds%begp: )
                                                                                   ! If ignore_current_state is true, then use default leaf proportions rather than
                                                                                   ! proportions based on current state.
-    logical           , intent(in)     :: ignore_current_state_patch( bounds%begp: )
-
-    real(r8)          , intent(inout)  :: seed_leaf_patch( bounds%begp: )         ! seed amount for leaf itself for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_leaf_storage_patch( bounds%begp: ) ! seed amount for leaf storage for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_leaf_xfer_patch( bounds%begp: )    ! seed amount for leaf xfer for this species (g/m2)
-    real(r8)          , intent(inout)  :: seed_deadstem_patch( bounds%begp: )     ! seed amount for deadstem for this species (g/m2)
+    logical           , intent(in)     :: ignore_current_state_patch!( bounds%begp: )
+    real(r8)          , intent(inout)  :: seed_leaf_patch !( bounds%begp: )         ! seed amount for leaf itself for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_leaf_storage_patch!( bounds%begp: ) ! seed amount for leaf storage for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_leaf_xfer_patch!( bounds%begp: )    ! seed amount for leaf xfer for this species (g/m2)
+    real(r8)          , intent(inout)  :: seed_deadstem_patch!( bounds%begp: )     ! seed amount for deadstem for this species (g/m2)
     real(r8), optional, intent(in)     :: pool_seed_param
-    real(r8), optional, intent(inout)  :: pool_seed_patch( bounds%begp: )
+    real(r8), optional, intent(inout)  :: pool_seed_patch!( bounds%begp: )
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp, p, c, l
-    integer  :: begp, endp
+    !integer  :: fp, p, c, l
     real(r8) :: my_leaf_seed
     real(r8) :: my_deadstem_seed
     real(r8) :: my_pool_seed
@@ -96,49 +98,26 @@ contains
     real(r8) :: pleaf
     real(r8) :: pstor
     real(r8) :: pxfer
-
-    character(len=*), parameter :: subname = 'ComputeSeedAmounts'
     !-----------------------------------------------------------------------
 
-    begp = bounds%begp
-    endp = bounds%endp
-
-    SHR_ASSERT_ALL((ubound(leaf_patch                 ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(leaf_storage_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(leaf_xfer_patch            ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(compute_here_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(ignore_current_state_patch ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_patch            ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_storage_patch    ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_xfer_patch       ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_deadstem_patch        ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    
     if (present(pool_seed_patch)) then
-       SHR_ASSERT_ALL((ubound(pool_seed_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
        if (.not. present(pool_seed_param)) then
-          call endrun(subname//': pool_seed_patch can only be provided with pool_seed_param')          
+          stop ': pool_seed_patch can only be provided with pool_seed_param'
        end if
     end if
 
-    
-    do p = bounds%begp,bounds%endp
-       c = veg_pp%column(p)
-
-       l = veg_pp%landunit(p)
-
-       if (compute_here_patch(p) .and. (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)) then
-
+    if (compute_here_patch) then
           my_leaf_seed = 0._r8
           my_deadstem_seed = 0._r8
           my_pool_seed = 0._r8
           pft_type = veg_pp%itype(p)
 
           call LeafProportions( &
-               ignore_current_state = ignore_current_state_patch(p), &
+               ignore_current_state = ignore_current_state_patch , &
                pft_type = pft_type, &
-               leaf = leaf_patch(p), &
-               leaf_storage = leaf_storage_patch(p), &
-               leaf_xfer = leaf_xfer_patch(p), &
+               leaf = leaf_patch , &
+               leaf_storage = leaf_storage_patch , &
+               leaf_xfer = leaf_xfer_patch , &
                pleaf = pleaf, &
                pstorage = pstor, &
                pxfer = pxfer)
@@ -156,21 +135,19 @@ contains
              end if
           end if
 
-          seed_leaf_patch(p)         = my_leaf_seed * pleaf
-          seed_leaf_storage_patch(p) = my_leaf_seed * pstor
-          seed_leaf_xfer_patch(p)    = my_leaf_seed * pxfer
-          seed_deadstem_patch(p)     = my_deadstem_seed
+          seed_leaf_patch          = my_leaf_seed * pleaf
+          seed_leaf_storage_patch  = my_leaf_seed * pstor
+          seed_leaf_xfer_patch     = my_leaf_seed * pxfer
+          seed_deadstem_patch      = my_deadstem_seed
           if (present(pool_seed_param)) then
-             pool_seed_patch(p) = my_pool_seed
+             pool_seed_patch  = my_pool_seed
           end if
        else
-          seed_leaf_patch(p)         = 0._r8
-          seed_leaf_storage_patch(p) = 0._r8
-          seed_leaf_xfer_patch(p)    = 0._r8
-          seed_deadstem_patch(p)     = 0._r8
+          seed_leaf_patch          = 0._r8
+          seed_leaf_storage_patch  = 0._r8
+          seed_leaf_xfer_patch     = 0._r8
+          seed_deadstem_patch      = 0._r8
        end if
-
-    end do
 
   end subroutine ComputeSeedAmounts
 
@@ -185,6 +162,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer , intent(in)  :: pft_type
     logical , intent(in)  :: ignore_current_state
     real(r8), intent(in)  :: leaf         ! g/m2 leaf C or N
@@ -229,7 +207,7 @@ contains
     ! this value into an appropriate value for c13, c14, n or p.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     real(r8)            :: multiplier ! function result
     integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in SpeciesMod
@@ -238,7 +216,6 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'SpeciesTypeMultiplier'
     !-----------------------------------------------------------------------
 
     select case (species)
@@ -269,8 +246,7 @@ contains
              multiplier = 0._r8
           end if
        case default
-          write(iulog,*) subname//' ERROR: unknown component: ', component
-          call endrun(subname//': unknown component')
+          print *, ' ERROR: unknown component: ', component
        end select
 
     case (CN_SPECIES_P)
@@ -286,13 +262,11 @@ contains
              multiplier = 0._r8
           end if
        case default
-          write(iulog,*) subname//' ERROR: unknown component: ', component
-          call endrun(subname//': unknown component')
+          print *, ' ERROR: unknown component: ', component
        end select
 
     case default
-       write(iulog,*) subname//' ERROR: unknown species: ', species
-       call endrun(subname//': unknown species')
+       print *, ' ERROR: unknown species: ', species
     end select
 
   end function SpeciesTypeMultiplier
