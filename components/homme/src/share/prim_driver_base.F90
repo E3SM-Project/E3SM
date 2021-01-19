@@ -999,7 +999,7 @@ contains
     !       tl%n0    time t + dt_q
 
     use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
-         dt_remap_factor, dt_tracer_factor, transport_alg, ftype
+         dt_remap_factor, dt_tracer_factor, transport_alg
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
@@ -1052,9 +1052,7 @@ contains
     if(disable_diagnostics) compute_diagnostics= .false.
 
     ! compute scalar diagnostics if currently active
-    if (ftype /= 1) then
-       if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
-    endif
+    if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
 
     if (.not. independent_time_steps) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
@@ -1514,7 +1512,7 @@ contains
   !    remap                    remap back to ref levels.  ps_v now valid
   !    write restart files      ps_v ok for restart
   !
-  use control_mod,        only : use_moisture, adjust_ps
+  use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
@@ -1537,6 +1535,7 @@ contains
   real (kind=real_kind)  :: fq
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
+  logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1546,6 +1545,16 @@ contains
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#endif
+
+#ifdef MODEL_THETA_L
+  if (dt_remap_factor==0) then
+     adjust_ps=.true.   ! stay on reference levels for Eulerian case
+  else
+     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+  endif
+#else
+  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
@@ -1691,8 +1700,8 @@ contains
 #endif
 
   end subroutine applyCAMforcing_tracers
-
-
+  
+  
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
   !
   !   prim_step version for single column model (SCM)

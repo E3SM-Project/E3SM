@@ -623,27 +623,6 @@ contains
     adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
 
-    !check that dt_remap_factor, etc. were set
-    if(dt_remap_factor /= -1) then
-      dt_hv = tstep !dt_hv = dyn. dt
-
-      dt_remap = tstep*dt_remap_factor
-      dt_tracer = tstep*dt_tracer_factor
-
-      dt_run_sub = tstep*max(dt_remap_factor,dt_tracer_factor)
-
-      if(ftype == 1 .or. ftype == 0) dt_forcing = nsplit*dt_run_sub
-      if(ftype == 4) dt_forcing = tstep
-
-      if(ftype == 2) then
-        if (dt_remap_factor > 0)  dt_forcing = tstep*dt_remap_factor
-        if (dt_remap_factor == 0) dt_forcing = tstep
-      endif
-
-    else
-      call abortmp('control_params_init should be called after factor params are set')
-    endif
-
   end subroutine control_params_init
 
 
