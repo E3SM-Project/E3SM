@@ -1,6 +1,8 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
 #include "physics/p3/p3_main_impl.hpp"
+// Needed for p3_init, the only F90 code still used.
+#include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -16,6 +18,10 @@ namespace scream
   using P3F          = Functions<Real, DefaultDevice>;
   using Spack        = typename P3F::Spack;
   using Pack         = ekat::Pack<Real,Spack::n>;
+
+  using view_1d  = typename P3F::view_1d<Real>;
+  using view_2d  = typename P3F::view_2d<Spack>;
+  using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
 
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -133,6 +139,9 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
+  // Initialize p3
+  p3_init();
+
   // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
   // Some options:
   //  - we can tell P3 it can init all inputs or specify which ones it can init. We call the
@@ -200,13 +209,85 @@ void P3Microphysics::run_impl (const Real dt)
     Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
   }
 
+  // Prep views to be passed to p3_main structures -> eventually passed to p3_main itself.
+  // For organization purposes the views are organized by the structure they will eventually
+  // be a part of (similar to the declarations of fields above).
+  auto qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
+  auto nc     = m_p3_fields_out["nc"].get_reshaped_view<Pack**>();
+  auto qr     = m_p3_fields_out["qr"].get_reshaped_view<Pack**>();
+  auto nr     = m_p3_fields_out["nr"].get_reshaped_view<Pack**>();
+  auto qi     = m_p3_fields_out["qi"].get_reshaped_view<Pack**>();
+  auto qm     = m_p3_fields_out["qm"].get_reshaped_view<Pack**>();
+  auto ni     = m_p3_fields_out["ni"].get_reshaped_view<Pack**>();
+  auto bm     = m_p3_fields_out["bm"].get_reshaped_view<Pack**>();
+  auto qv     = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
+  auto th_atm = m_p3_fields_out["th_atm"].get_reshaped_view<Pack**>();
+  // --Diagnostic Input Variables:
+  auto nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
+  auto nccn_prescribed = m_p3_fields_in["nccn_prescribed"].get_reshaped_view<const Pack**>();
+  auto ni_activated    = m_p3_fields_in["ni_activated"].get_reshaped_view<const Pack**>();
+  auto inv_qc_relvar   = m_p3_fields_in["inv_qc_relvar"].get_reshaped_view<const Pack**>();
+  auto pmid            = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
+  auto dp              = m_p3_fields_in["dp"].get_reshaped_view<const Pack**>();
+  auto qv_prev         = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
+  auto T_prev          = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
+  // TODO: replace below with a local representation based on updated state values
+  auto cld_frac_i = m_p3_fields_out["cld_frac_i"].get_reshaped_view<Pack**>();
+  auto cld_frac_l = m_p3_fields_out["cld_frac_l"].get_reshaped_view<Pack**>();
+  auto cld_frac_r = m_p3_fields_out["cld_frac_r"].get_reshaped_view<Pack**>();
+  auto dz         = m_p3_fields_out["dz"].get_reshaped_view<Pack**>();
+  auto exner      = m_p3_fields_out["exner"].get_reshaped_view<Pack**>();
+  // --Diagnostic Outputs
+  view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
+  view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
+  view_2d qv2qi_depos_tend("qv2qi_depos_tend",m_num_cols,m_num_levs);
+  view_2d rho_qi("rho_qi",m_num_cols,m_num_levs);
+  view_2d precip_liq_flux("precip_liq_flux",m_num_cols,m_num_levs);
+  view_2d precip_ice_flux("precip_ice_flux",m_num_cols,m_num_levs);
+  auto mu_c               = m_p3_fields_out["mu_c"].get_reshaped_view<Pack**>();
+  auto lamc               = m_p3_fields_out["lamc"].get_reshaped_view<Pack**>();
+  auto diag_eff_radius_qc = m_p3_fields_out["diag_eff_radius_qc"].get_reshaped_view<Pack**>();
+  auto diag_eff_radius_qi = m_p3_fields_out["diag_eff_radius_qi"].get_reshaped_view<Pack**>();
+  auto precip_total_tend  = m_p3_fields_out["precip_total_tend"].get_reshaped_view<Pack**>();
+  auto nevapr             = m_p3_fields_out["nevapr"].get_reshaped_view<Pack**>();
+  auto qr_evap_tend       = m_p3_fields_out["qr_evap_tend"].get_reshaped_view<Pack**>();
+  // --Infrastructure
+  // dt is passed as an argument to run_impl
+  m_it++;
+  Int its = 0;
+  Int ite = m_num_cols-1;
+  Int kts = 0;
+  Int kte = m_num_levs-1;
+  bool do_predict_nc = true;     // Hard-coded for now, TODO: make this a runtime option 
+  bool do_prescribed_CCN = true; // Hard-coded for now, TODO: make this a runtime option
+  sview_2d col_location("col_location", m_num_cols, 3);
+  // --History Only
+  auto liq_ice_exchange = m_p3_fields_out["liq_ice_exchange"].get_reshaped_view<Pack**>();
+  auto vap_liq_exchange = m_p3_fields_out["vap_liq_exchange"].get_reshaped_view<Pack**>();
+  auto vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
+
+  // Pack our data into structs and ship it off to p3_main.
+  P3F::P3PrognosticState prog_state{ qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm };
+  P3F::P3DiagnosticInputs diag_inputs{ nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, 
+                                       cld_frac_i, cld_frac_l, cld_frac_r, pmid, dz, dp, exner, qv_prev, T_prev };
+  P3F::P3DiagnosticOutputs diag_outputs{ mu_c, lamc, qv2qi_depos_tend, precip_liq_surf,
+                                         precip_ice_surf, diag_eff_radius_qc, diag_eff_radius_qi, rho_qi,
+                                         precip_total_tend, nevapr, qr_evap_tend, precip_liq_flux, precip_ice_flux };
+  P3F::P3Infrastructure infrastructure{ dt, m_it, its, ite, kts, kte, do_predict_nc, do_prescribed_CCN, col_location };
+  P3F::P3HistoryOnly history_only{ liq_ice_exchange, vap_liq_exchange, vap_ice_exchange };
+
+  // Run p3 main
+  auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
+                                       history_only, m_num_cols, m_num_levs);
+
   // Get a copy of the current timestamp (at the beginning of the step) and
   // advance it, updating the p3 fields.
   auto ts = timestamp();
   ts += dt;
-//  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
-//  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
-//  m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(ts);
+  for (auto& f : m_p3_fields_out) {
+    f.second.get_header().get_tracking().update_time_stamp(ts);
+  }
+
 }
 
 // =========================================================================================

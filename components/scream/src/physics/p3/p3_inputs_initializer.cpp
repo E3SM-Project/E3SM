@@ -262,7 +262,6 @@ void P3InputsInitializer::initialize_fields ()
     h_T_prev(icol_i,ipack)[ivec]          = h_T_prev(icol,ipack)[ivec]         ;
     }
   }
-  printf("ASD - new version p3, %d %d, %d\n",ncol,nk,icol_in_max);
 
   // Deep copy back to device
   Kokkos::deep_copy(d_T_atm          , h_T_atm          ); 
