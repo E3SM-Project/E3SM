@@ -1791,7 +1791,7 @@ contains
                         abs(snwliqtot(c)) > 1.e-7_r8 ) then
                       write(iulog,*)'Inconsistency in SnowDivision_Lake! c, remainders', &
                            'dztot, snwicetot, snwliqtot = ',c,dztot(c),snwicetot(c),snwliqtot(c)
-                      call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                      call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                    end if
                 end if
              end do
@@ -2339,7 +2339,7 @@ contains
            if (h2osoi_ice(c,0) < 0._r8 .or. h2osoi_liq(c,0) < 0._r8 ) then
               write(iulog,*)'ERROR: capping procedure failed (negative mass remaining) c = ',c
               write(iulog,*)'h2osoi_ice = ', h2osoi_ice(c,0), ' h2osoi_liq = ', h2osoi_liq(c,0)
-              call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+              call endrun(decomp_index=c, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
            end if
 
            ! Correct the top layer aerosol mass to account for snow capping.
