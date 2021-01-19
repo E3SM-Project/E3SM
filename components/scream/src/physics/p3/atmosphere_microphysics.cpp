@@ -31,43 +31,95 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
+  auto nondim = m/m;
+  auto mm = m/1000;
 
-  constexpr int NVL = SCREAM_NUM_VERTICAL_LEV;
-  constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  // Retrieve physical dimension extents
+  m_num_levs = SCREAM_NUM_VERTICAL_LEV;  // Number of levels per column
 
   const auto& grid_name = m_p3_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
-  const int num_dofs = grid->get_num_local_dofs();
-  const int nc = num_dofs;
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this ranks
 
+  // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  FieldLayout scalar3d_layout_mid { {COL,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout scalar3d_layout_int { {COL,VL}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
-  FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
+  FieldLayout scalar3d_layout_mid { {COL,VL}, {m_num_cols,m_num_levs} };   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level 
+  FieldLayout scalar3d_layout_int { {COL,VL}, {m_num_cols,m_num_levs+1} }; // Layout for 3D (2d horiz X 1d vertical) variable defined at the interfaces
 
-  // Inputs
-  auto nondim = m/m;
-  m_required_fields.emplace("ast",            scalar3d_layout_mid,   nondim, grid_name);
-  m_required_fields.emplace("ni_activated",   scalar3d_layout_mid,   1/kg, grid_name);
-  m_required_fields.emplace("nc_nuceat_tend", scalar3d_layout_mid,   1/(kg*s), grid_name);
-  m_required_fields.emplace("pmid",           scalar3d_layout_mid,   Pa, grid_name);
-  m_required_fields.emplace("dp",             scalar3d_layout_mid,   Pa, grid_name);
-  m_required_fields.emplace("zi",             scalar3d_layout_int,   m, grid_name);
-  m_required_fields.emplace("T_prev",  scalar3d_layout_mid, K, grid_name);
-  m_required_fields.emplace("qv_prev", vector3d_layout_mid, Q, grid_name);
+  // Define fields needed in P3.
+  // Note: p3_main is organized by a set of 5 structures, variables below are organized
+  //       using the same approach to make it easier to follow.
 
-  // Input-Outputs
-  m_required_fields.emplace("FQ", tracers_layout,      Q, grid_name);
-  m_required_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
-  m_required_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
+  // These variables are needed, but not actually passed to p3_main.  For organization
+  // purposes they are listed here:
+  m_required_fields.emplace("ast",   scalar3d_layout_mid, nondim, grid_name);
+  m_required_fields.emplace("pmid",  scalar3d_layout_mid, Pa,     grid_name);
+  m_required_fields.emplace("zi",    scalar3d_layout_int, m,      grid_name);
+  m_required_fields.emplace("T_atm", scalar3d_layout_mid, K,      grid_name);
+  m_computed_fields.emplace("T_atm", scalar3d_layout_mid, K,      grid_name);  // T_atm is the only one of these variables that is also updated.
 
-  m_computed_fields.emplace("FQ", tracers_layout,      Q, grid_name);
-  m_computed_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
-  m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
-  m_computed_fields.emplace("T_prev",  scalar3d_layout_mid, K, grid_name);
-  m_computed_fields.emplace("qv_prev", vector3d_layout_mid, Q, grid_name);
+  // Prognostic State:  (all fields are both input and output)
+  m_required_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
+  m_required_fields.emplace("qc",     scalar3d_layout_mid, Q,    grid_name);
+  m_required_fields.emplace("qr",     scalar3d_layout_mid, Q,    grid_name);
+  m_required_fields.emplace("qi",     scalar3d_layout_mid, Q,    grid_name);
+  m_required_fields.emplace("qm",     scalar3d_layout_mid, Q,    grid_name);
+  m_required_fields.emplace("nc",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_required_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_required_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_required_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.
+  //
+  m_computed_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
+  m_computed_fields.emplace("qc",     scalar3d_layout_mid, Q,    grid_name);
+  m_computed_fields.emplace("qr",     scalar3d_layout_mid, Q,    grid_name);
+  m_computed_fields.emplace("qi",     scalar3d_layout_mid, Q,    grid_name);
+  m_computed_fields.emplace("qm",     scalar3d_layout_mid, Q,    grid_name);
+  m_computed_fields.emplace("nc",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_computed_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_computed_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_computed_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
+  m_computed_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);
+  // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
+  m_required_fields.emplace("nc_nuceat_tend",  scalar3d_layout_mid, 1/(kg*s), grid_name);
+  m_required_fields.emplace("nccn_prescribed", scalar3d_layout_mid, nondim,   grid_name);
+  m_required_fields.emplace("ni_activated",    scalar3d_layout_mid, 1/kg,     grid_name);
+  m_required_fields.emplace("inv_qc_relvar",   scalar3d_layout_mid, nondim,   grid_name);
+  m_required_fields.emplace("dp",              scalar3d_layout_mid, Pa,       grid_name);
+  m_required_fields.emplace("qv_prev",         scalar3d_layout_mid, Q,        grid_name);
+  m_required_fields.emplace("T_prev",          scalar3d_layout_mid, K,        grid_name); 
+  //
+  m_computed_fields.emplace("qv_prev",         scalar3d_layout_mid, Q,        grid_name);
+  m_computed_fields.emplace("T_prev",          scalar3d_layout_mid, K,        grid_name);
+  // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
+  m_computed_fields.emplace("mu_c",               scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("lamc",               scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("diag_eff_radius_qc", scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("diag_eff_radius_qi", scalar3d_layout_mid, m,      grid_name);
+  m_computed_fields.emplace("precip_total_tend",  scalar3d_layout_mid, mm,     grid_name);
+  m_computed_fields.emplace("nevapr",             scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("qr_evap_tend",       scalar3d_layout_mid, mm/s,   grid_name);
+  // History Only: (all fields are just outputs and are really only meant for I/O purposes)
+  m_computed_fields.emplace("liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
+  m_computed_fields.emplace("vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
+  // TODO: AaronDonahue - The following should actually be set locally and therefore don't
+  //       need to be fields registered with the field manager.  Currently we are use them
+  //       as fields so they can be initialized by the p3_inputs_initialzer for testing
+  //       purposes.  A future task is to remove these and define them locally as 2d views
+  //       in run_impl.
+  m_required_fields.emplace("dz", scalar3d_layout_mid, K,         grid_name);
+  m_required_fields.emplace("exner", scalar3d_layout_mid, K,      grid_name);
+  m_required_fields.emplace("cld_frac_l", scalar3d_layout_mid, K, grid_name);
+  m_required_fields.emplace("cld_frac_i", scalar3d_layout_mid, K, grid_name);
+  m_required_fields.emplace("cld_frac_r", scalar3d_layout_mid, K, grid_name);
+  m_computed_fields.emplace("dz", scalar3d_layout_mid, K,         grid_name);
+  m_computed_fields.emplace("exner", scalar3d_layout_mid, K,      grid_name);
+  m_computed_fields.emplace("cld_frac_l", scalar3d_layout_mid, K, grid_name);
+  m_computed_fields.emplace("cld_frac_i", scalar3d_layout_mid, K, grid_name);
+  m_computed_fields.emplace("cld_frac_r", scalar3d_layout_mid, K, grid_name);
+
 }
 
 // =========================================================================================
@@ -87,7 +139,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   //  - initable fields may not need initialization (e.g., some other atm proc that
   //    appears earlier in the atm dag might provide them).
 
-  std::vector<std::string> p3_inputs = {"q","T","FQ","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev"};
+  std::vector<std::string> p3_inputs = {"ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev","inv_qc_relvar","nccn_prescribed"};
   using strvec = std::vector<std::string>;
   const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
   const bool can_init_all = m_p3_params.get<bool>("Can Initialize All Inputs", false);
@@ -143,9 +195,9 @@ void P3Microphysics::run_impl (const Real dt)
   // advance it, updating the p3 fields.
   auto ts = timestamp();
   ts += dt;
-  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
-  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
-  m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(ts);
+//  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(ts);
+//  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(ts);
+//  m_p3_fields_out.at("T").get_header().get_tracking().update_time_stamp(ts);
 }
 
 // =========================================================================================

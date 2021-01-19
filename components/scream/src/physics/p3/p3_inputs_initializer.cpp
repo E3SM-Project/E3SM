@@ -47,8 +47,6 @@ void P3InputsInitializer::initialize_fields ()
   // Safety check: if we're asked to init anything at all,
   // then we should have been asked to init 10 fields.
   int count = 0;
-  count += m_fields.count("q");
-  count += m_fields.count("T");
   count += m_fields.count("ast");
   count += m_fields.count("ni_activated");
   count += m_fields.count("nc_nuceat_tend");
@@ -62,15 +60,13 @@ void P3InputsInitializer::initialize_fields ()
     return;
   }
 
-  EKAT_REQUIRE_MSG (count==10,
-    "Error! P3InputsInitializer is expected to init 'q','T','ast','ni_activated','nc_nuceat_tend','pmid','dp','zi','qv_prev','T_prev'.\n"
+  EKAT_REQUIRE_MSG (count==8,
+    "Error! P3InputsInitializer is expected to init 'ast','ni_activated','nc_nuceat_tend','pmid','dp','zi','qv_prev','T_prev'.\n"
     "       Only " + std::to_string(count) + " of those have been found.\n"
     "       Please, check the atmosphere processes you are using,"
     "       and make sure they agree on who's initializing each field.\n");
 
   // Get device views
-  auto d_q     = m_fields.at("q").get_view();
-  auto d_T     = m_fields.at("T").get_view();
   auto d_ast   = m_fields.at("ast").get_view();
   auto d_ni_activated  = m_fields.at("ni_activated").get_view();
   auto d_nc_nuceat_tend = m_fields.at("nc_nuceat_tend").get_view();
@@ -81,8 +77,6 @@ void P3InputsInitializer::initialize_fields ()
   auto d_t_prev  = m_fields.at("T_prev").get_view();
   
   // Create host mirrors
-  auto h_q     = Kokkos::create_mirror_view(d_q);
-  auto h_T     = Kokkos::create_mirror_view(d_T);
   auto h_ast   = Kokkos::create_mirror_view(d_ast);
   auto h_ni_activated  = Kokkos::create_mirror_view(d_ni_activated);
   auto h_nc_nuceat_tend = Kokkos::create_mirror_view(d_nc_nuceat_tend);
@@ -93,8 +87,6 @@ void P3InputsInitializer::initialize_fields ()
   auto h_t_prev = Kokkos::create_mirror_view(d_t_prev);
   
   // Get host mirros' raw pointers
-  auto q     = h_q.data();
-  auto T_atm     = h_T.data();
   auto ast   = h_ast.data();
   auto ni_activated  = h_ni_activated.data();
   auto nc_nuceat_tend = h_nc_nuceat_tend.data();
@@ -105,8 +97,6 @@ void P3InputsInitializer::initialize_fields ()
   auto t_prev  = h_t_prev.data();
   
   // Deep copy back to device
-  Kokkos::deep_copy(d_q,h_q);
-  Kokkos::deep_copy(d_T,h_T);
   Kokkos::deep_copy(d_ast,h_ast);
   Kokkos::deep_copy(d_ni_activated,h_ni_activated);
   Kokkos::deep_copy(d_nc_nuceat_tend,h_nc_nuceat_tend);
