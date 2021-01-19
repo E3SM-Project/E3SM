@@ -1821,7 +1821,7 @@ contains
      ! This alternate subroutine is needed if "use_extrasnowlayers" is true.
      !
      ! !USES:
-     use clm_varcon,  only : tfrz 
+     use elm_varcon,  only : tfrz 
      use LakeCon   ,  only : lsadz
      !
      ! !ARGUMENTS:
@@ -2147,7 +2147,7 @@ contains
     ! Initialize snow layer depth from specified total depth.
     !
     ! !USES:
-    use clm_varcon         , only : spval
+    use elm_varcon         , only : spval
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -2370,7 +2370,7 @@ contains
       ! all other columns remain at their original values.
       !
       ! !USES:
-      use clm_varcon,  only : tfrz
+      use elm_varcon,  only : tfrz
       !
       ! !ARGUMENTS:
       type(bounds_type)  , intent(in)    :: bounds
