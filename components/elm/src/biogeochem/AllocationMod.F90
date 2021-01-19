@@ -40,6 +40,7 @@ module AllocationMod
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use elm_varctl          , only : NFIX_PTASE_plant
+  use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
 
   !
   implicit none
@@ -177,7 +178,7 @@ contains
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
-  subroutine AllocationInit ( bounds)
+  subroutine AllocationInit ( bounds, elm_fates)
     !
     ! !DESCRIPTION:
     !
@@ -193,7 +194,9 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
+    type(hlm_fates_interface_type), intent(in) :: elm_fates  ! This will be needed in soon
+                                                             ! to be released features
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'AllocationInit'
@@ -1070,7 +1073,9 @@ contains
                             carbonstate_vars, carbonflux_vars               , &
                             nitrogenstate_vars, nitrogenflux_vars           , &
                             phosphorusstate_vars,phosphorusflux_vars        , &
-                            soilstate_vars,waterstate_vars)
+                            soilstate_vars,waterstate_vars, &
+                            elm_fates)
+   
     ! PHASE-2 of Allocation:  resolving N/P limitation
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
@@ -1102,6 +1107,8 @@ contains
 
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(hlm_fates_interface_type), intent(inout) :: elm_fates   ! Slated for use future commit
+    
     !
     ! !LOCAL VARIABLES:
     real(r8) :: sum_pdemand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)  ! sum of total P demand, scaled with relative competitiveness

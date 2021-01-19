@@ -30,7 +30,7 @@ module histFileMod
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
-  use EDTypesMod        , only : nelements_fates  => num_elements
+  use PRTGenericMod          , only : nelements_fates  => num_elements
 
   !
   implicit none
@@ -1910,6 +1910,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levelpft', nelements_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -2333,6 +2334,8 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_cwdmap_levelcwd
     use FatesInterfaceTypesMod, only : fates_hdim_elmap_levelage
     use FatesInterfaceTypesMod, only : fates_hdim_agemap_levelage
+    use FatesInterfaceTypesMod, only : fates_hdim_agmap_levagefuel
+    use FatesInterfaceTypesMod, only : fates_hdim_fscmap_levagefuel
 
 
 
@@ -2449,7 +2452,11 @@ contains
              call ncd_defvar(varname='fates_elmap_levelage', xtype=ncd_int, dim1name='fates_levelage', &
                    long_name='FATES element map into age x pft', units='-', ncid=nfid(t))
              call ncd_defvar(varname='fates_agemap_levelage', xtype=ncd_int, dim1name='fates_levelage', &
-                   long_name='FATES element map into age x pft', units='-', ncid=nfid(t))
+                  long_name='FATES element map into age x pft', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_agmap_levagefuel', xtype=ncd_int, dim1name='fates_levagefuel', &
+                  long_name='FATES age-class map into patch age x fuel size', units='-', ncid=nfid(t))
+             call ncd_defvar(varname='fates_fscmap_levagefuel', xtype=ncd_int, dim1name='fates_levagefuel', &
+                  long_name='FATES fuel size-class map into patch age x fuel size', units='-', ncid=nfid(t))
 
           end if
 
@@ -2495,7 +2502,8 @@ contains
              call ncd_io(varname='fates_cwdmap_levelcwd',data=fates_hdim_cwdmap_levelcwd, ncid=nfid(t),flag='write')
              call ncd_io(varname='fates_elmap_levelage',data=fates_hdim_elmap_levelage, ncid=nfid(t),flag='write')
              call ncd_io(varname='fates_agemap_levelage',data=fates_hdim_agemap_levelage, ncid=nfid(t),flag='write')
-
+             call ncd_io(varname='fates_agmap_levagefuel',data=fates_hdim_agmap_levagefuel, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_fscmap_levagefuel',data=fates_hdim_fscmap_levagefuel, ncid=nfid(t), flag='write')
           end if
 
        endif
@@ -4604,7 +4612,8 @@ contains
        num2d = nelements_fates*ncwd_fates
     case ('fates_levelage')
        num2d = nelements_fates*nlevage_fates
-
+    case ('fates_levagefuel')
+       num2d = nlevage_fates*nfsc_fates
     case('cft')
        if (cft_size > 0) then
           num2d = cft_size

@@ -21,7 +21,7 @@ _TESTS = {
             "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
-            "ERS_Ld20.f45_f45.IELMED.elm-fates",
+            "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
@@ -226,9 +226,9 @@ _TESTS = {
 
     "fates" : {
         "tests" : (
-            "ERS_Ld9.1x1_brazil.IELMED",
-            "ERS_D_Ld9.1x1_brazil.IELMED",
-            "SMS_D_Lm6.1x1_brazil.IELMED",
+            "ERS_Ld9.1x1_brazil.IELMFATES",
+            "ERS_D_Ld9.1x1_brazil.IELMFATES",
+            "SMS_D_Lm6.1x1_brazil.IELMFATES",
             )
         },
 

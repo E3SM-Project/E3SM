@@ -709,6 +709,24 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
+
+<compiler COMPILER="gnu" MACH="eddi">
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
+  <FFLAGS>
+    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
+    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$ENV{NETCDF_HOME}/lib/ -lnetcdff -lnetcdf -lcurl -llapack -lblas </append>
+  </SLIBS>  
+  <SCC MPILIB="mpi-serial">gcc</SCC>
+  <SFC MPILIB="mpi-serial">gfortran</SFC>
+</compiler>
+
 <compiler MACH="anvil" COMPILER="intel">
   <CFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>

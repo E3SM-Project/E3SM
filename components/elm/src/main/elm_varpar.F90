@@ -176,38 +176,22 @@ contains
        nlevlak     =  25     ! number of lake layers (Yields better results for site simulations)
     end if
 
-    if ( use_fates ) then
-       i_cwd = 0
+    if (use_century_decomp) then
+       ndecomp_pools = 7
+       ndecomp_cascade_transitions = 10
        i_met_lit = 1
        i_cel_lit = 2
        i_lig_lit = 3
-       if (use_century_decomp) then
-          ndecomp_pools = 6
-          ndecomp_cascade_transitions = 8
-       else
-          ndecomp_pools = 7
-          ndecomp_cascade_transitions = 7
-       end if
-       
+       i_cwd = 4
     else
+       ndecomp_pools = 8
+       ndecomp_cascade_transitions = 9
+       i_met_lit = 1
+       i_cel_lit = 2
+       i_lig_lit = 3
+       i_cwd = 4
+    end if
 
-       if (use_century_decomp) then
-          ndecomp_pools = 7
-          ndecomp_cascade_transitions = 10
-          i_met_lit = 1
-          i_cel_lit = 2
-          i_lig_lit = 3
-          i_cwd = 4
-       else
-          ndecomp_pools = 8
-          ndecomp_cascade_transitions = 9
-          i_met_lit = 1
-          i_cel_lit = 2
-          i_lig_lit = 3
-          i_cwd = 4
-       end if
-
-    endif
     
 
 
