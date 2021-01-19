@@ -9,6 +9,7 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
+  use shr_kind_mod           , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
@@ -179,6 +180,13 @@ contains
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
     use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
+
+    use clm_time_manager , only : get_step_size
+    use dynPatchStateUpdaterMod  , only : patch_state_set_old_weights_acc
+    use dynColumnStateUpdaterMod , only : column_state_set_old_weights_acc
+    use dynPriorWeightsMod       , only : set_prior_weights_acc
+    use glc2lndMod                , only : glc2lnd_vars_update_glc2lnd_acc
+    use dynUpdateModAcc         
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -218,14 +226,14 @@ contains
     integer           :: nclumps      ! number of clumps on this processor
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
-
+    real(r8)          :: dt
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     nclumps = get_proc_clumps()
-    
+    dt = real(get_step_size(), r8) 
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -238,11 +246,15 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            energyflux_vars)
 
-       call prior_weights%set_prior_weights(bounds_clump)
-       call patch_state_updater%set_old_weights(bounds_clump)
-       call column_state_updater%set_old_weights(bounds_clump)
+       !call prior_weights%set_prior_weights(bounds_clump)
+       !call patch_state_updater%set_old_weights(bounds_clump)
+       !call column_state_updater%set_old_weights(bounds_clump)
+
+       call set_prior_weights_acc(prior_weights, bounds_clump)
+       call patch_state_set_old_weights_acc  (patch_state_updater,bounds_clump)
+       call column_state_set_old_weights_acc(column_state_updater,bounds_clump)
     end do
     !$OMP END PARALLEL DO
 
@@ -274,8 +286,11 @@ contains
           call dyn_ED(bounds_clump)
        end if
 
+       !if (create_glacier_mec_landunit) then
+       !   call glc2lnd_vars%update_glc2lnd(bounds_clump)
+       !end if
        if (create_glacier_mec_landunit) then
-          call glc2lnd_vars%update_glc2lnd(bounds_clump)
+          call glc2lnd_vars_update_glc2lnd_acc(glc2lnd_vars ,bounds_clump)
        end if
 
        ! Everything following this point in this loop only needs to be called if we have
@@ -284,20 +299,23 @@ contains
        ! (particularly mask that is past through coupler).
 
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
-       call patch_state_updater%set_new_weights(bounds_clump)
-       call column_state_updater%set_new_weights(bounds_clump, nc)
+       call patch_set_new_weightsAcc (patch_state_updater ,bounds_clump)
+       call column_set_new_weightsAcc(column_state_updater,bounds_clump, nc)
+       
+      ! call patch_state_updater%set_new_weights(bounds_clump)
+      ! call column_state_updater%set_new_weights(bounds_clump, nc)
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
        call initialize_new_columns(bounds_clump, &
-            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), &
-            temperature_vars, waterstate_vars, soilhydrology_vars)
+            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
+    
 
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            energyflux_vars, dt)
 
        if (use_cn) then
           call dyn_cnbal_patch(bounds_clump, &
@@ -307,27 +325,24 @@ contains
                patch_state_updater, &
                canopystate_vars, photosyns_vars, cnstate_vars, &
                veg_cs, c13_veg_cs, c14_veg_cs, &
-               carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars, &
-               veg_ns, &
-               phosphorusstate_vars,phosphorusflux_vars, veg_ps)
+               veg_ns, veg_ps, dt)
 
           ! Transfer root/seed litter C/N/P to decomposer pools
           call CarbonStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
        end if
 
        if(use_cn .or. use_fates)then
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
-               phosphorusstate_vars, col_ns, col_ps )
+               col_ns, col_ps )
        end if
 
     end do
