@@ -408,6 +408,13 @@ subroutine diag_init()
    call addfld ('U90M',horiz_only,    'A','m/s','Zonal wind at turbine hub height (90m above surface)')
    call addfld ('V90M',horiz_only,    'A','m/s','Meridional wind at turbine hub height (90m above surface)')
 
+   call addfld ('Wflux',horiz_only,    'A','kg/m2/s','water flux to be sent')
+   call addfld ('dW',horiz_only,    'A','kg/m2/s','diff water / dt')
+   call addfld ('dWmWflux',horiz_only,    'A','kg/m2/s','diff water / dt')
+
+   call addfld ('WEflux',horiz_only,    'A','W/m2','water energy flux to be sent')
+   call addfld ('dWE',horiz_only,    'A','W/m2','diff water energy / dt')
+
    ! This field is added by radiation when full physics is used
    if ( ideal_phys )then
       call addfld('QRS', (/ 'lev' /), 'A', 'K/s', 'Solar heating rate')

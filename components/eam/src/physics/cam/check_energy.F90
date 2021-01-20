@@ -255,7 +255,7 @@ subroutine get_water_energy(state,field)
 
     call get_water_componentsVLIRS(wv,wl,wi,wr,ws,state)
 
-    field(1:ncol) = (latvap+latice)*wv(1:ncol) + latice*(wr(1:ncol) + wl(1:ncol)) + ws(1:ncol) + wi(1:ncol)
+    field(1:ncol) = (latvap+latice)*wv(1:ncol) + latice*(wr(1:ncol) + wl(1:ncol))
 end subroutine get_water_energy
 
 
@@ -794,7 +794,7 @@ end subroutine check_energy_save_local_te
 
     real(r8) :: te(pcols,begchunk:endchunk,9)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(3)               ! global means of total energy
+    real(r8) :: te_glob(9)               ! global means of total energy
     real(r8), pointer :: teout(:)
 !-----------------------------------------------------------------------
 
@@ -829,7 +829,7 @@ end subroutine check_energy_save_local_te
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 5)
+    call gmean(te, te_glob, 9)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)

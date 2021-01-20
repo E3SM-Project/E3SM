@@ -48,6 +48,8 @@ module physpkg
 
   use check_energy,       only: get_water_mass, get_water_energy
 
+    use time_manager,   only: get_nstep
+
   implicit none
   private
 
@@ -2955,16 +2957,37 @@ end if ! l_rad
     call get_water_mass(state,state%water_after_physstep(1:ncol))
     call get_water_energy(state,state%energy_water_after_physstep(1:ncol))
 
-    state%water_delta(1:ncol) = state%water_after_physstep(1:ncol) - &
-                                (state%water_before_physstep(1:ncol) + cam_in%cflx(1:ncol,1)*ztodt)
-    state%energy_water_delta(1:ncol) = state%energy_water_after_physstep(1:ncol) - &
-                                (state%energy_water_before_physstep(1:ncol) + cam_in%cflx(1:ncol,1)*(latvap+latice)*ztodt)
+!make sign consistent with precip which is always > 0
+    state%water_delta(1:ncol) = - ( state%water_after_physstep(1:ncol) - &
+                                    (state%water_before_physstep(1:ncol) + cam_in%cflx(1:ncol,1)*ztodt) )
+    state%energy_water_delta(1:ncol) = - (  state%energy_water_after_physstep(1:ncol) - &
+                                           (state%energy_water_before_physstep(1:ncol) + &
+                                            cam_in%cflx(1:ncol,1)*(latvap+latice)*ztodt) )
 
     state%water_flux_to_send(1:ncol) = &
-       cam_out%precc(1:ncol) + cam_out%precl(1:ncol) + cam_out%precsc(1:ncol) + cam_out%precsl(1:ncol)
+       1000.0*(cam_out%precc(1:ncol) + cam_out%precl(1:ncol)) ! + cam_out%precsc(1:ncol) + cam_out%precsl(1:ncol)
 
     state%energy_water_flux_to_send(1:ncol) = &
        1000.0*latice*( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol))
+
+
+print *, 'OG diagn'
+print *, 'state%water_delta(1:ncol)/dt', state%water_delta(1:10)/ztodt
+print *, 'state%water_flux(1:ncol)/dt', state%water_flux_to_send(1:10)
+
+
+!if (nstep > 1 ) then
+
+       call outfld('Wflux', state%water_flux_to_send , pcols, lchnk )
+       call outfld('dW', state%water_delta/ztodt, pcols, lchnk )
+       call outfld('dWmWflux', state%water_delta/ztodt - state%water_flux_to_send, pcols, lchnk )
+
+       call outfld('WEflux', state%energy_water_flux_to_send , pcols, lchnk )
+       call outfld('dWE', state%energy_water_delta/ztodt, pcols, lchnk )
+
+!endif
+
+
 
 
     ! Write export state to history file
