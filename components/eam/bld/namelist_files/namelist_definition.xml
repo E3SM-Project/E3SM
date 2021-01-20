@@ -5618,16 +5618,20 @@ Dynamics timestep.  Replaces se_nsplit.
 
 <entry id="dt_tracer_factor" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Tracer advection is done every dt_tracer_factor dynamics timesteps.
+The tracer advection timestep is dt_tracer_factor*se_tstep, where se_tstep is
+the dynamics timesteps. dt_tracer_factor*se_tstep must divide dtime, and one of
+dt_remap_factor and dt_tracer_factor must divide the other.
 Replaces qsplit, rsplit.
 Default: Set by build-namelist.
 </entry>
 
 <entry id="dt_remap_factor" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+The vertically Lagrangian remap timestep is dt_remap_factor*se_tstep, where
+se_tstep is the dynamics timesteps. dt_remap_factor*se_tstep must divide dtime,
+and one of dt_remap_factor and dt_tracer_factor must divide the other.
 Replaces qsplit, rsplit.
-If dt_remap_factor=0, vertically lagrangian code is off.
+If dt_remap_factor=0, vertically Lagrangian code is off.
 </entry>
 
 <entry id="tstep_type" type="integer" category="se"
