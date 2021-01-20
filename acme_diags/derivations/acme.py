@@ -849,7 +849,14 @@ derived_variables = {
         (('PRECC', 'PRECL', 'QFLX',),lambda precc,precl,qflx: pminuse_convert_units(prect(precc,precl)-pminuse_convert_units(qflx))),
         (('F_prec','F_evap'), lambda pr,evspsbl: pminuse_convert_units(pr + evspsbl)),
         (('pr','evspsbl'), lambda pr,evspsbl: pminuse_convert_units(pr - evspsbl))
-        
+    ]),
+    'TREFMNAV': OrderedDict([
+        (('TREFMNAV',), lambda t: convert_units(t, target_units="DegC")),
+        (('tasmin',), lambda t: convert_units(t, target_units="DegC"))
+    ]),
+    'TREFMXAV': OrderedDict([
+        (('TREFMXAV',), lambda t: convert_units(t, target_units="DegC")),
+        (('tasmax',), lambda t: convert_units(t, target_units="DegC"))
     ]),
     #Land variables
     'SOILWATER_10CM': OrderedDict([
