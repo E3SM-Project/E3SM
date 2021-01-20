@@ -46,12 +46,10 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto nondim = m/m;
   auto mm = m/1000;
 
-  // Retrieve physical dimension extents
-  m_num_levs = SCREAM_NUM_VERTICAL_LEV;  // Number of levels per column
-
   const auto& grid_name = m_p3_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this ranks
+  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -81,7 +79,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
-  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.
+  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.  Keeping it as such now so that the initializr can init it.
   //
   m_computed_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
   m_computed_fields.emplace("qc",     scalar3d_layout_mid, Q,    grid_name);
