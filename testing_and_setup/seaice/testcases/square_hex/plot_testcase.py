@@ -8,7 +8,7 @@ import numpy as np
 iTime = -1
 
 # read in file
-filein = Dataset("./output_quad_pwl_80_7680/output.2000.nc","r")
+filein = Dataset("./output_hex_wachspress_120/output.2000.nc","r")
 
 nCells = len(filein.dimensions["nCells"])
 nVertices = len(filein.dimensions["nVertices"])
@@ -97,4 +97,4 @@ axes[1,1].axis('off')
 
 
 
-plt.savefig("plot.png",dpi=600)
+plt.savefig("plot.png",dpi=300)
