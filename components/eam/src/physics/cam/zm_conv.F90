@@ -499,10 +499,11 @@ subroutine zm_convr(lchnk   ,ncol    , &
 
    real(r8) hu_nm1g(pcols,pver)        !songxl 2014-05-20
 
-   real(r8) rprdg(pcols,pver)           ! wg gathered rain production rate
+   real(r8) rprdg(pcols,pver)          ! wg gathered rain production rate
    real(r8) capeg(pcols)               ! wg gathered convective available potential energy.
    real(r8) tlg(pcols)                 ! wg grid slice of gathered values of tl.
-   real(r8) landfracg(pcols)            ! wg grid slice of landfrac  
+   real(r8) landfracg(pcols)           ! wg grid slice of landfrac  
+   real(r8) tpertg(pcols)              ! wg grid slice of gathered values of tpert (temperature perturbation from PBL)
 
    integer lclg(pcols)       ! wg gathered values of lcl.
    integer lelg(pcols)
@@ -796,6 +797,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       maxg(i) = maxi(ideep(i))
       tlg(i) = tl(ideep(i))
       landfracg(i) = landfrac(ideep(i))
+      tpertg(i) = tpert(ideep(i))
    end do
 !
 ! calculate sub-cloud layer pressure "thickness" for use in
@@ -848,7 +850,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                maxg    ,j0      ,jd      ,rl      ,lengath , &
                rgas    ,grav    ,cpres   ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,limcnv  , &
-               landfracg, hu_nm1g, tpert)   !songxl 2014-05-20
+               landfracg, hu_nm1g, tpertg)   !songxl 2014-05-20
                                             !PMA adds tpert to the calculation
 !
 ! convert detrainment from units of "1/m" to "1/mb".
@@ -2222,7 +2224,7 @@ subroutine cldprp(lchnk   , &
 !<songxl 2014-05-20-------
 !                  pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac)
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac,  &
-                  hu_nm1, tpert  )
+                  hu_nm1, tpertg  )
 !>songxl 2014-05-20-------
 !----------------------------------------------------------------------- 
 ! 
@@ -2276,7 +2278,7 @@ subroutine cldprp(lchnk   , &
    integer, intent(in) :: msg                    ! missing moisture vals (always 0)
    real(r8), intent(in) :: rl                    ! latent heat of vap
    real(r8), intent(in) :: shat(pcols,pver)      ! interface values of dry stat energy
-   real(r8), intent(in) :: tpert(pcols)
+   real(r8), intent(in) :: tpertg(pcols)
 !
 ! output
 !
@@ -2502,8 +2504,8 @@ subroutine cldprp(lchnk   , &
    do k = msg + 1,pver
       do i = 1,il2g
          if (k >= jt(i) .and. k <= jb(i)) then
-            hu(i,k) = hmn(i,mx(i)) + cp*(tiedke_add+tp_fac*tpert(i)) !PMA
-            su(i,k) = s(i,mx(i)) + tiedke_add+tp_fac*tpert(i)
+            hu(i,k) = hmn(i,mx(i)) + cp*(tiedke_add+tp_fac*tpertg(i)) !PMA
+            su(i,k) = s(i,mx(i)) + tiedke_add+tp_fac*tpertg(i)
          end if
       end do
    end do
