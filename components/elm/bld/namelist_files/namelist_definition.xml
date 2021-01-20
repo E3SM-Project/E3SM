@@ -636,7 +636,7 @@ with config_use_snicar_ad in mpas-seaice namelist
 </entry>
 
 <entry id="use_extrasnowlayers" type="logical" category="physics"
-       group="clm_inparm" valid_values="" value=".false.">
+       group="elm_inparm" valid_values="" value=".false.">
 Toggle to use 16 snow layers instead of 5.  This option enables more realistic
 snowpack conditions on glaciers and ice sheets, including a semi-empirical
 firn densification model.
