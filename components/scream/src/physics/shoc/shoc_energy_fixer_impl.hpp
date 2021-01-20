@@ -34,9 +34,12 @@ void Functions<S,D>::shoc_energy_fixer(
   const uview_1d<const Spack>& rho_zt,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& pint,
-  const uview_1d<Spack>&       rho_zi,
+  const Workspace&             workspace_nlevi,
   const uview_1d<Spack>&       host_dse)
 {
+  // Define temporary variables
+  auto rho_zi = workspace_nlevi.take("rho_zi");
+
   // Constants
   const auto cp = C::CP;
   const auto lcond = C::LatVap;
@@ -99,6 +102,9 @@ void Functions<S,D>::shoc_energy_fixer(
 
     host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k)-se_dis*ggr);
   });
+
+  // Release temporary variables from the workspace
+  workspace_nlevi.release(rho_zi);
 }
 
 } // namespace shoc

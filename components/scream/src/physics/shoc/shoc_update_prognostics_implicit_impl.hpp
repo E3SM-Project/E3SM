@@ -31,14 +31,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const uview_1d<const Spack>& wtracer_sfc,
-  const uview_1d<Spack>&       rdp_zt,
-  const uview_1d<Spack>&       tmpi,
-  const uview_1d<Spack>&       tkh_zi,
-  const uview_1d<Spack>&       tk_zi,
-  const uview_1d<Spack>&       rho_zi,
-  const uview_1d<Scalar>&      du,
-  const uview_1d<Scalar>&      dl,
-  const uview_1d<Scalar>&      d,
+  const Workspace&             workspace_nlev,
+  const Workspace&             workspace_nlevi,
+  const WorkspaceScalar&       workspace_nlev_scalar,
   const uview_2d<Spack>&       X1,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
@@ -47,6 +42,21 @@ void Functions<S,D>::update_prognostics_implicit(
   const uview_1d<Spack>&       u_wind,
   const uview_1d<Spack>&       v_wind)
 {
+  // Define temporary variables
+  auto rdp_zt = workspace_nlev.take("rdp_zt");
+
+  uview_1d<Spack> tmpi, tkh_zi,
+                  tk_zi, rho_zi;
+  uview_1d<Scalar> du, dl, d;
+
+  workspace_nlevi.template take_many_contiguous_unsafe<4>(
+    {"tmpi", "tkh_zi", "tk_zi", "rho_zi"},
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi});
+
+  workspace_nlev_scalar.template take_many_contiguous_unsafe<3>(
+    {"du", "dl", "d"},
+    {&du, &dl, &d});
+
   const auto last_nlev_pack = (nlev-1)/Spack::n;
   const auto last_nlev_indx = (nlev-1)%Spack::n;
   const auto last_nlevi_pack = (nlevi-1)/Spack::n;
@@ -156,6 +166,13 @@ void Functions<S,D>::update_prognostics_implicit(
     s_qw(k) = tracer(k,(num_tracer+1)/Spack::n)[(num_tracer+1)%Spack::n];
     s_tke(k) = tracer(k,(num_tracer+2)/Spack::n)[(num_tracer+2)%Spack::n];
   });
+
+  // Release temporary variables from the workspace
+  workspace_nlev.release(rdp_zt);
+  workspace_nlevi.template release_many_contiguous<4>(
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi});
+  workspace_nlev_scalar.template release_many_contiguous<3>(
+    {&du, &dl, &d});
 }
 
 } // namespace shoc
