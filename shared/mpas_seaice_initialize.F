@@ -65,7 +65,8 @@ contains
     use seaice_prescribed, only: &
          seaice_init_prescribed_ice
     use seaice_special_boundaries, only: &
-         seaice_init_special_boundaries
+         seaice_init_special_boundaries, &
+         seaice_set_special_boundaries_zero_tracers
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -143,6 +144,9 @@ contains
     ! coupler flux reset
     call mpas_log_write(" Initialize coupler fluxes...")
     call seaice_reset_coupler_fluxes(domain)
+
+    ! special boundaries tracers
+    call seaice_set_special_boundaries_zero_tracers(domain)
 
   end subroutine seaice_init!}}}
 

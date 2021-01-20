@@ -23,17 +23,25 @@ module seaice_special_boundaries
   public :: &
        seaice_init_special_boundaries, &
        seaice_set_special_boundaries_velocity, &
-       seaice_set_special_boundaries_velocity_masks
+       seaice_set_special_boundaries_velocity_masks, &
+       seaice_set_special_boundaries_zero_tracers
 
   logical, pointer :: &
        useSpecialBoundariesVelocity, &
-       useSpecialBoundariesVelocityMasks
+       useSpecialBoundariesVelocityMasks, &
+       useSpecialBoundariesZeroTracers
 
+  ! vertex flags
   integer, parameter :: &
        VELOCITY_BOUNDARY_NONE = 0, &
        VELOCITY_BOUNDARY_PERIODIC = 1, &
        VELOCITY_BOUNDARY_REVERSE = 2, &
        VELOCITY_BOUNDARY_ZERO = 3
+
+  ! cell flags
+  integer, parameter :: &
+       TRACER_BOUNDARY_NONE = 0, &
+       TRACER_BOUNDARY_ZERO = 1
 
 contains
 
@@ -55,6 +63,8 @@ contains
          domain !< Input/Output:
 
     call init_special_boundaries_velocity(domain)
+
+    call init_special_boundaries_tracers(domain)
 
   end subroutine seaice_init_special_boundaries
 
@@ -144,6 +154,27 @@ contains
     endif
 
   end subroutine init_special_boundaries_velocity
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_special_boundaries_tracers
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 16th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_special_boundaries_tracers(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    call MPAS_pool_get_config(domain % configs, "config_use_special_boundaries_zero_tracers", useSpecialBoundariesZeroTracers)
+
+  end subroutine init_special_boundaries_tracers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -306,6 +337,77 @@ contains
     endif
 
   end subroutine seaice_set_special_boundaries_velocity_masks
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_set_special_boundaries_zero_tracers
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 16th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_set_special_boundaries_zero_tracers(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    type(block_type), pointer :: &
+         blockPtr
+
+    type(mpas_pool_type), pointer :: &
+         specialBoundariesPool, &
+         tracersPool
+
+    integer, dimension(:), pointer :: &
+         tracerBoundaryType
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    if (useSpecialBoundariesZeroTracers) then
+
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
+
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
+
+          call MPAS_pool_get_subpool(blockPtr % structs, "special_boundaries", specialBoundariesPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
+
+          call MPAS_pool_get_array(specialBoundariesPool, "tracerBoundaryType", tracerBoundaryType)
+
+          call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
+          call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
+          call MPAS_pool_get_array(tracersPool, "snowVolumeCategory", snowVolumeCategory, 1)
+
+          do iCell = 1, nCells
+
+             if (tracerBoundaryType(iCell) == TRACER_BOUNDARY_ZERO) then
+                iceAreaCategory(:,:,iCell) = 0.0_RKIND
+                iceVolumeCategory(:,:,iCell) = 0.0_RKIND
+                snowVolumeCategory(:,:,iCell) = 0.0_RKIND
+             endif
+
+          enddo ! iCell
+
+          blockPtr => blockPtr % next
+       enddo
+
+    endif
+
+  end subroutine seaice_set_special_boundaries_zero_tracers
 
   !-----------------------------------------------------------------------
 
