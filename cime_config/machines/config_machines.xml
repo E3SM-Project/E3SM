@@ -1581,6 +1581,7 @@
         <command name="load">gcc/9.3.0</command>
         <command name="load">PrgEnv-cray/6.0.7</command>
         <command name="swap">cce/10.0.3</command>
+        <command name="rm">darshan</command>
       </modules>
       <modules compiler="!intel">
         <command name="swap">cray-libsci/20.06.1</command>
