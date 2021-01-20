@@ -3048,7 +3048,7 @@
         <command name="load">svn/1.10.6</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0</command>
+        <command name="load">gcc/8.1.0</command>
         <command name="load">blas/gcc/64/3.8.0</command>
         <command name="load">lapack/gcc/64/3.8.0</command>
       </modules>
