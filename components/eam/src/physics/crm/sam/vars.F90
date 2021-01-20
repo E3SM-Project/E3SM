@@ -52,7 +52,6 @@ module vars
   real(crm_rknd), allocatable :: fzero   (:,:,:)
   real(crm_rknd), allocatable :: precsfc (:,:,:) ! surface precip. rate
   real(crm_rknd), allocatable :: precssfc(:,:,:) ! surface ice precip. rate
-
   !-----------------------------------------------------------------
   ! profiles
 

@@ -676,7 +676,7 @@
      ! often lead to an error to be thrown in the energy balance check.
      !   MMF_FLUX_BYPASS - only sensible and latent heat fluxes are affected
 
-#if defined( MMF_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLUX )
       if (do_MMF_bypass) then
         dse(:ncol,pver) = dse(:ncol,pver) - tmp1(:ncol) * shflx(:ncol)
       endif
@@ -789,7 +789,7 @@
       q(:ncol,pver,m) = q(:ncol,pver,m) + tmp1(:ncol) * cflx(:ncol,m) 
         
 
-#if defined( MMF_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS ) || defined( MMF_CRM_SFC_FLUX )
         if (do_MMF_bypass) then
           if ( m .eq. 1 ) q(:ncol,pver,m) = q(:ncol,pver,m) - tmp1(:ncol) * cflx(:ncol,m) 
         endif
