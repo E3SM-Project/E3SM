@@ -108,6 +108,7 @@
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
     config_use_column_snow_tracers = false
+    config_use_special_boundaries_zero_tracers = false
 /
 &column_tracers
     config_use_ice_age = true

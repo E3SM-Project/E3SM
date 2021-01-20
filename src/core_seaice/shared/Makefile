@@ -76,7 +76,7 @@ mpas_seaice_unit_test.o: mpas_seaice_constants.o mpas_seaice_velocity_solver_uni
 
 mpas_seaice_prescribed.o: mpas_seaice_constants.o mpas_seaice_column.o
 
-mpas_seaice_time_integration.o: mpas_seaice_constants.o mpas_seaice_velocity_solver.o mpas_seaice_forcing.o mpas_seaice_unit_test.o mpas_seaice_advection.o mpas_seaice_diagnostics.o mpas_seaice_column.o mpas_seaice_prescribed.o
+mpas_seaice_time_integration.o: mpas_seaice_constants.o mpas_seaice_velocity_solver.o mpas_seaice_forcing.o mpas_seaice_unit_test.o mpas_seaice_advection.o mpas_seaice_diagnostics.o mpas_seaice_column.o mpas_seaice_prescribed.o mpas_seaice_special_boundaries.o
 
 mpas_seaice_initialize.o: mpas_seaice_constants.o mpas_seaice_mesh.o mpas_seaice_velocity_solver.o mpas_seaice_testing.o mpas_seaice_forcing.o mpas_seaice_advection.o mpas_seaice_column.o mpas_seaice_forcing.o mpas_seaice_mesh_pool.o mpas_seaice_special_boundaries.o
 

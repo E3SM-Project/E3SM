@@ -72,6 +72,9 @@ contains
     use seaice_prescribed, only: &
          seaice_run_prescribed_ice
 
+    use seaice_special_boundaries, only: &
+         seaice_set_special_boundaries_zero_tracers
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -175,6 +178,9 @@ contains
 
     ! check the physical state of the model
     call seaice_check_state(domain)
+
+    ! tracer special boundaries
+    call seaice_set_special_boundaries_zero_tracers(domain)
 
   end subroutine seaice_timestep!}}}
 
