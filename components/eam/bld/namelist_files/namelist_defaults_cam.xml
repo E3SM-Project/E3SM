@@ -1554,7 +1554,10 @@
 
 <cubed_sphere_map> 2 </cubed_sphere_map>
 <cubed_sphere_map npg="0"> 0 </cubed_sphere_map>
+
+<!-- scream -->
 <cubed_sphere_map hgrid="ne512np4"  npg="0"> 2 </cubed_sphere_map>
+<!-- scream -->
 <cubed_sphere_map hgrid="ne1024np4" npg="0"> 2 </cubed_sphere_map>
 
 
@@ -1598,9 +1601,9 @@
 <hypervis_order >     2 </hypervis_order>
 <hypervis_scaling> 3.0 </hypervis_scaling>
 
-<!-- special defaults for V2 NE30 -->
-<nu hgrid="ne30np4">  1.0e15 </nu>
-<hypervis_scaling hgrid="ne30np4" > 0 </hypervis_scaling>
+<!-- special TEMPORARY defaults for scream for upstream merge  -->
+<nu hgrid="ne4np4"> 5.0e17  </nu>
+<hypervis_scaling hgrid="ne4np4" > 0 </hypervis_scaling>
 
 
 
@@ -1725,21 +1728,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <nu_div dyn_target="preqx" hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
 <nu_div dyn_target="preqx" hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
 
-<hypervis_order >     2 </hypervis_order>
-
-<hypervis_scaling> 0 </hypervis_scaling>
-<hypervis_scaling dyn_target="theta-l"  hgrid="ne45np4"> 3.0 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_northamericax4v1"  > 3.2 </hypervis_scaling>
-<hypervis_scaling dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"  > 3.0 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_antarcticax4v1"  > 3.2 </hypervis_scaling>
-<hypervis_scaling dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3.0 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_svalbard_x8v1_lowcon"  > 3.2 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 3.2 </hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_enax4v1">3.2</hypervis_scaling>
-<hypervis_scaling  hgrid="ne0np4_twpx4v1" > 3.2 </hypervis_scaling>
-
 <hypervis_scaling dyn_target="preqx" > 0 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
@@ -1750,40 +1738,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_enax4v1">3.2</hypervis_scaling>
 <hypervis_scaling dyn_target="preqx" hgrid="ne0np4_twpx4v1" > 3.2 </hypervis_scaling>
 
-<!-- ================================================================== -->
-<!-- timesteps  -->
-<!-- ================================================================== -->
-<tstep_type > 5 </tstep_type>
-<se_tstep > -1 </se_tstep>
-<hypervis_subcycle > 1 </hypervis_subcycle>
-
-
-<!-- new interface used for E3SM v2 and later compsets  --> 
-<!-- enabed by setting se_tstep, dt_tracer_factor, dt_remap_factor   -->
-<!-- se_nsplit, rsplit, qsplit set to -1 -->
-<dt_tracer_factor > 6 </dt_tracer_factor>
-<dt_tracer_factor hgrid="ne1024np4"> 8 </dt_tracer_factor>
-<dt_remap_factor dyn_target="theta-l">  2  </dt_remap_factor>
-<hypervis_subcycle_q dyn_target="theta-l"> 6 </hypervis_subcycle_q>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8 </hypervis_subcycle_q>
-<hypervis_subcycle_tom dyn_target="theta-l"> 1 </hypervis_subcycle_tom>
-<qsplit > -1 </qsplit>
-<rsplit > -1 </rsplit>
-<se_nsplit > -1 </se_nsplit>
-
-<se_tstep dyn_target="theta-l" hgrid="ne4np4" >   600 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne11np4" >  600 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne16np4" >  600 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne30np4" >  300 </se_tstep>
-<se_tstep                      hgrid="ne45np4" >  200 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne60np4" >  150 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne240np4">  40 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne256np4">  40 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne512np4">  20 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne1024np4"> 9.375 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 75 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 75 </se_tstep>
 
 <!-- old interface, used by preqx.  timesteps controlled by se_nsplit, rsplit, qsplit -->
 <!-- se_tstep, dt_remap_factor, dt_tracer_factor set to -1 -->
