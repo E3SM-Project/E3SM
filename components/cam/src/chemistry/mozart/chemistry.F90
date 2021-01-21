@@ -1427,7 +1427,11 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
-    call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    if ( chem_is("superfast_mam4_resus_mom_soag")  ) then
+       call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    else
+       call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
+    end if
 
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_pblh,       pblh)
