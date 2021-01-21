@@ -263,7 +263,7 @@ We provde two options to compute :math:`C_{ref}` and :math:`z_{ref}`:
 
 - *Zyserman and Fredsoe, 1994*
 
-.. math::
+  .. math::
 
       C_{ref} = \frac{0.331(\theta - 0.045)^{1.75}}{1+0.72(\theta-0.045)^{1.75}}
 
@@ -272,7 +272,7 @@ and :math:`z_{ref}=2D_{50}`. Again, :math:`\theta` is the Shields parameter and
 
 - *Goldstein et al., 2014*
 
-.. math::
+  .. math::
 
       C_{ref} = \left[ \frac{0.328U_b}{0.0688+1000D_{50}}\right]^2
 
@@ -308,7 +308,7 @@ The methods to compute sediment settling velocity include
 
 - *Soulsby 1997*
 
-.. math::
+  .. math::
 
       w_s = \frac{\nu}{D_{50}}\left[\sqrt{ (10.36^2+1.049D_*^3)}-10.36\right]
 
@@ -316,7 +316,7 @@ where :math:`\nu` is the kinematic viscosity of water (:math:`m^2s^{-1}`)
 
 - *Cheng 1997*
 
-.. math::
+  .. math::
 
       w_s = \frac{\nu}{D_{50}} (\sqrt{25+1.2D_*^2}-5)^{1.5}
 
@@ -460,7 +460,7 @@ These can be defined in **Registry.xml** as follows:
 
 Suspended sediment transport also requires the definitions of the following variables:
 
-- Pre-defined sediment-related variables:
+- Pre-defined sediment-related variables
 
   * sediment settling velocity: :code:`sedimentSettlingVelocity(nSedimentClasses)`
 
@@ -470,7 +470,7 @@ Suspended sediment transport also requires the definitions of the following vari
 
   * sediment bed porosity: :code:`sedimentBedPorosity(nSedimentClasses)`
 
-- Other variables:
+- Other variables
 
   * sediment suspended concentration: :code:`sedimentSuspendedConcentration(nSedimentClasses, nCell)`
 
