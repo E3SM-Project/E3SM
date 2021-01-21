@@ -35,6 +35,12 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
 
+!-----------Added by MS for diurnal oxidants-----------------------------
+  logical :: inv_o3, inv_oh, inv_no3, inv_ho2
+  integer :: id_o3, id_oh, id_no3, id_ho2
+  logical :: diurnal_offline_oxidants = .true.
+!------------------------------------------------------------------------
+
 contains
 
   subroutine gas_phase_chemdr_inti(chem_name)
@@ -75,6 +81,25 @@ contains
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
     o3lnz_ndx = get_spc_ndx('O3LNZ')
+!-------------Added by MS for diurnal oxidants--------------------------
+    inv_o3   = get_inv_ndx('O3') > 0
+    inv_oh   = get_inv_ndx('OH') > 0
+    inv_no3  = get_inv_ndx('NO3') > 0
+    inv_ho2  = get_inv_ndx('HO2') > 0
+    if (inv_o3) then
+       id_o3 = get_inv_ndx('O3')
+    endif
+    if (inv_oh) then
+       id_oh = get_inv_ndx('OH')
+    endif
+    if (inv_no3) then
+       id_no3 = get_inv_ndx('NO3')
+    endif
+    if (inv_ho2) then
+       id_ho2 = get_inv_ndx('HO2')
+    endif
+!------------------------------------------------------------------------------
+
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
     do m = 1,extcnt
@@ -138,6 +163,30 @@ contains
        call addfld( 'het1_total', (/ 'lev' /), 'I', '/s', 'total N2O5 + H2O het rate constant' )
     endif
     call addfld( 'SZA', horiz_only, 'I', 'degrees', 'solar zenith angle' )
+
+    if ( diurnal_offline_oxidants ) then
+    call addfld( 'HOX_SCALER',  horiz_only, 'I',  ' ', 'diurnal scale factor for oh and ho2' )
+    call addfld( 'NO3_SCALER',  horiz_only, 'I',  ' ', 'diurnal scale factor for no3' )
+    if ( inv_oh )  call addfld( 'OH_SMOOTH',   (/ 'lev' /), 'I', 'mol/mol', 'gas-phase oh without diurnal cycle' )
+    if ( inv_oh )  call addfld( 'OH_DIURNAL',  (/ 'lev' /), 'I', 'mol/mol', 'gas-phase oh with diurnal cycle' )
+    if ( inv_ho2 ) call addfld( 'HO2_SMOOTH',  (/ 'lev' /), 'I', 'mol/mol', 'gas-phase ho2 without diurnal cycle' )
+    if ( inv_ho2 ) call addfld( 'HO2_DIURNAL', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase ho2 with diurnal cycle' )
+    if ( inv_no3 ) call addfld( 'NO3_SMOOTH',  (/ 'lev' /), 'I', 'mol/mol', 'gas-phase no3 without diurnal cycle' )
+    if ( inv_no3 ) call addfld( 'NO3_DIURNAL', (/ 'lev' /), 'I', 'mol/mol', 'gas-phase no3 with diurnal cycle' )
+!
+! You can either put add_default calls here,
+! on activate these fields through fincl in atm_in
+!
+! I suggest that you initially do a short run (2-3 days), 
+! with the primary history file having 1 day averages,
+! and the HOX_SCALER and NO3_SCALER going to an auxiliary history file that is written every time step
+!
+! The OH_SMOOTH and OH_DIURNAL in primary history should be close
+! We can check the diurnal variation using the HOX_SCALER and NO3_SCALER
+! If you want, you could also output smooth and diurnal oxidants every time step
+!    by including them in both the primary and auxiliary history files
+!
+    end if
 
     call chm_diags_inti()
     call rate_diags_init()
@@ -377,7 +426,9 @@ contains
     real(r8) :: mmr_tend(pcols,pver,gas_pcnst) ! chemistry species tendencies (kg/kg/s)
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
     real(r8) :: delta
+
     real(r8) :: o3lsfcsink(ncol)               ! linoz o3lnz surface sink from call lin_strat_sfcsink 
+    real(r8) :: dicorfac_hox(ncol), dicorfac_no3(ncol)
 
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
@@ -481,6 +532,41 @@ contains
     !        ... Set the "invariants"
     !-----------------------------------------------------------------------  
     call setinv( invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf )
+
+!-----------Added by MS for diurnal oxidant profile-----------------------------------------------
+    if ( diurnal_offline_oxidants ) then
+
+    call dicor_hox_no3( delt, calday, rlats, rlons, ncol, dicorfac_hox, dicorfac_no3)
+
+    call outfld( 'HOX_SCALER', dicorfac_hox(:), ncol, lchnk )
+    call outfld( 'NO3_SCALER', dicorfac_no3(:), ncol, lchnk )
+
+    if ( inv_oh )  call outfld( 'OH_SMOOTH',  invariants(:,:,id_oh),  ncol, lchnk )
+    if ( inv_ho2 ) call outfld( 'HO2_SMOOTH', invariants(:,:,id_ho2), ncol, lchnk )
+    if ( inv_no3 ) call outfld( 'NO3_SMOOTH', invariants(:,:,id_no3), ncol, lchnk )
+
+    do i = 1, ncol
+!      if ( inv_o3 ) then       !No diurnal profile for O3
+!          invariants(i,:,id_o3)  = invariants(i,:,id_o3) * dicorfac_hox(i)
+!      end if
+      if ( inv_oh ) then
+          invariants(i,:,id_oh)  = invariants(i,:,id_oh) * dicorfac_hox(i)
+      end if
+      if ( inv_no3 ) then
+          invariants(i,:,id_no3) = invariants(i,:,id_no3) * dicorfac_no3(i)
+      end if
+      if ( inv_ho2 ) then
+          invariants(i,:,id_ho2) = invariants(i,:,id_ho2) * dicorfac_hox(i)
+      end if
+    enddo
+
+    if ( inv_oh )  call outfld( 'OH_DIURNAL',  invariants(:,:,id_oh),  ncol, lchnk )
+    if ( inv_ho2 ) call outfld( 'HO2_DIURNAL', invariants(:,:,id_ho2), ncol, lchnk )
+    if ( inv_no3 ) call outfld( 'NO3_DIURNAL', invariants(:,:,id_no3), ncol, lchnk )
+
+    end if
+
+!----------------------------------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------      
     !        ... interpolate SAGEII data for surface area
@@ -961,5 +1047,190 @@ contains
     call t_stopf('chemdr_diags')
 
   end subroutine gas_phase_chemdr
+
+!-----------------------------------------------------------------------------
+!
+! ROUTINE
+!   Scale_HOx_NO3
+!
+! CODE DEVELOPER
+!   Xiaohong Liu and Richard Easter
+!
+! DESCRIPTION
+!   This routine computes the scaling factor for HOx-NO3 based on
+!
+!   OH(instantaneous) = OH(max) * cos(theta)
+!
+!   where cos(theta) is cosine of solar zenith angle.
+!
+!   thus, OH(monthly_ave) * 24 (hr) = OH(max) * Sum (cos(theta) * dt)
+!                               ( t (time in hr) = triz -> tset, dt: timestep)
+!
+!   OH(max) = OH(monthly_ave) * 24 (hr) / (Sum (cos(theta) * dt) )
+!
+!   so, hox_scaler = 24 / (Sum (cos(theta) * dt) ) * cos(theta)
+!
+!   and, computes the scaling factor for NO3 assuming NO3 evenly distributed
+!        over night.
+!   so, no3_scaler = 24 / (24-(tset-triz))
+!
+!-----------------------------------------------------------------------------
+! may-2017 - 
+!    having some problems with the original code 
+!    eliminated the use of the triz and tset (sunrise and sunset) times
+!    instead do calculations using csza = cos( zenith angle )
+!       sun is  up  when csza >= csza_riseset
+!       sun is down when csza <  csza_riseset
+!-----------------------------------------------------------------------------
+
+      subroutine dicor_hox_no3( dt, calday, clat, clon, ncol, hox_scaler, no3_scaler )
+
+      use shr_kind_mod,    only : r8 => shr_kind_r8
+!     use time_manager,    only : get_curr_date
+      use orbit,           only : zenith
+
+      implicit none
+
+      integer,  intent(in)  :: ncol                 ! number of positions
+      real(r8), intent(in)  :: dt                  ! model time step (s)
+      real(r8), intent(in)  :: calday              ! Calendar day, including fraction 
+                                                  !    (at end of current time-step)
+      real(r8), intent(in)  :: clat(ncol)          ! Current centered latitude (radians)
+      real(r8), intent(in)  :: clon(ncol)          ! Centered longitude (radians)
+
+      real(r8), intent(out) :: hox_scaler(ncol)
+      real(r8), intent(out) :: no3_scaler(ncol)
+
+      !---------------------------Local variables-----------------------------
+
+      integer :: ic, it, nt
+!     integer :: yr, mon, day, ncsec
+
+!     real(r8) :: tloc, tutc
+!     real(r8) :: days_utc
+!     real(r8) :: doy_utc, tod
+      real(r8) :: calday_midcur, calday_00utc, calday_tmp
+      real(r8) :: csza_riseset
+      real(r8) :: csza(ncol)
+!     real(r8) :: latdeg(ncol)
+!     real(r8) :: triz(ncol), tset(ncol)
+!     real(r8) :: tot_cossza(ncol)
+      real(r8) :: tot_csza(ncol)
+      real(r8) :: tot_lite(ncol)
+      real(r8) :: tot_dark(ncol)
+
+      !-----------------------------------------------------------------------
+      !
+
+      nt = nint( 86400.0_r8/dt )   ! number of time-steps in 1 day
+      if (nt < 24) then
+! no diurnal cycle when time-step > 1 h
+         hox_scaler(:) = 1.0_r8
+         no3_scaler(:) = 1.0_r8
+         return
+      end if
+
+!     doy_utc = aint( calday )
+!     tod = calday - doy_utc
+
+!     csza(:) = 0.0_r8
+
+!     call get_curr_date( yr, mon, day, ncsec )
+
+!     Calculate the sun rize and sun set time (local time: hr)
+!     do ic=1,ncol
+!       latdeg(ic) = clat(ic) * 57.307_r8
+!       call SunRizSet(mon, day, latdeg(ic), triz(ic), tset(ic))
+!     end do
+
+! from smithsonian meteorological tables, sixth edition, 1949
+! sunrise and sunset occur when the upper edge of the suns disk 
+!    appears to be on the horizon
+! it is assumed that the upper edge of the sun appears on the horizon
+!    when the true center of the suns disk is 50/60 of 1 degree below the horizon
+! the corresponding csza = -0.014544
+! note that there is considerable visible light for some minutes before
+!    sunrise and after sunset
+      csza_riseset = -0.014544_r8
+
+! calday = [(utc-day-of-year) + (utc-hour-of-day)/24.0] at end of current time-step
+      calday_midcur = calday - (0.5_r8*dt/86400.0_r8)  ! "utc day & time" at mid-point of current time-step
+      calday_00utc = aint( calday_midcur )             ! "utc day & time" at 00 utc of this utc-day-of-year
+
+      tot_csza(:) = 0.0_r8
+      tot_lite(:) = 0.0_r8
+      tot_dark(:) = 0.0_r8
+
+      do it = 1, nt
+! calculate cos(zenith) at mid-point of the nt time-steps during the current utc-day-of-year
+
+!        tutc = (it-0.5) * 24.0_r8/nt      ! hr
+!        days_utc = doy_utc + tutc / 24.0_r8
+         calday_tmp = calday_00utc + ((it-0.5_r8)*dt/86400.0_r8)   ! "utc day & time" at mid-point of the time-step
+
+!        call zenith( days_utc, clat, clon, csza, ncol )
+         call zenith( calday_tmp, clat, clon, csza, ncol )
+
+         do ic=1,ncol
+!           if(tutc > triz(ic) .and. tutc < tset(ic)) then
+!              tot_cossza(ic) = tot_cossza(ic) + csza(ic) * 24.0_r8/nt
+!           end if
+            if (csza(ic) >= csza_riseset) then
+               tot_csza(ic) = tot_csza(ic) + max(csza(ic),0.01_r8)
+               tot_lite(ic) = tot_lite(ic) + 1.0_r8
+            else
+               tot_dark(ic) = tot_dark(ic) + 1.0_r8
+            end if
+         end do
+
+      end do
+
+!     call zenith( calday, clat, clon, csza, ncol )
+      call zenith( calday_midcur, clat, clon, csza, ncol )
+
+      do ic=1,ncol
+
+!         tloc = tod*24.0_r8 + clon(ic)* 57.307_r8 / 360.0_r8 * 24.0_r8
+!         if(tloc > 24.0_r8) tloc = tloc - 24.0_r8
+
+          if ( (tot_lite(ic)/nt) < 0.05_r8 .or.  tot_lite(ic) < 1.9_r8 ) then
+! when sun is up for less than 1.2 h or 2 time-steps, 
+!    set diurnal cycle to uniform to avoid potential numerical problems
+! note that uniform diurnal cycle is used when sun is not up at all,
+!    and this occurs more often than sun up for 0-1.2 h
+             hox_scaler(ic) = 1.0_r8
+          else
+! scale oh (and ho2) by cosine of zenith angle
+!            if(tloc > triz(ic) .and. tloc < tset(ic)) then
+             if (csza(ic) >= csza_riseset) then
+!               hox_scaler(ic) = 24.0_r8 /tot_csza(ic) * csza(ic)
+                hox_scaler(ic) = ( max(csza(ic),0.01_r8) / tot_csza(ic) ) * nt
+             else
+                hox_scaler(ic) = 1.0e-5_r8
+             end if
+          end if
+
+          if ( (tot_dark(ic)/nt) < 0.05_r8 .or.  tot_dark(ic) < 1.9_r8 ) then
+! when sun is down for less than 1.2 h or 2 time-steps, 
+!    set diurnal cycle to uniform to avoid potential numerical problems
+! note that uniform diurnal cycle is used when sun is not down at all,
+!    and this occurs more often than sun down for 0-1.2 h
+             no3_scaler(ic) = 1.0_r8
+          else
+! scale no3 by number of sun-down time steps
+!            if(tloc < triz(ic) .or. tloc > tset(ic)) then
+             if (csza(ic) < csza_riseset) then
+!               no3_scaler(ic) = 24.0_r8 /(24.0_r8 - (tset(ic) - triz(ic)))
+                no3_scaler(ic) = nt / tot_dark(ic)
+             else
+                no3_scaler(ic) = 1.0e-5_r8
+             end if
+          end if
+
+      end do
+
+      end subroutine dicor_hox_no3
+
+
 
 end module mo_gas_phase_chemdr

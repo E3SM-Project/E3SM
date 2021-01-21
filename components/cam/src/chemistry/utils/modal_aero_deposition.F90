@@ -441,7 +441,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
 #endif
 
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM)  )
       ! MAM4
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors

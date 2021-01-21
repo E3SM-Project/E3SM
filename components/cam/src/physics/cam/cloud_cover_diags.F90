@@ -16,6 +16,10 @@ module cloud_cover_diags
   public :: cloud_cover_diags_init
   public :: cloud_cover_diags_out
 
+!==========LSJ=======
+  real(r8), public :: cltot_pub(pcols) 
+!==========LSJ=======
+
 contains
 
 !===============================================================================
@@ -62,6 +66,8 @@ subroutine cloud_cover_diags_out(lchnk, ncol, cld, pmid, nmxrgn, pmxrgn )
 
   call cldsav (lchnk, ncol, cld, pmid, cltot, cllow, clmed, clhgh, nmxrgn, pmxrgn)
 
+  cltot_pub(1:pcols)=cltot(1:pcols)
+ 
   !
   ! Dump cloud field information to history tape buffer (diagnostics)
   !

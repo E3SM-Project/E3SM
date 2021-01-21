@@ -91,6 +91,15 @@ subroutine neu_wetdep_init
       case ( 'ALKOOH', 'MEKOOH', 'TOLOOH', 'TERPOOH' )
          test_name = 'CH3OOH'        
 
+!         Added by Manish Shrivastava on 01/22/2016 to do wet deposition of SOA gas species
+!---------------------------------------------------------------------------------------------------------
+
+           case(  'SOAG0','SOAG15', 'SOAG24', &
+                  'SOAG31', 'SOAG32', &
+                  'SOAG33', 'SOAG34', 'SOAG35' )
+             test_name = 'CH3OOH'  ! this is just a place holder. values are explicitly set below
+!----------------------------------------------------------------------------------------------------
+
     end select
 !
     do l = 1,n_species_table
