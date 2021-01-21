@@ -1200,6 +1200,14 @@
         <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
         <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
       </modules>
+      <modules compiler="gnu" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
+        <command name="load">hdf5/1.8.16-dtbpce3</command>
+        <command name="load">netcdf-c/4.4.1-zcoa44z</command>
+        <command name="load">netcdf-cxx/4.2-ayxg4c7</command>
+        <command name="load">netcdf-fortran/4.4.4-2lfr2lr</command>
+        <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
+      </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
