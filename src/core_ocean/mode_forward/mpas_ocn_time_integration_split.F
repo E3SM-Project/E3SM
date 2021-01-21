@@ -534,7 +534,8 @@ module ocn_time_integration_split
                   sshCur, dt, vertAleTransportTop, err)
             endif
 
-           call ocn_tend_vel(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, scratchPool, stage1_tend_time, dt)
+           call ocn_tend_vel(tendPool, statePool, forcingPool, &
+                             diagnosticsPool, stage1_tend_time, dt)
 
            block => block % next
          end do
