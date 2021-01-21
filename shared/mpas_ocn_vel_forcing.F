@@ -20,11 +20,10 @@
 
 module ocn_vel_forcing
 
+   use mpas_kind_types
    use mpas_derived_types
-
+   use mpas_log
    use ocn_constants
-   use ocn_forcing
-
    use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_explicit_bottom_drag
 
@@ -75,71 +74,56 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceFluxAttenuationCoefficient, &
-                                   surfaceStress, kineticEnergyCell, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
+                                   surfaceStress, kineticEnergyCell, &
+                                   layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity, &    !< Input: Normal velocity at edges
-         kineticEnergyCell        !< Input: kinetic energy at cell
+         normalVelocity,    &!< [in] Normal velocity at edges
+         kineticEnergyCell, &!< [in] kinetic energy at cell
+         layerThicknessEdge  !< [in] thickness at edge
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         surfaceFluxAttenuationCoefficient, & !< Input: attenuation coefficient for surface fluxes at cell centers
-         surfaceStress     !< Input: surface stress at edges
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: thickness at edge
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
+         sfcFlxAttCoeff, &!< [in] attenuation coefficient for sfc fluxes
+         surfaceStress    !< [in] surface stress at edges
 
       !-----------------------------------------------------------------
-      !
       ! input/output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend            !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: err1
+      integer :: err1 ! local error flag
 
+      ! End preamble
       !-----------------------------------------------------------------
-      !
-      ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the
-      !   tendencies will be added together
-      !
-      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** initialize error flag, then call individual forcing routines
 
       err = 0
 
-      call ocn_vel_forcing_surface_stress_tend(meshPool, surfaceFluxAttenuationCoefficient, &
-                                               surfaceStress, layerThicknessEdge, tend, err1)
+      call ocn_vel_forcing_surface_stress_tend(sfcFlxAttCoeff, &
+                   surfaceStress, layerThicknessEdge, tend, err1)
       err = ior(err, err1)
 
-      call ocn_vel_forcing_explicit_bottom_drag_tend(meshPool, normalVelocity, &
-              kineticEnergyCell, layerThicknessEdge, tend, err1)
-
+      call ocn_vel_forcing_explicit_bottom_drag_tend(normalVelocity, &
+                   kineticEnergyCell, layerThicknessEdge, tend, err1)
       err = ior(err, err1)
 
    !--------------------------------------------------------------------
@@ -163,22 +147,39 @@ contains
 
    subroutine ocn_vel_forcing_init(err)!{{{
 
-   !--------------------------------------------------------------------
-
       !-----------------------------------------------------------------
-      !
-      ! call individual init routines for each parameterization
-      !
+      ! output variables
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
-      integer :: err1, err2
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: err1, err2 ! local error flags
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      err = 0
 
       call ocn_vel_forcing_surface_stress_init(err1)
-      call ocn_vel_forcing_explicit_bottom_drag_init(err2)
+      if (err1 /= 0) then
+         call mpas_log_write( &
+            'vel_forcing_init encountered error in sfc stress init', &
+             MPAS_LOG_ERR)
+         err = err1
+      endif
 
-      err = ior(err1, err2)
+      call ocn_vel_forcing_explicit_bottom_drag_init(err2)
+      if (err2 /= 0) then
+         call mpas_log_write( &
+            'vel_forcing_init encountered error in bot drag init', &
+             MPAS_LOG_ERR)
+         err = err2
+      endif
 
    !--------------------------------------------------------------------
 
