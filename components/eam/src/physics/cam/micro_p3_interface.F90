@@ -35,7 +35,7 @@ module micro_p3_interface
   use cam_logfile,    only: iulog
   use time_manager,   only: is_first_step, get_curr_date
   use perf_mod,       only: t_startf, t_stopf
-  use micro_p3_utils, only: p3_qc_autocon_expon, p3_qc_accret_expon
+  use micro_p3_utils, only: p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3
   use pio,            only: file_desc_t, pio_nowrite
   use cam_pio_utils,    only: cam_pio_openfile,cam_pio_closefile
   use cam_grid_support, only: cam_grid_check, cam_grid_id, cam_grid_get_dim_names
@@ -46,8 +46,9 @@ module micro_p3_interface
   save
 
   public :: micro_p3_init, micro_p3_register, micro_p3_tend, &
-            micro_p3_init_cnst, micro_p3_implements_cnst &
-            ,micro_p3_readnl
+            micro_p3_init_cnst, micro_p3_implements_cnst,    &
+            micro_p3_readnl                               
+            
 
   character(len=16), parameter :: unset_str = 'UNSET'
 
@@ -128,7 +129,8 @@ module micro_p3_interface
    logical            :: micro_aerosolactivation = .false.   ! Use aerosol activation
    logical            :: micro_subgrid_cloud     = .false.   ! Use subgrid cloudiness
    logical            :: micro_tend_output       = .false.   ! Default microphysics tendencies to output file
-   logical            :: do_prescribed_CCN        = .false.   ! Use prescribed CCN
+   logical            :: do_prescribed_CCN       = .false.   ! Use prescribed CCN
+
    contains
 !===============================================================================
 subroutine micro_p3_readnl(nlfile)
@@ -145,7 +147,7 @@ subroutine micro_p3_readnl(nlfile)
 
   namelist /micro_nl/ &
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
-       micro_tend_output, p3_qc_autocon_expon, p3_qc_accret_expon, do_prescribed_CCN
+       micro_tend_output, p3_qc_autocon_expon, p3_qc_accret_expon, do_prescribed_CCN, do_Cooper_inP3
 
   !-----------------------------------------------------------------------------
 
@@ -168,9 +170,10 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,L)')    'micro_aerosolactivation: ', micro_aerosolactivation
      write(iulog,'(A30,1x,L)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
      write(iulog,'(A30,1x,L)')    'micro_tend_output: ',       micro_tend_output
-     write(iulog,'(A30,1x,8e12.4)') 'p3_qc_autocon_expon',        p3_qc_autocon_expon
-     write(iulog,'(A30,1x,8e12.4)') 'p3_qc_accret_expon',         p3_qc_accret_expon
+     write(iulog,'(A30,1x,8e12.4)') 'p3_qc_autocon_expon',     p3_qc_autocon_expon
+     write(iulog,'(A30,1x,8e12.4)') 'p3_qc_accret_expon',      p3_qc_accret_expon
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
+     write(iulog,'(A30,1x,L)')    'do_Cooper_inP3: ',          do_Cooper_inP3
 
   end if
 
@@ -181,9 +184,10 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(micro_aerosolactivation, 1,                          mpilog,  0, mpicom)
   call mpibcast(micro_subgrid_cloud,     1,                          mpilog,  0, mpicom)
   call mpibcast(micro_tend_output,       1,                          mpilog,  0, mpicom)
-  call mpibcast(p3_qc_autocon_expon,      1,                          mpir8,   0, mpicom)
-  call mpibcast(p3_qc_accret_expon,       1,                          mpir8,   0, mpicom)
-  call mpibcast(do_prescribed_CCN,     1,                          mpilog,  0,    mpicom)
+  call mpibcast(p3_qc_autocon_expon,     1,                          mpir8,   0, mpicom)
+  call mpibcast(p3_qc_accret_expon,      1,                          mpir8,   0, mpicom)
+  call mpibcast(do_prescribed_CCN,       1,                          mpilog,  0, mpicom)
+  call mpibcast(do_Cooper_inP3,          1,                          mpilog,  0, mpicom)
 
 #endif
 

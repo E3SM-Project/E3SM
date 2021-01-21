@@ -2143,6 +2143,12 @@ Specify if CCN concentration is read in from ncdf file within p3.
 Default: FALSE
 </entry>
 
+<entry id="do_Cooper_inP3" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if ice nucleation is done using the Cooper scheme within p3.
+Default: FALSE
+</entry>
+
 <!-- micro_mg -->
 <entry id="micro_do_nccons" type="logical" category="microphys"
        group="micro_mg_nl" valid_values="" >

@@ -33,6 +33,8 @@ use wv_saturation,  only: svp_water, svp_ice
 use cam_logfile,    only: iulog
 use phys_control,   only: cam_chempkg_is 
 
+use micro_p3_utils, only: do_Cooper_inP3 
+
 implicit none
 private
 save
@@ -407,7 +409,7 @@ subroutine nucleati(  &
       nimey=0._r8
    endif
 
-   if (use_hetfrz_classnuc) nimey = 0._r8
+   if (use_hetfrz_classnuc .or. do_Cooper_inP3) nimey = 0._r8
 
    nuci=ni+nimey
    if(nuci.gt.9999._r8.or.nuci.lt.0._r8) then

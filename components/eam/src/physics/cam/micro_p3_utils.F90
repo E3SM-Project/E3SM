@@ -28,6 +28,8 @@ module micro_p3_utils
        clbfact_dep, &
        p3_qc_autocon_expon, p3_qc_accret_expon
 
+    logical,public  :: do_Cooper_inP3   ! Use prescribed CCN       
+
     real(rtype),dimension(16), public :: dnu
 
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype

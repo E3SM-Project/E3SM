@@ -54,7 +54,9 @@ module micro_p3
        T_rainfrz, T_icenuc, T_homogfrz, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c, &
-       p3_qc_autocon_expon, p3_qc_accret_expon
+       p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3
+
+   !use micro_p3_interface, only: do_Cooper_inP3
 
    use wv_sat_scream, only:qv_sat
 
@@ -2674,8 +2676,22 @@ subroutine ice_nucleation(t_atm,inv_rho,ni,ni_activated,qv_supersat_i,inv_dt,do_
          endif
       else
       ! Ice nucleation predicted by aerosol scheme
-         ni_nucleat_tend = max(0._rtype, (ni_activated - ni)*inv_dt)
-         qinuc = ni_nucleat_tend * mi0
+      ! +++ [JS]: Here we add the cirrus/aerosol contribution to the Cooper scheme under dedicated switch +++
+         if(do_Cooper_inP3)then
+            dum = 0.005_rtype*bfb_exp(0.304_rtype*(T_zerodegc-t_atm))*1000._rtype*inv_rho   !Cooper (1986)
+            dum = min(dum,100.e3_rtype*inv_rho)
+            N_nuc = max(0._rtype,(dum-ni)*inv_dt)
+            if (N_nuc.ge.1.e-20_rtype) then
+               Q_nuc = max(0._rtype,(dum-ni)*mi0*inv_dt)
+               qinuc = Q_nuc
+               ni_nucleat_tend = N_nuc
+            endif   
+            ni_nucleat_tend = ni_nucleat_tend + max(0._rtype, (ni_activated - ni)*inv_dt)
+            qinuc = ni_nucleat_tend * mi0
+         else          
+            ni_nucleat_tend = max(0._rtype, (ni_activated - ni)*inv_dt)
+            qinuc = ni_nucleat_tend * mi0
+         endif
       endif
    endif
 
