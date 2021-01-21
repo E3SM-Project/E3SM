@@ -984,6 +984,16 @@
       <mask>WC14to60E2r3</mask>
     </model_grid>
 
+    <model_grid alias="northamericax4v1pg2_WC14to60E2r3_ICG" compset="(EAM.+ELM.+MPASO%SPUNUP)">
+      <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
+      <grid name="lnd">ne0np4_northamericax4v1.pg2</grid>
+      <grid name="ocnice">WC14to60E2r3_ICG</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>WC14to60E2r3</mask>
+    </model_grid>
+
     <model_grid alias="svalbardx8v1_svalbardx8v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_svalbard_x8v1_lowcon</grid>
       <grid name="lnd">ne0np4_svalbard_x8v1_lowcon</grid>
@@ -4224,6 +4234,11 @@
     <gridmap lnd_grid="ne30np4.pg2" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_r05_mono.200220.nc</map>
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne30pg2/map_r05_to_ne30pg2_mono.200220.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_northamericax4v1.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_mono.20200401.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1pg2_mono.20200401.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne60np4" rof_grid="r05">
