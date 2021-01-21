@@ -91,12 +91,10 @@ void P3InputsInitializer::initialize_fields ()
     list_of_fields += ", ";
     count += m_fields.count(name);
   }
-  
-  if (count==0) {
-    return;
-  }
+ 
+  EKAT_REQUIRE_MSG(count!=0,"Error in p3_inputs_initializer: no fields have declared this initializer.  Check p3 interface."); 
 
-  EKAT_REQUIRE_MSG (count==fields_to_init.size(),
+  EKAT_REQUIRE_MSG (count==(int)fields_to_init.size(),
     "Error! P3InputsInitializer is expected to init " + std::to_string(fields_to_init.size()) + " fields:\n"
     "       " + list_of_fields + "\n"
     "       Instead found " + std::to_string(count) + " fields.\n"
@@ -165,64 +163,47 @@ void P3InputsInitializer::initialize_fields ()
 
  // Initalize from text file 
   std::ifstream fid("p3_init_vals.txt", std::ifstream::in);
+  EKAT_REQUIRE_MSG(!fid.fail(),"Error in p3_inputs_initializer.cpp loading p3_init_vals.txt file");
   std::string tmp_line;
+  getline(fid,tmp_line);  // Read header and discard.
   int icol_in_max = 0;
   while(getline(fid,tmp_line))
   {
     std::stringstream s(tmp_line);
     std::string field;
     std::vector<Real> field_vals;
-    while (getline(s,field,' '))
-    {
-      field_vals.push_back(std::stod(field));
-    }
-    int icol  = (int)field_vals[0];
-    int ipack = (int)field_vals[1] / Spack::n;
-    int ivec  = (int)field_vals[1] % Spack::n;
+    std::string skip;
+    int icol, k, ipack, ivec;
+    s >> icol >> k;
+    ipack = k / Spack::n;
+    ivec  = k % Spack::n;
     icol_in_max = std::max(icol,icol_in_max);
-    int cnt = 2;
-    h_qv(icol,ipack)[ivec]=field_vals[cnt++];
-    h_th_atm(icol,ipack)[ivec]=field_vals[cnt++];
-    h_pmid(icol,ipack)[ivec]=field_vals[cnt++];
-    h_dz(icol,ipack)[ivec]=field_vals[cnt++];
-    h_nc_nuceat_tend(icol,ipack)[ivec]=field_vals[cnt++];
-    h_nccn_prescribed(icol,ipack)[ivec]=field_vals[cnt++];
-    h_ni_activated(icol,ipack)[ivec]=field_vals[cnt++];
-    h_inv_qc_relvar(icol,ipack)[ivec]=field_vals[cnt++];
-    h_qc(icol,ipack)[ivec]=field_vals[cnt++];
-    h_nc(icol,ipack)[ivec]=field_vals[cnt++];
-    h_qr(icol,ipack)[ivec]=field_vals[cnt++];
-    h_nr(icol,ipack)[ivec]=field_vals[cnt++];
-    h_qi(icol,ipack)[ivec]=field_vals[cnt++];
-    h_ni(icol,ipack)[ivec]=field_vals[cnt++];
-    h_qm(icol,ipack)[ivec]=field_vals[cnt++];
-    h_bm(icol,ipack)[ivec]=field_vals[cnt++];
-    cnt+=5;
-    //h_precip_liq_surf(icol,ipack)[ivec]=field_vals[cnt];    //
-    //h_precip_ice_surf(icol,ipack)[ivec]=field_vals[cnt];    //
-    //h_diag_eff_radius_qc(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_diag_eff_radius_qi(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_rho_qi(icol,ipack)[ivec]=field_vals[cnt]; //
-    h_dp(icol,ipack)[ivec]=field_vals[cnt++];
-    h_exner(icol,ipack)[ivec]=field_vals[cnt++];
-    cnt+=6;
-    //h_qv2qi_depos_tend(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_precip_total_tend(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_nevapr(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_qr_evap_tend(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_precip_liq_flux(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_precip_ice_flux(icol,ipack)[ivec]=field_vals[cnt]; //
-    h_cld_frac_r(icol,ipack)[ivec]=field_vals[cnt++];
-    h_cld_frac_l(icol,ipack)[ivec]=field_vals[cnt++];
-    h_cld_frac_i(icol,ipack)[ivec]=field_vals[cnt++];
-    cnt+=5;
-    //h_mu_c(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_lamc(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_liq_ice_exchange(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_vap_liq_exchange(icol,ipack)[ivec]=field_vals[cnt]; //
-    //h_vap_ice_exchange(icol,ipack)[ivec]=field_vals[cnt]; //
-    h_qv_prev(icol,ipack)[ivec]=field_vals[cnt++]; 
-    h_T_prev(icol,ipack)[ivec]=field_vals[cnt];
+    s >> h_qv(icol,ipack)[ivec]             ;
+    s >> h_th_atm(icol,ipack)[ivec]         ;
+    s >> h_pmid(icol,ipack)[ivec]           ;
+    s >> h_dz(icol,ipack)[ivec]             ;
+    s >> h_nc_nuceat_tend(icol,ipack)[ivec] ;
+    s >> h_nccn_prescribed(icol,ipack)[ivec];
+    s >> h_ni_activated(icol,ipack)[ivec]   ;
+    s >> h_inv_qc_relvar(icol,ipack)[ivec]  ;
+    s >> h_qc(icol,ipack)[ivec]             ;
+    s >> h_nc(icol,ipack)[ivec]             ;
+    s >> h_qr(icol,ipack)[ivec]             ;
+    s >> h_nr(icol,ipack)[ivec]             ;
+    s >> h_qi(icol,ipack)[ivec]             ;
+    s >> h_ni(icol,ipack)[ivec]             ;
+    s >> h_qm(icol,ipack)[ivec]             ;
+    s >> h_bm(icol,ipack)[ivec]             ;
+    for (int skp=0;skp<5;skp++) { s >> skip; }
+    s >> h_dp(icol,ipack)[ivec]   ;
+    s >> h_exner(icol,ipack)[ivec];
+    for (int skp=0;skp<6;skp++) { s >> skip; }
+    s >> h_cld_frac_r(icol,ipack)[ivec];
+    s >> h_cld_frac_l(icol,ipack)[ivec];
+    s >> h_cld_frac_i(icol,ipack)[ivec];
+    for (int skp=0;skp<5;skp++) { s >> skip; }
+    s >> h_qv_prev(icol,ipack)[ivec];
+    s >> h_T_prev(icol,ipack)[ivec] ;
 
   } // while getline(fid,tmp_line)
   // For now use dummy values copied from `p3_ic_cases.cpp`, which is loaded from a file.

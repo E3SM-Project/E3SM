@@ -86,7 +86,9 @@ protected:
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
-  Int m_num_levs; 
+  Int m_num_levs;
+  // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
+  // m_it is passed as an arguement to P3 and is used for identifying which iteration an error occurs. 
   Int m_it = 0; 
 
 }; // class P3Microphysics

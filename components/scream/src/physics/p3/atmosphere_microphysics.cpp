@@ -5,6 +5,7 @@
 #include "physics/p3/p3_f90.hpp"
 
 #include "ekat/ekat_assert.hpp"
+#include "ekat/util/ekat_units.hpp"
 
 #include <array>
 
@@ -43,26 +44,26 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
-  auto nondim = m/m;
+  Units nondim(0,0,0,0,0,0,0);
   auto mm = m/1000;
 
   const auto& grid_name = m_p3_params.get<std::string>("Grid");
   auto grid = grids_manager->get_grid(grid_name);
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this ranks
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  FieldLayout scalar3d_layout_mid { {COL,VL}, {m_num_cols,m_num_levs} };   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level 
-  FieldLayout scalar3d_layout_int { {COL,VL}, {m_num_cols,m_num_levs+1} }; // Layout for 3D (2d horiz X 1d vertical) variable defined at the interfaces
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
+  FieldLayout scalar3d_layout_mid { {COL,VL}, {m_num_cols,m_num_levs} };
+  FieldLayout scalar3d_layout_int { {COL,VL}, {m_num_cols,m_num_levs+1} };
 
   // Define fields needed in P3.
   // Note: p3_main is organized by a set of 5 structures, variables below are organized
   //       using the same approach to make it easier to follow.
 
-  // These variables are needed, but not actually passed to p3_main.  For organization
-  // purposes they are listed here:
+  // These variables are needed by the interface, but not actually passed to p3_main. 
   m_required_fields.emplace("ast",   scalar3d_layout_mid, nondim, grid_name);
   m_required_fields.emplace("pmid",  scalar3d_layout_mid, Pa,     grid_name);
   m_required_fields.emplace("zi",    scalar3d_layout_int, m,      grid_name);
@@ -140,6 +141,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   // Initialize p3
   p3_init();
 
+#ifndef SCREAM_CIME_BUILD
   // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
   // Some options:
   //  - we can tell P3 it can init all inputs or specify which ones it can init. We call the
@@ -184,6 +186,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
                       "Error! Some p3 inputs were marked to be inited by P3, while others weren't.\n"
                       "       P3 was requested to init either all or none of the inputs.\n");
   }
+#endif
 }
 
 // =========================================================================================
