@@ -735,6 +735,10 @@
 			possible_values="true or false"
 			icepack_name="tr_rsnw"
 		/>
+		<nml_option name="config_use_special_boundaries_zero_tracers" type="logical" default_value="false" units="unitless"
+			description="Zero out tracers in given boundary cells."
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="biogeochemistry" in_defaults="true">
@@ -4197,6 +4201,7 @@
 	        <var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
 		<var name="solveVelocitySpecialBoundaries" type="integer" dimensions="nVertices"/>
 		<var name="solveStressSpecialBoundaries" type="integer" dimensions="nCells"/>
+		<var name="tracerBoundaryType" type="integer" dimensions="nCells"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"
