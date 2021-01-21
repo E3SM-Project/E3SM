@@ -11,11 +11,11 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = F2010SC5-CMIP6_wP3
+set job_name       = F2010SC5-CMIP6_wP3_v2
 set compset        = F2010SC5-CMIP6
 set resolution     = ne30pg2_r05_oECv3
 set machine        = compy
-set walltime       = 12:30:00
+set walltime       = 10:00:00
 setenv project       e3sm
 
 ### SOURCE CODE OPTIONS
@@ -28,13 +28,13 @@ set case_name = ${tag_name}.${job_name}.${resolution}.${machine}
 
 ### BUILD OPTIONS
 set debug_compile  = false
-set old_executable = false
+set old_executable = true
 
 ### AUTOMATIC DELETION OPTIONS
-set seconds_before_delete_source_dir =  1 #-1
+set seconds_before_delete_source_dir =  -1 #-1
 set seconds_before_delete_case_dir   =  1 #10
-set seconds_before_delete_bld_dir    =  1 #-1
-set seconds_before_delete_run_dir    =  1 #-1
+set seconds_before_delete_bld_dir    =  -1 #-1
+set seconds_before_delete_run_dir    =  -1 #-1
 
 ### SUBMIT OPTIONS
 set submit_run       = true
@@ -48,7 +48,7 @@ set nnodes = 30
 #set nnodes = 15
 
 ### STARTUP TYPE
-set model_start_type = initial #initial #continue #branch
+set model_start_type = continue #initial #continue #branch
 
 ### DIRECTORIEs
 set code_root_dir               = /qfs/people/shpu881/E3SM/
@@ -1099,6 +1099,7 @@ cat <<EOF >> user_nl_eam
  history_budget = .true.
  nucleate_ice_subgrid = 1.2d0
  use_hetfrz_classnuc = .false.
+ do_Cooper_inP3 = .true.
 
 EOF
 
