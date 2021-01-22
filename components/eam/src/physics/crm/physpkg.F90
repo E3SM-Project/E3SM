@@ -1606,7 +1606,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-#ifndef MMF_FLUX_BYPASS
+#if !defined( MMF_FLUX_BYPASS ) && !defined( MMF_CRM_SFC_FLX ) 
     if(.not.use_qqflx_fixer) then 
 
        ! Check if latent heat flux exceeds the total moisture content of the
@@ -2289,7 +2289,7 @@ subroutine tphysbc (ztodt,               &
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
-#if defined(MMF_FLUX_BYPASS)
+#if defined(MMF_FLUX_BYPASS) || defined( MMF_CRM_SFC_FLX )
     if(.not.use_qqflx_fixer) then 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
