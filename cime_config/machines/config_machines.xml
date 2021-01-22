@@ -1121,7 +1121,7 @@
 
   <machine MACH="chrysalis">
     <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
-    <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
+    <NODENAME_REGEX>chr.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,openmpi</MPILIBS>
