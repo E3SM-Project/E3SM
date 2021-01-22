@@ -1121,7 +1121,7 @@
 
   <machine MACH="chrysalis">
     <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
-    <NODENAME_REGEX>chrlogin.*</NODENAME_REGEX>
+    <NODENAME_REGEX>chr.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,openmpi</MPILIBS>
@@ -1199,6 +1199,14 @@
         <command name="load">netcdf-cxx/4.2-fz347dw</command>
         <command name="load">netcdf-fortran/4.5.3-i5ah7u2</command>
         <command name="load">parallel-netcdf/1.12.1-e7w4x32</command>
+      </modules>
+      <modules compiler="gnu" mpilib="impi">
+        <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
+        <command name="load">hdf5/1.8.16-dtbpce3</command>
+        <command name="load">netcdf-c/4.4.1-zcoa44z</command>
+        <command name="load">netcdf-cxx/4.2-ayxg4c7</command>
+        <command name="load">netcdf-fortran/4.4.4-2lfr2lr</command>
+        <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
