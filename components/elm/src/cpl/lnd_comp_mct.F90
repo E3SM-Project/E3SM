@@ -2,9 +2,9 @@ module lnd_comp_mct
   
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
-  !  Interface of the active land model component of CESM the CLM (Community Land Model)
-  !  with the main CESM driver. This is a thin interface taking CESM driver information
-  !  in MCT (Model Coupling Toolkit) format and converting it to use by CLM.
+  !  Interface of the active land model component of CESM the ELM (E3SM Land Model)
+  !  with the main E3SM driver. This is a thin interface taking E3SM driver information
+  !  in MCT (Model Coupling Toolkit) format and converting it to use by ELM.
   !
   ! !uses:
   use shr_kind_mod     , only : r8 => shr_kind_r8
@@ -19,9 +19,9 @@ module lnd_comp_mct
   private                     ! by default make data private
   !
   ! !public member functions:
-  public :: lnd_init_mct      ! clm initialization
-  public :: lnd_run_mct       ! clm run phase
-  public :: lnd_final_mct     ! clm finalization/cleanup
+  public :: lnd_init_mct      ! elm initialization
+  public :: lnd_run_mct       ! elm run phase
+  public :: lnd_final_mct     ! elm finalization/cleanup
   !
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
@@ -42,12 +42,11 @@ contains
     use abortutils       , only : endrun
     use shr_kind_mod     , only : SHR_KIND_CL
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use clm_initializeMod, only : initialize1, initialize2, initialize3
-    use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use clm_varctl       , only : finidat,single_column, iop_mode, &
-                                  clm_varctl_set, iulog, noland
-    use clm_varctl       , only : inst_index, inst_suffix, inst_name
-    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
+    use elm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name
+    use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
     use domainMod        , only : ldomain
@@ -64,8 +63,8 @@ contains
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
     use spmdMod          , only : masterproc, npes, spmd_init
-    use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
-    use clm_cpl_indices  , only : clm_cpl_indices_set
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
@@ -85,7 +84,7 @@ contains
     integer  :: lsz                                  ! size of attribute vector
     integer  :: g,i,j                                ! indices
     integer  :: dtime_sync                           ! coupling time-step from the input synchronization clock
-    integer  :: dtime_clm                            ! clm time-step
+    integer  :: dtime_elm                            ! elm time-step
     logical  :: exists                               ! true if file exists
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
@@ -102,7 +101,7 @@ contains
     character(len=SHR_KIND_CL) :: username           ! user running the model
     character(len=8)           :: c_inst_index       ! instance number           
     character(len=8)           :: c_npes             ! number of pes
-    integer :: nsrest                                ! clm restart type
+    integer :: nsrest                                ! elm restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
     integer :: ref_tod                               ! reference time of day (sec)
     integer :: start_ymd                             ! start date (YYYYMMDD)
@@ -125,9 +124,9 @@ contains
 
     ! Determine attriute vector indices
 
-    call clm_cpl_indices_set()
+    call elm_cpl_indices_set()
 
-    ! Initialize clm MPI communicator 
+    ! Initialize elm MPI communicator 
 
     call spmd_init( mpicom_lnd, LNDID )
 
@@ -151,7 +150,7 @@ contains
           iulog = shr_file_getUnit()
           call shr_file_setIO('lnd_modelio.nml'//trim(inst_suffix),iulog)
        end if
-       write(iulog,format) "CLM land model initialization"
+       write(iulog,format) "ELM land model initialization"
     else
        iulog = shrlogunit
     end if
@@ -176,7 +175,7 @@ contains
        if (masterproc) then
           write(iulog,'(/,3A)') &
              trim(adjustl(c_npes)), &
-             ' pes participating in computation of CLM instance #', &
+             ' pes participating in computation of ELM instance #', &
              trim(adjustl(c_inst_index))
           call shr_sys_flush(iulog)
        endif
@@ -198,7 +197,7 @@ contains
 
     call control_setNL("lnd_in"//trim(inst_suffix))
 
-    ! Initialize clm
+    ! Initialize elm
     ! initialize1 reads namelist, grid and surface data (need this to initialize gsmap) 
     ! initialize2 performs rest of initialization	
 
@@ -210,7 +209,6 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
-                              iop_mode=iop_mode,                            &
                               scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
@@ -228,13 +226,10 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    ! If IOP mode, force single_column flag to be false for this
-    !  block of code, as special treatment is needed
-    if (iop_mode) single_column = .false. 
-    call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
+    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
                         single_column_in=single_column,&
-                        iop_mode_in=iop_mode, scmlat_in=scmlat,       &
+                        scmlat_in=scmlat,       &
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 
@@ -256,10 +251,10 @@ contains
     call seq_infodata_GetData(infodata, atm_aero=atm_aero )
     !DMR 6/12/15 - remove this requirement (CPL_BPYASS mode uses SATM)
     if ( .not. atm_aero .and. atm_present )then
-       call endrun( sub//' ERROR: atmosphere model MUST send aerosols to CLM' )
+       call endrun( sub//' ERROR: atmosphere model MUST send aerosols to ELM' )
     end if
 
-    ! Initialize clm gsMap, clm domain and clm attribute vectors
+    ! Initialize elm gsMap, elm domain and elm attribute vectors
 
     call get_proc_bounds( bounds )
 
@@ -274,21 +269,21 @@ contains
     call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsz)
     call mct_aVect_zero(l2x_l)
 
-    ! Finish initializing clm
+    ! Finish initializing elm
 
     call initialize2()
     call initialize3()
 
-    ! Check that clm internal dtime aligns with clm coupling interval
+    ! Check that elm internal dtime aligns with elm coupling interval
 
     call seq_timemgr_EClockGetData(EClock, dtime=dtime_sync )
-    dtime_clm = get_step_size()
+    dtime_elm = get_step_size()
     if (masterproc) then
        write(iulog,*)'dtime_sync= ',dtime_sync,&
-            ' dtime_clm= ',dtime_clm,' mod = ',mod(dtime_sync,dtime_clm)
+            ' dtime_elm= ',dtime_elm,' mod = ',mod(dtime_sync,dtime_elm)
     end if
-    if (mod(dtime_sync,dtime_clm) /= 0) then
-       write(iulog,*)'clm dtime ',dtime_clm,' and Eclock dtime ',&
+    if (mod(dtime_sync,dtime_elm) /= 0) then
+       write(iulog,*)'elm dtime ',dtime_elm,' and Eclock dtime ',&
             dtime_sync,' never align'
        call endrun( sub//' ERROR: time out of sync' )
     end if
@@ -314,7 +309,7 @@ contains
       !this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
       nstep = get_nstep()
-      nextsw_cday = mod((nstep/(86400._r8/dtime_clm))*1.0_r8,365._r8)+1._r8
+      nextsw_cday = mod((nstep/(86400._r8/dtime_elm))*1.0_r8,365._r8)+1._r8
       call set_nextsw_cday( nextsw_cday )
     end if
 
@@ -339,18 +334,18 @@ contains
   subroutine lnd_run_mct(EClock, cdata_l, x2l_l, l2x_l)
     !
     ! !DESCRIPTION:
-    ! Run clm model
+    ! Run elm model
     !
     ! !USES:
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
-    use clm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
-    use clm_driver      ,  only : clm_drv
+    use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use elm_driver      ,  only : elm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
-    use clm_varctl      ,  only : iulog
-    use clm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
+    use elm_varctl      ,  only : iulog
+    use elm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
     use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel
     use seq_cdata_mod   ,  only : seq_cdata, seq_cdata_setptrs
@@ -375,11 +370,11 @@ contains
     integer      :: mon_sync             ! Sync current month
     integer      :: day_sync             ! Sync current day
     integer      :: tod_sync             ! Sync current time of day (sec)
-    integer      :: ymd                  ! CLM current date (YYYYMMDD)
-    integer      :: yr                   ! CLM current year
-    integer      :: mon                  ! CLM current month
-    integer      :: day                  ! CLM current day
-    integer      :: tod                  ! CLM current time of day (sec)
+    integer      :: ymd                  ! ELM current date (YYYYMMDD)
+    integer      :: yr                   ! ELM current year
+    integer      :: mon                  ! ELM current month
+    integer      :: day                  ! ELM current day
+    integer      :: tod                  ! ELM current time of day (sec)
     integer      :: dtime                ! time step increment (sec)
     integer      :: nstep                ! time step index
     logical      :: rstwr_sync           ! .true. ==> write restart file before returning
@@ -389,7 +384,7 @@ contains
     logical      :: dosend               ! true => send data back to driver
     logical      :: doalb                ! .true. ==> do albedo calculation on this time step
     real(r8)     :: nextsw_cday          ! calday from clock of next radiation computation
-    real(r8)     :: caldayp1             ! clm calday plus dtime offset
+    real(r8)     :: caldayp1             ! elm calday plus dtime offset
     integer      :: shrlogunit,shrloglev ! old values for share log unit and log level
     integer      :: lbnum                ! input to memory diagnostic
     integer      :: g,i,lsz              ! counters
@@ -450,7 +445,7 @@ contains
     ! Perform downscaling if appropriate
 
     
-    ! Map to clm (only when state and/or fluxes need to be updated)
+    ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
@@ -495,17 +490,17 @@ contains
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
-       ! Run clm 
+       ! Run elm 
 
-       call t_barrierf('sync_clm_run1', mpicom)
-       call t_startf ('clm_run')
+       call t_barrierf('sync_elm_run1', mpicom)
+       call t_startf ('elm_run')
        call t_startf ('shr_orb_decl')
        calday = get_curr_calday()
        call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
        call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
        call t_stopf ('shr_orb_decl')
-       call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
-       call t_stopf ('clm_run')
+       call elm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
+       call t_stopf ('elm_run')
 
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
 
@@ -515,11 +510,11 @@ contains
        call t_stopf ('lc_lnd_export')
 #endif
 
-       ! Advance clm time step
+       ! Advance elm time step
        
-       call t_startf ('lc_clm2_adv_timestep')
+       call t_startf ('lc_elm2_adv_timestep')
        call advance_timestep()
-       call t_stopf ('lc_clm2_adv_timestep')
+       call t_stopf ('lc_elm2_adv_timestep')
 
     end do
 
@@ -530,9 +525,9 @@ contains
     tod = tod
     if ( .not. seq_timemgr_EClockDateInSync( EClock, ymd, tod ) )then
        call seq_timemgr_EclockGetData( EClock, curr_ymd=ymd_sync, curr_tod=tod_sync )
-       write(iulog,*)' clm ymd=',ymd     ,'  clm tod= ',tod
+       write(iulog,*)' elm ymd=',ymd     ,'  elm tod= ',tod
        write(iulog,*)'sync ymd=',ymd_sync,' sync tod= ',tod_sync
-       call endrun( sub//":: CLM clock not in sync with Master Sync clock" )
+       call endrun( sub//":: ELM clock not in sync with Master Sync clock" )
     end if
     
     ! Reset shr logging to my original values
@@ -564,7 +559,7 @@ contains
     use seq_timemgr_mod ,only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use mct_mod
     use esmf
-    use clm_finalizeMod, only : final
+    use elm_finalizeMod, only : final
     !
     ! !ARGUMENTS:
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
@@ -593,7 +588,7 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)  :: bounds     ! bounds
-    integer           , intent(in)  :: mpicom_lnd ! MPI communicator for the clm land model
+    integer           , intent(in)  :: mpicom_lnd ! MPI communicator for the elm land model
     integer           , intent(in)  :: LNDID      ! Land model identifyer number
     type(mct_gsMap)   , intent(out) :: gsMap_lnd  ! Resulting MCT GS map for the land model
     !
@@ -632,7 +627,7 @@ contains
     ! Send the land model domain information to the coupler
     !
     ! !USES:
-    use clm_varcon  , only: re
+    use elm_varcon  , only: re
     use domainMod   , only: ldomain
     use spmdMod     , only: iam
     use mct_mod     , only: mct_gsMap, mct_gGrid, mct_gGrid_importIAttr

@@ -2,18 +2,4 @@ se_ftype=1
 cubed_sphere_map=0
 theta_hydrostatic_mode=.true.
 
-se_nsplit=2
-se_limiter_option = 8
-transport_alg=0
-vert_remap_q_alg=1
-se_tstep=-1
-dt_remap_factor=-1
-dt_tracer_factor=-1
-qsplit=1
-rsplit=2
-hypervis_subcycle=3
-hypervis_subcycle_q=1
-hypervis_subcycle_tom=0
-theta_advect_form=0
-
 

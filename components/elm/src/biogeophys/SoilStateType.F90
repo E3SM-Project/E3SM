@@ -10,16 +10,16 @@ module SoilStateType
   use spmdMod         , only : mpicom, MPI_INTEGER, masterproc
   use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use ncdio_pio       , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
-  use clm_varpar      , only : more_vertlayers, numpft, numrad 
-  use clm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
+  use elm_varpar      , only : more_vertlayers, numpft, numrad 
+  use elm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
-  use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
-  use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
-  use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
-  use clm_varctl      , only : use_erosion
-  use clm_varctl      , only : use_var_soil_thick
-  use clm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
+  use elm_varcon      , only : zsoi, dzsoi, zisoi, spval
+  use elm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
+  use elm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
+  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : use_var_soil_thick
+  use elm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
@@ -862,8 +862,8 @@ contains
     use abortutils , only : endrun
     use restUtilMod
     use ncdio_pio
-    use clm_varctl,  only : use_dynroot
-    use clm_varctl,  only : use_hydrstress
+    use elm_varctl,  only : use_dynroot
+    use elm_varctl,  only : use_hydrstress
     use RootBiophysMod      , only : init_vegrootfr
     !
     ! !ARGUMENTS:

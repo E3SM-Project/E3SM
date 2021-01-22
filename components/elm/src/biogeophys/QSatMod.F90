@@ -129,7 +129,7 @@ contains
   subroutine rhoSat(T, rho, rhodT)
     ! compute the saturated vapor pressure density and its derivative against the temperature
     ! jyt
-    use clm_varcon,    only: rwat
+    use elm_varcon,    only: rwat
     use shr_const_mod, only: SHR_CONST_TKFRZ
 
     implicit none

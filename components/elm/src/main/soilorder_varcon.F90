@@ -9,8 +9,8 @@ module soilorder_varcon
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
-  use clm_varpar  , only : nsoilorder
-  use clm_varctl  , only : iulog, use_vertsoilc
+  use elm_varpar  , only : nsoilorder
+  use elm_varctl  , only : iulog, use_vertsoilc
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -73,7 +73,7 @@ contains
     use fileutils      , only : getfil
     use ncdio_pio      , only : ncd_io, ncd_pio_closefile, ncd_pio_openfile,file_desc_t, &
                             ncd_inqdid, ncd_inqdlen
-    use clm_varctl     , only : fsoilordercon
+    use elm_varctl     , only : fsoilordercon
     use spmdMod        , only : masterproc
 
     ! !ARGUMENTS:

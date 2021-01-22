@@ -121,6 +121,7 @@ void pre_timeloop() {
   auto &crm_output_flux_v        = :: crm_output_flux_v; 
   auto &crm_output_fluxsgs_qt    = :: crm_output_fluxsgs_qt;
   auto &crm_output_tkez          = :: crm_output_tkez; 
+  auto &crm_output_tkew          = :: crm_output_tkew; 
   auto &crm_output_tkesgsz       = :: crm_output_tkesgsz; 
   auto &crm_output_tkz           = :: crm_output_tkz; 
   auto &crm_output_flux_qp       = :: crm_output_flux_qp; 
@@ -155,7 +156,7 @@ void pre_timeloop() {
   dostatis  = false;    // no statistics are collected.
   idt_gl    = 1.0/dt_glob;
   ptop      = plev-nzm+1;
-  factor_xy = 1.0/(nx*ny);
+  factor_xy = 1.0/( (real) nx * (real) ny );
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<crm_ny_rad; j++) {
@@ -189,7 +190,7 @@ void pre_timeloop() {
   });
   // for (int j=0; j<ny+1; j++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(ny*YES3D +1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
+  parallel_for( SimpleBounds<2>(ny+1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
     fcory(j,icrm) = fcor(icrm);
   });
   // for (int j=0; j<ny; j++) {
@@ -422,6 +423,7 @@ void pre_timeloop() {
       crm_output_flux_v    (k,icrm) = 0.0;
       crm_output_fluxsgs_qt(k,icrm) = 0.0;
       crm_output_tkez      (k,icrm) = 0.0;
+      crm_output_tkew      (k,icrm) = 0.0;
       crm_output_tkesgsz   (k,icrm) = 0.0;
       crm_output_tkz       (k,icrm) = 0.0;
       crm_output_flux_qp   (k,icrm) = 0.0;
@@ -462,7 +464,7 @@ void pre_timeloop() {
   //perturb_arrays()
 
   nstop = dt_glob/dt;
-  dt = dt_glob/nstop;
+  dt = dt_glob/((real) nstop);
 
   crm_run_time  = dt_glob;
   icrm_run_time = 1.0/crm_run_time;

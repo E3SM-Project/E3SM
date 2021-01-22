@@ -36,7 +36,7 @@ contains
       do i = 1, nx
         do icrm = 1 , ncrms
           do k = 1,nzm
-            if(qcl(icrm,i,j,k)+qci(icrm,i,j,k).gt.0..and. tabs(icrm,i,j,k).lt.273.15) then
+            if(qcl(icrm,i,j,k)+qci(icrm,i,j,k).gt.0.D0.and. tabs(icrm,i,j,k).lt.273.15D0) then
               !$acc atomic update
               kmin(icrm) = min(kmin(icrm),k)
               !$acc atomic update
@@ -49,8 +49,8 @@ contains
     !$acc parallel loop collapse(2) async(asyncid)
     do k = 1,nzm
       do icrm = 1 , ncrms
-        qifall(icrm,k) = 0.
-        tlatqi(icrm,k) = 0.
+        qifall(icrm,k) = 0.D0
+        tlatqi(icrm,k) = 0.D0
       end do
     end do
 
@@ -61,7 +61,7 @@ contains
       do j = 1, ny
         do i = 1, nx
           do icrm = 1 , ncrms
-            fz(icrm,i,j,k) = 0.
+            fz(icrm,i,j,k) = 0.D0
           end do
         end do
       end do
@@ -80,7 +80,7 @@ contains
               kc = min(nzm,k+1)
               kb = max(1,k-1)
               ! CFL number based on grid spacing interpolated to interface i,j,k-1/2
-              coef = dtn/(0.5*(adz(icrm,kb)+adz(icrm,k))*dz(icrm))
+              coef = dtn/(0.5D0*(adz(icrm,kb)+adz(icrm,k))*dz(icrm))
 
               ! Compute cloud ice density in this cell and the ones above/below.
               ! Since cloud ice is falling, the above cell is u(icrm,upwind),
@@ -91,23 +91,23 @@ contains
 
               ! Ice sedimentation velocity depends on ice content. The fiting is
               ! based on the data by Heymsfield (JAS,2003). -Marat
-              vt_ice = min(real(0.4,crm_rknd),8.66*(max(real(0.,crm_rknd),qic)+1.e-10)**0.24)   ! Heymsfield (JAS, 2003, p.2607)
+              vt_ice = min(real(0.4D0,crm_rknd),8.66D0*(max(real(0.,crm_rknd),qic)+1.D-10)**0.24D0)   ! Heymsfield (JAS, 2003, p.2607)
 
               ! Use MC flux limiter in computation of flux correction.
               ! (MC = monotonized centered difference).
               !         if (qic.eq.qid) then
-              if (abs(qic-qid).lt.1.0e-25) then  ! when qic, and qid is very small, qic_qid can still be zero
+              if (abs(qic-qid).lt.1.0D-25) then  ! when qic, and qid is very small, qic_qid can still be zero
                 ! even if qic is not equal to qid. so add a fix here +++mhwang
                 tmp_phi = 0.
               else
                 tmp_theta = (qiu-qic)/(qic-qid)
-                tmp_phi = max(real(0.,crm_rknd),min(0.5*(1.+tmp_theta),real(2.,crm_rknd),2.*tmp_theta))
+                tmp_phi = max(real(0.,crm_rknd),min(0.5D0*(1.+tmp_theta),real(2.D0,crm_rknd),2.D0*tmp_theta))
               end if
 
               ! Compute limited flux.
               ! Since falling cloud ice is a 1D advection problem, this
               ! flux-limited advection scheme is monotonic.
-              fz(icrm,i,j,k) = -vt_ice*(qic - 0.5*(1.-coef*vt_ice)*tmp_phi*(qic-qid))
+              fz(icrm,i,j,k) = -vt_ice*(qic - 0.5D0*(1.D0-coef*vt_ice)*tmp_phi*(qic-qid))
             endif
           end do
         end do

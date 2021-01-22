@@ -2533,7 +2533,7 @@ EOF
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for eam's cppdefs in ccsm
+my $cpp_filename     = 'CIME_cppdefs';         # name of output file for eam's cppdefs in cime
 
 # Write the filepath file.
 write_filepath("$cam_bld/$fp_filename", $cfg_ref);
@@ -2541,7 +2541,7 @@ if ($print) { print "creating $cam_bld/$fp_filename\n"; }
 
 if (($ccsm_seq)) {
 
-    # Write the file for cam's cppdefs needed in ccsm.
+    # Write the file for cam's cppdefs needed in cime.
     write_cppdefs("$cam_bld/$cpp_filename", $make_cppdefs, $cfg_ref);
     if ($print) { print "creating $cam_bld/$cpp_filename\n"; }
 
@@ -2756,6 +2756,7 @@ sub write_filepath
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
+        print $fh "$camsrcdir/homme/src/preqx_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
     }
@@ -2871,7 +2872,7 @@ sub write_cppdefs
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
-	print $fh " -DUSE_KOKKOS_KERNELS "
+        print $fh " -DKOKKOS_TARGET "
     }
 
     print $fh "\n";

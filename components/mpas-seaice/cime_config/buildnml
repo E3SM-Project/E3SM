@@ -35,6 +35,7 @@ def buildnml(case, caseroot, compname):
     ice_bgc          = case.get_value("MPASSI_BGC")
     surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
     iceberg_mode     = case.get_value("MPASSI_ICEBERG_MODE")
+    prognostic_mode  = case.get_value("MPASSI_PROGNOSTIC_MODE")
     ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
@@ -313,6 +314,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
         sysmod += " -surface_mode '{}'".format(surface_mode)
         sysmod += " -iceberg_mode '{}'".format(iceberg_mode)
+        sysmod += " -prognostic_mode '{}'".format(prognostic_mode)
         sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
         sysmod += " -ninst_ice '{}'".format(ninst_ice_real)
 

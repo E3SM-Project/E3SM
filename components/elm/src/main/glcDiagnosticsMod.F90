@@ -80,9 +80,9 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use clm_varctl     , only : create_glacier_mec_landunit
+    use elm_varctl     , only : create_glacier_mec_landunit
     use histFileMod    , only: hist_addfld1d
-    use clm_varcon     , only : spval
+    use elm_varcon     , only : spval
     !
     ! !ARGUMENTS:
     class(glc_diagnostics_type) :: this

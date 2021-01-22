@@ -21,17 +21,17 @@ module params
   real(crm_rknd), parameter :: rgas  = real( shr_const_rdair  ,crm_rknd)
   real(crm_rknd), parameter :: rv    = real( shr_const_rgas/shr_const_mwwv ,crm_rknd)
 
-  real(crm_rknd), parameter :: diffelq = 2.21e-05     ! Diffusivity of water vapor, m2/s
-  real(crm_rknd), parameter :: therco  = 2.40e-02     ! Thermal conductivity of air, J/m/s/K
-  real(crm_rknd), parameter :: muelq   = 1.717e-05    ! Dynamic viscosity of air
+  real(crm_rknd), parameter :: diffelq = 2.21D-05     ! Diffusivity of water vapor, m2/s
+  real(crm_rknd), parameter :: therco  = 2.40D-02     ! Thermal conductivity of air, J/m/s/K
+  real(crm_rknd), parameter :: muelq   = 1.717D-05    ! Dynamic viscosity of air
 
   real(crm_rknd), parameter :: fac_cond = lcond/cp
   real(crm_rknd), parameter :: fac_fus  = lfus/cp
   real(crm_rknd), parameter :: fac_sub  = lsub/cp
 
-  real(crm_rknd), parameter :: epsv = 0.61     ! = (1-eps)/eps, where eps= Rv/Ra
+  real(crm_rknd), parameter :: epsv = 0.61D0     ! = (1-eps)/eps, where eps= Rv/Ra
 
-  real(crm_rknd), parameter ::  pi = 3.141592653589793
+  real(crm_rknd), parameter ::  pi = 3.141592653589793D0
 
   !----------------------------------------------
   ! Internally set parameters
@@ -51,7 +51,11 @@ module params
   logical:: doprecip      = .true.    ! allow precipitation
   logical:: dodamping     = .true.    ! Newtonian damping for upper levels
   logical:: dosgs         = .true.    ! sub-grid turbulence scheme
+#ifdef MMF_MOMENTUM_FEEDBACK
+  logical:: dosurface     = .false.    ! surface scheme to calculate friction within CRM
+#else
   logical:: dosurface     = .true.    ! surface scheme to calculate friction within CRM
+#endif
 
   logical:: docoriolis    = .false.   ! not normally used for MMF
   logical:: dowallx       = .false.   ! not normally used for MMF
@@ -95,7 +99,7 @@ contains
 
     fcor  = 0
     fcorz = 0
-    z0 = 0.035
+    z0 = 0.035D0
     ocean = .false.
     land = .false.
     uhl = 0

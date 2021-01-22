@@ -34,20 +34,18 @@ contains
     type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
     integer,            intent(in)            :: nets     ! starting thread element number (private)
     integer,            intent(in)            :: nete     ! ending thread element number   (private)
-    !
-    ! Locals
-    !
+
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
 
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
 
-    ! Init the kokkos views
-    call prim_init_elements_views (elem)
-
     !Init the kokkos functors (and their boundary exchanges)
     call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
@@ -76,6 +74,42 @@ contains
 
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
 
+    ! Init the c data structures
+    call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
+
+    ! Init the kokkos functors (and their bounday exchanges)
+    call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
+  end subroutine prim_init2
+
+  subroutine prim_create_c_data_structures (tl, hvcoord, mp)
+    use iso_c_binding,    only : c_loc, c_ptr, c_bool, C_NULL_CHAR
+    use time_mod,         only : TimeLevel_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use prim_driver_base, only : deriv1
+    use control_mod,      only : vert_remap_q_alg, use_cpstar, transport_alg,           &
+                                 tstep_type, statefreq, rsplit, qsplit, ftype,          &
+                                 prescribed_wind, limiter_option, disable_diagnostics,  &
+                                 nu, nu_p, nu_q, nu_s, nu_div, nu_top, moisture,        &
+                                 hypervis_order, hypervis_scaling, hypervis_subcycle
+    use preqx_f2c_mod,    only : init_reference_element_c, init_simulation_params_c, &
+                                 init_hvcoord_c, init_time_level_c, init_elements_c
+    !
+    ! Input(s)
+    !
+    type (TimeLevel_t),       intent(in) :: tl
+    type (hvcoord_t), target, intent(in) :: hvcoord
+    real(kind=real_kind),     intent(in) :: mp(np,np)
+    !
+    ! Local(s)
+    !
+    logical (kind=c_bool) :: use_semi_lagrange_transport
+    real (kind=real_kind), dimension(np,np), target :: dvv, elem_mp
+
+    type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
+    
     ! Initialize the C++ reference element structure (i.e., pseudo-spectral deriv matrix and ref element mass matrix)
     dvv = deriv1%dvv
     elem_mp = mp
@@ -104,6 +138,39 @@ contains
 
     ! Initialize the C++ elements structure
     call init_elements_c (nelemd)
+  end subroutine prim_create_c_data_structures
+
+  subroutine prim_init_elements_views (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use element_state, only : elem_state_v, elem_state_temp, elem_state_dp3d,       &
+                              elem_state_Q, elem_state_Qdp, elem_state_ps_v,        &
+                              elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass, &
+                              elem_accum_kener, elem_accum_pener, elem_accum_iener, &
+                              elem_accum_iener_wet
+    use preqx_f2c_mod, only : init_elements_2d_c, init_elements_states_c, init_diagnostics_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem(:)
+    !
+    ! Local(s)
+    !
+    type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr
+    type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr, elem_metdet_ptr
+    type (c_ptr) :: elem_metinv_ptr, elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
+    type (c_ptr) :: elem_state_phis_ptr, elem_fcor_ptr
+    type (c_ptr) :: elem_state_ps_v_ptr, elem_state_dp3d_ptr
+    type (c_ptr) :: elem_state_v_ptr, elem_state_temp_ptr
+    type (c_ptr) :: elem_state_q_ptr, elem_state_Qdp_ptr
+    type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
+    type (c_ptr) :: elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
+
+    real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
+    real (kind=real_kind), target, dimension(np,np)         :: elem_spheremp, elem_rspheremp, elem_metdet
+    real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis, elem_fcor
+    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    integer :: ie
 
   end subroutine prim_create_c_data_structures
 

@@ -24,7 +24,9 @@ my @groups = qw(run_modes
                 pressure_gradient
                 eos
                 eos_linear
+                split_timestep_share
                 split_explicit_ts
+                semi_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug

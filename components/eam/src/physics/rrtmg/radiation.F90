@@ -601,53 +601,63 @@ end function radiation_nextsw_cday
 
        if (active_calls(icall)) then
 
-          call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', sampling_seq='rad_lwsw')
+          call addfld('SOLIN'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar insolation', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('SOLL'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward near infrared direct  to surface',&
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('SOLS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Solar downward visible direct  to surface', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('SOLLD'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar downward near infrared diffuse to surface', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('SOLSD'//diag(icall),  horiz_only,     'A',   'W/m2', 'Solar downward visible diffuse to surface', &
-                                                                                 sampling_seq='rad_lwsw')
-          call addfld('QRS'//diag(icall),   (/ 'lev' /),  'A',     'K/s', 'Solar heating rate', sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('QRS'//diag(icall),   (/ 'lev' /),  'A',     'K/s', 'Solar heating rate', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('QRSC'//diag(icall),   (/ 'lev' /),  'A',    'K/s', 'Clearsky solar heating rate', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Net solar flux at surface', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNT'//diag(icall),  horiz_only,     'A',    'W/m2', 'Net solar flux at top of model', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNTOA'//diag(icall),  horiz_only,     'A',  'W/m2', 'Net solar flux at top of atmosphere', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSUTOA'//diag(icall),  horiz_only,     'A',  'W/m2', 'Upwelling solar flux at top of atmosphere', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNTOAC'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net solar flux at top of atmosphere', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSUTOAC'//diag(icall),  horiz_only,     'A',  'W/m2', 'Clearsky upwelling solar flux at top of atmosphere', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSN200'//diag(icall),  horiz_only,     'A',  'W/m2', 'Net shortwave flux at 200 mb', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSN200C'//diag(icall),  horiz_only,     'A', 'W/m2', 'Clearsky net shortwave flux at 200 mb', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNTC'//diag(icall),  horiz_only,     'A',   'W/m2', 'Clearsky net solar flux at top of model', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNSC'//diag(icall),  horiz_only,     'A',   'W/m2', 'Clearsky net solar flux at surface', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSDSC'//diag(icall),  horiz_only,     'A',   'W/m2', 'Clearsky downwelling solar flux at surface', &
-                                                                                 sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSDS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Downwelling solar flux at surface', &
-                                                                                 sampling_seq='rad_lwsw')
-          call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux')
-          call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux')
-          call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux')
-          call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux')
-          call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2',&
-	   'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky upward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2', &
+                      'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNRTOAC'//diag(icall),  horiz_only,     'A','W/m2', &
-                      'Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', sampling_seq='rad_lwsw')
+                      'Clearsky net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FSNRTOAS'//diag(icall),  horiz_only,     'A','W/m2', &
-	  'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', sampling_seq='rad_lwsw')
-          call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', sampling_seq='rad_lwsw')
+                      'Net near-infrared flux (>= 0.7 microns) at top of atmosphere', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld ('SWCF'//diag(icall),  horiz_only,     'A',   'W/m2', 'Shortwave cloud forcing', &
+                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
           if (history_amwg) then
              call add_default('SOLIN'//diag(icall),   1, ' ')
@@ -683,34 +693,40 @@ end function radiation_nextsw_cday
 
        if (active_calls(icall)) then
 
-          call addfld('QRL'//diag(icall),  (/ 'lev' /), 'A',     'K/s', 'Longwave heating rate', sampling_seq='rad_lwsw')
+          call addfld('QRL'//diag(icall),  (/ 'lev' /), 'A',     'K/s', 'Longwave heating rate', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('QRLC'//diag(icall),  (/ 'lev' /), 'A',    'K/s', 'Clearsky longwave heating rate', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLDS'//diag(icall), horiz_only,    'A',    'W/m2', 'Downwelling longwave flux at surface', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLDSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky Downwelling longwave flux at surface', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNS'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at surface', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNT'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at top of model', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLUT'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at top of model', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLUTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky upwelling longwave flux at top of model', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNTC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at top of model', &
-                                                                           sampling_seq='rad_lwsw')
-          call addfld('LWCF'//diag(icall), horiz_only,    'A',    'W/m2', 'Longwave cloud forcing', sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('LWCF'//diag(icall), horiz_only,    'A',    'W/m2', 'Longwave cloud forcing', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLN200'//diag(icall), horiz_only,    'A',  'W/m2', 'Net longwave flux at 200 mb', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLN200C'//diag(icall), horiz_only,    'A', 'W/m2', 'Clearsky net longwave flux at 200 mb', &
-                                                                           sampling_seq='rad_lwsw')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at surface', &
-                                                                           sampling_seq='rad_lwsw')
-          call addfld('FUL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave upward flux')
-          call addfld('FDL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave downward flux')
-          call addfld('FULC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky upward flux')
-          call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux')
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FUL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave upward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FDL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave downward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FULC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky upward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
           if (history_amwg) then
              call add_default('QRL'//diag(icall),   1, ' ')
@@ -727,7 +743,8 @@ end function radiation_nextsw_cday
        end if
     end do
 
-    call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
+    call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
     if (single_column.and.scm_crm_mode) then
        call add_default ('FUL     ', 1, ' ')
@@ -738,17 +755,28 @@ end function radiation_nextsw_cday
 
     ! HIRS/MSU diagnostic brightness temperatures
     if (dohirs) then
-       call addfld (hirsname(1),horiz_only,'A','K','HIRS CH2 infra-red brightness temperature')
-       call addfld (hirsname(2),horiz_only,'A','K','HIRS CH4 infra-red brightness temperature')
-       call addfld (hirsname(3),horiz_only,'A','K','HIRS CH6 infra-red brightness temperature')
-       call addfld (hirsname(4),horiz_only,'A','K','HIRS CH8 infra-red brightness temperature')
-       call addfld (hirsname(5),horiz_only,'A','K','HIRS CH10 infra-red brightness temperature')
-       call addfld (hirsname(6),horiz_only,'A','K','HIRS CH11 infra-red brightness temperature')
-       call addfld (hirsname(7),horiz_only,'A','K','HIRS CH12 infra-red brightness temperature')
-       call addfld (msuname(1),horiz_only,'A','K','MSU CH1 microwave brightness temperature')
-       call addfld (msuname(2),horiz_only,'A','K','MSU CH2 microwave brightness temperature')
-       call addfld (msuname(3),horiz_only,'A','K','MSU CH3 microwave brightness temperature')
-       call addfld (msuname(4),horiz_only,'A','K','MSU CH4 microwave brightness temperature')
+       call addfld (hirsname(1),horiz_only,'A','K','HIRS CH2 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(2),horiz_only,'A','K','HIRS CH4 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(3),horiz_only,'A','K','HIRS CH6 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(4),horiz_only,'A','K','HIRS CH8 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(5),horiz_only,'A','K','HIRS CH10 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(6),horiz_only,'A','K','HIRS CH11 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (hirsname(7),horiz_only,'A','K','HIRS CH12 infra-red brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (msuname(1),horiz_only,'A','K','MSU CH1 microwave brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (msuname(2),horiz_only,'A','K','MSU CH2 microwave brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (msuname(3),horiz_only,'A','K','MSU CH3 microwave brightness temperature', &
+                sampling_seq='rad_lwsw', flag_xyfill=.true.)
+       call addfld (msuname(4),horiz_only,'A','K','MSU CH4 microwave brightness temperature', &
+                    sampling_seq='rad_lwsw', flag_xyfill=.true.)
        call add_default (hirsname(1), 1, ' ')
        call add_default (hirsname(2), 1, ' ')
        call add_default (hirsname(3), 1, ' ')
@@ -763,7 +791,7 @@ end function radiation_nextsw_cday
     end if
 
     ! Heating rate needed for d(theta)/dt computation
-    call addfld ('HR',(/ 'lev' /), 'A','K/s','Heating rate needed for d(theta)/dt computation')
+    call addfld ('HR',(/ 'lev' /), 'A','K/s','Heating rate needed for d(theta)/dt computation', flag_xyfill=.true.)
 
     if ( history_budget .and. history_budget_histfile_num > 1 ) then
        call add_default ('QRL     ', history_budget_histfile_num, ' ')
@@ -780,6 +808,7 @@ end function radiation_nextsw_cday
     concld_idx   = pbuf_get_index('CONCLD')
 
     if (cldfsnow_idx > 0) then
+       ! CLDFSNOW output every call, does not need the sampling_seq flag
        call addfld ('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
        call addfld('SNOW_ICLD_VISTAU', (/ 'lev' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)

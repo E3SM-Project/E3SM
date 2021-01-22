@@ -15,10 +15,10 @@ module DUSTMod
   use shr_kind_mod         , only : r8 => shr_kind_r8 
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar           , only : dst_src_nbr, ndst, sz_nbr
-  use clm_varcon           , only : grav, spval
+  use elm_varpar           , only : dst_src_nbr, ndst, sz_nbr
+  use elm_varcon           , only : grav, spval
   use landunit_varcon      , only : istcrop, istice_mec, istsoil
-  use clm_varctl           , only : iulog
+  use elm_varctl           , only : iulog
   use abortutils           , only : endrun
   use subgridAveMod        , only : p2l_1d
   use decompMod            , only : bounds_type

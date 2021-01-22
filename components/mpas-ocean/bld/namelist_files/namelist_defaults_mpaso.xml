@@ -131,6 +131,7 @@
 
 <!-- mesoscale_eddy_parameterizations -->
 <config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
+<config_eddying_resolution_taper ocn_grid="EC30to60E2r2">'none'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
 
@@ -163,6 +164,7 @@
 <config_use_GM ocn_grid="oRRS18to6v3">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS15to5">.false.</config_use_GM>
 <config_GM_closure>'EdenGreatbatch'</config_GM_closure>
+<config_GM_closure ocn_grid="EC30to60E2r2">'constant'</config_GM_closure>
 <config_GM_constant_kappa>1800.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
@@ -343,11 +345,13 @@
 <config_eos_linear_Sref>35.0</config_eos_linear_Sref>
 <config_eos_linear_densityref>1000.0</config_eos_linear_densityref>
 
-<!-- split_explicit_ts -->
+<!-- split_timestep_share -->
 <config_n_ts_iter>2</config_n_ts_iter>
 <config_n_bcl_iter_beg>1</config_n_bcl_iter_beg>
 <config_n_bcl_iter_mid>2</config_n_bcl_iter_mid>
 <config_n_bcl_iter_end>2</config_n_bcl_iter_end>
+
+<!-- split_explicit_ts -->
 <config_btr_dt>'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU480">'0000_00:05:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
@@ -376,6 +380,12 @@
 <config_btr_gam2_SSHWt1>1.0</config_btr_gam2_SSHWt1>
 <config_btr_gam3_velWt2>1.0</config_btr_gam3_velWt2>
 <config_btr_solve_SSH2>.false.</config_btr_solve_SSH2>
+
+<!-- semi_implicit_ts -->
+<config_btr_si_preconditioner>'ras'</config_btr_si_preconditioner>
+<config_btr_si_tolerance>1.0e-9</config_btr_si_tolerance>
+<config_n_btr_si_outer_iter>2</config_n_btr_si_outer_iter>
+<config_btr_si_partition_match_mode>.false.</config_btr_si_partition_match_mode>
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
@@ -880,7 +890,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
@@ -889,8 +899,6 @@
 <config_AM_mocStreamfunction_min_bin>-1.0e34</config_AM_mocStreamfunction_min_bin>
 <config_AM_mocStreamfunction_max_bin>-1.0e34</config_AM_mocStreamfunction_max_bin>
 <config_AM_mocStreamfunction_num_bins>180</config_AM_mocStreamfunction_num_bins>
-<config_AM_mocStreamfunction_vertical_velocity_value>'vertVelocityTop'</config_AM_mocStreamfunction_vertical_velocity_value>
-<config_AM_mocStreamfunction_normal_velocity_value>'normalVelocity'</config_AM_mocStreamfunction_normal_velocity_value>
 <config_AM_mocStreamfunction_region_group>'all'</config_AM_mocStreamfunction_region_group>
 <config_AM_mocStreamfunction_transect_group>'all'</config_AM_mocStreamfunction_transect_group>
 

@@ -28,7 +28,6 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
-
     !
     ! Inputs
     !
@@ -38,20 +37,18 @@ contains
     type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
     integer,            intent(in)            :: nets     ! starting thread element number (private)
     integer,            intent(in)            :: nete     ! ending thread element number   (private)
-    !
-    ! Locals
-    !
+
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
 
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
 
-    ! Init the kokkos views
-    call prim_init_elements_views (elem)
-
     !Init the kokkos functors (and their boundary exchanges)
     call prim_init_kokkos_functors ()
+
+    ! Init the kokkos views
+    call prim_init_elements_views (elem)
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
@@ -78,7 +75,6 @@ contains
     integer :: ie
     logical (kind=c_bool) :: use_semi_lagrange_transport
     real (kind=real_kind), target :: dvv (np,np), elem_mp(np,np)
-
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     character(len=MAX_STRING_LEN), target :: test_name
 
@@ -225,7 +221,6 @@ contains
     call init_elements_states_c (elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr)
-
   end subroutine prim_init_state_views
 
   subroutine prim_init_ref_states_views (elem)
@@ -281,33 +276,10 @@ contains
   subroutine prim_init_elements_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
-    use element_state, onlY : elem_accum_iener, elem_accum_kener, elem_accum_pener, &
-                              elem_accum_q1mass, elem_accum_qmass, elem_accum_qvar, &
-                              elem_state_dp3d, elem_state_phinh_i, elem_state_ps_v, &
-                              elem_state_q, elem_state_qdp, elem_state_v,           &
-                              elem_state_vtheta_dp, elem_state_w_i,                 &
-                              elem_theta_ref, elem_dp_ref, elem_phi_ref
-    use theta_f2c_mod, only : init_geopotential_c, init_elements_states_c, &
-                              init_reference_states_c, init_diagnostics_c
     !
     ! Input(s)
     !
     type (element_t), intent(in) :: elem (:)
-    !
-    ! Local(s)
-    !
-    real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis
-    real (kind=real_kind), target, dimension(np,np,2)       :: elem_gradphis
-
-    type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
-    type (c_ptr) :: elem_state_phis_ptr, elem_gradphis_ptr
-    type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
-    type (c_ptr) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
-    type (c_ptr) :: elem_state_Qdp_ptr
-    type (c_ptr) :: elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
-    type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
-
-    integer :: ie
 
     ! Initialize the grid-related views in C++
     call prim_init_grid_views (elem)
@@ -354,10 +326,9 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
-#if !defined(SCREAM)
+#ifndef SCREAM
     use theta_f2c_mod,  only : push_forcing_to_c
 #endif
-
     !
     ! Inputs
     !
@@ -395,7 +366,7 @@ contains
       compute_diagnostics = .false.
     endif
 
-#if !defined(SCREAM)
+#ifndef SCREAM
     ! Scream already computes all forcing using the same pointers
     ! stored in Hommexx, so the forcing is already up to date
     call t_startf('push_to_cxx')

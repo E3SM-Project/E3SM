@@ -23,8 +23,7 @@ provided they are in the valid list expressed above.
 <finidat >lnd/clm2/initdata/clmi.${clm_usr_name}_${mask}_simyr${sim_year}.nc</finidat>
 
 <!-- Surface dataset (relative to ${csmdata}) -->
-<fsurdat phys="clm4_0">lnd/clm2/surfdata/surfdata_${clm_usr_name}_simyr${sim_year}.nc</fsurdat>
-<fsurdat phys="clm4_5">lnd/clm2/surfdata_map/surfdata_${clm_usr_name}_simyr${sim_year}.nc</fsurdat>
+<fsurdat phys="elm">lnd/clm2/surfdata_map/surfdata_${clm_usr_name}_simyr${sim_year}.nc</fsurdat>
 
 <!-- Dynamic PFT surface dataset (relative to ${csmdata}) -->
 <flanduse_timeseries sim_year_range="constant"  rcp="-999.9">null</flanduse_timeseries>

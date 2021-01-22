@@ -38,7 +38,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use clm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
+    use elm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
     use spmdMod,    only : mpicom, MPI_LOGICAL
     use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:
@@ -73,10 +73,10 @@ contains
     ! select one subroutine to do the soil and root water coupling
     !
     !USES
-    use clm_varctl                 , only : use_betr
-    use clm_varctl                 , only : use_var_soil_thick
+    use elm_varctl                 , only : use_betr
+    use elm_varctl                 , only : use_var_soil_thick
     use shr_kind_mod               , only : r8 => shr_kind_r8
-    use clm_varpar                 , only : nlevsoi    
+    use elm_varpar                 , only : nlevsoi    
     use decompMod                  , only : bounds_type   
     use abortutils                 , only : endrun   
     use SoilHydrologyType          , only : soilhydrology_type
@@ -85,7 +85,7 @@ contains
     use WaterFluxType              , only : waterflux_type
     use WaterStateType             , only : waterstate_type
     use SoilWaterRetentionCurveMod , only : soil_water_retention_curve_type
-    use clm_varcon                 , only : denh2o, denice, watmin
+    use elm_varcon                 , only : denh2o, denice, watmin
     use ColumnType                 , only : col_pp
     use ExternalModelConstants     , only : EM_VSFM_SOIL_HYDRO_STAGE
     use ExternalModelConstants     , only : EM_ID_VSFM
@@ -266,13 +266,13 @@ contains
     ! r_j = a_j [d wat_j-1] + b_j [d wat_j] + c_j [d wat_j+1]
     !
     ! !USES:
-    use clm_varctl           , only : use_var_soil_thick
+    use elm_varctl           , only : use_var_soil_thick
     use shr_kind_mod         , only : r8 => shr_kind_r8     
     use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
     use decompMod            , only : bounds_type        
-    use clm_varcon           , only : wimp,grav,hfus,tfrz
-    use clm_varcon           , only : e_ice,denh2o, denice
-    use clm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
+    use elm_varcon           , only : wimp,grav,hfus,tfrz
+    use elm_varcon           , only : e_ice,denh2o, denice
+    use elm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
     use TridiagonalMod       , only : Tridiagonal
@@ -863,8 +863,8 @@ contains
     ! !USES:
     use shr_kind_mod              , only : r8 => shr_kind_r8
     use decompMod                 , only : bounds_type
-    use clm_varcon                , only : denh2o
-    use clm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
+    use elm_varcon                , only : denh2o
+    use elm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager          , only : get_step_size
     use SoilStateType             , only : soilstate_type
     use SoilHydrologyType         , only : soilhydrology_type
@@ -873,10 +873,10 @@ contains
     use WaterStateType            , only : waterstate_type
     use VegetationType            , only : veg_pp
     use ColumnType                , only : col_pp
-    use clm_varcon                , only : watmin
+    use elm_varcon                , only : watmin
     use LandunitType              , only : lun_pp
     use landunit_varcon           , only : istsoil, istcrop
-    use clm_varctl                , only : lateral_connectivity
+    use elm_varctl                , only : lateral_connectivity
     use domainLateralMod          , only : ldomain_lateral
     !
     ! !ARGUMENTS:
@@ -1083,7 +1083,7 @@ contains
       use LandunitType        , only : lun_pp
       use decompMod           , only : bounds_type   
       use column_varcon       , only : icol_road_perv
-      use clm_varctl          , only : use_hydrstress, iulog
+      use elm_varctl          , only : use_hydrstress, iulog
       use shr_log_mod         , only : errMsg => shr_log_errMsg
       use abortutils          , only : endrun
 
@@ -1162,7 +1162,7 @@ contains
     !USES:
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
-    use clm_varpar       , only : nlevsoi, max_patch_per_col
+    use elm_varpar       , only : nlevsoi, max_patch_per_col
     use SoilStateType    , only : soilstate_type
     use WaterFluxType    , only : waterflux_type
     use VegetationType   , only : veg_pp
@@ -1281,14 +1281,14 @@ contains
         !
         !USES:
         use decompMod        , only : bounds_type
-        use clm_varpar       , only : nlevsoi
-        use clm_varpar       , only : max_patch_per_col
+        use elm_varpar       , only : nlevsoi
+        use elm_varpar       , only : max_patch_per_col
         use SoilStateType    , only : soilstate_type
         use WaterFluxType    , only : waterflux_type
         use CanopyStateType  , only : canopystate_type
         use VegetationType   , only : veg_pp
         use ColumnType       , only : col_pp
-        use clm_varctl       , only : iulog
+        use elm_varctl       , only : iulog
         use PhotosynthesisMod, only : plc, params_inst
         use column_varcon    , only : icol_road_perv
         use shr_infnan_mod   , only : isnan => shr_infnan_isnan

@@ -62,6 +62,7 @@ public :: make_c0
 public :: make_c0_vector
 public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
+public :: compute_eta_C0_contra
 
 type (EdgeBuffer_t)          :: edge1
 
@@ -260,7 +261,42 @@ call make_C0(zeta,elem,par)
 
 end subroutine
 
+subroutine compute_eta_C0_contra(eta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute C0 absolute vorticity.  That is, solve:
+!     < PHI, eta > = <PHI, curl(elem%state%v) + coriolis >
+!
+!    input:  v (stored in elem()%, in contra-variant coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+type (parallel_t)      , intent(in) :: par
+type (element_t)     , intent(in), target :: elem(:)
+integer :: nt
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: eta
+real (kind=real_kind), dimension(np,np,2) :: ulatlon
+real (kind=real_kind), dimension(np,np) :: v1,v2
+
+! local
+integer :: k,ie
+type (derivative_t)          :: deriv
+
+call derivinit(deriv)
+
+do k=1,nlev
+do ie=1,nelemd
+    v1 = elem(ie)%state%v(:,:,1,k,nt)
+    v2 = elem(ie)%state%v(:,:,2,k,nt)
+    ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
+    ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
+   eta(:,:,k,ie)=vorticity_sphere(ulatlon,deriv,elem(ie)) + elem(ie)%fcor(:,:)
+enddo
+enddo
+
+call make_C0(eta,elem,par)
+
+end subroutine
 
 subroutine compute_div_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

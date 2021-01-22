@@ -4,7 +4,7 @@ module AerosolMod
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type
-  use clm_varpar       , only : nlevsno 
+  use elm_varpar       , only : nlevsno 
   use clm_time_manager , only : get_step_size
   use atm2lndType      , only : atm2lnd_type
   use WaterfluxType    , only : waterflux_type

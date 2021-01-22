@@ -518,7 +518,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for cice's cppdefs 
+my $cpp_filename     = 'CIME_cppdefs';         # name of output file for cice's cppdefs
 
 # Write the filepath file 
 write_filepath("$cice_bld/$fp_filename", $cesmroot);

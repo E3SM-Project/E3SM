@@ -18,9 +18,9 @@ module FireMod
   use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : iulog
-  use clm_varpar             , only : nlevdecomp, ndecomp_pools
-  use clm_varcon             , only : dzsoi_decomp
+  use elm_varctl             , only : iulog
+  use elm_varpar             , only : nlevdecomp, ndecomp_pools
+  use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
   use spmdMod                , only : masterproc, mpicom, comp_id
   use fileutils              , only : getavu, relavu
@@ -54,7 +54,7 @@ module FireMod
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
   use SharedParamsMod      , only : ParamsShareInst
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
   !
   implicit none
   save
@@ -128,9 +128,9 @@ contains
     !
     ! !USES:
     use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
-    use clm_varpar           , only: max_patch_per_col
-    use clm_varcon           , only: secspday
-    use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
+    use elm_varpar           , only: max_patch_per_col
+    use elm_varcon           , only: secspday
+    use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
     use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
     use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
@@ -666,10 +666,10 @@ contains
    use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
-   use clm_varpar           , only: max_patch_per_col
-   use clm_varctl           , only: spinup_state, spinup_mortality_factor
+   use elm_varpar           , only: max_patch_per_col
+   use elm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
-   use clm_varcon           , only: secspday
+   use elm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
    !
    ! !ARGUMENTS:
@@ -1522,12 +1522,12 @@ contains
    ! Initialize data stream information for population density.
    !
    ! !USES:
-   use clm_varctl       , only : inst_name
+   use elm_varctl       , only : inst_name
    use clm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
-   use clm_nlUtilsMod   , only : find_nlgroup_name
-   use ndepStreamMod    , only : clm_domain_mct
+   use elm_nlUtilsMod   , only : find_nlgroup_name
+   use ndepStreamMod    , only : elm_domain_mct
    use histFileMod      , only : hist_addfld1d
    !
    ! !ARGUMENTS:
@@ -1540,7 +1540,7 @@ contains
    integer            :: model_year_align_popdens    ! align stream_year_first_hdm with 
    integer            :: nu_nml                      ! unit for namelist file
    integer            :: nml_error                   ! namelist i/o error flag
-   type(mct_ggrid)    :: dom_clm                     ! domain information 
+   type(mct_ggrid)    :: dom_elm                     ! domain information 
    character(len=CL)  :: stream_fldFileName_popdens  ! population density streams filename
    character(len=CL)  :: popdensmapalgo = 'bilinear' ! mapping alogrithm for population density
    character(*), parameter :: subName = "('hdmdyn_init')"
@@ -1593,13 +1593,13 @@ contains
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_hdm,name="clmhdm",     &
         pio_subsystem=pio_subsystem,                   & 
         pio_iotype=shr_pio_getiotype(inst_name),       &
         mpicom=mpicom, compid=comp_id,                 &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,        &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,        &
         nxg=ldomain%ni, nyg=ldomain%nj,                &
         yearFirst=stream_year_first_popdens,           &
         yearLast=stream_year_last_popdens,             &
@@ -1675,12 +1675,12 @@ subroutine lnfm_init( bounds )
   ! Initialize data stream information for Lightning.
   !
   ! !USES:
-  use clm_varctl       , only : inst_name
+  use elm_varctl       , only : inst_name
   use clm_time_manager , only : get_calendar
   use ncdio_pio        , only : pio_subsystem
   use shr_pio_mod      , only : shr_pio_getiotype
-  use clm_nlUtilsMod   , only : find_nlgroup_name
-  use ndepStreamMod    , only : clm_domain_mct
+  use elm_nlUtilsMod   , only : find_nlgroup_name
+  use ndepStreamMod    , only : elm_domain_mct
   use histFileMod      , only : hist_addfld1d
   !
   ! !ARGUMENTS:
@@ -1693,7 +1693,7 @@ subroutine lnfm_init( bounds )
   integer            :: model_year_align_lightng   ! align stream_year_first_lnfm with 
   integer            :: nu_nml                     ! unit for namelist file
   integer            :: nml_error                  ! namelist i/o error flag
-  type(mct_ggrid)    :: dom_clm                    ! domain information 
+  type(mct_ggrid)    :: dom_elm                    ! domain information 
   character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
   character(len=CL)  :: lightngmapalgo = 'bilinear'! Mapping alogrithm
   character(*), parameter :: subName = "('lnfmdyn_init')"
@@ -1746,13 +1746,13 @@ subroutine lnfm_init( bounds )
       write(iulog,*) ' '
    endif
 
-   call clm_domain_mct (bounds, dom_clm)
+   call elm_domain_mct (bounds, dom_elm)
 
    call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
         pio_subsystem=pio_subsystem,                  & 
         pio_iotype=shr_pio_getiotype(inst_name),      &
         mpicom=mpicom, compid=comp_id,                &
-        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_elm,       &
         nxg=ldomain%ni, nyg=ldomain%nj,               &
         yearFirst=stream_year_first_lightng,          &
         yearLast=stream_year_last_lightng,            &

@@ -8,7 +8,7 @@ void setperturb() {
   // of the dependence of the SPCAM results on pcols.
   // Walter Hannah - LLNL - Mar 2018
   int  constexpr perturb_num_layers  = 5;    // Number of levels to perturb
-  real constexpr perturb_t_magnitude = 1.e-1;  // perturbation LSE amplitube [K]
+  real constexpr perturb_t_magnitude = 1.0;  // perturbation LSE amplitube [K]
 
   real2d t02 = real2d("t02",perturb_num_layers,ncrms);
   yakl::memset(t02,0.);
@@ -32,7 +32,7 @@ void setperturb() {
     // apply perturbation 
     t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + rand_perturb * perturb_t_magnitude * perturb_k_scaling;
     // Calculate new average LSE for energy conservation scaling below
-    yakl::atomicAdd( t02(k,icrm) , t(k,j+offy_s,i+offx_s,icrm)/(nx*ny) );
+    yakl::atomicAdd( t02(k,icrm) , t(k,j+offy_s,i+offx_s,icrm)/( (real) nx * (real) ny ) );
   });
 
   // enforce energy conservation

@@ -3,7 +3,7 @@
 <config_definition>
 
 <entry id="dyn"   value="se"  />
-<entry id="dyn_target"   value="preqx"  />
+<entry id="dyn_target"   value="theta-l"  />
 <entry id="hgrid" value="ne16np4" />
 <entry id="pcols" value="16" />
 

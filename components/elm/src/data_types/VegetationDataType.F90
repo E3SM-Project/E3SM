@@ -12,15 +12,15 @@ module VegetationDataType
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
   use clm_time_manager, only : is_restart, get_nstep
-  use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
-  use clm_varpar      , only : nlevdecomp, nlevdecomp_full
-  use clm_varcon      , only : spval, ispval, sb
-  use clm_varcon      , only : c13ratio, c14ratio
+  use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
+  use elm_varpar      , only : nlevdecomp, nlevdecomp_full
+  use elm_varcon      , only : spval, ispval, sb
+  use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
   use pftvarcon       , only : npcropmin, noveg, nstor
-  use clm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
-  use clm_varctl      , only : nu_com, use_crop, use_c13
-  use clm_varctl      , only : use_lch4, use_betr
+  use elm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates  
+  use elm_varctl      , only : nu_com, use_crop, use_c13
+  use elm_varctl      , only : use_lch4, use_betr
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type, get_proc_global
@@ -1041,7 +1041,7 @@ module VegetationDataType
   subroutine veg_es_init(this, begp, endp)
     !
     ! !USES:
-    use clm_varctl     , only : use_vancouver, use_mexicocity
+    use elm_varctl     , only : use_vancouver, use_mexicocity
     !
     ! !ARGUMENTS:
     class(vegetation_energy_state) :: this
@@ -1461,7 +1461,7 @@ module VegetationDataType
     ! !USES 
     use accumulMod       , only : extract_accum_field
     use clm_time_manager , only : get_nstep
-    use clm_varctl       , only : nsrest, nsrStartup
+    use elm_varctl       , only : nsrest, nsrStartup
     use abortutils       , only : endrun
     !
     ! !ARGUMENTS:
@@ -5379,26 +5379,16 @@ module VegetationDataType
     call hist_addfld1d (fname='QIRRIG_REAL', units='mm/s', &
          avgflag='A', long_name='actual water added through irrigation (surface + ground)', &
          ptr_patch=this%qflx_real_irrig_patch)
-    
-    this%qflx_supply_patch(begp:endp) = spval     
-    call hist_addfld1d (fname='QSUPPLY', units='mm/s', &
-         avgflag='A', long_name='irrigation supply from MOSART', &
-         ptr_patch=this%qflx_supply_patch)
          
     this%qflx_surf_irrig_patch(begp:endp) = spval    
-    call hist_addfld1d (fname='QSURF_IRRIG', units='mm/s', &
+    call hist_addfld1d (fname='QIRRIG_SURF', units='mm/s', &
          avgflag='A', long_name='Surface water irrigation', &
          ptr_patch=this%qflx_surf_irrig_patch)
     
     this%qflx_grnd_irrig_patch(begp:endp) = spval   
-    call hist_addfld1d (fname='QGRND_IRRIG', units='mm/s', &
+    call hist_addfld1d (fname='QIRRIG_GRND', units='mm/s', &
          avgflag='A', long_name='Groundwater irrigation', &
-         ptr_patch=this%qflx_grnd_irrig_patch)
-		 
-    this%qflx_over_supply_patch(begp:endp) = spval   
-    call hist_addfld1d (fname='QOVER_SUPPLY', units='mm/s', &
-         avgflag='A', long_name='Over supplied irrigation due to remapping, added to irrigation to conserve mass', &
-         ptr_patch=this%qflx_over_supply_patch)
+         ptr_patch=this%qflx_grnd_irrig_patch)	 
 
     this%qflx_prec_intr(begp:endp) = spval
     call hist_addfld1d (fname='QINTR', units='mm/s',  &

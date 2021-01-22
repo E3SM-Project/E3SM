@@ -111,6 +111,7 @@ module crm_output_module
       real(crm_rknd), allocatable :: flux_qt      (:,:)  ! nonprecip water flux        [kg/m2/s]
       real(crm_rknd), allocatable :: fluxsgs_qt   (:,:)  ! sgs non-precip water flux   [kg/m2/s]
       real(crm_rknd), allocatable :: tkez         (:,:)  ! tke profile                 [kg/m/s2]
+      real(crm_rknd), allocatable :: tkew         (:,:)  ! vertical velocity variance  [kg/m/s2]
       real(crm_rknd), allocatable :: tkesgsz      (:,:)  ! sgs tke profile             [kg/m/s2]
       real(crm_rknd), allocatable :: tkz          (:,:)  ! tk profile                  [m2/s]
       real(crm_rknd), allocatable :: flux_u       (:,:)  ! x-momentum flux             [m2/s2]
@@ -280,6 +281,7 @@ contains
          if (.not. allocated(output%flux_qt      )) allocate(output%flux_qt      (ncol,nlev))
          if (.not. allocated(output%fluxsgs_qt   )) allocate(output%fluxsgs_qt   (ncol,nlev))
          if (.not. allocated(output%tkez         )) allocate(output%tkez         (ncol,nlev))
+         if (.not. allocated(output%tkew         )) allocate(output%tkew         (ncol,nlev))
          if (.not. allocated(output%tkesgsz      )) allocate(output%tkesgsz      (ncol,nlev))
          if (.not. allocated(output%tkz          )) allocate(output%tkz          (ncol,nlev))
          if (.not. allocated(output%flux_u       )) allocate(output%flux_u       (ncol,nlev))
@@ -322,6 +324,7 @@ contains
          call prefetch(output%flux_qt       )
          call prefetch(output%fluxsgs_qt    )
          call prefetch(output%tkez          )
+         call prefetch(output%tkew          )
          call prefetch(output%tkesgsz       )
          call prefetch(output%tkz           )
          call prefetch(output%flux_u        )
@@ -440,6 +443,7 @@ contains
       output%flux_qt       = 0
       output%fluxsgs_qt    = 0
       output%tkez          = 0
+      output%tkew          = 0
       output%tkesgsz       = 0
       output%tkz           = 0
       output%flux_u        = 0
@@ -555,6 +559,7 @@ contains
       if (allocated(output%flux_qt)) deallocate(output%flux_qt)
       if (allocated(output%fluxsgs_qt)) deallocate(output%fluxsgs_qt)
       if (allocated(output%tkez)) deallocate(output%tkez)
+      if (allocated(output%tkew)) deallocate(output%tkew)
       if (allocated(output%tkesgsz)) deallocate(output%tkesgsz)
       if (allocated(output%tkz)) deallocate(output%tkz)
       if (allocated(output%flux_u)) deallocate(output%flux_u)

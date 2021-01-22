@@ -203,6 +203,10 @@ def buildnml(case, caseroot, compname):
         cam_buildnml_cmd += " -ntasks {}".format(ntasks)
         cam_buildnml_cmd += ' -namelist " &atmexp {} /" '.format(cam_namelist_opts)
 
+        # check if the case still attempts to use user_nl_cam, stop proceeding if detected
+        if os.path.exists(os.path.join(caseroot, "user_nl_cam")):
+           sys.exit("\n *** STOP: It appears you are still using user_nl_cam, please change it to user_nl_eam. ***\n")
+
         # TODO: eam/bld/build-namelist needs to be converted to python
         run_cmd_no_fail(cam_buildnml_cmd, from_dir=eamconf_dir)
 

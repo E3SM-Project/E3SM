@@ -5,10 +5,10 @@ Module SoilHydrologyType
   use decompMod             , only : bounds_type
   use spmdMod               , only : masterproc, mpicom
   use abortutils            , only : endrun
-  use clm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
-  use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
-  use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
-  use clm_varctl            , only : iulog 
+  use elm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi 
+  use elm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
+  use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
+  use elm_varctl            , only : iulog 
   use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp                
@@ -20,7 +20,7 @@ Module SoilHydrologyType
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: initSoilParVIC    ! Convert default CLM soil properties to VIC parameters
-  private :: initCLMVICMap     ! Initialize map from VIC to CLM layers
+  private :: initELMVICMap     ! Initialize map from VIC to CLM layers
   private :: linear_interp     ! function for linear interperation 
   !
   type, public :: soilhydrology_type
@@ -51,7 +51,7 @@ Module SoilHydrologyType
      real(r8), pointer :: dsmax_col         (:)     ! col VIC max. velocity of baseflow (mm/day) (time constant)
      real(r8), pointer :: Wsvic_col         (:)     ! col VIC fraction of maximum soil moisutre where non-liear base flow occurs (time constant)
      real(r8), pointer :: porosity_col      (:,:)   ! col VIC porosity (1-bulk_density/soil_density)
-     real(r8), pointer :: vic_clm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
+     real(r8), pointer :: vic_elm_fract_col (:,:,:) ! col VIC fraction of VIC layers in CLM layers 
      real(r8), pointer :: depth_col         (:,:)   ! col VIC layer depth of upper layer  
      real(r8), pointer :: c_param_col       (:)     ! col VIC baseflow exponent (Qb) 
      real(r8), pointer :: expt_col          (:,:)   ! col VIC pore-size distribution related paramter(Q12) 
@@ -100,7 +100,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd
+    use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
     class(soilhydrology_type) :: this
@@ -139,7 +139,7 @@ contains
     allocate(this%Wsvic_col         (begc:endc))                 ; this%Wsvic_col         (:)     = nan
     allocate(this%depth_col         (begc:endc,nlayert))         ; this%depth_col         (:,:)   = nan
     allocate(this%porosity_col      (begc:endc,nlayer))          ; this%porosity_col      (:,:)   = nan
-    allocate(this%vic_clm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_clm_fract_col (:,:,:) = nan
+    allocate(this%vic_elm_fract_col (begc:endc,nlayer, nlevsoi)) ; this%vic_elm_fract_col (:,:,:) = nan
     allocate(this%c_param_col       (begc:endc))                 ; this%c_param_col       (:)     = nan
     allocate(this%expt_col          (begc:endc,nlayer))          ; this%expt_col          (:,:)   = nan
     allocate(this%ksat_col          (begc:endc,nlayer))          ; this%ksat_col          (:,:)   = nan
@@ -158,8 +158,8 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog 
+    use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -224,11 +224,11 @@ contains
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use clm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
-    use clm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
-    use clm_varcon      , only : denice, denh2o, sb, bdsno 
-    use clm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
-    use clm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
+    use elm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
+    use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
+    use elm_varcon      , only : denice, denh2o, sb, bdsno 
+    use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval, pc
+    use elm_varcon      , only : nlvic, dzvic, pc, mu, grlnd
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
     use column_varcon   , only : icol_shadewall, icol_road_perv
     use column_varcon   , only : icol_road_imperv, icol_roof, icol_sunwall
@@ -501,7 +501,7 @@ contains
                    this%depth_col(c, nlayer+1:nlayert) = col_pp%dz(c, nlevsoi+1:nlevgrnd)
 
                    ! create weights to map soil moisture profiles (10 layer) to 3 layers for VIC hydrology, M.Huang
-                   call initCLMVICMap(c, this)
+                   call initELMVICMap(c, this)
                    call initSoilParVIC(c, claycol, sandcol, om_fraccol, this)
                 end if
              else 
@@ -509,7 +509,7 @@ contains
                 this%depth_col(c, nlayer+1:nlayert) = col_pp%dz(c, nlevsoi+1:nlevgrnd)
 
                 ! create weights to map soil moisture profiles (10 layer) to 3 layers for VIC hydrology, M.Huang
-                call initCLMVICMap(c, this)
+                call initELMVICMap(c, this)
                 call initSoilParVIC(c, claycol, sandcol, om_fraccol, this)
              end if
           end if ! end of if not lake
@@ -622,8 +622,8 @@ contains
     ! added by M. Huang
     !
     ! !USES:
-    use clm_varcon  , only : denh2o, denice
-    use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+    use elm_varcon  , only : denh2o, denice
+    use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: c               ! column index
@@ -657,7 +657,7 @@ contains
     !-------------------------------------------------------------------------------------------
 
     ! soilhydrology_vars%depth_col(:,:)           Output: layer depth of upper layer(m) 
-    ! soilhydrology_vars%vic_clm_fract_col(:,:,:) Output: fraction of VIC layers in CLM layers
+    ! soilhydrology_vars%vic_elm_fract_col(:,:,:) Output: fraction of VIC layers in CLM layers
     ! soilhydrology_vars%c_param_col(:)           Output: baseflow exponent (Qb)
     ! soilhydrology_vars%expt_col(:,:)            Output: pore-size distribution related paramter(Q12)
     ! soilhydrology_vars%ksat_col(:,:)            Output: Saturated hydrologic conductivity (mm/s)
@@ -676,10 +676,10 @@ contains
        om_fracvic(i) = 0._r8  
        temp_sum_frac = 0._r8     
        do j = 1, nlevsoi
-          sandvic(i)    = sandvic(i)    + sandcol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
-          clayvic(i)    = clayvic(i)    + claycol(c,j)    * soilhydrology_vars%vic_clm_fract_col(c,i,j)
-          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_clm_fract_col(c,i,j) 
-          temp_sum_frac = temp_sum_frac +                   soilhydrology_vars%vic_clm_fract_col(c,i,j)
+          sandvic(i)    = sandvic(i)    + sandcol(c,j)    * soilhydrology_vars%vic_elm_fract_col(c,i,j)
+          clayvic(i)    = clayvic(i)    + claycol(c,j)    * soilhydrology_vars%vic_elm_fract_col(c,i,j)
+          om_fracvic(i) = om_fracvic(i) + om_fraccol(c,j) * soilhydrology_vars%vic_elm_fract_col(c,i,j) 
+          temp_sum_frac = temp_sum_frac +                   soilhydrology_vars%vic_elm_fract_col(c,i,j)
        end do
 
        !average soil properties, M.Huang, 08/11/2010
@@ -739,7 +739,7 @@ contains
   end subroutine initSoilParVIC
 
    !-----------------------------------------------------------------------
-   subroutine initCLMVICMap(c, soilhydrology_vars)
+   subroutine initELMVICMap(c, soilhydrology_vars)
      !
      ! !DESCRIPTION:
      ! This subroutine calculates mapping between CLM and VIC layers
@@ -748,8 +748,8 @@ contains
      ! h2osoi_ice is actually water equavlent ice content.
      !
      ! !USES:
-     use clm_varcon  , only : denh2o, denice
-     use clm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
+     use elm_varcon  , only : denh2o, denice
+     use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd 
      !
      ! !ARGUMENTS:
      integer , intent(in)  :: c
@@ -774,7 +774,7 @@ contains
           z             =>    col_pp%z     ,                          & ! Input:  [real(r8) (:,:)   ]  layer thickness (m)                   
 
           depth         =>    soilhydrology_vars%depth_col ,       & ! Input:  [real(r8) (:,:)   ]  layer depth of VIC (m)                
-          vic_clm_fract =>    soilhydrology_vars%vic_clm_fract_col & ! Output: [real(r8) (:,:,:) ]  fraction of VIC layers in clm layers
+          vic_elm_fract =>    soilhydrology_vars%vic_elm_fract_col & ! Output: [real(r8) (:,:,:) ]  fraction of VIC layers in clm layers
           )
 
        !  set fraction of VIC layer in each CLM layer
@@ -789,32 +789,32 @@ contains
           do j = 1, nlevsoi
              if( (zsum < lsum) .and. (zsum + dz(c,j) >= lsum ))  then
                 call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_clm_fract(c,i,j) = 1._r8 - temp
+                vic_elm_fract(c,i,j) = 1._r8 - temp
                 if(lsum + deltal(i) < zsum + dz(c,j)) then
                    call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 1._r8, 0._r8)
-                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
+                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
                 end if
              else if( (zsum < lsum + deltal(i)) .and. (zsum + dz(c,j) >= lsum + deltal(i)) ) then
                 call linear_interp(lsum + deltal(i), temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                vic_clm_fract(c,i,j) = temp
+                vic_elm_fract(c,i,j) = temp
                 if(zsum<=lsum) then
                    call linear_interp(lsum, temp, zsum, zsum + dz(c,j), 0._r8, 1._r8)
-                   vic_clm_fract(c,i,j) = vic_clm_fract(c,i,j) - temp
+                   vic_elm_fract(c,i,j) = vic_elm_fract(c,i,j) - temp
                 end if
              else if( (zsum >= lsum .and. zsum + dz(c,j) <= lsum + deltal(i)) )  then
-                vic_clm_fract(c,i,j) = 1._r8
+                vic_elm_fract(c,i,j) = 1._r8
              else
-                vic_clm_fract(c,i,j) = 0._r8
+                vic_elm_fract(c,i,j) = 0._r8
              end if
              zsum = zsum + dz(c,j)
-             sum_frac(i) = sum_frac(i) + vic_clm_fract(c,i,j)
+             sum_frac(i) = sum_frac(i) + vic_elm_fract(c,i,j)
           end do                           ! end CLM layer calculation
           lsum = lsum + deltal(i)
        end do                             ! end VIC layer calcultion 
 
      end associate 
 
-   end subroutine initCLMVICMap
+   end subroutine initELMVICMap
 
    !-------------------------------------------------------------------
    subroutine linear_interp(x,y, x0, x1, y0, y1)
@@ -841,7 +841,7 @@ contains
      ! !USES:
      use shr_mpi_mod          , only : shr_mpi_bcast
      use fileutils            , only : getavu, relavu, opnfil
-     use clm_nlUtilsMod       , only : find_nlgroup_name
+     use elm_nlUtilsMod       , only : find_nlgroup_name
      !
      ! !ARGUMENTS:
      class(soilhydrology_type) :: this
@@ -855,7 +855,7 @@ contains
      character(len=32) :: subname = 'SoilHydrology_readnl'  ! subroutine name
      !-----------------------------------------------------------------------
 
-     namelist / clm_soilhydrology_inparm / h2osfcflag, origflag
+     namelist / elm_soilhydrology_inparm / h2osfcflag, origflag
 
      ! preset values
 
@@ -865,13 +865,13 @@ contains
      if ( masterproc )then
 
         unitn = getavu()
-        write(iulog,*) 'Read in clm_soilhydrology_inparm  namelist'
+        write(iulog,*) 'Read in elm_soilhydrology_inparm  namelist'
         call opnfil (NLFilename, unitn, 'F')
-        call find_nlgroup_name(unitn, 'clm_soilhydrology_inparm', status=ierr)
+        call find_nlgroup_name(unitn, 'elm_soilhydrology_inparm', status=ierr)
         if (ierr == 0) then
-           read(unitn, clm_soilhydrology_inparm, iostat=ierr)
+           read(unitn, elm_soilhydrology_inparm, iostat=ierr)
            if (ierr /= 0) then
-              call endrun(msg="ERROR reading clm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
+              call endrun(msg="ERROR reading elm_soilhydrology_inparm namelist"//errmsg(__FILE__, __LINE__))
            end if
         end if
         call relavu( unitn )

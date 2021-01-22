@@ -165,7 +165,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use clm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns

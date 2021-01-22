@@ -10,8 +10,8 @@ module NitrogenDynamicsMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
-  use clm_varcon          , only : dzsoi_decomp, zisoi
-  use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
+  use elm_varcon          , only : dzsoi_decomp, zisoi
+  use elm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -30,7 +30,7 @@ module NitrogenDynamicsMod
   use CNCarbonStateType   , only : carbonstate_type
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
  
   !
   implicit none
@@ -163,7 +163,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -239,7 +239,7 @@ contains
     ! as a function of soluble mineral N and total soil water outflow.
     !
     ! !USES:
-    use clm_varpar       , only : nlevdecomp, nlevsoi
+    use elm_varpar       , only : nlevdecomp, nlevsoi
     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
@@ -626,7 +626,7 @@ contains
     ! !USES:
     use clm_time_manager , only : get_days_per_year, get_step_size
     use shr_sys_mod      , only : shr_sys_flush
-    use clm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
         
     !
@@ -685,7 +685,7 @@ contains
                   ! calculate aqueous N2 concentration and bulk aqueous N2 concentration
                   ! aqueous N2 concentration under pure nitrogen is 6.1e-4 mol/L/atm (based on Hery's law)
                   ! 78% atm * 6.1e-4 mol/L/atm * 28 g/mol * 1e3L/m3 * water content m3/m3 at 10 cm
-                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * h2osoi_vol(c,4)
+                  N2_aq = 0.78_r8 * 6.1e-4_r8 *28._r8 *1.e3_r8 * max(h2osoi_vol(c,4),0.01_r8)
                   ! calculate n2 fixation rate for each pft and add it to column total
                   nfix_tmp = vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
                              N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p))) 

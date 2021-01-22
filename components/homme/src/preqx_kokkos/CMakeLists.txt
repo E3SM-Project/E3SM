@@ -26,6 +26,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${TARGET_DIR}/cxx
     ${SRC_SHARE_DIR}/cxx
     ${HOMME_BINARY_DIR}/src/share/cxx)
+  )
 
   SET (EXEC_INCLUDE_DIRS
     ${EXEC_LIB_INCLUDE_DIRS}
@@ -104,6 +105,9 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
     ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+    ${SRC_SHARE_DIR}/planar_mod.F90
+    ${SRC_SHARE_DIR}/geometry_mod.F90
+    ${SRC_SHARE_DIR}/planar_mesh_mod.F90
   )
 
   SET(TEST_SRC_F90
@@ -124,6 +128,8 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip2016-terminator.F90
     ${TEST_SRC_DIR}/dcmip2016-tropical-cyclone.F90
     ${TEST_SRC_DIR}/held_suarez_mod.F90
+    ${TEST_SRC_DIR}/dry_planar.F90
+    ${TEST_SRC_DIR}/moist_planar.F90
     ${TEST_SRC_DIR}/mtests.F90
   )
 
@@ -135,31 +141,22 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_DIR}/repro_sum_mod.F90
     ${SRC_DIR}/surfaces_mod.F90
     ${SRC_DIR}/test_mod.F90
-  )
-  IF (NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
-    SET (PREQX_DEPS_F90
-         ${PREQX_DEPS_F90}
-         ${SRC_DIR}/common_io_mod.F90
-         ${SRC_DIR}/common_movie_mod.F90
-         ${SRC_DIR}/interpolate_driver_mod.F90
-         ${SRC_DIR}/interp_movie_mod.F90
-         ${SRC_DIR}/netcdf_io_mod.F90
-         ${SRC_DIR}/pio_io_mod.F90
-         ${SRC_DIR}/prim_movie_mod.F90
-         ${SRC_DIR}/prim_restart_mod.F90
-         ${SRC_DIR}/restart_io_mod.F90
-    )
-  ENDIF ()
-
-  SET(PREQX_DEPS_F90
-      ${PREQX_DEPS_F90}
-      ${UTILS_SHARE_DIR}/shr_const_mod.F90
-      ${UTILS_SHARE_DIR}/shr_file_mod.F90
-      ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-      ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
-      ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-      ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-      ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
+    ${SRC_DIR}/common_io_mod.F90
+    ${SRC_DIR}/common_movie_mod.F90
+    ${SRC_DIR}/interpolate_driver_mod.F90
+    ${SRC_DIR}/interp_movie_mod.F90
+    ${SRC_DIR}/netcdf_io_mod.F90
+    ${SRC_DIR}/pio_io_mod.F90
+    ${SRC_DIR}/prim_movie_mod.F90
+    ${SRC_DIR}/prim_restart_mod.F90
+    ${SRC_DIR}/restart_io_mod.F90
+    ${UTILS_SHARE_DIR}/shr_const_mod.F90
+    ${UTILS_SHARE_DIR}/shr_file_mod.F90
+    ${UTILS_SHARE_DIR}/shr_kind_mod.F90
+    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
+    ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
+    ${UTILS_SHARE_DIR}/shr_sys_mod.F90
+    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
   )
 
   SET(PREQX_DEPS_CXX
@@ -197,7 +194,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   )
 
-  IF (${HOMME_USE_TRILINOS})
+  IF (HOMME_USE_TRILINOS)
     SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
     SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
   ENDIF()

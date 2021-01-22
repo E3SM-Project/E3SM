@@ -13,9 +13,9 @@ module PhenologyMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use shr_sys_mod         , only : shr_sys_flush
   use decompMod           , only : bounds_type
-  use clm_varpar          , only : numpft
-  use clm_varctl          , only : iulog
-  use clm_varcon          , only : tfrz
+  use elm_varpar          , only : numpft
+  use elm_varctl          , only : iulog
+  use elm_varcon          , only : tfrz
   use abortutils          , only : endrun
   use CanopyStateType     , only : canopystate_type
   use CNCarbonFluxType    , only : carbonflux_type
@@ -31,7 +31,7 @@ module PhenologyMod
   use WaterstateType      , only : waterstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
-  use clm_varctl          , only : nu_com 
+  use elm_varctl          , only : nu_com 
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_cf, col_nf, col_pf 
   use TopounitDataType    , only : top_af, top_as  
@@ -112,7 +112,7 @@ contains
     !
     ! !USES:
     use ncdio_pio    , only: file_desc_t,ncd_io
-    use clm_varcon   , only: secspday
+    use elm_varcon   , only: secspday
 
     ! !ARGUMENTS:
     implicit none
@@ -308,8 +308,8 @@ contains
     !
     ! !USES:
     use clm_time_manager, only: get_step_size
-    use clm_varpar      , only: crop_prog
-    use clm_varcon      , only: secspday
+    use elm_varpar      , only: crop_prog
+    use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
     implicit none
@@ -467,7 +467,7 @@ contains
     ! For coupled carbon-nitrogen code (CN).
     !
     ! !USES:
-    use clm_varcon       , only : secspday
+    use elm_varcon       , only : secspday
     use clm_time_manager , only : get_days_per_year
     !
     ! !ARGUMENTS:
@@ -522,7 +522,7 @@ contains
     !
     ! !USES:
     use shr_const_mod   , only: SHR_CONST_TKFRZ, SHR_CONST_PI
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -871,7 +871,7 @@ contains
     !
     ! !USES:
     use clm_time_manager , only : get_days_per_year
-    use clm_varcon       , only : secspday
+    use elm_varcon       , only : secspday
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
     !
     ! !ARGUMENTS:
@@ -1365,7 +1365,7 @@ contains
     use pftvarcon        , only : ncorn, nscereal, nwcereal, nsoybean, gddmin, hybgdd
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
-    use clm_varcon       , only : spval, secspday
+    use elm_varcon       , only : spval, secspday
     use CropType         , only : tcvp, tcvt, cst
     !
     ! !ARGUMENTS:
@@ -2118,8 +2118,8 @@ contains
     ! !USES:
     use clm_time_manager , only : get_curr_date
     use clm_time_manager , only : get_step_size
-    use clm_varcon       , only : secspday
-    use clm_varpar       , only : numpft
+    use elm_varcon       , only : secspday
+    use elm_varpar       , only : numpft
     use pftvarcon        , only : planttemp
     use CropMod          , only : calculate_eto, plant_month
 
@@ -3010,7 +3010,7 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !USES:
-    use clm_varpar , only : max_patch_per_col, nlevdecomp
+    use elm_varpar , only : max_patch_per_col, nlevdecomp
     use pftvarcon  , only : npcropmin
     !
     ! !ARGUMENTS:
@@ -3174,7 +3174,7 @@ contains
    ! to the column level and assign them to a product pools
    !
    ! !USES:
-   use clm_varpar, only : maxpatch_pft
+   use elm_varpar, only : maxpatch_pft
    type(cnstate_type)       , intent(in)    :: cnstate_vars
    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars

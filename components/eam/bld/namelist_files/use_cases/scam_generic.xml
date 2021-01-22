@@ -6,4 +6,9 @@
 <ncdata             >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
 <soag_ext_file      >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
 
+<!-- SCM is configured with ne4 grid, but we want settings for an ne30 simulation -->
+<se_tstep dyn_target="theta-l" hgrid="ne4np4"  >   1800      </se_tstep>
+<dt_remap_factor dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_remap_factor>
+<dt_tracer_factor dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_tracer_factor>
+
 </namelist_defaults>

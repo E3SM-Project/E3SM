@@ -47,7 +47,7 @@ require Build::NamelistDefinition;
 require queryDefaultXML;
 
 # Defaults
-my $namelist = "clm_inparm";
+my $namelist = "elm_inparm";
 my $config = "config_cache.xml";
 
 
@@ -75,7 +75,7 @@ OPTIONS
      -onlyfiles                           Only output filenames.
      -options "item=value,item2=value2"   Set options to query for when matching.
                                           (comma delimited, with equality to set value).
-     -phys "CLM-version" [or -p]          CLM version to use (clm4_0 or clm4_5)
+     -phys "ELM-version" [or -p]          ELM version to use 
      -res  "resolution"                   Resolution to use for files. Use "-res list" to
                                           list all valid resolutions. Use "-res any" to
                                           use any valid resolution.

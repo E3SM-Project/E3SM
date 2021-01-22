@@ -9,11 +9,11 @@ module surfrdMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use clm_varpar      , only : nlevsoifl, numpft, numcft
+  use elm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
-  use clm_varcon      , only : grlnd
-  use clm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
-  use clm_varctl      , only : create_glacier_mec_landunit
+  use elm_varcon      , only : grlnd
+  use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
+  use elm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
@@ -138,10 +138,10 @@ contains
     ! o real longitude of grid cell (degrees)
     !
     ! !USES:
-    use clm_varcon, only : spval, re
+    use elm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
-    use clm_varctl, only : use_pflotran
+    use elm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 
@@ -549,10 +549,10 @@ contains
     !    o real % abundance PFTs (as a percent of vegetated area)
     !
     ! !USES:
-    use clm_varctl  , only : create_crop_landunit, firrig_data
+    use elm_varctl  , only : create_crop_landunit, firrig_data
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
-    use clm_varsur  , only : wt_lunit, topo_glc_mec
+    use elm_varsur  , only : wt_lunit, topo_glc_mec
 
     !
     ! !ARGUMENTS:
@@ -624,7 +624,7 @@ contains
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
     surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
     surfdata_domain%set = .false.
-    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
+    call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, elmlevel=grlnd)
 
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
          dim1name=grlnd, readvar=readvar)
@@ -693,9 +693,9 @@ contains
     ! as soil color and percent sand and clay
     !
     ! !USES:
-    use clm_varpar      , only : maxpatch_glcmec, nlevurb
+    use elm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
-    use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
+    use elm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
     !
     ! !ARGUMENTS:
@@ -863,8 +863,8 @@ contains
     !     Handle generic crop types for file format where they are on their own
     !     crop landunit and read in as Crop Function Types.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch
-    use clm_varpar      , only : cft_size, cft_lb, natpft_lb
+    use elm_varsur      , only : fert_cft, wt_nat_patch
+    use elm_varpar      , only : cft_size, cft_lb, natpft_lb
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t), intent(inout) :: ncid         ! netcdf id
@@ -918,10 +918,10 @@ contains
     !     Handle generic crop types for file format where they are part of the
     !     natural vegetation landunit.
     ! !USES:
-    use clm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
-    use clm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
-    use clm_varpar      , only : cft_lb, cft_ub
-    use clm_varctl      , only : create_crop_landunit
+    use elm_varsur      , only : fert_cft, wt_nat_patch, wt_cft
+    use elm_varpar      , only : natpft_size, cft_size, natpft_lb, natpft_ub
+    use elm_varpar      , only : cft_lb, cft_ub
+    use elm_varctl      , only : create_crop_landunit
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: begg, endg
@@ -988,11 +988,11 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use clm_varctl      , only : create_crop_landunit, use_fates
-    use clm_varctl      , only : irrigate
-    use clm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
-    use clm_varpar      , only : crop_prog
-    use clm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
+    use elm_varctl      , only : create_crop_landunit, use_fates
+    use elm_varctl      , only : irrigate
+    use elm_varpar      , only : natpft_lb, natpft_ub, natpft_size, cft_lb, cft_ub, cft_size
+    use elm_varpar      , only : crop_prog
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
     use landunit_varcon , only : istsoil, istcrop
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig

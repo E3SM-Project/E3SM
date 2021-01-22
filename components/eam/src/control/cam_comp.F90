@@ -210,6 +210,7 @@ subroutine cam_run1(cam_in, cam_out)
    use mpishorthand,     only: mpicom
 #endif
    use time_manager,     only: get_nstep
+   use scamMod,          only: single_column
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
@@ -234,6 +235,10 @@ subroutine cam_run1(cam_in, cam_out)
    call t_startf ('stepon_run1')
    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
    call t_stopf  ('stepon_run1')
+
+   if (single_column) then
+     call scam_use_iop_srf( cam_in)
+   endif
 
    !
    !----------------------------------------------------------

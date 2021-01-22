@@ -10,9 +10,9 @@ module lnd2atmMod
   use abortutils           , only : endrun
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_megan_mod        , only : shr_megan_mechcomps_n
-  use clm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
-  use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
+  use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
+  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -60,7 +60,7 @@ contains
     ! run started.
     !
     ! !USES:
-    use clm_varcon, only : sb
+    use elm_varcon, only : sb
     
     !
     ! !ARGUMENTS:
@@ -168,7 +168,7 @@ contains
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 
     call p2g(bounds, &
-         frictionvel_vars%u10_clm_patch (bounds%begp:bounds%endp), &
+         frictionvel_vars%u10_elm_patch (bounds%begp:bounds%endp), &
          lnd2atm_vars%u_ref10m_grc      (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
 

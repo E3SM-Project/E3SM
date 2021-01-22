@@ -388,7 +388,7 @@ contains
     logical :: release_read     ! check if release on restart file
     logical :: stormth_read     ! check if stormthstop on restart file
     character(len=32)  :: vname,uname
-    character(len=128) :: lname
+    character(len=256) :: lname
     !-----------------------------------------------------------------------
 
     compute_release = .false.

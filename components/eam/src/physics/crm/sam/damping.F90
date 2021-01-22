@@ -17,7 +17,7 @@ contains
     real(crm_rknd) tau_min    ! minimum damping time-scale (at the top)
     real(crm_rknd) tau_max    ! maxim damping time-scale (base of damping layer)
     real(crm_rknd) damp_depth ! damping depth as a fraction of the domain height
-    parameter(tau_min=60., tau_max=450., damp_depth=0.4)
+    parameter(tau_min=60.D0, tau_max=450.D0, damp_depth=0.4D0)
     real(crm_rknd) tau(ncrms,nzm), tmp
     integer, allocatable :: n_damp(:)
     integer :: i, j, k, icrm
@@ -55,7 +55,7 @@ contains
       do icrm = 1 , ncrms
         if ( k <= nzm .and. k >= nzm-n_damp(icrm) ) then
           tau(icrm,k) = tau_min *(tau_max/tau_min)**((z(icrm,nzm)-z(icrm,k))/(z(icrm,nzm)-z(icrm,nzm-n_damp(icrm))))
-          tau(icrm,k)=1./tau(icrm,k)
+          tau(icrm,k)=1.D0/tau(icrm,k)
         endif
       end do
     end do
@@ -91,7 +91,7 @@ contains
     end do
 
    !For working around PGI OpenACC bug where it didn't create enough gangs 
-    numgangs = ceiling(ncrms*ny*nx/128.)
+    numgangs = ceiling(ncrms*ny*nx/128.D0)
     !$acc parallel loop collapse(4) vector_length(128) num_gangs(numgangs) async(asyncid)
     do k = 1 , nzm
       do j=1,ny

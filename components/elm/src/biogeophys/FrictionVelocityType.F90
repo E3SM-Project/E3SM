@@ -6,9 +6,9 @@ module FrictionVelocityType
   use shr_sys_mod    , only : shr_sys_flush
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use clm_varctl     , only : use_cn
-  use clm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
-  use clm_varcon     , only : spval
+  use elm_varctl     , only : use_cn
+  use elm_varpar     , only : nlevcan, nlevsno, nlevgrnd, nlevsoi  
+  use elm_varcon     , only : spval
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc
@@ -27,7 +27,7 @@ module FrictionVelocityType
      real(r8), pointer :: forc_hgt_t_patch (:)   ! patch temperature forcing height (10m+z0m+d) (m)
      real(r8), pointer :: forc_hgt_q_patch (:)   ! patch specific humidity forcing height (10m+z0m+d) (m)
      real(r8), pointer :: u10_patch        (:)   ! patch 10-m wind (m/s) (for dust model)
-     real(r8), pointer :: u10_clm_patch    (:)   ! patch 10-m wind (m/s) (for clm_map2gcell)
+     real(r8), pointer :: u10_elm_patch    (:)   ! patch 10-m wind (m/s) (for clm_map2gcell)
      real(r8), pointer :: va_patch         (:)   ! patch atmospheric wind speed plus convective velocity (m/s)
      real(r8), pointer :: vds_patch        (:)   ! patch deposition velocity term (m/s) (for dry dep SO4, NH4NO3)
      real(r8), pointer :: fv_patch         (:)   ! patch friction velocity (m/s) (for dust model)
@@ -91,7 +91,7 @@ contains
     allocate(this%forc_hgt_t_patch (begp:endp)) ; this%forc_hgt_t_patch (:)   = nan
     allocate(this%forc_hgt_q_patch (begp:endp)) ; this%forc_hgt_q_patch (:)   = nan
     allocate(this%u10_patch        (begp:endp)) ; this%u10_patch        (:)   = nan
-    allocate(this%u10_clm_patch    (begp:endp)) ; this%u10_clm_patch    (:)   = nan
+    allocate(this%u10_elm_patch    (begp:endp)) ; this%u10_elm_patch    (:)   = nan
     allocate(this%va_patch         (begp:endp)) ; this%va_patch         (:)   = nan
     allocate(this%vds_patch        (begp:endp)) ; this%vds_patch        (:)   = nan
     allocate(this%fv_patch         (begp:endp)) ; this%fv_patch         (:)   = nan
@@ -148,10 +148,10 @@ contains
          avgflag='A', long_name='atmospheric wind speed plus convective velocity', &
          ptr_patch=this%va_patch, default='inactive')
 
-    this%u10_clm_patch(begp:endp) = spval
+    this%u10_elm_patch(begp:endp) = spval
     call hist_addfld1d (fname='U10', units='m/s', &
          avgflag='A', long_name='10-m wind', &
-         ptr_patch=this%u10_clm_patch)
+         ptr_patch=this%u10_elm_patch)
 
     if (use_cn) then
        this%u10_patch(begp:endp) = spval

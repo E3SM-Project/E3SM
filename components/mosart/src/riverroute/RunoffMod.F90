@@ -222,6 +222,7 @@ module RunoffMod
      real(r8), pointer :: rlenTotal(:) ! length of all reaches, [m]
      real(r8), pointer :: Gxr(:)       ! drainage density within the cell, [1/m]
      real(r8), pointer :: frac(:)      ! fraction of cell included in the study area, [-]
+     real(r8), pointer :: domainfrac(:)! fraction of cell included in the study area from domain file, [-]
      logical , pointer :: euler_calc(:)! flag for calculating tracers in euler
 
      ! hillslope properties

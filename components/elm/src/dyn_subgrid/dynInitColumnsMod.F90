@@ -11,8 +11,8 @@ module dynInitColumnsMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
-  use clm_varctl        , only : iulog
-  use clm_varcon        , only : ispval, namec
+  use elm_varctl        , only : iulog
+  use elm_varcon        , only : ispval, namec
   use TemperatureType   , only : temperature_type
   use SoilHydrologyType , only : soilhydrology_type
   use WaterstateType    , only : waterstate_type
@@ -77,7 +77,7 @@ contains
           else
              write(iulog,*) subname// ' WARNING: No template column found to initialize newly-active column'
              write(iulog,*) '-- keeping the state that was already in memory, possibly from arbitrary initialization'
-             call GetGlobalWrite(decomp_index=c, clmlevel=namec)
+             call GetGlobalWrite(decomp_index=c, elmlevel=namec)
           end if
        end if
     end do
@@ -122,23 +122,23 @@ contains
     case(istice)
        write(iulog,*) subname// ' ERROR: Ability to initialize a newly-active glacier column not yet implemented'
        write(iulog,*) 'Expectation is that only ice_mec columns can grow'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     case(istice_mec)
        write(iulog,*) subname// ' ERROR: Ability to initialize a newly-active glacier mec column not yet implemented'
        write(iulog,*) 'Expectation is that glacier mec columns should be active from the start of the run wherever they can grow'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     case(istdlak)
        write(iulog,*) subname// ' ERROR: Ability to initialize a newly-active lake column not yet implemented'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     case(istwet)
        write(iulog,*) subname// ' ERROR: Ability to initialize a newly-active wetland column not yet implemented'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     case(isturb_MIN:isturb_MAX)
        write(iulog,*) subname// ' ERROR: Ability to initialize a newly-active urban column not yet implemented'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     case default
        write(iulog,*) subname// ' ERROR: Unknown landunit type: ', ltype
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     end select
 
   end function initial_template_col_dispatcher
@@ -156,7 +156,7 @@ contains
     ! return ispval from this function. Within this function, we check this assumption.
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer              :: c_template ! function result
@@ -170,7 +170,7 @@ contains
     if (col_pp%wtgcell(c_new) > 0._r8) then
        write(iulog,*) subname// ' ERROR: Expectation is that the only vegetated columns that&
             & can newly become active are ones with 0 weight on the grid cell'
-       call endrun(decomp_index=c_new, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+       call endrun(decomp_index=c_new, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
     end if
 
     c_template = ispval
@@ -186,7 +186,7 @@ contains
     ! Returns ispval if there is no column to use for initialization
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     use landunit_varcon, only : istsoil, istcrop
     !
     ! !ARGUMENTS:
@@ -231,7 +231,7 @@ contains
     ! time step.
     !
     ! !USES:
-    use clm_varcon, only : ispval
+    use elm_varcon, only : ispval
     !
     ! !ARGUMENTS:
     integer :: c_template  ! function return value

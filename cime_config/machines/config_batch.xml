@@ -279,6 +279,12 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="chrysalis" type="slurm" >
+      <queues>
+	<queue walltimemax="03:00:00" nodemin="1" nodemax="512" default="true" strict="true">compute</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="bebop" type="slurm" >
       <queues>
 	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
@@ -334,18 +340,6 @@
       <queue walltimemax="01:00:00" nodemax="128" default="true">skx-normal</queue>
     </queues>
   </batch_system>
-
-    <batch_system MACH="mira" type="cobalt">
-      <queues>
-        <queue walltimemax="03:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="cetus" type="cobalt">
-      <queues>
-        <queue walltimemax="01:00:00" default="true">default</queue>
-      </queues>
-    </batch_system>
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>

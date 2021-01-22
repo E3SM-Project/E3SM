@@ -9,67 +9,67 @@ module micro_params
 
   ! Densities of hydrometeors
 
-  real(crm_rknd), parameter :: rhor = 1000. ! Density of water, kg/m3
-  real(crm_rknd), parameter :: rhos = 100.  ! Density of snow, kg/m3
-  real(crm_rknd), parameter :: rhog = 400.  ! Density of graupel, kg/m3
+  real(crm_rknd), parameter :: rhor = 1000.D0 ! Density of water, kg/m3
+  real(crm_rknd), parameter :: rhos = 100.D0  ! Density of snow, kg/m3
+  real(crm_rknd), parameter :: rhog = 400.D0  ! Density of graupel, kg/m3
   !real(crm_rknd), parameter :: rhog = 917.  ! hail - Lin 1983
 
   ! Temperatures limits for various hydrometeors
 
-  real(crm_rknd), parameter :: tbgmin = 253.16    ! Minimum temperature for cloud water., K
-  real(crm_rknd), parameter :: tbgmax = 273.16    ! Maximum temperature for cloud ice, K
-  real(crm_rknd), parameter :: tprmin = 268.16    ! Minimum temperature for rain, K
-  real(crm_rknd), parameter :: tprmax = 283.16    ! Maximum temperature for snow+graupel, K
-  real(crm_rknd), parameter :: tgrmin = 223.16    ! Minimum temperature for snow, K
-  real(crm_rknd), parameter :: tgrmax = 283.16    ! Maximum temperature for graupel, K
+  real(crm_rknd), parameter :: tbgmin = 253.16D0    ! Minimum temperature for cloud water., K
+  real(crm_rknd), parameter :: tbgmax = 273.16D0    ! Maximum temperature for cloud ice, K
+  real(crm_rknd), parameter :: tprmin = 268.16D0    ! Minimum temperature for rain, K
+  real(crm_rknd), parameter :: tprmax = 283.16D0    ! Maximum temperature for snow+graupel, K
+  real(crm_rknd), parameter :: tgrmin = 223.16D0    ! Minimum temperature for snow, K
+  real(crm_rknd), parameter :: tgrmax = 283.16D0    ! Maximum temperature for graupel, K
 
   ! Terminal velocity coefficients
 
-  real(crm_rknd), parameter :: a_rain = 842. ! Coeff.for rain term vel
-  real(crm_rknd), parameter :: b_rain = 0.8  ! Fall speed exponent for rain
-  real(crm_rknd), parameter :: a_snow = 4.84 ! Coeff.for snow term vel
-  real(crm_rknd), parameter :: b_snow = 0.25 ! Fall speed exponent for snow
+  real(crm_rknd), parameter :: a_rain = 842.D0 ! Coeff.for rain term vel
+  real(crm_rknd), parameter :: b_rain = 0.8D0  ! Fall speed exponent for rain
+  real(crm_rknd), parameter :: a_snow = 4.84D0 ! Coeff.for snow term vel
+  real(crm_rknd), parameter :: b_snow = 0.25D0 ! Fall speed exponent for snow
   !real(crm_rknd), parameter :: a_grau = 40.7! Krueger (1994) ! Coef. for graupel term vel
-  real(crm_rknd), parameter :: a_grau = 94.5 ! Lin (1983) (rhog=400)
+  real(crm_rknd), parameter :: a_grau = 94.5D0 ! Lin (1983) (rhog=400)
   !real(crm_rknd), parameter :: a_grau = 127.94! Lin (1983) (rhog=917)
-  real(crm_rknd), parameter :: b_grau = 0.5  ! Fall speed exponent for graupel
+  real(crm_rknd), parameter :: b_grau = 0.5D0  ! Fall speed exponent for graupel
 
   ! Autoconversion
-  real(crm_rknd), parameter :: qcw0 = 1.e-3      ! Threshold for water autoconversion, g/g
-  real(crm_rknd), parameter :: qci0 = 1.e-4     ! Threshold for ice autoconversion, g/g
-  real(crm_rknd), parameter :: alphaelq = 1.e-3  ! autoconversion of cloud water rate coef
-  real(crm_rknd), parameter :: betaelq = 1.e-3   ! autoconversion of cloud ice rate coef
+  real(crm_rknd), parameter :: qcw0 = 1.D-3      ! Threshold for water autoconversion, g/g
+  real(crm_rknd), parameter :: qci0 = 1.D-4     ! Threshold for ice autoconversion, g/g
+  real(crm_rknd), parameter :: alphaelq = 1.D-3  ! autoconversion of cloud water rate coef
+  real(crm_rknd), parameter :: betaelq = 1.D-3   ! autoconversion of cloud ice rate coef
 
   ! Accretion
 
-  real(crm_rknd), parameter :: erccoef = 1.0   ! Rain/Cloud water collection efficiency
-  real(crm_rknd), parameter :: esccoef = 1.0   ! Snow/Cloud water collection efficiency
-  real(crm_rknd), parameter :: esicoef = 0.1   ! Snow/cloud ice collection efficiency
-  real(crm_rknd), parameter :: egccoef = 1.0   ! Graupel/Cloud water collection efficiency
-  real(crm_rknd), parameter :: egicoef = 0.1   ! Graupel/Cloud ice collection efficiency
+  real(crm_rknd), parameter :: erccoef = 1.0D0   ! Rain/Cloud water collection efficiency
+  real(crm_rknd), parameter :: esccoef = 1.0D0   ! Snow/Cloud water collection efficiency
+  real(crm_rknd), parameter :: esicoef = 0.1D0   ! Snow/cloud ice collection efficiency
+  real(crm_rknd), parameter :: egccoef = 1.0D0   ! Graupel/Cloud water collection efficiency
+  real(crm_rknd), parameter :: egicoef = 0.1D0   ! Graupel/Cloud ice collection efficiency
 
   ! Interseption parameters for exponential size spectra
 
-  real(crm_rknd), parameter :: nzeror = 8.e6   ! Intercept coeff. for rain
-  real(crm_rknd), parameter :: nzeros = 3.e6   ! Intersept coeff. for snow
-  real(crm_rknd), parameter :: nzerog = 4.e6   ! Intersept coeff. for graupel
+  real(crm_rknd), parameter :: nzeror = 8.D6   ! Intercept coeff. for rain
+  real(crm_rknd), parameter :: nzeros = 3.D6   ! Intersept coeff. for snow
+  real(crm_rknd), parameter :: nzerog = 4.D6   ! Intersept coeff. for graupel
   !real(crm_rknd), parameter :: nzerog = 4.e4   ! hail - Lin 1993
 
-  real(crm_rknd), parameter :: qp_threshold = 1.e-8 ! minimal rain/snow water content
+  real(crm_rknd), parameter :: qp_threshold = 1.D-8 ! minimal rain/snow water content
 
 
   ! Misc. microphysics variables
+  real(crm_rknd) :: gam3       ! Gamma function of 3
+  real(crm_rknd) :: gams1      ! Gamma function of (3 + b_snow)
+  real(crm_rknd) :: gams2      ! Gamma function of (5 + b_snow)/2
+  real(crm_rknd) :: gams3      ! Gamma function of (4 + b_snow)
+  real(crm_rknd) :: gamg1      ! Gamma function of (3 + b_grau)
+  real(crm_rknd) :: gamg2      ! Gamma function of (5 + b_grau)/2
+  real(crm_rknd) :: gamg3      ! Gamma function of (4 + b_grau)
+  real(crm_rknd) :: gamr1      ! Gamma function of (3 + b_rain)
+  real(crm_rknd) :: gamr2      ! Gamma function of (5 + b_rain)/2
+  real(crm_rknd) :: gamr3      ! Gamma function of (4 + b_rain)
 
-  real*4 gam3       ! Gamma function of 3
-  real*4 gams1      ! Gamma function of (3 + b_snow)
-  real*4 gams2      ! Gamma function of (5 + b_snow)/2
-  real*4 gams3      ! Gamma function of (4 + b_snow)
-  real*4 gamg1      ! Gamma function of (3 + b_grau)
-  real*4 gamg2      ! Gamma function of (5 + b_grau)/2
-  real*4 gamg3      ! Gamma function of (4 + b_grau)
-  real*4 gamr1      ! Gamma function of (3 + b_rain)
-  real*4 gamr2      ! Gamma function of (5 + b_rain)/2
-  real*4 gamr3      ! Gamma function of (4 + b_rain)
 
   real(crm_rknd), allocatable :: accrsc (:,:)
   real(crm_rknd), allocatable :: accrsi (:,:)

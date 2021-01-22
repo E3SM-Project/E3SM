@@ -30,7 +30,7 @@ contains
     ! where x and r are vectors
     ! !USES:
     use shr_kind_mod   , only: r8 => shr_kind_r8
-    use clm_varctl     , only : iulog
+    use elm_varctl     , only : iulog
     use decompMod      , only : bounds_type
     !
     ! !ARGUMENTS:
@@ -109,7 +109,7 @@ contains
     ! where A, X and R are all matrices.
     ! !USES:
     use shr_kind_mod   , only: r8 => shr_kind_r8
-    use clm_varctl     , only : iulog
+    use elm_varctl     , only : iulog
     use decompMod      , only : bounds_type
     !
     ! !ARGUMENTS:
@@ -209,7 +209,7 @@ contains
      !redistribution. Idealy, the code should fit well with the purpose of solving coupled heat and
      !water transport equation, but I did not make any attempt here.
      use shr_kind_mod , only : r8 => shr_kind_r8
-     use clm_varctl   , only : iulog
+     use elm_varctl   , only : iulog
      use decompMod    , only : bounds_type
      implicit none
      type(bounds_type) , intent(in)  :: bounds                                 ! bounds
@@ -332,7 +332,7 @@ contains
     ! where x and r are vectors
     ! !USES:
     use shr_kind_mod   , only: r8 => shr_kind_r8
-    use clm_varctl     , only : iulog
+    use elm_varctl     , only : iulog
     use decompMod      , only : bounds_type
     !
     ! !ARGUMENTS:

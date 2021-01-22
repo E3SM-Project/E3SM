@@ -1029,6 +1029,8 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="normalGMBolusVelocitySquared"/>')
             lines.append('    <var name="gmKappaScaling"/>')
             lines.append('    <var name="gmBolusKappa"/>')
+            lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
+            lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
 
         lines.append('    <var_struct name="tracersSurfaceFlux"/>')
         lines.append('    <var name="penetrativeTemperatureFlux"/>')

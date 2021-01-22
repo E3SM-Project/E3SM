@@ -10,9 +10,9 @@ module SoilLittDecompMod
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
-  use clm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
-  use clm_varcon             , only : dzsoi_decomp
-  use clm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varctl             , only : iulog, use_nitrif_denitrif, use_lch4, use_century_decomp
+  use elm_varcon             , only : dzsoi_decomp
+  use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use DecompCascadeCNMod   , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod  , only : decomp_rate_constants_bgc
   use CNNitrifDenitrifMod    , only : nitrif_denitrif
@@ -24,7 +24,7 @@ module SoilLittDecompMod
   !!  add phosphorus  -X. YANG
   use PhosphorusStateType    , only : phosphorusstate_type
   use PhosphorusFluxType     , only : phosphorusflux_type
-  use clm_varctl             , only : nu_com
+  use elm_varctl             , only : nu_com
 
   use CNCarbonStateType      , only : carbonstate_type
   use CNCarbonFluxType       , only : carbonflux_type
@@ -40,7 +40,7 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
   ! clm interface & pflotran:
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -628,7 +628,7 @@ contains
     use AllocationMod , only: Allocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
     use clm_time_manager, only: get_step_size
-!    use clm_varpar      , only: nlevdecomp, ndecomp_pools
+!    use elm_varpar      , only: nlevdecomp, ndecomp_pools
 
     !
     ! !ARGUMENT:
@@ -720,7 +720,7 @@ contains
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-      if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
+      if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
          ! fpg calculation
          do fc=1,num_soilc
             c = filter_soilc(fc)
@@ -816,7 +816,7 @@ contains
             end do
          end do
 
-      end if !if(use_clm_interface.and.use_pflotran.and.pf_cmode)
+      end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
@@ -878,8 +878,8 @@ contains
   !
   !USES:
 
-    use clm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
-    use clm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
+    use elm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
+    use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds

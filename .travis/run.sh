@@ -46,5 +46,6 @@ if [ $rc -ne 0 ]; then
     print_bldlog "pio"
     print_bldlog "mct"
     print_bldlog "gptl"
+    print_bldlog "e3sm"
     exit $rc
 fi

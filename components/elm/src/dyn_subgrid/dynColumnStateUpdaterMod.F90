@@ -92,8 +92,8 @@ module dynColumnStateUpdaterMod
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use abortutils           , only : endrun
-  use clm_varctl           , only : iulog  
-  use clm_varcon           , only : namec, spval
+  use elm_varctl           , only : iulog  
+  use elm_varcon           , only : namec, spval
   use decompMod            , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType           , only : col_pp
   use LandunitType         , only : lun_pp
@@ -891,7 +891,7 @@ contains
        if (this%area_gained_col(c) < 0._r8) then
           if (.not. vals_input_valid(c)) then
              write(iulog,*) subname//' ERROR: shrinking column without valid input value'
-             call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(sourcefile, __LINE__))
+             call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost

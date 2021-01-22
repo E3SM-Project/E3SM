@@ -12,10 +12,10 @@ module dynpftFileMod
   use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
   use dynFileMod          , only : dyn_file_type
   use dynVarTimeInterpMod , only : dyn_var_time_interp_type
-  use clm_varctl          , only : iulog
+  use elm_varctl          , only : iulog
   use abortutils          , only : endrun
   use spmdMod             , only : masterproc, mpicom
-  use clm_varcon          , only : grlnd, nameg
+  use elm_varcon          , only : grlnd, nameg
   use LandunitType        , only : lun_pp                
   !DW  not use at all     !   use ColumnType          , only : col                
   use VegetationType           , only : veg_pp                
@@ -51,7 +51,7 @@ contains
     ! This also calls dynpft_interp for the initial time
     !
     ! !USES:
-    use clm_varpar     , only : numpft, maxpatch_pft, natpft_size
+    use elm_varpar     , only : numpft, maxpatch_pft, natpft_size
     use dynTimeInfoMod , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod , only : YEAR_POSITION_END_OF_TIMESTEP
     use ncdio_pio
@@ -114,8 +114,8 @@ contains
     ! PCT_NAT_PFT on the surface dataset.
     !
     ! !USES:
-    use clm_varsur, only : wt_nat_patch
-    use clm_varpar, only : natpft_size
+    use elm_varsur, only : wt_nat_patch
+    use elm_varpar, only : natpft_size
     use ncdio_pio
     !
     ! !ARGUMENTS:
@@ -164,9 +164,9 @@ contains
              write(iulog,*) 'If you are confident that you are using the correct landuse_timeseries file'
              write(iulog,*) 'and the correct surface dataset, then you can bypass this check by setting:'
              write(iulog,*) '  check_dynpft_consistency = .false.'
-             write(iulog,*) 'in user_nl_clm'
+             write(iulog,*) 'in user_nl_elm'
              write(iulog,*) ' '
-             call endrun(decomp_index=g, clmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+             call endrun(decomp_index=g, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
           end if
        end do
 
@@ -184,7 +184,7 @@ contains
     !
     ! !USES:
     use fileutils      , only : getavu, relavu
-    use clm_nlUtilsMod , only : find_nlgroup_name
+    use elm_nlUtilsMod , only : find_nlgroup_name
     use controlMod     , only : NLFilename
     use shr_mpi_mod    , only : shr_mpi_bcast
     !
@@ -240,7 +240,7 @@ contains
     !
     ! !USES:
     use landunit_varcon , only : istsoil
-    use clm_varpar      , only : natpft_lb, natpft_ub
+    use elm_varpar      , only : natpft_lb, natpft_ub
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds

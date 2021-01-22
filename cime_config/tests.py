@@ -37,6 +37,7 @@ _TESTS = {
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
+            "ERS.ELM_USRDAT.I1850ELM.elm-usrdat"
             )
         },
 
@@ -46,7 +47,7 @@ _TESTS = {
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.eam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM5A97",
+            "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
             )
@@ -91,8 +92,8 @@ _TESTS = {
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
         "tests" : (
-            "SMS_Ln5.ne30_ne30.FC5AV1C-L.eam-cosplite",
-            "SMS.ne30_r05_ne30.F20TRC5-CMIP6",
+            "SMS_Ln5.ne30pg2_r05_oECv3.F2010SC5-CMIP6.eam-wcprod",
+            "SMS.ne30pg2_r05_oECv3.F20TRC5-CMIP6.eam-wcprod",
             )
         },
 
@@ -152,15 +153,15 @@ _TESTS = {
             "PET.f45_g37_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S.allactive-mach-pet",
             "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
-            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
+            "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.elm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.eam-crmout",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-genmmf",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP.eam-genmmf",
             )
         },
 
@@ -210,7 +211,7 @@ _TESTS = {
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
-        "tests"   : "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6"
+        "tests"   : "SMS_Ld1.ne30pg2_r05_EC30to60E2r2-1900_ICG.A_WCYCL1850S_CMIP6.allactive-wcprod"
         },
 
     #e3sm tests to mimic BGC production runs

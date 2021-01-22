@@ -7,10 +7,15 @@ use element_mod, only: element_t
 use scamMod
 use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
-use time_manager, only: get_nstep, dtime
+use time_manager, only: get_nstep, dtime, is_first_step
 use ppgrid, only: begchunk
 use pmgrid, only: plev, plon
 use parallel_mod,            only: par
+#ifdef MODEL_THETA_L
+use element_ops, only: get_R_star
+use eos, only: pnh_and_exner_from_eos
+#endif
+use element_ops, only: get_temperature
 
 implicit none
 
@@ -155,7 +160,8 @@ subroutine scm_setfield(elem,iop_update_phase1)
   integer i, j, k, ie
 
   do ie=1,nelemd
-    if (have_ps .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs 
+    if (have_ps .and. use_replay .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs
+    if (have_ps .and. .not. use_replay) elem(ie)%state%ps_v(:,:,:) = psobs
     do i=1, PLEV
       ! If IOP mode do NOT write over dycore vertical velocity
       if ((have_omega .and. iop_update_phase1) .and. .not. iop_mode) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
@@ -172,7 +178,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use control_mod, only : use_cpstar, qsplit
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp, Rgas, cpwater_vapor
     use time_mod
     use constituents, only: pcnst
     use time_manager, only: get_nstep
@@ -192,15 +198,19 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi
+    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi, pnh
+    real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
+    real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
+    real (kind=real_kind), dimension(np,np,nlev) :: dpscm
     real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
     real (kind=real_kind) :: Qt,dt
     real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
     real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
-    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
+    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
     real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
     real (kind=real_kind) :: forecast_ps
+    real (kind=real_kind) :: temperature(np,np,nlev)
     logical :: wet
 
     integer:: icount
@@ -223,10 +233,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       np_todo = np
     endif
 
-    !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
-    !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
-    !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
-
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
@@ -239,6 +245,18 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
       dt=dtime
 
+#ifdef MODEL_THETA_L
+      ! If using the theta-l dycore then need to get the exner function
+      !   and reference levels "dp", so we can convert the SCM forecasted
+      !   temperature back potential temperature on reference levels.
+      dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
+      call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
+          dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
+#endif
+
+    ! Get temperature from dynamics state
+    call get_temperature(elem(ie),temperature,hvcoord,t1)
+
       do j=1,np_todo
         do i=1,np_todo
 
@@ -247,35 +265,46 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
 
           if (.not. use_3dfrc) then
-            dummy1(:) = 0.0_real_kind
+            temp_tend(:) = 0.0_real_kind
           else
-            dummy1(:) = elem(ie)%derived%fT(i,j,:)
+            temp_tend(:) = elem(ie)%derived%fT(i,j,:)
           endif
           dummy2(:) = 0.0_real_kind
           forecast_ps = elem(ie)%state%ps_v(i,j,t1)
+          
+#ifdef MODEL_THETA_L
+          ! At first time step the tendency term is set to the
+          !  initial condition temperature profile.  Do NOT use
+          !  as it will cause temperature profile to blow up.
+          if ( is_first_step() ) then
+            temp_tend(:) = 0.0
+          endif
+#endif          
 
           call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
             elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
             elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
             forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
             elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-#ifdef MODEL_THETA_L	    
-            elem(ie)%derived%FT(i,j,:),elem(ie)%derived%FT(i,j,:),&
-#else
-            elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
-#endif
-            forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
+            temperature(i,j,:),temperature(i,j,:),&
+            forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
             stateQin_qfcst,p(i,j,:),stateQin1,1,&
             tdiff_dyn,qdiff_dyn)         
 
+          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+
 #ifdef MODEL_THETA_L
-          elem(ie)%derived%FT(i,j,:) = forecast_t(:)
+          ! If running theta-l model then the forecast temperature needs
+          !   to be converted back to potential temperature on reference levels, 
+          !   which is what dp_coupling expects
+          call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+          elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
+                (Rgas*exner(i,j,:))
 #else
           elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
 #endif
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
-          elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
   
           tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
           qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)

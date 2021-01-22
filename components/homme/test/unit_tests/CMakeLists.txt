@@ -42,6 +42,9 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
 
   # Compile definitions and flags
   SET_TARGET_PROPERTIES(${target_name} PROPERTIES COMPILE_DEFINITIONS "${config_defines}")
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    TARGET_COMPILE_DEFINITIONS(${target_name} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+  ENDIF()
 
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${HOMME_SOURCE_DIR}/test/unit_tests/catch2/include")
   TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${include_dirs}")

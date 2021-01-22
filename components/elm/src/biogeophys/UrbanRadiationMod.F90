@@ -11,9 +11,9 @@ module UrbanRadiationMod
   use shr_sys_mod       , only : shr_sys_flush 
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use clm_varpar        , only : numrad
-  use clm_varcon        , only : isecspday, degpsec, namel
-  use clm_varctl        , only : iulog
+  use elm_varpar        , only : numrad
+  use elm_varcon        , only : isecspday, degpsec, namel
+  use elm_varctl        , only : iulog
   use abortutils        , only : endrun  
   use UrbanParamsType   , only : urbanparams_type
   use atm2lndType       , only : atm2lnd_type
@@ -58,7 +58,7 @@ contains
     ! Also net and upward longwave fluxes.
 
     ! !USES:
-    use clm_varcon          , only : spval, sb, tfrz
+    use elm_varcon          , only : spval, sb, tfrz
     use column_varcon       , only : icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager    , only : get_curr_date, get_step_size
@@ -337,7 +337,7 @@ contains
     ! multiple reflection. Also net longwave radiation for urban roof. 
     !
     ! !USES:
-    use clm_varcon , only : sb
+    use elm_varcon , only : sb
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                  
@@ -496,8 +496,8 @@ contains
             write(iulog,*) 'vf_sr      = ',vf_sr(l)
             write(iulog,*) 'vf_sw      = ',vf_sw(l)
             write(iulog,*) 'canyon_hwr = ',canyon_hwr(l)
-            write(iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write(iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          endif
       end do
 
@@ -676,8 +676,8 @@ contains
          end do
          if (iter >= n) then
             write (iulog,*) 'urban net longwave radiation error: no convergence'
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          endif
 
          ! total net longwave radiation for canyon. project wall fluxes to horizontal surface
@@ -701,8 +701,8 @@ contains
          err = lwnet_canyon(l) - (lwup_canyon(l) - lwdown(l))
          if (abs(err) > .10_r8 ) then
             write (iulog,*) 'urban net longwave radiation balance error',err
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
       end do

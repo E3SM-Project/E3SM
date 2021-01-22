@@ -5,9 +5,9 @@ module VegetationPropertiesType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use abortutils     , only : endrun
-  use clm_varpar     , only : nlevdecomp
-  use clm_varpar     , only : nsoilorder
-  use clm_varctl     , only : nu_com
+  use elm_varpar     , only : nlevdecomp
+  use elm_varpar     , only : nsoilorder
+  use elm_varctl     , only : nu_com
   !
   implicit none
   save
@@ -158,7 +158,7 @@ contains
   subroutine veg_vp_init(this)
     !
     ! !USES:
-    use clm_varpar, only : numrad, numpft 
+    use elm_varpar, only : numrad, numpft 
     use pftvarcon , only : ntree, smpso, smpsc, fnitr
     use pftvarcon , only : z0mr, displar, dleaf, rhol, rhos, taul, taus, xl
     use pftvarcon , only : c3psn, slatop, dsladlai, leafcn, flnr, woody

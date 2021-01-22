@@ -425,7 +425,7 @@ contains
     use shr_infnan_mod            , only : shr_infnan_isnan
     use abortutils                , only : endrun
     use shr_infnan_mod            , only : isnan => shr_infnan_isnan
-    use clm_varcon                , only : spval
+    use elm_varcon                , only : spval
     use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
     use MultiPhysicsProbConstants , only : MPP_THERMAL_TBASED_KSP_CLM
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
@@ -1082,7 +1082,7 @@ contains
     !
     ! !USES:
     use MultiPhysicsProbThermal   , only : MPPThermalSetSoils
-    use clm_varcon                , only : spval
+    use elm_varcon                , only : spval
     use mpp_varpar                , only : nlevgrnd, nlevsno
     !
     implicit none

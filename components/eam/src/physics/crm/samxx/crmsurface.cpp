@@ -42,8 +42,8 @@ void crmsurface(real1d &bflx) {
 
     fluxbv(j,i,icrm) = -(0.5*(v(0,j+YES3D+offy_v,i+offx_v,icrm)+v(0,j+offy_v,i+offx_v,icrm))+vg-vhl(icrm))/u_h0*tau00;
 
-    yakl::atomicAdd( taux0(icrm) , fluxbu(j,i,icrm)/(nx*ny) );
-    yakl::atomicAdd( tauy0(icrm) , fluxbv(j,i,icrm)/(nx*ny) );
+    yakl::atomicAdd( taux0(icrm) , fluxbu(j,i,icrm)/( (real) nx * (real) ny ) );
+    yakl::atomicAdd( tauy0(icrm) , fluxbv(j,i,icrm)/( (real) nx * (real) ny ) );
   });
 }
 

@@ -13,21 +13,21 @@ module ColumnDataType
   use shr_sys_mod     , only : shr_sys_flush
   use abortutils      , only : endrun
   use MathfuncMod     , only : dot_sum
-  use clm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
-  use clm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
-  use clm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
-  use clm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
-  use clm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
-  use clm_varcon      , only : c13ratio, c14ratio, secspday
-  use clm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
-  use clm_varctl      , only : use_hydrstress
-  use clm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
-  use clm_varctl      , only : use_erosion
-  use clm_varctl      , only : use_clm_interface, use_pflotran, pf_cmode
-  use clm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
-  use clm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
-  use clm_varctl      , only : pf_hmode, nu_com
+  use elm_varpar      , only : nlevsoi, nlevsno, nlevgrnd, nlevlak, nlevurb
+  use elm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
+  use elm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
+  use elm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
+  use elm_varcon      , only : watmin, bdsno, zsoi, zisoi, dzsoi_decomp
+  use elm_varcon      , only : c13ratio, c14ratio, secspday
+  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use elm_varctl      , only : use_hydrstress
+  use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
+  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
+  use elm_varctl      , only : hist_wrtch4diag, use_nitrif_denitrif, use_century_decomp
+  use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
+  use elm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
   use soilorder_varcon, only : smax, ks_sorption
@@ -610,7 +610,7 @@ module ColumnDataType
      real(r8), pointer :: plant_p_to_cwdp                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
 
     real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
-    ! Variables for clm_interface_funcsMod & pflotran
+    ! Variables for elm_interface_funcsMod & pflotran
     real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
     real(r8), pointer :: externalc_to_decomp_delta             (:)     => null() ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
@@ -983,7 +983,7 @@ contains
     !
     ! !USES:
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
-    use clm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
+    use elm_varctl     , only : iulog, use_cn, use_vancouver, use_mexicocity
     use column_varcon  , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
     use UrbanParamsType, only : urbanparams_vars
     !
@@ -6744,7 +6744,7 @@ contains
     !----------------------------------------------------------------
     ! bgc interface & pflotran:
     !----------------------------------------------------------------
-    if (use_clm_interface.and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface.and. (use_pflotran .and. pf_cmode)) then
         call col_cf_summary_pf(this, bounds, num_soilc, filter_soilc)
     end if
     !----------------------------------------------------------------
@@ -9182,7 +9182,7 @@ contains
     endif
 
     ! bgc interface & pflotran
-    if (use_clm_interface .and. (use_pflotran .and. pf_cmode)) then
+    if (use_elm_interface .and. (use_pflotran .and. pf_cmode)) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)
     end if
   
@@ -10708,7 +10708,7 @@ contains
     end do
 
     ! bgc interface & pflotran:
-    if (use_clm_interface) then
+    if (use_elm_interface) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)
     end if
   

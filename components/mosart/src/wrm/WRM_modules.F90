@@ -1022,7 +1022,7 @@ MODULE WRM_modules
 
         if (iter > 2) done = .true.
 
-        if (masterproc) write(iulog,'(2a,i6,g20.10,l4)') subname,' iteration ',iter,sum(dam_uptake_sum),done
+        !if (masterproc) write(iulog,'(2a,i6,g20.10,l4)') subname,' iteration ',iter,sum(dam_uptake_sum),done
 
      enddo
 

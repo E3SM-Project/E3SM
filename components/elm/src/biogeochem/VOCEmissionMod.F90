@@ -7,8 +7,8 @@ module VOCEmissionMod
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use clm_varctl         , only : iulog
-  use clm_varpar         , only : numpft, nlevcan
+  use elm_varctl         , only : iulog
+  use elm_varpar         , only : numpft, nlevcan
   use pftvarcon          , only : ndllf_evr_tmp_tree,  ndllf_evr_brl_tree
   use pftvarcon          , only : ndllf_dcd_brl_tree,  nbrdlf_evr_trp_tree
   use pftvarcon          , only : nbrdlf_evr_tmp_tree, nbrdlf_dcd_brl_shrub
@@ -22,7 +22,7 @@ module VOCEmissionMod
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
   use fileutils          , only : getfil
-  use clm_varcon         , only : grlnd
+  use elm_varcon         , only : grlnd
   use atm2lndType        , only : atm2lnd_type
   use CanopyStateType    , only : canopystate_type
   use PhotosynthesisType , only : photosyns_type
@@ -173,7 +173,7 @@ contains
     ! Initialize history output fields for MEGAN emissions diagnositics
     !
     ! !USES 
-    use clm_varcon  , only : spval
+    use elm_varcon  , only : spval
     use histFileMod , only : hist_addfld1d
     !
     ! !ARGUMENTS:
@@ -304,7 +304,7 @@ contains
     !
     ! !USES
     use ncdio_pio
-    use clm_varctl, only : fsurdat
+    use elm_varctl, only : fsurdat
     !
     ! !ARGUMENTS:
     class(vocemis_type) :: this
@@ -787,8 +787,8 @@ contains
     ! Guenther et al., 2006 eq 3
     !
     ! !USES:
-    use clm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varcon   , only : denice
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none
@@ -820,8 +820,8 @@ contains
     ! convert to volumetric soil water using equation 7.118 of the CLM4 Technical Note
     !
     ! !USES:
-    use clm_varcon   , only : denice
-    use clm_varpar   , only : nlevsoi
+    use elm_varcon   , only : denice
+    use elm_varpar   , only : nlevsoi
     !
     ! !ARGUMENTS:
     implicit none
@@ -1011,7 +1011,7 @@ contains
     ! Author: Colette L. Heald (11/30/11)
     !
     ! !USES:
-    use clm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
+    use elm_varctl,    only : co2_ppmv      ! corresponds to CCSM_CO2_PPMV set in env_conf.xml
     !
     ! !ARGUMENTS:
     implicit none

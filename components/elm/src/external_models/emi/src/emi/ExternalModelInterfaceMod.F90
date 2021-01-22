@@ -9,7 +9,7 @@ module ExternalModelInterfaceMod
   use shr_log_mod                           , only : errMsg => shr_log_errMsg
   use decompMod                             , only : bounds_type, get_proc_clumps
   use abortutils                            , only : endrun
-  use clm_varctl                            , only : iulog
+  use elm_varctl                            , only : iulog
   use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
@@ -74,14 +74,14 @@ contains
     ! Determine which EMs are active
     !
     ! !USES:
-    use clm_varctl, only : use_fates
+    use elm_varctl, only : use_fates
 #ifndef FATES_VIA_EMI
-    use clm_varctl, only : use_betr
-    use clm_varctl, only : use_pflotran
-    use clm_varctl, only : use_vsfm
+    use elm_varctl, only : use_betr
+    use elm_varctl, only : use_pflotran
+    use elm_varctl, only : use_vsfm
 #endif
-    use clm_varctl, only : use_petsc_thermal_model
-    use clm_varctl, only : use_em_stub
+    use elm_varctl, only : use_petsc_thermal_model
+    use elm_varctl, only : use_em_stub
     !
     implicit none
     !
@@ -187,15 +187,15 @@ contains
     use ExternalModelConstants, only : EM_ID_PTM
     use ExternalModelConstants, only : EM_ID_STUB
 #ifndef FATES_VIA_EMI
-    use clm_instMod           , only : soilstate_vars
-    use clm_instMod           , only : soilhydrology_vars
-    use clm_instMod           , only : waterflux_vars
-    use clm_instMod           , only : waterstate_vars
+    use elm_instMod           , only : soilstate_vars
+    use elm_instMod           , only : soilhydrology_vars
+    use elm_instMod           , only : waterflux_vars
+    use elm_instMod           , only : waterstate_vars
 #else
-    use clm_instMod           , only : soilstate_inst
-    use clm_instMod           , only : soilhydrology_inst
-    use clm_instMod           , only : waterflux_inst
-    use clm_instMod           , only : waterstate_inst
+    use elm_instMod           , only : soilstate_inst
+    use elm_instMod           , only : soilhydrology_inst
+    use elm_instMod           , only : waterflux_inst
+    use elm_instMod           , only : waterstate_inst
 #endif
     use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
     use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List

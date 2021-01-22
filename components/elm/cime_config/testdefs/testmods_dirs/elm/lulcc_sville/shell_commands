@@ -1,1 +1,1 @@
-./xmlchange CLM_BLDNML_OPTS="-irrig .true." -append
+./xmlchange ELM_BLDNML_OPTS="-irrig .true." -append

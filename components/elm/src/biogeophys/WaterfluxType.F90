@@ -6,7 +6,7 @@ module WaterfluxType
   ! !USES:
   use shr_kind_mod , only: r8 => shr_kind_r8
   use decompMod    , only : bounds_type, get_proc_global
-  use clm_varcon   , only : spval
+  use elm_varcon   , only : spval
   use LandunitType , only : lun_pp                
   use ColumnType   , only : col_pp                
   use VegetationType    , only : veg_pp                
@@ -173,7 +173,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar     , only : nlevsno, nlevgrnd, nlevsoi
+    use elm_varpar     , only : nlevsno, nlevgrnd, nlevsoi
     !
     ! !ARGUMENTS:
     class(waterflux_type) :: this
@@ -317,8 +317,8 @@ contains
     !
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use clm_varpar     , only : nlevsno, crop_prog, nlevsoi 
+    use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
+    use elm_varpar     , only : nlevsno, crop_prog, nlevsoi 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     !
     ! !ARGUMENTS:
@@ -395,10 +395,10 @@ contains
     ! 
     ! !USES:
     use spmdMod          , only : masterproc
-    use clm_varcon       , only : denice, denh2o, pondmx, watmin
+    use elm_varcon       , only : denice, denh2o, pondmx, watmin
     use landunit_varcon  , only : istcrop, istdlak, istsoil 
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_varpar       , only : nlevgrnd, nlevurb, nlevsno   
+    use elm_varpar       , only : nlevgrnd, nlevurb, nlevsno   
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
     use restUtilMod
     !

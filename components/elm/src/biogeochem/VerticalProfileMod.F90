@@ -51,9 +51,9 @@ contains
     !  SoilLittDecompMod uses the standard filters that just apply over active points
     ! 
     ! !USES:
-    use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
-    use clm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
+    use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
+    use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:

@@ -482,6 +482,7 @@ MODULE MOSART_physics_mod
        call estimate_returnflow_deficit()
        if (ctlSubwWRM%ExtractionFlag > 0) then
           StorWater%deficit = StorWater%demand
+          StorWater%deficit = StorWater%deficit/Tctl%DeltaT !change it back from mm/timestep to mm/s for output
        endif
        call t_stopf('mosartr_wrm_estrfdef')
     endif

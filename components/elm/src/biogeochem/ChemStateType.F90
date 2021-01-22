@@ -42,7 +42,7 @@ module ChemStateType
     ! Initialize module data structure
     !
     ! !USES:
-    use clm_varpar            , only : nlevsoi
+    use elm_varpar            , only : nlevsoi
     !
     ! !ARGUMENTS:
     class(chemstate_type)            :: this

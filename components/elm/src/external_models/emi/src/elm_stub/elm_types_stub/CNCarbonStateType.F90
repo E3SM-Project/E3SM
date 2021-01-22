@@ -16,7 +16,7 @@ module CNCarbonStateType
   use clm_varctl             , only : nu_com, use_fates, use_crop
 
   ! bgc interface & pflotran
-  use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use clm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   
   ! 
   ! !PUBLIC TYPES:

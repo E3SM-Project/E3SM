@@ -9,9 +9,9 @@ module UrbanFluxesMod
   use shr_sys_mod          , only : shr_sys_flush 
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
-  use clm_varpar           , only : numrad
-  use clm_varcon           , only : isecspday, degpsec, namel
-  use clm_varctl           , only : iulog
+  use elm_varpar           , only : numrad
+  use elm_varcon           , only : isecspday, degpsec, namel
+  use elm_varctl           , only : iulog
   use abortutils           , only : endrun  
   use UrbanParamsType      , only : urbanparams_type
   use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac 
@@ -54,16 +54,16 @@ contains
     ! shadewall, pervious and impervious road).
 
     ! !USES:
-    use clm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
-    use clm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
+    use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
+    use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni
     use QSatMod             , only : QSat
-    use clm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
+    use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
-    use clm_varctl          , only : use_vsfm
+    use elm_varctl          , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds    
@@ -299,16 +299,16 @@ contains
             write (iulog,*) 'h_r - z_d <= z_0'
             write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
          if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
             write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
             write (iulog,*) 'h_u - z_d <= z_0'
             write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
                  z_0_town(l)
-            write (iulog,*) 'clm model is stopping'
-            call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            write (iulog,*) 'elm model is stopping'
+            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
 
          ! Magnitude of atmospheric wind
@@ -591,7 +591,7 @@ contains
                write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
                write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
                write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
-               call endrun(decomp_index=l, clmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
+               call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
             end if
 
             taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
@@ -820,13 +820,13 @@ contains
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
          if (abs(eflx_err(indexl)) > .01_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than .01 W/m**2'
+            write(iulog,*)'elm model is stopping - error is greater than .01 W/m**2'
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
             write(iulog,*)'eflx          = ',eflx(indexl)
             ! test code, PET
             write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(indexl))
-            call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 
@@ -844,10 +844,10 @@ contains
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
-            write(iulog,*)'clm model is stopping - error is greater than 4.e-9 kg/m**2/s'
+            write(iulog,*)'elm model is stopping - error is greater than 4.e-9 kg/m**2/s'
             write(iulog,*)'qflx_scale    = ',qflx_scale(indexl)
             write(iulog,*)'qflx          = ',qflx(indexl)
-            call endrun(decomp_index=indexl, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 

@@ -191,23 +191,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-      ! If IOP mode, do not consider physics temperature tendency
-      !   since that will be redundant.  In pure SCM mode, that section 
-      !   of dycore is not called and thus needs to be added here.  
-#ifdef MODEL_THETA_L
-        ! theta_l model prog variable is temp tendency
-        if (iop_mode) then 
-          tfcst(k) = t3m2(k) + divt3d(k)
-        else
-          tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
-        endif
-#else
-        if (iop_mode) then
-          tfcst(k) = t3m2(k) + ztodt*divt3d(k)
-        else
-          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
-        endif
-#endif
+        tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
       end do
       do m=1,pcnst
          do k=1,plev
@@ -286,16 +270,9 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
-#ifdef MODEL_THETA_L  
-       fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
-       tfcst(k) = t3m2(k) &
-           - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
-           + wfldint(k)*(t3m1(k) - t3m1(k-1)))
-#else
        tfcst(k) = t3m2(k) &
            - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
            + wfldint(k)*(t3m1(k) - t3m1(k-1)))
-#endif
        vfcst(k) = v3m2(k) &
            - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)) &
            + wfldint(k)*(v3m1(k) - v3m1(k-1)))
@@ -317,12 +294,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
      k = 1
      fac = ztodt/(2.0_r8*pdelm1(k))
-#ifdef MODEL_THETA_L
-     fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
-     tfcst(k) = t3m2(k) - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
-#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
-#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
      do m=1,pcnst
@@ -332,12 +304,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
      k = plev
      fac = ztodt/(2.0_r8*pdelm1(plev))
-#ifdef MODEL_THETA_L
-     fac_t = 1.0_r8/(2.0_r8*pdelm1(plev))
-     tfcst(k) = t3m2(k) - fac_t*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
-#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
-#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
      do m=1,pcnst
@@ -519,26 +486,13 @@ end if
 !
 
    do k=1,plev
-     ! If IOP mode, do not consider physics temperature tendency
-     !   since that will be redundant.  In pure SCM mode, that section 
-     !   of dycore is not called and thus needs to be added here.   
-#ifdef MODEL_THETA_L
-     ! in theta_l model, prog variable is temp tendency, not temp 
-     if (iop_mode) then
-       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) + divt(k)     
-     else
-       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
-         + (t2(k) + divt(k))
-     endif
-#else
-     if (iop_mode) then
-       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
-         + ztodt*(divt(k))     
-     else
-       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
-         + ztodt*(t2(k) + divt(k))
-     endif
+     tfcst(k) = tfcst(k) &
+#ifndef MODEL_THETA_L
+       ! this term is already taken into account through
+       !  LS vertical advection term in theta-l dycore
+       + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
 #endif
+       + ztodt*(t2(k) + divt(k))
      do m=1,pcnst
        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
      end do

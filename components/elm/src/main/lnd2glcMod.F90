@@ -19,9 +19,9 @@ module lnd2glcMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : get_proc_bounds, bounds_type
   use domainMod       , only : ldomain
-  use clm_varpar      , only : maxpatch_glcmec
-  use clm_varctl      , only : iulog
-  use clm_varcon      , only : spval, tfrz, namec
+  use elm_varpar      , only : maxpatch_glcmec
+  use elm_varctl      , only : iulog
+  use elm_varcon      , only : spval, tfrz, namec
   use column_varcon   , only : col_itype_to_icemec_class
   use landunit_varcon , only : istice_mec, istsoil
   use abortutils      , only : endrun
@@ -81,7 +81,7 @@ contains
     ! Initialize land variables required by glc
     !
     ! !USES:
-    use clm_varcon , only : spval
+    use elm_varcon , only : spval
     use histFileMod, only : hist_addfld1d
     !
     ! !ARGUMENTS:
@@ -207,7 +207,7 @@ contains
          write(iulog,*) 'One possible cause is having multiple columns in the istsoil landunit,'
          write(iulog,*) 'which this routine cannot handle.'
          write(iulog,*) 'g, n = ', g, n
-         call endrun(decomp_index=c, clmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+         call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
       end if
 
       ! Send surface temperature, topography, and SMB flux (qice) to coupler.

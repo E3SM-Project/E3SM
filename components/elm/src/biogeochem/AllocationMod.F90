@@ -8,9 +8,9 @@ module AllocationMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use clm_varcon          , only : dzsoi_decomp
-  use clm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
-  use clm_varctl          , only : nyears_ad_carbon_only
+  use elm_varcon          , only : dzsoi_decomp
+  use elm_varctl          , only : use_c13, use_c14, use_nitrif_denitrif, spinup_state
+  use elm_varctl          , only : nyears_ad_carbon_only
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
@@ -35,11 +35,11 @@ module AllocationMod
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf, veg_ps, veg_pf
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf  
   ! bgc interface & pflotran module switches
-  use clm_varctl          , only: use_clm_interface,use_clm_bgc, use_pflotran, pf_cmode
-  use clm_varctl          , only : nu_com
+  use elm_varctl          , only: use_elm_interface,use_elm_bgc, use_pflotran, pf_cmode
+  use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
 
   !
   implicit none
@@ -182,14 +182,14 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use clm_varcon      , only: secspday
+    use elm_varcon      , only: secspday
     use clm_time_manager, only: get_step_size, get_curr_date
-    use clm_varpar      , only: crop_prog
-    use clm_varctl      , only: iulog, cnallocate_carbon_only_set
-    use clm_varctl      , only: cnallocate_carbonnitrogen_only_set
-    use clm_varctl      , only: cnallocate_carbonphosphorus_only_set
+    use elm_varpar      , only: crop_prog
+    use elm_varctl      , only: iulog, cnallocate_carbon_only_set
+    use elm_varctl      , only: cnallocate_carbonnitrogen_only_set
+    use elm_varctl      , only: cnallocate_carbonphosphorus_only_set
     use shr_infnan_mod  , only: nan => shr_infnan_nan, assignment(=)
-    use clm_varpar      , only: nlevdecomp
+    use elm_varpar      , only: nlevdecomp
     !
     ! !ARGUMENTS:
     implicit none
@@ -301,13 +301,13 @@ contains
     ! PHASE-1 of Allocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
-    use clm_varpar       , only: nlevdecomp
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
-    use clm_varctl       , only: cnallocate_carbon_only_set
+    use elm_varpar       , only: nlevdecomp
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varctl       , only: cnallocate_carbon_only_set
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size, get_curr_date
     !
@@ -1048,7 +1048,7 @@ contains
       end do
 
       ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_clm_interface.and.use_pflotran .and. pf_cmode) then
+      if (use_elm_interface.and.use_pflotran .and. pf_cmode) then
             do j = 1, nlevdecomp
                do fc=1, num_soilc
                   c = filter_soilc(fc)
@@ -1074,16 +1074,16 @@ contains
     ! PHASE-2 of Allocation:  resolving N/P limitation
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
 !    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
 !    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean 
     use pftvarcon        , only: noveg
-    use clm_varpar       , only: nlevdecomp, ndecomp_cascade_transitions
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varpar       , only: nlevdecomp, ndecomp_cascade_transitions
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size
-    use clm_varcon       , only : zisoi
+    use elm_varcon       , only : zisoi
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -2838,14 +2838,14 @@ contains
 
     ! !USES:
     use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
+    use elm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
 !    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
 !    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use pftvarcon        , only: noveg
     use pftvarcon        , only:  npcropmin, grperc, grpnow
-    use clm_varpar       , only:  nlevdecomp 
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
+    use elm_varpar       , only:  nlevdecomp 
+    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
 !    use landunit_varcon  , only: istsoil, istcrop
     use clm_time_manager , only: get_step_size
     !
@@ -4045,7 +4045,7 @@ contains
     ! bgc interface & pflotran:
     ! nuptake_prof is used in Allocation1, 2, 3
     ! !USES:
-    use clm_varpar       , only: nlevdecomp
+    use elm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
@@ -4119,7 +4119,7 @@ contains
     ! bgc interface & pflotran:
     ! puptake_prof is used in Allocation1, 2, & 3
     ! !USES:
-    use clm_varpar       , only: nlevdecomp
+    use elm_varpar       , only: nlevdecomp
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter

@@ -9,8 +9,8 @@ module UrbanParamsType
   use shr_log_mod  , only : errMsg => shr_log_errMsg
   use abortutils   , only : endrun
   use decompMod    , only : bounds_type
-  use clm_varctl   , only : iulog, fsurdat
-  use clm_varcon   , only : namel, grlnd, spval
+  use elm_varctl   , only : iulog, fsurdat
+  use elm_varcon   , only : namel, grlnd, spval
   use LandunitType , only : lun_pp                
   !
   implicit none
@@ -117,10 +117,10 @@ module UrbanParamsType
     !
     ! !USES:
     use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
-    use clm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
-    use clm_varpar      , only : nlevsoi, nlevgrnd
-    use clm_varctl      , only : use_vancouver, use_mexicocity
-    use clm_varcon      , only : vkc
+    use elm_varpar      , only : nlevcan, nlevcan, numrad, nlevgrnd, nlevurb
+    use elm_varpar      , only : nlevsoi, nlevgrnd
+    use elm_varctl      , only : use_vancouver, use_mexicocity
+    use elm_varcon      , only : vkc
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_road_perv
     use landunit_varcon , only : isturb_MIN
@@ -296,14 +296,14 @@ module UrbanParamsType
           sumvf = this%vf_sr(l) + 2._r8*this%vf_wr(l)
           if (abs(sumvf-1._r8) > 1.e-06_r8 ) then
              write (iulog,*) 'urban road view factor error',sumvf
-             write (iulog,*) 'clm model is stopping'
-             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+             write (iulog,*) 'elm model is stopping'
+             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
           endif
           sumvf = this%vf_sw(l) + this%vf_rw(l) + this%vf_ww(l)
           if (abs(sumvf-1._r8) > 1.e-06_r8 ) then
              write (iulog,*) 'urban wall view factor error',sumvf
-             write (iulog,*) 'clm model is stopping'
-             call endrun(decomp_index=l, clmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+             write (iulog,*) 'elm model is stopping'
+             call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
           endif
 
           !----------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ module UrbanParamsType
     ! Allocate memory and read in urban input data
     !
     ! !USES:
-    use clm_varpar      , only : numrad, nlevurb
+    use elm_varpar      , only : numrad, nlevurb
     use landunit_varcon , only : numurbl
     use fileutils       , only : getavu, relavu, getfil, opnfil
     use spmdMod         , only : masterproc
@@ -720,7 +720,7 @@ module UrbanParamsType
     ! true, abort with a message.
     !
     ! !USES:
-    use clm_varsur      , only : urban_valid
+    use elm_varsur      , only : urban_valid
     use landunit_varcon , only : numurbl
     !
     ! !ARGUMENTS:

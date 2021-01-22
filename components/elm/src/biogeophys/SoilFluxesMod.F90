@@ -10,8 +10,8 @@ module SoilFluxesMod
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
   use perf_mod		, only : t_startf, t_stopf
-  use clm_varctl	, only : iulog
-  use clm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
+  use elm_varctl	, only : iulog
+  use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
   use EnergyFluxType    , only : energyflux_type
@@ -47,7 +47,7 @@ contains
     !
     ! !USES:
     use clm_time_manager , only : get_step_size
-    use clm_varcon       , only : hvap, cpair, grav, vkc, tfrz, sb 
+    use elm_varcon       , only : hvap, cpair, grav, vkc, tfrz, sb 
     use landunit_varcon  , only : istsoil, istcrop
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use subgridAveMod    , only : p2c

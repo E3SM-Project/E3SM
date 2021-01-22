@@ -14,8 +14,8 @@ module prim_cxx_driver_base
   public :: prim_finalize
 
   private :: generate_global_to_local
-  public :: init_cxx_connectivity
-  public :: setup_element_pointers
+  public  :: init_cxx_connectivity
+  public  :: setup_element_pointers
 
 #include <mpif.h>
 

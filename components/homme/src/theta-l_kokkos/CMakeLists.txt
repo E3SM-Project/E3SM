@@ -21,6 +21,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${UTILS_TIMING_SRC_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${HOMME_BINARY_DIR}/src/share/cxx)
+
   SET (EXEC_INCLUDE_DIRS
     ${EXEC_LIB_INCLUDE_DIRS}
     ${PIO_INCLUDE_DIRS}
@@ -97,6 +98,9 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/viscosity_base.F90
     ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
+    ${SRC_SHARE_DIR}/planar_mod.F90
+    ${SRC_SHARE_DIR}/geometry_mod.F90
+    ${SRC_SHARE_DIR}/planar_mesh_mod.F90
   )
 
   SET(TEST_SRC_F90
@@ -114,6 +118,8 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/dcmip2016-terminator.F90
     ${TEST_SRC_DIR}/dcmip2016-tropical-cyclone.F90
     ${TEST_SRC_DIR}/held_suarez_mod.F90
+    ${TEST_SRC_DIR}/dry_planar.F90
+    ${TEST_SRC_DIR}/moist_planar.F90
     ${TEST_SRC_DIR}/mtests.F90
   )
 
@@ -181,11 +187,11 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(THETAL_DEPS_F90
     ${THETAL_DEPS_F90}
     ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
-    )
+  )
   SET(THETAL_DEPS_CXX
     ${THETAL_DEPS_CXX}
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
-    )
+  )
 
   IF (HOMME_USE_ARKODE)
     SET(THETAL_DEPS_F90
@@ -221,16 +227,16 @@ MACRO(THETAL_KOKKOS_SETUP)
 
   # Set up defaults
   IF (NOT PREQX_NP)
-    SET (PREQX_NP 4)
+    SET (PREQX_NP 4) 
   ENDIF ()
   IF (NOT PREQX_PLEV)
-    SET (PREQX_PLEV 20)
+    SET (PREQX_PLEV 20) 
   ENDIF ()
   IF (NOT PREQX_USE_PIO)
-    SET (PREQX_USE_PIO FALSE)
+    SET (PREQX_USE_PIO FALSE) 
   ENDIF ()
   IF (NOT PREQX_USE_ENERGY)
-    SET (PREQX_USE_ENERGY FALSE)
+    SET (PREQX_USE_ENERGY FALSE) 
   ENDIF ()
   IF (NOT PREQX_NC)
     SET (PREQX_NC 0)
@@ -239,7 +245,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     SET (QSIZE_D 4)
   ENDIF ()
   # for some of matt's old scripts which use preqx_qsize_d
-  IF (PREQX_QSIZE_D)
+  IF (PREQX_QSIZE_D)      
     SET (QSIZE_D ${PREQX_QSIZE_D})
   ENDIF ()
 
@@ -255,5 +261,12 @@ IF (HOMME_BUILD_EXECS)
   # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
   ############################################################################
   createTestExec(theta-l_kokkos theta-l_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
+ENDIF ()
+
+IF (HOMME_BUILD_LIBS)
+  THETAL_KOKKOS_SETUP()
+
+  createExecLib(theta-l_kokkos_lib theta-l_kokkos "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
+      ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
 ENDIF ()
 

@@ -9,7 +9,7 @@ module lnd_import_export
   use glc2lndMod   , only: glc2lnd_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
-  use clm_cpl_indices
+  use elm_cpl_indices
   use mct_mod
   !
   implicit none
@@ -25,11 +25,11 @@ contains
     ! Convert the input data from the coupler to the land model 
     !
     ! !USES:
-    use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
+    use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
-    use clm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
-    use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
-    use clm_varcon       , only: rair, o2_molar_const, c13ratio
+    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
+    use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
+    use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
@@ -37,7 +37,7 @@ contains
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
     use spmdmod          , only: masterproc, mpicom, iam, npes, MPI_REAL8, MPI_INTEGER, MPI_STATUS_SIZE
-    use clm_nlUtilsMod   , only : find_nlgroup_name
+    use elm_nlUtilsMod   , only : find_nlgroup_name
     use netcdf
     !
     ! !ARGUMENTS:
@@ -1152,7 +1152,7 @@ contains
          call endrun( sub//' ERROR: Invalid co2_type_idx, must be 0, 1, or 2 (constant, prognostic, or diagnostic)' )
        end if
        ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
-       ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
+       ! If using C13, then get the c13ratio from elm_varcon (constant value for pre-industrial atmosphere)
 
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)
@@ -1308,11 +1308,11 @@ contains
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
-    ! Convert the data to be sent from the clm model to the coupler 
+    ! Convert the data to be sent from the elm model to the coupler 
     ! 
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
-    use clm_varctl         , only : iulog, create_glacier_mec_landunit
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit
     use clm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep

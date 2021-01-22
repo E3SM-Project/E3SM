@@ -23,6 +23,7 @@ module ice_comp_mct
    use shr_taskmap_mod,   only : shr_taskmap_write
    use shr_pio_mod
    use perf_mod
+   use shr_strdata_mod,   only : shr_strdata_type
 
    ! MPASSI driver modules
    use mpassi_cpl_indices
@@ -56,8 +57,9 @@ module ice_comp_mct
    use seaice_time_integration
    use seaice_error, only: seaice_check_critical_error
 
-   use ice_constants_colpkg, only: &
-       Tffresh
+   use ice_constants_colpkg, only: Tffresh
+
+   use ice_colpkg, only: colpkg_sea_freezing_temperature
 
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -98,6 +100,10 @@ module ice_comp_mct
    type (core_type), pointer :: corelist => null()
    type (domain_type), pointer :: domain
    integer :: itimestep, ice_cpl_dt
+
+   ! prescribed ice mode
+   type(shr_strdata_type) :: &
+        sdat ! prescribed data stream   
 
 !=======================================================================
 
@@ -718,6 +724,14 @@ contains
 
 !----------------------------------------------------------------------------
 !
+!   Initialize ice prescribed mode
+!
+!----------------------------------------------------------------------------
+
+    call ice_prescribed_init( domain, ICEID, gsmap_i, dom_i )
+
+!----------------------------------------------------------------------------
+!
 !   Reset shr logging to original values
 !
 !----------------------------------------------------------------------------
@@ -738,6 +752,198 @@ contains
 !EOC
 
  end subroutine ice_init_mct!}}}
+
+!***********************************************************************
+!BOP
+!
+! !IROUTINE: ice_prescribed_init
+!
+! !INTERFACE:
+  subroutine ice_prescribed_init( domain, compid, gsmap, dom )!{{{
+!
+! !DESCRIPTION:
+! Initialize prescribed ice
+!
+! !USES:
+    use shr_pio_mod, only: &
+         shr_pio_getiotype, &
+         shr_pio_getiosys
+    use seq_comm_mct, only: &
+         seq_comm_name
+    use shr_cal_mod, only: &
+         shr_cal_noleap, &
+         shr_cal_gregorian
+    use shr_strdata_mod, only: &
+         shr_strdata_create
+    use shr_kind_mod, only: &
+         SHR_KIND_IN
+    include 'mpif.h'
+! !INPUT/OUTPUT PARAMETERS:
+    type (domain_type), pointer :: &
+         domain
+    integer, intent(in) :: &
+         compid
+    type(mct_gsMap) :: &
+         gsmap
+    type(mct_gGrid) :: &
+         dom
+!
+! !REVISION HISTORY:
+! Author: Adrian K. Turner
+!EOP
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+    integer(SHR_KIND_IN), parameter :: nFilesMaximum = 400 ! max number of files
+
+    integer, pointer :: stream_year_first   ! first year in stream to use
+    integer, pointer :: stream_year_last    ! last year in stream to use
+    integer, pointer :: model_year_align    ! align stream_year_first
+                                   ! with this model year
+    character(len=strKIND), pointer :: stream_fldVarName
+    character(len=strKIND), pointer :: stream_fldFileNameIn
+    character(len=strKIND) :: stream_fldFileName(nFilesMaximum)
+    character(len=strKIND), pointer :: stream_domTvarName
+    character(len=strKIND), pointer :: stream_domXvarName
+    character(len=strKIND), pointer :: stream_domYvarName
+    character(len=strKIND), pointer :: stream_domAreaName
+    character(len=strKIND), pointer :: stream_domMaskName
+    character(len=strKIND), pointer :: stream_domFileName
+    character(len=strKIND), pointer :: stream_mapread
+    logical, pointer :: stream_fill ! true if data fill required
+
+    integer :: &
+         ierr, &
+         iFile, &
+         nFiles
+
+    character(len=8) :: &
+         fillalgo
+
+    character(len=16) :: &
+         inst_name
+
+    integer, pointer :: &
+         nCellsSolve
+
+    Integer :: &
+         nCells
+
+    character(len=strKIND), pointer :: &
+         config_calendar_type
+
+    character(len=strKIND) :: &
+         calendar_type
+
+    logical, pointer :: &
+         config_use_prescribed_ice
+
+    call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
+    if (config_use_prescribed_ice) then
+
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_year_first", stream_year_first)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_year_last", stream_year_last)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_model_year_align", model_year_align)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_fldvarname", stream_fldVarName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_fldfilename", stream_fldFileNameIn)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_domtvarname", stream_domTvarName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_domxvarname", stream_domXvarName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_domyvarname", stream_domYvarName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_domareaname", stream_domAreaName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_dommaskname", stream_domMaskName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_domfilename", stream_domFileName)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_mapread", stream_mapread)
+       call mpas_pool_get_config(domain % configs, "config_prescribed_ice_stream_fill", stream_fill)
+
+       ! file array
+       stream_fldFileName(1) = trim(stream_fldFileNameIn)
+       do iFile = 2, nFilesMaximum
+          stream_fldFileName(iFile) = ' '
+       end do
+
+       ! file number
+       nFiles = 0
+       do iFile = 1, nFilesMaximum
+          if (stream_fldFileName(iFile) /= ' ') nFiles = nFiles + 1
+       end do
+
+       ! Read shr_strdata_nml namelist
+       if (stream_fill) then
+          fillalgo='nn'
+       else
+          fillalgo='none'
+       endif
+
+       call MPAS_log_write(' ')
+       call MPAS_log_write('This is the prescribed ice coverage option.')
+       call MPAS_log_write('  stream_year_first  = $i', intArgs=(/stream_year_first/))
+       call MPAS_log_write('  stream_year_last   = $i', intArgs=(/stream_year_last/))
+       call MPAS_log_write('  model_year_align   = $i', intArgs=(/model_year_align/))
+       call MPAS_log_write('  stream_fldVarName  = '//trim(stream_fldVarName))
+       do iFile = 1, nFiles
+          call MPAS_log_write('  stream_fldFileName = $i: '//trim(stream_fldFileName(iFile)), intArgs=(/iFile/))
+       end do
+       call MPAS_log_write('  stream_domTvarName = '//trim(stream_domTvarName))
+       call MPAS_log_write('  stream_domXvarName = '//trim(stream_domXvarName))
+       call MPAS_log_write('  stream_domYvarName = '//trim(stream_domYvarName))
+       call MPAS_log_write('  stream_domFileName = '//trim(stream_domFileName))
+       call MPAS_log_write('  stream_domAreaName = '//trim(stream_domAreaName))
+       call MPAS_log_write('  stream_domMaskName = '//trim(stream_domMaskName))
+       call MPAS_log_write('  stream_mapread     = '//trim(stream_mapread))
+       call MPAS_log_write('  stream_fillalgo    = '//trim(fillalgo))
+       call MPAS_log_write(' ')
+
+       inst_name = seq_comm_name(compid)
+
+       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCellsSolve", nCellsSolve)
+       call MPI_Allreduce(nCellsSolve, nCells, 1, MPI_Integer, MPI_SUM, domain % dminfo % comm, ierr)
+       
+
+       call MPAS_pool_get_config(domain % configs, "config_calendar_type", config_calendar_type)
+       if (trim(config_calendar_type) == "gregorian") then
+          calendar_type = shr_cal_gregorian
+       else if (trim(config_calendar_type) == "gregorian_noleap") then
+          calendar_type = shr_cal_noleap
+       else
+          call MPAS_log_write("ice_prescribed_init: Unknown calendar type: "//trim(config_calendar_type))
+       endif
+
+       call shr_strdata_create( &
+            sdat, &
+            name = "prescribed_ice", &
+            mpicom = domain % dminfo % comm, &
+            compid = compid, &
+            gsmap = gsmap, &
+            ggrid = dom, &
+            nxg = nCells, &
+            nyg = 1, &
+            yearFirst = stream_year_first, &
+            yearLast = stream_year_last, &
+            yearAlign = model_year_align, &
+            offset = 0, &
+            domFilePath = '', &
+            domFileName = trim(stream_domFileName), &
+            domTvarName = trim(stream_domTvarName), &
+            domXvarName = trim(stream_domXvarName), &
+            domYvarName = trim(stream_domYvarName), &
+            domAreaName = trim(stream_domAreaName), &
+            domMaskName = trim(stream_domMaskName), &
+            filePath = '', &
+            filename = stream_fldFileName(1:nFiles), &
+            fldListFile = trim(stream_fldVarName), &
+            fldListModel = trim(stream_fldVarName), &
+            pio_subsystem = shr_pio_getiosys(inst_name), &
+            pio_iotype = shr_pio_getiotype(inst_name), &
+            fillalgo = trim(fillalgo), &
+            calendar = trim(calendar_type), &
+            mapread = trim(stream_mapread))
+
+    endif ! config_use_prescribed_ice
+
+  end subroutine ice_prescribed_init
 
 !***********************************************************************
 !BOP
@@ -865,6 +1071,9 @@ contains
         write (WCstring,'(F18.3)') current_wallclock_time
         call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
 
+        ! get prescribed ice coverage
+        call ice_prescribed_run(domain, currTime)
+
         ! pre-timestep analysis computation
         if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
         call seaice_analysis_precompute(domain, ierr)
@@ -962,6 +1171,108 @@ contains
 !EOC
 
   end subroutine ice_run_mct!}}}
+
+
+!***********************************************************************
+!BOP
+!
+! !IROUTINE: ice_prescribed_run
+!
+! !INTERFACE:
+  subroutine ice_prescribed_run( domain, currTime )!{{{
+!
+! !DESCRIPTION:
+! Set ice coverage for prescribed ice mode
+!
+! !USES:
+    use shr_strdata_mod, only: &
+         shr_strdata_advance
+! !INPUT/OUTPUT PARAMETERS:
+    type (domain_type), pointer :: &
+         domain
+    type (MPAS_Time_Type), intent(in) :: &
+         currTime
+!
+! !REVISION HISTORY:
+! Author: Adrian K. Turner
+!EOP
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+    logical, pointer :: &
+         config_use_prescribed_ice
+
+    integer :: &
+         mDateIn, &
+         secIn, &
+         YYYY, MM, DD, DoY, H, M, S, &
+         ierr
+
+    integer :: &
+         n, &
+         iCell
+
+    type (block_type), pointer :: &
+         block_ptr
+
+    type (mpas_pool_type), pointer :: &
+         meshPool, &
+         prescribedIcePool
+
+    integer, pointer :: &
+         nCellsSolve
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceCoverage
+
+    type (field1DReal), pointer :: &
+         iceCoverageField
+    
+    call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
+    if (config_use_prescribed_ice) then
+
+       call MPAS_get_time(currTime, YYYY, MM, DD, DoY, H, M, S, ierr)
+       mDateIn = YYYY * 10000 + MM * 100 + DD
+       secIn = H * 3600 + M * 60 + S
+
+       call shr_strdata_advance(&
+            sdat, &
+            mDateIn, &
+            SecIn, &
+            domain % dminfo % comm, &
+            'mpassi_pice')
+
+       n = 0
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+
+          call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call MPAS_pool_get_subpool(block_ptr % structs, 'prescribed_ice', prescribedIcePool)
+
+          call MPAS_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+          call MPAS_pool_get_array(prescribedIcePool, 'iceCoverage', iceCoverage)
+
+          iceCoverage(:) = 0.0_RKIND
+
+          do iCell = 1, nCellsSolve
+             n = n + 1
+             iceCoverage(iCell) = sdat % avs(1) % rAttr(1,n)
+          enddo ! iCell
+
+          block_ptr => block_ptr % next
+       end do
+
+       call MPAS_pool_get_subpool(domain % blocklist % structs, 'prescribed_ice', prescribedIcePool)
+       call MPAS_pool_get_field(prescribedIcePool, 'iceCoverage', iceCoverageField)
+       call MPAS_dmpar_exch_halo_field(iceCoverageField)
+
+    endif
+
+  end subroutine ice_prescribed_run
 
 !***********************************************************************
 !BOP
@@ -1607,6 +1918,9 @@ contains
         n = n + 1
         seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
+
+        seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
         seaSurfaceTiltU(i)             = x2i_i % rAttr(index_x2i_So_dhdx, n)
@@ -1740,9 +2054,6 @@ contains
 !-----------------------------------------------------------------------
       do i = 1, nCellsSolve
         seaSurfaceTemperature(i)  = seaSurfaceTemperature(i) - seaiceFreshWaterFreezingPoint
-        seaFreezingTemperature(i) = -1.8_RKIND                 ! hardwired for NCOM
-             !         Tf (i,j,iblk) = -depressT*sss(i,j,iblk)       ! freezing temp (C)
-             !         Tf (i,j,iblk) = -depressT*max(sss(i,j,iblk),ice_ref_salinity)
 
         if (config_use_column_biogeochemistry) then
            ! convert from mmol C/m^3 to mmol N/m^3

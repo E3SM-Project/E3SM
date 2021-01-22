@@ -5,8 +5,8 @@ module readParamsMod
   ! Read parameters
   ! module used to read parameters for individual modules
   !
-  use clm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
-  use clm_varctl   , only: use_lch4, use_fates
+  use elm_varctl   , only: use_cn, use_century_decomp, use_nitrif_denitrif
+  use elm_varctl   , only: use_lch4, use_fates
   implicit none
   save
   private
@@ -37,7 +37,7 @@ contains
 
     use SharedParamsMod       , only : ParamsReadShared
 
-    use clm_varctl              , only : paramfile, iulog
+    use elm_varctl              , only : paramfile, iulog
     use spmdMod                 , only : masterproc
     use fileutils               , only : getfil
     use ncdio_pio               , only : ncd_pio_closefile, ncd_pio_openfile, &
@@ -89,7 +89,7 @@ contains
     use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
     use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
     use CH4Mod                   , only : readCH4Params
-    use clm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress
+    use elm_varctl               , only : paramfile, iulog, use_betr, use_hydrstress
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &

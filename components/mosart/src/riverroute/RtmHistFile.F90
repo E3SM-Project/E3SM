@@ -92,7 +92,7 @@ module RtmHistFile
 ! !PRIVATE TYPES:
 ! Constants
 !
-  integer, parameter :: max_chars = 128        ! max chars for char variables
+  integer, parameter :: max_chars = 256        ! max chars for char variables
 !
 ! Subscript dimensions
 !
@@ -634,8 +634,6 @@ contains
     type(file_desc_t) :: lnfid     ! local file id
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
-    character(len=256) :: name     ! name of attribute
-    character(len=256) :: units    ! units of attribute
     character(len=256) :: str      ! global attribute string
     character(len=  1) :: avgflag  ! time averaging flag
     character(len=*),parameter :: subname = 'htape_create'
@@ -921,7 +919,6 @@ contains
     integer :: yrm1                ! nstep-1 year (0 -> ...)
     integer :: mcsecm1             ! nstep-1 time of day [seconds]
     real(r8):: time                ! current time
-    character(len=256):: str       ! global attribute string
     character(len=1)  :: avgflag   ! averaging flag
     real(r8), pointer :: histo(:)  ! temporary
     real(r8), pointer :: hbuf(:)   ! history buffer

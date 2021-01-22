@@ -51,7 +51,6 @@ public:
   int num_elems() const { return m_num_elems; }
 
   // Fill the exec space views with data coming from F90 pointers
-  void set_phis (const int ie, CF90Ptr& phis);
   void set_elem_data (const int ie,
                       CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                       CF90Ptr& spheremp, CF90Ptr& rspheremp,
@@ -59,6 +58,7 @@ public:
                       CF90Ptr& tensorvisc,
                       CF90Ptr& vec_sph2cart, const bool consthv);
 
+  void set_phis (const int ie, CF90Ptr& phis);
 private:
   bool m_consthv;
   int m_num_elems;

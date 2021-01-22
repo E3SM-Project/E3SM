@@ -58,6 +58,8 @@ OPTIONS
                            Options are: free, non-free
      -iceberg_mode         variable for iceberg mode
                            Options are: none, data, prognostic
+     -prognostic_mode      variable for prognostic mode
+                           Options are: full, prescribed
      -ntasks_ice           NTASKS_ICE for this case
      -ninst_ice            NINST_ICE for this case
 
@@ -90,46 +92,48 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help          => 0,
-             test          => 0,
-             verbose       => 0,
-             preview       => 0,
-             caseroot      => undef,
-             casebuild     => undef,
-             cimeroot      => undef,
-             inst_string   => undef,
-             ice_grid      => undef,
-             decomp_prefix => undef,
-             date_stamp    => undef,
-             ic_mode       => undef,
-             ice_bgc       => undef,
-             surface_mode  => undef,
-             iceberg_mode  => undef,
-             cfg_dir       => $cfgdir,
-             ntasks_ice    => 0,
-             ninst_ice     => 0,
+my %opts = ( help            => 0,
+             test            => 0,
+             verbose         => 0,
+             preview         => 0,
+             caseroot        => undef,
+             casebuild       => undef,
+             cimeroot        => undef,
+             inst_string     => undef,
+             ice_grid        => undef,
+             decomp_prefix   => undef,
+             date_stamp      => undef,
+             ic_mode         => undef,
+             ice_bgc         => undef,
+             surface_mode    => undef,
+             iceberg_mode    => undef,
+             prognostic_mode => undef,
+             cfg_dir         => $cfgdir,
+             ntasks_ice      => 0,
+             ninst_ice       => 0,
            );
 
 GetOptions(
-    "h|help"          => \$opts{'help'},
-    "infile=s"        => \$opts{'infile'},
-    "namelist=s"      => \$opts{'namelist'},
-    "v|verbose"       => \$opts{'verbose'},
-    "caseroot=s"      => \$opts{'caseroot'},
-    "casebuild=s"     => \$opts{'casebuild'},
-    "cimeroot=s"      => \$opts{'cimeroot'},
-    "inst_string=s"   => \$opts{'inst_string'},
-    "ice_grid=s"      => \$opts{'ice_grid'},
-    "decomp_prefix=s" => \$opts{'decomp_prefix'},
-    "date_stamp=s"    => \$opts{'date_stamp'},
-    "ic_mode=s"       => \$opts{'ic_mode'},
-    "ice_bgc=s"       => \$opts{'ice_bgc'},
-    "surface_mode=s"  => \$opts{'surface_mode'},
-    "iceberg_mode=s"  => \$opts{'iceberg_mode'},
-    "cfg_dir=s"       => \$opts{'cfg_dir'},
-    "preview"         => \$opts{'preview'},
-    "ntasks_ice=i"    => \$opts{'ntasks_ice'},
-    "ninst_ice=i"     => \$opts{'ninst_ice'},
+    "h|help"            => \$opts{'help'},
+    "infile=s"          => \$opts{'infile'},
+    "namelist=s"        => \$opts{'namelist'},
+    "v|verbose"         => \$opts{'verbose'},
+    "caseroot=s"        => \$opts{'caseroot'},
+    "casebuild=s"       => \$opts{'casebuild'},
+    "cimeroot=s"        => \$opts{'cimeroot'},
+    "inst_string=s"     => \$opts{'inst_string'},
+    "ice_grid=s"        => \$opts{'ice_grid'},
+    "decomp_prefix=s"   => \$opts{'decomp_prefix'},
+    "date_stamp=s"      => \$opts{'date_stamp'},
+    "ic_mode=s"         => \$opts{'ic_mode'},
+    "ice_bgc=s"         => \$opts{'ice_bgc'},
+    "surface_mode=s"    => \$opts{'surface_mode'},
+    "iceberg_mode=s"    => \$opts{'iceberg_mode'},
+    "prognostic_mode=s" => \$opts{'prognostic_mode'},
+    "cfg_dir=s"         => \$opts{'cfg_dir'},
+    "preview"           => \$opts{'preview'},
+    "ntasks_ice=i"      => \$opts{'ntasks_ice'},
+    "ninst_ice=i"       => \$opts{'ninst_ice'},
 )  or usage();
 
 # Give usage message.
@@ -153,20 +157,21 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MPASSI configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT      = $opts{'caseroot'};
-my $CASEBUILD     = $opts{'casebuild'};
-my $CIMEROOT      = $opts{'cimeroot'};
-my $inst_string   = $opts{'inst_string'};
-my $ICE_GRID      = $opts{'ice_grid'};
-my $decomp_prefix = $opts{'decomp_prefix'};
-my $date_stamp    = $opts{'date_stamp'};
-my $ic_mode       = $opts{'ic_mode'};
-my $ice_bgc       = $opts{'ice_bgc'};
-my $surface_mode  = $opts{'surface_mode'};
-my $iceberg_mode  = $opts{'iceberg_mode'};
-my $NINST_ICE     = $opts{'ninst_ice'};
-my $NTASKS_ICE    = $opts{'ntasks_ice'};
-$cfgdir           = $opts{'cfg_dir'};
+my $CASEROOT        = $opts{'caseroot'};
+my $CASEBUILD       = $opts{'casebuild'};
+my $CIMEROOT        = $opts{'cimeroot'};
+my $inst_string     = $opts{'inst_string'};
+my $ICE_GRID        = $opts{'ice_grid'};
+my $decomp_prefix   = $opts{'decomp_prefix'};
+my $date_stamp      = $opts{'date_stamp'};
+my $ic_mode         = $opts{'ic_mode'};
+my $ice_bgc         = $opts{'ice_bgc'};
+my $surface_mode    = $opts{'surface_mode'};
+my $iceberg_mode    = $opts{'iceberg_mode'};
+my $prognostic_mode = $opts{'prognostic_mode'};
+my $NINST_ICE       = $opts{'ninst_ice'};
+my $NTASKS_ICE      = $opts{'ntasks_ice'};
+$cfgdir             = $opts{'cfg_dir'};
 
 my $CIMEROOT;     
 if ( defined $opts{'cimeroot'} ) {
@@ -411,6 +416,21 @@ my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 
+my $SSTICE_GRID_FILENAME;
+my $SSTICE_DATA_FILENAME;
+my $SSTICE_YEAR_ALIGN;
+my $SSTICE_YEAR_START;
+my $SSTICE_YEAR_END;
+my $SSTICE_STREAM;
+if ($prognostic_mode eq 'prescribed') {
+    $SSTICE_GRID_FILENAME = $xmlvars{'SSTICE_GRID_FILENAME'};
+    $SSTICE_DATA_FILENAME = $xmlvars{'SSTICE_DATA_FILENAME'};
+    $SSTICE_YEAR_ALIGN    = $xmlvars{'SSTICE_YEAR_ALIGN'};
+    $SSTICE_YEAR_START    = $xmlvars{'SSTICE_YEAR_START'};
+    $SSTICE_YEAR_END      = $xmlvars{'SSTICE_YEAR_END'};
+    $SSTICE_STREAM        = $xmlvars{'SSTICE_STREAM'};
+}
+
 my $output_r = "./${CASE}.mpassi.r";
 my $output_h = "./${CASE}.mpassi.h";
 my $output_d = "./${CASE}.mpassi.d";
@@ -533,10 +553,21 @@ add_default($nl, 'config_calculate_coriolis');
 # Namelist group: use_sections #
 ################################
 
+if ($prognostic_mode eq 'prescribed') {
+    add_default($nl, 'config_use_dynamics', 'val'=>".false");
+} else {
+    add_default($nl, 'config_use_dynamics');
+}
 add_default($nl, 'config_use_velocity_solver');
 add_default($nl, 'config_use_advection');
 add_default($nl, 'config_use_forcing');
 add_default($nl, 'config_use_column_package');
+if ($prognostic_mode eq 'prescribed') {
+    add_default($nl, 'config_use_prescribed_ice', 'val'=>".true.");
+} else {
+    add_default($nl, 'config_use_prescribed_ice');
+}
+add_default($nl, 'config_use_prescribed_ice_forcing');
 
 ###########################
 # Namelist group: forcing #
@@ -599,7 +630,11 @@ if ($ice_bgc eq 'ice_bgc') {
 } else {
         add_default($nl, 'config_use_column_biogeochemistry', 'val'=>".false.");
 }
-add_default($nl, 'config_use_column_itd_thermodynamics');
+if ($prognostic_mode eq 'prescribed') {
+        add_default($nl, 'config_use_column_itd_thermodynamics', 'val'=>".false.");
+} else {
+        add_default($nl, 'config_use_column_itd_thermodynamics');
+}
 add_default($nl, 'config_use_column_ridging');
 add_default($nl, 'config_use_column_snow_tracers');
 
@@ -892,6 +927,53 @@ if ($iceberg_mode eq 'data') {
 
 add_default($nl, 'config_check_state');
 
+##################################
+# Namelist group: prescribed_ice #
+##################################
+
+if ($prognostic_mode eq 'prescribed') {
+        if ($SSTICE_GRID_FILENAME eq 'UNSET') {
+                die "SSTICE_GRID_FILENAME must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_DATA_FILENAME eq 'UNSET') {
+                die "SSTICE_DATA_FILENAME must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_ALIGN eq '-999') {
+                die "SSTICE_YEAR_ALIGN must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_START eq '-999') {
+                die "SSTICE_YEAR_START must be set for MPAS-Seaice prescribed mode \n";
+        }
+        if ($SSTICE_YEAR_END eq '-999') {
+                die "SSTICE_YEAR_END must be set for MPAS-Seaice prescribed mode \n";
+        }
+        my $stream_domxvarname;
+        my $stream_domyvarname;
+        if ($SSTICE_STREAM eq 'CAMDATA') {
+                $stream_domxvarname = "xc";
+                $stream_domyvarname = "yc";
+        } elsif ($SSTICE_STREAM eq 'WRFDATA') {
+                $stream_domxvarname = "xc";
+                $stream_domyvarname = "yc";
+        } else {
+                $stream_domxvarname = "lon";
+                $stream_domyvarname = "lat";
+        }
+        add_default($nl, 'config_prescribed_ice_stream_year_first' , 'val'=>"$SSTICE_YEAR_START");
+        add_default($nl, 'config_prescribed_ice_stream_year_last'  , 'val'=>"$SSTICE_YEAR_END");
+        add_default($nl, 'config_prescribed_ice_model_year_align'  , 'val'=>"$SSTICE_YEAR_ALIGN");
+        add_default($nl, 'config_prescribed_ice_stream_fldvarname' , 'val'=>"ice_cov");
+        add_default($nl, 'config_prescribed_ice_stream_fldfilename', 'val'=>"$SSTICE_DATA_FILENAME");
+        add_default($nl, 'config_prescribed_ice_stream_domtvarname', 'val'=>"time");
+        add_default($nl, 'config_prescribed_ice_stream_domxvarname', 'val'=>"$stream_domxvarname");
+        add_default($nl, 'config_prescribed_ice_stream_domyvarname', 'val'=>"$stream_domyvarname");
+        add_default($nl, 'config_prescribed_ice_stream_domareaname', 'val'=>"area");
+        add_default($nl, 'config_prescribed_ice_stream_dommaskname', 'val'=>"mask");
+        add_default($nl, 'config_prescribed_ice_stream_domfilename', 'val'=>"$SSTICE_GRID_FILENAME");
+        add_default($nl, 'config_prescribed_ice_stream_mapread'    , 'val'=>'NOT_SET');
+        add_default($nl, 'config_prescribed_ice_stream_fill'       , 'val'=>'.false.');
+}
+
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
 ##########################################
@@ -1146,6 +1228,7 @@ my @groups = qw(seaice_model
                 atmosphere
                 ocean
                 diagnostics
+                prescribed_ice
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics

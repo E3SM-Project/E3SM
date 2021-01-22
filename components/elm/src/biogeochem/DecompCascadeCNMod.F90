@@ -9,10 +9,10 @@ module DecompCascadeCNMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_const_mod          , only : SHR_CONST_TKFRZ
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
-  use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
-  use clm_varcon             , only : zsoi
+  use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
+  use elm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use SharedParamsMod      , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
@@ -621,8 +621,8 @@ contains
      !
      ! !USES:
      use clm_time_manager, only : get_step_size, get_nstep, get_curr_date
-     use clm_varcon      , only : secspday
-     use clm_varpar      , only : i_cwd
+     use elm_varcon      , only : secspday
+     use elm_varpar      , only : i_cwd
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds          

@@ -22,7 +22,7 @@
 // Whether the MPI operations have to be performed directly on the device
 #cmakedefine01 HOMMEXX_MPI_ON_DEVICE
 
-#cmakedefine01 HOMMEXX_CUDA_SHARE_BUFFER
+#cmakedefine HOMMEXX_CUDA_SHARE_BUFFER
 
 // Minimum and maximum number of warps to provide to a team
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}

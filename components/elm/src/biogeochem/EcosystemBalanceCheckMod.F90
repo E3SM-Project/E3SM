@@ -10,33 +10,33 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
+  use elm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
   use clm_time_manager    , only : get_step_size,get_nstep
-  use clm_varpar          , only : crop_prog
+  use elm_varpar          , only : crop_prog
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use clm_varpar          , only : nlevdecomp
-  use clm_varcon          , only : dzsoi_decomp
-  use clm_varctl          , only : nu_com
-  use clm_varctl          , only : ECA_Pconst_RGspin
+  use elm_varpar          , only : nlevdecomp
+  use elm_varcon          , only : dzsoi_decomp
+  use elm_varctl          , only : nu_com
+  use elm_varctl          , only : ECA_Pconst_RGspin
 
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use clm_varpar          , only: ndecomp_cascade_transitions
+  use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   ! soil erosion
-  use clm_varctl          , only : use_erosion, ero_ccycle
+  use elm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
+  use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
   use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
-  use clm_varctl          , only : forest_fert_exp
+  use elm_varctl          , only : forest_fert_exp
   use pftvarcon           , only: noveg
-  use clm_varctl          , only : NFIX_PTASE_plant
+  use elm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
   use GridcellDataType    , only : gridcell_carbon_state, grc_cf
   use GridcellDataType    , only : grc_ns, grc_nf, grc_ps, grc_pf

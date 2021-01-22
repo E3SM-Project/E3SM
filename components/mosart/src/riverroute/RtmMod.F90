@@ -2742,7 +2742,6 @@ contains
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input demand -not included-  = ',nt,budget_global(br_qdem,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
           if (output_all_budget_terms) then
             write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
@@ -3233,7 +3232,15 @@ contains
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%frac, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read frac ',minval(Tunit%frac),maxval(Tunit%frac)
      call shr_sys_flush(iulog)
-
+     
+     if (wrmflag) then
+       allocate(TUnit%domainfrac(begr:endr))
+       ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
+       call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
+       if (masterproc) write(iulog,FORMR) trim(subname),' read domainfrac ',minval(Tunit%domainfrac),maxval(Tunit%domainfrac)
+       call shr_sys_flush(iulog)
+     endif
+     
      ! read fdir, convert to mask
      ! fdir <0 ocean, 0=outlet, >0 land
      ! tunit mask is 0=ocean, 1=land, 2=outlet for mosart calcs
@@ -3262,6 +3269,15 @@ contains
         else
            call shr_sys_abort(subname//' Tunit mask error')
         endif
+       
+       if (wrmflag) then       
+        if (Tunit%domainfrac(n) == 0) then
+          Tunit%domainfrac(n) = 1
+        elseif (Tunit%domainfrac(n) < 0) then
+          write(iulog,*) subname,' ERROR domain frac < 0',n,Tunit%domainfrac(n)
+          call shr_sys_abort(subname//' Tunit domainfrac error')
+        endif
+       endif
      enddo
 
      allocate(TUnit%ID0(begr:endr))  
