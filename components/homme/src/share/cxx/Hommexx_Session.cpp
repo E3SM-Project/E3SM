@@ -43,13 +43,17 @@ void print_homme_config_settings () {
 #ifdef HOMMEXX_SHA1
   std::cout << "HOMMEXX SHA1: " << HOMMEXX_SHA1 << "\n";
 #endif
-  std::cout << "HOMMEXX VECTOR_SIZE: " << VECTOR_SIZE << "\n";
-  std::cout << "HOMMEXX vector tag: " << Scalar::label() << "\n";
-  std::cout << "HOMMEXX active AVX set:" << active_avx_string() << "\n";
-  std::cout << "HOMMEXX MPI_ON_DEVICE: " << HOMMEXX_MPI_ON_DEVICE << "\n";
-  std::cout << "HOMMEXX CUDA_SHARE_BUFFER: " << HOMMEXX_CUDA_SHARE_BUFFER << "\n";
-  std::cout << "HOMMEXX CUDA_(MIN/MAX)_WARP_PER_TEAM: " << HOMMEXX_CUDA_MIN_WARP_PER_TEAM
-            << " / " << HOMMEXX_CUDA_MAX_WARP_PER_TEAM << "\n";
+    std::cout << "HOMMEXX VECTOR_SIZE: " << VECTOR_SIZE << "\n";
+    std::cout << "HOMMEXX vector tag: " << Scalar::label() << "\n";
+    std::cout << "HOMMEXX active AVX set:" << active_avx_string() << "\n";
+    std::cout << "HOMMEXX MPI_ON_DEVICE: " << HOMMEXX_MPI_ON_DEVICE << "\n";
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
+    std::cout << "HOMMEXX CUDA_SHARE_BUFFER: on\n";
+#else
+    std::cout << "HOMMEXX CUDA_SHARE_BUFFER: off\n";
+#endif
+    std::cout << "HOMMEXX CUDA_(MIN/MAX)_WARP_PER_TEAM: " << HOMMEXX_CUDA_MIN_WARP_PER_TEAM
+              << " / " << HOMMEXX_CUDA_MAX_WARP_PER_TEAM << "\n";
 #ifndef HOMMEXX_NO_VECTOR_PRAGMAS
   std::cout << "HOMMEXX has vector pragmas\n";
 #else

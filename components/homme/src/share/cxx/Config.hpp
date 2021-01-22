@@ -12,6 +12,13 @@
 # ifdef HAVE_CONFIG_H
 #  include "config.h.c"
 # endif
+#else
+// Establish a good candidate vector size for eam builds
+# ifdef CUDA_BUILD
+#  define HOMMEXX_VECTOR_SIZE 1
+# else
+#  define HOMMEXX_VECTOR_SIZE 8
+# endif
 #endif
 
 #if ! defined HOMMEXX_CUDA_SPACE && ! defined HOMMEXX_OPENMP_SPACE && ! defined HOMMEXX_THREADS_SPACE && ! defined HOMMEXX_SERIAL_SPACE

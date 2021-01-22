@@ -4,7 +4,7 @@
 #include "Types.hpp"
 #include "ExecSpaceDefs.hpp"
 
-#include "../../algorithms/src/Kokkos_Random.hpp"
+#include "Kokkos_Random.hpp"
 
 #include <chrono>
 #include <cassert>
@@ -108,7 +108,7 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 template <>
 class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 {
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
   using Device = Kokkos::Device<Kokkos::Cuda, typename Kokkos::Cuda::memory_space>;
   using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
   using view_1d = ExecView<flag_type*>;
@@ -125,7 +125,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.25) :
     _TeamUtilsCommonBase<Kokkos::Cuda>(policy)
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
     , _num_ws_slots(_league_size > _num_teams
                     ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)
                     : _num_teams)
@@ -134,7 +134,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
     , _rand_pool()
 #endif
   {
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
     if (_need_ws_sharing) {
       _rand_pool = RandomGenerator(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     }
@@ -142,7 +142,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   }
 
   // How many ws slots are there
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
   int get_num_ws_slots() const { return _num_ws_slots; }
 #else
   int get_num_ws_slots() const { return _league_size; }
@@ -152,7 +152,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   KOKKOS_INLINE_FUNCTION
   int get_workspace_idx(const MemberType& team_member) const
   {
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
     if (!_need_ws_sharing) {
       return team_member.league_rank();
     }
@@ -186,7 +186,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   KOKKOS_INLINE_FUNCTION
   void release_workspace_idx(const MemberType& team_member, int ws_idx) const
   {
-#if HOMMEXX_CUDA_SHARE_BUFFER
+#ifdef HOMMEXX_CUDA_SHARE_BUFFER
     if (_need_ws_sharing) {
       team_member.team_barrier();
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
