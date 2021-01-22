@@ -60,6 +60,12 @@ contains
        integrationType, &
        integrationOrder)!{{{
 
+    use seaice_mesh, only: &
+         seaice_cell_vertices_at_vertex
+
+    use seaice_velocity_solver_variational_shared, only: &
+         seaice_calc_variational_metric_terms
+
     use seaice_velocity_solver_wachspress, only: &
          seaice_init_velocity_solver_wachspress
 
@@ -84,6 +90,29 @@ contains
     integer, intent(in) :: &
          integrationOrder !< Input:
 
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         tanLatVertexRotatedOverRadius
+
+    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+
+    call mpas_timer_start("variational calc_metric_terms")
+    call seaice_calc_variational_metric_terms(&
+         mesh, &
+         tanLatVertexRotatedOverRadius, &
+         rotateCartesianGrid, &
+         includeMetricTerms)
+    call mpas_timer_stop("variational calc_metric_terms")
+
+    call mpas_timer_start("wachpress vertices_at_vertex")
+    call seaice_cell_vertices_at_vertex(&
+         mesh, &
+         cellVerticesAtVertex)
+    call mpas_timer_stop("wachpress vertices_at_vertex")
+
     if (trim(variationalBasisType) == "wachspress") then
 
        call seaice_init_velocity_solver_wachspress(&
@@ -103,6 +132,14 @@ contains
             boundary, &
             rotateCartesianGrid, &
             includeMetricTerms)
+
+    else if (trim(variationalBasisType) == "none") then
+
+       continue
+
+    else
+
+       call MPAS_log_write("Unknown variational basis type: "//trim(variationalBasisType), MPAS_LOG_CRIT)
 
     endif
 
@@ -316,6 +353,13 @@ contains
             tanLatVertexRotatedOverRadius, &
             solveStress)
        call mpas_timer_stop("Velocity solver strain tensor")
+
+       !call mpas_timer_start("Velocity solver strain average")
+       !call seaice_average_strains_on_vertex(&
+       !     strain11, &
+       !     strain22, &
+       !     strain12)
+       !call mpas_timer_stop("Velocity solver strain average")
 
        call mpas_timer_start("Velocity solver stress tensor")
        call seaice_stress_tensor_variational(&
@@ -574,6 +618,95 @@ contains
     enddo ! iCell
 
   end subroutine seaice_strain_tensor_variational!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_average_strains_on_vertex
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_average_strains_on_vertex(&
+       strain11, &
+       strain22, &
+       strain12)
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nVerticesSolve, &
+         cellVerticesAtVertex, &
+         cellsOnVertex, &
+         vertexDegree
+
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         strain11, & !< Input/Output:
+         strain22, & !< Input/Output:
+         strain12    !< Input/Output:
+
+    real(kind=RKIND) :: &
+         strain11avg, &
+         strain22avg, &
+         strain12avg
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         iVertexOnCell, &
+         nCellsSum
+
+    do iVertex = 1, nVerticesSolve
+
+       strain11avg = 0.0
+       strain22avg = 0.0
+       strain12avg = 0.0
+       nCellsSum = 0
+
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          if (iCell <= nCells) then
+
+             iVertexOnCell = cellVerticesAtVertex(iVertexDegree,iVertex)
+
+             strain11avg = strain11avg + strain11(iVertexOnCell,iCell)
+             strain22avg = strain22avg + strain22(iVertexOnCell,iCell)
+             strain12avg = strain12avg + strain12(iVertexOnCell,iCell)
+             nCellsSum = nCellsSum + 1
+
+          endif
+
+       enddo ! iVertexDegree
+
+       strain11avg = strain11avg / real(nCellsSum,RKIND)
+       strain22avg = strain22avg / real(nCellsSum,RKIND)
+       strain12avg = strain12avg / real(nCellsSum,RKIND)
+
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          if (iCell <= nCells) then
+
+             iVertexOnCell = cellVerticesAtVertex(iVertexDegree,iVertex)
+
+             strain11(iVertexOnCell,iCell) = strain11avg
+             strain22(iVertexOnCell,iCell) = strain22avg
+             strain12(iVertexOnCell,iCell) = strain12avg
+
+          endif
+
+       enddo ! iCellOnVertex
+
+    enddo ! iVertex
+
+  end subroutine seaice_average_strains_on_vertex
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
