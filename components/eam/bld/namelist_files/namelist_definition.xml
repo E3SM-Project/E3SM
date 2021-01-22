@@ -367,7 +367,7 @@ If phys_chnk_fdim is less than 1 (so runtime pcols is calculated)
 and phys_chnk_fdim_max is greater than 0, then phys_chnk_fdim_max
 is an upper bound on the size of the runtime pcols parameter.
 Otherwise it is ignored.
-Default: 16 when no overriding rules. See namelist_defaults_cam.xml
+Default: 16 when no overriding rules. See namelist_defaults_eam.xml
 </entry>
 
 <entry id="phys_chnk_fdim_mult" type="integer"  category="perf_dp_coup"
@@ -378,7 +378,7 @@ less than 1 (so ignored) or phys_chnk_fdim_mult is less than or equal to
 phys_chnk_fdim_max, then the runtime pcols is required to be an integer
 multiple of phys_chnk_fdim_mult. This can be useful for memory alignment
 of local variables. 
-Default: 1 when no overriding rules. See namelist_defaults_cam.xml
+Default: 1 when no overriding rules. See namelist_defaults_eam.xml
 </entry>
 
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
