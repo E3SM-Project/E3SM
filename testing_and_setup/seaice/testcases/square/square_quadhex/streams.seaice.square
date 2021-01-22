@@ -51,6 +51,7 @@
 	<var name="icePressure"/>
 	<var name="fVertex"/>
 	<var name="interiorVertex"/>
+	<var name="interiorCell"/>
 	<var name="principalStress1Var"/>
 	<var name="principalStress2Var"/>
 	<var name="principalStress1Weak"/>
@@ -61,6 +62,9 @@
 	<var name="basisIntegralsMetric"/>
 	<var name="basisGradientU"/>
 	<var name="basisGradientV"/>
+	<var name="strain11var"/>
+	<var name="strain22var"/>
+	<var name="strain12var"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

@@ -10,21 +10,21 @@ operatorMethods = ["wachspress","pwl","weak"]
 gridTypes = ["hex","quad"]
 #gridTypes = ["quad"]
 
-grids = {"hex" :["0082x0094",
-                 "0164x0188",
-                 "0328x0376",
-                 "0656x0752"],
-         "quad":["0080x0080",
-                 "0160x0160",
-                 "0320x0320",
-                 "0640x0640"]}
-#grids = {"hex" :["0082x0094"],
-#         "quad":["0080x0080"]}
+#grids = {"hex" :["0082x0094",
+#                 "0164x0188",
+#                 "0328x0376",
+#                 "0656x0752"],
+#         "quad":["0080x0080",
+#                 "0160x0160",
+#                 "0320x0320",
+#                 "0640x0640"]}
+grids = {"hex" :["0082x0094"],
+         "quad":["0080x0080"]}
 
 
 #subcycleNumbers = [120,240,480,960,1920,3840,7680,15360,30720]
-subcycleNumbers = [120,240,480,960,1920,3840,7680]
-#subcycleNumbers = [120,240]
+#subcycleNumbers = [120,240,480,960,1920,3840,7680]
+subcycleNumbers = [120]
 
 for gridType in gridTypes:
 
@@ -65,6 +65,6 @@ for gridType in gridTypes:
                 os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, subcycleNumber))
                 os.system("ln -s streams.seaice.square streams.seaice")
 
-                os.system("../../../../seaice_model")
+                os.system("../../../../../seaice_model")
 
                 os.system("mv output output_%s_%s_%s_%i" %(gridType, operatorMethod, grid, subcycleNumber))

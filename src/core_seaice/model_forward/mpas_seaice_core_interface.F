@@ -134,28 +134,20 @@ module seaice_core_interface
           config_use_velocity_solver
 
      character(len=strKIND), pointer :: &
-          config_stress_divergence_scheme, &
-          config_variational_basis
+          config_stress_divergence_scheme
 
      logical, pointer :: &
           pkgWeakActive, &
-          pkgVariationalActive, &
-          pkgWachspressActive, &
-          pkgPieceWiseLinearActive
+          pkgVariationalActive
 
      !pkgWeak
      !pkgVariational
-     !pkgWachspress
-     !pkgPieceWiseLinear
 
      call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
      call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
-     call MPAS_pool_get_config(configPool, "config_variational_basis", config_variational_basis)
 
      call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
      call MPAS_pool_get_package(packagePool, "pkgVariationalActive", pkgVariationalActive)
-     call MPAS_pool_get_package(packagePool, "pkgWachspressActive", pkgWachspressActive)
-     call MPAS_pool_get_package(packagePool, "pkgPieceWiseLinearActive", pkgPieceWiseLinearActive)
 
      ! is the velocity solver on
      if (config_use_velocity_solver) then
@@ -170,25 +162,6 @@ module seaice_core_interface
 
            ! variational stress divergence scheme
            pkgVariationalActive = .true.
-
-           ! variational basis function scheme
-           if (trim(config_variational_basis) == "wachspress") then
-
-              ! wachspress basis functions
-              pkgWachspressActive = .true.
-
-           else if (trim(config_variational_basis) == "pwl") then
-
-              ! piecewise linear basis functions
-              pkgPieceWiseLinearActive = .true.
-
-           else
-
-              ! unknown value of config_variational_basis
-              call mpas_log_write("Unknown variational scheme: "//trim(config_variational_basis))
-              ierr = 1
-
-           endif ! config_variational_basis
 
         else
 
