@@ -26,6 +26,7 @@ MACHINE_METADATA = {
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/blake/bin:$PATH",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/pnetcdf-/install/blake/bin:$PATH",
+                   "export INTEL_LICENSE_FILE=/home/projects/x86-64/intel/licenses/USE_SERVER.lic"  # speeds up license lookup
                   ],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc -N 1 srun -n1 --preserve-env",
