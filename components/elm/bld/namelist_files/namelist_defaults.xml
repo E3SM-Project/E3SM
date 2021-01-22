@@ -201,10 +201,10 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <!-- ne0np4_northamericax4v1.pg2 -->
-<fsurdat hgrid="northamericax4v1pg2"   sim_year="1850" use_crop=".false." >
+<fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr1850_c210112.nc</fsurdat>
 
-<fsurdat hgrid="northamericax4v1pg2"   sim_year="2010" use_crop=".false." >
+<fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr2010_c210112.nc</fsurdat>
 
 <!-- f10 resolution -->
