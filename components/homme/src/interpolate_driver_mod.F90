@@ -228,8 +228,8 @@ contains
           if(varnames(i) == '') exit
           ret = PIO_inq_varid(InFile%FileID, varnames(i), varid)
           if (ret==PIO_NOERR) then
-             varnames_list(i)=varnames(i)
              varcnt=varcnt+1
+             varnames_list(varcnt)=varnames(i)
           else
              if (par%masterproc) print *,'skipping requested variable=',trim(varnames(i))
           endif
