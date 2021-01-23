@@ -2355,8 +2355,6 @@
 		<!-- dynamics packages -->
 		<package name="pkgWeak" description=""/>
 		<package name="pkgVariational" description=""/>
-		<package name="pkgWachspress" description=""/>
-		<package name="pkgPieceWiseLinear" description=""/>
 
 		<!-- column package packages -->
 		<package name="pkgColumnPackage" description=""/>

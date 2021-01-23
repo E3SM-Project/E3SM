@@ -54,12 +54,8 @@ contains
 
     use mpas_timer
 
-    use seaice_mesh, only: &
-         seaice_cell_vertices_at_vertex
-
     use seaice_velocity_solver_variational_shared, only: &
-         seaice_calc_local_coords, &
-         seaice_calc_variational_metric_terms
+         seaice_calc_local_coords
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -89,12 +85,6 @@ contains
     integer, dimension(:), pointer :: &
          nEdgesOnCell
 
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
-
     real(kind=RKIND), dimension(:,:), allocatable :: &
          xLocal, &
          yLocal
@@ -120,8 +110,6 @@ contains
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
-    call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
-    call MPAS_pool_get_array(velocity_variational, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
     call MPAS_pool_get_array(velocity_variational, "basisGradientU", basisGradientU)
     call MPAS_pool_get_array(velocity_variational, "basisGradientV", basisGradientV)
     call MPAS_pool_get_array(velocity_variational, "basisIntegralsU", basisIntegralsU)
@@ -141,14 +129,6 @@ contains
          yLocal, &
          rotateCartesianGrid)
     call mpas_timer_stop("wachpress calc_local_coords")
-
-    call mpas_timer_start("wachpress calc_metric_terms")
-    call seaice_calc_variational_metric_terms(&
-         mesh, &
-         tanLatVertexRotatedOverRadius, &
-         rotateCartesianGrid, &
-         includeMetricTerms)
-    call mpas_timer_stop("wachpress calc_metric_terms")
 
     call mpas_timer_start("wachpress calc_coefficients")
     call calc_wachspress_coefficients(&
@@ -186,12 +166,6 @@ contains
          integrationType, &
          integrationOrder)
     call mpas_timer_stop("wachpress integrate")
-
-    call mpas_timer_start("wachpress vertices_at_vertex")
-    call seaice_cell_vertices_at_vertex(&
-         mesh, &
-         cellVerticesAtVertex)
-    call mpas_timer_stop("wachpress vertices_at_vertex")
 
     deallocate(xLocal)
     deallocate(yLocal)
