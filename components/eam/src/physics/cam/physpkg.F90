@@ -97,6 +97,9 @@ module physpkg
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
+#define ADDCP
+
+
   !======================================================================= 
 contains
 
@@ -1777,16 +1780,35 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
+!save current TE
+    state%tebefore(:ncol) = state%te_cur(:ncol)
+
+!adjust pressure
     call physics_dme_adjust(state, tend, qini, ztodt)
-!!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
+
+!compute new TE from the adjusted pressure
+!this overwrites te_cur for TE after pressure adjustment
+!without this call pressure adjustment is computed but then is ignored
     call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
+    state%teafter(:ncol) = state%te_cur(:ncol)
+
+!reverse TE to TE before pressure adjustment
+!comment this line when discarding pppw
+    state%te_cur(:ncol) = state%tebefore(:ncol)
+!revert pressure to the previous
+    state%ps = state%oldps
+    state%pdel = state%oldpdel
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#ifdef ADDCP
+!take CP term out of te_cur
+    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)
+#endif
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
-!!!!! revert state to the previous
-
-    state%ps = state%oldps
-    state%pdel = state%oldpdel
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
@@ -2746,6 +2768,13 @@ end if ! l_rad
     call t_startf('diag_export')
     call diag_export(cam_out)
     call t_stopf('diag_export')
+
+!use cam_out to compute cpterm
+    state%cpterm(:ncol) = cpair * 300.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+
+#ifdef ADDCP
+    fsns(:ncol) = fsns(:ncol) + state%cpterm(:ncol)    
+#endif
 
     call check_tracers_fini(tracerint)
 
