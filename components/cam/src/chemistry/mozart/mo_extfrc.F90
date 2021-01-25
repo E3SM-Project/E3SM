@@ -119,7 +119,6 @@ contains
 
        m = get_extfrc_ndx( spc_name )
 
-       print*,"solsym=",solsym
        if ( m < 1 ) then
           call endrun('extfrc_inti: '//trim(spc_name)// ' does not have an external source')
        endif

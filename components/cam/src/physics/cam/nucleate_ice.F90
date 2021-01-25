@@ -364,14 +364,13 @@ subroutine nucleati(  &
               cam_chempkg_is('linoz_mam3') .or. cam_chempkg_is('linoz_mam4_resus') .or. &
               cam_chempkg_is('linoz_mam4_resus_soag') .or. cam_chempkg_is('linoz_mam4_resus_mom') .or. &
               cam_chempkg_is('linoz_mam4_resus_mom_soag') .or. &
-              cam_chempkg_is('linoz_mam5_resus_mom_soag') .or. &
-              cam_chempkg_is('linoz_mam5_resus_soa_mom_soag') .or. cam_chempkg_is('linoz_mam5_resus_soa_mom_soag_vbs') then !ASK Hailong about trop_mam4 
-            na500_1 = dst1_num*0.488_r8
+              cam_chempkg_is('superfast_mam4_resus_mom_soag' .or. &
+              cam_chempkg_is('linoz_mam4_resus_soa_mom_soag') .or. cam_chempkg_is('linoz_mam4_resus_soa_mom_soag_vbs') then !ASK Hailong about trop_mam4 
+            na500_1 = dst1_num*0.488_r8 + dst3_num
          else
             na500_1 = dst1_num*0.488_r8 + dst2_num + dst3_num + dst4_num   ! scaled for D>0.5-1 um from 0.1-1 um
          endif
       endif
-
 
       ! prepare aerosol number and surface data for ice nucleation in mixed-phase clouds        
       na500    = ( soot_num + organic_num ) * 0.0256_r8 + na500_1  ! scaled for D>0.5 um using Clarke et al., 1997; 2004; 2007: rg=0.1um, sig=1.6

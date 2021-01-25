@@ -128,8 +128,8 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-			  linoz_mam5_resus_soa_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | linoz_mam4_resus_soa_mom_soag |
+			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
@@ -144,6 +144,7 @@ OPTIONS
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
+     -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
@@ -906,7 +907,7 @@ my $bc_dep_to_snow_updates = $bc_dep_to_snow_updates_opt ? 1:0;
 
 if ($print>=2) { print "Is bc_dep_to_snow_updates active (0-NO; 1-YES)?: $bc_dep_to_snow_updates$eol"; }
 
-# Use "rain_evap_to_coarse_aero" in MAM3, MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
+# Use "rain_evap_to_coarse_aero" in MAM3 or MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
 my $rain_evap_to_coarse_aero_opt = (defined $opts{'rain_evap_to_coarse_aero'}) ? 1 : 0;
 $cfg_ref->set('rain_evap_to_coarse_aero', $rain_evap_to_coarse_aero_opt);
 my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
@@ -1315,7 +1316,6 @@ if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 if (defined $opts{'e3smreplay'}) {
     $cfg_ref->set('e3smreplay', 1);
 }
-my $camiop = $cfg_ref->get('camiop') ? "ON" : "OFF";
 
 my $e3smreplay = $cfg_ref->get('e3smreplay') ? "ON" : "OFF";
 
@@ -1501,9 +1501,9 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' || $chem_pkg =~ '_mam4_resus_mom_soag' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
-} elsif ($chem_pkg =~ '_mam5_resus_soa_mom' ) {
-    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_5MODE_SOA_MOM '; 
-} elsif ($chem_pkg =~ '_mam4' ) {
+} elsif ($chem_pkg =~ '_mam4_resus_soa_mom' ) {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_SOA_MOM '; 
+} elsif ($chem_pkg =~ '_mam4') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
