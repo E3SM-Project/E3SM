@@ -3408,6 +3408,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 !DCAPE-ULL
    if (trigdcape_ull .or. trig_ull_only) then
+      pblt600(:ncol) = 1.0_r8
       do k = pver - 1,msg + 1,-1
       do i = 1,ncol
          if ((p(i,k).le.600._r8) .and. (p(i,k+1).gt.600._r8)) pblt600(i) = dble(k)
