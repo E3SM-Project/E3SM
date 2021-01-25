@@ -55,6 +55,11 @@ macro (CreateScorpioTarget CREATE_FLIB)
     else ()
       # Not a CIME build. Add scorpio as a subdir
       add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
+      EkatDisableAllWarning(pioc)
+      EkatDisableAllWarning(gptl)
+      if (CREATE_FLIB)
+        EkatDisableAllWarning(pioc)
+      endif()
     endif()
   endif ()
 
