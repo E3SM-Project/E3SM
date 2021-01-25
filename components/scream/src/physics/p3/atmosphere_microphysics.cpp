@@ -1,6 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
-#include "physics/p3/p3_main_impl.hpp"
+//#include "physics/p3/p3_main_impl.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_f90.hpp"
 
@@ -16,9 +16,9 @@ namespace scream
 */
 
   using namespace p3;
-  using P3F          = Functions<Real, DefaultDevice>;
-  using Spack        = typename P3F::Spack;
-  using Pack         = ekat::Pack<Real,Spack::n>;
+//  using P3F          = Functions<Real, DefaultDevice>;
+//  using Spack        = typename P3F::Spack;
+//  using Pack         = ekat::Pack<Real,Spack::n>;
 
   using view_1d  = typename P3F::view_1d<Real>;
   using view_2d  = typename P3F::view_2d<Spack>;
@@ -80,7 +80,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_required_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
   m_required_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
-  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.  Keeping it as such now so that the initializr can init it.
+//  m_required_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);  //TODO: Delete, don't acutally need this as required.  Keeping it as such now so that the initializr can init it.
   //
   m_computed_fields.emplace("qv",     scalar3d_layout_mid, Q,    grid_name);
   m_computed_fields.emplace("qc",     scalar3d_layout_mid, Q,    grid_name);
@@ -91,7 +91,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("nr",     scalar3d_layout_mid, 1/kg, grid_name);
   m_computed_fields.emplace("ni",     scalar3d_layout_mid, 1/kg, grid_name);
   m_computed_fields.emplace("bm",     scalar3d_layout_mid, 1/kg, grid_name);
-  m_computed_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);
+//  m_computed_fields.emplace("th_atm", scalar3d_layout_mid, K,    grid_name);
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   m_required_fields.emplace("nc_nuceat_tend",  scalar3d_layout_mid, 1/(kg*s), grid_name);
   m_required_fields.emplace("nccn_prescribed", scalar3d_layout_mid, nondim,   grid_name);
@@ -115,21 +115,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("liq_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("vap_liq_exchange", scalar3d_layout_mid, nondim, grid_name);
   m_computed_fields.emplace("vap_ice_exchange", scalar3d_layout_mid, nondim, grid_name);
-  // TODO: AaronDonahue - The following should actually be set locally and therefore don't
-  //       need to be fields registered with the field manager.  Currently we are use them
-  //       as fields so they can be initialized by the p3_inputs_initialzer for testing
-  //       purposes.  A future task is to remove these and define them locally as 2d views
-  //       in run_impl.
-  m_required_fields.emplace("dz", scalar3d_layout_mid, K,         grid_name);
-  m_required_fields.emplace("exner", scalar3d_layout_mid, K,      grid_name);
-  m_required_fields.emplace("cld_frac_l", scalar3d_layout_mid, K, grid_name);
-  m_required_fields.emplace("cld_frac_i", scalar3d_layout_mid, K, grid_name);
-  m_required_fields.emplace("cld_frac_r", scalar3d_layout_mid, K, grid_name);
-  m_computed_fields.emplace("dz", scalar3d_layout_mid, K,         grid_name);
-  m_computed_fields.emplace("exner", scalar3d_layout_mid, K,      grid_name);
-  m_computed_fields.emplace("cld_frac_l", scalar3d_layout_mid, K, grid_name);
-  m_computed_fields.emplace("cld_frac_i", scalar3d_layout_mid, K, grid_name);
-  m_computed_fields.emplace("cld_frac_r", scalar3d_layout_mid, K, grid_name);
 
 }
 
@@ -156,7 +141,6 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
 
   std::vector<std::string> p3_inputs = {"T_atm","ast","ni_activated","nc_nuceat_tend","pmid","dp","zi","qv_prev","T_prev",
                                         "qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm","nccn_prescribed","inv_qc_relvar"
-                                       ,"th_atm","exner","dz","cld_frac_l","cld_frac_r","cld_frac_i"  // TODO: Delete these, should be local.
                                        };
   using strvec = std::vector<std::string>;
   const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
@@ -213,6 +197,10 @@ void P3Microphysics::run_impl (const Real dt)
   // Prep views to be passed to p3_main structures -> eventually passed to p3_main itself.
   // For organization purposes the views are organized by the structure they will eventually
   // be a part of (similar to the declarations of fields above).
+  auto T_atm  = m_p3_fields_out["T_atm"].get_reshaped_view<Pack**>();
+  auto ast    = m_p3_fields_in["ast"].get_reshaped_view<const Pack**>();
+  auto zi     = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
+  // --Prognostic State Variables:
   auto qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
   auto nc     = m_p3_fields_out["nc"].get_reshaped_view<Pack**>();
   auto qr     = m_p3_fields_out["qr"].get_reshaped_view<Pack**>();
@@ -222,7 +210,8 @@ void P3Microphysics::run_impl (const Real dt)
   auto ni     = m_p3_fields_out["ni"].get_reshaped_view<Pack**>();
   auto bm     = m_p3_fields_out["bm"].get_reshaped_view<Pack**>();
   auto qv     = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
-  auto th_atm = m_p3_fields_out["th_atm"].get_reshaped_view<Pack**>();
+//  auto th_atm = m_p3_fields_out["th_atm"].get_reshaped_view<Pack**>();
+  view_2d th_atm_l("th_atm",m_num_cols,m_num_levs);
   // --Diagnostic Input Variables:
   auto nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
   auto nccn_prescribed = m_p3_fields_in["nccn_prescribed"].get_reshaped_view<const Pack**>();
@@ -232,12 +221,6 @@ void P3Microphysics::run_impl (const Real dt)
   auto dp              = m_p3_fields_in["dp"].get_reshaped_view<const Pack**>();
   auto qv_prev         = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
   auto T_prev          = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
-  // TODO: replace below with a local representation based on updated state values
-  auto cld_frac_i = m_p3_fields_out["cld_frac_i"].get_reshaped_view<Pack**>();
-  auto cld_frac_l = m_p3_fields_out["cld_frac_l"].get_reshaped_view<Pack**>();
-  auto cld_frac_r = m_p3_fields_out["cld_frac_r"].get_reshaped_view<Pack**>();
-  auto dz         = m_p3_fields_out["dz"].get_reshaped_view<Pack**>();
-  auto exner      = m_p3_fields_out["exner"].get_reshaped_view<Pack**>();
   // --Diagnostic Outputs
   view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
   view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
@@ -267,10 +250,21 @@ void P3Microphysics::run_impl (const Real dt)
   auto vap_liq_exchange = m_p3_fields_out["vap_liq_exchange"].get_reshaped_view<Pack**>();
   auto vap_ice_exchange = m_p3_fields_out["vap_ice_exchange"].get_reshaped_view<Pack**>();
 
+  // Assign values to local arrays used by P3, these are now stored in p3_loc.
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  run_local_vars p3_loc(m_num_cols,nk_pack,pmid,T_atm,ast,zi);
+  Kokkos::parallel_for(
+    "p3_main_local_vals",
+    Kokkos::RangePolicy<>(0,m_num_cols),
+    p3_loc
+  ); // Kokkos::parallel_for(p3_main_local_vals)
+  Kokkos::fence();
+
   // Pack our data into structs and ship it off to p3_main.
-  P3F::P3PrognosticState prog_state{ qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm };
+  P3F::P3PrognosticState prog_state{ qc, nc, qr, nr, qi, qm, ni, bm, qv, p3_loc.th_atm };
   P3F::P3DiagnosticInputs diag_inputs{ nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, 
-                                       cld_frac_i, cld_frac_l, cld_frac_r, pmid, dz, dp, exner, qv_prev, T_prev };
+                                       p3_loc.cld_frac_i, p3_loc.cld_frac_l, p3_loc.cld_frac_r, pmid,
+                                       p3_loc.dz, dp, p3_loc.exner, qv_prev, T_prev };
   P3F::P3DiagnosticOutputs diag_outputs{ mu_c, lamc, qv2qi_depos_tend, precip_liq_surf,
                                          precip_ice_surf, diag_eff_radius_qc, diag_eff_radius_qi, rho_qi,
                                          precip_total_tend, nevapr, qr_evap_tend, precip_liq_flux, precip_ice_flux };

@@ -51,6 +51,7 @@ void P3InputsInitializer::initialize_fields ()
   using P3F             = Functions<Real, DefaultDevice>;
   using Spack           = typename P3F::Spack;
   using Pack            = ekat::Pack<Real,Spack::n>;
+  using view_2d  = typename P3F::view_2d<Spack>;
 
   // Safety check: if we're asked to init anything at all,
   // To simplify the initializer we first define all the fields we expect to have to initialize.
@@ -75,14 +76,6 @@ void P3InputsInitializer::initialize_fields ()
   fields_to_init.push_back("bm");
   fields_to_init.push_back("nccn_prescribed");
   fields_to_init.push_back("inv_qc_relvar");
-  // TODO: Delete eventually, should instead be set in run interface: 
-  fields_to_init.push_back("th_atm");  
-  fields_to_init.push_back("dz");  
-  fields_to_init.push_back("exner");  
-  fields_to_init.push_back("cld_frac_l");  
-  fields_to_init.push_back("cld_frac_i");  
-  fields_to_init.push_back("cld_frac_r");  
-  // then we should have been asked to init 20 + 6 (to be deleted) fields.
   int count = 0;
   std::string list_of_fields = "";
   for (auto name : fields_to_init)
@@ -123,16 +116,17 @@ void P3InputsInitializer::initialize_fields ()
   auto d_bm              = m_fields.at("bm").get_reshaped_view<Pack**>();
   auto d_nccn_prescribed = m_fields.at("nccn_prescribed").get_reshaped_view<Pack**>();
   auto d_inv_qc_relvar   = m_fields.at("inv_qc_relvar").get_reshaped_view<Pack**>();
-  // TODO: Delete eventually, should instead be set in run interface: 
-  auto d_th_atm          = m_fields.at("th_atm").get_reshaped_view<Pack**>();  
-  auto d_dz              = m_fields.at("dz").get_reshaped_view<Pack**>();  
-  auto d_exner           = m_fields.at("exner").get_reshaped_view<Pack**>();  
-  auto d_cld_frac_l      = m_fields.at("cld_frac_l").get_reshaped_view<Pack**>();  
-  auto d_cld_frac_i      = m_fields.at("cld_frac_i").get_reshaped_view<Pack**>();  
-  auto d_cld_frac_r      = m_fields.at("cld_frac_r").get_reshaped_view<Pack**>();
 
+  // Set local views which are used in some of the initialization
+  auto mdims = m_fields.at("qc").get_header().get_identifier().get_layout();
+  Int ncol = mdims.dim(0); 
+  Int nk   = mdims.dim(1);
+  const Int nk_pack = ekat::npack<Spack>(nk);
+  view_2d d_th_atm("th_atm",ncol,nk_pack);        
+  view_2d d_dz("dz",ncol,nk_pack);                
+  view_2d d_exner("exner",ncol,nk_pack);          
   
-  // Create host mirrors
+  // Create host mirrors for all views
   auto h_T_atm            = Kokkos::create_mirror_view(d_T_atm          ); 
   auto h_ast              = Kokkos::create_mirror_view(d_ast            ); 
   auto h_ni_activated     = Kokkos::create_mirror_view(d_ni_activated   ); 
@@ -153,13 +147,9 @@ void P3InputsInitializer::initialize_fields ()
   auto h_bm               = Kokkos::create_mirror_view(d_bm             ); 
   auto h_nccn_prescribed  = Kokkos::create_mirror_view(d_nccn_prescribed); 
   auto h_inv_qc_relvar    = Kokkos::create_mirror_view(d_inv_qc_relvar  ); 
-  // TODO: Delete eventually, should instead be set in run interface: 
   auto h_th_atm           = Kokkos::create_mirror_view(d_th_atm         ); 
   auto h_dz               = Kokkos::create_mirror_view(d_dz             ); 
   auto h_exner            = Kokkos::create_mirror_view(d_exner          ); 
-  auto h_cld_frac_l       = Kokkos::create_mirror_view(d_cld_frac_l     ); 
-  auto h_cld_frac_i       = Kokkos::create_mirror_view(d_cld_frac_i     ); 
-  auto h_cld_frac_r       = Kokkos::create_mirror_view(d_cld_frac_r     ); 
 
  // Initalize from text file 
   std::ifstream fid("p3_init_vals.txt", std::ifstream::in);
@@ -197,56 +187,55 @@ void P3InputsInitializer::initialize_fields ()
     for (int skp=0;skp<5;skp++) { s >> skip; }
     s >> h_dp(icol,ipack)[ivec]   ;
     s >> h_exner(icol,ipack)[ivec];
+    for (int skp=0;skp<7;skp++) { s >> skip; }
+    s >> h_ast(icol,ipack)[ivec];
     for (int skp=0;skp<6;skp++) { s >> skip; }
-    s >> h_cld_frac_r(icol,ipack)[ivec];
-    s >> h_cld_frac_l(icol,ipack)[ivec];
-    s >> h_cld_frac_i(icol,ipack)[ivec];
-    for (int skp=0;skp<5;skp++) { s >> skip; }
     s >> h_qv_prev(icol,ipack)[ivec];
     s >> h_T_prev(icol,ipack)[ivec] ;
 
   } // while getline(fid,tmp_line)
   // For now use dummy values copied from `p3_ic_cases.cpp`, which is loaded from a file.
   // That file only has data for 3 columns, need to expand to >3 columns.
-  auto mdims = m_fields.at("qc").get_header().get_identifier().get_layout();
-  Int ncol = mdims.dim(0); 
-  Int nk   = mdims.dim(1);
-  for (int icol_i = icol_in_max;icol_i<ncol;icol_i++)
+  for (int icol_i = 0;icol_i<ncol;icol_i++)
   {
-    for (int k = 0;k<nk;k++)
+    for (int k = nk-1;k>=0;k--)
     {
     int icol  = icol_i % icol_in_max;
     int ipack = k / Spack::n;
     int ivec  = k % Spack::n;
-    h_qv(icol_i,ipack)[ivec]              = h_qv(icol,ipack)[ivec]             ;
-    h_th_atm(icol_i,ipack)[ivec]          = h_th_atm(icol,ipack)[ivec]         ;
-    h_pmid(icol_i,ipack)[ivec]            = h_pmid(icol,ipack)[ivec]           ;
-    h_dz(icol_i,ipack)[ivec]              = h_dz(icol,ipack)[ivec]             ;
-    h_nc_nuceat_tend(icol_i,ipack)[ivec]  = h_nc_nuceat_tend(icol,ipack)[ivec] ;
-    h_nccn_prescribed(icol_i,ipack)[ivec] = h_nccn_prescribed(icol,ipack)[ivec];
-    h_ni_activated(icol_i,ipack)[ivec]    = h_ni_activated(icol,ipack)[ivec]   ;
-    h_inv_qc_relvar(icol_i,ipack)[ivec]   = h_inv_qc_relvar(icol,ipack)[ivec]  ;
-    h_qc(icol_i,ipack)[ivec]              = h_qc(icol,ipack)[ivec]             ;
-    h_nc(icol_i,ipack)[ivec]              = h_nc(icol,ipack)[ivec]             ;
-    h_qr(icol_i,ipack)[ivec]              = h_qr(icol,ipack)[ivec]             ;
-    h_nr(icol_i,ipack)[ivec]              = h_nr(icol,ipack)[ivec]             ;
-    h_qi(icol_i,ipack)[ivec]              = h_qi(icol,ipack)[ivec]             ;
-    h_ni(icol_i,ipack)[ivec]              = h_ni(icol,ipack)[ivec]             ;
-    h_qm(icol_i,ipack)[ivec]              = h_qm(icol,ipack)[ivec]             ;
-    h_bm(icol_i,ipack)[ivec]              = h_bm(icol,ipack)[ivec]             ;
-    h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]             ;
-    h_exner(icol_i,ipack)[ivec]           = h_exner(icol,ipack)[ivec]          ;
-    h_cld_frac_r(icol_i,ipack)[ivec]      = h_cld_frac_r(icol,ipack)[ivec]     ;
-    h_cld_frac_l(icol_i,ipack)[ivec]      = h_cld_frac_l(icol,ipack)[ivec]     ;
-    h_cld_frac_i(icol_i,ipack)[ivec]      = h_cld_frac_i(icol,ipack)[ivec]     ;
-    h_qv_prev(icol_i,ipack)[ivec]         = h_qv_prev(icol,ipack)[ivec]        ;
-    h_T_prev(icol_i,ipack)[ivec]          = h_T_prev(icol,ipack)[ivec]         ;
+    int ipack_m1 = (k-1) / Spack::n;
+    int ivec_m1  = (k-1) % Spack::n;
+    h_qv(icol_i,ipack)[ivec]              = h_qv(icol,ipack)[ivec]                              ;
+    h_th_atm(icol_i,ipack)[ivec]          = h_th_atm(icol,ipack)[ivec]                          ;
+    h_T_atm(icol_i,ipack)[ivec]           = h_th_atm(icol,ipack)[ivec]*h_exner(icol,ipack)[ivec];
+    h_pmid(icol_i,ipack)[ivec]            = h_pmid(icol,ipack)[ivec]                            ;
+    h_dz(icol_i,ipack)[ivec]              = h_dz(icol,ipack)[ivec]                              ;
+    h_nc_nuceat_tend(icol_i,ipack)[ivec]  = h_nc_nuceat_tend(icol,ipack)[ivec]                  ;
+    h_nccn_prescribed(icol_i,ipack)[ivec] = h_nccn_prescribed(icol,ipack)[ivec]                 ;
+    h_ni_activated(icol_i,ipack)[ivec]    = h_ni_activated(icol,ipack)[ivec]                    ;
+    h_inv_qc_relvar(icol_i,ipack)[ivec]   = h_inv_qc_relvar(icol,ipack)[ivec]                   ;
+    h_qc(icol_i,ipack)[ivec]              = h_qc(icol,ipack)[ivec]                              ;
+    h_nc(icol_i,ipack)[ivec]              = h_nc(icol,ipack)[ivec]                              ;
+    h_qr(icol_i,ipack)[ivec]              = h_qr(icol,ipack)[ivec]                              ;
+    h_nr(icol_i,ipack)[ivec]              = h_nr(icol,ipack)[ivec]                              ;
+    h_qi(icol_i,ipack)[ivec]              = h_qi(icol,ipack)[ivec]                              ;
+    h_ni(icol_i,ipack)[ivec]              = h_ni(icol,ipack)[ivec]                              ;
+    h_qm(icol_i,ipack)[ivec]              = h_qm(icol,ipack)[ivec]                              ;
+    h_bm(icol_i,ipack)[ivec]              = h_bm(icol,ipack)[ivec]                              ;
+    h_dp(icol_i,ipack)[ivec]              = h_dp(icol,ipack)[ivec]                              ;
+    h_exner(icol_i,ipack)[ivec]           = h_exner(icol,ipack)[ivec]                           ;
+    h_ast(icol_i,ipack)[ivec]             = h_ast(icol,ipack)[ivec]                             ;
+    h_qv_prev(icol_i,ipack)[ivec]         = h_qv_prev(icol,ipack)[ivec]                         ;
+    h_T_prev(icol_i,ipack)[ivec]          = h_T_prev(icol,ipack)[ivec]                          ;
+    // Initialize arrays not provided in input file
+    h_zi(icol_i,ipack)[ivec] = (k==nk-1) ? 0 :
+                                           h_zi(icol_i,ipack_m1)[ivec_m1] + h_dz(icol_i,ipack)[ivec];
     }
   }
 
   // Deep copy back to device
   Kokkos::deep_copy(d_T_atm          , h_T_atm          ); 
-  Kokkos::deep_copy(d_ast            , h_ast            ); 
+  Kokkos::deep_copy(d_ast            , h_ast            );
   Kokkos::deep_copy(d_ni_activated   , h_ni_activated   ); 
   Kokkos::deep_copy(d_nc_nuceat_tend , h_nc_nuceat_tend ); 
   Kokkos::deep_copy(d_pmid           , h_pmid           ); 
@@ -265,13 +254,6 @@ void P3InputsInitializer::initialize_fields ()
   Kokkos::deep_copy(d_bm             , h_bm             ); 
   Kokkos::deep_copy(d_nccn_prescribed, h_nccn_prescribed); 
   Kokkos::deep_copy(d_inv_qc_relvar  , h_inv_qc_relvar  ); 
-  // TODO: Delete eventually, should instead be set in run interface: 
-  Kokkos::deep_copy(d_th_atm         , h_th_atm    ); 
-  Kokkos::deep_copy(d_dz             , h_dz        ); 
-  Kokkos::deep_copy(d_exner          , h_exner     ); 
-  Kokkos::deep_copy(d_cld_frac_l     , h_cld_frac_l); 
-  Kokkos::deep_copy(d_cld_frac_i     , h_cld_frac_i); 
-  Kokkos::deep_copy(d_cld_frac_r     , h_cld_frac_r); 
 
   if (m_remapper) {
     m_remapper->registration_ends();
