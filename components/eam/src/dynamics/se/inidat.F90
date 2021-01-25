@@ -538,7 +538,7 @@ contains
       call scm_setinitial(elem)
     endif
 
-    if (.not. single_column) then    
+    if (iop_mode .and. .not. single_column) then 
 
       ! once we've read all the fields we do a boundary exchange to 
       ! update the redundent columns in the dynamics
