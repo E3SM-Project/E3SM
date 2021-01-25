@@ -1804,8 +1804,11 @@ if (l_ac_energy_chk) then
 
 #ifdef ADDCP
 !take CP term out of te_cur
-    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)
+    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)*ztodt
 #endif
+
+    call outfld('CP', state%cpterm*ztodt            , pcols, lchnk )
+    call outfld('PW', state%teafter - state%tebefore, pcols, lchnk )
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
@@ -2773,7 +2776,7 @@ end if ! l_rad
     state%cpterm(:ncol) = cpair * 300.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
 #ifdef ADDCP
-    fsns(:ncol) = fsns(:ncol) + state%cpterm(:ncol)    
+    fsns(:ncol) = fsns(:ncol) + state%cpterm(:ncol) 
 #endif
 
     call check_tracers_fini(tracerint)
