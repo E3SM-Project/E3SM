@@ -5615,6 +5615,18 @@ If se_ne=0 (RRM grids), read mesh from Exodus file.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="se_ne_x" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of columns in the x direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_ne_y" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of columns in the y direction, for doubly periodic mode
+Default: Set by build-namelist.
+</entry>
+
 <entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
        group="ctl_nl" valid_values="" >
 Exodus format grid file used when se_ne=0
@@ -5635,9 +5647,18 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="se_topology" type="char*80" category="se"
-       group="ctl_nl" valid_values="cube" >
+       group="ctl_nl" valid_values="cube,plane" >
 SE's topology.
-Only "cube" is supported in CAM.
+Only "cube" is supported in CAM. "plane" allowed for SCREAM in doubly
+periodic mode.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_geometry" type="char*80" category="se"
+       group="ctl_nl" valid_values="sphere,plane" >
+SE's geometry.
+Only "sphere" is supported in CAM. "plane" allowed for SCREAM in doubly
+periodic mode.
 Default: Set by build-namelist.
 </entry>
 

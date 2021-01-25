@@ -191,9 +191,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
 #ifdef CAM
-    character(len=MAX_STRING_LEN) :: se_topology
+    character(len=MAX_STRING_LEN) :: se_topology, se_geometry
     integer :: se_partmethod
     integer :: se_ne
+    integer :: se_ne_x, se_ne_y
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
@@ -209,7 +210,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #ifdef CAM
       se_partmethod,     &
       se_topology,       &
+      se_geometry,       &
       se_ne,             &
+      se_ne_x,           &
+      se_ne_y,           &
       se_limiter_option, &
 #else
       qsize,             &         ! number of SE tracers
@@ -642,7 +646,10 @@ end if
        limiter_option=se_limiter_option
        partmethod = se_partmethod
        ne         = se_ne
+       ne_x       = se_ne_x
+       ne_y       = se_ne_y
        topology   = se_topology
+       geometry   = se_geometry
        qsize      = qsize_d
        nsplit     = se_nsplit
        tstep      = se_tstep
@@ -905,6 +912,11 @@ end if
       scale_factor = 1.0D0
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
+! Set some temporary defaults
+    Lx = 5000.0D0 * 1000.0D0
+    Ly = 5000.0D0 * 1000.0D0
+    Sx = 0.0D0
+    Sy = 0.0D0
     if (test_case == "planar_dbl_vrtx") then
       Lx = 5000.0D0 * 1000.0D0
       Ly = 5000.0D0 * 1000.0D0
