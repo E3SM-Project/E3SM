@@ -44,6 +44,7 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use cam_history,    only: outfld
 
   implicit none
   private
