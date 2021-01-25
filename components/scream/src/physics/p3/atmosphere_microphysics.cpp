@@ -283,7 +283,7 @@ void P3Microphysics::run_impl (const Real dt)
   infrastructure.it++;
 
   // Run p3 main
-  auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
+  P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, m_num_cols, m_num_levs);
 
   // Get a copy of the current timestamp (at the beginning of the step) and
