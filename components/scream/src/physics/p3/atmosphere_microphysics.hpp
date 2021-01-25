@@ -4,6 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_main_impl.hpp"
+#include "physics/p3/p3_functions.hpp"
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs 
 
 #include <string>
@@ -67,6 +68,10 @@ public:
   const std::set<FieldIdentifier>& get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>& get_computed_fields () const { return m_computed_fields; }
 
+  /*--------------------------------------------------------------------------------------------*/
+  // Most individual processes have a pre-processing step that constructs needed variables from
+  // the set of fields stored in the field manager.  A structure like this defines those operations,
+  // which can then be called during run_imple in the main .cpp code.
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct run_local_vars {
     run_local_vars(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
@@ -139,7 +144,8 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
-  }; // p3_run_local
+  }; // run_local_vars
+  /* --------------------------------------------------------------------------------------------*/
 
 protected:
 
@@ -175,9 +181,15 @@ protected:
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
+
+  // Store the structures for each arguement to p3_main;
+  P3F::P3PrognosticState prog_state;
+  P3F::P3DiagnosticInputs diag_inputs;
+  P3F::P3DiagnosticOutputs diag_outputs;
+  P3F::P3HistoryOnly history_only;
+  P3F::P3Infrastructure infrastructure;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
-  // m_it is passed as an arguement to P3 and is used for identifying which iteration an error occurs. 
-  Int m_it = 0; 
+  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
 
 }; // class P3Microphysics
 
