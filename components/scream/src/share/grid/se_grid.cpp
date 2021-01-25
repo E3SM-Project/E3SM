@@ -61,5 +61,40 @@ set_geometry_data (const std::string& name, const geo_view_type& data) {
   m_geo_views[name] = data;
 }
 
+FieldLayout
+SEGrid::get_2d_scalar_layout () const
+{
+  using namespace ShortFieldTagsNames;
+
+  return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
+}
+
+FieldLayout
+SEGrid::get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+
+  return FieldLayout({EL,vector_tag,GP,GP},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp});
+}
+
+FieldLayout
+SEGrid::get_3d_scalar_layout (const bool midpoints) const
+{
+  using namespace ShortFieldTagsNames;
+
+  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+
+  return FieldLayout({EL,GP,GP,VL},{m_num_local_elem,m_num_gp,m_num_gp,nvl});
+}
+
+FieldLayout
+SEGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const
+{
+  using namespace ShortFieldTagsNames;
+
+  int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
+
+  return FieldLayout({EL,vector_tag,GP,GP,VL},{m_num_local_elem,vector_dim,m_num_gp,m_num_gp,nvl});
+}
 
 } // namespace scream

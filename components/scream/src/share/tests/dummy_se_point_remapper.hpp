@@ -44,26 +44,32 @@ public:
 
   FieldLayout create_src_layout (const FieldLayout& tgt) const override {
     using namespace ShortFieldTagsNames;
-    auto ncol = this->get_src_grid()->get_native_dof_layout().dim(0);
+    using TV = std::vector<FieldTag>;
+    using IV = std::vector<int>;
+
+    auto ncol = this->get_src_grid()->get_2d_scalar_layout().dim(0);
 
     const auto rank = tgt.rank();
     EKAT_REQUIRE_MSG (rank==3 || rank==4 || rank==5,
       "Error! Target layout not supported. Remember that this class has limited support.\n");
     switch (rank) {
       case 3:
-        return FieldLayout ({COL},{ncol});
+        return FieldLayout (TV{COL},IV{ncol});
       case 4:
-        return FieldLayout ({COL,VL},{ncol,tgt.dim(3)});
+        return FieldLayout (TV{COL,VL},IV{ncol,tgt.dim(3)});
       case 5:
-        return FieldLayout ({COL,CMP,VL},{ncol,tgt.dim(1),tgt.dim(4)});
+        return FieldLayout (TV{COL,CMP,VL},IV{ncol,tgt.dim(1),tgt.dim(4)});
       default:
-        return FieldLayout ({},{});
+        return FieldLayout (TV{},IV{});
     }
   }
 
   FieldLayout create_tgt_layout (const FieldLayout& src) const override {
     using namespace ShortFieldTagsNames;
-    auto nele = this->get_tgt_grid()->get_native_dof_layout().dim(0);
+    using TV = std::vector<FieldTag>;
+    using IV = std::vector<int>;
+
+    auto nele = this->get_tgt_grid()->get_2d_scalar_layout().dim(0);
 
     const auto rank = src.rank();
     EKAT_REQUIRE_MSG (rank==1 || rank==2 || rank==3,
@@ -71,13 +77,13 @@ public:
 
     switch (rank) {
       case 1:
-        return FieldLayout ({EL,GP,GP},{nele,4,4});
+        return FieldLayout (TV{EL,GP,GP},IV{nele,4,4});
       case 2:
-        return FieldLayout ({EL,GP,GP,src.tag(1)},{nele,4,4,src.dim(1)});
+        return FieldLayout (TV{EL,GP,GP,src.tag(1)},IV{nele,4,4,src.dim(1)});
       case 3:
-        return FieldLayout ({EL,CMP,GP,GP,VL},{nele,src.dim(1),4,4,src.dim(2)});
+        return FieldLayout (TV{EL,CMP,GP,GP,VL},IV{nele,src.dim(1),4,4,src.dim(2)});
       default:
-        return FieldLayout ({},{});
+        return FieldLayout (TV{},IV{});
     }
   }
 

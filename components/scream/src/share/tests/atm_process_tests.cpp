@@ -67,9 +67,6 @@ protected:
   std::set<FieldIdentifier> m_fids_in;
   std::set<FieldIdentifier> m_fids_out;
 
-  std::vector<FieldIdentifier> m_vec_fids_in;
-  std::vector<FieldIdentifier> m_vec_fids_out;
-
   std::string m_name;
   std::string m_grid_name;
 
@@ -84,30 +81,18 @@ public:
   MyDynamics (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier tend("Temperature tendency",{EL,GP,GP,VL},K/s);
-    m_vec_fids_in.push_back(tend);
-
-    FieldIdentifier temp("Temperature",{EL,GP,GP,VL},K);
-    m_vec_fids_out.push_back(temp);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto dyn_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& tend = m_vec_fids_in.front();
-    tend.set_grid_name(grid->name());
-    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
-    m_fids_in.insert(tend);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto dyn_lt = grid->get_3d_scalar_layout(true);
 
-    auto& temp = m_vec_fids_out.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
-    m_fids_out.insert(temp);
+    m_fids_in.emplace("Temperature tendency",dyn_lt,K/s,m_grid_name);
+
+    m_fids_out.emplace("Temperature",dyn_lt,K,m_grid_name);
   }
 };
 
@@ -119,30 +104,18 @@ public:
   MyPhysicsA (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier temp("Temperature",{COL,VL},K);
-    m_vec_fids_in.push_back(temp);
-
-    FieldIdentifier qA("Concentration A",{COL,VL},kg/pow(m,3));
-    m_vec_fids_out.push_back(qA);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto phys_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& temp = m_vec_fids_in.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(temp);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    auto& qA = m_vec_fids_out.front();
-    qA.set_grid_name(grid->name());
-    qA.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_out.insert(qA);
+    m_fids_in.emplace("Temperature",phys_lt,K,m_grid_name);
+
+    m_fids_out.emplace("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
   }
 };
 
@@ -154,37 +127,19 @@ public:
   MyPhysicsB (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
-    FieldIdentifier temp("Temperature",{COL,VL},K);
-    m_vec_fids_in.push_back(temp);
-    FieldIdentifier qA("Concentration A",{COL,VL},kg/pow(m,3));
-    m_vec_fids_in.push_back(qA);
-
-    FieldIdentifier tend("Temperature tendency",{COL,VL},K/s);
-    m_vec_fids_out.push_back(tend);
+    // Nothing to do here
   }
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    auto grid = gm->get_grid(m_grid_name);
-    const auto nvl = grid->get_num_vertical_levels();
-    auto phys_lt = grid->get_native_dof_layout();
+    using namespace ekat::units;
 
-    auto& temp = m_vec_fids_in.front();
-    temp.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(temp);
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto phys_lt = grid->get_3d_scalar_layout (true);
 
-    auto& qA = m_vec_fids_in[1];
-    qA.set_grid_name(grid->name());
-    qA.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_in.insert(qA);
+    m_fids_in.emplace("Temperature",phys_lt,K,m_grid_name);
+    m_fids_in.emplace("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);
 
-    auto& tend = m_vec_fids_out.front();
-    tend.set_grid_name(grid->name());
-    tend.set_dimensions({phys_lt.dim(0),nvl});
-    m_fids_out.insert(tend);
+    m_fids_out.emplace("Temperature tendency",phys_lt,K/s,m_grid_name);
   }
 };
 

@@ -76,8 +76,11 @@ public:
   const std::string& name () const { return m_name; }
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
-  // E.g., for a 2d structured grid, this could be a set of 2 indices.
-  virtual FieldLayout get_native_dof_layout () const  = 0;
+  // E.g., for a 2d field on a SE grid, this will be (nelem,np,np)
+  virtual FieldLayout get_2d_scalar_layout () const = 0;
+  virtual FieldLayout get_2d_vector_layout (const FieldTag vector_tag, const int vector_dim) const = 0;
+  virtual FieldLayout get_3d_scalar_layout (const bool midpoints) const = 0;
+  virtual FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const = 0;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
