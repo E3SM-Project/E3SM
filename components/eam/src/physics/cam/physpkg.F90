@@ -2774,7 +2774,7 @@ end if ! l_rad
     call t_stopf('diag_export')
 
 !use cam_out to compute cpterm
-    state%cpterm(:ncol) = cpair * 300.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+    state%cpterm(:ncol) = 1000.0 * cpair * 300.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
 
 #ifdef ADDCP
     fsns(:ncol) = fsns(:ncol) + state%cpterm(:ncol) 
