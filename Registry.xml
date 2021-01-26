@@ -2351,6 +2351,9 @@
 				 description="Meridional surface velocity reconstructed at cell centers"
 			/>
 		</var_array>
+		<var name="surfacePressure" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure at the sea surface due to atmosphere, sea ice, frazil and land ice"
+		/>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="SSHGradientZonal" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
