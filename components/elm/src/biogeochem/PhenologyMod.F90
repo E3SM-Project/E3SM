@@ -1936,7 +1936,7 @@ contains
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use clm_time_manager , only : get_curr_calday, get_days_per_year
     use pftvarcon        , only : gddmin, hybgdd
-    use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes, crit_days_senes
+    use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use clm_varcon       , only : spval, secspday
     use clm_varctl       , only : iulog
     !

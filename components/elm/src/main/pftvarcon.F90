@@ -161,7 +161,6 @@ module pftvarcon
   real(r8), allocatable :: minplanttemp(:) !mininum planting temperature used in Phenology (K)
   real(r8), allocatable :: senestemp(:)    !senescence temperature for perennial crops used in Phenology (K)
   real(r8), allocatable :: min_days_senes(:)   !minimum leaf age to allow for leaf senescence
-  real(r8), allocatable :: crit_days_senes(:)  !critical leaf age beyond which leaf senescence
   real(r8), allocatable :: froot_leaf(:)   !allocation parameter: new fine root C per new leaf C (gC/gC) 
   real(r8), allocatable :: stem_leaf(:)    !allocation parameter: new stem c per new leaf C (gC/gC)
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)
@@ -474,7 +473,6 @@ contains
     allocate( minplanttemp  (0:mxpft) ) 
     allocate( senestemp     (0:mxpft) )
     allocate( min_days_senes (0:mxpft) )
-    allocate( crit_days_senes (0:mxpft) )
     allocate( froot_leaf    (0:mxpft) )   
     allocate( stem_leaf     (0:mxpft) )    
     allocate( croot_stem    (0:mxpft) )   
@@ -820,8 +818,6 @@ contains
     call ncd_io('senescence_temp', senestemp, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('min_days_senescence', min_days_senes, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('crit_days_senescence', crit_days_senes, 'read', ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
     if (nu_com .ne. 'RD' ) then
