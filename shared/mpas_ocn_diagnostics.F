@@ -185,6 +185,13 @@ contains
                 normalizedRelativeVorticityCell)
 
       !
+      ! Surface pressure
+      ! This section must be placed in the code before computing the density.
+      !
+      call ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
+                seaIcePressure, surfacePressure)
+
+      !
       ! equation of state
       !
 
@@ -213,8 +220,7 @@ contains
       ! This section must be placed in the code after computing the density.
       !
       call ocn_diagnostic_solve_pressure(forcingPool, layerThickness, density, &
-                atmosphericPressure, seaIcePressure, montgomeryPotential, pressure, &
-                zMid, zTop, ssh)
+                surfacePressure, montgomeryPotential, pressure, zMid, zTop, ssh)
 
       nCells = nCellsAll
 
@@ -1214,6 +1220,83 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_diagnostic_solve_surface_pressure
+!
+!> \brief   Computes diagnostic variables for surface pressure
+!> \author  Xylar Asay-Davis
+!> \date    Jan 2021
+!> \details
+!>  This routine computes the diagnostic variable for surface pressure
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
+                seaIcePressure, surfacePressure)!{{{
+
+      use ocn_mesh     ! debug, mdt :: this should be module-level
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         atmosphericPressure
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         seaIcePressure
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         surfacePressure
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: nCells
+      integer :: iCell
+
+      real (kind=RKIND), dimension(:), pointer :: &
+        frazilSurfacePressure, landIcePressure
+
+      !
+      ! Pressure
+      ! This section must be placed in the code after computing the density.
+      !
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+
+      nCells = nCellsAll
+
+      !$omp parallel
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         ! Pressure for generalized coordinates.
+         ! Pressure at top surface may be due to atmospheric pressure, frazil
+         ! ice, sea ice or the weight of an ice shelf
+         surfacePressure(iCell) = atmosphericPressure(iCell) + seaIcePressure(iCell)
+         if ( associated(frazilSurfacePressure) ) &
+            surfacePressure(iCell) = surfacePressure(iCell) + frazilSurfacePressure(iCell)
+         if ( associated(landIcePressure) ) &
+            surfacePressure(iCell) = surfacePressure(iCell) + landIcePressure(iCell)
+      end do
+      !$omp end do
+      !$omp end parallel
+
+   end subroutine ocn_diagnostic_solve_surface_pressure!}}}
+
+!***********************************************************************
+!
 !  routine ocn_diagnostic_solve_pressure
 !
 !> \brief   Computes diagnostic variables for pressure, montgomery potential, and ssh
@@ -1225,8 +1308,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_pressure(forcingPool, layerThickness, density, &
-                atmosphericPressure, seaIcePressure, montgomeryPotential, pressure, &
-                zMid, zTop, ssh)!{{{
+                surfacePressure, montgomeryPotential, pressure, zMid, zTop, ssh)!{{{
 
       use ocn_mesh     ! debug, mdt :: this should be module-level
 
@@ -1244,9 +1326,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          density
       real (kind=RKIND), dimension(:), intent(in) :: &
-         atmosphericPressure
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         seaIcePressure
+         surfacePressure
 
       !-----------------------------------------------------------------
       !
@@ -1277,15 +1357,10 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable:: pTop
 
-      real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure
-
       !
       ! Pressure
       ! This section must be placed in the code after computing the density.
       !
-      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
-      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
       nCells = nCellsAll
       if (config_pressure_gradient_type.eq.'MontgomeryPotential') then
@@ -1327,17 +1402,13 @@ contains
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
            ! Pressure for generalized coordinates.
-           ! Pressure at top surface may be due to atmospheric pressure
-           ! or an ice-shelf depression.
-           pressure(1,iCell) = atmosphericPressure(iCell) + seaIcePressure(iCell)
-           if ( associated(frazilSurfacePressure) ) pressure(1,iCell) = pressure(1,iCell) + frazilSurfacePressure(iCell)
-           if ( associated(landIcePressure) ) pressure(1,iCell) = pressure(1,iCell) + landIcePressure(iCell)
-           pressure(1,iCell) = pressure(1,iCell) + density(1,iCell)*gravity*0.5_RKIND*layerThickness(1,iCell)
+           pressure(1,iCell) = surfacePressure(iCell) &
+             + density(1,iCell)*gravity*0.5_RKIND*layerThickness(1,iCell)
 
            do k = 2, maxLevelCell(iCell)
               pressure(k,iCell) = pressure(k-1,iCell)  &
                 + 0.5_RKIND*gravity*(  density(k-1,iCell)*layerThickness(k-1,iCell) &
-                               + density(k  ,iCell)*layerThickness(k  ,iCell))
+                                     + density(k  ,iCell)*layerThickness(k  ,iCell))
            end do
 
            ! Compute zMid, the z-coordinate of the middle of the layer.
