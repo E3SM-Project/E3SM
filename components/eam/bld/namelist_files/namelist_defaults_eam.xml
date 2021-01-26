@@ -926,7 +926,6 @@
 <tms_z0fac                chem="waccm_mozart"               > 0.100D0 </tms_z0fac>
 <tms_z0fac                chem="waccm_mozart_sulfur"        > 0.100D0 </tms_z0fac>
 <tms_z0fac                chem="waccm_ghg"                  > 0.100D0 </tms_z0fac>
-<tms_z0fac unicon="1"                                       > 0.010D0 </tms_z0fac>
 
 <tms_orocnst                                                > 1.0D0   </tms_orocnst>
 
@@ -939,7 +938,6 @@
 <conv_water_in_rad phys="cam5"      > 1 </conv_water_in_rad>
 
 <conv_water_frac_limit            > 0.01d0  </conv_water_frac_limit>
-<conv_water_frac_limit unicon="1" > 0.001d0 </conv_water_frac_limit>
 
 <!-- CLUBB_SGS -->
 <do_clubb_sgs                > .false. </do_clubb_sgs>
@@ -993,7 +991,6 @@
 <micro_mg_sub_version microphys="mg1">    0          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg1">    1          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg1">    400.D-6    </micro_mg_dcs>
-<micro_mg_dcs         microphys="mg1" unicon="1" >    350.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg1">    700.0      </ice_sed_ai>
 <micro_mg_accre_enhan_fac  microphys="mg1"> 1.0D0    </micro_mg_accre_enhan_fac>
 
@@ -1081,8 +1078,6 @@
 <eddy_max_bot_pressure phys="cam5" waccm_phys="1" >100.D0</eddy_max_bot_pressure>
 
 <eddy_moist_entrain_a2l           >30.D0</eddy_moist_entrain_a2l>
-<eddy_moist_entrain_a2l unicon="1">40.D0</eddy_moist_entrain_a2l>
-<eddy_moist_entrain_a2l dyn="se" unicon="1">20.D0</eddy_moist_entrain_a2l>
 
 <diff_cnsrv_mass_check                > .false. </diff_cnsrv_mass_check>
 
@@ -1104,8 +1099,6 @@
 
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
-
-<dust_emis_fact dyn="se" unicon="1"                  >1.38D0</dust_emis_fact>
 
 
 <!-- Sea Salt tuning option for scavenging mods by PNNL -->
@@ -1140,10 +1133,8 @@
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>
 
 <sol_factb_interstitial                >0.1D0</sol_factb_interstitial>
-<sol_factb_interstitial unicon="1"     >1.0D0</sol_factb_interstitial>
 
 <sol_factic_interstitial                >0.4D0</sol_factic_interstitial>
-<sol_factic_interstitial unicon="1"     >1.0D0</sol_factic_interstitial>
 
 <!-- sub-column switches for physics packages -->
 <use_subcol_microp>.false.</use_subcol_microp>
@@ -1167,7 +1158,6 @@
 <!-- Deep convection scheme -->
 <deep_scheme>ZM</deep_scheme>
 <deep_scheme clubb_do_deep="1" >CLUBB_SGS</deep_scheme>
-<deep_scheme unicon="1"        >UNICON   </deep_scheme>
 
 <!-- PBL scheme -->
 <eddy_scheme pbl="uw"             >diag_TKE </eddy_scheme>
@@ -1176,7 +1166,6 @@
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
-<shallow_scheme pbl="uw" unicon="1">UNICON   </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
@@ -1206,8 +1195,6 @@
 <cldfrc_ice phys="cam5" >.true.</cldfrc_ice>
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
-<cldfrc_rhminl dyn="fv"          phys="cam5" unicon="1"               > 0.850D0 </cldfrc_rhminl>
-<cldfrc_rhminl dyn="se"          phys="cam5" unicon="1"               > 0.920D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5"                          > 0.8975D0 </cldfrc_rhminl>
 <cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5" microphys="mg1.5"        > 0.9125D0 </cldfrc_rhminl>
@@ -1224,7 +1211,6 @@
 
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
-<cldfrc_rhminl_adj_land unicon="1"                                    > 0.000D0 </cldfrc_rhminl_adj_land>
 
 <cldfrc_rhminh                                                        > 0.800D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="0.23x0.31" phys="cam4"                          > 0.770D0 </cldfrc_rhminh>
@@ -1240,7 +1226,6 @@
 <cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="128x256"                                        > 0.680D0 </cldfrc_rhminh>
 <cldfrc_rhminh hgrid="512x1024"                                       > 0.650D0 </cldfrc_rhminh>
-<cldfrc_rhminh unicon="1"                                             > 0.980D0 </cldfrc_rhminh>
 
 
 <cldfrc_sh1                                                           > 0.07D0 </cldfrc_sh1>
@@ -1284,7 +1269,6 @@
 <cldfrc_icecrit phys="cam5"                > 0.93D0 </cldfrc_icecrit>
 
 <cldfrc2m_rhmini               >  0.80D0  </cldfrc2m_rhmini>
-<cldfrc2m_rhmini   unicon="1"  >  0.85D0  </cldfrc2m_rhmini>
 
 <cldfrc2m_rhmaxi                                     >  1.1D0  </cldfrc2m_rhmaxi>
 <cldfrc2m_rhmaxi    clubb_sgs="1" clubb_do_deep="0"  >  1.0D0  </cldfrc2m_rhmaxi>
@@ -1292,7 +1276,6 @@
 <!-- Cldwat -->
 <cldwat_icritc                                                        >  5.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"                                              >  9.5e-6  </cldwat_icritc>
-<cldwat_icritc  dyn="fv"           unicon="1"                         >  9.5e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.23x0.31"                           > 45.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.47x0.63"                           > 45.0e-6  </cldwat_icritc>
 <cldwat_icritc  dyn="fv"  hgrid="0.5x0.625"                           > 45.0e-6  </cldwat_icritc>
@@ -1375,7 +1358,6 @@
 <zmconv_ke                       hgrid="256x512"                      > 1.0E-6 </zmconv_ke>
 <zmconv_ke                       hgrid="512x1024"                     > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigmem                                                       >.false. </zmconv_trigmem>
 <zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
 <zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
 <zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>

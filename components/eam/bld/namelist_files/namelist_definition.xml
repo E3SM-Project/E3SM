@@ -2488,12 +2488,6 @@ Maximum downdraft mass flux fraction
 Default: set by build-namelist
 </entry>
 
-<entry id="zmconv_trigmem" type="logical" category="conv"
-       group="zmconv_nl" valid_values="" >
-Trigger and memory option in ZM deep convection scheme.
-Default: FALSE
-</entry>
-
 <entry id="zmconv_trigdcape_ull" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
@@ -2712,10 +2706,10 @@ Default: 10
 <!-- Moist Convection and Microphysics -->
 
 <entry id="deep_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="ZM,UNICON,CLUBB_SGS,off" >
+       group="phys_ctl_nl" valid_values="ZM,CLUBB_SGS,off" >
 Type of deep convection scheme employed.  'ZM' for Zhang-McFarlane;
 'off' for none.
-Default: 'ZM' unless using 'UNICON'
+Default: 'ZM'
 </entry>
 
 <entry id="microp_scheme" type="char*16" category="conv"
@@ -2746,10 +2740,9 @@ Default: FALSE
 </entry>
 
 <entry id="shallow_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS,UNICON" >
+       group="phys_ctl_nl" valid_values="off,Hack,UW,CLUBB_SGS" >
 Type of shallow convection scheme employed.  'Hack' for Hack shallow convection;
-'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS'
-for CLUBB_SGS; or UNICON which doesn't distinquish shallow and deep.
+'UW' for original McCaa UW pbl scheme, modified by Sungsu Park; 'CLUBB_SGS' for CLUBB_SGS
 Default: set by build-namelist (depends on <varname>eddy_scheme</varname>).
 </entry>
 
