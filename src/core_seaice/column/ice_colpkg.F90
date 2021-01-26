@@ -6152,12 +6152,15 @@
              warningsOut
 
         integer :: &
-             iWarning
+             iWarning, &
+             nWarnings
+
+        nWarnings = get_number_warnings()
 
         if (allocated(warningsOut)) deallocate(warningsOut)
-        allocate(warningsOut(get_number_warnings()))
+        allocate(warningsOut(nWarnings))
 
-        do iWarning = 1, get_number_warnings()
+        do iWarning = 1, nWarnings
            warningsOut(iWarning) = trim(get_warning(iWarning))
         enddo
 
