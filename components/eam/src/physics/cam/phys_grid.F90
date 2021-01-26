@@ -1040,6 +1040,9 @@ contains
     if (single_column .and. .not. iop_mode .and. dycore_is('SE')) then
       area_d = 4.0_r8*pi
       wght_d = 4.0_r8*pi
+    else if (iop_mode .and. dycore_is('SE')) then
+      area_d(1:ngcols) = 4.0_r8*pi/ngcols
+      wght_d(1:ngcols) = 4.0_r8*pi/ngcols
     else
       call get_horiz_grid_d(ngcols, area_d_out=area_d, wght_d_out=wght_d)
     endif

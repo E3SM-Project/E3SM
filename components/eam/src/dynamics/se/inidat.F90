@@ -165,10 +165,15 @@ contains
           enddo
         enddo
       enddo
-      
-      if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
-        call endrun('Could not find closest SCM point on input datafile')
-      endif
+ 
+      ! temp hardwired mods
+      ie_scm = 1
+      i_scm = 1
+      j_scm = 1
+      indx_scm = indx     
+!      if (ie_scm == 0 .or. i_scm == 0 .or. j_scm == 0 .or. indx_scm == 0) then
+!        call endrun('Could not find closest SCM point on input datafile')
+!      endif
 
     endif ! single_column
 
@@ -182,18 +187,18 @@ contains
     fieldname = 'U'
     tmp = 0.0_r8
     
-    if (.not. iop_mode) then    
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-    else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
-    endif  
+!    if (.not. iop_mode) then    
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+!    else
+!      tmp_iop = 0.0_r8 
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, tmp_iop, found, gridname='GLL')
+!    endif  
       
-    if(.not. found) then
-       call endrun('Could not find U field on input datafile')
-    end if
+!    if(.not. found) then
+!       call endrun('Could not find U field on input datafile')
+!    end if
     
     do ie=1,nelemd
        elem(ie)%state%v=0.0_r8
@@ -211,18 +216,18 @@ contains
     fieldname = 'V'
     tmp = 0.0_r8
 
-    if (.not. iop_mode) then
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-    else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
-    endif     
+!    if (.not. iop_mode) then
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+!    else
+!      tmp_iop = 0.0_r8 
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, tmp_iop, found, gridname='GLL')
+!    endif     
 
-    if(.not. found) then
-       call endrun('Could not find V field on input datafile')
-    end if
+!    if(.not. found) then
+!       call endrun('Could not find V field on input datafile')
+!    end if
 
     do ie=1,nelemd
        indx = 1
@@ -237,20 +242,20 @@ contains
     end do
 
     fieldname = 'T'
-    tmp = 0.0_r8
+    tmp = 290.0_r8
 
-    if (.not. iop_mode) then 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
-    else
-      tmp_iop = 0.0_r8 
-      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
-           1, nlev, tmp_iop, found, gridname='GLL')
-    endif
+!    if (.not. iop_mode) then 
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+!    else
+!      tmp_iop = 0.0_r8 
+!      call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!           1, nlev, tmp_iop, found, gridname='GLL')
+!    endif
 
-    if(.not. found) then
-       call endrun('Could not find T field on input datafile')
-    end if
+!    if(.not. found) then
+!       call endrun('Could not find T field on input datafile')
+!    end if
 
     do ie=1,nelemd
 #ifdef MODEL_THETA_L
@@ -359,8 +364,8 @@ contains
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
             else
               tmp_iop = 0.0_r8 
-              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, npsq,          &
-                1, nlev, tmp_iop, found, gridname='GLL')
+!              call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev', 1, npsq,          &
+!                1, nlev, tmp_iop, found, gridname='GLL')
             endif
     
           endif
@@ -451,12 +456,12 @@ contains
     end if
 
     fieldname = 'PS'
-    tmp(:,1,:) = 0.0_r8
-    call infld(fieldname, ncid_ini, ncol_name,      &
-         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-    if(.not. found) then
-       call endrun('Could not find PS field on input datafile')
-    end if
+    tmp(:,1,:) = 100000.0_r8
+!    call infld(fieldname, ncid_ini, ncol_name,      &
+!         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+!    if(.not. found) then
+!       call endrun('Could not find PS field on input datafile')
+!    end if
 
     ! Check read-in data to make sure it is in the appropriate units
     allocate(tmpmask(npsq,nelemd))
@@ -486,34 +491,34 @@ contains
     else    
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
-      if (fv_nphys == 0) then
-         call infld(fieldname, ncid_topo, ncol_name,      &
-              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-      else
+!      if (fv_nphys == 0) then
+!         call infld(fieldname, ncid_topo, ncol_name,      &
+!              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+!      else
          ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
          ! addition to PHIS.
-         call infld(trim(fieldname) // '_d', ncid_topo, ncol_name, &
-              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-         if (found) then
-            if (masterproc) then
-               write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
-                    ' on gridname ', trim(grid_name)
-            end if
-         else
-            ! Pure-FV topo file, so read FV PHIS and map it to GLL.
-            if (masterproc) then
-               write(iulog,*) 'reading FV ', trim(fieldname), &
-                    ' on gridname physgrid_d'
-            end if
-            read_pg_grid = .true.
-            call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-                 1, nelemd, phis_tmp, found, gridname='physgrid_d')
-            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
-         end if
-      end if
-      if(.not. found) then
-         call endrun('Could not find PHIS field on input datafile')
-      end if
+!         call infld(trim(fieldname) // '_d', ncid_topo, ncol_name, &
+!              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+!         if (found) then
+!            if (masterproc) then
+!               write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
+!                    ' on gridname ', trim(grid_name)
+!            end if
+!         else
+!            ! Pure-FV topo file, so read FV PHIS and map it to GLL.
+!            if (masterproc) then
+!               write(iulog,*) 'reading FV ', trim(fieldname), &
+!                    ' on gridname physgrid_d'
+!            end if
+!            read_pg_grid = .true.
+!            call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+!                 1, nelemd, phis_tmp, found, gridname='physgrid_d')
+!            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
+!         end if
+!      end if
+!      if(.not. found) then
+!         call endrun('Could not find PHIS field on input datafile')
+!      end if
     end if
 
     if (.not. read_pg_grid) then
