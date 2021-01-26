@@ -673,7 +673,7 @@
         <command name="load">sems-cmake/3.12.2</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">sems-gcc/7.3.0</command>
+        <command name="load">acme-gcc/8.1.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">sems-intel/19.0.5</command>
