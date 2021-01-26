@@ -138,10 +138,10 @@ contains
 
         do iCell = 1, nCells
            zTop = 0.0_RKIND
-           transmissionCoeffTop = ocn_forcing_transmission(zTop, surfaceFluxAttenuationCoefficient(iCell))
+           transmissionCoeffTop = ocn_forcing_transmission(zTop, sfcFlxAttCoeff(iCell))
            do k = 1, maxLevelCell(iCell)
               zBot = zTop - layerThickness(k,iCell)
-              transmissionCoeffBot = ocn_forcing_transmission(zBot, surfaceFluxAttenuationCoefficient(iCell))
+              transmissionCoeffBot = ocn_forcing_transmission(zBot, sfcFlxAttCoeff(iCell))
 
               fractionAbsorbed(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
 

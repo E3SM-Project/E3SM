@@ -534,7 +534,8 @@ module ocn_time_integration_split
                   sshCur, dt, vertAleTransportTop, err)
             endif
 
-           call ocn_tend_vel(tendPool, statePool, forcingPool, meshPool, stage1_tend_time, dt)
+           call ocn_tend_vel(tendPool, statePool, forcingPool, &
+                             stage1_tend_time, dt)
 
            block => block % next
          end do
@@ -1554,7 +1555,7 @@ module ocn_time_integration_split
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block % structs, 'shortwave', swForcingPool)
-            call ocn_tend_tracer(tendPool, statePool, forcingPool, meshPool, swForcingPool, &
+            call ocn_tend_tracer(tendPool, statePool, forcingPool, meshPool, swForcingPool, scratchPool, &
                     dt, activeTracersOnly, 2)
 
             block => block % next
@@ -1961,7 +1962,7 @@ module ocn_time_integration_split
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
  !       if (config_use_GM.or.config_use_Redi) then
- !          call ocn_gm_compute_Bolus_velocity(statePool, &
+ !          call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
  !             meshPool, scratchPool, timeLevelIn=2)
  !       end if
         call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
@@ -2064,7 +2065,7 @@ module ocn_time_integration_split
 
 !         ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
 !         if (config_use_GM.or.config_use_Redi) then
-!            call ocn_gm_compute_Bolus_velocity(statePool, &
+!            call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
 !               meshPool, scratchPool, timeLevelIn=2)
 !         end if
 

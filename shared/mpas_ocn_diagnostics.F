@@ -150,7 +150,7 @@ contains
       nCells = nCellsAll
       nVertices = nVerticesAll
 
-      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThicknessEdge)
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
 
       coef_3rd_order = config_coef_3rd_order
 
@@ -167,7 +167,7 @@ contains
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
-             layerThicknessEdge, normalVelocity, normalTransportVelocity, &
+             layerThickEdge, normalVelocity, normalTransportVelocity, &
              normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
@@ -181,7 +181,7 @@ contains
 
       call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
                 layerThickness, relativeVorticity, &
-                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                normRelVortEdge, normPlanetVortEdge, &
                 normalizedRelativeVorticityCell)
 
       !
@@ -194,7 +194,7 @@ contains
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 0, 'relative', density, err, &
-                                         inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
+                                         thermExpCoeff, salineContractCoeff, &
                                          timeLevelIn=timeLevel)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
@@ -255,9 +255,9 @@ contains
          ! average tracer values over the ocean surface layer
          ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
          call ocn_diagnostic_solve_surfaceLayer(layerThickness, activeTracers, &
-                layerThicknessEdge, normalVelocity, tracersSurfaceLayerValue,  &
+                layerThickEdge, normalVelocity, tracersSurfaceLayerValue,  &
                 indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
-                surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)
+                sfcFlxAttCoeff, surfaceFluxAttenuationCoefficientRunoff)
 
       end if ! full_compute
 
@@ -1719,12 +1719,12 @@ contains
         ! thicknessSum is initialized outside the loop because on land boundaries
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
         ! nonzero value to avoid a NaN.
-        normalThicknessFluxSum = layerThicknessEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
-        thicknessSum  = layerThicknessEdge(1,iEdge)
+        normalThicknessFluxSum = layerThickEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
+        thicknessSum  = layerThickEdge(1,iEdge)
 
         do k = 2, maxLevelEdgeTop(iEdge)
-          normalThicknessFluxSum = normalThicknessFluxSum + layerThicknessEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
-          thicknessSum  =  thicknessSum + layerThicknessEdge(k,iEdge)
+          normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
+          thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum / thicknessSum
@@ -2026,8 +2026,8 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
-         topDragMagnitude(iCell) = rho_sw * landIceFraction(iCell) &
-                                   * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
+         topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
+                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
@@ -2120,7 +2120,7 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          if(landIceMask(iCell) == 1) then
-            surfaceFluxAttenuationCoefficient(iCell) = config_land_ice_flux_attenuation_coefficient
+            sfcFlxAttCoeff(iCell) = config_land_ice_flux_attenuation_coefficient
          end if
       end do
       !$omp end do

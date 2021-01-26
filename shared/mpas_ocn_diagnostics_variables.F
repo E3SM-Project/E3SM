@@ -44,19 +44,19 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: circulation
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticityCell
-   real (kind=RKIND), dimension(:,:), pointer :: normalizedPlanetaryVorticityEdge
-   real (kind=RKIND), dimension(:,:), pointer :: normalizedRelativeVorticityEdge
+   real (kind=RKIND), dimension(:,:), pointer :: normPlanetVortEdge
+   real (kind=RKIND), dimension(:,:), pointer :: normRelVortEdge
    real (kind=RKIND), dimension(:,:), pointer :: normalizedRelativeVorticityCell
    real (kind=RKIND), dimension(:,:), pointer :: density
    real (kind=RKIND), dimension(:,:), pointer :: displaceddensity
    real (kind=RKIND), dimension(:,:), pointer :: potentialdensity
    real (kind=RKIND), dimension(:,:), pointer :: montgomeryPotential
    real (kind=RKIND), dimension(:,:), pointer :: pressure
-   real (kind=RKIND), dimension(:,:), pointer :: inSituThermalExpansionCoeff
-   real (kind=RKIND), dimension(:,:), pointer :: inSituSalineContractionCoeff
+   real (kind=RKIND), dimension(:,:), pointer :: thermExpCoeff
+   real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
-   real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdge
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
@@ -74,12 +74,12 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
    real (kind=RKIND), dimension(:),   pointer :: indexSurfaceLayerDepth
 
-   real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
+   real (kind=RKIND), dimension(:), pointer :: sfcFlxAttCoeff
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
 
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: topDrag
-   real (kind=RKIND), dimension(:), pointer :: topDragMagnitude
+   real (kind=RKIND), dimension(:), pointer :: topDragMag
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -231,19 +231,19 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
       call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
       call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
-      call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normPlanetVortEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normRelVortEdge)
       call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityCell', normalizedRelativeVorticityCell)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
       call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',thermExpCoeff)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', salineContractCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
       call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThickEdge)
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
       call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
@@ -262,12 +262,12 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceLayerValue', tracersSurfaceLayerValue)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
-      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', sfcFlxAttCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficientRunoff', surfaceFluxAttenuationCoefficientRunoff)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
-      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMagnitude)
+      call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
