@@ -99,6 +99,7 @@ module physpkg
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
 #define ADDCP
+!#undef ADDCP
 
 
   !======================================================================= 
@@ -1402,7 +1403,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, cpair
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1781,6 +1782,7 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
 
+#if 1
 !!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
 !save current TE
     state%tebefore(:ncol) = state%te_cur(:ncol)
@@ -1802,14 +1804,21 @@ if (l_ac_energy_chk) then
     state%pdel = state%oldpdel
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif
 
 #ifdef ADDCP
 !take CP term out of te_cur
-    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)*ztodt
+!original
+
+    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)*ztodt &
+                        + cam_in%cflx(:ncol,1)*ztodt*cpair*state%t(:ncol,pver)
+
+!    state%te_cur(:ncol) = state%te_cur(:ncol) -( state%tebefore(:ncol)-state%teafter(:ncol) )
 #endif
 
-    call outfld('CP', state%cpterm*ztodt            , pcols, lchnk )
-    call outfld('PW', state%teafter - state%tebefore, pcols, lchnk )
+    call outfld('CP',(state%cpterm - cam_in%cflx(:ncol,1)*cpair*state%t(:ncol,pver))*ztodt &
+                                                                            , pcols, lchnk )
+    call outfld('PW', state%tebefore - state%teafter, pcols, lchnk )
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
