@@ -2573,12 +2573,14 @@
       <!-- AND, setting 'CLM_USE_PETSC' value to 'TRUE' in 'env_build.xml' to append PETSc includes and Libraries,
                 otherwise,explicitly appending  ' -I$ENV{PETSC_DIR}/include $ENV{MKLROOT_INC}' in 'PFLOTRAN_INC' and
                  ' -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis $ENV{MKLROOT_LIB} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential' in 'PFLOTTRAN_LIB' -->
-        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
+        <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</env>
         <env name="PETSC_ARCH"></env> <!-- this is needed for cmake list of CLM_USE_PETSC, default by 'null' if installed PETSc rather than Built only -->
-        <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} </env>
+        <!--<env name="PETSC_LIB">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3/lib</env> 
+        <env name="BLASLAPACK_LIBDIR">/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3/lib</env> -->
+	      <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} </env>
         <!-- env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran </env>
              note that still needs PETSc libs explicitly on CADES probably due to older GCC -->
-        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis </env>
+        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_PATH}/lib -lpetsc -lparmetis -lmetis </env>
     </environment_variables>
   </machine>
 
