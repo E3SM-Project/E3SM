@@ -1145,6 +1145,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
+        <arg name="placement">-ppn {{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
