@@ -222,9 +222,11 @@ module shr_reprosum_mod
 ! The accuracy of the fixed point algorithm is controlled by the
 ! number of "levels" of integer expansion. The algorithm will calculate
 ! the number of levels that is required for the sum to be essentially
-! exact. The optional parameter arr_max_levels can be used to override
-! the calculated value. The optional parameter arr_max_levels_out can be
-! used to return the values used.
+! exact. (The sum as represented by the integer expansion will be exact,
+! but roundoff may perturb the least significant digit of the returned
+! real*8 representation of the sum.) The optional parameter arr_max_levels
+! can be used to override the calculated value. The optional parameter
+! arr_max_levels_out can be used to return the values used.
 !
 ! The algorithm also requires an upper bound on
 ! the maximum summand (in absolute value) for each field, and will
@@ -294,7 +296,7 @@ module shr_reprosum_mod
                                          ! input array
 
       real(r8), intent(out):: arr_gsum(nflds)
-                                         ! global means
+                                         ! global sums
 
       logical,  intent(in),    optional :: ddpdd_sum
                                          ! use ddpdd algorithm instead
@@ -597,6 +599,13 @@ module shr_reprosum_mod
                max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
                max_nsummands = max(max_nsummands, tasks*omp_nthreads)
+! A 'max' is used in the above calculation because the partial sum for
+! each thread, calculated in shr_reprosum_int, is postprocessed so that
+! each integer in the corresponding vector of integers is reduced in
+! magnitude to be less than (radix(IX_8)**arr_max_shift). Therefore,
+! the maximum shift can be calculated separately for per thread sums
+! and sums over threads and tasks, and the smaller value used. This is
+! equivalent to using max_nsummands as defined above.
 
                xmax_nsummands = dble(max_nsummands)
                arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
@@ -722,6 +731,13 @@ module shr_reprosum_mod
             max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
             max_nsummands = max(max_nsummands, tasks*omp_nthreads)
+! A 'max' is used in the above calculation because the partial sum for
+! each thread, calculated in shr_reprosum_int, is postprocessed so that
+! each integer in the corresponding vector of integers is reduced in
+! magnitude to be less than (radix(IX_8)**arr_max_shift). Therefore,
+! the maximum shift can be calculated separately for per thread sums
+! and sums over threads and tasks, and the smaller value used. This is
+! equivalent to using max_nsummands as defined above.
 
             xmax_nsummands = dble(max_nsummands)
             arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
@@ -731,7 +747,7 @@ module shr_reprosum_mod
             endif
 
 ! determine maximum number of levels required for each field
-! ((digits(0_i8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) / arr_max_shift)
+! ((digits(0.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) / arr_max_shift)
 ! + 1 because first truncation probably does not involve a maximal shift
 ! + 1 to guarantee that the integer division rounds up (not down)
 ! (setting lower bound on max_level*nflds to be 64 to improve OpenMP
@@ -739,7 +755,7 @@ module shr_reprosum_mod
             max_level = (64/nflds) + 1
             do ifld=1,nflds
                max_levels(ifld) = 2 + &
-                ((digits(0_i8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) &
+                ((digits(0.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) &
                 / arr_max_shift)
                if ( present(arr_max_levels) .and. (.not. validate) ) then
 ! if validate true, then computation with arr_max_levels failed
@@ -905,7 +921,7 @@ module shr_reprosum_mod
          !  or max_levels and arr_gmax_exp do not generate accurate
          !  enough sums
 
-      real(r8), intent(out):: arr_gsum(nflds)      ! global means
+      real(r8), intent(out):: arr_gsum(nflds)      ! global sums
 !
 ! Local workspace
 !
