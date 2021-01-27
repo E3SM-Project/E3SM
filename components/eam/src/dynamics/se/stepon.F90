@@ -517,9 +517,13 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
        call scm_broadcast()
        call scm_setfield(elem,iop_update_phase1)
+     endif
+
+     if (iop_mode) then
+       call scm_setfield(elem,iop_update_phase1)
      endif   
 
-   endif   
+   endif
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')

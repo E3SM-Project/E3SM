@@ -98,6 +98,7 @@ subroutine scm_setinitial(elem)
               !    velocity with the large-scale one.  wfld is used in forecast.F90
               !    for the compuation of the large-scale subsidence.
               if (have_omega .and. .not. iop_mode) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
+              elem(ie)%derived%omega_p(i,j,k) = 0.0
             enddo
 
           endif
@@ -264,7 +265,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           stateQin1(:,:) = stateQin_qfcst(:,:)
           stateQin2(:,:) = stateQin_qfcst(:,:)        
 
-          if (.not. use_3dfrc) then
+          if (.not. use_3dfrc .or. iop_mode) then
             temp_tend(:) = 0.0_real_kind
           else
             temp_tend(:) = elem(ie)%derived%fT(i,j,:)
