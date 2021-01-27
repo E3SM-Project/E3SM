@@ -21,8 +21,8 @@ module mo_gas_phase_chemdr
 
   integer :: map2chm(pcnst) = 0           ! index map to/from chemistry/constituents list
 
-  integer :: synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
-  integer :: o3_ndx, o3lnz_ndx
+  integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
+!  integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
@@ -73,7 +73,11 @@ contains
     hno3_ndx = get_spc_ndx('HNO3')
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
-    o3lnz_ndx = get_spc_ndx('O3LNZ')
+!    o3lnz_ndx =   get_spc_ndx('O3LNZ')
+!    n2olnz_ndx =  get_spc_ndx('N2OLNZ')
+!    noylnz_ndx =  get_spc_ndx('NOYLNZ')
+!    ch4lnz_ndx =  get_spc_ndx('CH4LNZ')
+!
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
     do m = 1,extcnt
@@ -238,7 +242,7 @@ contains
 !
 ! LINOZ
 !
-    use lin_strat_chem,    only : do_lin_strat_chem, lin_strat_chem_solve, lin_strat_sfcsink
+    use lin_strat_chem,    only : do_lin_strat_chem,linoz_v2, linoz_v3, linv2_strat_chem_solve, linv3_strat_chem_solve, lin_strat_sfcsink
     use linoz_data,        only : has_linoz_data
 !
 ! for aqueous chemistry and aerosol growth
@@ -373,8 +377,9 @@ contains
     real(r8) :: mmr_tend(pcols,pver,gas_pcnst) ! chemistry species tendencies (kg/kg/s)
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
     real(r8) :: delta
+     !linoz v3
+    real(r8) :: xsfc(4)                        ! constant surface concentration for o3/o3lnz, n2o, noylnz, and ch4 if called
     real(r8) :: o3lsfcsink(ncol)               ! linoz o3lnz surface sink from call lin_strat_sfcsink 
-
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
@@ -847,13 +852,14 @@ contains
 
 !
 ! LINOZ
-!
+!    write(iulog,*)'do_lin_strat_chem=',do_lin_strat_chem,'linoz_v2=',linoz_v2,'linoz_v3=',linoz_v3
+    xsfc=0    
     if ( do_lin_strat_chem ) then
-       call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3lnz_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
-       call lin_strat_sfcsink (ncol, lchnk,  vmr(:,:,o3lnz_ndx), delt, pdel(:ncol,:))
-
-       call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
+       if(linoz_v2) call linv2_strat_chem_solve( ncol, lchnk, vmr,                col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )                  
+       if(linoz_v3) call linv3_strat_chem_solve( ncol, lchnk, vmr, h2ovmr, xsfc,  col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
+       call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
+
 
     !-----------------------------------------------------------------------      
     !         ... Check for negative values and reset to zero
