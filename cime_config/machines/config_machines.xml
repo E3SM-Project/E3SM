@@ -1141,14 +1141,7 @@
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="impi">
-      <executable>mpirun</executable>
-      <arguments>
-        <arg name="num_tasks"> -l -n {{ total_tasks }}</arg>
-        <arg name="placement">-ppn {{ tasks_per_node }}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
+    <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
@@ -1229,14 +1222,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
-    </environment_variables>
-    <environment_variables mpilib="impi">
-      <env name="I_MPI_PIN_DOMAIN">omp</env>
-      <env name="I_MPI_PIN_ORDER">spread</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-    </environment_variables>
-    <environment_variables mpilib="impi" DEBUG="TRUE">
-      <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
   </machine>
 
