@@ -8,7 +8,6 @@ module metagraph_mod
   use kinds, only : int_kind, iulog
   use gridgraph_mod, only : gridvertex_t, gridedge_t, &
        allocate_gridvertex_nbrs, assignment ( = )
-  use pio_types ! _EXTERNAL
 
   implicit none 
   private 
