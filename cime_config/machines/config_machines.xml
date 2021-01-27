@@ -679,7 +679,7 @@
         <command name="load">sems-intel/19.0.5</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
       <modules mpilib="!mpi-serial">
