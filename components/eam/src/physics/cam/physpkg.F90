@@ -1810,15 +1810,18 @@ if (l_ac_energy_chk) then
 !take CP term out of te_cur
 !original
 
-    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cpterm(:ncol)*ztodt &
-                        + cam_in%cflx(:ncol,1)*ztodt*cpair*state%t(:ncol,pver)
+    state%te_cur(:ncol) = state%te_cur(:ncol) - state%cptermp(:ncol)*ztodt &
+                                              + state%cpterme(:ncol)*ztodt 
 
+!                        + cam_in%cflx(:ncol,1)*ztodt*cpair*state%t(:ncol,pver)
 !    state%te_cur(:ncol) = state%te_cur(:ncol) -( state%tebefore(:ncol)-state%teafter(:ncol) )
 #endif
 
-    call outfld('CP',(state%cpterm - cam_in%cflx(:ncol,1)*cpair*state%t(:ncol,pver))*ztodt &
+    call outfld('CPflux', (state%cptermp - state%cpterme) &
                                                                             , pcols, lchnk )
-    call outfld('PW', state%tebefore - state%teafter, pcols, lchnk )
+    call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
+
+    call outfld('PWmCPflux', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
@@ -2783,11 +2786,8 @@ end if ! l_rad
     call t_stopf('diag_export')
 
 !use cam_out to compute cpterm
-    state%cpterm(:ncol) = 1000.0 * cpair * 300.0 * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
-
-#ifdef ADDCP
-    fsns(:ncol) = fsns(:ncol) + state%cpterm(:ncol) 
-#endif
+    state%cptermp(:ncol) = 1000.0 * cpair * state%t(:ncol,pver) * ( cam_out%precl(:ncol) + cam_out%precc(:ncol) )
+    state%cpterme(:ncol) =          cpair * state%t(:ncol,pver) * cam_in%cflx(:ncol,1)
 
     call check_tracers_fini(tracerint)
 

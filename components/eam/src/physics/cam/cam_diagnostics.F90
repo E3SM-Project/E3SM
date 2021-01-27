@@ -194,8 +194,9 @@ subroutine diag_init()
    call addfld ('TTEND_TOT',(/ 'lev' /), 'A','K/s' ,'Total temperature tendency'   )
  
 
-   call addfld ('CP',horiz_only, 'A','w/m2' ,'cp term'   )
-   call addfld ('PW',horiz_only, 'A','w/m2' ,'pw term'   )
+   call addfld ('CPflux',horiz_only, 'A','w/m2' ,'cp term'   )
+   call addfld ('PWflux',horiz_only, 'A','w/m2' ,'pw term'   )
+   call addfld ('PWmCPflux',horiz_only, 'A','w/m2' ,'pw m cp term'   )
 
  
    ! column burdens for all constituents except water vapor
