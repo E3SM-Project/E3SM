@@ -913,8 +913,8 @@ end if
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
 ! Set some temporary defaults
-    Lx = 5000.0D0 * 1000.0D0
-    Ly = 5000.0D0 * 1000.0D0
+    Lx = 200.0D0 * 1000.0D0
+    Ly = 200.0D0 * 1000.0D0
     Sx = 0.0D0
     Sy = 0.0D0
     if (test_case == "planar_dbl_vrtx") then

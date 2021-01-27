@@ -81,15 +81,15 @@ subroutine scm_setinitial(elem)
 #ifdef MODEL_THETA_L
               if (have_t) elem(ie)%derived%FT(i,j,k)=tobs(k)
 #else
-              if (have_t) elem(ie)%state%T(i,j,k,1)=tobs(k)
+              if (have_t) elem(ie)%state%T(i,j,k,:)=tobs(k)
 #endif
-              if (have_q) elem(ie)%state%Q(i,j,k,1)=qobs(k)
+              if (have_q) elem(ie)%state%Q(i,j,k,:)=qobs(k)
             enddo
 
             do k=1,PLEV
-              if (have_ps) elem(ie)%state%ps_v(i,j,1) = psobs
-              if (have_u) elem(ie)%state%v(i,j,1,k,1) = uobs(k)
-              if (have_v) elem(ie)%state%v(i,j,2,k,1) = vobs(k)
+              if (have_ps) elem(ie)%state%ps_v(i,j,:) = psobs
+              if (have_u) elem(ie)%state%v(i,j,1,k,:) = uobs(k)
+              if (have_v) elem(ie)%state%v(i,j,2,k,:) = vobs(k)
               if (have_numliq) elem(ie)%state%Q(i,j,k,inumliq) = numliqobs(k)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
@@ -256,7 +256,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     ! Get temperature from dynamics state
     call get_temperature(elem(ie),temperature,hvcoord,t1)
-
+    
       do j=1,np_todo
         do i=1,np_todo
 
