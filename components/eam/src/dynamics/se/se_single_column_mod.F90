@@ -83,7 +83,7 @@ subroutine scm_setinitial(elem)
 #else
               if (have_t) elem(ie)%state%T(i,j,k,:)=tobs(k)
 #endif
-              if (have_q) elem(ie)%state%Q(i,j,k,:)=qobs(k)
+              if (have_q) elem(ie)%state%Q(i,j,k,1)=qobs(k)
             enddo
 
             do k=1,PLEV
