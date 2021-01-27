@@ -194,6 +194,8 @@ contains
       integer :: k
       real (kind=RKIND) :: fractionTotal
 
+      err = 0
+
       ! Get pool stuff
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
