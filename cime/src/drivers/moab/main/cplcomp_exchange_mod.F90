@@ -18,6 +18,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+  use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -1077,7 +1078,11 @@ contains
         endif
 #ifdef MOABDEBUG
         ! debug test
-        outfile = 'recMeshAtm.h5m'//CHAR(0)
+        if (atm_pg_active) then !
+          outfile = 'recMeshAtmPG.h5m'//CHAR(0)
+        else
+          outfile = 'recMeshAtm.h5m'//CHAR(0)
+        endif
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0)
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
@@ -1123,19 +1128,19 @@ contains
       ! we can receive those tags only on coupler pes, when mbaxid exists
       ! we have to check that before we can define the tag
       if (mbaxid .ge. 0 ) then
-        tagnameProj = 'T_ph16'//CHAR(0)
+        tagname = 'T_ph16'//CHAR(0)
         tagtype = 1  ! dense, double
         if (atm_pg_active) then
           numco = 1 ! just one value per cell !
         else
           numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
         endif
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
         ! define more tags
-        tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'v_ph16'//CHAR(0)  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
+        tagname = 'u_ph16'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+        tagname = 'v_ph16'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags '
           call shr_sys_abort(subname//' ERROR in defining tags ')
@@ -1228,7 +1233,18 @@ contains
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in sending land mesh '
            call shr_sys_abort(subname//' ERROR in sending land mesh ')
-         endif
+        endif
+        ! create the receiver on land mesh too:
+        tagnameProj = 'a2lTbot_proj'//CHAR(0)  ! temperature
+        tagtype = 1  ! dense, double
+        numco = 1 !  one value per vertex / entity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+
+        ! define more tags
+        tagnameProj = 'a2lUbot_proj'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'a2lVbot_proj'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
 
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
@@ -1238,7 +1254,7 @@ contains
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in registering coupler land '
            call shr_sys_abort(subname//' ERROR in registering coupler land')
-         endif
+        endif
         ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
         if (ierr .ne. 0) then
            write(logunit,*) subname,' error in receiving coupler land mesh'
@@ -1260,18 +1276,20 @@ contains
           call shr_sys_abort(subname//' ERROR in defining tags on land coupler')
         endif
 #ifdef MOABDEBUG
-        !there are no shared entities, but we will set a special partition tag, in order to see the
-        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-        tagname='partition'//CHAR(0)
-        tagtype = 0  ! dense, integer
-        numco = 1 !  one value per cell
-        ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-        ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
-        allocate(vgids(nverts(1)))
-        vgids = rank
-        ent_type = 0 ! vertex type
-        ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
         ! debug test
+        if (sameg_al) then
+          !there are no shared entities, but we will set a special partition tag, in order to see the
+          ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+          tagname='partition'//CHAR(0)
+          tagtype = 0  ! dense, integer
+          numco = 1 !  one value per cell
+          ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+          ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
+          allocate(vgids(nverts(1)))
+          vgids = rank
+          ent_type = 0 ! vertex type
+          ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
+        endif
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 !       write out the mesh file to disk

@@ -73,7 +73,7 @@ contains
     use mct_mod
     use ESMF
 #ifdef HAVE_MOAB
-    use seq_comm_mct,      only: mlnid  ! id of moab land app
+    use seq_comm_mct,      only: mlnid ! id of moab land app
 #endif
     !
     ! !ARGUMENTS:
@@ -127,6 +127,9 @@ contains
     integer, external :: iMOAB_RegisterFortranApplication
     integer :: ierr
     character*32  appname
+    logical :: samegrid_al !
+    character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
+    character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
     ! debugIuli
     integer   ::        debugGSMapFile, n
 #endif
@@ -305,7 +308,13 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
-    call init_land_moab(bounds)
+!   find out samegrid_al or not; from infodata
+    samegrid_al = .true.
+    call seq_infodata_GetData(infodata         , &
+                   atm_gnam=atm_gnam           , &
+                   lnd_gnam=lnd_gnam           )
+    if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+    call init_land_moab(bounds, samegrid_al)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
@@ -756,14 +765,16 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
-  subroutine init_land_moab(bounds)
+  subroutine init_land_moab(bounds, samegrid_al)
     use seq_comm_mct,      only: mlnid  ! id of moab land app
+    use seq_comm_mct,      only: sameg_al ! same grid as atm
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use clm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
 
     type(bounds_type) , intent(in)  :: bounds
+    logical :: samegrid_al
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -771,97 +782,209 @@ contains
     integer n
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-         iMOAB_ResolveSharedEntities
+         iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
     ! number of vertices is the size of land domain
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     real(r8)   :: latv, lonv
-    integer   dims, i, ilat, ilon, igdx, ierr, tagindex
-    integer tagtype, numco, ent_type
+    integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
+    integer tagtype, numco, ent_type, mbtype, block_ID
     character*100 outfile, wopts, localmeshfile, tagname
 
-    dims  =3 ! store as 3d mesh
+    integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
+    dims  =3 ! store as 3d mesh
+    sameg_al = samegrid_al ! use a different name, but they do mean the same thing
     ! number the local grid
     lsz = bounds%endg - bounds%begg + 1
-    allocate(moab_vert_coords(lsz*dims))
-    allocate(vgids(lsz))
+
+    allocate(vgids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
 
     do n = 1, lsz
-       vgids(n) = ldecomp%gdc2glo(bounds%begg+n-1)
+       vgids(n) = ldecomp%gdc2glo(bounds%begg+n-1) ! local to global !
     end do
-    gsize = ldomain%ni * ldomain%nj
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      lonv = ldomain%lonc(n) *SHR_CONST_PI/180.
-      latv = ldomain%latc(n) *SHR_CONST_PI/180.
-      moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
-      moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
-      moab_vert_coords(3*i  )=SIN(latv)
-    enddo
-    ierr = iMOAB_CreateVertices(mlnid, lsz*3, dims, moab_vert_coords)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create MOAB vertices in land model')
+    gsize = ldomain%ni * ldomain%nj ! size of the total grid
+    ! if ldomain%nv > 3 , create mesh
+    if (ldomain%nv .ge. 3 .and.  .not.sameg_al) then
+        ! number of vertices is nv * lsz !
+        allocate(moab_vert_coords(lsz*dims*ldomain%nv))
+        ! loop over ldomain
+        allocate(moabconn(ldomain%nv * lsz))
+        do n = bounds%begg, bounds%endg
+            i = (n - bounds%begg) * ldomain%nv
+            do iv = 1, ldomain%nv
+               lonv = ldomain%lonv(n, iv) * SHR_CONST_PI/180.
+               latv = ldomain%latv(n, iv) * SHR_CONST_PI/180.
+               i = i + 1 ! iv-th vertex of cell n; i starts at 1 ! should we repeat previous if nan
+               ! print *, i, n, ldomain%lonv(n, iv) , ldomain%latv(n, iv)
+               moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+               moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+               moab_vert_coords(3*i  )=SIN(latv)
+               moabconn(i) = i!
+            enddo
+        enddo
+        ierr = iMOAB_CreateVertices(mlnid, lsz * 3 * ldomain%nv, dims, moab_vert_coords)
+        if (ierr > 0 )  &
+            call endrun('Error: fail to create MOAB vertices in land model')
 
-    tagtype = 0  ! dense, integer
-    numco = 1
-    tagname='GLOBAL_ID'//CHAR(0)
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
-    ent_type = 0 ! vertex type
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set GLOBAL_ID tag ')
+        mbtype = 2 ! triangle
+        if (ldomain%nv .eq. 4) mbtype = 3 ! quad
+        if (ldomain%nv .gt. 4) mbtype = 4 ! polygon
+        block_ID = 100 !some value
+        ierr = iMOAB_CreateElements( mlnid, lsz, mbtype, ldomain%nv, moabconn, block_ID );
+        ! define some tags on cells now, not on vertices
+        tagtype = 0  ! dense, integer
+        numco = 1
+        tagname='GLOBAL_ID'//CHAR(0)
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
-    ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
-    if (ierr > 0 )  &
-      call endrun('Error: fail to resolve shared entities')
+        ent_type = 1 ! element type
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set GLOBAL_ID tag ')
 
-    !there are no shared entities, but we will set a special partition tag, in order to see the
-    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-    tagname='partition'//CHAR(0)
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create new partition tag ')
+!        ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
+!        if (ierr > 0 )  &
+!          call endrun('Error: fail to resolve shared entities')
 
-    vgids = iam
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set partition tag ')
+!        !there are no shared entities, but we will set a special partition tag, in order to see the
+!        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+!        tagname='partition'//CHAR(0)
+!        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+!        if (ierr > 0 )  &
+!          call endrun('Error: fail to create new partition tag ')
+!
+!        vgids = iam
+!        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+!        if (ierr > 0 )  &
+!          call endrun('Error: fail to set partition tag ')
 
-    ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
-    !   on the vertices; do not allocate other data array
-    tagname='frac'//CHAR(0)
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create frac tag ')
+        ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
+        !   on the vertices; do not allocate other data array
+        tagname='frac'//CHAR(0)
+        tagtype = 1 ! dense, double
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create frac tag ')
 
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      moab_vert_coords(i) = ldomain%frac(n)
-    enddo
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set frac tag ')
+        do i = 1, lsz
+          n = i-1 + bounds%begg
+          moab_vert_coords(i) = ldomain%frac(n)
+        enddo
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set frac tag ')
 
-    tagname='area'//CHAR(0)
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create area tag ')
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
-    enddo
+        tagname='area'//CHAR(0)
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create area tag ')
+        do i = 1, lsz
+          n = i-1 + bounds%begg
+          moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
+        enddo
 
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set area tag ')
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set area tag ')
 
+        deallocate(moabconn)
+        ! use merge vertices new imoab method to fix cells
+        deallocate(vgids) ! use it for global ids, for elements in full mesh or vertices in point cloud
+        allocate(vgids(lsz*ldomain%nv)) ! 
+        do n = 1, lsz
+          do i=1,ldomain%nv
+            vgids( (n-1)*ldomain%nv+i ) = (ldecomp%gdc2glo(bounds%begg+n-1)-1)*ldomain%nv+i ! local to global !
+          end do
+        end do
+        ent_type = 0 ! vertices now
+        tagname = 'GLOBAL_ID'//CHAR(0)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set global ID tag on vertices in land mesh ')
+        ierr = iMOAB_UpdateMeshInfo( mlnid )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to update mesh info ')
+        !ierr = iMOAB_MergeVertices(mlnid)
+        !if (ierr > 0 )  &
+        !  call endrun('Error: fail to fix vertices in land mesh ')
+
+    else ! old point cloud mesh
+        allocate(moab_vert_coords(lsz*dims))
+        do i = 1, lsz
+          n = i-1 + bounds%begg
+          lonv = ldomain%lonc(n) *SHR_CONST_PI/180.
+          latv = ldomain%latc(n) *SHR_CONST_PI/180.
+          moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+          moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+          moab_vert_coords(3*i  )=SIN(latv)
+        enddo
+        ierr = iMOAB_CreateVertices(mlnid, lsz*3, dims, moab_vert_coords)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create MOAB vertices in land model')
+
+        tagtype = 0  ! dense, integer
+        numco = 1
+        tagname='GLOBAL_ID'//CHAR(0)
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+
+        ent_type = 0 ! vertex type
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set GLOBAL_ID tag ')
+
+        ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
+        if (ierr > 0 )  &
+          call endrun('Error: fail to resolve shared entities')
+
+        !there are no shared entities, but we will set a special partition tag, in order to see the
+        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+        tagname='partition'//CHAR(0)
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create new partition tag ')
+
+        vgids = iam
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set partition tag ')
+
+        ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
+        !   on the vertices; do not allocate other data array
+        tagname='frac'//CHAR(0)
+        tagtype = 1 ! dense, double
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create frac tag ')
+
+        do i = 1, lsz
+          n = i-1 + bounds%begg
+          moab_vert_coords(i) = ldomain%frac(n)
+        enddo
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set frac tag ')
+
+        tagname='area'//CHAR(0)
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create area tag ')
+        do i = 1, lsz
+          n = i-1 + bounds%begg
+          moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
+        enddo
+
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set area tag ')
+    endif
     deallocate(moab_vert_coords)
     deallocate(vgids)
 #ifdef MOABDEBUG
