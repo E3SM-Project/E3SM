@@ -39,6 +39,7 @@
     config_nSnowLayers = 1
 /
 &initialize
+    config_earth_radius = 6371229.0
     config_initial_condition_type = 'none'
     config_initial_ice_area = 1.0
     config_initial_ice_volume = 1.0
