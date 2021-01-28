@@ -23,10 +23,4 @@
 ! Set glc_do_dynglacier  with GLC_TWO_WAY_COUPLING               env variable
 !----------------------------------------------------------------------------------
 
- hist_dov2xy = .true.,.true.
- hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'SNOW', 'FSDS', 'FSR', 'FLDS', 'FIRE'
- hist_mfilt = 1,365
- hist_nhtfrq = 0,-24
- hist_avgflag_pertape = 'A','A'
- check_finidat_year_consistency = .false.
- !finidat = '${case_scripts_dir}/../init/remap_to_naRRMpg2_20201217.beta1_01.piControlSI.compy.elm.r.0121-01-01-00000.nc'
+ check_finidat_year_consistency = .false. 
