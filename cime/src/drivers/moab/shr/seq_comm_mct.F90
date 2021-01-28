@@ -219,6 +219,7 @@ module seq_comm_mct
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
+  logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes

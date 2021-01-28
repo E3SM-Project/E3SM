@@ -18,6 +18,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+  use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -1276,6 +1277,19 @@ contains
         endif
 #ifdef MOABDEBUG
         ! debug test
+        if (sameg_al) then
+          !there are no shared entities, but we will set a special partition tag, in order to see the
+          ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+          tagname='partition'//CHAR(0)
+          tagtype = 0  ! dense, integer
+          numco = 1 !  one value per cell
+          ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+          ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
+          allocate(vgids(nverts(1)))
+          vgids = rank
+          ent_type = 0 ! vertex type
+          ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
+        endif
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 !       write out the mesh file to disk
