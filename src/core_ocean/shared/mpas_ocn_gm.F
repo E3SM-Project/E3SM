@@ -15,6 +15,7 @@ module ocn_gm
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -84,7 +85,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_GM_compute_Bolus_velocity(statePool, diagnosticsPool, &
+   subroutine ocn_GM_compute_Bolus_velocity(statePool, &
                                             meshPool, scratchPool, timeLevelIn)
       !{{{
 
@@ -108,7 +109,6 @@ contains
       !-----------------------------------------------------------------
 
       type(mpas_pool_type), intent(inout) :: &
-         diagnosticsPool, &! pool containing some diagnostics
          scratchPool           ! pool containing some scratch space
 
       !-----------------------------------------------------------------
@@ -117,18 +117,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real(kind=RKIND), dimension(:, :), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
-                                                    normalVelocity, tangentialVelocity, layerThicknessEdge, &
-                                                    k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
-                                                    layerThickness, inSituThermalExpansionCoeff, &
-                                                    inSituSalineContractionCoeff, RediKappaScaling, gmKappaScaling, RediKappaSfcTaper, &
-                                                    zTop, RiTopOfCell
+      real(kind=RKIND), dimension(:, :), pointer :: &
+                                                    normalVelocity, &
+                                                    layerThickness
 
-      real(kind=RKIND), dimension(:), pointer   :: c_Visbeck, gmBolusKappa, cGMphaseSpeed, &
-                ssh, eddyLength, eddyTime, betaEdge, fEdge, gmResolutionTaper, RediKappa
-      real(kind=RKIND), dimension(:, :, :), pointer :: slopeTriadUp, slopeTriadDown
+      real(kind=RKIND), dimension(:), pointer   :: &
+                ssh, fEdge
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell, indMLD
+      integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
@@ -170,31 +166,6 @@ contains
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-
-      call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff', inSituThermalExpansionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
-
-      call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
-      call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
-      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-      call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -339,8 +310,8 @@ contains
                areaEdge = dcEdge(iEdge)*dvEdge(iEdge)
    
                do k = 1, maxLevelEdgeTop(iEdge)
-                  drhoDT = -inSituThermalExpansionCoeff(k, iCell)
-                  drhoDS = inSituSalineContractionCoeff(k, iCell)
+                  drhoDT = -thermExpCoeff(k, iCell)
+                  drhoDS = salineContractCoeff(k, iCell)
                   dTdx = (activeTracers(indexTemperature, k, cell2) &
                           - activeTracers(indexTemperature, k, cell1)) &
                          *dcEdgeInv
@@ -499,8 +470,8 @@ contains
             ! The interpolation can only be carried out on non-boundary edges
             if (maxLevelEdgeTop(iEdge) .GE. 1) then
                do k = 2, maxLevelEdgeTop(iEdge)
-                  h1 = layerThicknessEdge(k-1,iEdge)
-                  h2 = layerThicknessEdge(k,iEdge)
+                  h1 = layerThickEdge(k-1,iEdge)
+                  h2 = layerThickEdge(k,iEdge)
                   ! Using second-order interpolation below
                   gradDensityTopOfEdge(k,iEdge) = (h2 * gradDensityEdge(k-1,iEdge) + h1 * &
                                 gradDensityEdge(k,iEdge)) / (h1 + h2)
@@ -604,13 +575,7 @@ contains
          ! When config_GM_closure = 'Visbeck' actually modify the value of gmBolusKappa based on
          ! Visbeck et al (1997), JPO as recast by Cessi (2008), JPO
          if (local_config_GM_compute_Visbeck) then
-           call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-           call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-           call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
-           call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
-           call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
-           call mpas_pool_get_array(diagnosticsPool, 'c_Visbeck', c_Visbeck)
            !$omp parallel
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2)
@@ -624,7 +589,7 @@ contains
               cell2 = cellsOnEdge(2, iEdge)
 
               k = 2
-              zEdge = -layerThicknessEdge(k-1,iEdge)
+              zEdge = -layerThickEdge(k-1,iEdge)
               do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
@@ -636,7 +601,7 @@ contains
                 countN2 = countN2 + 1
 
                 k = k + 1
-                zEdge = zEdge - layerThicknessEdge(k-1,iEdge)
+                zEdge = zEdge - layerThickEdge(k-1,iEdge)
               end do
 
               if (countN2 > 0) then
@@ -661,9 +626,7 @@ contains
          ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
          ! Eden and Greatbach (2008), Ocean Model., but assuming quasi-geostrophy to simplify the EKE budget
          if (local_config_GM_compute_EdenGreatbatch) then
-           call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-           call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
 
            !$omp parallel
            !$omp do schedule(runtime) private(cell1, cell2, sigma, RiTopOfEdge, &
@@ -677,7 +640,7 @@ contains
               do k=2,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-                 shearEdgeInv = (0.5_RKIND*(layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)))**2.0 &
+                 shearEdgeInv = (0.5_RKIND*(layerThickEdge(k-1,iEdge) + layerThickEdge(k,iEdge)))**2.0 &
                     / (  (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2.0 &
                        + (tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge))**2.0 &
                        + 1.0e-18_RKIND )
@@ -714,10 +677,10 @@ contains
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThicknessEdge(k - 1, iEdge) &
-                                                                     *layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-               tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
-                                 /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
+               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
+                                                                     *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
+               tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
+                                 /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
 
@@ -725,12 +688,12 @@ contains
                do k = 3, maxLevelEdgeTop(iEdge) - 1
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-                  tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k - 1, iEdge) &
-                                    /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
-                  tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThicknessEdge(k - 1, iEdge) &
-                                                                        *layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-                  tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
-                                    /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
+                  tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
+                                    /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
+                  tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
+                                                                        *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
+                  tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
+                                    /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
                   rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                          *gradDensityConstZTopOfEdge(k,iEdge)
                end do
@@ -739,10 +702,10 @@ contains
                k = maxLevelEdgeTop(iEdge)
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k - 1, iEdge) &
-                                 /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
-               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThicknessEdge(k - 1, iEdge) &
-                                                                     *layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
+               tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
+                                 /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
+               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
+                                                                     *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
@@ -762,7 +725,7 @@ contains
          do iEdge = 1, nEdges
             do k = 1, maxLevelEdgeTop(iEdge)
                normalGMBolusVelocity(k, iEdge) = gmResolutionTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
-                      - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThicknessEdge(k, iEdge)
+                      - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThickEdge(k, iEdge)
             end do
          end do
          !$omp end do

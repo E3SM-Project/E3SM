@@ -20,6 +20,7 @@ module ocn_vmix_coefs_redi
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -68,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_redi_build(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs_redi_build(meshPool, statePool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -90,9 +91,6 @@ contains
       type (mpas_pool_type), intent(inout) :: &
          statePool             !< Input/Output: state information
 
-      type (mpas_pool_type), intent(inout) :: &
-         diagnosticsPool             !< Input/Output: diagnostic information
-
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -107,11 +105,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), pointer :: &
-        vertDiffTopOfCell, k33
-      real (kind=RKIND), dimension(:), pointer :: &
-        RediKappa
-
       !-----------------------------------------------------------------
       !
       ! call relevant routines for computing tendencies
@@ -121,10 +114,6 @@ contains
       !-----------------------------------------------------------------
 
       err = 0
-
-      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
-      call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
 
       if (config_use_Redi) then
           call ocn_tracer_vmix_coefs_redi(meshPool, vertDiffTopOfCell, k33, RediKappa, err)

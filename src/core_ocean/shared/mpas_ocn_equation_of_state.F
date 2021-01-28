@@ -28,6 +28,7 @@ module ocn_equation_of_state
    use ocn_equation_of_state_jm
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use mpas_log
 
    implicit none
@@ -88,11 +89,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool,&
-                           meshPool, nCells, kDisplaced,  &
-                           displacement_type, density, err,            &
-                           thermalExpansionCoeff,                      &
-                           salineContractionCoeff, timeLevelIn)
+   subroutine ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
+                           nCells, kDisplaced, displacement_type, density, err,       &
+                           thermalExpansionCoeff, salineContractionCoeff, timeLevelIn)
       !{{{
       !-----------------------------------------------------------------
       ! Input variables
@@ -102,6 +101,9 @@ contains
          nCells,             &! number of horiz mesh cells
          kDisplaced           ! target vert level for adiab displacement
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         tracersSurfaceValue
+
       integer, intent(in), optional :: &
          timeLevelIn          ! time level for state variables
 
@@ -110,7 +112,6 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          statePool,           &! pool containing state variables
-         diagnosticsPool,     &! pool containing some forcing fields
          meshPool              ! pool containing mesh quantities
 
       !-----------------------------------------------------------------
@@ -136,7 +137,6 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer :: iCell, k, nVertLevels, indexT, indexS
       integer, pointer :: indexTptr, indexSptr, nVertLevelsPtr
@@ -157,8 +157,6 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', &
-                                                 tracersSurfaceValue)
       call mpas_pool_get_subpool  (statePool,   'tracers', &
                                                  tracersPool)
       call mpas_pool_get_array    (tracersPool, 'activeTracers', &
