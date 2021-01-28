@@ -238,8 +238,7 @@ void Functions<S,D>::shoc_main_internal(
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<4>(
-    {&rho_zt, &shoc_qv, &dz_zt, & dz_zi});
-  //workspace.release(dz_zi);
+    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi});
 }
 
 
