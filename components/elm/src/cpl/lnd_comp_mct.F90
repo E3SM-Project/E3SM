@@ -127,6 +127,9 @@ contains
     integer, external :: iMOAB_RegisterFortranApplication
     integer :: ierr
     character*32  appname
+    logical :: samegrid_al !
+    character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
+    character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
     ! debugIuli
     integer   ::        debugGSMapFile, n
 #endif
@@ -305,7 +308,13 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
-    call init_land_moab(bounds)
+!   find out samegrid_al or not; from infodata
+    samegrid_al = .true.
+    call seq_infodata_GetData(infodata         , &
+                   atm_gnam=atm_gnam           , &
+                   lnd_gnam=lnd_gnam           )
+    if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+    call init_land_moab(bounds, samegrid_al)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
@@ -756,14 +765,16 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
-  subroutine init_land_moab(bounds)
+  subroutine init_land_moab(bounds, samegrid_al)
     use seq_comm_mct,      only: mlnid  ! id of moab land app
+    use seq_comm_mct,      only: sameg_al ! same grid as atm
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use clm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
 
     type(bounds_type) , intent(in)  :: bounds
+    logical :: samegrid_al
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -785,7 +796,7 @@ contains
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
     dims  =3 ! store as 3d mesh
-
+    sameg_al = samegrid_al ! use a different name, but they do mean the same thing
     ! number the local grid
     lsz = bounds%endg - bounds%begg + 1
 
@@ -796,7 +807,7 @@ contains
     end do
     gsize = ldomain%ni * ldomain%nj ! size of the total grid
     ! if ldomain%nv > 3 , create mesh
-    if (ldomain%nv .ge. 3 ) then
+    if (ldomain%nv .ge. 3 .and.  .not.sameg_al) then
         ! number of vertices is nv * lsz !
         allocate(moab_vert_coords(lsz*dims*ldomain%nv))
         ! loop over ldomain
