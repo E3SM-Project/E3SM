@@ -27,6 +27,7 @@ module ocn_frazil_forcing
    use mpas_timer
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_equation_of_state
 
    implicit none
@@ -305,7 +306,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)!{{{
+   subroutine ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -314,7 +315,6 @@ contains
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), pointer, intent(in) :: diagnosticsPool !< Input: Diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -364,10 +364,7 @@ contains
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassOld
       real (kind=RKIND), pointer, dimension(:)     :: ssh
-      real (kind=RKIND), pointer, dimension(:,:)   :: zMid
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
-      real (kind=RKIND), pointer, dimension(:,:)   :: density
-      real (kind=RKIND), pointer, dimension(:,:)   :: pressure
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
 
       integer, dimension(:), pointer :: maxLevelCell
@@ -409,9 +406,6 @@ contains
       call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-      call mpas_pool_get_array(diagnosticsPool, 'density', density)
-      call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
       call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
       call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)

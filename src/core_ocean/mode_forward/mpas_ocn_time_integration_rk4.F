@@ -425,7 +425,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
-              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
+              call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, meshPool, 1)
               block => block % next
            end do
 
@@ -710,7 +710,7 @@ module ocn_time_integration_rk4
            end do
          end if
 
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
@@ -728,7 +728,7 @@ module ocn_time_integration_rk4
 
          ! Compute normalGMBolusVelocity and the tracer transport velocity
          if (config_use_GM) then
-             call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
+             call ocn_gm_compute_Bolus_velocity(statePool, &
                 meshPool, scratchPool, timeLevelIn=2)
          end if
 
@@ -767,7 +767,7 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
 
-         call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
+         call ocn_time_average_coupled_accumulate(statePool, forcingPool, 2)
 
          if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(meshPool)
@@ -858,8 +858,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, &
-                        diagnosticsPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, 1, dt)
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}
 
@@ -921,7 +920,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
+      call ocn_tend_thick(tendPool, forcingPool, meshPool)
 
 
    end subroutine ocn_time_integrator_rk4_compute_thick_tends!}}}
@@ -989,7 +988,7 @@ module ocn_time_integration_rk4
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, meshPool, 1)
       endif
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
@@ -1053,8 +1052,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, &
-                        diagnosticsPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, 1, dt)
 
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
@@ -1068,13 +1066,13 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
+      call ocn_tend_thick(tendPool, forcingPool, meshPool)
 
       if (config_filter_btr_mode) then
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, meshPool, 1)
       endif
 
-      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
+      call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
@@ -1233,7 +1231,7 @@ module ocn_time_integration_rk4
          !$omp end parallel
       end if
 
-      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 1)
+      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
 
       ! ------------------------------------------------------------------
       ! Accumulating various parametrizations of the transport velocity
@@ -1248,7 +1246,7 @@ module ocn_time_integration_rk4
 
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
       if (config_use_GM) then
-         call ocn_gm_compute_Bolus_velocity(provisStatePool, diagnosticsPool, &
+         call ocn_gm_compute_Bolus_velocity(provisStatePool, &
             meshPool, scratchPool, timeLevelIn=1)
       end if
 
@@ -1460,9 +1458,9 @@ module ocn_time_integration_rk4
          end if
       end do
 
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
-      call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
+      call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
    end subroutine ocn_time_integrator_rk4_cleanup!}}}
 

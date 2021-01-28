@@ -34,6 +34,7 @@ module ocn_init_routines
    use mpas_tracer_advection_helpers
 
    use ocn_diagnostics
+   use ocn_diagnostics_variables
    use ocn_gm
    use ocn_constants
    use ocn_config
@@ -569,16 +570,10 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool, tracersPool
-      type (mpas_pool_type), pointer :: forcingPool, diagnosticsPool, scratchPool
+      type (mpas_pool_type), pointer :: forcingPool, scratchPool
       integer :: i, iEdge, iCell, k
       integer :: err1
 
-      integer, dimension(:), pointer :: indMLD
-      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
-      real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity, normalGMBolusVelocity
-      real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: edgeAreaFractionOfCell
       integer, dimension(:,:), pointer :: highOrderAdvectionMaskTmp, boundaryCellTmp
       integer, dimension(:,:), pointer :: edgeSignOnCellTmp, edgeSignOnVertexTmp
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
@@ -598,24 +593,12 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', highOrderAdvectionMaskTmp)
       call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCellTmp)
-
-      call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
-      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityY', velocityY)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityZ', velocityZ)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
-      call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
-      call mpas_pool_get_array(diagnosticsPool, 'edgeAreaFractionOfCell', edgeAreaFractionOfCell)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -650,7 +633,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
          end do
       end if
 
-      call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool)
+      call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, scratchPool, tracersPool)
 
       ! initialize velocities and active tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34_RKIND
@@ -706,9 +689,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       call mpas_pool_initialize_time_levels(statePool)
 
       ! compute land-ice fluxes for potential output at startup
-      call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, diagnosticsPool, forcingPool, err1, 1)
+      call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, err1, 1)
       err = ior(err, err1)
-      call ocn_surface_land_ice_fluxes_build_arrays(meshPool, diagnosticsPool, &
+      call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                     forcingPool, scratchPool, statePool, dt, err1)
       err = ior(err, err1)
 

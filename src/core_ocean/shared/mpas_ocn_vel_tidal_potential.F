@@ -30,6 +30,7 @@ module ocn_vel_tidal_potential
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -196,13 +197,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_tidal_potential_forcing(diagnosticsPool, err)!{{{
+   subroutine ocn_compute_tidal_potential_forcing(err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: diagnosticsPool 
 
       !-----------------------------------------------------------------
       ! output variables
@@ -214,8 +213,6 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), pointer :: daysSinceStartOfSim
-      
       integer :: &
          iCell, jCon,  &! loop indices for cell, constituent loops
          conType        ! id for constituent type
@@ -235,10 +232,6 @@ contains
       !*** Set error flag and return early if not turned on
       err = 0
       if (tidalPotentialOff) return
-
-      !*** Get pool variables (eventually private module variables?)
-      call mpas_pool_get_array(diagnosticsPool, "daysSinceStartOfSim", &
-                                                 daysSinceStartOfSim)
 
       ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/tidalPotRamp)
       t = daysSinceStartOfSim*86400.0_RKIND
@@ -314,7 +307,6 @@ contains
       type (block_type), pointer :: block_ptr 
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool 
       integer, pointer :: nTidalPotentialConstituents
 
       ! End preamble
