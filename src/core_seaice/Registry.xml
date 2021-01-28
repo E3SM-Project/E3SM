@@ -444,6 +444,10 @@
 		/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
+		<nml_option name="config_earth_radius" type="real" default_value="1.0" units="m"
+			description="Earth radius in m"
+			possible_values="Any positive real number."
+		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
 			possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"

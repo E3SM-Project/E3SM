@@ -25,7 +25,6 @@ module seaice_velocity_solver_unit_tests
        seaice_strain_rate_operator_unit_test, &
        seaice_stress_divergence_operator_unit_test, &
        seaice_constitutive_relationship_unit_test, &
-       seaice_strain_and_stress_divergence_unit_test_init, &
        seaice_strain_and_stress_divergence_unit_test
 
   integer, private :: &
@@ -2435,35 +2434,6 @@ contains
 !--------------------------------------------------------------------------
 ! strain and stress
 !--------------------------------------------------------------------------
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  seaice_strain_and_stress_divergence_unit_test_init
-!
-!> \brief Init simultaneous unit test of strain and stress divergence
-!> \author Adrian K. Turner, LANL
-!> \date 30th September 2019
-!> \details
-!>  Set unit earth radius
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_strain_and_stress_divergence_unit_test_init(&
-       domain, &
-       unitTestSubtype)
-
-    use seaice_constants, only: &
-         earthRadius
-
-    type(domain_type), intent(inout) :: &
-         domain !< Input/Output:
-
-    character(len=*), intent(in) :: &
-         unitTestSubtype !< Input:
-
-    earthRadius = 1.0_RKIND
-
-  end subroutine seaice_strain_and_stress_divergence_unit_test_init
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

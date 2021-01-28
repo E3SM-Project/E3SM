@@ -3,7 +3,7 @@
     config_calendar_type = 'gregorian_noleap'
     config_start_time = '2000-01-01_00:00:00'
     config_stop_time = 'none'
-    config_run_duration = '01-00-00_00:00:00'
+    config_run_duration = '00-00-00_01:00:00'
     config_num_halos = 2
 /
 &io
@@ -19,6 +19,10 @@
     config_number_of_blocks = 0
     config_explicit_proc_decomp = false
     config_proc_decomp_file_prefix = 'graphs/graph.info.part.'
+    config_use_halo_exch = true
+    config_aggregate_halo_exch = false
+    config_reuse_halo_exch = false
+    config_load_balance_timers = false
 /
 &restart
     config_do_restart = false
@@ -31,28 +35,28 @@
 /
 &dimensions
     config_nCategories = 1
-    config_nIceLayers = 7
+    config_nIceLayers = 1
     config_nSnowLayers = 1
 /
 &initialize
-    config_earth_radius = 6371229.0
-    config_initial_condition_type = 'cice_default'
+    config_earth_radius = 1.0
+    config_initial_condition_type = 'uniform'
     config_initial_ice_area = 1.0
     config_initial_ice_volume = 1.0
     config_initial_snow_volume = 0.0
-    config_initial_latitude_north = 70.0
-    config_initial_latitude_south = -60.0
-    config_initial_velocity_type = 'uniform'
+    config_initial_latitude_north = -70.0
+    config_initial_latitude_south = 60.0
+    config_initial_velocity_type = 'none'
     config_initial_uvelocity = 0.0
     config_initial_vvelocity = 0.0
     config_calculate_coriolis = true
 /
 &use_sections
     config_use_dynamics = true
-    config_use_velocity_solver = false
+    config_use_velocity_solver = true
     config_use_advection = false
-    config_use_forcing = true
-    config_use_column_package = true
+    config_use_forcing = false
+    config_use_column_package = false
     config_use_prescribed_ice = false
     config_use_prescribed_ice_forcing = false
 /
@@ -77,7 +81,7 @@
     config_dynamics_subcycle_number = 1
     config_rotate_cartesian_grid = true
     config_include_metric_terms = true
-    config_elastic_subcycle_number = 120
+    config_elastic_subcycle_number = 1
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
     config_wachspress_integration_type = 'dunavant'
@@ -107,11 +111,11 @@
     config_use_column_snow_tracers = false
 /
 &column_tracers
-    config_use_ice_age = true
-    config_use_first_year_ice = true
-    config_use_level_ice = true
+    config_use_ice_age = false
+    config_use_first_year_ice = false
+    config_use_level_ice = false
     config_use_cesm_meltponds = false
-    config_use_level_meltponds = true
+    config_use_level_meltponds = false
     config_use_topo_meltponds = false
     config_use_aerosols = false
     config_use_effective_snow_density = false
@@ -281,13 +285,13 @@
 /
 &snow
     config_snow_redistribution_scheme = 'none'
-    config_fallen_snow_radius = 54.4
+    config_fallen_snow_radius = 54.526
     config_use_snow_liquid_ponds = false
     config_new_snow_density = 100.0
     config_max_snow_density = 450.0
     config_minimum_wind_compaction = 10.0
     config_wind_compaction_factor = 27.3
-    config_max_dry_snow_radius = 2800.0
+    config_max_dry_snow_radius = 1800.0
 /
 &meltponds
     config_snow_to_ice_transition_depth = 0.0
@@ -310,8 +314,8 @@
     config_congelation_ice_porosity = 0.85
 /
 &itd
-    config_itd_conversion_type = 'delta function'
-    config_category_bounds_type = 'single category'
+    config_itd_conversion_type = 'linear remap'
+    config_category_bounds_type = 'original'
 /
 &ridging
     config_ice_strength_formulation = 'Rothrock75'
@@ -333,6 +337,9 @@
     config_min_friction_velocity = 0.0005
     config_ocean_heat_transfer_type = 'constant'
     config_sea_freezing_temperature_type = 'mushy'
+    config_ocean_surface_type = 'free'
+    config_couple_biogeochemistry_fields = false
+    config_use_data_icebergs = false
 /
 &diagnostics
     config_check_state = false
@@ -419,7 +426,7 @@
     config_AM_pondDiagnostics_write_on_startup = false
 /
 &AM_unitConversion
-    config_AM_unitConversion_enable = true
+    config_AM_unitConversion_enable = false
     config_AM_unitConversion_compute_interval = 'dt'
     config_AM_unitConversion_output_stream = 'none'
     config_AM_unitConversion_compute_on_startup = false
@@ -461,7 +468,7 @@
     config_AM_timeSeriesStatsDaily_backward_output_offset = '00-00-01_00:00:00'
 /
 &AM_timeSeriesStatsMonthly
-    config_AM_timeSeriesStatsMonthly_enable = false
+    config_AM_timeSeriesStatsMonthly_enable = true
     config_AM_timeSeriesStatsMonthly_compute_on_startup = false
     config_AM_timeSeriesStatsMonthly_write_on_startup = false
     config_AM_timeSeriesStatsMonthly_compute_interval = 'dt'

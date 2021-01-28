@@ -84,9 +84,6 @@ contains
 
     use mpas_stream_manager
 
-    use seaice_constants, only: &
-         earthRadius
-
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
 
@@ -96,7 +93,8 @@ contains
 
     real(kind=RKIND), pointer :: &
          oldRadius, &
-         sphere_radius
+         sphere_radius, &
+         earthRadius
 
     real(kind=RKIND) :: &
          newRadius
@@ -154,6 +152,7 @@ contains
          directionProperty
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
 
     if (.not. config_do_restart) then
 

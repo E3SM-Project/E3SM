@@ -986,9 +986,6 @@ contains
        block, &
        configs)!{{{
 
-    use seaice_constants, only: &
-         earthRadius
-
     type(block_type), intent(inout) :: &
          block !< Input/Output:
 
@@ -1014,6 +1011,7 @@ contains
          surfaceTemperature
 
     real(kind=RKIND), pointer :: &
+         earthRadius, &
          config_initial_ice_area, &
          config_initial_ice_volume, &
          config_initial_snow_volume
@@ -1026,6 +1024,8 @@ contains
 
     real(kind=RKIND) :: &
          circle_radius
+
+    call MPAS_pool_get_config(configs, "config_earth_radius", earthRadius)
 
     circle_radius = 0.1_RKIND*earthRadius
 
