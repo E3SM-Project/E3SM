@@ -92,14 +92,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, &
+   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, &
                                    timeLevelIn, full)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: statePool !< Input: State information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
-      type (mpas_pool_type), intent(inout) :: diagnosticsPool  !< Input: diagnostic fields derived from State
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       type (mpas_pool_type), intent(in) :: tracersPool !< Input: tracer fields
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
@@ -151,7 +150,7 @@ contains
       nCells = nCellsAll
       nVertices = nVerticesAll
 
-      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThicknessEdge)
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
 
       coef_3rd_order = config_coef_3rd_order
 
@@ -168,7 +167,7 @@ contains
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
-             layerThicknessEdge, normalVelocity, normalTransportVelocity, &
+             layerThickEdge, normalVelocity, normalTransportVelocity, &
              normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
@@ -182,7 +181,7 @@ contains
 
       call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
                 layerThickness, relativeVorticity, &
-                normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
+                normRelVortEdge, normPlanetVortEdge, &
                 normalizedRelativeVorticityCell)
 
       !
@@ -193,19 +192,19 @@ contains
       nCells = nCellsAll
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 0, 'relative', density, err, &
-                                         inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
+                                         thermExpCoeff, salineContractCoeff, &
                                          timeLevelIn=timeLevel)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                          nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
 
@@ -256,9 +255,9 @@ contains
          ! average tracer values over the ocean surface layer
          ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
          call ocn_diagnostic_solve_surfaceLayer(layerThickness, activeTracers, &
-                layerThicknessEdge, normalVelocity, tracersSurfaceLayerValue,  &
+                layerThickEdge, normalVelocity, tracersSurfaceLayerValue,  &
                 indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
-                surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)
+                sfcFlxAttCoeff, surfaceFluxAttenuationCoefficientRunoff)
 
       end if ! full_compute
 
@@ -1720,12 +1719,12 @@ contains
         ! thicknessSum is initialized outside the loop because on land boundaries
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a
         ! nonzero value to avoid a NaN.
-        normalThicknessFluxSum = layerThicknessEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
-        thicknessSum  = layerThicknessEdge(1,iEdge)
+        normalThicknessFluxSum = layerThickEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
+        thicknessSum  = layerThickEdge(1,iEdge)
 
         do k = 2, maxLevelEdgeTop(iEdge)
-          normalThicknessFluxSum = normalThicknessFluxSum + layerThicknessEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
-          thicknessSum  =  thicknessSum + layerThicknessEdge(k,iEdge)
+          normalThicknessFluxSum = normalThicknessFluxSum + layerThickEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
+          thicknessSum  =  thicknessSum + layerThickEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum / thicknessSum
@@ -1756,13 +1755,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
+    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, timeLevelIn)!{{{
 
       type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Diagnostics information derived from State
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       integer, intent(in), optional :: timeLevelIn
 
       ! pool pointers
@@ -1853,8 +1850,9 @@ contains
       nCells = nCellsHalo( 2 )
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, nCells, 0, 'surfaceDisplaced', &
-                                         densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
+      call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
+                                         nCells, 0, 'surfaceDisplaced', densitySurfaceDisplaced, &
+                                         err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
       !$omp parallel
@@ -2028,8 +2026,8 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
-         topDragMagnitude(iCell) = rho_sw * landIceFraction(iCell) &
-                                   * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
+         topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
+                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(1,iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
@@ -2122,7 +2120,7 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCellsAll
          if(landIceMask(iCell) == 1) then
-            surfaceFluxAttenuationCoefficient(iCell) = config_land_ice_flux_attenuation_coefficient
+            sfcFlxAttCoeff(iCell) = config_land_ice_flux_attenuation_coefficient
          end if
       end do
       !$omp end do

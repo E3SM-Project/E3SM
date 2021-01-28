@@ -33,6 +33,7 @@ module ocn_tracer_advection_mono
    use mpas_tracer_advection_helpers
 
    use ocn_constants
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -96,7 +97,7 @@ module ocn_tracer_advection_mono
                                              maxLevelCell, maxLevelEdgeTop,    &
                                              highOrderAdvectionMask,           &
                                              edgeSignOnCell, meshPool,         &
-                                             diagnosticsPool, computeBudgets)!{{{
+                                             computeBudgets)!{{{
 
       !*** Input/Output parameters
 
@@ -133,8 +134,6 @@ module ocn_tracer_advection_mono
          edgeSignOnCell         !< [in] Sign for flux from edge on each cell
       type (mpas_pool_type), intent(in) :: &
          meshPool               !< [in] Mesh information
-      type (mpas_pool_type), intent(in) :: &
-         diagnosticsPool        !< [in] pool for traceradvection budget term
       logical, intent(in) :: &
          computeBudgets         !< [in] Flag to compute active tracer budgets
 
@@ -181,13 +180,6 @@ module ocn_tracer_advection_mono
          wgtTmp,            &! vertical temporaries for
          flxTmp, sgnTmp      !   high-order flux computation
 
-      ! pointers for tendencies used in diagnostic budget computation
-      real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
-         activeTracerHorizontalAdvectionTendency, &
-         activeTracerVerticalAdvectionTendency,   &
-         activeTracerHorizontalAdvectionEdgeFlux, &
-         activeTracerVerticalAdvectionTopFlux
-
       real (kind=RKIND), parameter :: &
          eps = 1.e-10_RKIND  ! small number to avoid numerical difficulties
 
@@ -207,21 +199,6 @@ module ocn_tracer_advection_mono
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-
-      if (computeBudgets) then
-         call mpas_pool_get_array(diagnosticsPool,         &
-                'activeTracerVerticalAdvectionTopFlux',    &
-                 activeTracerVerticalAdvectionTopFlux)
-         call mpas_pool_get_array(diagnosticsPool,         &
-                'activeTracerHorizontalAdvectionEdgeFlux', &
-                 activeTracerHorizontalAdvectionEdgeFlux)
-         call mpas_pool_get_array(diagnosticsPool,         &
-                'activeTracerHorizontalAdvectionTendency', &
-                 activeTracerHorizontalAdvectionTendency)
-         call mpas_pool_get_array(diagnosticsPool,         &
-                'activeTracerVerticalAdvectionTendency',   &
-                 activeTracerVerticalAdvectionTendency)
-      end if
 
       ! Get dimensions
       nVertLevels = size(tracers,dim=2)

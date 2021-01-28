@@ -31,6 +31,7 @@ module ocn_eliassen_palm
    use ocn_constants
    use ocn_config
    use ocn_equation_of_state
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -578,7 +579,7 @@ contains
 
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
 
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+         call ocn_equation_of_state_density(statePool, meshPool, tracersSurfaceValue, &
                                             nCells, 1, 'absolute', potentialDensity, &
                                             err) !, timeLevelIn=1)
 
