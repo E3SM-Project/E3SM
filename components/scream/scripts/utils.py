@@ -2,7 +2,7 @@
 Utilities
 """
 
-import os, sys, re, signal, subprocess
+import os, sys, re, signal, subprocess, site
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -463,3 +463,35 @@ def get_cpu_core_count():
     Get the number of CPU processors available on the current node
     """
     return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
+
+###############################################################################
+def ensure_pip():
+###############################################################################
+    try:
+        import pip
+    except ImportError:
+        import ensurepip
+
+        ensurepip.bootstrap(user=True)
+
+        site.main() # needed to "rehash" available libs
+
+        import pip
+
+###############################################################################
+def ensure_yaml():
+###############################################################################
+    try:
+        import yaml
+    except ImportError:
+        print("Detected missing pyyaml, will attempt to install locally")
+
+        ensure_pip()
+
+        # --trusted-host may not work for ancient versions of python
+        stat, out, err = run_cmd("{} -m pip install pyyaml --trusted-host files.pythonhosted.org --user".format(sys.executable))
+        expect(stat == 0, "Failed to install pyyaml, cannot continue:\n{}".format(err))
+
+        site.main() # needed to "rehash" available libs
+
+        import yaml
