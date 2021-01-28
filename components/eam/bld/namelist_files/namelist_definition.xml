@@ -3373,7 +3373,7 @@ Default: TRUE
 <!-- Physics control -->
 
 <entry id="cam_physpkg" type="char*16" category="build"
-       group="phys_ctl_nl" valid_values="cam3,cam4,cam5,ideal,adiabatic" >
+       group="phys_ctl_nl" valid_values="cam3,cam4,cam5,ideal,adiabatic,default" >
 Name of the CAM physics package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
