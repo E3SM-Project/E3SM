@@ -470,7 +470,7 @@ contains
                      div_huT = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
-                        div_huT = div_huT - layerThicknessEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
+                        div_huT = div_huT - layerThickEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
                              * 0.5_RKIND * (activeTracers(indexTemperature,k,cellsOnEdge(1,iEdge)) &
                              + activeTracers(indexTemperature,k,cellsOnEdge(2,iEdge))) &
                              * edgeSignOnCell(i, iCell) * dvEdge(iEdge)
