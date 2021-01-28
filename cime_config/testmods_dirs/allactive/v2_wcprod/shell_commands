@@ -1,6 +1,5 @@
 #!/bin/bash
 ./xmlchange CAM_TARGET=theta-l
-./xmlchange --append CAM_CONFIG_OPTS='-cosp'
-./xmlchange --id BUDGETS --val TRUE
+./xmlchange ATM_NCPL=48
 ./xmlchange PIO_BUFFER_SIZE_LIMIT=128000000
 
