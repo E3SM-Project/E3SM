@@ -6,29 +6,6 @@
 
 namespace scream {
 
-// How a field has to be init-ed
-// Note: internally, Value still creates a FieldInitializer object, but can be done
-//       behind the scenes by the infrastructure
-enum class InitType {
-  // NotNeeded,    // No initialization is needed for this field
-  Value,        // Should be inited to a specific value
-  Initializer,  // A FieldInitializer object should take care of this
-  None          // No initialization is needed/expected
-};
-
-inline std::string e2str (const InitType e) {
-  std::string s;
-  switch (e) {
-    // case InitType::NotNeeded:   s = "NotNeeded";    break;
-    case InitType::None:        s = "None";         break;
-    case InitType::Value:       s = "Value";        break;
-    case InitType::Initializer: s = "Initializer";  break;
-    default: s = "INVALID";
-  }
-
-  return s;
-}
-
 // The type of the layout, that is, the kind of field it represent.
 enum class LayoutType {
   Invalid,
