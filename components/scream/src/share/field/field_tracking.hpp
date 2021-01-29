@@ -5,11 +5,13 @@
 
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
+#include <list>
 #include <set>
 
 namespace scream {
@@ -21,6 +23,7 @@ enum class InitType {
   // NotNeeded,    // No initialization is needed for this field
   Value,        // Should be inited to a specific value
   Initializer,  // A FieldInitializer object should take care of this
+  Inherited,    // For subviews: an init type has been set for the 'parent' field
   None          // No initialization is needed/expected
 };
 
@@ -31,6 +34,7 @@ inline std::string e2str (const InitType e) {
     case InitType::None:        s = "None";         break;
     case InitType::Value:       s = "Value";        break;
     case InitType::Initializer: s = "Initializer";  break;
+    case InitType::Inherited:   s = "Inherited";    break;
     default: s = "INVALID";
   }
 
@@ -40,8 +44,9 @@ inline std::string e2str (const InitType e) {
 // Forward declarations
 class AtmosphereProcess;
 class FieldInitializer;
+class FieldHeader;
 
-class FieldTracking {
+class FieldTracking : public ekat::enable_shared_from_this<FieldTracking> {
 public:
 
   using TimeStamp         = util::TimeStamp;
@@ -50,8 +55,10 @@ public:
   using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
   FieldTracking() = delete;
-  FieldTracking(const std::string&);
+  FieldTracking(const std::string& name);
   FieldTracking(const FieldTracking&) = default;
+  FieldTracking(const std::string& name,
+                const std::shared_ptr<FieldTracking>& parent);
 
   // No assignment, to prevent tampering with tracking (e.g., rewinding time stamps)
   FieldTracking& operator=(const FieldTracking&) = delete;
@@ -68,6 +75,10 @@ public:
   const std::weak_ptr<FieldInitializer>& get_initializer () const { return m_initializer; }
   InitType get_init_type () const { return m_init_type; }
 
+  // Get parent/children (if any)
+  // std::shared_ptr<const FieldHeader> get_parent () const { return m_parent.lock(); }
+  std::weak_ptr<FieldTracking> get_parent () const { return m_parent; }
+
   // List of field groups that this field belongs to
   const std::set<ci_string>& get_groups_names () const { return m_groups; }
 
@@ -83,7 +94,13 @@ public:
   void add_to_group (const std::string& group_name);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
+  // NOTE: if the field has 'children' (see below), their ts will be udpated too.
+  //       However, if the field has a 'parent' (see below), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
+
+  const std::string& name () const { return m_name; }
+
+  void register_as_children_in_parent ();
 
 protected:
 
@@ -112,7 +129,12 @@ protected:
 
   // The initializer is a class that claims the responsibility of initializing the field
   // at the beginning of the simulation. There can be ONLY one initializer.
-  std::weak_ptr<FieldInitializer>       m_initializer;
+  std::weak_ptr<FieldInitializer>     m_initializer;
+
+  // If this field is a sub-view of another field, we keep a pointer to the parent
+  // On the other hand, if there are sub-views of this field, we keep a list of them
+  std::weak_ptr<FieldTracking>              m_parent;
+  std::list<std::weak_ptr<FieldTracking>>   m_children;
 
   // Groups are used to bundle together fields, so that a process can request all of them
   // without knowing/listing all their names. For instance, the dynamics process needs to
@@ -121,6 +143,16 @@ protected:
   // dynamics to request all fields that have been marked as 'tracers'.
   std::set<ci_string>    m_groups;
 };
+
+// Use this free function to exploit features of enable_from_this
+template<typename... Args>
+inline std::shared_ptr<FieldTracking>
+create_tracking(const Args&... args) {
+  auto ptr = std::make_shared<FieldTracking>(args...);
+  ptr->setSelfPointer(ptr);
+  return ptr;
+}
+
 
 } // namespace scream
 

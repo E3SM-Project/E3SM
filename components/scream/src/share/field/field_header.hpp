@@ -8,6 +8,7 @@
 
 #include "share/util/scream_time_stamp.hpp"
 #include "ekat/std_meta/ekat_std_any.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 
 #include <vector>
 #include <map>
@@ -32,7 +33,7 @@ class AtmosphereProcess;
  * to warrant a new sub-object or a specific named member/method.
  */
 
-class FieldHeader {
+class FieldHeader : public ekat::enable_shared_from_this<FieldHeader> {
 public:
 
   using identifier_type = FieldIdentifier;
@@ -42,6 +43,9 @@ public:
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
   explicit FieldHeader (const identifier_type& id);
+  FieldHeader (const identifier_type& id,
+               std::shared_ptr<FieldHeader> parent,
+               const int idim, const int k);
 
   // Assignment deleted, to prevent sneaky overwrites.
   FieldHeader& operator= (const FieldHeader&) = delete;
@@ -63,33 +67,51 @@ public:
   // ----- Getters ----- //
 
   // Get the basic information from the identifier
-  const FieldIdentifier& get_identifier () const { return m_identifier; }
+  const identifier_type& get_identifier () const { return m_identifier; }
 
   // Get the tracking
-  const FieldTracking& get_tracking () const { return m_tracking; }
-        FieldTracking& get_tracking ()       { return m_tracking; }
+  const tracking_type& get_tracking () const { return *m_tracking; }
+        tracking_type& get_tracking ()       { return *m_tracking; }
+  const std::shared_ptr<tracking_type>& get_tracking_ptr () const { return m_tracking; }
 
   // Get the allocation properties
   const FieldAllocProp& get_alloc_properties () const { return m_alloc_prop; }
         FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
 
+  // Get parent (if any)
+  std::weak_ptr<FieldHeader> get_parent () { return m_parent; }
+
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
+
+  void register_inside_parent ();
 
 protected:
 
   // Static information about the field: name, rank, tags
-  FieldIdentifier       m_identifier;
+  identifier_type                 m_identifier;
 
   // Tracking of the field
-  FieldTracking         m_tracking;
+  std::shared_ptr<tracking_type>  m_tracking;
 
   // Allocation properties
-  FieldAllocProp        m_alloc_prop;
+  FieldAllocProp                  m_alloc_prop;
+
+  // If this field is a sub-view of another field, we keep a pointer to the parent
+  std::weak_ptr<FieldHeader>      m_parent;
 
   // Extra data associated with this field
-  extra_data_type       m_extra_data;
+  extra_data_type                 m_extra_data;
 };
+
+// Use this free function to exploit features of enable_from_this
+template<typename... Args>
+inline std::shared_ptr<FieldHeader>
+create_header(const Args&... args) {
+  auto ptr = std::make_shared<FieldHeader>(args...);
+  ptr->setSelfPointer(ptr);
+  return ptr;
+}
 
 } // namespace scream
 

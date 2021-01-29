@@ -178,17 +178,17 @@ TEST_CASE("remap", "") {
   Field<Real> ts_3d_field_dyn (ts_3d_dyn_fid);
 
   // Request allocation to fit packs of reals for 3d views
-  s_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  v_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  ss_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vs_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  ts_3d_field_phys.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  s_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  v_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  ss_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  vs_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
+  ts_3d_field_phys.get_header().get_alloc_properties().request_allocation<PackType>();
 
-  s_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  v_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  ss_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  vs_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
-  ts_3d_field_dyn.get_header().get_alloc_properties().request_value_type_allocation<PackType>();
+  s_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  v_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  ss_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  vs_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
+  ts_3d_field_dyn.get_header().get_alloc_properties().request_allocation<PackType>();
   ts_3d_field_dyn.get_header().set_extra_data("Is Tracer State", true);
 
   // Allocate view

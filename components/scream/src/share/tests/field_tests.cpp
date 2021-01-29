@@ -171,6 +171,47 @@ TEST_CASE("field", "") {
     REQUIRE(f2.is_allocated());
     REQUIRE(views_are_equal(f1,f2));
   }
+
+  // Subfields
+  SECTION ("subfield") {
+    std::vector<FieldTag> t1 = {COL,VAR,CMP,VL};
+    std::vector<int> d1 = {3,10,2,24};
+
+    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
+
+    using DevT = Field<Real>::device_type;
+    using kt = ekat::KokkosTypes<DevT>;
+
+    Field<Real> f1(fid1);
+    f1.allocate_view();
+    auto v = f1.get_view();
+    Kokkos::parallel_for(kt::RangePolicy(0,v.size()),
+                         KOKKOS_LAMBDA(const int i) {
+      v(i) = i;
+    });
+    auto vh = Kokkos::create_mirror_view(v);
+    Kokkos::deep_copy(vh,v);
+
+    const int idim = 1;
+    const int ivar = 2;
+
+    auto f2 = f1.subfield(idim,ivar);
+    auto v4d = f1.get_reshaped_view<Real****>();
+    auto v3d = f2.get_reshaped_view<Real***>();
+
+    // Wrong rank for the subfield f2
+    REQUIRE_THROWS(f2.get_reshaped_view<Real****>());
+
+    auto v4dh = Kokkos::create_mirror_view(v4d);
+    auto v3dh = Kokkos::create_mirror_view(v3d);
+    Kokkos::deep_copy(v4dh,v4d);
+    Kokkos::deep_copy(v3dh,v3d);
+    for (int i=0; i<d1[0]; ++i)
+      for (int j=0; j<d1[2]; ++j)
+        for (int k=0; k<d1[3]; ++k) {
+          REQUIRE (v4dh(i,ivar,j,k)==v3dh(i,j,k));
+        }
+  }
 }
 
 TEST_CASE("field_repo", "") {
