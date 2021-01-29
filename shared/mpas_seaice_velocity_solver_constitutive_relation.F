@@ -27,6 +27,15 @@ module seaice_velocity_solver_constitutive_relation
        seaice_evp_constitutive_relation_revised, &
        seaice_linear_constitutive_relation
 
+  ! constitutive relation options
+  integer, public :: &
+       constitutiveRelationType
+
+  integer, public :: &
+       EVP_CONSTITUTIVE_RELATION = 1, &
+       REVISED_EVP_CONSTITUTIVE_RELATION = 2, &
+       LINEAR_CONSTITUTIVE_RELATION = 3
+
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
        eccentricity = 2.0_RKIND, &
@@ -68,6 +77,9 @@ contains
 
     type(block_type), pointer :: block
 
+    character(len=strKIND), pointer :: &
+         config_constitutive_relation_type
+
     type(MPAS_pool_type), pointer :: &
          velocitySolver, &
          mesh
@@ -86,6 +98,18 @@ contains
          gamma, &
          dvEdgeMin, &
          dvEdgeMinGlobal
+
+    ! constitutive relation type
+    call MPAS_pool_get_config(domain % configs, "config_constitutive_relation_type", config_constitutive_relation_type)
+    if (trim(config_constitutive_relation_type) == 'evp') then
+       constitutiveRelationType = EVP_CONSTITUTIVE_RELATION
+    else if (trim(config_constitutive_relation_type) == 'evp_revised') then
+       constitutiveRelationType = REVISED_EVP_CONSTITUTIVE_RELATION
+    else if (trim(config_constitutive_relation_type) == 'linear') then
+       constitutiveRelationType = LINEAR_CONSTITUTIVE_RELATION
+    else
+       call MPAS_log_write("config_constitutive_relation_type unknown: "//trim(config_constitutive_relation_type), MPAS_LOG_CRIT)
+    endif
 
     ! general EVP
     block => domain % blocklist
