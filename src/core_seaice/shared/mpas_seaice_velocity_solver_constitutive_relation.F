@@ -34,7 +34,8 @@ module seaice_velocity_solver_constitutive_relation
   integer, public :: &
        EVP_CONSTITUTIVE_RELATION = 1, &
        REVISED_EVP_CONSTITUTIVE_RELATION = 2, &
-       LINEAR_CONSTITUTIVE_RELATION = 3
+       LINEAR_CONSTITUTIVE_RELATION = 3, &
+       NONE_CONSTITUTIVE_RELATION = 4
 
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
@@ -107,6 +108,8 @@ contains
        constitutiveRelationType = REVISED_EVP_CONSTITUTIVE_RELATION
     else if (trim(config_constitutive_relation_type) == 'linear') then
        constitutiveRelationType = LINEAR_CONSTITUTIVE_RELATION
+    else if (trim(config_constitutive_relation_type) == 'none') then
+       constitutiveRelationType = NONE_CONSTITUTIVE_RELATION
     else
        call MPAS_log_write("config_constitutive_relation_type unknown: "//trim(config_constitutive_relation_type), MPAS_LOG_CRIT)
     endif
