@@ -1,4 +1,5 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -477,34 +478,6 @@ set_field_repos (const FieldRepository<Real>& repo,
   }
 }
 
-bool AtmosphereProcessGroup::
-views_are_equal(const field_type& f1, const field_type& f2) {
-  const auto& layout = f1.get_header().get_identifier().get_layout();
-  const int size = layout.size();
-  const int last_dim_alloc_size = f1.get_header().get_alloc_properties().get_last_dim_alloc_size();
-  const int last_alloc_dim = last_dim_alloc_size / sizeof(Real);
-  const int last_dim = layout.dim(layout.rank()-1);
-
-  const auto v1 = f1.get_view();
-  const auto v2 = f2.get_view();
-
-  using exec_space = field_type::view_type::execution_space;
-  Kokkos::RangePolicy<exec_space> policy(0,size);
-  int num_diffs = 0;
-  Kokkos::parallel_reduce(
-    policy,
-    [=](const int i, int& sum){
-      const int outer_dim = i / last_dim;
-      const int inner_dim = i % last_dim;
-      const int idx = outer_dim*last_alloc_dim + inner_dim;
-
-      if (v1(idx)!=v2(idx)) {
-        ++sum;
-      }
-    },num_diffs
-  );
-  return (num_diffs == 0);
-}
 #endif
 
 FieldIdentifier
