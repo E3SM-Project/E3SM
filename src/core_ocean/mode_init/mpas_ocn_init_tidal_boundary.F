@@ -28,6 +28,7 @@ module ocn_init_tidal_boundary
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -89,7 +90,6 @@ contains
     type (mpas_pool_type), pointer :: meshPool
     type (mpas_pool_type), pointer :: forcingPool
     type (mpas_pool_type), pointer :: statePool
-    type (mpas_pool_type), pointer :: diagnosticsPool
     type (mpas_pool_type), pointer :: verticalMeshPool
     type (mpas_pool_type), pointer :: tracersPool
 
@@ -107,7 +107,7 @@ contains
     real (kind=RKIND), dimension(:), pointer :: tidalInputMask
     real (kind=RKIND), dimension(:), pointer :: bottomDrag
     real (kind=RKIND), dimension(:), pointer :: ssh
-    real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
+    real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
     real (kind=RKIND),  parameter :: eps=1.0e-12
@@ -163,7 +163,6 @@ contains
 
       call mpas_pool_get_array(meshPool, 'yCell', yCell)
       call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-      call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -182,7 +181,6 @@ contains
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
