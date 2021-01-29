@@ -5,7 +5,7 @@
 
 <immutable_stream name="input"
                   type="input"
-                  filename_template="grid_ridging_island.nc"
+                  filename_template="grid.nc"
                   filename_interval="none"
                   input_interval="initial_only" />
 
