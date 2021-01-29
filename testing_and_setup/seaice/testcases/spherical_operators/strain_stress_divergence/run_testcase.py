@@ -39,6 +39,6 @@ for operatorMethod in operatorMethods:
         os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, gridSize))
         os.system("ln -s streams.seaice.strain_stress_divergence streams.seaice")
 
-        os.system("../../../../seaice_model")
+        os.system("../../../../../seaice_model")
 
         os.system("mv output output_%s_%i" %(operatorMethod, gridSize))

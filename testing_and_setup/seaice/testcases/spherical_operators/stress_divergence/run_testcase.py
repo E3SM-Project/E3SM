@@ -33,12 +33,12 @@ for operatorMethod in operatorMethods:
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                             "config_stress_divergence_scheme":"weak"}}
 
-        f90nml.patch("namelist.seaice.strain", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, gridSize))
+        f90nml.patch("namelist.seaice.stress_divergence", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, gridSize))
 
         os.system("rm -rf namelist.seaice streams.seaice output_%s_%i" %(operatorMethod, gridSize))
         os.system("ln -s namelist.seaice.%s.%i namelist.seaice" %(operatorMethod, gridSize))
-        os.system("ln -s streams.seaice.strain streams.seaice")
+        os.system("ln -s streams.seaice.stress_divergence streams.seaice")
 
-        os.system("../../../../seaice_model")
+        os.system("../../../../../seaice_model")
 
         os.system("mv output output_%s_%i" %(operatorMethod, gridSize))
