@@ -29,6 +29,7 @@ module ocn_init_isomip
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -88,7 +89,6 @@ contains
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: forcingPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool
@@ -100,7 +100,7 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask, landIceMask
+      integer, dimension(:), pointer :: maxLevelCell, landIceMask
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, &
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
@@ -108,7 +108,7 @@ contains
                                                   refLayerThickness, refZMid, &
                                                   ssh
       !real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore, maskRestore
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
       real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
 
@@ -197,7 +197,6 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -224,9 +223,6 @@ contains
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
         call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
-
-        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-        call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
@@ -364,7 +360,6 @@ contains
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
         call ocn_compute_Haney_number(domain, iErr)
 

@@ -170,6 +170,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: gradSSHZ
 
    real (kind=RKIND), dimension(:), pointer :: barotropicForcing
+   real (kind=RKIND), dimension(:), pointer :: barotropicCoriolisTerm
    real (kind=RKIND), dimension(:), pointer :: barotropicThicknessFlux
 
    real (kind=RKIND), dimension(:, :), pointer :: edgeAreaFractionOfCell
@@ -186,6 +187,13 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: eddyTime
    real (kind=RKIND), dimension(:), pointer :: c_visbeck
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
+
+   ! Semi-implicit Array Pointers
+   real (kind=RKIND), dimension(:), pointer :: CGvec_r0,CGvec_r00,CGvec_r1 ,CGvec_rh0,CGvec_rh1,CGvec_ph0,CGvec_ph1
+   real (kind=RKIND), dimension(:), pointer :: CGvec_v0,CGvec_v1 ,CGvec_s0 ,CGvec_s1 ,CGvec_sh0,CGvec_sh1
+   real (kind=RKIND), dimension(:), pointer :: CGvec_t0,CGvec_t1 ,CGvec_q0 ,CGvec_q1 ,CGvec_qh0
+   real (kind=RKIND), dimension(:), pointer :: CGvec_w0,CGvec_w1 ,CGvec_wh0,CGvec_wh1,CGvec_y0
+   real (kind=RKIND), dimension(:), pointer :: CGvec_z0,CGvec_z1 ,CGvec_zh0,CGvec_zh1
 
    !--------------------------------------------------------------------
    !
@@ -401,6 +409,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', gradSSHMeridional)
 
       call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
+      call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
 
       call mpas_pool_get_array(diagnosticsPool, 'SSHGradient', SSHGradient)
@@ -411,10 +420,41 @@ contains
       call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)                                    
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)                                        
+      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
+      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
       call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
+
+      ! Semi-implicit Array Pointer retrievals
+      if (trim(config_time_integrator) == 'semi_implicit') then
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r0', CGvec_r0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r1', CGvec_r1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v0', CGvec_v0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v1', CGvec_v1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w0', CGvec_w0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w1', CGvec_w1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_q0', CGvec_q0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s0', CGvec_s0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s1', CGvec_s1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t1', CGvec_t1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_y0', CGvec_y0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z0', CGvec_z0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z1', CGvec_z1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r00', CGvec_r00)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh0', CGvec_rh0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh1', CGvec_rh1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh0', CGvec_wh0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh1', CGvec_wh1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph0', CGvec_ph0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph1', CGvec_ph1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_qh0', CGvec_qh0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh0', CGvec_sh0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh1', CGvec_sh1)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh0', CGvec_zh0)
+         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh1', CGvec_zh1)
+      end if
 
     end subroutine ocn_diagnostics_variables_init!}}}
 

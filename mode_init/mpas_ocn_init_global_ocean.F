@@ -33,6 +33,7 @@ module ocn_init_global_ocean
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
    use ocn_init_interpolation
@@ -1044,7 +1045,7 @@ contains
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, forcingPool, landIceInitPool, diagnosticsPool, &
+       type (mpas_pool_type), pointer :: meshPool, forcingPool, landIceInitPool, &
                                          statePool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
@@ -1055,7 +1056,7 @@ contains
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell, landIceMask, modifySSHMask
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask
 
        integer :: iCell
 
@@ -1152,7 +1153,6 @@ contains
 
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -1163,7 +1163,6 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
           call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
@@ -2007,7 +2006,7 @@ contains
       character (len=StrKIND), intent(in) :: interpTracerName
 
       type (block_type), pointer :: block_ptr
-      type (mpas_pool_type), pointer :: meshPool, scratchPool, diagnosticsPool
+      type (mpas_pool_type), pointer :: meshPool, scratchPool
 
       real (kind=RKIND) :: counter
       integer :: iSmooth, j, coc, iCell, k, nDepth
@@ -2020,7 +2019,6 @@ contains
       real (kind=RKIND), dimension(:, :), pointer :: smoothedTracer
 
       real (kind=RKIND), dimension(:), pointer :: outTracerColumn
-      real (kind=RKIND), dimension(:,:), pointer :: zMid
       integer :: inKMax, outKMax
 
       type (field2DReal), pointer :: interpTracerField
@@ -2124,14 +2122,12 @@ contains
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(scratchPool, trim(interpTracerName), interpTracer)
 
          allocate(outTracerColumn(nVertLevels))
@@ -2321,7 +2317,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    type (block_type), pointer :: block_ptr
    type (MPAS_Stream_type) :: zenithStream, chlorophyllStream, clearSkyStream
-   type (mpas_pool_type), pointer :: meshPool, statePool, shortwavePool, diagnosticsPool
+   type (mpas_pool_type), pointer :: meshPool, statePool, shortwavePool
 
    type(MPAS_TimeInterval_type) :: timeStep ! time step interval
    type(MPAS_Time_Type) :: currentTime
@@ -2334,8 +2330,6 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
 
    real (kind=RKIND), dimension(:), pointer :: chlorophyllData, zenithAngle, clearSkyRadiation
    real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-
-   character (len=StrKIND), pointer :: xtime
 
    iErr = 0
 
@@ -2403,12 +2397,10 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
       call mpas_pool_get_subpool(block_ptr % structs, 'shortwave', shortwavePool)
-      call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
