@@ -17,17 +17,21 @@ for operatorMethod in operatorMethods:
 
         print("  Gridsize: ", gridSize)
 
-        os.system("rm grid.nc")
+        os.system("rm grid.nc ic.nc")
         os.system("ln -s x1.%i.grid.nc grid.nc" %(gridSize))
+        os.system("ln -s ic_%i.nc ic.nc" %(gridSize))
 
         if (operatorMethod == "wachspress"):
-            nmlPatch = {"velocity_solver": {"config_stress_divergence_scheme":"variational",
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                            "config_stress_divergence_scheme":"variational",
                                             "config_variational_basis":"wachspress"}}
         elif (operatorMethod == "pwl"):
-            nmlPatch = {"velocity_solver": {"config_stress_divergence_scheme":"variational",
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                            "config_stress_divergence_scheme":"variational",
                                             "config_variational_basis":"pwl"}}
         elif (operatorMethod == "weak"):
-            nmlPatch = {"velocity_solver": {"config_stress_divergence_scheme":"weak"}}
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                            "config_stress_divergence_scheme":"weak"}}
 
         f90nml.patch("namelist.seaice.strain_stress_divergence", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, gridSize))
 

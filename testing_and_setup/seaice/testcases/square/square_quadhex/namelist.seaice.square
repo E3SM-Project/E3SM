@@ -70,10 +70,7 @@
     config_update_ocean_fluxes = false
     config_include_pond_freshwater_feedback = false
 /
-&unit_test
-    config_perform_unit_test = false
-    config_unit_test_type = ''
-    config_unit_test_subtype = ''
+&testing
     config_use_test_ice_shelf = false
     config_testing_system_test = false
 /
@@ -82,6 +79,8 @@
     config_rotate_cartesian_grid = false
     config_include_metric_terms = false
     config_elastic_subcycle_number = 120
+    config_strain_scheme = 'variational'
+    config_constitutive_relation_type = 'evp'
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
     config_wachspress_integration_type = 'dunavant'

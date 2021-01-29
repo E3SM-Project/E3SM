@@ -9,6 +9,17 @@
                   filename_interval="none"
                   input_interval="initial_only" />
 
+<stream name="initialConditions"
+        type="input"
+        filename_template="ic.nc"
+        filename_interval="none"
+        input_interval="initial_only">
+
+        <var name="uVelocity"/>
+        <var name="vVelocity"/>
+	<var name="solveVelocityPrevious"/>
+</stream>
+
 <immutable_stream name="restart"
                   type="input;output"
                   filename_template="restarts/restart.$Y-$M-$D_$h.$m.$s.nc"
@@ -26,15 +37,20 @@
 	<var name="xtime"/>
 	<var name="daysSinceStartOfSim"/>
 	<stream name="mesh"/>
+	<var name="cellVerticesAtVertex"/>
+	<var name="iceAreaCell"/>
+	<var name="iceVolumeCell"/>
+	<var name="snowVolumeCell"/>
 	<var name="uVelocity"/>
 	<var name="vVelocity"/>
+	<var name="strain11var"/>
+	<var name="strain22var"/>
+	<var name="strain12var"/>
+	<var name="strain11weak"/>
+	<var name="strain22weak"/>
+	<var name="strain12weak"/>
 	<var name="stressDivergenceU"/>
 	<var name="stressDivergenceV"/>
-	<var name="stressDivergenceUAnalytical"/>
-	<var name="stressDivergenceVAnalytical"/>
-	<var name="strain11Analytical"/>
-	<var name="strain22Analytical"/>
-	<var name="strain12Analytical"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

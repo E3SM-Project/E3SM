@@ -134,6 +134,7 @@ module seaice_core_interface
           config_use_velocity_solver
 
      character(len=strKIND), pointer :: &
+          config_strain_scheme, &
           config_stress_divergence_scheme
 
      logical, pointer :: &
@@ -144,6 +145,7 @@ module seaice_core_interface
      !pkgVariational
 
      call MPAS_pool_get_config(configPool, "config_use_velocity_solver", config_use_velocity_solver)
+     call MPAS_pool_get_config(configPool, "config_strain_scheme", config_strain_scheme)
      call MPAS_pool_get_config(configPool, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
      call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
@@ -153,23 +155,21 @@ module seaice_core_interface
      if (config_use_velocity_solver) then
 
         ! stress divergence scheme
-        if (trim(config_stress_divergence_scheme) == "weak") then
+        if (trim(config_strain_scheme)            == "weak" .or. &
+            trim(config_stress_divergence_scheme) == "weak") then
 
            ! weak stress divergence scheme
            pkgWeakActive = .true.
 
-        else if (trim(config_stress_divergence_scheme) == "variational") then
+        endif
+
+        if (trim(config_strain_scheme)            == "variational" .or. &
+            trim(config_stress_divergence_scheme) == "variational") then
 
            ! variational stress divergence scheme
            pkgVariationalActive = .true.
 
-        else
-
-           ! unknown value of config_stress_divergence_scheme
-           call mpas_log_write("Unknown stress divergence scheme: "//trim(config_stress_divergence_scheme))
-           ierr = 1
-
-        endif ! config_stress_divergence_scheme
+        endif
 
      endif ! config_use_velocity_solver
 
