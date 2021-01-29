@@ -1687,6 +1687,8 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   state%cptermp(:) = 0.0
   state%cpterme(:) = 0.0
+  state%tebefore(:) = 0.0
+  state%teafter(:) = 0.0
 
 end subroutine physics_state_alloc
 

@@ -1817,11 +1817,11 @@ if (l_ac_energy_chk) then
 !    state%te_cur(:ncol) = state%te_cur(:ncol) -( state%tebefore(:ncol)-state%teafter(:ncol) )
 #endif
 
-    call outfld('CPflux', (state%cptermp - state%cpterme) &
-                                                                            , pcols, lchnk )
+!    call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
+    call outfld('CPfluxe', state%cpterme , pcols, lchnk )
+    call outfld('CPfluxp', state%cptermp , pcols, lchnk )
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
-
-    call outfld('PWmCPflux', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
+!    call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
