@@ -88,6 +88,11 @@ module crm_output_module
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
       real(crm_rknd), allocatable :: qiltend (:,:)          ! CRM output tendency of cloud ice
 
+      real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for LSE variance transport
+      real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for QT  variance transport
+      real(crm_rknd), allocatable :: t_vt_ls   (:,:)       ! large-scale LSE variance transport tendency from GCM
+      real(crm_rknd), allocatable :: q_vt_ls   (:,:)       ! large-scale QT  variance transport tendency from GCM
+
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
       real(crm_rknd), allocatable :: gicewp(:,:)      ! ice water path
@@ -261,6 +266,11 @@ contains
          if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
          if (.not. allocated(output%qiltend))  allocate(output%qiltend(ncol,nlev))
 
+         if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
+         if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
+         if (.not. allocated(output%t_vt_ls  ))  allocate(output%t_vt_ls  (ncol,nlev))
+         if (.not. allocated(output%q_vt_ls  ))  allocate(output%q_vt_ls  (ncol,nlev))
+
          if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
          if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
          if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
@@ -306,6 +316,12 @@ contains
          call prefetch(output%qltend  )
          call prefetch(output%qcltend )
          call prefetch(output%qiltend )
+
+         call prefetch(output%t_vt_tend )
+         call prefetch(output%q_vt_tend )
+         call prefetch(output%t_vt_ls   )
+         call prefetch(output%q_vt_ls   )
+
          call prefetch(output%cld    )
          call prefetch(output%gicewp )
          call prefetch(output%gliqwp )
@@ -420,6 +436,11 @@ contains
       output%qltend  = 0
       output%qcltend = 0
       output%qiltend = 0
+
+      output%t_vt_tend = 0
+      output%q_vt_tend = 0
+      output%t_vt_ls   = 0
+      output%q_vt_ls   = 0
 
       output%cld    = 0
       output%gicewp = 0
@@ -538,6 +559,11 @@ contains
       if (allocated(output%qltend)) deallocate(output%qltend)
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
+
+      if (allocated(output%t_vt_tend)) deallocate(output%t_vt_tend)
+      if (allocated(output%q_vt_tend)) deallocate(output%q_vt_tend)
+      if (allocated(output%t_vt_ls))   deallocate(output%t_vt_ls)
+      if (allocated(output%q_vt_ls))   deallocate(output%q_vt_ls)
 
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)
