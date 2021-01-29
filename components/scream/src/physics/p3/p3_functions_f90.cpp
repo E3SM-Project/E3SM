@@ -236,7 +236,7 @@ void p3_main_c(
 
 void ice_supersat_conservation_c(Real* qidep, Real* qinuc, Real cld_frac_i, Real qv, Real qv_sat_i, Real latent_heat_sublim, Real t_atm, Real dt);
 void nc_conservation_c(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_collect_tend, Real* nc2ni_immers_freeze_tend, Real* nc_accret_tend, Real* nc2nr_autoconv_tend);
-void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
+void nr_conservation_c(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend);
 void ni_conservation_c(Real ni, Real ni_nucleat_tend, Real nr2ni_immers_freeze_tend, Real nc2ni_immers_freeze_tend, Real dt, Real* ni2nr_melt_tend, Real* ni_sublim_tend, Real* ni_selfcollect_tend);
 void water_vapor_conservation_c(Real qv, Real* qidep, Real* qinuc, Real qi2qv_sublim_tend, Real qr2qv_evap_tend, Real dt);
 } // extern "C" : end _c decls
@@ -855,7 +855,7 @@ void nc_conservation(NcConservationData& d)
 void nr_conservation(NrConservationData& d)
 {
   p3_init();
-  nr_conservation_c(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
+  nr_conservation_c(d.nr, d.ni2nr_melt_tend, d.nr_ice_shed_tend, d.ncshdc, d.nc2nr_autoconv_tend, d.dt, d.nmltratio, &d.nr_collect_tend, &d.nr2ni_immers_freeze_tend, &d.nr_selfcollect_tend, &d.nr_evap_tend);
 }
 
 void ni_conservation(NiConservationData& d)
@@ -904,6 +904,7 @@ void NrConservationData::randomize()
   ncshdc                   = data_dist(generator);
   nc2nr_autoconv_tend      = data_dist(generator);
   dt                       = data_dist(generator);
+  nmltratio                = data_dist(generator);
   nr_collect_tend          = data_dist(generator);
   nr2ni_immers_freeze_tend = data_dist(generator);
   nr_selfcollect_tend      = data_dist(generator);
@@ -3452,7 +3453,7 @@ void nc_conservation_f(Real nc, Real nc_selfcollect_tend, Real dt, Real* nc_coll
   *nc_collect_tend = t_h(3);
 }
 
-void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend)
+void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Real ncshdc, Real nc2nr_autoconv_tend, Real dt, Real nmltratio, Real* nr_collect_tend, Real* nr2ni_immers_freeze_tend, Real* nr_selfcollect_tend, Real* nr_evap_tend)
 {
   using PF = Functions<Real, DefaultDevice>;
 
@@ -3465,7 +3466,7 @@ void nr_conservation_f(Real nr, Real ni2nr_melt_tend, Real nr_ice_shed_tend, Rea
   Real local_nr2ni_immers_freeze_tend(*nr2ni_immers_freeze_tend), local_nr_collect_tend(*nr_collect_tend), local_nr_evap_tend(*nr_evap_tend), local_nr_selfcollect_tend(*nr_selfcollect_tend);
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     Spack nc2nr_autoconv_tend_(nc2nr_autoconv_tend), ncshdc_(ncshdc), ni2nr_melt_tend_(ni2nr_melt_tend), nr_(nr), nr2ni_immers_freeze_tend_(local_nr2ni_immers_freeze_tend), nr_collect_tend_(local_nr_collect_tend), nr_evap_tend_(local_nr_evap_tend), nr_ice_shed_tend_(nr_ice_shed_tend), nr_selfcollect_tend_(local_nr_selfcollect_tend);
-    PF::nr_conservation(nr_, ni2nr_melt_tend_, nr_ice_shed_tend_, ncshdc_, nc2nr_autoconv_tend_, dt, nr_collect_tend_, nr2ni_immers_freeze_tend_, nr_selfcollect_tend_, nr_evap_tend_);
+    PF::nr_conservation(nr_, ni2nr_melt_tend_, nr_ice_shed_tend_, ncshdc_, nc2nr_autoconv_tend_, dt, nmltratio, nr_collect_tend_, nr2ni_immers_freeze_tend_, nr_selfcollect_tend_, nr_evap_tend_);
     t_d(0) = nr2ni_immers_freeze_tend_[0];
     t_d(1) = nr_collect_tend_[0];
     t_d(2) = nr_evap_tend_[0];

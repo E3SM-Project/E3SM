@@ -832,7 +832,7 @@ contains
 
       call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
            nc_accret_tend, nc2nr_autoconv_tend)
-      call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,&
+      call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,&
            nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,&
            ni_sublim_tend,ni_selfcollect_tend)
@@ -2937,18 +2937,18 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
   return
 end subroutine nc_conservation
 
-subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,&
+subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,&
      nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
   !Make sure sinks of nr don't force end-of-step nr below 0. Rescale them if they do.
 
   implicit none
 
-  real(rtype), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt
+  real(rtype), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio
   real(rtype), intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend
   real(rtype) :: sink_nr, source_nr, ratio
 
   sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt
-  source_nr = nr + (ni2nr_melt_tend + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
+  source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
   if(sink_nr > source_nr) then
      ratio = source_nr/sink_nr
      nr_collect_tend  = nr_collect_tend*ratio

@@ -799,7 +799,7 @@ struct NcConservationData {
 
 struct NrConservationData {
   // Inputs
-  Real nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt;
+  Real nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend, dt, nmltratio;
 
   // Inputs/Outputs
   Real nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend;
