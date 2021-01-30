@@ -611,13 +611,11 @@ contains
 
 !call thisroutine after timestep_make_... routines
   subroutine control_params_init
-    use time_mod, only : nsplit, tstep, dt_remap, dt_tracer, dt_hv, dt_forcing, dt_run_sub 
-    use parallel_mod, only: abortmp
 #ifdef MODEL_THETA_L
     if (dt_remap_factor==0) then
        adjust_ps=.true.   ! stay on reference levels for Eulerian case
     else
-       adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+       adjust_ps=.false.   ! Lagrangian case can support adjusting dp3d or ps
     endif
 #else
     adjust_ps=.true.      ! preqx requires forcing to stay on reference levels

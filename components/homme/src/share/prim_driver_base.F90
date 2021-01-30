@@ -1512,7 +1512,7 @@ contains
   !    remap                    remap back to ref levels.  ps_v now valid
   !    write restart files      ps_v ok for restart
   !
-  use control_mod,        only : use_moisture, dt_remap_factor
+  use control_mod,        only : use_moisture, dt_remap_factor, adjust_ps
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
@@ -1535,7 +1535,6 @@ contains
   real (kind=real_kind)  :: fq
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
-  logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1547,17 +1546,6 @@ contains
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
-#ifdef MODEL_THETA_L
-  if (dt_remap_factor==0) then
-     adjust_ps=.true.   ! stay on reference levels for Eulerian case
-  else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
-  endif
-#else
-  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
-#endif
-
-  dp=elem%state%dp3d(:,:,:,np1)
   dp_adj=dp
   ps=elem%state%ps_v(:,:,np1)
   !ps=hvcoord%hyai(1)*hvcoord%ps0 + sum(dp(:,:,:),3) ! introduces roundoff

@@ -364,6 +364,7 @@ subroutine diag_init()
    !expected to be ~zero
    call addfld ('TEdiffadj',horiz_only, 'A','J/m2','TE diff ')
    call addfld ('KEdiff',horiz_only, 'A','J/m2','TE diff ')
+   call addfld ('BCdiff',horiz_only, 'A','J/m2','TE diff ')
    !delta T computed to 'fix' moisure adjustment, similarly to what fixer does, via
    !c_pT term
    call addfld ('dTadj',(/ 'lev' /), 'A','K','delta T from adjustment')
@@ -455,6 +456,10 @@ subroutine diag_init()
       call add_default ('VU      ', 1, ' ')
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
+
+      call add_default ('TEdiff  ', 1, ' ')
+      call add_default ('KEdiff  ', 1, ' ')
+      call add_default ('BCdiff  ', 1, ' ')
 
       if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')

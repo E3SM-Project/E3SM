@@ -664,7 +664,7 @@ CONTAINS
     type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
     type(physics_tend),  intent(inout), dimension(begchunk:endchunk) :: tend
     ! LOCAL VARIABLES
-    integer                                      :: ncol, k, ic                                
+    integer                                      :: ncol, k, ic, m                        
     integer(kind=int_kind)                       :: lchnk
 
     real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore, teadjusted
@@ -673,6 +673,7 @@ CONTAINS
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
     real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2, ttendhor, ttendadjhor
     real (kind=real_kind)                        :: fq, dtime
+    real (kind=real_kind), dimension(pcols)      :: fdq
 
     dtime=get_step_size()
 
@@ -698,9 +699,12 @@ CONTAINS
                                  kebefore,se,wv,wl,wi,wr,ws,tebefore,tw, &
                                  ncol,teloc1,psterm1)
       !energy before pressure work (PW) adjustment
-      call outfld('TEbeforeadj', tebefore, pcols, lchnk)
-      call outfld('KEbeforeadj', kebefore, pcols, lchnk)
+!      call outfld('TEbeforeadj', tebefore, pcols, lchnk)
+!      call outfld('KEbeforeadj', kebefore, pcols, lchnk)
       
+
+!version mimicing homme code but not adjusting Q
+#if 0
       !adjust pressure, keep the code close to applyCAMforcing_tracers
       !do not adjust Q1
       dp_adj(:ncol,:) = pdel(:ncol,:)
@@ -711,6 +715,29 @@ CONTAINS
             dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
          enddo
       enddo
+#endif
+
+!version from dme_adjust with Q adjust
+#if 1
+      dp_adj(:ncol,:) = pdel(:ncol,:)
+      ps(:ncol)=state(lchnk)%pint(:ncol,1)
+      do k = 1, pver
+
+         ! adjusment factor is just change in water vapor
+         fdq(:ncol) = 1._r8 + state(lchnk)%q(:ncol,k,1) - state(lchnk)%q1(:ncol,k )
+
+         ! adjust constituents to conserve mass in each layer
+         do m = 1, pcnst
+            qstate(:ncol,k,m) = qstate(:ncol,k,m) / fdq(:ncol)
+         end do
+
+         dp_adj(:ncol,k  ) = dp_adj(:ncol,k  ) * fdq(:ncol)
+
+         ps(:ncol)=ps(:ncol) + dp_adj(:ncol,k)
+      enddo
+#endif
+
+!last part to decide to adjust ps and hybrid or dp3d
       if (adjust_ps) then
          ! compute new dp3d from adjusted ps()
          do k=1,pver
@@ -720,16 +747,19 @@ CONTAINS
       endif
       pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
 
+
       !compute energy after PW
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
                                  ke,se,wv,wl,wi,wr,ws,te,tw, &
                                  ncol,teloc2,psterm2)
       !energy after PW
-      call outfld('TEafteradj', te, pcols, lchnk)
-      call outfld('KEafteradj', ke, pcols, lchnk)
+!      call outfld('TEafteradj', te, pcols, lchnk)
+!      call outfld('KEafteradj', ke, pcols, lchnk)
 
       !difference of energy: after PW minus before PW
       call outfld('TEdiff', te-tebefore, pcols, lchnk)
+      call outfld('KEdiff', ke-kebefore, pcols, lchnk)
+      call outfld('BCdiff', psterm2-psterm1, pcols, lchnk)
 
       !compute temperature tend from PW adjustment
       !keep is as local as possible
