@@ -46,6 +46,3 @@
 	url = git@github.com:NVlabs/cub.git
 [submodule "Submod"]
 	branch = rljacob/e3smconfig/elm-name
-[submodule "externals/netcdf-cxx4"]
-	path = externals/netcdf-cxx4
-	url = git@github.com:Unidata/netcdf-cxx4.git

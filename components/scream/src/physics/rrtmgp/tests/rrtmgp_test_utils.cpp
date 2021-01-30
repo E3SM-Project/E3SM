@@ -5,6 +5,8 @@
 #include "mo_garand_atmos_io.h"
 #include "mo_fluxes.h"
 #include "mo_cloud_optics.h"
+#include "simple_netcdf.hpp"
+#include <netcdf>
 namespace rrtmgpTest {
 
     // TODO: use YAKL intrinsics for this; this won't work on the GPU
@@ -97,8 +99,8 @@ namespace rrtmgpTest {
             real2d &lw_flux_up, real2d &lw_flux_dn) {
 
         // Initialize netcdf reader
-        yakl::SimpleNetCDF io;
-        io.open(inputfile, yakl::NETCDF_MODE_READ);
+        simple_netcdf::SimpleNetCDF io;
+        io.open(inputfile, NC_NOWRITE);
 
         // Initialize arrays to hold fluxes
         int nlev = io.getDimSize("lev");
@@ -122,8 +124,8 @@ namespace rrtmgpTest {
             real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
             real2d &lw_flux_up, real2d &lw_flux_dn) {
 
-        yakl::SimpleNetCDF io;
-        io.open(outputfile, yakl::NETCDF_MODE_WRITE);
+        simple_netcdf::SimpleNetCDF io;
+        io.open(outputfile, NC_NOWRITE);
         io.write(sw_flux_up , "sw_flux_up_result" , {"col_new","lev"});
         io.write(sw_flux_dn , "sw_flux_dn_result" , {"col_new","lev"});
         io.write(sw_flux_dir, "sw_flux_dir_result", {"col_new","lev"});
