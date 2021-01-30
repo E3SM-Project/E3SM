@@ -2351,6 +2351,7 @@
 		<!-- dynamics packages -->
 		<package name="pkgWeak" description=""/>
 		<package name="pkgVariational" description=""/>
+		<package name="pkgWeakVariational" description=""/>
 
 		<!-- column package packages -->
 		<package name="pkgColumnPackage" description=""/>
@@ -3740,6 +3741,13 @@
 		<var name="principalStress1Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress1"/>
 		<var name="principalStress2Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress2"/>
 		<var name="replacementPressureVar"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="replacementPressure"/>
+	</var_struct>
+
+	<!-- weak strain / variational stress divergence -->
+	<var_struct name="velocity_weak_variational" time_levs="1" packages="pkgWeakVariational">
+		<var name="strain11Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain11Vertex"/>
+		<var name="strain22Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain22Vertex"/>
+		<var name="strain12Vertex"			type="real"	dimensions="nVertices Time"		name_in_code="strain12Vertex"/>
 	</var_struct>
 
 	<!-- column physics -->

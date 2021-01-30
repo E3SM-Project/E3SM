@@ -139,7 +139,8 @@ module seaice_core_interface
 
      logical, pointer :: &
           pkgWeakActive, &
-          pkgVariationalActive
+          pkgVariationalActive, &
+          pkgWeakVariationalActive
 
      !pkgWeak
      !pkgVariational
@@ -150,6 +151,7 @@ module seaice_core_interface
 
      call MPAS_pool_get_package(packagePool, "pkgWeakActive", pkgWeakActive)
      call MPAS_pool_get_package(packagePool, "pkgVariationalActive", pkgVariationalActive)
+     call MPAS_pool_get_package(packagePool, "pkgWeakVariationalActive", pkgWeakVariationalActive)
 
      ! is the velocity solver on
      if (config_use_velocity_solver) then
@@ -168,6 +170,14 @@ module seaice_core_interface
 
            ! variational stress divergence scheme
            pkgVariationalActive = .true.
+
+        endif
+
+        if (trim(config_strain_scheme)            == "weak" .and. &
+            trim(config_stress_divergence_scheme) == "variational") then
+
+           ! weak strain / variational stress divergence
+           pkgWeakVariationalActive = .true.
 
         endif
 
