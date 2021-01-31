@@ -457,9 +457,11 @@ subroutine diag_init()
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
 
+#ifdef ENERGY_DIAGNOSTICS
       call add_default ('TEdiff  ', 1, ' ')
       call add_default ('KEdiff  ', 1, ' ')
       call add_default ('BCdiff  ', 1, ' ')
+#endif
 
       if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')
