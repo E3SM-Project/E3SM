@@ -3,7 +3,7 @@ import numpy as np
 
 gridSizes = [2562, 10242, 40962, 163842]
 
-operatorMethods = ["wachspress","pwl"]
+operatorMethods = ["wachspress","pwl","weakwachs"]
 
 for operatorMethod in operatorMethods:
 

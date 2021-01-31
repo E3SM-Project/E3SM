@@ -145,7 +145,7 @@ print("Strain: ",
 
 fileIC.close()
 
-# wachspress
+# Wachspress
 fileWach = Dataset("./output_wachspress_40962/output.2000.nc","r")
 
 strain11varWachspress = fileWach.variables["strain11varAvg"][0,:]
@@ -163,6 +163,7 @@ print("Wachs: ",
 
 fileWach.close()
 
+# PWL
 filePWL = Dataset("./output_pwl_40962/output.2000.nc","r")
 
 strain11varPWL = filePWL.variables["strain11varAvg"][0,:]
@@ -180,6 +181,7 @@ print("PWL:   ",
 
 filePWL.close()
 
+# Weak
 fileWeak = Dataset("./output_weak_40962/output.2000.nc","r")
 
 strain11weakWeak = fileWeak.variables["strain11weak"][0,:]
@@ -197,6 +199,24 @@ print("Weak:  ",
 
 fileWeak.close()
 
+# Weak Wachs
+fileWeakWachs = Dataset("./output_weakwachs_40962/output.2000.nc","r")
+
+strain11weakWachs = fileWeakWachs.variables["strain11varAvg"][0,:]
+strain22weakWachs = fileWeakWachs.variables["strain22varAvg"][0,:]
+strain12weakWachs = fileWeakWachs.variables["strain12varAvg"][0,:]
+
+strain11weakWachsDiff = strain11weakWachs - strain11VertexAnalytical
+strain22weakWachsDiff = strain22weakWachs - strain22VertexAnalytical
+strain12weakWachsDiff = strain12weakWachs - strain12VertexAnalytical
+
+print("WeakWachs:  ",
+      np.amin(strain11weakWachsDiff), np.amax(strain11weakWachsDiff),
+      np.amin(strain22weakWachsDiff), np.amax(strain22weakWachsDiff),
+      np.amin(strain12weakWachsDiff), np.amax(strain12weakWachsDiff))
+
+fileWeakWachs.close()
+
 
 
 mpl.rc('font', family='Times New Roman', size=8)
@@ -204,7 +224,7 @@ mpl.rc('text', usetex=True)
 mpl.rcParams['axes.linewidth'] = 0.5
 
 
-fig, axes = plt.subplots(5, 6)
+fig, axes = plt.subplots(6, 6)
 fig.set_size_inches(9, 8)
 
 minStrain = -3.3
@@ -278,6 +298,20 @@ plot_subfigure(axes[4,4], nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex
                False, False, r'$\epsilon_{12}$ Weak', '(y)', False)
 plot_subfigure(axes[4,5], nCells, nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex, latCell, strain12weakWeakDiff, minDiff, maxDiff, -0.2, 0.2, -0.2, 0.2, \
                False, False, r'$\epsilon_{12}$ Weak', '(z)', True)
+
+# Weak Wachs
+plot_subfigure(axes[5,0], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain11weakWachsDiff, minDiff, maxDiff, -1.0, 1.0, -1.0, 1.0, \
+               False, False, r'$\epsilon_{11}$ WeakWachs.', '(aa)', False)
+plot_subfigure(axes[5,1], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain11weakWachsDiff, minDiff, maxDiff, -0.2, 0.2, -0.2, 0.2, \
+               False, False, r'$\epsilon_{11}$ WeakWachs.', '(bb)', False)
+plot_subfigure(axes[5,2], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain22weakWachsDiff, minDiff, maxDiff, -1.0, 1.0, -1.0, 1.0, \
+               False, False, r'$\epsilon_{22}$ WeakWachs.', '(cc)', False)
+plot_subfigure(axes[5,3], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain22weakWachsDiff, minDiff, maxDiff, -0.2, 0.2, -0.2, 0.2, \
+               False, False, r'$\epsilon_{22}$ WeakWachs.', '(dd)', False)
+plot_subfigure(axes[5,4], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain12weakWachsDiff, minDiff, maxDiff, -1.0, 1.0, -1.0, 1.0, \
+               False, False, r'$\epsilon_{12}$ WeakWachs.', '(ee)', False)
+plot_subfigure(axes[5,5], nVertices, vertexDegreeArr, cellsOnVertex, xCell, yCell, zCell, latVertex, strain12weakWachsDiff, minDiff, maxDiff, -0.2, 0.2, -0.2, 0.2, \
+               False, False, r'$\epsilon_{12}$ WeakWachs.', '(ff)', True)
 
 plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
 plt.savefig("strain_map.png",dpi=400)

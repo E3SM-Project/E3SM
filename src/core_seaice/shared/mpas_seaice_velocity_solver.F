@@ -187,6 +187,11 @@ contains
           call MPAS_log_write("config_ocean_stress_type unknown: "//trim(config_ocean_stress_type), MPAS_LOG_CRIT)
        endif
 
+       if (strainSchemeType           == VARIATIONAL_STRAIN_SCHEME .and. &
+           stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
+          call MPAS_log_write("Cannot have variational strain scheme with variational stress divergence scheme", MPAS_LOG_CRIT)
+       endif
+
        ! initialize the evp solver
        call seaice_init_evp(domain)
 
@@ -2624,6 +2629,7 @@ contains
          meshPool, &
          velocityWeakPool, &
          velocityVariationalPool, &
+         velocityWeakVariationalPool, &
          velocitySolverPool
 
     real(kind=RKIND), pointer :: &
@@ -2660,28 +2666,39 @@ contains
        call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
        call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
        call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak_variational", velocityWeakVariationalPool)
        call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
 
-       call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
-       call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
-       call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
-       call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
-       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11weak)
-       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22weak)
-       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12weak)
-       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11weak)
-       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22weak)
-       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12weak)
-       call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressureWeak)
+       if (strainSchemeType           == WEAK_STRAIN_SCHEME .or. &
+           stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
 
-       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11var)
-       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22var)
-       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12var)
-       call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
+          call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
+          call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
+          call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
+          call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
+          call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11weak)
+          call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22weak)
+          call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12weak)
+          call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11weak)
+          call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22weak)
+          call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12weak)
+          call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressureWeak)
+
+       endif
+
+       if (strainSchemeType           == VARIATIONAL_STRAIN_SCHEME .or. &
+           stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
+
+          call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11var)
+          call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22var)
+          call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12var)
+          call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
+
+       endif
 
        ! strain
        if (strainSchemeType == WEAK_STRAIN_SCHEME) then
@@ -2714,6 +2731,24 @@ contains
                tanLatVertexRotatedOverRadius, &
                solveStress)
           call mpas_timer_stop("Velocity solver strain tensor")
+
+       endif
+
+       ! weak strain / variational stress divergence
+       if (strainSchemeType           == WEAK_STRAIN_SCHEME .and. &
+           stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
+
+          call mpas_timer_start("Velocity solver interpolate strain")
+          call interpolate_strains_weak_to_variational(&
+               meshPool, &
+               velocityWeakVariationalPool, &
+               strain11weak, &
+               strain22weak, &
+               strain12weak, &
+               strain11var, &
+               strain22var, &
+               strain12var)
+          call mpas_timer_stop("Velocity solver interpolate strain")
 
        endif
 
@@ -2794,6 +2829,113 @@ contains
     end do
 
   end subroutine seaice_internal_stress
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  interpolate_strains_weak_to_variational
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 29th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine interpolate_strains_weak_to_variational(&
+       meshPool, &
+       velocityWeakVariationalPool, &
+       strain11weak, &
+       strain22weak, &
+       strain12weak, &
+       strain11var, &
+       strain22var, &
+       strain12var)
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nVerticesSolve, &
+         vertexDegree, &
+         cellsOnVertex, &
+         nEdgesOnCell, &
+         verticesOnCell
+
+    type (MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakVariationalPool
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         strain11weak, & !< Input/Output:
+         strain22weak, & !< Input/Output:
+         strain12weak    !< Input/Output:
+
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         strain11var, & !< Input/Output:
+         strain22var, & !< Input/Output:
+         strain12var    !< Input/Output:
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11Vertex, &
+         strain22Vertex, &
+         strain12Vertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaCell
+
+    real(kind=RKIND) :: &
+         denom
+
+    integer :: &
+         iVertex, &
+         iCellOnVertex, &
+         iCell, &
+         iVertexOnCell
+
+    call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+
+    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain11Vertex", strain11Vertex)
+    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain22Vertex", strain22Vertex)
+    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain12Vertex", strain12Vertex)
+
+    do iVertex = 1, nVerticesSolve
+
+       strain11Vertex(iVertex) = 0.0_RKIND
+       strain22Vertex(iVertex) = 0.0_RKIND
+       strain12Vertex(iVertex) = 0.0_RKIND
+       denom = 0.0_RKIND
+
+       do iCellOnVertex = 1, vertexDegree
+
+          iCell = cellsOnVertex(iCellOnVertex,iVertex)
+
+          strain11Vertex(iVertex) = strain11Vertex(iVertex) + areaCell(iCell) * strain11weak(iCell)
+          strain22Vertex(iVertex) = strain22Vertex(iVertex) + areaCell(iCell) * strain22weak(iCell)
+          strain12Vertex(iVertex) = strain12Vertex(iVertex) + areaCell(iCell) * strain12weak(iCell)
+          denom = denom + areaCell(iCell)
+
+       enddo ! iCellOnVertex
+
+       strain11Vertex(iVertex) = strain11Vertex(iVertex) / denom
+       strain22Vertex(iVertex) = strain22Vertex(iVertex) / denom
+       strain12Vertex(iVertex) = strain12Vertex(iVertex) / denom
+
+    enddo ! iVertex
+
+    do iCell = 1, nCells
+
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+          iVertex = verticesOnCell(iVertexOnCell,iCell)
+
+          strain11var(iVertexOnCell,iCell) = strain11Vertex(iVertex)
+          strain22var(iVertexOnCell,iCell) = strain22Vertex(iVertex)
+          strain12var(iVertexOnCell,iCell) = strain12Vertex(iVertex)
+
+       enddo ! iVertexOnCell
+
+    enddo ! iCell
+
+  end subroutine interpolate_strains_weak_to_variational
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

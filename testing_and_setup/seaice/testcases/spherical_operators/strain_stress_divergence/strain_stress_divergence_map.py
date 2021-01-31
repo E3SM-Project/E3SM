@@ -184,6 +184,21 @@ print("Weak:  ",
 
 fileWeak.close()
 
+# WeakWachs
+fileWeakWachs = Dataset("./output_weakwachs_40962/output.2000.nc","r")
+
+stressDivergenceUWeakWachs = fileWeakWachs.variables["stressDivergenceU"][0,:]
+stressDivergenceVWeakWachs = fileWeakWachs.variables["stressDivergenceV"][0,:]
+
+stressDivergenceUWeakWachsDiff = (stressDivergenceUWeakWachs - stressDivergenceUAnalytical)
+stressDivergenceVWeakWachsDiff = (stressDivergenceVWeakWachs - stressDivergenceVAnalytical)
+
+print("WeakWachs:  ",
+      np.amin(stressDivergenceUWeakWachsDiff), np.amax(stressDivergenceUWeakWachsDiff),
+      np.amin(stressDivergenceVWeakWachsDiff), np.amax(stressDivergenceVWeakWachsDiff))
+
+fileWeakWachs.close()
+
 
 mpl.rc('font', family='Times New Roman', size=8)
 mpl.rc('text', usetex=True)
@@ -199,7 +214,7 @@ minStressDivDiff = -1.0
 maxStressDivDiff =  1.0
 
 
-fig, axes = plt.subplots(4, 4)
+fig, axes = plt.subplots(5, 4)
 
 fig.set_size_inches(7, 6.75)
 
@@ -218,6 +233,8 @@ plot_subfigure(axes[2,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, 
                False, False, r'PWL ($u^\prime$ direction)', '(i)', False)
 plot_subfigure(axes[3,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
                False, False, r'Weak ($u^\prime$ direction)', '(m)', False)
+plot_subfigure(axes[4,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+               False, False, r'WeakWachs ($u^\prime$ direction)', '(q)', False)
 
 plot_subfigure(axes[1,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
                False, False, r'Wachs. ($u^\prime$ direction)', '(f)', False)
@@ -225,6 +242,8 @@ plot_subfigure(axes[2,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, 
                False, False, r'PWL ($u^\prime$ direction)', '(j)', False)
 plot_subfigure(axes[3,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
                False, False, r'Weak ($u^\prime$ direction)', '(n)', False)
+plot_subfigure(axes[4,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+               False, False, r'WeakWachs ($u^\prime$ direction)', '(r)', False)
 
 plot_subfigure(axes[1,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
                False, False, r'Wachs. ($v^\prime$ direction)', '(g)', False)
@@ -232,6 +251,8 @@ plot_subfigure(axes[2,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, 
                False, False, r'PWL ($v^\prime$ direction)', '(k)', False)
 plot_subfigure(axes[3,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
                False, False, r'Weak ($v^\prime$ direction)', '(o)', False)
+plot_subfigure(axes[4,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+               False, False, r'WeakWachs ($v^\prime$ direction)', '(s)', False)
 
 plot_subfigure(axes[1,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
                False, False, r'Wachs. ($v^\prime$ direction)', '(h)', True)
@@ -239,6 +260,8 @@ plot_subfigure(axes[2,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, 
                False, False, r'PWL ($v^\prime$ direction)', '(l)', True)
 plot_subfigure(axes[3,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
                False, False, r'Weak ($v^\prime$ direction)', '(p)', True)
+plot_subfigure(axes[4,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+               False, False, r'WeakWachs ($v^\prime$ direction)', '(t)', True)
 
 #plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
 plt.savefig("strain_stress_divergence_map.png",dpi=400)

@@ -6,8 +6,7 @@ except ImportError:
     raise
 
 gridSizes = [2562, 10242, 40962, 163842]
-
-operatorMethods = ["wachspress","pwl","weak"]
+operatorMethods = ["wachspress","pwl","weak","weakwachs"]
 
 for operatorMethod in operatorMethods:
 
@@ -32,6 +31,11 @@ for operatorMethod in operatorMethods:
         elif (operatorMethod == "weak"):
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                             "config_stress_divergence_scheme":"weak"}}
+
+        elif (operatorMethod == "weakwachs"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"wachspress"}}
 
         f90nml.patch("namelist.seaice.strain_stress_divergence", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, gridSize))
 

@@ -5,7 +5,7 @@ import matplotlib as mpl
 
 #--------------------------------------------------------
 
-def L2_norm(numerical, analytical, nVertices, latVertex, areaTriangle, latitudeLimit):
+def L2_norm_vertex(numerical, analytical, nVertices, latVertex, areaTriangle, latitudeLimit):
 
     degreesToRadians = math.pi / 180.0
 
@@ -26,12 +26,13 @@ def L2_norm(numerical, analytical, nVertices, latVertex, areaTriangle, latitudeL
 
 #--------------------------------------------------------
 
-def get_norm(filenameIC, filename, latitudeLimit):
+def get_norm_vertex(filenameIC, filename, latitudeLimit):
 
     fileIC = Dataset(filenameIC, "r")
 
-    stressDivergenceUAnalytical = fileIC.variables["stressDivergenceUAnalytical"][:]
-    stressDivergenceVAnalytical = fileIC.variables["stressDivergenceVAnalytical"][:]
+    strain11VertexAnalytical = fileIC.variables["strain11VertexAnalytical"][:]
+    strain22VertexAnalytical = fileIC.variables["strain22VertexAnalytical"][:]
+    strain12VertexAnalytical = fileIC.variables["strain12VertexAnalytical"][:]
 
     fileIC.close()
 
@@ -43,15 +44,70 @@ def get_norm(filenameIC, filename, latitudeLimit):
 
     areaTriangle = fileMPAS.variables["areaTriangle"][:]
 
-    stressDivergenceU = fileMPAS.variables["stressDivergenceU"][0,:]
-    stressDivergenceV = fileMPAS.variables["stressDivergenceV"][0,:]
+    strain11varAvg = fileMPAS.variables["strain11varAvg"][0,:]
+    strain22varAvg = fileMPAS.variables["strain22varAvg"][0,:]
+    strain12varAvg = fileMPAS.variables["strain12varAvg"][0,:]
 
-    normU = L2_norm(stressDivergenceU, stressDivergenceUAnalytical, nVertices, latVertex, areaTriangle, latitudeLimit)
-    normV = L2_norm(stressDivergenceV, stressDivergenceVAnalytical, nVertices, latVertex, areaTriangle, latitudeLimit)
+    normE11 = L2_norm_vertex(strain11varAvg, strain11VertexAnalytical, nVertices, latVertex, areaTriangle, latitudeLimit)
+    normE22 = L2_norm_vertex(strain22varAvg, strain22VertexAnalytical, nVertices, latVertex, areaTriangle, latitudeLimit)
+    normE12 = L2_norm_vertex(strain12varAvg, strain12VertexAnalytical, nVertices, latVertex, areaTriangle, latitudeLimit)
 
     fileMPAS.close()
 
-    return normU, normV
+    return normE11, normE22, normE12
+
+#--------------------------------------------------------
+
+def L2_norm_cell(numerical, analytical, nCells, latCell, areaCell, latitudeLimit):
+
+    degreesToRadians = math.pi / 180.0
+
+    norm  = 0.0
+    denom = 0.0
+
+    for iCell in range(0,nCells):
+
+        if (math.fabs(latCell[iCell]) > latitudeLimit * degreesToRadians):
+
+            norm  = norm  + areaCell[iCell] * math.pow(numerical[iCell] - analytical[iCell],2)
+
+            denom = denom + areaCell[iCell] * math.pow(analytical[iCell],2)
+
+    norm = math.sqrt(norm / denom)
+
+    return norm
+
+#--------------------------------------------------------
+
+def get_norm_cell(filenameIC, filename, latitudeLimit):
+
+    fileIC = Dataset(filenameIC, "r")
+
+    strain11CellAnalytical = fileIC.variables["strain11CellAnalytical"][:]
+    strain22CellAnalytical = fileIC.variables["strain22CellAnalytical"][:]
+    strain12CellAnalytical = fileIC.variables["strain12CellAnalytical"][:]
+
+    fileIC.close()
+
+    fileMPAS = Dataset(filename, "r")
+
+    nCells = len(fileMPAS.dimensions["nCells"])
+
+    latCell = fileMPAS.variables["latCell"][:]
+
+    areaCell = fileMPAS.variables["areaCell"][:]
+
+    strain11weak = fileMPAS.variables["strain11weak"][0,:]
+    strain22weak = fileMPAS.variables["strain22weak"][0,:]
+    strain12weak = fileMPAS.variables["strain12weak"][0,:]
+
+    normE11 = L2_norm_cell(strain11weak, strain11CellAnalytical, nCells, latCell, areaCell, latitudeLimit)
+    normE22 = L2_norm_cell(strain22weak, strain22CellAnalytical, nCells, latCell, areaCell, latitudeLimit)
+    normE12 = L2_norm_cell(strain12weak, strain12CellAnalytical, nCells, latCell, areaCell, latitudeLimit)
+
+    fileMPAS.close()
+
+    return normE11, normE22, normE12
 
 #--------------------------------------------------------
 
@@ -91,6 +147,7 @@ resolutions = [2562,10242,40962,163842]
 methods = ["wachspress", "pwl", "weak", "weakwachs"]
 
 
+
 lineColours = ["black","black","grey","grey"]
 lineStyles  = ["-","--","-","--"]
 
@@ -127,10 +184,13 @@ for method in methods:
 
         print(filename, filenameIC)
 
-        normU, normV = get_norm(filenameIC, filename, latitudeLimit)
+        if (method == "weak"):
+            normE11, normE22, normE12 = get_norm_cell(filenameIC, filename, latitudeLimit)
+        else:
+            normE11, normE22, normE12 = get_norm_vertex(filenameIC, filename, latitudeLimit)
 
         x.append(get_resolution(filename, latitudeLimit))
-        y.append(normU)
+        y.append(normE11)
 
     plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
 
@@ -147,4 +207,4 @@ ax.set_ylabel(r"$L_2$ error norm")
 ax.set_xlim([xMin, xMax])
 
 plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-plt.savefig("strain_stress_divergence_scaling.png",dpi=400)
+plt.savefig("strain_scaling.png",dpi=400)

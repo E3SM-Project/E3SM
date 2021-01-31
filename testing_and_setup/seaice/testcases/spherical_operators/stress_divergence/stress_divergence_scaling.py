@@ -88,11 +88,11 @@ mpl.rcParams['axes.linewidth'] = 0.5
 
 resolutions = [2562,10242,40962,163842]
 
-methods = ["wachspress", "pwl", "weak", "weakwachs"]
+methods = ["wachspress", "pwl", "weak"]
 
 
-lineColours = ["black","black","grey","grey"]
-lineStyles  = ["-","--","-","--"]
+lineColours = ["black","black","grey"]
+lineStyles  = ["-","--","-"]
 
 latitudeLimit = 20.0
 
@@ -136,8 +136,8 @@ for method in methods:
 
     iPlot = iPlot + 1
 
-#legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
-legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
+#legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak"]
+legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak"]
 
 plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
 
@@ -147,4 +147,4 @@ ax.set_ylabel(r"$L_2$ error norm")
 ax.set_xlim([xMin, xMax])
 
 plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-plt.savefig("strain_stress_divergence_scaling.png",dpi=400)
+plt.savefig("stress_divergence_scaling.png",dpi=400)
