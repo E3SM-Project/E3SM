@@ -101,6 +101,7 @@ contains
          config_strain_scheme, &
          config_stress_divergence_scheme, &
          config_variational_basis, &
+         config_variational_denominator_type, &
          config_wachspress_integration_type, &
          config_ocean_stress_type
 
@@ -204,6 +205,7 @@ contains
           call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
 
           call MPAS_pool_get_config(block % configs, "config_variational_basis", config_variational_basis)
+          call MPAS_pool_get_config(block % configs, "config_variational_denominator_type", config_variational_denominator_type)
           call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
           call MPAS_pool_get_config(block % configs, "config_include_metric_terms", config_include_metric_terms)
           call MPAS_pool_get_config(block % configs, "config_wachspress_integration_type", config_wachspress_integration_type)
@@ -231,6 +233,7 @@ contains
                   config_rotate_cartesian_grid, &
                   config_include_metric_terms, &
                   config_variational_basis, &
+                  config_variational_denominator_type, &
                   config_wachspress_integration_type, &
                   config_wachspress_integration_order)
 
@@ -2660,6 +2663,9 @@ contains
          strain22var, &
          strain12var
 
+    real(kind=RKIND), dimension(:), pointer :: &
+         variationalDenominator
+
     blockPtr => domain % blocklist
     do while (associated(blockPtr))
 
@@ -2697,6 +2703,7 @@ contains
           call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22var)
           call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12var)
           call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
+          call MPAS_pool_get_array(velocityVariationalPool, "variationalDenominator", variationalDenominator)
 
        endif
 
@@ -2818,6 +2825,7 @@ contains
                basisIntegralsU, &
                basisIntegralsV, &
                basisIntegralsMetric, &
+               variationalDenominator, &
                tanLatVertexRotatedOverRadius, &
                cellVerticesAtVertex, &
                solveVelocity)
