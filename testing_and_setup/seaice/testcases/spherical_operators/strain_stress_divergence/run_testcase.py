@@ -6,7 +6,7 @@ except ImportError:
     raise
 
 gridSizes = [2562, 10242, 40962, 163842]
-operatorMethods = ["wachspress","pwl","weak","weakwachs"]
+operatorMethods = ["wachspress","pwl","weak","weakwachs","weakpwl","wachspress_alt","pwl_alt","weakwachs_alt","weakpwl_alt"]
 
 for operatorMethod in operatorMethods:
 
@@ -23,19 +23,47 @@ for operatorMethod in operatorMethods:
         if (operatorMethod == "wachspress"):
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
                                             "config_stress_divergence_scheme":"variational",
-                                            "config_variational_basis":"wachspress"}}
+                                            "config_variational_basis":"wachspress",
+                                            "config_variational_denominator_type":"original"}}
         elif (operatorMethod == "pwl"):
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
                                             "config_stress_divergence_scheme":"variational",
-                                            "config_variational_basis":"pwl"}}
+                                            "config_variational_basis":"pwl",
+                                            "config_variational_denominator_type":"original"}}
         elif (operatorMethod == "weak"):
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
-                                            "config_stress_divergence_scheme":"weak"}}
-
+                                            "config_stress_divergence_scheme":"weak",
+                                            "config_variational_denominator_type":"original"}}
         elif (operatorMethod == "weakwachs"):
             nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
                                             "config_stress_divergence_scheme":"variational",
-                                            "config_variational_basis":"wachspress"}}
+                                            "config_variational_basis":"wachspress",
+                                            "config_variational_denominator_type":"original"}}
+        elif (operatorMethod == "weakpwl"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"pwl",
+                                            "config_variational_denominator_type":"original"}}
+        elif (operatorMethod == "wachspress_alt"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"wachspress",
+                                            "config_variational_denominator_type":"alternate"}}
+        elif (operatorMethod == "pwl_alt"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"variational",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"pwl",
+                                            "config_variational_denominator_type":"alternate"}}
+        elif (operatorMethod == "weakwachs_alt"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"wachspress",
+                                            "config_variational_denominator_type":"alternate"}}
+        elif (operatorMethod == "weakpwl_alt"):
+            nmlPatch = {"velocity_solver": {"config_strain_scheme":"weak",
+                                            "config_stress_divergence_scheme":"variational",
+                                            "config_variational_basis":"pwl",
+                                            "config_variational_denominator_type":"alternate"}}
 
         f90nml.patch("namelist.seaice.strain_stress_divergence", nmlPatch, "namelist.seaice.%s.%i" %(operatorMethod, gridSize))
 

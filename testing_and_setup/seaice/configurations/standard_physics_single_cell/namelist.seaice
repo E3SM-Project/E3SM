@@ -79,6 +79,7 @@
     config_constitutive_relation_type = 'evp'
     config_stress_divergence_scheme = 'variational'
     config_variational_basis = 'wachspress'
+    config_variational_denominator_type = 'original'
     config_wachspress_integration_type = 'dunavant'
     config_wachspress_integration_order = 8
     config_use_air_stress = true
