@@ -56,6 +56,7 @@ contains
        rotateCartesianGrid, &
        includeMetricTerms, &
        variationalBasisType, &
+       variationalDenominatorType, &
        integrationType, &
        integrationOrder)!{{{
 
@@ -83,8 +84,9 @@ contains
          includeMetricTerms     !< Input:
 
     character(len=*), intent(in) :: &
-         variationalBasisType, & !< Input:
-         integrationType         !< Input:
+         variationalBasisType, &       !< Input:
+         variationalDenominatorType, & !< Input:
+         integrationType               !< Input:
 
     integer, intent(in) :: &
          integrationOrder !< Input:
@@ -142,9 +144,139 @@ contains
 
     endif
 
+    call variational_denominator(&
+         mesh, &
+         boundary, &
+         velocity_variational, &
+         variationalDenominatorType)
+
     !call homogenize_variational_basis_field()
 
   end subroutine seaice_init_velocity_solver_variational
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  variational_denominator
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 30th January 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine variational_denominator(&
+       mesh, &
+       boundary, &
+       velocity_variational, &
+       variationalDenominatorType)
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh, &              !< Input:
+         boundary, &          !< Input:
+         velocity_variational !< Input:
+
+    character(len=*), intent(in) :: &
+         variationalDenominatorType !< Input:
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisIntegralsMetric
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle, &
+         variationalDenominator
+
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer :: &
+         iVertex, &
+         iSurroundingCell, &
+         iStressVertex, &
+         iCell, &
+         iVelocityVertex
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    integer, dimension(:), pointer :: &
+         interiorVertex, &
+         nEdgesOnCell
+
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
+    call MPAS_pool_get_array(velocity_variational, "variationalDenominator", variationalDenominator)
+
+    if (trim(variationalDenominatorType) == "alternate") then
+
+       call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
+       call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+       call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+
+       call MPAS_pool_get_array(velocity_variational, "cellVerticesAtVertex", cellVerticesAtVertex)
+       call MPAS_pool_get_array(velocity_variational, "basisIntegralsMetric", basisIntegralsMetric)
+
+       do iVertex = 1, nVertices
+
+          if (interiorVertex(iVertex) == 1) then
+
+             variationalDenominator(iVertex) = 0.0_RKIND
+
+             ! loop over surrounding cells
+             do iSurroundingCell = 1, vertexDegree
+
+                ! get the cell number of this cell
+                iCell = cellsOnVertex(iSurroundingCell, iVertex)
+
+                ! get the vertexOnCell number of the iVertex velocity point from cell iCell
+                iVelocityVertex = cellVerticesAtVertex(iSurroundingCell,iVertex)
+
+                ! loop over the vertices of the surrounding cell
+                do iStressVertex = 1, nEdgesOnCell(iCell)
+
+                   variationalDenominator(iVertex) = variationalDenominator(iVertex) + &
+                        basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell)
+
+                enddo ! iStressVertex
+
+             enddo ! iSurroundingCell
+
+             ! inverse
+             variationalDenominator(iVertex) = variationalDenominator(iVertex)
+
+          endif
+
+       enddo ! iVertex
+
+    else if (trim(variationalDenominatorType) == "original") then
+
+       call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+
+       do iVertex = 1, nVertices
+
+          if (interiorVertex(iVertex) == 1) then
+
+             variationalDenominator(iVertex) = areaTriangle(iVertex)
+
+          endif
+
+       enddo ! iVertex
+
+    else
+
+       call MPAS_log_write("Unknown variational denominator type: "//trim(variationalDenominatorType), MPAS_LOG_CRIT)
+
+    endif
+
+  end subroutine variational_denominator
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -769,6 +901,7 @@ contains
        basisIntegralsU, &
        basisIntegralsV, &
        basisIntegralsMetric, &
+       variationalDenominator, &
        tanLatVertexRotatedOverRadius, &
        cellVerticesAtVertex, &
        solveVelocity)!{{{
@@ -798,7 +931,8 @@ contains
          basisIntegralsMetric !< Input:
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         tanLatVertexRotatedOverRadius !< Input:
+         tanLatVertexRotatedOverRadius, & !< Input:
+         variationalDenominator           !< Input:
 
     integer, dimension(:,:), intent(in) :: &
          cellVerticesAtVertex !< Input:
@@ -870,8 +1004,8 @@ contains
 
           enddo ! iSurroundingCell
 
-          stressDivergenceU(iVertex) = stressDivergenceUVertex / areaTriangle(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceVVertex / areaTriangle(iVertex)
+          stressDivergenceU(iVertex) = stressDivergenceUVertex / variationalDenominator(iVertex)
+          stressDivergenceV(iVertex) = stressDivergenceVVertex / variationalDenominator(iVertex)
 
        endif ! solveVelocity
 

@@ -596,6 +596,10 @@
 			description="Type of basis functions to use with the variational stress divergence scheme."
 			possible_values="'wachspress' or 'pwl'"
 		/>
+		<nml_option name="config_variational_denominator_type" type="character" default_value="original" units="unitless"
+			description="Type of denominator in variational calculation."
+			possible_values="'original' or 'alternate'"
+		/>
 		<nml_option name="config_wachspress_integration_type" type="character" default_value="dunavant" units="unitless"
 			description="Type of integration to perform with the Wachspress variational stress divergence scheme."
 			possible_values="'trapezoidal', 'dunavant' or 'fekete'"
@@ -3741,6 +3745,7 @@
 		<var name="principalStress1Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress1"/>
 		<var name="principalStress2Var"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="principalStress2"/>
 		<var name="replacementPressureVar"		type="real"	dimensions="maxEdges nCells Time"		name_in_code="replacementPressure"/>
+		<var name="variationalDenominator"	type="real"	dimensions="nVertices"				name_in_code="variationalDenominator"/>
 	</var_struct>
 
 	<!-- weak strain / variational stress divergence -->

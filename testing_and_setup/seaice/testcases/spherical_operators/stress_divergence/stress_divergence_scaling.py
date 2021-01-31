@@ -88,11 +88,11 @@ mpl.rcParams['axes.linewidth'] = 0.5
 
 resolutions = [2562,10242,40962,163842]
 
-methods = ["wachspress", "pwl", "weak"]
+methods = ["wachspress", "pwl", "weak", "wachspress_alt", "pwl_alt"]
 
 
-lineColours = ["black","black","grey"]
-lineStyles  = ["-","--","-"]
+lineColours = ["black","black","grey","red","red"]
+lineStyles  = ["-","--","-","-","--"]
 
 latitudeLimit = 20.0
 
@@ -137,7 +137,7 @@ for method in methods:
     iPlot = iPlot + 1
 
 #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak"]
-legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak"]
+legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "Wachs. alt", "PWL alt."]
 
 plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
 
