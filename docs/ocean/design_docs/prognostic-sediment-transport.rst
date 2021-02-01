@@ -20,16 +20,8 @@ The proposed model development will focus on the non-cohesive sediment transport
 The model requirements, algorithms and implementation mainly follow the sediment transport
 development work in `Warner et al., 2005 <https://doi.org/10.1016/j.cageo.2008.02.012>`_ and
 the `COAWST code (USGS version) <https://github.com/jcwarner-usgs/COAWST>`_.
-The main model components include
-
-1) sediment classes;
-
-2) bedload sediment transport;
-
-3) suspended sediment transport;
-
-Sediment classes determine the properties of sediment-related variables,while
-bedload and suspended sediment transport are the two main transport forms considered in this development.
+The model components include bedload sediment transport and suspended sediment transport;
+These are the two main transport forms considered in this development.
 
 The primary implementation challenges lie in the suspended sediment transport component.
 It requires solving the three-dimensional scalar equation for suspended sediment with
@@ -43,20 +35,6 @@ as well as the potential interactions between sediment transport, hydrodynamics 
 
 Requirements
 ------------
-
-Requirement: Sediment classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2021/01/14
-
-Contributors: Zhendong Cao
-
-In the model, we will add the capability to represent multiple user-defined
-sediment classes. Sediment classes determine the sediment properties such as
-sediment grain size, grain density, settling velocity, critical erosion shear
-and erodibility constant. Apparently, the definitions of these sediment
-properties require the assignment of the number of sediment classes.
-
 
 Requirement: Bedload sediment transport
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -105,16 +83,7 @@ tests. The effect on timing should ideally be completely negligible.
 When sediment transport is enabled, performance will necessarily be affected. For this implementation, we will not worry too much about this performance -- optimization will be left to follow-up work.
 
 Algorithm Design
----------------------------
-
-Algorithm Design: Sediment classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2021/01/16
-
-Contributors: Zhendong Cao
-
-The number of sediment classes will be defined manually and considered as a dimension of sediment-related variables.
+----------------
 
 Algorithm Design: Bedload sediment transport
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -314,21 +283,6 @@ Two sediment settling veloity formulations are selected to implement into MPAS-O
 
 Implementation
 --------------
-
-Implementation: Sediment classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2021/01/14
-
-Contributors: Zhendong Cao
-
-The number of sediment classes :code:`nSedimentClasses` will be defined as a dimension before the
-definitions of the sediment properties. The definition will be in the **Registry.xml** file and the code is
-
-.. code-block::
-
-	dim name='nSedimentClasses' unit='unitless'
-	    description='the number of sediment classes considered in the model'
 
 Implementation: Bedload sediment transport
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
