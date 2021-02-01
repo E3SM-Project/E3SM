@@ -26,6 +26,9 @@
       character (len=StrKIND) :: mesh_spec = '' !< mesh_spec attribute, read in from input file.
       character (len=StrKIND) :: parent_id = '' !< parent_id attribute, read in from input file.
 
+      ! Unique global ID number for this domain
+      integer :: domainID
+
       ! Pointer to timer root
       type (mpas_timer_root), pointer :: timer_root => null()
 
