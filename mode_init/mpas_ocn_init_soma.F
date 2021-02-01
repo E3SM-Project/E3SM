@@ -98,7 +98,7 @@ contains
       integer, pointer :: index_temperature, index_salinity, index_tracer1
 
       ! Define variable pointers
-      logical, pointer :: on_a_sphere, config_soma_use_surface_temp_restoring
+      logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid, fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
