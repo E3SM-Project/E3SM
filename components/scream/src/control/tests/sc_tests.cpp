@@ -7,6 +7,13 @@
 
 TEST_CASE ("surface_coupling")
 {
+  /*
+   * This test performs an export-import sequence, and it verifies that
+   * the resulting fields (after the import) match the fields that were
+   * originally exported. If successful, the test "ensures" that the
+   * import/export kernels in the SurfaceCoupling class are correct.
+   */
+
   // Some namespaces/aliases
   using namespace scream;
   using namespace ShortFieldTagsNames;
@@ -43,6 +50,13 @@ TEST_CASE ("surface_coupling")
   FID s3d_id("s3d",FL{{COL,VL},{ncols,nlevs}},Pa,grid->name());
   FID v3d_id("v3d",FL{{COL,CMP,VL},{ncols,2,nlevs}},m/s,grid->name());
 
+  // NOTE: if you add fields abovew, you will have to modify these counters too.
+  const int num_s2d = 1;
+  const int num_s3d = 1;
+  const int num_v3d = 1;
+  const int num_fields = num_s2d+num_s3d+2*num_v3d;
+
+  // Keep two separate repos, so we can compare original and final fields.
   FieldRepository<Real> repo_in, repo_out;
   repo_in.registration_begins();
   repo_in.register_field(s2d_id);
@@ -59,10 +73,14 @@ TEST_CASE ("surface_coupling")
   control::SurfaceCoupling importer(grid,repo_in);
   control::SurfaceCoupling exporter(grid,repo_out);
 
-  importer.set_num_fields(4,0); // Recall that SC counts *scalar* fields, so vector3d counts as 2 fields
-  exporter.set_num_fields(0,4);
+  importer.set_num_fields(num_fields,0); // Recall that SC counts *scalar* fields, so vector3d counts as 2 fields
+  exporter.set_num_fields(0,num_fields);
 
   // Register fields in the importer/exporter
+  // Note: the 1st integer is the field "idx" (the idx used by the component cpl to retrieve it),
+  //       which here is not really used (though it still needs to be passed). The 2nd integer
+  //       is needed for vector fields, to tell the importer/exporter which component of the
+  //       vector field is imported/exported.
   importer.register_import("s2d",0);
   importer.register_import("s3d",1);
   importer.register_import("v3d",2,0);
@@ -73,7 +91,7 @@ TEST_CASE ("surface_coupling")
   exporter.register_export("v3d",3,1);
 
   // Create a raw array big enough to contain all the 2d data for import/export
-  Real* raw_data = new Real[ncols*4];
+  Real* raw_data = new Real[ncols*num_fields];
 
   // Complete setup of importer/exporter
   importer.registration_ends(raw_data,nullptr);
