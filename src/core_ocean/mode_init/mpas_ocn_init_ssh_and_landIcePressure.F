@@ -415,7 +415,7 @@ contains
      ! Define variable pointers
      integer, dimension(:), pointer :: maxLevelCell
      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomDepth, ssh
-     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
+     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
 
      integer :: iCell
 
