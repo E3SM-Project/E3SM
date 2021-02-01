@@ -1546,6 +1546,7 @@ contains
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
+  dp=elem%state%dp3d(:,:,:,np1)
   dp_adj=dp
   ps=elem%state%ps_v(:,:,np1)
   !ps=hvcoord%hyai(1)*hvcoord%ps0 + sum(dp(:,:,:),3) ! introduces roundoff
