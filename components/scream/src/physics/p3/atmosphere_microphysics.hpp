@@ -74,6 +74,7 @@ public:
   // which can then be called during run_imple in the main .cpp code.
   // Structure to handle the local generation of data needed by p3_main in run_impl
   struct run_local_vars {
+    run_local_vars() = default; 
     run_local_vars(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
       m_ncol(ncol),
       m_npack(npack),
@@ -92,10 +93,10 @@ public:
     {
       // Nothing else to initialize at the moment.
     };
+    // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
-      int ipack, ivec;
-      for (ipack=0;ipack<m_npack;ipack++) {
+      for (int ipack=0;ipack<m_npack;ipack++) {
         // Exner
         const Spack opmid(pmid(icol,ipack));
         const Smask opmid_mask(!isnan(opmid) and opmid>0.0);
@@ -112,26 +113,29 @@ public:
         cld_frac_l(icol,ipack).set(oasti_mask,oast);
         cld_frac_i(icol,ipack).set(oasti_mask,oast);
         cld_frac_r(icol,ipack).set(oasti_mask,oast);
-        Int kstr = ipack==0 ? 1 : 0;  // If ipack == 0 then we need to skip the first index for rain fraction (i.e. TOM)
-        for (int kk=kstr;kk<Spack::n;kk++)
+        for (int ivec=0;ivec<Spack::n;ivec++)
         {
           // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
           // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
           // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
-          ivec  = kk % Spack::n;
-          Int ipack_m1 = (ipack*Spack::n + kk) / Spack::n;
-          Int ivec_m1  = (ipack*Spack::n + kk) % Spack::n;
-          cld_frac_r(icol,ipack)[kk] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[kk] ? 
+          Int col = ipack*Spack::n + ivec;
+          Int ipack_m1 = (col - 1) / Spack::n;
+          Int ivec_m1  = (col - 1) % Spack::n;
+          Int ipack_p1 = (col + 1) / Spack::n;
+          Int ivec_p1  = (col + 1) % Spack::n;
+          if (col!=0) { /* Not applicable at the very top layer */
+            cld_frac_r(icol,ipack)[ivec] = ast(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ? 
                                               ast(icol,ipack_m1)[ivec_m1] :
-                                              cld_frac_r(icol,ipack)[kk];
+                                              cld_frac_r(icol,ipack)[ivec];
+          }
           // dz is calculated as the difference between the two layer interfaces.  Note that the lower the index the higher the altitude.
           // We also want to make sure we use the top level index for assignment since dz[0] = zi[0]-zi[1], for example.
-          dz(icol,ipack_m1)[ivec_m1] = zi(icol,ipack_m1)[ivec_m1]-zi(icol,ipack)[ivec]; 
+          dz(icol,ipack)[ivec] = zi(icol,ipack)[ivec]-zi(icol,ipack_p1)[ivec_p1]; 
         }
         //
       }
     }
-
+    // Local variables
     int m_ncol, m_npack;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
@@ -144,6 +148,27 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
+    // Assigning local values
+    void set_values(const int ncol, const int npack, 
+           view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_,
+           view_2d exner_, view_2d th_atm_, view_2d cld_frac_l_, view_2d cld_frac_i_, view_2d cld_frac_r_, view_2d dz_
+           )
+    {
+      m_ncol = ncol;
+      m_npack = npack;
+      // IN
+      pmid = pmid_;
+      T_atm = T_atm_;
+      ast = ast_;
+      zi = zi_;
+      // OUT
+      exner = exner_;
+      th_atm = th_atm_;
+      cld_frac_l = cld_frac_l_;
+      cld_frac_i = cld_frac_i_;
+      cld_frac_r = cld_frac_r_;
+      dz = dz_;
+    }
   }; // run_local_vars
   /* --------------------------------------------------------------------------------------------*/
 
@@ -173,21 +198,22 @@ protected:
   // Used to init some fields. For now, only needed for stand-alone p3 runs
   std::shared_ptr<FieldInitializer>  m_initializer;
 
-  util::TimeStamp   m_current_ts;
-  ekat::Comm              m_p3_comm;
-
-  ekat::ParameterList     m_p3_params;
+  util::TimeStamp     m_current_ts;
+  ekat::Comm          m_p3_comm;
+  ekat::ParameterList m_p3_params;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
+  Int m_nk_pack;
 
   // Store the structures for each arguement to p3_main;
-  P3F::P3PrognosticState prog_state;
-  P3F::P3DiagnosticInputs diag_inputs;
+  P3F::P3PrognosticState   prog_state;
+  P3F::P3DiagnosticInputs  diag_inputs;
   P3F::P3DiagnosticOutputs diag_outputs;
-  P3F::P3HistoryOnly history_only;
-  P3F::P3Infrastructure infrastructure;
+  P3F::P3HistoryOnly       history_only;
+  P3F::P3Infrastructure    infrastructure;
+  run_local_vars           p3_preproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
 

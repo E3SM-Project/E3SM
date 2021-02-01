@@ -129,6 +129,19 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
+  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  auto pmid  = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
+  auto T_atm = m_p3_fields_out["T_atm"].get_reshaped_view<Pack**>();
+  auto ast   = m_p3_fields_in["ast"].get_reshaped_view<const Pack**>();
+  auto zi    = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
+  view_2d exner("exner",m_num_cols,nk_pack);
+  view_2d th_atm("th_atm",m_num_cols,nk_pack);
+  view_2d cld_frac_l("cld_frac_l",m_num_cols,nk_pack);
+  view_2d cld_frac_i("cld_frac_i",m_num_cols,nk_pack);
+  view_2d cld_frac_r("cld_frac_r",m_num_cols,nk_pack);
+  view_2d dz("dz",m_num_cols,nk_pack);
+  p3_preproc.set_values(m_num_cols,nk_pack,pmid,T_atm,ast,zi,
+                        exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
   // --Prognostic State Variables:
   prog_state.qc     = m_p3_fields_out["qc"].get_reshaped_view<Pack**>();
   prog_state.nc     = m_p3_fields_out["nc"].get_reshaped_view<Pack**>();
@@ -139,6 +152,7 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   prog_state.ni     = m_p3_fields_out["ni"].get_reshaped_view<Pack**>();
   prog_state.bm     = m_p3_fields_out["bm"].get_reshaped_view<Pack**>();
   prog_state.qv     = m_p3_fields_out["qv"].get_reshaped_view<Pack**>();
+  prog_state.th     = p3_preproc.th_atm;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = m_p3_fields_in["nc_nuceat_tend"].get_reshaped_view<const Pack**>();
   diag_inputs.nccn            = m_p3_fields_in["nccn_prescribed"].get_reshaped_view<const Pack**>();
@@ -148,6 +162,11 @@ void P3Microphysics::initialize_impl (const util::TimeStamp& t0)
   diag_inputs.dpres           = m_p3_fields_in["dp"].get_reshaped_view<const Pack**>();
   diag_inputs.qv_prev         = m_p3_fields_out["qv_prev"].get_reshaped_view<Pack**>();
   diag_inputs.t_prev          = m_p3_fields_out["T_prev"].get_reshaped_view<Pack**>();
+  diag_inputs.cld_frac_l = p3_preproc.cld_frac_l;
+  diag_inputs.cld_frac_i = p3_preproc.cld_frac_i;
+  diag_inputs.cld_frac_r = p3_preproc.cld_frac_r;
+  diag_inputs.dz         = p3_preproc.dz;
+  diag_inputs.exner      = p3_preproc.exner;
   // --Diagnostic Outputs
   view_1d precip_liq_surf("precip_liq_surf",m_num_cols);
   view_1d precip_ice_surf("precip_ice_surf",m_num_cols);
@@ -258,34 +277,35 @@ void P3Microphysics::run_impl (const Real dt)
   auto T_atm  = m_p3_fields_out["T_atm"].get_reshaped_view<Pack**>();
   auto ast    = m_p3_fields_in["ast"].get_reshaped_view<const Pack**>();
   auto zi     = m_p3_fields_in["zi"].get_reshaped_view<const Pack**>();
-  auto pmid            = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
+  auto pmid   = m_p3_fields_in["pmid"].get_reshaped_view<const Pack**>();
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
-  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
-  run_local_vars p3_loc(m_num_cols,nk_pack,pmid,T_atm,ast,zi);
   Kokkos::parallel_for(
     "p3_main_local_vals",
     Kokkos::RangePolicy<>(0,m_num_cols),
-    p3_loc
+    p3_preproc
   ); // Kokkos::parallel_for(p3_main_local_vals)
   Kokkos::fence();
 
   // Update the variables in the p3 input structures with local values.
-  prog_state.th          = p3_loc.th_atm;
-
-  diag_inputs.cld_frac_l = p3_loc.cld_frac_l;
-  diag_inputs.cld_frac_i = p3_loc.cld_frac_i;
-  diag_inputs.cld_frac_r = p3_loc.cld_frac_r;
-  diag_inputs.dz         = p3_loc.dz;
-  diag_inputs.exner      = p3_loc.exner;
 
   infrastructure.dt = dt;
   infrastructure.it++;
 
+//ASD  const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+//ASD  view_2d th_temp("th_temp",m_num_cols,nk_pack);
+//ASD  Kokkos::deep_copy(th_temp,prog_state.qc);
+
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, m_num_cols, m_num_levs);
-
+//ASD  printf(" it=%2d \n",infrastructure.it);
+//ASD  for (int kk=0;kk<m_num_levs;kk++)
+//ASD  {
+//ASD    int ipack = kk / Spack::n;
+//ASD    int ivec  = kk % Spack::n;
+//ASD    printf("ASD - (%d) = %e, %e, %e\n",kk,th_temp(0,ipack)[ivec],prog_state.qc(0,ipack)[ivec],p3_preproc.th_atm(0,ipack)[ivec]);
+//ASD  }
   // Get a copy of the current timestamp (at the beginning of the step) and
   // advance it, updating the p3 fields.
   auto ts = timestamp();
