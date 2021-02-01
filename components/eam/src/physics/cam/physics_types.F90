@@ -23,6 +23,9 @@ module physics_types
 
   logical, parameter :: adjust_te = .FALSE.
 
+  integer, parameter :: q7 = 7
+
+
 ! Public types:
 
   public physics_state
@@ -36,6 +39,7 @@ module physics_types
   public physics_ptend_reset
   public physics_ptend_init
   public physics_state_set_grid
+  public physics_dme_adjust_q7  ! adjust dry mass and energy for change in water
   public physics_dme_adjust  ! adjust dry mass and energy for change in water
                              ! cannot be applied to eul or sld dycores
   public physics_state_copy  ! copy a physics_state object
@@ -96,7 +100,8 @@ module physics_types
           zm        ! geopotential height above surface at midpoints (m)
 
      real(r8), dimension(:,:,:),allocatable      :: &
-          q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          q,    &     ! constituent mixing ratio (kg/kg moist or dry air depending on type)
+          oldq        ! constituent mixing ratio (kg/kg moist or dry air depending on type)
 
      real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
@@ -1210,12 +1215,7 @@ end subroutine physics_ptend_copy
     integer  :: ncol          ! number of atmospheric columns
     integer  :: i,k,m         ! Longitude, level indices
     real(r8) :: fdq(pcols)    ! mass adjustment factor
-    real(r8) :: te(pcols)     ! total energy in a layer
-    real(r8) :: utmp(pcols)   ! temp variable for recalculating the initial u values
-    real(r8) :: vtmp(pcols)   ! temp variable for recalculating the initial v values
 
-    real(r8) :: zvirv(pcols,pver)    ! Local zvir array pointer
-    !
     !-----------------------------------------------------------------------
 
     if (state%psetcols .ne. pcols) then
@@ -1248,6 +1248,55 @@ end subroutine physics_ptend_copy
 
   end subroutine physics_dme_adjust
 !-----------------------------------------------------------------------
+
+
+
+!===============================================================================
+  subroutine physics_dme_adjust_q7(state, tend, qini, dt)
+    use constituents, only : cnst_get_type_byind
+    implicit none
+    type(physics_state), intent(inout) :: state
+    type(physics_tend ), intent(inout) :: tend
+    real(r8),            intent(in   ) :: qini(pcols,pver)    ! initial specifichumidity
+    real(r8),            intent(in   ) :: dt                  ! model physicstimestep
+    integer  :: lchnk         ! chunk identifier
+    integer  :: ncol          ! number of atmospheric columns
+    integer  :: i,k,m         ! Longitude, level indices
+    real(r8) :: fdq(pcols)    ! mass adjustment factor
+
+    lchnk = state%lchnk
+    ncol  = state%ncol
+
+!save old values
+    state%oldpdel=state%pdel
+    state%oldps=state%ps
+    state%oldq=state%q(:,:,1:q7)
+
+    ! adjust dry mass in each layer back to input value, while conserving
+    ! constituents, momentum, and total energy
+    do k = 1, pver
+
+       ! adjusment factor is just change in water vapor
+       fdq(:ncol) = 1._r8 + state%q(:ncol,k,1) - qini(:ncol,k)
+
+       do m = 1, q7
+          state%q(:ncol,k,m) = state%q(:ncol,k,m) / fdq(:ncol)
+       end do
+
+! compute new total pressure variables
+       state%pdel  (:ncol,k  ) = state%pdel(:ncol,k  ) * fdq(:ncol)
+    end do
+
+!new ps
+    state%ps(:ncol) = state%pint(:ncol,1)
+    do k=1,pver
+       state%ps(:ncol) = state%ps(:ncol) + state%pdel(:ncol, k)
+    enddo
+
+  end subroutine physics_dme_adjust_q7
+!-----------------------------------------------------------------------
+
+
 
 !===============================================================================
   subroutine physics_state_copy(state_in, state_out)
@@ -1610,7 +1659,10 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%q(psetcols,pver,pcnst), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
-  
+ 
+  allocate(state%oldq(psetcols,pver,q7), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
+ 
   allocate(state%pint(psetcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pint')
   
@@ -1671,6 +1723,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%zm(:,:) = inf
   state%q(:,:,:) = inf
       
+  state%oldq(:,:,:) = inf
   state%pint(:,:) = inf
   state%pintdry(:,:) = inf
   state%lnpint(:,:) = inf
@@ -1769,7 +1822,10 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%q, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q')
-  
+ 
+  deallocate(state%oldq, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q')
+ 
   deallocate(state%pint, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pint')
   

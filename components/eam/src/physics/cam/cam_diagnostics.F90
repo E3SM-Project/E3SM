@@ -194,11 +194,11 @@ subroutine diag_init()
    call addfld ('TTEND_TOT',(/ 'lev' /), 'A','K/s' ,'Total temperature tendency'   )
  
 
-!   call addfld ('CPflux',horiz_only, 'A','w/m2' ,'cp term'   )
+   call addfld ('CPflux',horiz_only, 'A','w/m2' ,'cp term'   )
    call addfld ('CPfluxp',horiz_only, 'A','w/m2' ,'cp p term'   )
    call addfld ('CPfluxe',horiz_only, 'A','w/m2' ,'cp e term'   )
    call addfld ('PWflux',horiz_only, 'A','w/m2' ,'pw term'   )
-!   call addfld ('PWmCPflu',horiz_only, 'A','w/m2' ,'pw m cp term'   )
+   call addfld ('PWmCPflu',horiz_only, 'A','w/m2' ,'pw m cp term'   )
 
  
    ! column burdens for all constituents except water vapor
@@ -445,11 +445,11 @@ subroutine diag_init()
       call add_default ('VV      ', 1, ' ')
       call add_default ('VQ      ', 1, ' ')
 
-!      call add_default ('CPflux  ', 1, ' ')
+      call add_default ('CPflux  ', 1, ' ')
       call add_default ('CPfluxp ', 1, ' ')
       call add_default ('CPfluxe ', 1, ' ')
       call add_default ('PWflux  ', 1, ' ')
-!      call add_default ('PWmCPflu', 1, ' ')
+      call add_default ('PWmCPflu', 1, ' ')
 
       if(prog_modal_aero .and. history_verbose) then !Only for prognostic aerosols
          call add_default ('Vbc_a1  ', 1, ' ')

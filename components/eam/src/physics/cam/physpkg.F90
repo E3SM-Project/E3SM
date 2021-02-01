@@ -1399,6 +1399,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use constituents,       only: cnst_get_ind
     use physics_types,      only: physics_state, physics_tend, physics_ptend,    &
          physics_dme_adjust, set_dry_to_wet, physics_state_check
+    use physics_types,      only: physics_dme_adjust_q7
     use majorsp_diffusion,  only: mspd_intr  ! WACCM-X major diffusion
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
@@ -1782,13 +1783,17 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
 
-#if 1
 !!!!!!!!!!!!!!!!!!!!!!!!!!! this code is only to compare PW with cp term
 !save current TE
     state%tebefore(:ncol) = state%te_cur(:ncol)
 
 !adjust pressure
+#define Q7
+#ifdef Q7
+    call physics_dme_adjust_q7(state, tend, qini, ztodt)
+#else
     call physics_dme_adjust(state, tend, qini, ztodt)
+#endif
 
 !compute new TE from the adjusted pressure
 !this overwrites te_cur for TE after pressure adjustment
@@ -1799,12 +1804,15 @@ if (l_ac_energy_chk) then
 !reverse TE to TE before pressure adjustment
 !comment this line when discarding pppw
     state%te_cur(:ncol) = state%tebefore(:ncol)
+
 !revert pressure to the previous
     state%ps = state%oldps
     state%pdel = state%oldpdel
+#ifdef Q7
+    state%q(:,:,1:7) = state%oldq
+#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#endif
 
 #ifdef ADDCP
 !take CP term out of te_cur
@@ -1817,11 +1825,11 @@ if (l_ac_energy_chk) then
 !    state%te_cur(:ncol) = state%te_cur(:ncol) -( state%tebefore(:ncol)-state%teafter(:ncol) )
 #endif
 
-!    call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
+    call outfld('CPflux', (state%cptermp - state%cpterme) , pcols, lchnk )
     call outfld('CPfluxe', state%cpterme , pcols, lchnk )
     call outfld('CPfluxp', state%cptermp , pcols, lchnk )
     call outfld('PWflux', (state%tebefore - state%teafter ) /ztodt , pcols, lchnk )
-!    call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
+    call outfld('PWmCPflu', (state%tebefore - state%teafter)/ztodt - (state%cptermp - state%cpterme) , pcols, lchnk )
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/)) 
 
