@@ -93,6 +93,11 @@ module mpas_geotile_manager
     !>     * signed = 0 ! No
     !>     * scalefactor = 1.0_RKIND
     !>     * endian = "big"
+    !>     * iswater = 16
+    !>     * islake = -1
+    !>     * isice = 24
+    !>     * isurban = 1
+    !>     * isoilwater = 14
     !
     !-----------------------------------------------------------------------
     function mpas_geotile_mgr_init(mgr, path) result(ierr)
@@ -106,11 +111,14 @@ module mpas_geotile_manager
         character (len=*), intent(in) :: path
 
         ! Local variables
+        character (len=StrKIND), pointer :: fieldType
         character (len=StrKIND), pointer :: endian
         integer, pointer :: tile_nx ! Number of pixels in the x-direction for a single tile
         integer, pointer :: tile_ny ! Number of pixels in the y-direction for a single tile
         integer, pointer :: signed
         integer, pointer :: tile_bdr
+        integer, pointer :: iswater, islake, isice, isurban, isoilwater
+        integer, pointer :: category_min, category_max
         integer :: err_level
         real (kind=RKIND), pointer :: dx ! Grid spacing in the x-direction
         real (kind=RKIND), pointer :: dy ! Grid spacing in the y-direction
@@ -155,7 +163,6 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor)
         call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
 
-
         !
         ! tile_bdr, signed, endian, and scale_factor all have default values, so if they
         ! are not present in the index file then set them as the default values, as
@@ -185,6 +192,77 @@ module mpas_geotile_manager
             call mpas_pool_add_config(mgr % pool, 'tile_bdr', tile_bdr)
         endif
 
+        !
+        ! If this is a categorical field, then check to see if it has category_max and category_min,
+        ! and then set the defaults of iswater, islake, isice, isurban and isoilwater
+        !
+        call mpas_pool_get_config(mgr % pool, 'type', fieldType)
+        if (fieldType == 'categorical') then
+            category_max => null()
+            category_min => null()
+
+            call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+            call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
+
+            if (.not. associated(category_max)) then
+                call mpas_log_write("The index file of this categorical dataset did not contain a category_max parameter", &
+                                     messageType=MPAS_LOG_ERR)
+                call mpas_pool_set_error_level(err_level) ! Reset pool error level
+                ierr = 1
+                return
+            endif
+
+            if (.not. associated(category_min)) then
+                call mpas_log_write("The index file of this categorical dataset did not contain a category_min parameter", &
+                                     messageType=MPAS_LOG_ERR)
+                call mpas_pool_set_error_level(err_level) ! Reset pool error level
+                ierr = 1
+                return
+            endif
+
+            iswater => null()
+            islake => null()
+            isice => null()
+            isurban => null()
+            isoilwater => null()
+
+            call mpas_pool_get_config(mgr % pool, 'iswater', iswater)
+            call mpas_pool_get_config(mgr % pool, 'islake', islake)
+            call mpas_pool_get_config(mgr % pool, 'isice', isice)
+            call mpas_pool_get_config(mgr % pool, 'isurban', isurban)
+            call mpas_pool_get_config(mgr % pool, 'isoilwater', isoilwater)
+
+            if (.not. associated(iswater)) then
+                allocate(iswater)
+                iswater = 16
+                call mpas_pool_add_config(mgr % pool, 'iswater', iswater)
+            endif
+
+            if (.not. associated(islake)) then
+                allocate(islake)
+                islake = -1
+                call mpas_pool_add_config(mgr % pool, 'islake', islake)
+            endif
+
+            if (.not. associated(isice)) then
+                allocate(isice)
+                isice = 24
+                call mpas_pool_add_config(mgr % pool, 'isice', isice)
+            endif
+
+            if (.not. associated(isurban)) then
+                allocate(isurban)
+                isurban = 1
+                call mpas_pool_add_config(mgr % pool, 'isurban', isurban)
+            endif
+
+            if (.not. associated(isoilwater)) then
+                allocate(isoilwater)
+                isoilwater = 14
+                call mpas_pool_add_config(mgr % pool, 'isoilwater', isoilwater)
+            endif
+        endif
+
         ! Reset the pool's error level
         call mpas_pool_set_error_level(err_level)
 
@@ -196,8 +274,8 @@ module mpas_geotile_manager
         ! Calculate the total number of pixels in x dir
         ! NOTE: This calculation assumes that a dataset is a global dataset and may
         ! not work correctly for non-global datasets
-        mgr % pixel_nx = nint(360.0_RKIND / dx)
-        mgr % pixel_ny = nint(180.0_RKIND / dy)
+        mgr % pixel_nx = nint(360.0_RKIND / abs(dx))
+        mgr % pixel_ny = nint(180.0_RKIND / abs(dy))
 
         ! Calculate the number of tiles in the x, y directions
         ! NOTE: This calculation assumes that a dataset is a global dataset and may
@@ -420,7 +498,7 @@ module mpas_geotile_manager
 
         interface
            subroutine read_geogrid(fname, rarray, nx, ny, nz, isigned, endian, &
-                                   scalefactor, wordsize, status) bind(C)
+                                   wordsize, status) bind(C)
               use iso_c_binding, only : c_char, c_int, c_float, c_ptr
               character (c_char), dimension(*), intent(in) :: fname
               type (c_ptr), value :: rarray
@@ -429,7 +507,6 @@ module mpas_geotile_manager
               integer (c_int), intent(in), value :: nz
               integer (c_int), intent(in), value :: isigned
               integer (c_int), intent(in), value :: endian
-              real (c_float), intent(in), value :: scalefactor
               integer (c_int), intent(in), value :: wordsize
               integer (c_int), intent(inout) :: status
            end subroutine read_geogrid
@@ -449,7 +526,6 @@ module mpas_geotile_manager
         integer :: start_x, start_y
         integer, pointer :: signed
         character (len=StrKIND), pointer :: endian
-        real (kind=RKIND), pointer :: scalefactor
         logical :: res
 
         character (len=StrKIND) :: fname
@@ -458,7 +534,6 @@ module mpas_geotile_manager
         integer (c_int) :: c_endian
         integer (c_int) :: c_wordsize
         integer (c_int) :: c_signed
-        real (c_float) :: c_scalefactor
         integer (c_int) :: status
         type (c_ptr) :: c_tile_ptr
 
@@ -466,7 +541,6 @@ module mpas_geotile_manager
 
         tile => null()
         endian => null()
-        scalefactor => null()
         signed => null()
 
         call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
@@ -476,13 +550,11 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'wordsize', wordsize)
         call mpas_pool_get_config(mgr % pool, 'signed', signed)
         call mpas_pool_get_config(mgr % pool, 'endian', endian)
-        call mpas_pool_get_config(mgr % pool, 'scale_factor', scalefactor)
 
         c_tile_nx = tile_nx + 2 * tile_bdr ! The number of pixels in the x direction, including halo cells
         c_tile_ny = tile_ny + 2 * tile_bdr ! The number of pixels in the y direction, including halo cells
         c_tile_nz = tile_nz ! The number of pixels in the z direction
         c_wordsize = wordsize
-        c_scalefactor = scalefactor
         c_signed = signed
 
         if (endian == "big") then
@@ -520,8 +592,7 @@ module mpas_geotile_manager
         allocate(tile)
         allocate(tile % tile(tile_nx + (tile_bdr * 2), tile_ny + (tile_bdr * 2), tile_nz))
         c_tile_ptr = c_loc(tile % tile)
-        call read_geogrid(c_fname, c_tile_ptr, c_tile_nx, c_tile_ny, c_tile_nz, c_signed, c_endian, &
-                            c_scalefactor, c_wordsize, status)
+        call read_geogrid(c_fname, c_tile_ptr, c_tile_nx, c_tile_ny, c_tile_nz, c_signed, c_endian, c_wordsize, status)
         if (status /= 0) then
             call mpas_log_write("Error reading this geogrid file: "//trim(fname), messageType=MPAS_LOG_ERR)
             ierr = 1
@@ -611,16 +682,22 @@ module mpas_geotile_manager
     !
     !  public subroutine mpas_geotile_mgr_tile_to_latlon => tile_to_latlon
     !
-    !> \brief   Translate a tile indices to latitude and longitude,
+    !> \brief   Find the latitude, longitude location of a tile's pixels
     !> \author  Miles A. Curry
     !> \date    02/20/2020
     !> \details
-    !> Given a tile, translate the relative tile coordinates, i, j, of that
-    !> tile to a latitude and longitude coordinate. Upon success, lat, lon
-    !> will be in the range of -1/2 * pi to 1/2 * pi and 0 to 2.0 * pi, respectively.
+    !> Given a tile, translate the pixel coordinates, i, j to a corresponding latitude
+    !> and longitude coordinate.
+    !>
+    !> If supersample_fac is present each pixel will be subdivided into supersample_fac ^ 2
+    !> sub-pixels. If supersample_fac is greater than 1, then the calling code will need
+    !> to pass in supersampled i and j coordinates.
+    !>
+    !> Upon success, lat, lon will be in the range  of -1/2 * pi to 1/2 * pi and 0 to
+    !> 2.0 * pi, respectively.
     !
     !-----------------------------------------------------------------------
-    subroutine mpas_geotile_mgr_tile_to_latlon(mgr, tile, j, i, lat, lon)
+    subroutine mpas_geotile_mgr_tile_to_latlon(mgr, tile, j, i, lat, lon, supersample_fac)
 
         implicit none
 
@@ -630,15 +707,23 @@ module mpas_geotile_manager
         integer, value :: i
         real (kind=RKIND), intent(out) :: lat
         real (kind=RKIND), intent(out) :: lon
+        integer, optional, intent(in) :: supersample_fac
 
         integer, pointer :: tile_bdr
         real (kind=RKIND), pointer :: known_lon
         real (kind=RKIND), pointer :: known_lat
         real (kind=RKIND), pointer :: dx
         real (kind=RKIND), pointer :: dy
+        integer :: supersample_lcl
         integer :: ierr
 
         ierr = 0
+
+        if (present(supersample_fac)) then
+            supersample_lcl = supersample_fac
+        else
+            supersample_lcl = 1
+        end if
 
         call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
         call mpas_pool_get_config(mgr % pool, 'known_lat', known_lat)
@@ -646,8 +731,10 @@ module mpas_geotile_manager
         call mpas_pool_get_config(mgr % pool, 'dx', dx)
         call mpas_pool_get_config(mgr % pool, 'dy', dy)
 
-        lat = real((j - (tile_bdr + 1) + tile % y - 1), kind=RKIND) * dy + known_lat
-        lon = real((i - (tile_bdr + 1) + tile % x - 1), kind=RKIND) * dx + known_lon
+        lat = known_lat + real(j - (supersample_lcl * tile_bdr + 1) + (supersample_lcl * (tile % y - 1)), kind=RKIND) * dy &
+                               / supersample_lcl
+        lon = known_lon + real(i - (supersample_lcl * tile_bdr + 1) + (supersample_lcl * (tile % x - 1)), kind=RKIND) * dx &
+                              / supersample_lcl
 
         call deg2Rad(lat)
         call deg2Rad(lon)
