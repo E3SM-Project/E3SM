@@ -1,4 +1,4 @@
-MODEL_FORMULATION = 
+MODEL_FORMULATION =
 
 ifneq "${MPAS_SHELL}" ""
         SHELL = ${MPAS_SHELL}
@@ -507,9 +507,34 @@ llvm:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-CPPINCLUDES = 
-FCINCLUDES = 
-LIBS = 
+nag:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpifort" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpic++" \
+	"FC_SERIAL = nagfor" \
+	"CC_SERIAL = gcc" \
+	"CXX_SERIAL = g++" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -free -mismatch -O3 -convert=big_ieee" \
+	"CFLAGS_OPT = -O3" \
+	"CXXFLAGS_OPT = -O3" \
+	"LDFLAGS_OPT = -O3" \
+	"FFLAGS_DEBUG = -free -mismatch -O0 -g -C -convert=big_ieee" \
+	"CFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
+	"CXXFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
+	"LDFLAGS_DEBUG = -O0 -g -C" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -DNAG_COMPILER" )
+
+CPPINCLUDES =
+FCINCLUDES =
+LIBS =
 
 #
 # If user has indicated a PIO2 library, define USE_PIO2 pre-processor macro
@@ -544,9 +569,15 @@ endif
 # Depending on PIO version, libraries may be libpio.a, or libpiof.a and libpioc.a
 # Keep open the possibility of shared libraries in future with, e.g., .so suffix
 #
+# Check if libpio.* exists and link -lpio if so, but we make an exception for
+# libpio.settings (a file added in PIO2), which is not a library to link
 ifneq ($(wildcard $(PIO_LIB)/libpio\.*), )
-	LIBS += -lpio
+	# Makefiles don't support "and" operators so we have nested "if" instead
+	ifneq "$(wildcard $(PIO_LIB)/libpio\.*)" "$(PIO_LIB)/libpio.settings"
+		LIBS += -lpio
+	endif
 endif
+
 ifneq ($(wildcard $(PIO_LIB)/libpiof\.*), )
 	LIBS += -lpiof
 endif
@@ -597,7 +628,6 @@ ifeq "$(USE_LAPACK)" "true"
 ifndef LAPACK
 $(error LAPACK is not set.  Please set LAPACK to the LAPACK install directory when USE_LAPACK=true)
 endif
-
 ifneq (, $(shell ls $(LAPACK)/liblapack.*))
 	LIBS += -L$(LAPACK)
 else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))

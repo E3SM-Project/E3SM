@@ -17,6 +17,7 @@
  use mpas_atmphys_constants
  use mpas_atmphys_utilities
  use mpas_log, only : mpas_log_write
+ use mpas_io_units
 
 !wrf physics
  use module_ra_rrtmg_sw
@@ -73,14 +74,8 @@
 
 !get a unit to open init file:
  if(dminfo % my_proc_id == IO_NODE) then
-    do i = 10,99
-       inquire(i,opened = opened,iostat=istat)
-       if(.not. opened) then
-          rrtmg_unit = i
-          exit
-       endif
-    enddo
-    if(istat /= 0) &
+    call mpas_new_unit(rrtmg_unit, unformatted = .true.)
+    if(rrtmg_unit < 0) &
        call physics_error_fatal('module_ra_rrtmg_sw: rrtm_swlookuptable: Can not '// &
                                 'find unused fortran unit to read in lookup table.' )
  endif
@@ -120,7 +115,10 @@
  call sw_kgb28(rrtmg_unit,dminfo)
  call sw_kgb29(rrtmg_unit,dminfo)
 
- if(dminfo % my_proc_id == IO_NODE) close(rrtmg_unit)
+ if(dminfo % my_proc_id == IO_NODE) then
+    close(rrtmg_unit)
+    call mpas_release_unit(rrtmg_unit)
+ end if
 
  end subroutine rrtmg_swlookuptable
 

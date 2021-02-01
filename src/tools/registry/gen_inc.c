@@ -653,7 +653,11 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		}
 
 		fortprintf(fd, "      if (dminfo %% my_proc_id == IO_NODE) then\n");
+		fortprintf(fd, "! Rewinding before each read leads to errors when the code is built with\n");
+		fortprintf(fd, "! the NAG Fortran compiler. If building with NAG, be kind and don't rewind.\n");
+		fortprintf(fd, "#ifndef NAG_COMPILER\n");
 		fortprintf(fd, "         rewind(unitNumber)\n");
+		fortprintf(fd, "#endif\n");
 		fortprintf(fd, "         read(unitNumber, %s, iostat=ierr)\n", nmlrecname);
 		fortprintf(fd, "      end if\n");
 
