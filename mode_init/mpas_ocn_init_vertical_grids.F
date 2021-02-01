@@ -1333,7 +1333,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: zTop, zBot, zBotNew, bottomDepth
 
       integer, pointer :: nCells, nVertLevels, nEdges
-      integer, dimension(:), pointer :: maxLevelCell, smoothingMask
+      integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: iCell, iEdge, c1, c2, iterIndex
