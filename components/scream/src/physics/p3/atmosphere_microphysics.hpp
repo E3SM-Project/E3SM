@@ -73,9 +73,9 @@ public:
   // the set of fields stored in the field manager.  A structure like this defines those operations,
   // which can then be called during run_imple in the main .cpp code.
   // Structure to handle the local generation of data needed by p3_main in run_impl
-  struct run_local_vars {
-    run_local_vars() = default; 
-    run_local_vars(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
+  struct p3_preamble {
+    p3_preamble() = default; 
+    p3_preamble(const int ncol, const int npack, view_2d_const pmid_, view_2d T_atm_, view_2d_const ast_, view_2d_const zi_) : 
       m_ncol(ncol),
       m_npack(npack),
       // IN
@@ -169,7 +169,7 @@ public:
       cld_frac_r = cld_frac_r_;
       dz = dz_;
     }
-  }; // run_local_vars
+  }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
 
 protected:
@@ -213,7 +213,7 @@ protected:
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
   P3F::P3Infrastructure    infrastructure;
-  run_local_vars           p3_preproc;
+  p3_preamble              p3_preproc;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs. 
 
