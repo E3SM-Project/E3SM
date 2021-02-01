@@ -2319,9 +2319,9 @@ flags should be captured within MPAS CMake files.
     <base> -free </base>
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <MPIFC>mpiifwl.sh</MPIFC>
-  <MPICC>mpiicx</MPICC>
-  <MPICXX>mpiicpx</MPICXX>
+  <MPIFC>mpif90</MPIFC>
+  <MPICC>mpicc</MPICC>
+  <MPICXX>mpicxx</MPICXX>
   <SCC>icx</SCC>
   <SCXX>icpx</SCXX>
   <SFC>ifwl.sh</SFC>

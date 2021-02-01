@@ -1756,20 +1756,34 @@
 	<command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
 	<command name="use">/soft/restricted/intel_dga/modulefiles</command>
 	<command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
-	<command name="load">oneapi</command>
-	<command name="load">mpi</command>
+	<command name="load">oneapi/2020.12.15.004</command>
+      </modules>
+      <modules compiler="intelgpu">
+	<command name="load">mpi/aurora_mpich/icc-sockets-deterministic/38.1</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">mpi/intel_mpi/2019.4.243</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
       <env name="PATH">/home/crlishka/bin:/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_DOMAIN">omp</env>
       <env name="I_MPI_PIN_ORDER">spread</env>
       <env name="I_MPI_PIN_CELL">unit</env>
+    </environment_variables>
+    <environment_variables compiler="intelgpu">
+      <env name="MPICH_CC">icx</env>
+      <env name="MPICH_CXX">icpx</env>
+      <env name="MPICH_FC">ifwl.sh</env>
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-mpich-38.1</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
     </environment_variables>
 </machine>
 
