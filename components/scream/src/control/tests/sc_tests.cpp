@@ -91,7 +91,7 @@ TEST_CASE ("surface_coupling")
   exporter.register_export("v3d",3,1);
 
   // Create a raw array big enough to contain all the 2d data for import/export
-  Real* raw_data = new Real[ncols*num_fields];
+  double* raw_data = new double[ncols*num_fields];
 
   // Complete setup of importer/exporter
   importer.registration_ends(raw_data,nullptr);
