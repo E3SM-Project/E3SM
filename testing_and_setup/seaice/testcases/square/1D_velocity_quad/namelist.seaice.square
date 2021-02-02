@@ -86,7 +86,6 @@
     config_variational_denominator_type = 'original'
     config_wachspress_integration_type = 'dunavant'
     config_wachspress_integration_order = 8
-    config_revised_evp = false
     config_use_air_stress = true
     config_use_ocean_stress = true
     config_use_surface_tilt = false
@@ -109,7 +108,6 @@
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
     config_use_column_snow_tracers = false
-    config_use_special_boundaries_zero_tracers = false
 /
 &column_tracers
     config_use_ice_age = true
@@ -121,6 +119,7 @@
     config_use_aerosols = false
     config_use_effective_snow_density = false
     config_use_snow_grain_radius = false
+    config_use_special_boundaries_zero_tracers = false
 /
 &biogeochemistry
     config_use_brine = false

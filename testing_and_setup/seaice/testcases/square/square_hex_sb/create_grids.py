@@ -3,11 +3,11 @@ import math
 import os
 import matplotlib.pyplot as plt
 
-mpas_tools_dir = "/home/akt/Work/MPAS-Seaice/MPAS-Tools/feature_branches/master/MPAS-Tools/"
-
 #-------------------------------------------------------------------------------
 
-def create_grid(nx, ny, plot=False):
+def create_grid(nx, ny, Lx, Ly, plot=False):
+
+    mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
     dcx = Lx / float(nx-1)
     dcy = 0.5 * math.sqrt(3.0) * dcx
@@ -126,35 +126,43 @@ def create_grid(nx, ny, plot=False):
 
 #-------------------------------------------------------------------------------
 
-Lx = 80000.0
-nx = 51
-#Lx = 1280000.0
-#nx = 81
+def create_grids():
 
-#nGrid = 8
-nGrid = 1
+    Lx = 80000.0
+    nx = 51
+    #Lx = 1280000.0
+    #nx = 81
 
-dcx = Lx / float(nx-1)
-dcy = 0.5 * math.sqrt(3.0) * dcx
+    #nGrid = 8
+    nGrid = 1
 
-print(dcx, dcy)
+    dcx = Lx / float(nx-1)
+    dcy = 0.5 * math.sqrt(3.0) * dcx
 
-ny = Lx / dcy + 1
-ny = int(math.ceil(ny))
-if ((ny % 2) == 0): ny -= 1
-Ly = float(ny-1) * dcy
+    print(dcx, dcy)
 
-print(Lx, Ly)
+    ny = Lx / dcy + 1
+    ny = int(math.ceil(ny))
+    if ((ny % 2) == 0): ny -= 1
+    Ly = float(ny-1) * dcy
 
-
-nxs = []
-nys = []
-for i in range(0,nGrid):
-    nxs.append(nx)
-    nys.append(ny)
-    nx = 2*nx - 1
-    ny = 2*ny - 1
+    print(Lx, Ly)
 
 
-for nx, ny in zip(nxs, nys):
-    create_grid(nx, ny)
+    nxs = []
+    nys = []
+    for i in range(0,nGrid):
+        nxs.append(nx)
+        nys.append(ny)
+        nx = 2*nx - 1
+        ny = 2*ny - 1
+
+
+    for nx, ny in zip(nxs, nys):
+        create_grid(nx, ny, Lx, Ly)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_grids()

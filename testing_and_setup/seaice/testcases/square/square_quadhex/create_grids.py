@@ -4,11 +4,11 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-mpas_tools_dir = "/home/akt/Work/MPAS-Seaice/MPAS-Tools/feature_branches/master/MPAS-Tools/"
-
 #-------------------------------------------------------------------------------
 
 def create_grid_hex(nx, ny, dc):
+
+    mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
     Lx = float(nx) * dc
     Ly = float(ny) * dc
@@ -65,6 +65,8 @@ def create_grid_hex(nx, ny, dc):
 #-------------------------------------------------------------------------------
 
 def create_grid_quad(nx, ny, dc):
+
+    mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
     Lx = float(nx) * dc
     Ly = float(ny) * dc
@@ -171,42 +173,50 @@ def create_grid_quad(nx, ny, dc):
 
 #-------------------------------------------------------------------------------
 
-nGrid = 4
+def create_grids():
 
-# hex
-dc = 16000.0
-nx = 82
-ny = 94
+    nGrid = 4
 
-nxs = []
-nys = []
-dcs = []
-for i in range(0,nGrid):
-    nxs.append(nx)
-    nys.append(ny)
-    dcs.append(dc)
-    nx = nx*2
-    ny = ny*2
-    dc = dc/2
+    # hex
+    dc = 16000.0
+    nx = 82
+    ny = 94
 
-for nx, ny, dc in zip(nxs, nys, dcs):
-   create_grid_hex(nx, ny, dc)
+    nxs = []
+    nys = []
+    dcs = []
+    for i in range(0,nGrid):
+        nxs.append(nx)
+        nys.append(ny)
+        dcs.append(dc)
+        nx = nx*2
+        ny = ny*2
+        dc = dc/2
 
-# quad
-dc = 16000.0
-nx = 80
-ny = 80
+    for nx, ny, dc in zip(nxs, nys, dcs):
+        create_grid_hex(nx, ny, dc)
 
-nxs = []
-nys = []
-dcs = []
-for i in range(0,nGrid):
-    nxs.append(nx)
-    nys.append(ny)
-    dcs.append(dc)
-    nx = nx*2
-    ny = ny*2
-    dc = dc/2
+    # quad
+    dc = 16000.0
+    nx = 80
+    ny = 80
 
-for nx, ny, dc in zip(nxs, nys, dcs):
-   create_grid_quad(nx, ny, dc)
+    nxs = []
+    nys = []
+    dcs = []
+    for i in range(0,nGrid):
+        nxs.append(nx)
+        nys.append(ny)
+        dcs.append(dc)
+        nx = nx*2
+        ny = ny*2
+        dc = dc/2
+
+    for nx, ny, dc in zip(nxs, nys, dcs):
+        create_grid_quad(nx, ny, dc)
+
+#-------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_grids()

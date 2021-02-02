@@ -620,122 +620,130 @@ def latlon_from_xyz(x, y, z, r):
 
 #-------------------------------------------------------------------------------
 
-mu = 3
-lu = 5
+def create_ic():
 
-mv = 2
-lv = 4
+    mu = 3
+    lu = 5
 
-gridSizes = [2562, 10242, 40962, 163842]
+    mv = 2
+    lv = 4
 
-rotateCartesianGrid = True
-r = 1.0
+    gridSizes = [2562, 10242, 40962, 163842]
 
-for gridSize in gridSizes:
+    rotateCartesianGrid = True
+    r = 1.0
 
-    print("  Gridsize: ", gridSize)
+    for gridSize in gridSizes:
 
-    # input
-    filenameIn = "x1.%i.grid.nc" %(gridSize)
+        print("  Gridsize: ", gridSize)
 
-    fileIn = Dataset(filenameIn,"r")
+        # input
+        filenameIn = "x1.%i.grid.nc" %(gridSize)
 
-    nCells = len(fileIn.dimensions["nCells"])
-    nVertices = len(fileIn.dimensions["nVertices"])
+        fileIn = Dataset(filenameIn,"r")
 
-    xCell = fileIn.variables["xCell"][:]
-    yCell = fileIn.variables["yCell"][:]
-    zCell = fileIn.variables["zCell"][:]
+        nCells = len(fileIn.dimensions["nCells"])
+        nVertices = len(fileIn.dimensions["nVertices"])
 
-    xVertex = fileIn.variables["xVertex"][:]
-    yVertex = fileIn.variables["yVertex"][:]
-    zVertex = fileIn.variables["zVertex"][:]
+        xCell = fileIn.variables["xCell"][:]
+        yCell = fileIn.variables["yCell"][:]
+        zCell = fileIn.variables["zCell"][:]
 
-    latCell = fileIn.variables["latCell"][:]
-    lonCell = fileIn.variables["lonCell"][:]
+        xVertex = fileIn.variables["xVertex"][:]
+        yVertex = fileIn.variables["yVertex"][:]
+        zVertex = fileIn.variables["zVertex"][:]
 
-    latVertex = fileIn.variables["latVertex"][:]
-    lonVertex = fileIn.variables["lonVertex"][:]
+        latCell = fileIn.variables["latCell"][:]
+        lonCell = fileIn.variables["lonCell"][:]
 
-    fileIn.close()
+        latVertex = fileIn.variables["latVertex"][:]
+        lonVertex = fileIn.variables["lonVertex"][:]
 
-    # velocities
-    uVelocity = np.zeros(nVertices)
-    vVelocity = np.zeros(nVertices)
+        fileIn.close()
 
-    strain11VertexAnalytical = np.zeros(nVertices)
-    strain22VertexAnalytical = np.zeros(nVertices)
-    strain12VertexAnalytical = np.zeros(nVertices)
+        # velocities
+        uVelocity = np.zeros(nVertices)
+        vVelocity = np.zeros(nVertices)
 
-    for iVertex in range(0, nVertices):
+        strain11VertexAnalytical = np.zeros(nVertices)
+        strain22VertexAnalytical = np.zeros(nVertices)
+        strain12VertexAnalytical = np.zeros(nVertices)
 
-        #print("iVertex: ", iVertex, latVertex[iVertex], lonVertex[iVertex])
+        for iVertex in range(0, nVertices):
 
-        xp, yp, zp = grid_rotation_forward(xVertex[iVertex], yVertex[iVertex], zVertex[iVertex], rotateCartesianGrid)
-        lat, lon = latlon_from_xyz(xp, yp, zp, r)
+            #print("iVertex: ", iVertex, latVertex[iVertex], lonVertex[iVertex])
 
-        u, v, strain11, strain22, strain12 = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
+            xp, yp, zp = grid_rotation_forward(xVertex[iVertex], yVertex[iVertex], zVertex[iVertex], rotateCartesianGrid)
+            lat, lon = latlon_from_xyz(xp, yp, zp, r)
 
-        uVelocity[iVertex] = u
-        vVelocity[iVertex] = v
+            u, v, strain11, strain22, strain12 = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
 
-        strain11VertexAnalytical[iVertex] = strain11
-        strain22VertexAnalytical[iVertex] = strain22
-        strain12VertexAnalytical[iVertex] = strain12
+            uVelocity[iVertex] = u
+            vVelocity[iVertex] = v
 
-    strain11CellAnalytical = np.zeros(nCells)
-    strain22CellAnalytical = np.zeros(nCells)
-    strain12CellAnalytical = np.zeros(nCells)
+            strain11VertexAnalytical[iVertex] = strain11
+            strain22VertexAnalytical[iVertex] = strain22
+            strain12VertexAnalytical[iVertex] = strain12
 
-    for iCell in range(0, nCells):
+        strain11CellAnalytical = np.zeros(nCells)
+        strain22CellAnalytical = np.zeros(nCells)
+        strain12CellAnalytical = np.zeros(nCells)
 
-        #print("iCell: ", iCell, latCell[iCell], lonCell[iCell])
+        for iCell in range(0, nCells):
 
-        xp, yp, zp = grid_rotation_forward(xCell[iCell], yCell[iCell], zCell[iCell], rotateCartesianGrid)
-        lat, lon = latlon_from_xyz(xp, yp, zp, r)
+            #print("iCell: ", iCell, latCell[iCell], lonCell[iCell])
 
-        u, v, strain11, strain22, strain12 = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
+            xp, yp, zp = grid_rotation_forward(xCell[iCell], yCell[iCell], zCell[iCell], rotateCartesianGrid)
+            lat, lon = latlon_from_xyz(xp, yp, zp, r)
 
-        strain11CellAnalytical[iCell] = strain11
-        strain22CellAnalytical[iCell] = strain22
-        strain12CellAnalytical[iCell] = strain12
+            u, v, strain11, strain22, strain12 = velocities_strains_analytical(lat, lon, mu, lu, mv, lv)
 
-    solveVelocityPrevious = np.ones(nVertices,dtype="i")
+            strain11CellAnalytical[iCell] = strain11
+            strain22CellAnalytical[iCell] = strain22
+            strain12CellAnalytical[iCell] = strain12
+
+        solveVelocityPrevious = np.ones(nVertices,dtype="i")
 
 
-    # output
-    filenameOut = "ic_%i.nc" %(gridSize)
+        # output
+        filenameOut = "ic_%i.nc" %(gridSize)
 
-    fileOut = Dataset(filenameOut, "w", format="NETCDF3_CLASSIC")
+        fileOut = Dataset(filenameOut, "w", format="NETCDF3_CLASSIC")
 
-    fileOut.createDimension("nVertices", nVertices)
-    fileOut.createDimension("nCells", nCells)
+        fileOut.createDimension("nVertices", nVertices)
+        fileOut.createDimension("nCells", nCells)
 
-    var = fileOut.createVariable("uVelocity","d",dimensions=["nVertices"])
-    var[:] = uVelocity[:]
+        var = fileOut.createVariable("uVelocity","d",dimensions=["nVertices"])
+        var[:] = uVelocity[:]
 
-    var = fileOut.createVariable("vVelocity","d",dimensions=["nVertices"])
-    var[:] = vVelocity[:]
+        var = fileOut.createVariable("vVelocity","d",dimensions=["nVertices"])
+        var[:] = vVelocity[:]
 
-    var = fileOut.createVariable("solveVelocityPrevious","i",dimensions=["nVertices"])
-    var[:] = solveVelocityPrevious[:]
+        var = fileOut.createVariable("solveVelocityPrevious","i",dimensions=["nVertices"])
+        var[:] = solveVelocityPrevious[:]
 
-    var = fileOut.createVariable("strain11VertexAnalytical","d",dimensions=["nVertices"])
-    var[:] = strain11VertexAnalytical[:]
+        var = fileOut.createVariable("strain11VertexAnalytical","d",dimensions=["nVertices"])
+        var[:] = strain11VertexAnalytical[:]
 
-    var = fileOut.createVariable("strain22VertexAnalytical","d",dimensions=["nVertices"])
-    var[:] = strain22VertexAnalytical[:]
+        var = fileOut.createVariable("strain22VertexAnalytical","d",dimensions=["nVertices"])
+        var[:] = strain22VertexAnalytical[:]
 
-    var = fileOut.createVariable("strain12VertexAnalytical","d",dimensions=["nVertices"])
-    var[:] = strain12VertexAnalytical[:]
+        var = fileOut.createVariable("strain12VertexAnalytical","d",dimensions=["nVertices"])
+        var[:] = strain12VertexAnalytical[:]
 
-    var = fileOut.createVariable("strain11CellAnalytical","d",dimensions=["nCells"])
-    var[:] = strain11CellAnalytical[:]
+        var = fileOut.createVariable("strain11CellAnalytical","d",dimensions=["nCells"])
+        var[:] = strain11CellAnalytical[:]
 
-    var = fileOut.createVariable("strain22CellAnalytical","d",dimensions=["nCells"])
-    var[:] = strain22CellAnalytical[:]
+        var = fileOut.createVariable("strain22CellAnalytical","d",dimensions=["nCells"])
+        var[:] = strain22CellAnalytical[:]
 
-    var = fileOut.createVariable("strain12CellAnalytical","d",dimensions=["nCells"])
-    var[:] = strain12CellAnalytical[:]
+        var = fileOut.createVariable("strain12CellAnalytical","d",dimensions=["nCells"])
+        var[:] = strain12CellAnalytical[:]
 
-    fileOut.close()
+        fileOut.close()
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_ic()

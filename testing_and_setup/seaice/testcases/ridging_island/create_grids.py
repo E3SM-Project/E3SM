@@ -4,8 +4,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-mpas_tools_dir = "/home/akt/Work/MPAS-Seaice/MPAS-Tools/feature_branches/master/MPAS-Tools/"
-
 #-------------------------------------------------------------------------------
 
 def in_box(x, y, x1, x2, y1, y2):
@@ -18,6 +16,8 @@ def in_box(x, y, x1, x2, y1, y2):
 #-------------------------------------------------------------------------------
 
 def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
+
+    mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
     dc = 10000.0
     nx = 100
@@ -135,25 +135,27 @@ def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
     cmd = "mv grid_culled_island.nc %s" %(gridfileOut)
     os.system(cmd)
 
+    # grid
+    filein = Dataset(gridfileOut,"a")
+
+    nCells = len(filein.dimensions["nCells"])
+    nVertices = len(filein.dimensions["nVertices"])
+
+    xCell = filein.variables["xCell"][:]
+    yCell = filein.variables["yCell"][:]
+
+    xVertex = filein.variables["xVertex"][:]
+    yVertex = filein.variables["yVertex"][:]
+
+    nEdgesOnCell = filein.variables["nEdgesOnCell"][:]
+    verticesOnCell = filein.variables["verticesOnCell"][:]
+    verticesOnCell[:] = verticesOnCell[:] - 1
+
+    filein.close()
+
+    # plot
     plot = True
     if (plot):
-
-        filein = Dataset(gridfileOut,"a")
-
-        nCells = len(filein.dimensions["nCells"])
-        nVertices = len(filein.dimensions["nVertices"])
-
-        xCell = filein.variables["xCell"][:]
-        yCell = filein.variables["yCell"][:]
-
-        xVertex = filein.variables["xVertex"][:]
-        yVertex = filein.variables["yVertex"][:]
-
-        nEdgesOnCell = filein.variables["nEdgesOnCell"][:]
-        verticesOnCell = filein.variables["verticesOnCell"][:]
-        verticesOnCell[:] = verticesOnCell[:] - 1
-
-        filein.close()
 
         filediag = open("grid_diag.txt","w")
 
@@ -200,5 +202,13 @@ def create_grid(gridfileOut, icfileOut, specialBoundariedFileOut, island=True):
 
 #-------------------------------------------------------------------------------
 
-create_grid("grid_island.nc", "ic_island.nc", "special_boundaries_island.nc")
-create_grid("grid_no_island.nc", "ic_no_island.nc", "special_boundaries_no_island.nc")
+def create_grids():
+
+    create_grid("grid_island.nc", "ic_island.nc", "special_boundaries_island.nc", True)
+    create_grid("grid_no_island.nc", "ic_no_island.nc", "special_boundaries_no_island.nc", False)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    create_grids()

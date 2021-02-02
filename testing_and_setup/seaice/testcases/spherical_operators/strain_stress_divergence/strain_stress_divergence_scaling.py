@@ -82,67 +82,75 @@ def get_resolution(filename, latitudeLimit):
 
 #--------------------------------------------------------
 
-mpl.rc('font', family='Times New Roman', size=8)
-mpl.rc('text', usetex=True)
-mpl.rcParams['axes.linewidth'] = 0.5
+def strain_stress_divergence_scaling():
 
-resolutions = [2562,10242,40962,163842]
-methods = ["wachspress","pwl","weak","weakwachs","weakpwl","wachspress_alt","pwl_alt","weakwachs_alt","weakpwl_alt"]
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rc('text', usetex=True)
+    mpl.rcParams['axes.linewidth'] = 0.5
 
-lineColours = ["black","black","grey","red","red","blue","blue","green","green"]
-lineStyles  = ["-","--","-","-","--","-","--","-","--"]
+    resolutions = [2562,10242,40962,163842]
+    methods = ["wachspress","pwl","weak","weakwachs","weakpwl","wachspress_alt","pwl_alt","weakwachs_alt","weakpwl_alt"]
 
-latitudeLimit = 20.0
+    lineColours = ["black","black","grey","red","red","blue","blue","green","green"]
+    lineStyles  = ["-","--","-","-","--","-","--","-","--"]
 
-xMin = 6e-3
-xMax = 1e-1
+    latitudeLimit = 20.0
 
-# quadratic scaling
-#scale = 3e-5 / math.pow(xMin,2)
-#scaleMin = math.pow(xMin,2) * scale
-#scaleMax = math.pow(xMax,2) * scale
+    xMin = 6e-3
+    xMax = 1e-1
 
-# linear scaling
-scale = 2.5e-3 / math.pow(xMin,1)
-scaleMin = math.pow(xMin,1) * scale
-scaleMax = math.pow(xMax,1) * scale
+    # quadratic scaling
+    #scale = 3e-5 / math.pow(xMin,2)
+    #scaleMin = math.pow(xMin,2) * scale
+    #scaleMax = math.pow(xMax,2) * scale
+
+    # linear scaling
+    scale = 2.5e-3 / math.pow(xMin,1)
+    scaleMin = math.pow(xMin,1) * scale
+    scaleMax = math.pow(xMax,1) * scale
 
 
-plt.figure(figsize=(4,3))
+    plt.figure(figsize=(4,3))
 
-plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
+    plt.loglog([xMin, xMax],[scaleMin,scaleMax],linestyle=':', color='k')
 
-iPlot = 0
-for method in methods:
+    iPlot = 0
+    for method in methods:
 
-    x = []
-    y = []
+        x = []
+        y = []
 
-    for resolution in resolutions:
+        for resolution in resolutions:
 
-        filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
-        filenameIC = "./ic_%i.nc" %(resolution)
+            filename = "./output_%s_%i/output.2000.nc" %(method,resolution)
+            filenameIC = "./ic_%i.nc" %(resolution)
 
-        print(filename, filenameIC)
+            print(filename, filenameIC)
 
-        normU, normV = get_norm(filenameIC, filename, latitudeLimit)
+            normU, normV = get_norm(filenameIC, filename, latitudeLimit)
 
-        x.append(get_resolution(filename, latitudeLimit))
-        y.append(normU)
+            x.append(get_resolution(filename, latitudeLimit))
+            y.append(normU)
 
-    plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
+        plt.loglog(x,y, marker='o', color=lineColours[iPlot], ls=lineStyles[iPlot], markersize=5.0)
 
-    iPlot = iPlot + 1
+        iPlot = iPlot + 1
 
-#legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
-legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "WeakWachs", "WeakPWL", "Wachspress Alt", "PWL Alt","WeakWachs Alt","WeakPWL Alt"]
+    #legendLabels = ["Quadratic scaling","Wachspress", "PWL", "Weak", "WeakWachs"]
+    legendLabels = ["Linear scaling","Wachspress", "PWL", "Weak", "WeakWachs", "WeakPWL", "Wachspress Alt", "PWL Alt","WeakWachs Alt","WeakPWL Alt"]
 
-plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
+    plt.legend(legendLabels, frameon=False, loc=2, fontsize=8, handlelength=4)
 
-ax = plt.gca()
-ax.set_xlabel("Grid resolution")
-ax.set_ylabel(r"$L_2$ error norm")
-ax.set_xlim([xMin, xMax])
+    ax = plt.gca()
+    ax.set_xlabel("Grid resolution")
+    ax.set_ylabel(r"$L_2$ error norm")
+    ax.set_xlim([xMin, xMax])
 
-plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-plt.savefig("strain_stress_divergence_scaling.png",dpi=400)
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+    plt.savefig("strain_stress_divergence_scaling.png",dpi=400)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    strain_stress_divergence_scaling()

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 
+degreesToRadians = math.pi / 180.0
+
 #---------------------------------------------------------------
 
 def cm2inch(value):
@@ -58,7 +60,7 @@ def get_mpas_patch_collection(nVertices, vertexDegree, cellsOnVertex, xCell, yCe
 
 #---------------------------------------------------------------
 
-def plot_subfigure(axes, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, array, vmin, vmax, minX, maxX, minY, maxY, sciNote=False, diffPlot=False, title=None, subfigureLabel=None, colorbar=True, unityBar=False):
+def plot_subfigure(axes, fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, array, vmin, vmax, minX, maxX, minY, maxY, sciNote=False, diffPlot=False, title=None, subfigureLabel=None, colorbar=True, unityBar=False):
 
     if (not diffPlot):
         #colourMap = mpl.cm.jet
@@ -93,226 +95,232 @@ def plot_subfigure(axes, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, z
 
 #---------------------------------------------------------------
 
-degreesToRadians = math.pi / 180.0
+def strain_stress_divergence_map():
 
-# grid
-fileGrid = Dataset("x1.40962.grid.nc","r")
+    # grid
+    fileGrid = Dataset("x1.40962.grid.nc","r")
 
-nCells = len(fileGrid.dimensions["nCells"])
-nVertices = len(fileGrid.dimensions["nVertices"])
-vertexDegree = len(fileGrid.dimensions["vertexDegree"])
+    nCells = len(fileGrid.dimensions["nCells"])
+    nVertices = len(fileGrid.dimensions["nVertices"])
+    vertexDegree = len(fileGrid.dimensions["vertexDegree"])
 
-vertexDegreeArr = np.zeros(nVertices,dtype="i")
-vertexDegreeArr[:] = vertexDegree
+    vertexDegreeArr = np.zeros(nVertices,dtype="i")
+    vertexDegreeArr[:] = vertexDegree
 
-nEdgesOnCell = fileGrid.variables["nEdgesOnCell"][:]
+    nEdgesOnCell = fileGrid.variables["nEdgesOnCell"][:]
 
-cellsOnVertex = fileGrid.variables["cellsOnVertex"][:]
+    cellsOnVertex = fileGrid.variables["cellsOnVertex"][:]
 
-verticesOnCell = fileGrid.variables["verticesOnCell"][:]
+    verticesOnCell = fileGrid.variables["verticesOnCell"][:]
 
-latVertex = fileGrid.variables["latVertex"][:]
-latCell = fileGrid.variables["latCell"][:]
+    latVertex = fileGrid.variables["latVertex"][:]
+    latCell = fileGrid.variables["latCell"][:]
 
-xCell = fileGrid.variables["xCell"][:]
-yCell = fileGrid.variables["yCell"][:]
-zCell = fileGrid.variables["zCell"][:]
+    xCell = fileGrid.variables["xCell"][:]
+    yCell = fileGrid.variables["yCell"][:]
+    zCell = fileGrid.variables["zCell"][:]
 
-xVertex = fileGrid.variables["xVertex"][:]
-yVertex = fileGrid.variables["yVertex"][:]
-zVertex = fileGrid.variables["zVertex"][:]
+    xVertex = fileGrid.variables["xVertex"][:]
+    yVertex = fileGrid.variables["yVertex"][:]
+    zVertex = fileGrid.variables["zVertex"][:]
 
-fileGrid.close()
+    fileGrid.close()
 
-# ic
-fileIC = Dataset("ic_40962.nc","r")
+    # ic
+    fileIC = Dataset("ic_40962.nc","r")
 
-uVelocity = fileIC.variables["uVelocity"][:]
-vVelocity = fileIC.variables["vVelocity"][:]
+    uVelocity = fileIC.variables["uVelocity"][:]
+    vVelocity = fileIC.variables["vVelocity"][:]
 
-stressDivergenceUAnalytical = fileIC.variables["stressDivergenceUAnalytical"][:]
-stressDivergenceVAnalytical = fileIC.variables["stressDivergenceVAnalytical"][:]
+    stressDivergenceUAnalytical = fileIC.variables["stressDivergenceUAnalytical"][:]
+    stressDivergenceVAnalytical = fileIC.variables["stressDivergenceVAnalytical"][:]
 
-print("Stress divergence: ",
-      np.amin(stressDivergenceUAnalytical), np.amax(stressDivergenceUAnalytical),
-      np.amin(stressDivergenceVAnalytical), np.amax(stressDivergenceVAnalytical))
+    print("Stress divergence: ",
+          np.amin(stressDivergenceUAnalytical), np.amax(stressDivergenceUAnalytical),
+          np.amin(stressDivergenceVAnalytical), np.amax(stressDivergenceVAnalytical))
 
-fileIC.close()
+    fileIC.close()
 
-# Wachspress
-fileWach = Dataset("./output_wachspress_40962/output.2000.nc","r")
+    # Wachspress
+    fileWach = Dataset("./output_wachspress_40962/output.2000.nc","r")
 
-stressDivergenceUWach = fileWach.variables["stressDivergenceU"][0,:]
-stressDivergenceVWach = fileWach.variables["stressDivergenceV"][0,:]
+    stressDivergenceUWach = fileWach.variables["stressDivergenceU"][0,:]
+    stressDivergenceVWach = fileWach.variables["stressDivergenceV"][0,:]
 
-stressDivergenceUWachDiff = (stressDivergenceUWach - stressDivergenceUAnalytical)
-stressDivergenceVWachDiff = (stressDivergenceVWach - stressDivergenceVAnalytical)
+    stressDivergenceUWachDiff = (stressDivergenceUWach - stressDivergenceUAnalytical)
+    stressDivergenceVWachDiff = (stressDivergenceVWach - stressDivergenceVAnalytical)
 
-print("Wachs: ",
-      np.amin(stressDivergenceUWachDiff), np.amax(stressDivergenceUWachDiff),
-      np.amin(stressDivergenceVWachDiff), np.amax(stressDivergenceVWachDiff))
+    print("Wachs: ",
+          np.amin(stressDivergenceUWachDiff), np.amax(stressDivergenceUWachDiff),
+          np.amin(stressDivergenceVWachDiff), np.amax(stressDivergenceVWachDiff))
 
-fileWach.close()
+    fileWach.close()
 
-# PWL
-filePWL = Dataset("./output_pwl_40962/output.2000.nc","r")
+    # PWL
+    filePWL = Dataset("./output_pwl_40962/output.2000.nc","r")
 
-stressDivergenceUPWL = filePWL.variables["stressDivergenceU"][0,:]
-stressDivergenceVPWL = filePWL.variables["stressDivergenceV"][0,:]
+    stressDivergenceUPWL = filePWL.variables["stressDivergenceU"][0,:]
+    stressDivergenceVPWL = filePWL.variables["stressDivergenceV"][0,:]
 
-stressDivergenceUPWLDiff = (stressDivergenceUPWL - stressDivergenceUAnalytical)
-stressDivergenceVPWLDiff = (stressDivergenceVPWL - stressDivergenceVAnalytical)
+    stressDivergenceUPWLDiff = (stressDivergenceUPWL - stressDivergenceUAnalytical)
+    stressDivergenceVPWLDiff = (stressDivergenceVPWL - stressDivergenceVAnalytical)
 
-print("PWL:   ",
-      np.amin(stressDivergenceUPWLDiff), np.amax(stressDivergenceUPWLDiff),
-      np.amin(stressDivergenceVPWLDiff), np.amax(stressDivergenceVPWLDiff))
+    print("PWL:   ",
+          np.amin(stressDivergenceUPWLDiff), np.amax(stressDivergenceUPWLDiff),
+          np.amin(stressDivergenceVPWLDiff), np.amax(stressDivergenceVPWLDiff))
 
-filePWL.close()
+    filePWL.close()
 
-# Weak
-fileWeak = Dataset("./output_weak_40962/output.2000.nc","r")
+    # Weak
+    fileWeak = Dataset("./output_weak_40962/output.2000.nc","r")
 
-stressDivergenceUWeak = fileWeak.variables["stressDivergenceU"][0,:]
-stressDivergenceVWeak = fileWeak.variables["stressDivergenceV"][0,:]
+    stressDivergenceUWeak = fileWeak.variables["stressDivergenceU"][0,:]
+    stressDivergenceVWeak = fileWeak.variables["stressDivergenceV"][0,:]
 
-stressDivergenceUWeakDiff = (stressDivergenceUWeak - stressDivergenceUAnalytical)
-stressDivergenceVWeakDiff = (stressDivergenceVWeak - stressDivergenceVAnalytical)
+    stressDivergenceUWeakDiff = (stressDivergenceUWeak - stressDivergenceUAnalytical)
+    stressDivergenceVWeakDiff = (stressDivergenceVWeak - stressDivergenceVAnalytical)
 
-print("Weak:  ",
-      np.amin(stressDivergenceUWeakDiff), np.amax(stressDivergenceUWeakDiff),
-      np.amin(stressDivergenceVWeakDiff), np.amax(stressDivergenceVWeakDiff))
+    print("Weak:  ",
+          np.amin(stressDivergenceUWeakDiff), np.amax(stressDivergenceUWeakDiff),
+          np.amin(stressDivergenceVWeakDiff), np.amax(stressDivergenceVWeakDiff))
 
-fileWeak.close()
+    fileWeak.close()
 
-# WeakWachs
-fileWeakWachs = Dataset("./output_weakwachs_40962/output.2000.nc","r")
+    # WeakWachs
+    fileWeakWachs = Dataset("./output_weakwachs_40962/output.2000.nc","r")
 
-stressDivergenceUWeakWachs = fileWeakWachs.variables["stressDivergenceU"][0,:]
-stressDivergenceVWeakWachs = fileWeakWachs.variables["stressDivergenceV"][0,:]
+    stressDivergenceUWeakWachs = fileWeakWachs.variables["stressDivergenceU"][0,:]
+    stressDivergenceVWeakWachs = fileWeakWachs.variables["stressDivergenceV"][0,:]
 
-stressDivergenceUWeakWachsDiff = (stressDivergenceUWeakWachs - stressDivergenceUAnalytical)
-stressDivergenceVWeakWachsDiff = (stressDivergenceVWeakWachs - stressDivergenceVAnalytical)
+    stressDivergenceUWeakWachsDiff = (stressDivergenceUWeakWachs - stressDivergenceUAnalytical)
+    stressDivergenceVWeakWachsDiff = (stressDivergenceVWeakWachs - stressDivergenceVAnalytical)
 
-print("WeakWachs:  ",
-      np.amin(stressDivergenceUWeakWachsDiff), np.amax(stressDivergenceUWeakWachsDiff),
-      np.amin(stressDivergenceVWeakWachsDiff), np.amax(stressDivergenceVWeakWachsDiff))
+    print("WeakWachs:  ",
+          np.amin(stressDivergenceUWeakWachsDiff), np.amax(stressDivergenceUWeakWachsDiff),
+          np.amin(stressDivergenceVWeakWachsDiff), np.amax(stressDivergenceVWeakWachsDiff))
 
-fileWeakWachs.close()
+    fileWeakWachs.close()
 
 
-mpl.rc('font', family='Times New Roman', size=8)
-mpl.rc('text', usetex=True)
-mpl.rcParams['axes.linewidth'] = 0.5
-
-minVelocity = -1.0
-maxVelocity =  1.0
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rc('text', usetex=True)
+    mpl.rcParams['axes.linewidth'] = 0.5
+
+    minVelocity = -1.0
+    maxVelocity =  1.0
 
-minStressDiv = -20.0
-maxStressDiv =  20.0
+    minStressDiv = -20.0
+    maxStressDiv =  20.0
 
-minStressDivDiff = -1.0
-maxStressDivDiff =  1.0
+    minStressDivDiff = -1.0
+    maxStressDivDiff =  1.0
 
 
-fig, axes = plt.subplots(5, 4)
+    fig, axes = plt.subplots(5, 4)
 
-fig.set_size_inches(7, 6.75)
+    fig.set_size_inches(7, 6.75)
 
-plot_subfigure(axes[0,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, uVelocity, minVelocity, maxVelocity, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'$u^\prime$', '(a)', False)
-plot_subfigure(axes[0,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUAnalytical, minStressDiv, maxStressDiv, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'$(\nabla \cdot \sigma)_{u^\prime}$ Analytical', r'(b)$\times20$', False)
-plot_subfigure(axes[0,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, vVelocity, minVelocity, maxVelocity, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'$v^\prime$', '(c)', False)
-plot_subfigure(axes[0,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVAnalytical, minStressDiv, maxStressDiv, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'$(\nabla \cdot \sigma)_{v^\prime}$ Analytical', r'(d)$\times20$', True)
+    plot_subfigure(axes[0,0], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, uVelocity, minVelocity, maxVelocity, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'$u^\prime$', '(a)', False)
+    plot_subfigure(axes[0,1], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUAnalytical, minStressDiv, maxStressDiv, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'$(\nabla \cdot \sigma)_{u^\prime}$ Analytical', r'(b)$\times20$', False)
+    plot_subfigure(axes[0,2], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, vVelocity, minVelocity, maxVelocity, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'$v^\prime$', '(c)', False)
+    plot_subfigure(axes[0,3], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVAnalytical, minStressDiv, maxStressDiv, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'$(\nabla \cdot \sigma)_{v^\prime}$ Analytical', r'(d)$\times20$', True)
 
-plot_subfigure(axes[1,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWachDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'Wachs. ($u^\prime$ direction)', '(e)', False)
-plot_subfigure(axes[2,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUPWLDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'PWL ($u^\prime$ direction)', '(i)', False)
-plot_subfigure(axes[3,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'Weak ($u^\prime$ direction)', '(m)', False)
-plot_subfigure(axes[4,0], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'WeakWachs ($u^\prime$ direction)', '(q)', False)
+    plot_subfigure(axes[1,0], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWachDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'Wachs. ($u^\prime$ direction)', '(e)', False)
+    plot_subfigure(axes[2,0], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUPWLDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'PWL ($u^\prime$ direction)', '(i)', False)
+    plot_subfigure(axes[3,0], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'Weak ($u^\prime$ direction)', '(m)', False)
+    plot_subfigure(axes[4,0], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'WeakWachs ($u^\prime$ direction)', '(q)', False)
 
-plot_subfigure(axes[1,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'Wachs. ($u^\prime$ direction)', '(f)', False)
-plot_subfigure(axes[2,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUPWLDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'PWL ($u^\prime$ direction)', '(j)', False)
-plot_subfigure(axes[3,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'Weak ($u^\prime$ direction)', '(n)', False)
-plot_subfigure(axes[4,1], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'WeakWachs ($u^\prime$ direction)', '(r)', False)
+    plot_subfigure(axes[1,1], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'Wachs. ($u^\prime$ direction)', '(f)', False)
+    plot_subfigure(axes[2,1], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUPWLDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'PWL ($u^\prime$ direction)', '(j)', False)
+    plot_subfigure(axes[3,1], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'Weak ($u^\prime$ direction)', '(n)', False)
+    plot_subfigure(axes[4,1], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceUWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'WeakWachs ($u^\prime$ direction)', '(r)', False)
 
-plot_subfigure(axes[1,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'Wachs. ($v^\prime$ direction)', '(g)', False)
-plot_subfigure(axes[2,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVPWLDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'PWL ($v^\prime$ direction)', '(k)', False)
-plot_subfigure(axes[3,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'Weak ($v^\prime$ direction)', '(o)', False)
-plot_subfigure(axes[4,2], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
-               False, False, r'WeakWachs ($v^\prime$ direction)', '(s)', False)
+    plot_subfigure(axes[1,2], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'Wachs. ($v^\prime$ direction)', '(g)', False)
+    plot_subfigure(axes[2,2], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVPWLDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'PWL ($v^\prime$ direction)', '(k)', False)
+    plot_subfigure(axes[3,2], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'Weak ($v^\prime$ direction)', '(o)', False)
+    plot_subfigure(axes[4,2], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -1.0, 1.0, -1.0, 1.0, \
+                   False, False, r'WeakWachs ($v^\prime$ direction)', '(s)', False)
 
-plot_subfigure(axes[1,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'Wachs. ($v^\prime$ direction)', '(h)', True)
-plot_subfigure(axes[2,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVPWLDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'PWL ($v^\prime$ direction)', '(l)', True)
-plot_subfigure(axes[3,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'Weak ($v^\prime$ direction)', '(p)', True)
-plot_subfigure(axes[4,3], nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
-               False, False, r'WeakWachs ($v^\prime$ direction)', '(t)', True)
+    plot_subfigure(axes[1,3], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWachDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'Wachs. ($v^\prime$ direction)', '(h)', True)
+    plot_subfigure(axes[2,3], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVPWLDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'PWL ($v^\prime$ direction)', '(l)', True)
+    plot_subfigure(axes[3,3], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'Weak ($v^\prime$ direction)', '(p)', True)
+    plot_subfigure(axes[4,3], fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCell, zCell, latVertex, stressDivergenceVWeakWachsDiff, minStressDivDiff, maxStressDivDiff, -0.2, 0.2, -0.2, 0.2, \
+                   False, False, r'WeakWachs ($v^\prime$ direction)', '(t)', True)
 
-#plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
-plt.savefig("strain_stress_divergence_map.png",dpi=400)
-#plt.savefig("strain_stress_divergence_map_3.png", bbox_inches="tight",dpi=2000)
+    #plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+    plt.savefig("strain_stress_divergence_map.png",dpi=400)
+    #plt.savefig("strain_stress_divergence_map_3.png", bbox_inches="tight",dpi=2000)
 
-plt.clf()
-plt.cla()
-plt.close()
+    plt.clf()
+    plt.cla()
+    plt.close()
 
 
-# histograms
+    # histograms
 
-stressDivergenceUWachDiffHist = []
-stressDivergenceUPWLDiffHist  = []
-stressDivergenceUWeakDiffHist = []
+    stressDivergenceUWachDiffHist = []
+    stressDivergenceUPWLDiffHist  = []
+    stressDivergenceUWeakDiffHist = []
 
-maxValue = 0.0
-for iVertex in range(0,nVertices):
+    maxValue = 0.0
+    for iVertex in range(0,nVertices):
 
-    if (latVertex[iVertex] > 20.0*degreesToRadians):
+        if (latVertex[iVertex] > 20.0*degreesToRadians):
 
-        stressDivergenceUWachDiffHist.append(math.fabs(stressDivergenceUWachDiff[iVertex]))
-        stressDivergenceUPWLDiffHist.append(math.fabs(stressDivergenceUPWLDiff[iVertex]))
-        stressDivergenceUWeakDiffHist.append(math.fabs(stressDivergenceUWeakDiff[iVertex]))
+            stressDivergenceUWachDiffHist.append(math.fabs(stressDivergenceUWachDiff[iVertex]))
+            stressDivergenceUPWLDiffHist.append(math.fabs(stressDivergenceUPWLDiff[iVertex]))
+            stressDivergenceUWeakDiffHist.append(math.fabs(stressDivergenceUWeakDiff[iVertex]))
 
-        maxValue = max(math.fabs(stressDivergenceUWachDiff[iVertex]),maxValue)
-        maxValue = max(math.fabs(stressDivergenceUPWLDiff[iVertex]),maxValue)
+            maxValue = max(math.fabs(stressDivergenceUWachDiff[iVertex]),maxValue)
+            maxValue = max(math.fabs(stressDivergenceUPWLDiff[iVertex]),maxValue)
 
 
-mpl.rc('text', usetex=True)
-mpl.rc('font', family='Times New Roman', size=8)
-mpl.rcParams['axes.linewidth'] = 0.5
+    mpl.rc('text', usetex=True)
+    mpl.rc('font', family='Times New Roman', size=8)
+    mpl.rcParams['axes.linewidth'] = 0.5
 
-plt.figure(figsize=(3.74016, 3))
+    plt.figure(figsize=(3.74016, 3))
 
-#plt.hist(stressDivergenceUWachDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
-#plt.hist(stressDivergenceUPWLDiffHist,  50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
-#plt.hist(stressDivergenceUWeakDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
-plt.hist(stressDivergenceUWachDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
-plt.hist(stressDivergenceUPWLDiffHist,  50, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
-plt.hist(stressDivergenceUWeakDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
+    #plt.hist(stressDivergenceUWachDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
+    #plt.hist(stressDivergenceUPWLDiffHist,  50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
+    #plt.hist(stressDivergenceUWeakDiffHist, 50, normed=0, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
+    plt.hist(stressDivergenceUWachDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='blue',  label='Wachspress')
+    plt.hist(stressDivergenceUPWLDiffHist,  50, range=[0.0,0.08], histtype='step', lw=1, color='red',   label='PWL')
+    plt.hist(stressDivergenceUWeakDiffHist, 50, range=[0.0,0.08], histtype='step', lw=1, color='green', label='Weak')
 
-plt.yscale('log', nonpositive='clip')
+    plt.yscale('log', nonpositive='clip')
 
-plt.xlabel("Error")
-plt.ylabel("Frequency")
+    plt.xlabel("Error")
+    plt.ylabel("Frequency")
 
-plt.legend(["Wachspress","PWL","Weak"], frameon=False, fontsize=8)
+    plt.legend(["Wachspress","PWL","Weak"], frameon=False, fontsize=8)
 
-plt.xlim([0,0.08])
+    plt.xlim([0,0.08])
 
-plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=0.5)
 
-plt.savefig("strain_stress_divergence_hist.png",dpi=400)
+    plt.savefig("strain_stress_divergence_hist.png",dpi=400)
+
+#-------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    strain_stress_divergence_map()
