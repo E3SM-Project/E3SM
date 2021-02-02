@@ -964,13 +964,20 @@
          endif                  ! tice_high
 
          if (tice_low .and. heat_capacity) then
+
                write(warning,*) ' '
                call add_warning(warning)
-               write(warning,*) 'Starting thermo T < Tmin, layer', k
+               write(warning,*) 'Starting thermo, zTin < Tmin, layer', k
                call add_warning(warning)
-               write(warning,*) 'zTin =', zTin(k)
+               write(warning,*) 'k:', k
                call add_warning(warning)
-               write(warning,*) 'Tmin =', Tmin
+               write(warning,*) 'zTin =',zTin(k),', Tmin=',Tmin
+               call add_warning(warning)
+               write(warning,*) 'zSin =',zSin(k)
+               call add_warning(warning)
+               write(warning,*) 'hin =',hin
+               call add_warning(warning)
+               write(warning,*) 'zqin =',zqin(k)
                call add_warning(warning)
                l_stop = .true.
                stop_label = "init_vertical_profile: Starting thermo, zTin < Tmin, layer"
