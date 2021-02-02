@@ -1209,15 +1209,16 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: groundedMarineMarginMask
       real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, faceMeltSpeed
       integer :: err_tmp
-      logical :: applyToFloating, applyToGrounded
+      logical :: applyToFloating, applyToGrounded, applyToGroundingLine
       logical :: applyMelting, applyCalving
        
       err = 0
       call mpas_log_write('Starting face melt routine')
 
       ! Define logicals for call to apply_front_ablation_velocity
-      applyToFloating = .false.
-      applyToGrounded = .true.
+      applyToFloating = .false. ! if true, only apply to floating ice
+      applyToGrounded = .false.  ! if true, only apply to grounded
+      applyToGroundingLine = .true. ! if true, apply at grounding line
       applyMelting = .true.
       applyCalving = .false.
 
@@ -1312,7 +1313,8 @@ module li_iceshelf_melt
          ! Distribute melt among neighbors
        !  call distribute_face_melt_flux(meshPool, geometryPool, scratchPool, groundedMarineMarginMask, err_tmp)
          call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                            applyToFloating, applyCalving, applyMelting, domain, err)
+                                            applyToFloating, applyToGroundingLine, applyCalving, &
+                                            applyMelting, domain, err)
 
          call mpas_log_write("Back to melting routine")
 

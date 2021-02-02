@@ -1123,7 +1123,7 @@ module li_calving
       logical :: dynamicNeighbor
       real(kind=RKIND) :: calvingSubtotal
       integer :: err_tmp
-      logical :: applyToGrounded, applyToFloating
+      logical :: applyToGrounded, applyToFloating, applyToGroundingLine
       logical :: applyCalving, applyMelting
 
       err = 0
@@ -1131,6 +1131,7 @@ module li_calving
       ! Logical arrays needed for apply_ablation_velocity
       applyToGrounded = .true.
       applyToFloating = .true.
+      applyToGroundingLine = .false.
       applyCalving = .true.
       applyMelting = .false.
 
@@ -1196,7 +1197,8 @@ module li_calving
 
          ! Convert calvingVelocity to calvingThickness
           call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                              applyToFloating, applyCalving, applyMelting, domain, err)
+                                              applyToFloating, applyToGroundingLine, applyCalving, &
+                                              applyMelting, domain, err)
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
@@ -1308,7 +1310,7 @@ module li_calving
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
-      logical :: applyToGrounded, applyToFloating
+      logical :: applyToGrounded, applyToFloating, applyToGroundingLine
       logical :: applyCalving, applyMelting
 
       err = 0
@@ -1316,6 +1318,7 @@ module li_calving
       ! Logical arrays needed for apply_front_ablation_velocity
       applyToGrounded = .true.
       applyToFloating = .true.
+      applyToGroundingLine = .false.
       applyCalving = .true.
       applyMelting = .false.
       
@@ -1399,7 +1402,7 @@ module li_calving
 
           ! Convert calvingVelocity to calvingThickness
           call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
-                                      applyToFloating, applyCalving, applyMelting, domain, err)
+                                      applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
 
 
           ! === apply calving ===
@@ -1455,14 +1458,15 @@ module li_calving
 !> by the calling routine.
 !-----------------------------------------------------------------------
 
-   subroutine apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, applyToFloating, applyCalving, applyMelting, domain, err)
+   subroutine apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, applyToFloating, applyToGroundingLine, applyCalving, applyMelting, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
       type (mpas_pool_type), pointer, intent(in) :: velocityPool !< Input: velocity pool
-      logical, intent(in) :: applyToFloating, applyToGrounded
+      logical, intent(in) :: applyToFloating, applyToGrounded, &
+                             applyToGroundingLine
       logical, intent(in) :: applyCalving, applyMelting
       !-----------------------------------------------------------------
       ! input/output variables
@@ -1551,12 +1555,13 @@ module li_calving
       groundedMarineMarginMask(:) = 0
       
       if ( applyToGrounded ) then
-         do iCell = 1, nCells
-         ! Define marine marginal cells as those that are (1) at the ice
+         do iCell = 1, nCellsSolve
+
+         ! If applyToGrounded: Define marine marginal cells as those that are (1) at the ice
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
-
+ 
          ! Check if neighboring cells contain ice and have bed topo below sea level
             nEmptyNeighbors = 0
             do iEdge = 1, nEdgesOnCell(iCell)
@@ -1580,7 +1585,32 @@ module li_calving
                groundedMarineMarginMask(iCell) = 0
             endif
          enddo
+      
+      else if ( applyToGroundingLine ) then
+         do iCell = 1,nCellsSolve
+
+         ! If applyToGroundingLine: Define marine marginal cells as those that
+         ! are at the margin (defined by li_mask_is_grounding_line) if no
+         ! floating ice or are the first floating cell if there is floating ice.
+           if ( bedTopography(iCell) < config_sea_level &
+                .and. li_mask_is_grounded_ice(cellMask(iCell)) ) then
+
+              do iEdge = 1, nEdgesOnCell(iCell)
+                iNeighbor = cellsOnCell(iEdge, iCell)
+                 if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
+                      .and. li_mask_is_floating_ice(cellMask(iNeighbor)) ) then
+                    groundedMarineMarginMask(iNeighbor) = 1
+                 else if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) &
+                      .and. (.not. li_mask_is_floating_ice(cellMask(iNeighbor))) ) then
+                    groundedMarineMarginMask(iCell) = 1
+                 endif
+              enddo ! end loop over edges
+           endif      
+         enddo !end loop over cells
+
       endif
+
+      
 
 
       ! Init fields for accounting
